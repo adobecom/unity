@@ -1,8 +1,8 @@
-import { createTag } from '../../../scripts/utils.js';
+import { createTag, getGuestAccessToken, getUnityConfig } from '../../../scripts/utils.js';
 import { uploadAsset } from '../../steps/upload-step.js';
 
-function toggleOptionTrayDisplay(unityCfg) {
-  const { unityWidget } = unityCfg;
+function toggleOptionTrayDisplay() {
+  const { unityWidget } = getUnityConfig();
   const unityOptTray = unityWidget.querySelector('.unity-option-area');
   if (unityOptTray.style.display === 'none') unityOptTray.style.display = 'flex';
   else unityOptTray.style.display = 'none';
@@ -35,20 +35,22 @@ function loadImg(img) {
   });
 }
 
-async function resetActiveState(unityCfg) {
+async function resetActiveState() {
+  const unityCfg = getUnityConfig();
   const { unityEl, unityWidget, targetEl } = unityCfg;
   const iconHolder = unityWidget.querySelector('.product-refresh-holder');
   iconHolder.classList.add('show-product');
   iconHolder.classList.remove('show-refresh');
   unityCfg.presentState.activeIdx = -1;
-  changeVisibleFeature(unityCfg);
+  changeVisibleFeature();
   const initImg = unityEl.querySelector(':scope picture img');
   const img = targetEl.querySelector('picture img');
   img.src = initImg.src;
   await loadImg(img);
 }
 
-async function switchProdIcon(unityCfg, refresh = false) {
+async function switchProdIcon(refresh = false) {
+  const unityCfg = getUnityConfig();
   const { unityWidget } = unityCfg;
   const iconHolder = unityWidget.querySelector('.product-refresh-holder');
   if (refresh) {
@@ -59,7 +61,8 @@ async function switchProdIcon(unityCfg, refresh = false) {
   iconHolder.classList.remove('show-product');
 }
 
-function addProductIcon(unityCfg) {
+function addProductIcon() {
+  const unityCfg = getUnityConfig();
   const { unityEl, unityWidget } = unityCfg;
   unityCfg.refreshEnabled = false;
   const refreshCfg = unityEl.querySelector('.icon-product-icon');
@@ -70,13 +73,14 @@ function addProductIcon(unityCfg) {
     iconHolder.append(refreshIcon);
     unityCfg.refreshEnabled = true;
     refreshIcon.addEventListener('click', async () => {
-      await switchProdIcon(unityCfg, true);
+      await switchProdIcon(true);
     });
   }
   unityWidget.querySelector('.unity-action-area').append(iconHolder);
 }
 
-function resetWorkflowState(unityCfg) {
+function resetWorkflowState() {
+  const unityCfg = getUnityConfig();
   unityCfg.presentState = {
     activeIdx: -1,
     removeBgState: {
@@ -89,7 +93,8 @@ function resetWorkflowState(unityCfg) {
   };
 }
 
-async function removeBgHandler(unityCfg, changeDisplay = true) {
+async function removeBgHandler(changeDisplay = true) {
+  const unityCfg = getUnityConfig();
   const { apiEndPoint, targetEl } = unityCfg;
   const { unityEl, interactiveSwitchEvent } = unityCfg;
   const { endpoint } = unityCfg.wfDetail.removebg;
@@ -111,7 +116,7 @@ async function removeBgHandler(unityCfg, changeDisplay = true) {
   const removeBgOptions = {
     method: 'POST',
     headers: {
-      Authorization: window.bearerToken,
+      Authorization: getGuestAccessToken(),
       'Content-Type': 'application/json',
       'x-api-key': 'leo',
     },
@@ -130,20 +135,21 @@ async function removeBgHandler(unityCfg, changeDisplay = true) {
   return true;
 }
 
-function removebg(featureName, unityCfg) {
-  const { unityWidget, wfDetail } = unityCfg;
+function removebg(featureName) {
+  const { unityWidget, wfDetail } = getUnityConfig();
   const btn = createActionBtn(wfDetail[featureName].authorCfg);
   unityWidget.querySelector('.unity-action-area').append(btn);
   btn.addEventListener('click', async () => {
-    await removeBgHandler(unityCfg);
+    await removeBgHandler();
   });
 }
 
-async function changeBgHandler(unityCfg, selectedUrl = null, refreshState = true) {
-  if (refreshState) resetWorkflowState(unityCfg);
+async function changeBgHandler(selectedUrl = null, refreshState = true) {
+  const unityCfg = getUnityConfig();
+  if (refreshState) resetWorkflowState();
   const { apiEndPoint, targetEl, unityWidget, unityEl, interactiveSwitchEvent } = unityCfg;
   const { endpoint } = unityCfg.wfDetail.changebg;
-  const unityRetriggered = await removeBgHandler(unityCfg, false);
+  const unityRetriggered = await removeBgHandler(false);
   const img = targetEl.querySelector('picture img');
   const fgId = unityCfg.presentState.removeBgState.assetId;
   const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-selector-tray img').dataset.backgroundImg;
@@ -159,7 +165,7 @@ async function changeBgHandler(unityCfg, selectedUrl = null, refreshState = true
   const changeBgOptions = {
     method: 'POST',
     headers: {
-      Authorization: window.bearerToken,
+      Authorization: getGuestAccessToken(),
       'Content-Type': 'application/json',
       'x-api-key': 'leo',
     },
@@ -183,8 +189,8 @@ async function changeBgHandler(unityCfg, selectedUrl = null, refreshState = true
   unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
 }
 
-function changebg(featureName, unityCfg) {
-  const { unityWidget, wfDetail } = unityCfg;
+function changebg(featureName) {
+  const { unityWidget, wfDetail } = getUnityConfig();
   const { authorCfg } = wfDetail[featureName];
   const btn = createActionBtn(authorCfg);
   unityWidget.querySelector('.unity-action-area').append(btn);
@@ -197,53 +203,55 @@ function changebg(featureName, unityCfg) {
     const a = createTag('a', { class: 'changebg-option' }, thumbnail);
     bgSelectorTray.append(a);
     a.addEventListener('click', async () => {
-      await changeBgHandler(unityCfg, bgImg.src, false);
+      await changeBgHandler(bgImg.src, false);
     });
   });
   unityWidget.querySelector('.unity-option-area').append(bgSelectorTray);
   btn.addEventListener('click', () => {
-    toggleOptionTrayDisplay(unityCfg);
+    toggleOptionTrayDisplay();
   });
 }
 
-function changeHueSat(featureName, unityCfg) {
-  const { unityWidget } = unityCfg;
+function changeHueSat(featureName) {
+  const { unityWidget } = getUnityConfig();
   const featureBtn = unityWidget.querySelector('.unity-button');
   const a = createTag('a', { class: 'unity-button changebg-button' }, 'Change BG');
   if (!featureBtn) unityWidget.append(a);
   else featureBtn.replaceWith(a);
   a.addEventListener('click', async () => {
-    await changeBgHandler(unityCfg);
+    await changeBgHandler();
   });
 }
 
-function changeVisibleFeature(cfg) {
+function changeVisibleFeature() {
+  const cfg = getUnityConfig();
   const { enabledFeatures } = cfg;
   if (cfg.presentState.activeIdx + 1 === enabledFeatures.length) return;
   cfg.presentState.activeIdx += 1;
   const featureName = enabledFeatures[cfg.presentState.activeIdx];
   switch (featureName) {
     case 'removebg':
-      removebg(featureName, cfg);
+      removebg(featureName);
       break;
     case 'changebg':
-      changebg(featureName, cfg);
+      changebg(featureName);
       break;
     case 'huesat':
-      changeHueSat(featureName, cfg);
+      changeHueSat(featureName);
       break;
     default:
       break;
   }
 }
 
-export default async function initUnity(cfg) {
+export default async function initUnity() {
+  const cfg = getUnityConfig();
   cfg.interactiveSwitchEvent = 'unity:ps-interactive-switch';
-  resetWorkflowState(cfg);
-  addProductIcon(cfg);
-  changeVisibleFeature(cfg);
+  resetWorkflowState();
+  addProductIcon();
+  changeVisibleFeature();
   cfg.unityEl.addEventListener(cfg.interactiveSwitchEvent, () => {
-    changeVisibleFeature(cfg);
-    if (cfg.refreshEnabled) switchProdIcon(cfg);
+    changeVisibleFeature();
+    if (cfg.refreshEnabled) switchProdIcon();
   });
 }

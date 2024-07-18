@@ -34,6 +34,20 @@ export const [setUnityLibs, getUnityLibs] = (() => {
   ];
 })();
 
+export const [setUnityConfig, getUnityConfig] = (() => {
+  let unityConfig = {};
+  return [
+    (cfg) => {
+      unityConfig = {
+        apiEndPoint: 'https://assistant-int.adobe.io/api/v1',
+        apiKey: 'leo',
+        ...cfg,
+      };
+    },
+    () => unityConfig,
+  ];
+})();
+
 export function decorateArea(area = document) {}
 
 const miloLibs = setLibs('/libs');
@@ -44,4 +58,10 @@ export { createTag, loadStyle, getConfig };
 
 export const unityConfig = {
   apiEndPoint: 'https://assistant-int.adobe.io/api/v1',
+  apiKey: 'leo',
 };
+
+export function getGuestAccessToken() {
+  const { token } = window.adobeIMS.getAccessToken();
+  return `Bearer ${token}`;
+}
