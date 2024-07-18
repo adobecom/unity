@@ -1,4 +1,4 @@
-import { createTag, loadStyle, getUnityLibs, unityConfig, setUnityConfig } from '../../scripts/utils.js';
+import { createTag, loadStyle, getUnityLibs, setUnityConfig } from '../../scripts/utils.js';
 
 export function defineDeviceByScreenSize() {
   const DESKTOP_SIZE = 1200;
@@ -117,7 +117,6 @@ export default async function init(el) {
     wfDetail,
     enabledFeatures,
     progressCircleEvent: 'unity:progress-circle',
-    ...unityConfig,
   };
   setUnityConfig(wfConfig);
   await initWorkflow(wfConfig);
