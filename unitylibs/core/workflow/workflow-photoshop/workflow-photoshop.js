@@ -273,7 +273,7 @@ export default async function initUnity() {
   await addProductIcon();
   await changeVisibleFeature();
   const img = cfg.targetEl.querySelector('picture img');
-  const uploadBtn = await createUpload(img);
+  const uploadBtn = await createUpload(img, removeBgHandler);
   cfg.unityWidget.querySelector('.unity-action-area').append(uploadBtn);
   await initAppConnector('photoshop');
   cfg.unityEl.addEventListener(cfg.interactiveSwitchEvent, async () => {
