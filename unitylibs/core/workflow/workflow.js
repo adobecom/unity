@@ -36,7 +36,7 @@ function createInteractiveArea(el, pic) {
   const iWidget = createTag('div', { class: 'unity-widget' });
   const unityaa = createTag('div', { class: 'unity-action-area' });
   const unityoa = createTag('div', { class: 'unity-option-area' });
-  iWidget.append(unityaa, unityoa);
+  iWidget.append(unityoa, unityaa);
   pic.querySelector('img').src = getImgSrc(pic);
   [...pic.querySelectorAll('source')].forEach((s) => s.remove());
   const newPic = pic.cloneNode(true);

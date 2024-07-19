@@ -11,9 +11,9 @@ function toggleOptionTrayDisplay() {
 function createActionBtn(btnCfg) {
   const txt = btnCfg.innerText;
   const img = btnCfg.querySelector('img[src*=".svg"]');
-  const actionBtn = createTag('a', { class: 'unity-action-btn' });
+  const actionBtn = createTag('a', { class: 'unity-action-btn body-xl' });
   if (img) {
-    const actionSvg = createTag('img', { class: 'btn-icon' }, img);
+    const actionSvg = createTag('div', { class: 'btn-icon' }, img);
     actionBtn.append(actionSvg);
   }
   if (txt) {
@@ -63,7 +63,7 @@ async function switchProdIcon(refresh = false) {
 
 function addProductIcon() {
   const unityCfg = getUnityConfig();
-  const { unityEl, unityWidget } = unityCfg;
+  const { unityEl, unityWidget, targetEl} = unityCfg;
   unityCfg.refreshEnabled = false;
   const refreshCfg = unityEl.querySelector('.icon-product-icon');
   if (!refreshCfg) return;
@@ -73,6 +73,11 @@ function addProductIcon() {
     iconHolder.append(refreshIcon);
     unityCfg.refreshEnabled = true;
     refreshIcon.addEventListener('click', async () => {
+      await switchProdIcon(true);
+    });
+    const mobileIconHolder = createTag('div', { class: 'mobile-refresh-holder' }, refreshIcon);
+    targetEl.append(mobileIconHolder);
+    mobileIconHolder.addEventListener('click', async () => {
       await switchProdIcon(true);
     });
   }
