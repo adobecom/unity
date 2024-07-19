@@ -52,10 +52,8 @@ async function switchProdIcon(forceRefresh = false) {
     iconHolder?.classList.add('show');
     unityWidget.querySelector('.widget-refresh-button').classList.remove('show');
     targetEl.querySelector(':scope > .widget-refresh-button').classList.remove('show');
+    return;
   }
-  iconHolder?.classList.remove('show');
-  unityWidget.querySelector('.widget-refresh-button').classList.add('show');
-  targetEl.querySelector(':scope > .widget-refresh-button').classList.add('show');
   iconHolder?.classList.remove('show');
   unityWidget.querySelector('.widget-refresh-button').classList.add('show');
   targetEl.querySelector(':scope > .widget-refresh-button').classList.add('show');
