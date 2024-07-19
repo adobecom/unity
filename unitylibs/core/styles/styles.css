@@ -31,6 +31,15 @@
 .unity-enabled .interactive-area {
   position: relative;
 }
+  
+.unity-enabled .widget-refresh-button {
+  display: none;
+  padding: 12.8px;
+}
+
+.unity-enabled .widget-refresh-button.show {
+  display: flex;
+}
 
 .unity-enabled .interactive-area .unity-option-area {
   background: var(--dark-bg);
@@ -43,11 +52,59 @@
 }
 
 .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray {
-  display: flex;
+  display: none;
   flex-direction: row;
   padding: 8px;
 }
 
+.unity-enabled .interactive-area .unity-option-area .changebg-selector-tray.show {
+  display: flex;
+}
+
+.unity-enabled .interactive-area .widget-refresh-button img {
+  width: 30px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  min-width:30px;
+  max-width: 30px;
+  cursor: pointer;
+}
+  
+.unity-enabled .interactive-area .widget-product-icon {
+  display: none;
+}
+
+.unity-enabled .interactive-area > .widget-refresh-button {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  border-radius: 6.389px;
+  border: 1.5px solid var(--border-gray);
+  background: var(--dark-bg);
+}
+
+.unity-enabled .interactive-area.light > .widget-refresh-button {
+  background: var(--light-bg);
+}
+
+.unity-enabled .interactive-area .unity-action-btn .btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unity-enabled .interactive-area .unity-option-area .changebg-selector-tray .changebg-option {
+  cursor: pointer;
+}
+
+.unity-enabled .interactive-area .unity-widget .ps-action-btn {
+  display: none;
+}
+
+.unity-enabled .interactive-area .unity-widget .ps-action-btn.show {
+  display: flex;
+}
 
 @media screen and (max-width: 600px) {
   .unity-enabled .interactive-area .unity-widget {
@@ -93,33 +150,8 @@
     max-height: 67px;
     overflow: hidden;
   }
-  
-  .unity-enabled .interactive-area .product-refresh-holder {
-    display: none;
-  }
 
-  .unity-enabled .interactive-area .mobile-refresh-holder {
-    display: inline-flex;
-    padding: 12px;
-    justify-content: center;
-    align-items: center;
-    border-radius: 6px;
-    border: 1.5px solid #DADADA;
-    position: absolute;
-    top: 21px;
-    left: 21px;
-    background: var(--dark-bg);
-  }
-
-  .unity-enabled .interactive-area.light .mobile-refresh-holder {
-    background: var(--light-bg);
-  }
-
-  .unity-enabled .interactive-area .mobile-refresh-holder img {
-    width: 30px;
-    height: 26px;
-  }
-
+  .unity-enabled .interactive-area .unity-action-btn .btn-icon svg,
   .unity-enabled .interactive-area .unity-action-btn .btn-icon img {
     height: 32px;
     width: 32px;
@@ -207,14 +239,13 @@
     border-radius: 8px;
   }
 
-  .unity-enabled .interactive-area .product-refresh-holder img {
+  .unity-enabled .interactive-area .widget-product-icon img {
     height: 38.5px;
     min-height: 38.5px;
     max-height: 38.5px;
     width: auto;
     min-width: auto;
     max-width: auto;
-    display: none;
   }
 
   .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray img {
@@ -226,6 +257,7 @@
     max-width: 67px;
   }
 
+  .unity-enabled .interactive-area .unity-action-btn .btn-icon svg,
   .unity-enabled .interactive-area .unity-action-btn .btn-icon img {
     height: 31px;
     width: 31px;
@@ -233,14 +265,6 @@
     max-height: 31px;
     min-width: 31px;
     max-width: 31px;
-  }
-
-  .unity-enabled .interactive-area .product-refresh-holder.show-product img:nth-child(1) {
-    display: flex;
-  }
-
-  .unity-enabled .interactive-area .product-refresh-holder.show-refresh img:nth-child(2) {
-    display: flex;
   }
 
   .unity-enabled .interactive-area .unity-action-area .unity-action-btn {
@@ -257,8 +281,18 @@
   .unity-enabled .interactive-area .unity-action-area .unity-action-btn:hover {
     border: 2px solid var(--highlight-blue);
   }
+  
+  .unity-enabled .interactive-area .unity-widget .widget-product-icon.show {
+    display: flex;
+  }
 }
 
+@media screen and (min-width: 600px) and (max-width: 1200px) {
+  .unity-enabled .interactive-area .unity-widget .widget-refresh-button,
+  .unity-enabled .interactive-area .unity-widget .widget-refresh-button.show {
+    display: none;
+  }
+}
 
 @media screen and (min-width: 1200px) {
   .unity-enabled .interactive-area .unity-widget {
@@ -272,5 +306,10 @@
   .unity-enabled .interactive-area .unity-option-area {
     position: relative;
     left: 78px;
+  }
+
+  .unity-enabled .interactive-area > .widget-refresh-button.show,
+  .unity-enabled .interactive-area > .widget-refresh-button {
+    display: none;
   }
 }

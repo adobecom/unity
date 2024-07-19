@@ -1,18 +1,9 @@
-import { createTag, loadStyle, getUnityLibs, setUnityConfig } from '../../scripts/utils.js';
-
-export function defineDeviceByScreenSize() {
-  const DESKTOP_SIZE = 1200;
-  const MOBILE_SIZE = 600;
-  const screenWidth = window.innerWidth;
-  if (screenWidth >= DESKTOP_SIZE) return 'DESKTOP';
-  if (screenWidth <= MOBILE_SIZE) return 'MOBILE';
-  return 'TABLET';
-}
+import { createTag, loadStyle, getUnityLibs, setUnityConfig, defineDeviceByScreenSize} from '../../scripts/utils.js';
 
 export function getImgSrc(pic) {
-  const viewport = defineDeviceByScreenSize() === 'MOBILE' ? 'mobile' : 'desktop';
+  const viewport = defineDeviceByScreenSize();
   let source = '';
-  if (viewport === 'mobile') source = pic.querySelector('source[type="image/webp"]:not([media])');
+  if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
   else source = pic.querySelector('source[type="image/webp"][media]');
   return source.srcset;
 }
@@ -117,6 +108,7 @@ export default async function init(el) {
     wfDetail,
     enabledFeatures,
     progressCircleEvent: 'unity:progress-circle',
+    refreshWidgetEvent: 'unity:refresh-widget',
   };
   setUnityConfig(wfConfig);
   await initWorkflow(wfConfig);

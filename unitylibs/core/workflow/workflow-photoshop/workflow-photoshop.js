@@ -1,26 +1,9 @@
 import { createTag, getGuestAccessToken, getUnityConfig } from '../../../scripts/utils.js';
 import { uploadAsset } from '../../steps/upload-step.js';
 
-function toggleOptionTrayDisplay() {
-  const { unityWidget } = getUnityConfig();
-  const unityOptTray = unityWidget.querySelector('.unity-option-area');
-  if (unityOptTray.style.display === 'none') unityOptTray.style.display = 'flex';
-  else unityOptTray.style.display = 'none';
-}
-
-function createActionBtn(btnCfg) {
-  const txt = btnCfg.innerText;
-  const img = btnCfg.querySelector('img[src*=".svg"]');
-  const actionBtn = createTag('a', { class: 'unity-action-btn body-xl' });
-  if (img) {
-    const actionSvg = createTag('div', { class: 'btn-icon' }, img);
-    actionBtn.append(actionSvg);
-  }
-  if (txt) {
-    const actionText = createTag('div', { class: 'btn-text' }, txt);
-    actionBtn.append(actionText);
-  }
-  return actionBtn;
+function toggleDisplay(domEl) {
+  if (domEl.classList.contains('show')) domEl.classList.remove('show');
+  else domEl.classList.add('show');
 }
 
 function loadImg(img) {
@@ -35,53 +18,77 @@ function loadImg(img) {
   });
 }
 
+async function loadSvg(img) {
+  const res = await fetch(img.src);
+  if (!res.status === 200) return;
+  const svg = await res.text();
+  return svg;
+}
+
+async function createActionBtn(btnCfg, btnClass) {
+  const txt = btnCfg.innerText;
+  const img = btnCfg.querySelector('img[src*=".svg"]');
+  const actionBtn = createTag('a', { class: `unity-action-btn ps-action-btn ${btnClass} show` });
+  if (img) {
+    const btnImg = await loadSvg(img);
+    const actionSvg = createTag('div', { class: 'btn-icon' }, btnImg);
+    actionBtn.append(actionSvg);
+  }
+  if (txt) {
+    const actionText = createTag('div', { class: 'btn-text' }, txt);
+    actionBtn.append(actionText);
+  }
+  return actionBtn;
+}
+
 async function resetActiveState() {
   const unityCfg = getUnityConfig();
-  const { unityEl, unityWidget, targetEl } = unityCfg;
-  const iconHolder = unityWidget.querySelector('.product-refresh-holder');
-  iconHolder.classList.add('show-product');
-  iconHolder.classList.remove('show-refresh');
+  const { unityEl, targetEl } = unityCfg;
   unityCfg.presentState.activeIdx = -1;
   changeVisibleFeature();
   const initImg = unityEl.querySelector(':scope picture img');
-  const img = targetEl.querySelector('picture img');
+  const img = targetEl.querySelector(':scope > picture img');
   img.src = initImg.src;
   await loadImg(img);
 }
 
-async function switchProdIcon(refresh = false) {
+async function switchProdIcon(forceRefresh = false) {
   const unityCfg = getUnityConfig();
-  const { unityWidget } = unityCfg;
-  const iconHolder = unityWidget.querySelector('.product-refresh-holder');
-  if (refresh) {
-    await resetActiveState(unityCfg);
+  const { unityWidget, refreshEnabled, targetEl } = unityCfg;
+  const iconHolder = unityWidget.querySelector('.widget-product-icon');
+  if (!(refreshEnabled)) return;
+  if (forceRefresh) {
+    await resetActiveState();
+    iconHolder?.classList.add('show');
+    unityWidget.querySelector('.widget-refresh-button').classList.remove('show');
+    targetEl.querySelector(':scope > .widget-refresh-button').classList.remove('show');
     return;
   }
-  iconHolder.classList.add('show-refresh');
-  iconHolder.classList.remove('show-product');
+  iconHolder?.classList.remove('show');
+  unityWidget.querySelector('.widget-refresh-button').classList.add('show');
+  targetEl.querySelector(':scope > .widget-refresh-button').classList.add('show');
 }
 
 function addProductIcon() {
   const unityCfg = getUnityConfig();
-  const { unityEl, unityWidget, targetEl} = unityCfg;
+  const { unityEl, unityWidget, targetEl, refreshWidgetEvent } = unityCfg;
   unityCfg.refreshEnabled = false;
   const refreshCfg = unityEl.querySelector('.icon-product-icon');
   if (!refreshCfg) return;
   const [prodIcon, refreshIcon] = refreshCfg.closest('li').querySelectorAll('img[src*=".svg"]');
-  const iconHolder = createTag('div', { class: 'product-refresh-holder show-product' }, prodIcon);
-  if (refreshIcon) {
-    iconHolder.append(refreshIcon);
-    unityCfg.refreshEnabled = true;
-    refreshIcon.addEventListener('click', async () => {
-      await switchProdIcon(true);
-    });
-    const mobileIconHolder = createTag('div', { class: 'mobile-refresh-holder' }, refreshIcon);
-    targetEl.append(mobileIconHolder);
-    mobileIconHolder.addEventListener('click', async () => {
-      await switchProdIcon(true);
-    });
-  }
+  const iconHolder = createTag('div', { class: 'widget-product-icon show' }, prodIcon);
+  const refreshHolder = createTag('div', { class: 'widget-refresh-button' }, refreshIcon);
   unityWidget.querySelector('.unity-action-area').append(iconHolder);
+  if (!refreshIcon) return;
+  unityCfg.refreshEnabled = true;
+  const mobileRefreshHolder = refreshHolder.cloneNode(true);
+  [refreshHolder, mobileRefreshHolder].forEach((el) => {
+    el.addEventListener('click', () => {
+      unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
+    });
+  });
+  unityWidget.querySelector('.unity-action-area').append(refreshHolder);
+  targetEl.append(mobileRefreshHolder);
 }
 
 function resetWorkflowState() {
@@ -140,13 +147,15 @@ async function removeBgHandler(changeDisplay = true) {
   return true;
 }
 
-function removebg(featureName) {
-  const { unityWidget, wfDetail } = getUnityConfig();
-  const btn = createActionBtn(wfDetail[featureName].authorCfg);
-  unityWidget.querySelector('.unity-action-area').append(btn);
+async function removebg(featureName) {
+  const { wfDetail, unityWidget } = getUnityConfig();
+  const removebgBtn = unityWidget.querySelector('.ps-action-btn.removebg-button');
+  if (removebgBtn) return removebgBtn;
+  const btn = await createActionBtn(wfDetail[featureName].authorCfg, 'removebg-button');
   btn.addEventListener('click', async () => {
     await removeBgHandler();
   });
+  return btn;
 }
 
 async function changeBgHandler(selectedUrl = null, refreshState = true) {
@@ -194,12 +203,13 @@ async function changeBgHandler(selectedUrl = null, refreshState = true) {
   unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
 }
 
-function changebg(featureName) {
+async function changebg(featureName) {
   const { unityWidget, wfDetail } = getUnityConfig();
   const { authorCfg } = wfDetail[featureName];
-  const btn = createActionBtn(authorCfg);
-  unityWidget.querySelector('.unity-action-area').append(btn);
-  const bgSelectorTray = createTag('div', { class: 'changebg-selector-tray' });
+  const changebgBtn = unityWidget.querySelector('.ps-action-btn.changebg-button');
+  if (changebgBtn) return changebgBtn;
+  const btn = await createActionBtn(authorCfg, 'changebg-button');
+  const bgSelectorTray = createTag('div', { class: 'changebg-selector-tray show' });
   const bgOptions = authorCfg.querySelectorAll(':scope ul li');
   [...bgOptions].forEach((o) => {
     let [thumbnail, bgImg] = o.querySelectorAll('img');
@@ -213,8 +223,9 @@ function changebg(featureName) {
   });
   unityWidget.querySelector('.unity-option-area').append(bgSelectorTray);
   btn.addEventListener('click', () => {
-    toggleOptionTrayDisplay();
+    toggleDisplay(unityWidget.querySelector('.unity-option-area .changebg-selector-tray'));
   });
+  return btn;
 }
 
 function changeHueSat(featureName) {
@@ -227,26 +238,31 @@ function changeHueSat(featureName) {
     await changeBgHandler();
   });
 }
-
-function changeVisibleFeature() {
+async function changeVisibleFeature() {
   const cfg = getUnityConfig();
-  const { enabledFeatures } = cfg;
+  const { unityWidget, enabledFeatures } = cfg;
   if (cfg.presentState.activeIdx + 1 === enabledFeatures.length) return;
   cfg.presentState.activeIdx += 1;
   const featureName = enabledFeatures[cfg.presentState.activeIdx];
+  let actionBtn = null;
   switch (featureName) {
     case 'removebg':
-      removebg(featureName);
+      actionBtn = await removebg(featureName);
       break;
     case 'changebg':
-      changebg(featureName);
+      actionBtn = await changebg(featureName);
       break;
     case 'huesat':
-      changeHueSat(featureName);
+      actionBtn = changeHueSat(featureName);
       break;
     default:
       break;
   }
+  const prevActionBtn = unityWidget.querySelector('.ps-action-btn.show');
+  if (prevActionBtn === actionBtn) return;
+  prevActionBtn?.classList.remove('show');
+  unityWidget.querySelector('.unity-action-area').append(actionBtn);
+  actionBtn.classList.add('show');
 }
 
 export default async function initUnity() {
@@ -254,9 +270,12 @@ export default async function initUnity() {
   cfg.interactiveSwitchEvent = 'unity:ps-interactive-switch';
   resetWorkflowState();
   addProductIcon();
-  changeVisibleFeature();
-  cfg.unityEl.addEventListener(cfg.interactiveSwitchEvent, () => {
-    changeVisibleFeature();
-    if (cfg.refreshEnabled) switchProdIcon();
+  await changeVisibleFeature();
+  cfg.unityEl.addEventListener(cfg.interactiveSwitchEvent, async () => {
+    await changeVisibleFeature();
+    await switchProdIcon();
+  });
+  cfg.unityEl.addEventListener(cfg.refreshWidgetEvent, async () => {
+    await switchProdIcon(true);
   });
 }
