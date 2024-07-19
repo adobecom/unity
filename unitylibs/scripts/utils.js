@@ -41,6 +41,9 @@ export const [setUnityConfig, getUnityConfig] = (() => {
       unityConfig = {
         apiEndPoint: 'https://assistant-int.adobe.io/api/v1',
         apiKey: 'leo',
+        progressCircleEvent: 'unity:progress-circle',
+        refreshWidgetEvent: 'unity:refresh-widget',
+        interactiveSwitchEvent: 'unity:interactive-switch',
         ...cfg,
       };
     },

@@ -1,21 +1,10 @@
 import { createTag, getGuestAccessToken, getUnityConfig } from '../../../scripts/utils.js';
 import { uploadAsset } from '../../steps/upload-step.js';
+import { initAppConnector, loadImg } from '../../steps/app-connector.js';
 
 function toggleDisplay(domEl) {
   if (domEl.classList.contains('show')) domEl.classList.remove('show');
   else domEl.classList.add('show');
-}
-
-function loadImg(img) {
-  return new Promise((res) => {
-    img.loading = 'eager';
-    img.fetchpriority = 'high';
-    if (img.complete) res();
-    else {
-      img.onload = () => res();
-      img.onerror = () => res();
-    }
-  });
 }
 
 async function loadSvg(img) {
@@ -43,12 +32,12 @@ async function createActionBtn(btnCfg, btnClass) {
 
 async function resetActiveState() {
   const unityCfg = getUnityConfig();
-  const { unityEl, targetEl } = unityCfg;
+  const { unityEl, targetEl, unityWidget } = unityCfg;
   unityCfg.presentState.activeIdx = -1;
-  changeVisibleFeature();
   const initImg = unityEl.querySelector(':scope picture img');
   const img = targetEl.querySelector(':scope > picture img');
   img.src = initImg.src;
+  await changeVisibleFeature();
   await loadImg(img);
 }
 
@@ -69,7 +58,7 @@ async function switchProdIcon(forceRefresh = false) {
   targetEl.querySelector(':scope > .widget-refresh-button').classList.add('show');
 }
 
-function addProductIcon() {
+async function addProductIcon() {
   const unityCfg = getUnityConfig();
   const { unityEl, unityWidget, targetEl, refreshWidgetEvent } = unityCfg;
   unityCfg.refreshEnabled = false;
@@ -78,6 +67,7 @@ function addProductIcon() {
   const [prodIcon, refreshIcon] = refreshCfg.closest('li').querySelectorAll('img[src*=".svg"]');
   const iconHolder = createTag('div', { class: 'widget-product-icon show' }, prodIcon);
   const refreshHolder = createTag('div', { class: 'widget-refresh-button' }, refreshIcon);
+  await loadImg(prodIcon);
   unityWidget.querySelector('.unity-action-area').append(iconHolder);
   if (!refreshIcon) return;
   unityCfg.refreshEnabled = true;
@@ -89,6 +79,7 @@ function addProductIcon() {
   });
   unityWidget.querySelector('.unity-action-area').append(refreshHolder);
   targetEl.append(mobileRefreshHolder);
+  await loadImg(refreshIcon);
 }
 
 function resetWorkflowState() {
@@ -166,7 +157,7 @@ async function changeBgHandler(selectedUrl = null, refreshState = true) {
   const unityRetriggered = await removeBgHandler(false);
   const img = targetEl.querySelector('picture img');
   const fgId = unityCfg.presentState.removeBgState.assetId;
-  const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-selector-tray img').dataset.backgroundImg;
+  const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
   const { origin, pathname } = new URL(bgImg);
   const bgImgUrl = `${origin}${pathname}`;
   if (!unityRetriggered && unityCfg.presentState.changeBgState[bgImgUrl]?.assetId) {
@@ -209,7 +200,8 @@ async function changebg(featureName) {
   const changebgBtn = unityWidget.querySelector('.ps-action-btn.changebg-button');
   if (changebgBtn) return changebgBtn;
   const btn = await createActionBtn(authorCfg, 'changebg-button');
-  const bgSelectorTray = createTag('div', { class: 'changebg-selector-tray show' });
+  btn.dataset.optionsTray = 'changebg-options-tray';
+  const bgSelectorTray = createTag('div', { class: 'changebg-options-tray show' });
   const bgOptions = authorCfg.querySelectorAll(':scope ul li');
   [...bgOptions].forEach((o) => {
     let [thumbnail, bgImg] = o.querySelectorAll('img');
@@ -223,7 +215,7 @@ async function changebg(featureName) {
   });
   unityWidget.querySelector('.unity-option-area').append(bgSelectorTray);
   btn.addEventListener('click', () => {
-    toggleDisplay(unityWidget.querySelector('.unity-option-area .changebg-selector-tray'));
+    toggleDisplay(unityWidget.querySelector('.unity-option-area .changebg-options-tray'));
   });
   return btn;
 }
@@ -260,17 +252,25 @@ async function changeVisibleFeature() {
   }
   const prevActionBtn = unityWidget.querySelector('.ps-action-btn.show');
   if (prevActionBtn === actionBtn) return;
-  prevActionBtn?.classList.remove('show');
-  unityWidget.querySelector('.unity-action-area').append(actionBtn);
+  if (prevActionBtn) {
+    prevActionBtn.classList.remove('show');
+    const hasOptTray = prevActionBtn.dataset.optionsTray;
+    if (hasOptTray) {
+      const optionTray = unityWidget.querySelector(`.unity-option-area .${hasOptTray}`);
+      optionTray?.classList.remove('show');
+    }
+  }
+  if (!prevActionBtn) unityWidget.querySelector('.unity-action-area').append(actionBtn);
+  else prevActionBtn.insertAdjacentElement('afterend', actionBtn);
   actionBtn.classList.add('show');
 }
 
 export default async function initUnity() {
   const cfg = getUnityConfig();
-  cfg.interactiveSwitchEvent = 'unity:ps-interactive-switch';
   resetWorkflowState();
-  addProductIcon();
+  await addProductIcon();
   await changeVisibleFeature();
+  await initAppConnector('photoshop');
   cfg.unityEl.addEventListener(cfg.interactiveSwitchEvent, async () => {
     await changeVisibleFeature();
     await switchProdIcon();

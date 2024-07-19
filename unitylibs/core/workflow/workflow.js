@@ -107,8 +107,6 @@ export default async function init(el) {
     wfName,
     wfDetail,
     enabledFeatures,
-    progressCircleEvent: 'unity:progress-circle',
-    refreshWidgetEvent: 'unity:refresh-widget',
   };
   setUnityConfig(wfConfig);
   await initWorkflow(wfConfig);

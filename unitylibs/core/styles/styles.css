@@ -51,13 +51,13 @@
   background: var(--light-bg);
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-selector-tray {
+.unity-enabled .interactive-area .unity-option-area .changebg-options-tray {
   display: none;
   flex-direction: row;
   padding: 8px;
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-selector-tray.show {
+.unity-enabled .interactive-area .unity-option-area .changebg-options-tray.show {
   display: flex;
 }
 
@@ -94,15 +94,11 @@
   justify-content: center;
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-selector-tray .changebg-option {
+.unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option {
   cursor: pointer;
 }
 
-.unity-enabled .interactive-area .unity-widget .ps-action-btn {
-  display: none;
-}
-
-.unity-enabled .interactive-area .unity-widget .ps-action-btn.show {
+.unity-enabled .interactive-area .unity-widget .unity-action-btn.show {
   display: flex;
 }
 
@@ -138,12 +134,12 @@
     width: 100%;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray {
+  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray {
     gap: 15px;
     border-radius: 8px 8px 0 0;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray .changebg-option {
+  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option {
     width: 100%;
     height: 67px;
     min-height: 67px;
@@ -161,7 +157,7 @@
     max-width: 32px;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray .changebg-option img {
+  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option img {
     width: 100%;
     object-fit: cover;
   }
@@ -233,7 +229,7 @@
     border-radius: 8px;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray {
+  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray {
     gap: 8px;
     width: fit-content;
     border-radius: 8px;
@@ -248,7 +244,7 @@
     max-width: auto;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-selector-tray img {
+  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray img {
     height: 67px;
     min-height: 67px;
     max-height: 67px;
@@ -269,7 +265,7 @@
 
   .unity-enabled .interactive-area .unity-action-area .unity-action-btn {
     padding: 6px 13px;
-    display: flex;
+    display: none;
     flex-direction: row;
     gap: 13px;
     cursor: pointer;
@@ -284,6 +280,15 @@
   
   .unity-enabled .interactive-area .unity-widget .widget-product-icon.show {
     display: flex;
+  }
+
+  .unity-enabled .interactive-area .unity-widget .continue-in-app {
+    background: #1473E6;
+    border: 2px solid var(--highlight-blue);
+  }
+
+  .unity-enabled .interactive-area .unity-widget .continue-in-app:hover {
+    border: 2px solid var(--color-black);
   }
 }
 
