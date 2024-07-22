@@ -82,8 +82,10 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
   if (img) {
     let btnImg = null;
-    if (iconAsImg) btnImg = img.cloneNode(true);
-    else btnImg = await loadSvg(img);
+    const { src } = img;
+    const libSrcPath = `${getUnityLibs().split('/')[0]/new URL(src).pathname}`;
+    if (iconAsImg) btnImg = createTag('img', { src: libSrcPath });
+    else btnImg = await loadSvg(libSrcPath);
     const btnIcon = createTag('div', { class: 'btn-icon' }, btnImg);
     actionBtn.append(btnIcon);
   }
