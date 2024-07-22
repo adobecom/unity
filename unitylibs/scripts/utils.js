@@ -49,10 +49,14 @@ export function defineDeviceByScreenSize() {
 }
 
 export async function loadSvg(src) {
-  const res = await fetch(src);
-  if (!res.status === 200) return null;
-  const svg = await res.text();
-  return svg;
+  try {
+    const res = await fetch(src);
+    if (!res.status === 200) return null;
+    const svg = await res.text();
+    return svg;
+  } catch (e) {
+    return '';
+  }
 }
 
 export function loadImg(img) {
