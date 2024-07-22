@@ -82,10 +82,8 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
   if (img) {
     let btnImg = null;
-    const ulib = getUnityLibs();
     const { pathname } = new URL(img.src);
-    console.log('mathuria', ulib, pathname);
-    const libSrcPath = `${ulib.split('/unitylibs')[0]}/${pathname}`;
+    const libSrcPath = `${getUnityLibs().split('/unitylibs')[0]}${pathname}`;
     if (iconAsImg) btnImg = createTag('img', { src: libSrcPath });
     else btnImg = await loadSvg(libSrcPath);
     const btnIcon = createTag('div', { class: 'btn-icon' }, btnImg);
