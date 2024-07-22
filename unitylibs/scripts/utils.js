@@ -17,18 +17,9 @@ export const [setLibs, getLibs] = (() => {
 export const [setUnityLibs, getUnityLibs] = (() => {
   let libs;
   return [
-    (prodLibs, project = 'unity') => {
+    (libPath, project = 'unity') => {
       if (project === 'unity') { libs = `${origin}/unitylibs`; return libs; }
-      const { hostname, origin } = window.location;
-      if (!hostname.includes('hlx.page')
-        && !hostname.includes('hlx.live')
-        && !hostname.includes('localhost')) {
-        libs = prodLibs;
-        return libs;
-      }
-      const branch = new URLSearchParams(window.location.search).get('unitylibs') || 'main';
-      if (branch.indexOf('--') > -1) { libs = `https://${branch}.hlx.live/unitylibs`; return libs; }
-      libs = `https://${branch}--unity--adobecom.hlx.live/unitylibs`;
+      libs = libPath;
       return libs;
     }, () => libs,
   ];
