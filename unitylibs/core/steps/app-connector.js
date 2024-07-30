@@ -31,7 +31,7 @@ async function continueInApp(cfg, appName, btnConfig) {
   const continuebtn = unityWidget.querySelector(`continue-in-${appName}`);
   if (continuebtn) return continuebtn;
   const btn = await createActionBtn(btnConfig, `continue-in-app continue-in-${appName}`, true, true);
-  btn.addEventListener('click', async () => {
+  btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
     const data = getPreludeData(cfg);
     const connectorOptions = {
