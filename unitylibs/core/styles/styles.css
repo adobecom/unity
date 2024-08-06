@@ -712,3 +712,9 @@
     line-height: var(--type-body-m-lh);
   }
 }
+
+  
+.marquee.split.unity-enabled .asset img {
+  min-width: 100%;
+  object-fit: contain;
+}
