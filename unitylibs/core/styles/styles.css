@@ -597,6 +597,11 @@
     object-fit: contain;
   }
   
+  .marquee.split.unity-enabled .asset img[src*='*media_'] {
+    min-width: unset;
+    object-fit: cover;
+  }
+  
   .aside.split.unity-enabled .interactive-area {
     width: 60.5vw;
     max-width: 1396px;
