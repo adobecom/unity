@@ -593,6 +593,7 @@
   }
   
   .marquee.split.unity-enabled .asset img {
+    min-width: 100%;
     object-fit: contain;
   }
   
