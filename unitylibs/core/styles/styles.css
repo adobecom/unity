@@ -718,3 +718,9 @@
   min-width: 100%;
   object-fit: contain;
 }
+
+  
+.marquee.split.unity-enabled .asset img[src*="media_"] {
+  min-width: unset;
+  object-fit: cover;
+}
