@@ -713,13 +713,14 @@
   }
 }
 
-  
+.marquee.split.unity-enabled .asset.bleed .interactive-area > picture img,
 .marquee.split.unity-enabled .asset img {
   min-width: 100%;
   object-fit: contain;
 }
 
   
+.marquee.split.unity-enabled .asset.bleed .interactive-area > picture img[src*="media_"],
 .marquee.split.unity-enabled .asset img[src*="media_"] {
   min-width: unset;
   object-fit: cover;
