@@ -25,6 +25,7 @@ export default async function createUpload(cfg, target, callback = null) {
       cfg.uploadState.filetype = file.type;
       if (callback) {
         try {
+          target.classList.add('contain-object');
           showProgressCircle(targetEl);
           await callback(cfg);
           showProgressCircle(targetEl);

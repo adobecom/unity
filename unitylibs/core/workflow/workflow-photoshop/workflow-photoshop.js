@@ -393,6 +393,7 @@ async function resetWidgetState(cfg) {
   unityWidget.querySelector('.widget-product-icon')?.classList.add('show');
   unityWidget.querySelector('.widget-refresh-button').classList.remove('show');
   targetEl.querySelector(':scope > .widget-refresh-button').classList.remove('show');
+  if (Object.keys(cfg.uploadState).length > 0) img.classList.remove('contain-object');
   resetSliders(unityWidget);
   await loadImg(img);
 }
