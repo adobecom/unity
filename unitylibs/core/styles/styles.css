@@ -238,8 +238,16 @@
   max-width: auto;
 }
 
+.marquee.split.unity-enabled .asset.bleed .interactive-area > picture .contain-object {
+  object-fit: contain;
+}
+
 .aside.split.unity-enabled.large {
   flex-direction: column;
+}
+
+.aside.split.unity-enabled .interactive-area > picture .contain-object {
+  object-fit: contain;
 }
 
 @media screen and (max-width: 600px) {
