@@ -23,10 +23,25 @@ export default async function createUpload(cfg, target, callback = null) {
     target.src = objUrl;
     target.onload = async () => {
       cfg.uploadState.filetype = file.type;
+      console.log("target width", targetEl.offsetWidth);
+      console.log("target width", target.width);
+      console.log("target height", target.height);
+      console.log("target natural width", target.naturalWidth);
+      console.log("target natural height", target.naturalHeight);
       if (callback) {
         try {
+          if (target.naturalWidth !== target.naturalHeight) {
+            console.log("different width and height");
+            if (!target.classList.contains('contain-object') && !target.classList.contains('mobile-gray-bg')) target.classList.add('contain-object', 'mobile-gray-bg');
+            if (!targetEl.classList.contains('gray-bg')) targetEl.classList.add('gray-bg');
+          }
+          else{
+            if (target.classList.contains('contain-object')) target.classList.remove('contain-object');
+            if (targetEl.classList.contains('gray-bg')) targetEl.classList.remove('gray-bg');
+          }
           showProgressCircle(targetEl);
           await callback(cfg);
+          if (target.classList.contains('mobile-gray-bg')) target.classList.remove('mobile-gray-bg');
           showProgressCircle(targetEl);
         } catch (err) {
           showProgressCircle(targetEl);

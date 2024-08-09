@@ -214,6 +214,7 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
   addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'assetIds', [bgId], { name: 'changeBackground', assetIds: [bgId] });
   img.src = outputUrl;
   await loadImg(img);
+  if (!img.classList.contains('mobile-gray-bg')) img.classList.add('mobile-gray-bg');
   unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
 }
 
@@ -402,6 +403,10 @@ async function resetWidgetState(cfg) {
   unityWidget.querySelector('.widget-product-icon')?.classList.add('show');
   unityWidget.querySelector('.widget-refresh-button').classList.remove('show');
   targetEl.querySelector(':scope > .widget-refresh-button').classList.remove('show');
+  if (img.classList.contains('contain-object')) img.classList.remove('contain-object');
+  if (img.classList.contains('mobile-gray-bg')) img.classList.remove('mobile-gray-bg');
+  if (targetEl.classList.contains('gray-bg')) targetEl.classList.remove('gray-bg');
+  // if (Object.keys(cfg.uploadState).length > 0) img.classList.remove('contain-object');
   resetSliders(unityWidget);
   await loadImg(img);
 }
