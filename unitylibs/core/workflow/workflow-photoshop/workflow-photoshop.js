@@ -91,6 +91,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     apiEndPoint,
     apiKey,
     interactiveSwitchEvent,
+    refreshWidgetEvent,
     targetEl,
     unityEl,
   } = cfg;
@@ -133,12 +134,14 @@ async function removeBgHandler(cfg, changeDisplay = true) {
   const scanData = await scanResponse.json();
   if (scanResponse.status !== 200) {
     if (!scanData.safe || scanData.judgment !== 'noMatch') {
+      unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
       await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
     }
     return false;
   }
   const { safe, judgment } = scanData;
   if (!safe || judgment !== 'noMatch') {
+    unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
     await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
     return false;
   }

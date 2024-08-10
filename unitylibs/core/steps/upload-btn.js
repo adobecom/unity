@@ -9,7 +9,7 @@ export function resetClasses(img, targetEl) {
 }
 
 export default async function createUpload(cfg, target, callback = null) {
-  const { targetEl, unityEl, interactiveSwitchEvent } = cfg;
+  const { targetEl, unityEl, interactiveSwitchEvent, refreshWidgetEvent } = cfg;
   const li = unityEl.querySelector('.icon-upload').parentElement;
   const a = await createActionBtn(li, 'show');
   const input = createTag('input', { class: 'file-upload', type: 'file', accept: 'image/png,image/jpg,image/jpeg', tabIndex: -1 });
@@ -67,6 +67,7 @@ export default async function createUpload(cfg, target, callback = null) {
           showProgressCircle(targetEl);
         } catch (err) {
           showProgressCircle(targetEl);
+          unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
           await showErrorToast(targetEl, unityEl, '.icon-error-request');
           return;
         }
