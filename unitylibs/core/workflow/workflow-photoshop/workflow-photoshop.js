@@ -128,6 +128,20 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     await showErrorToast(targetEl, unityEl, '.icon-error-request');
     return false;
   }
+  const { scanAsset } = await import('../../steps/upload-step.js');
+  const scanResponse = await scanAsset(cfg, id);
+  const scanData = await scanResponse.json();
+  if (scanResponse.status !== 200) {
+    if (!scanData.safe || scanData.judgment !== 'noMatch') {
+      await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
+    }
+    return false;
+  }
+  const { safe, judgment } = scanData;
+  if (!safe || judgment !== 'noMatch') {
+    await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
+    return false;
+  }
   cfg.preludeState.assetId = id;
   const removeBgOptions = {
     method: 'POST',
