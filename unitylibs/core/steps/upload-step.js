@@ -64,5 +64,5 @@ export async function scanAsset(cfg, assetId) {
     headers: getHeaders(apiKey),
     body: JSON.stringify(assetData),
   };
-  return await fetch(`${apiEndPoint}/asset/finalize`, imgScanOptions);
+  return fetch(`${apiEndPoint}/asset/finalize`, imgScanOptions);
 }

@@ -9,7 +9,7 @@ export function resetClasses(img, targetEl) {
 }
 
 export default async function createUpload(cfg, target, callback = null) {
-  const { targetEl, unityEl, interactiveSwitchEvent, refreshWidgetEvent } = cfg;
+  const { targetEl, unityEl, refreshWidgetEvent } = cfg;
   const li = unityEl.querySelector('.icon-upload').parentElement;
   const a = await createActionBtn(li, 'show');
   const input = createTag('input', { class: 'file-upload', type: 'file', accept: 'image/png,image/jpg,image/jpeg', tabIndex: -1 });
@@ -30,9 +30,13 @@ export default async function createUpload(cfg, target, callback = null) {
     }
     const objUrl = URL.createObjectURL(file);
     resetClasses(target, targetEl);
+    const currentImg = targetEl.querySelector(':scope > picture img');
+    cfg.currentImgSrc = currentImg.src;
     target.src = objUrl;
     target.onload = async () => {
       cfg.uploadState.filetype = file.type;
+      cfg.isUpload = true;
+      const mobileGrayBgClass = 'mobile-gray-bg';
       if (callback && flag) {
         flag = false;
         try {
@@ -43,7 +47,6 @@ export default async function createUpload(cfg, target, callback = null) {
             const containObjectClass = 'contain-object';
             const landscapeClass = 'contain-object-landscape';
             const portraitClass = 'contain-object-portrait';
-            const mobileGrayBgClass = 'mobile-gray-bg';
             const grayBgClass = 'gray-bg';
             if (!target.classList.contains(containObjectClass)) {
               target.classList.add(containObjectClass);
@@ -73,8 +76,19 @@ export default async function createUpload(cfg, target, callback = null) {
         }
       }
       const alertHolder = document.querySelector('.unity-enabled .interactive-area .alert-holder');
-      if (!alertHolder || alertHolder.style.display !== 'flex') {
-        unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
+      if (alertHolder && alertHolder.style.display === 'flex') {
+        const initImg = unityEl.querySelector(':scope picture img');
+        if (cfg.imageIsSafe) {
+          target.src = cfg.currentImgSrc;
+        }
+        if (target.src === initImg.src) {
+          resetClasses(target, targetEl);
+          return;
+        }
+        if (!target.classList.contains(mobileGrayBgClass)) {
+          console.log('mobile gray bg');
+          target.classList.add(mobileGrayBgClass);
+        }
       }
     };
     target.onerror = async () => {

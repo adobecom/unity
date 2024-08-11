@@ -25,7 +25,7 @@ function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newV
 
 function resetWorkflowState(cfg) {
   cfg.presentState = {
-    activeIdx: -1,
+    activeIdx: cfg.isUpload ? 0 : -1,
     removeBgState: {
       assetId: null,
       assetUrl: null,
@@ -129,11 +129,13 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     await showErrorToast(targetEl, unityEl, '.icon-error-request');
     return false;
   }
+  cfg.imageIsSafe = true;
   const { scanAsset } = await import('../../steps/upload-step.js');
   const scanResponse = await scanAsset(cfg, id);
   const scanData = await scanResponse.json();
   if (scanResponse.status !== 200) {
     if (!scanData.safe || scanData.judgment !== 'noMatch') {
+      cfg.imageIsSafe = false;
       unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
       await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
     }
@@ -141,6 +143,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
   }
   const { safe, judgment } = scanData;
   if (!safe || judgment !== 'noMatch') {
+    cfg.imageIsSafe = false;
     unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
     await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
     return false;
@@ -445,6 +448,7 @@ async function uploadCallback(cfg) {
   resetWorkflowState(cfg);
   if (enabledFeatures.length === 1) return;
   await removeBgHandler(cfg);
+  cfg.isUpload = false;
 }
 
 export default async function init(cfg) {
