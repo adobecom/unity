@@ -86,7 +86,6 @@ export default async function createUpload(cfg, target, callback = null) {
           return;
         }
         if (!target.classList.contains(mobileGrayBgClass)) {
-          console.log('mobile gray bg');
           target.classList.add(mobileGrayBgClass);
         }
       }
