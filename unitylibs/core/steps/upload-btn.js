@@ -1,11 +1,23 @@
 import { createTag, createActionBtn } from '../../scripts/utils.js';
 
+const CONTAIN_OBJECT = 'contain-object';
+const MOBILE_GRAY_BG = 'mobile-gray-bg';
+const GRAY_BG = 'gray-bg';
+export const IMG_LANDSCAPE = 'img-landscape';
+export const IMG_LANDSCAPE_REMOVE_BG = 'img-landscape-removebg';
+export const IMG_PORTRAIT = 'img-portrait';
+export const IMG_PORTRAIT_REMOVE_BG = 'img-portrait-removebg';
+
 export function resetClasses(img, targetEl) {
-  if (img.classList.contains('contain-object')) img.classList.remove('contain-object');
-  if (img.classList.contains('contain-object-landscape')) img.classList.remove('contain-object-landscape');
-  if (img.classList.contains('contain-object-portrait')) img.classList.remove('contain-object-portrait');
-  if (img.classList.contains('mobile-gray-bg')) img.classList.remove('mobile-gray-bg');
-  if (targetEl.classList.contains('gray-bg')) targetEl.classList.remove('gray-bg');
+  if (img.classList.contains(CONTAIN_OBJECT)) img.classList.remove(CONTAIN_OBJECT);
+  if (img.classList.contains(IMG_LANDSCAPE)) img.classList.remove(IMG_LANDSCAPE);
+  if (img.classList.contains(IMG_LANDSCAPE_REMOVE_BG)) {
+    img.classList.remove(IMG_LANDSCAPE_REMOVE_BG);
+  }
+  if (img.classList.contains(IMG_PORTRAIT)) img.classList.remove(IMG_PORTRAIT);
+  if (img.classList.contains(IMG_PORTRAIT_REMOVE_BG)) img.classList.remove(IMG_PORTRAIT_REMOVE_BG);
+  if (img.classList.contains(MOBILE_GRAY_BG)) img.classList.remove(MOBILE_GRAY_BG);
+  if (targetEl.classList.contains(GRAY_BG)) targetEl.classList.remove(GRAY_BG);
 }
 
 export default async function createUpload(cfg, target, callback = null) {
@@ -36,7 +48,6 @@ export default async function createUpload(cfg, target, callback = null) {
     target.onload = async () => {
       cfg.uploadState.filetype = file.type;
       cfg.isUpload = true;
-      const mobileGrayBgClass = 'mobile-gray-bg';
       if (callback && flag) {
         flag = false;
         try {
@@ -44,50 +55,38 @@ export default async function createUpload(cfg, target, callback = null) {
           const isPortrait = target.naturalWidth < target.naturalHeight;
           const isSquare = target.naturalWidth === target.naturalHeight;
           if (isLandscape || isPortrait) {
-            const containObjectClass = 'contain-object';
-            const landscapeClass = 'contain-object-landscape';
-            const portraitClass = 'contain-object-portrait';
-            const grayBgClass = 'gray-bg';
-            if (!target.classList.contains(containObjectClass)) {
-              target.classList.add(containObjectClass);
+            if (!target.classList.contains(CONTAIN_OBJECT)) {
+              target.classList.add(CONTAIN_OBJECT);
             }
-            if (!target.classList.contains(mobileGrayBgClass)) {
-              target.classList.add(mobileGrayBgClass);
+            if (!target.classList.contains(MOBILE_GRAY_BG)) {
+              target.classList.add(MOBILE_GRAY_BG);
             }
-            if (!targetEl.classList.contains(grayBgClass)) targetEl.classList.add(grayBgClass);
-            if (isLandscape && !target.classList.contains(landscapeClass)) {
-              target.classList.add(landscapeClass);
-            } else if (isPortrait && !target.classList.contains(portraitClass)) {
-              target.classList.add(portraitClass);
+            if (!targetEl.classList.contains(GRAY_BG)) targetEl.classList.add(GRAY_BG);
+            if (isLandscape && !target.classList.contains(IMG_LANDSCAPE)) {
+              cfg.imgDisplay = 'landscape';
+              target.classList.add(IMG_LANDSCAPE);
+            } else if (isPortrait && !target.classList.contains(IMG_PORTRAIT)) {
+              cfg.imgDisplay = 'portrait';
+              target.classList.add(IMG_PORTRAIT);
             }
           } else if (isSquare) {
-            target.classList.remove('contain-object-landscape', 'contain-object-portrait');
-            targetEl.classList.remove('gray-bg');
+            cfg.imgDisplay = '';
+            resetClasses(target, targetEl);
           }
           showProgressCircle(targetEl);
           await callback(cfg);
-          if (target.classList.contains('mobile-gray-bg')) target.classList.remove('mobile-gray-bg');
+          if (target.classList.contains(MOBILE_GRAY_BG)) target.classList.remove(MOBILE_GRAY_BG);
           showProgressCircle(targetEl);
         } catch (err) {
           showProgressCircle(targetEl);
           unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
           await showErrorToast(targetEl, unityEl, '.icon-error-request');
-          return;
         }
       }
       const alertHolder = document.querySelector('.unity-enabled .interactive-area .alert-holder');
       if (alertHolder && alertHolder.style.display === 'flex') {
-        const initImg = unityEl.querySelector(':scope picture img');
-        if (cfg.imageIsSafe) {
-          target.src = cfg.currentImgSrc;
-        }
-        if (target.src === initImg.src) {
-          resetClasses(target, targetEl);
-          return;
-        }
-        if (!target.classList.contains(mobileGrayBgClass)) {
-          target.classList.add(mobileGrayBgClass);
-        }
+        resetClasses(target, targetEl);
+        unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
       }
     };
     target.onerror = async () => {
