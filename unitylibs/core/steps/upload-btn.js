@@ -78,7 +78,6 @@ export default async function createUpload(cfg, target, callback = null) {
       }
       const alertHolder = targetEl.querySelector('.alert-holder');
       if (alertHolder && alertHolder.style.display === 'flex') {
-        resetClasses(target, targetEl);
         unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
       }
     };
