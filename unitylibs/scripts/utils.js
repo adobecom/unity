@@ -133,7 +133,6 @@ async function createErrorToast() {
   return errholder;
 }
 
-
 export async function showErrorToast(targetEl, unityEl, className) {
   const alertHolder = targetEl.querySelector('.alert-holder');
   if (!alertHolder) {
