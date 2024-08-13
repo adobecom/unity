@@ -31,6 +31,10 @@ export default async function createUpload(cfg, target, callback = null) {
     const { showErrorToast } = await import('../../scripts/utils.js');
     const file = e.target.files[0];
     if (!file) return;
+    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
+      await showErrorToast(targetEl, unityEl, '.icon-error-filetype');
+      return;
+    }
     const MAX_FILE_SIZE = 400000000;
     if (file.size > MAX_FILE_SIZE) {
       await showErrorToast(targetEl, unityEl, '.icon-error-filesize');
@@ -40,10 +44,6 @@ export default async function createUpload(cfg, target, callback = null) {
     resetClasses(target, targetEl);
     target.src = objUrl;
     target.onload = async () => {
-      if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
-        await showErrorToast(targetEl, unityEl, '.icon-error-filetype');
-        return;
-      }
       cfg.uploadState.filetype = file.type;
       cfg.isUpload = true;
       if (callback && flag) {
