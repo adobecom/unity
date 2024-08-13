@@ -40,6 +40,10 @@ export default async function createUpload(cfg, target, callback = null) {
     resetClasses(target, targetEl);
     target.src = objUrl;
     target.onload = async () => {
+      if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
+        await showErrorToast(targetEl, unityEl, '.icon-error-filetype');
+        return;
+      }
       cfg.uploadState.filetype = file.type;
       cfg.isUpload = true;
       if (callback && flag) {
