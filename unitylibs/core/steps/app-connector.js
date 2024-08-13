@@ -37,7 +37,7 @@ async function continueInApp(cfg, appName, btnConfig) {
     evt.preventDefault();
     const { showErrorToast } = await import('../../scripts/utils.js');
     cfg.continueRetrying = false;
-    if (!cfg.scanResponseAfterRetries || cfg.scanResponseAfterRetries.status === 403) {
+    if (cfg.scanResponseAfterRetries && cfg.scanResponseAfterRetries.status === 403) {
       unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
       await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
       return false;
