@@ -185,9 +185,9 @@ async function removeBgHandler(cfg, changeDisplay = true) {
   }
   const { outputUrl } = await response.json();
   const opId = new URL(outputUrl).pathname.split('/').pop();
+  cfg.preludeState.finalAssetId = opId;
   cfg.presentState.removeBgState.assetId = opId;
   cfg.presentState.removeBgState.assetUrl = outputUrl;
-  cfg.preludeState.finalAssetId = opId;
   cfg.preludeState.operations.push({ name: 'removeBackground' });
   if (!changeDisplay) return true;
   await updateImgClasses(cfg, img);
