@@ -1,5 +1,14 @@
 import { createActionBtn, createIntersectionObserver, getHeaders } from '../../scripts/utils.js';
 
+function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newValue, newObject) {
+  const existingObject = array.find((obj) => obj[keyToCheck] === valueToCheck);
+  if (existingObject) {
+    existingObject[keyToUpdate] = newValue;
+  } else {
+    array.push(newObject);
+  }
+}
+
 function getPreludeData(cfg) {
   const dataObj = {
     assetId: cfg.preludeState.assetId,
@@ -29,12 +38,21 @@ async function continueInApp(cfg, appName, btnConfig) {
     targetEl,
     unityEl,
     unityWidget,
-  } = cfg;
+  } = cfg;  
   const continuebtn = unityWidget.querySelector(`continue-in-${appName}`);
   if (continuebtn) return continuebtn;
   const btn = await createActionBtn(btnConfig, `continue-in-app continue-in-${appName}`, true, true);
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
+    if (!cfg.preludeState.finalAssetId || !cfg.preludeState.assetId) {
+      const { uploadAsset } = await import('./upload-step.js');
+      const assetId = await uploadAsset(cfg, cfg.presentState.removeBgState.srcUrl);
+      cfg.preludeState.assetId = assetId;
+      const img = cfg.targetEl.querySelector('picture img');
+      const bgId = await uploadAsset(cfg, img.src);
+      cfg.preludeState.finalAssetId = bgId;
+      addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'assetIds', [bgId], { name: 'changeBackground', assetIds: [bgId] });
+    }
     const { showErrorToast } = await import('../../scripts/utils.js');
     cfg.continueRetrying = false;
     if (cfg.scanResponseAfterRetries && cfg.scanResponseAfterRetries.status === 403) {

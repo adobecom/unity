@@ -114,7 +114,7 @@ function checkImgModified(hostname) {
   return isModified;
 }
 
-async function removeBgHandler(cfg, changeDisplay = true) {
+async function removeBgHandler(cfg, changeDisplay = true, rbgSrc = null) {
   const {
     apiEndPoint,
     apiKey,
@@ -137,6 +137,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     cfg.presentState.assetId = null;
     cfg.preludeState.operations = [];
   }
+
   const { srcUrl, assetUrl } = cfg.presentState.removeBgState;
   const urlIsValid = assetUrl ? await fetch(assetUrl) : null;
   if (cfg.presentState.removeBgState.assetId && urlIsValid?.status === 200) {
@@ -151,7 +152,24 @@ async function removeBgHandler(cfg, changeDisplay = true) {
   const { hostname, origin, pathname } = new URL(img.src);
   const imgUrl = srcUrl || (img.src.startsWith('blob:') ? img.src : `${origin}${pathname}`);
   const isImgModified = checkImgModified(hostname);
+
   cfg.presentState.removeBgState.srcUrl = imgUrl;
+
+  if (!isImgModified && (rbgSrc !== null || !changeDisplay)) {
+    if (!changeDisplay) return true;
+    //const id = await uploadAsset(cfg, rbgSrc);
+    /*if (!id) {
+      await showErrorToast(targetEl, unityEl, '.icon-error-request');
+      return false;
+    }*/
+    img.src = rbgSrc;
+    await loadImg(img);
+    //cfg.presentState.removeBgState.assetId = id;
+    cfg.presentState.removeBgState.assetUrl = rbgSrc;
+    if (!cfg.preludeState.operations['removeBackground']) cfg.preludeState.operations.push({ name: 'removeBackground' });
+    unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
+    return;
+  }
   const { uploadAsset } = await import('../../steps/upload-step.js');
   const id = await uploadAsset(cfg, imgUrl);
   if (!id) {
@@ -173,6 +191,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     }
   }
   cfg.preludeState.assetId = id;
+  
   const removeBgOptions = {
     method: 'POST',
     headers: getHeaders(apiKey),
@@ -188,6 +207,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
   cfg.presentState.removeBgState.assetId = opId;
   cfg.presentState.removeBgState.assetUrl = outputUrl;
   cfg.preludeState.operations.push({ name: 'removeBackground' });
+
   if (!changeDisplay) return true;
   await updateImgClasses(cfg, img);
   img.src = outputUrl;
@@ -198,17 +218,19 @@ async function removeBgHandler(cfg, changeDisplay = true) {
 
 async function removebg(cfg, featureName) {
   const { wfDetail, unityWidget } = cfg;
+  const { authorCfg } = wfDetail[featureName];
   const removebgBtn = unityWidget.querySelector('.ps-action-btn.removebg-button');
   if (removebgBtn) return removebgBtn;
   const btn = await createActionBtn(wfDetail[featureName].authorCfg, 'ps-action-btn removebg-button show');
+  const rbgOption = authorCfg.querySelectorAll(':scope img')[1];
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
-    handleEvent(cfg, () => removeBgHandler(cfg));
+    handleEvent(cfg, () => removeBgHandler(cfg, true, rbgOption?.src));
   });
   return btn;
 }
 
-async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
+async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, bgAppliedUrl = null) {
   if (refreshState) resetWorkflowState();
   const {
     apiEndPoint,
@@ -225,9 +247,26 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
   const fgId = cfg.presentState.removeBgState.assetId;
   const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
   const { origin, pathname } = new URL(bgImg);
+  const { hostname } = new URL(img.src)
   const bgImgUrl = `${origin}${pathname}`;
+
+  const isImgModified = checkImgModified(hostname);
+  if (!isImgModified){
+    const finalbgImageUrl = bgAppliedUrl || unityWidget.querySelectorAll('.unity-option-area .changebg-options-tray img')[1].dataset.bgAppliedImg;
+    img.src = finalbgImageUrl;
+    await loadImg(img);
+    cfg.presentState.changeBgState[bgImgUrl] = {};
+    //cfg.presentState.changeBgState[bgImgUrl].assetId = bgId;
+    cfg.presentState.changeBgState[bgImgUrl].assetUrl = bgImgUrl;
+    //cfg.preludeState.finalAssetId = bgId;
+    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'assetIds', [], { name: 'changeBackground', assetIds: [] });
+    unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
+    return;
+  }
+
   const { uploadAsset } = await import('../../steps/upload-step.js');
   const bgId = await uploadAsset(cfg, bgImgUrl);
+
   if (!unityRetriggered && cfg.presentState.changeBgState[bgImgUrl]?.assetId) {
     img.src = cfg.presentState.changeBgState[bgImgUrl].assetUrl;
     await loadImg(img);
@@ -277,14 +316,16 @@ async function changebg(cfg, featureName) {
   [...bgOptions].forEach((o) => {
     let thumbnail = null;
     let bgImg = null;
-    [thumbnail, bgImg] = o.querySelectorAll('img');
+    let bgImageApplied = null;
+    [thumbnail, bgImg, bgImageApplied] = o.querySelectorAll('img');
     if (!bgImg) bgImg = thumbnail;
     thumbnail.dataset.backgroundImg = bgImg.src;
+    thumbnail.dataset.bgAppliedImg = bgImageApplied.src;
     const a = createTag('a', { href: '#', class: 'changebg-option' }, thumbnail);
     bgSelectorTray.append(a);
     a.addEventListener('click', async (evt) => {
       evt.preventDefault();
-      handleEvent(cfg, () => changeBgHandler(cfg, bgImg.src, false));
+      handleEvent(cfg, () => changeBgHandler(cfg, bgImg.src, false, bgImageApplied.src));
     });
   });
   unityWidget.querySelector('.unity-option-area').append(bgSelectorTray);
