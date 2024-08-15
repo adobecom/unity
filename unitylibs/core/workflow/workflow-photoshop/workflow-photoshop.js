@@ -174,7 +174,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     return false;
   }
   if (isImgModified) {
-    scanForCsam(cfg, id, unityEl, targetEl);
+    scanForCsam(cfg, id, unityEl, targetEl, refreshWidgetEvent);
   }
   cfg.preludeState.assetId = id;
   const removeBgOptions = {
