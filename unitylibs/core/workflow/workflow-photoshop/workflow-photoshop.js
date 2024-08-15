@@ -23,12 +23,12 @@ function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newV
   }
 }
 
-async function scanForCsam(cfg, id, unityEl, targetEl, refreshWidgetEvent) {
+async function scanForCsam(cfg, id, unityEl, refreshWidgetEvent) {
   const { scanImgForSafety } = await import('../../steps/upload-step.js');
   let scanResponse = await scanImgForSafety(cfg, id);
   if (scanResponse.status === 403) {
     unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
-    await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
+    //await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
     return false;
   }
   if (scanResponse.status === 429
@@ -174,7 +174,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     return false;
   }
   if (isImgModified) {
-    scanForCsam(cfg, id, unityEl, targetEl, refreshWidgetEvent);
+    scanForCsam(cfg, id, unityEl, refreshWidgetEvent );
   }
   cfg.preludeState.assetId = id;
   const removeBgOptions = {
