@@ -56,7 +56,7 @@ export async function uploadAsset(cfg, imgUrl) {
   return assetId;
 }
 
-export async function scanAsset(cfg, assetId) {
+export async function scanImgForSafety(cfg, assetId) {
   const { apiEndPoint, apiKey } = cfg;
   const assetData = { assetId, targetProduct: 'Photoshop' };
   const imgScanOptions = {
