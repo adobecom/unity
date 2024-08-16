@@ -140,7 +140,6 @@ const miloLibs = setLibs(LIBS);
 }());
 
 (async function listenAndReload() {
-  let currPageUrl = '';
   window.addEventListener("message", async (event) => {
     const { unity } = JSON.parse(event.data);
     const u = document.querySelector('.unity');
