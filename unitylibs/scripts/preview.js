@@ -142,7 +142,7 @@ const miloLibs = setLibs(LIBS);
 (async function listenAndReload() {
   window.addEventListener("message", async (event) => {
     const { unity } = JSON.parse(event.data);
-    console.log(unity);
+    console.log('From unity page' , unity);
     const u = document.querySelector('.unity');
     const parser = new DOMParser();
     const ih = parser.parseFromString(unity, "text/html");
