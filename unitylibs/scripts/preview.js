@@ -141,7 +141,8 @@ const miloLibs = setLibs(LIBS);
 
 (async function listenAndReload() {
   window.addEventListener("message", async (event) => {
-    const { unity } = JSON.parse(event.data);
+    const { source, unity } = JSON.parse(event.data);
+    if (!(source == 'milo-studio')) return;
     console.log('From unity page' , unity);
     const u = document.querySelector('.unity');
     const parser = new DOMParser();
