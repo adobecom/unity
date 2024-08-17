@@ -16,14 +16,37 @@ function getUnityLibs(prodLibs, project = 'unity') {
   return libs;
 }
 
+function getWorkFlowInformation(el) {
+  let wfName = '';
+  const workflowCfg = {
+    'workflow-photoshop': {
+      removebg: { endpoint: 'providers/PhotoshopRemoveBackground' },
+      changebg: { endpoint: 'providers/PhotoshopChangeBackground' },
+      slider: {},
+    },
+  };
+  [...el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
+  if (!wfName || !workflowCfg[wfName]) return [];
+  return [wfName, workflowCfg[wfName]];
+}
+
 export default async function init(el) {
   const projectName = 'unity';
   const unitylibs = getUnityLibs('/unitylibs', projectName);
-  const [{ default: wfinit }] = await Promise.all([
+  const [wfName, wfDetail] = getWorkFlowInformation(el);
+  const [{ default: wfinit }, { default: productWfInit }] = await Promise.all([
     import(`${unitylibs}/core/workflow/workflow.js`),
+    import(`${unitylibs}/core/workflow/${wfName}/${wfName}.js`),
     new Promise((resolve) => {
       loadStyle(`${unitylibs}/core/styles/styles.css`, resolve);
     }),
+    new Promise((resolve) => {
+      loadStyle(`${getUnityLibs()}/core/workflow/${wfName}/${wfName}.css`, resolve);
+    }),
+    import(`${unitylibs}/core/steps/app-connector.js`),
+    import(`${unitylibs}/core/workflow/${wfName}/${wfName}.js`),
   ]);
-  await wfinit(el, projectName, unitylibs);
+  await wfinit({
+    el, projectName, unitylibs, wfName, wfDetail, productWfInit,
+  });
 }
