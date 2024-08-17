@@ -8,6 +8,14 @@ import {
   decorateDefaultLinkAnalytics,
   createIntersectionObserver,
 } from '../../../scripts/utils.js';
+import {
+  IMG_LANDSCAPE,
+  IMG_PORTRAIT,
+  IMG_REMOVE_BG,
+  resetClasses,
+  default as createUpload,
+} from '../../steps/upload-btn.js';
+import initAppConnector from '../../steps/app-connector.js';
 
 function resetSliders(unityWidget) {
   const adjustmentCircles = unityWidget.querySelectorAll('.adjustment-circle');
@@ -89,11 +97,6 @@ async function handleEvent(cfg, eventHandler) {
 async function updateImgClasses(cfg, img) {
   const { imgDisplay } = cfg;
   if (imgDisplay === 'landscape' || imgDisplay === 'portrait') {
-    const {
-      IMG_LANDSCAPE,
-      IMG_PORTRAIT,
-      IMG_REMOVE_BG,
-    } = await import('../../steps/upload-btn.js');
     if (cfg.imgDisplay === 'landscape') {
       if (img.classList.contains(IMG_LANDSCAPE)) img.classList.remove(IMG_LANDSCAPE);
     } else if (cfg.imgDisplay === 'portrait') {
@@ -452,7 +455,6 @@ async function resetWidgetState(cfg) {
   unityWidget.querySelector('.widget-product-icon')?.classList.add('show');
   unityWidget.querySelector('.widget-refresh-button').classList.remove('show');
   targetEl.querySelector(':scope > .widget-refresh-button').classList.remove('show');
-  const { resetClasses } = await import('../../steps/upload-btn.js');
   resetClasses(img, targetEl);
   resetSliders(unityWidget);
   await loadImg(img);
@@ -485,10 +487,8 @@ export default async function init(cfg) {
   await addProductIcon(cfg);
   await changeVisibleFeature(cfg);
   const img = cfg.targetEl.querySelector('picture img');
-  const { default: createUpload } = await import('../../steps/upload-btn.js');
   const uploadBtn = await createUpload(cfg, img, uploadCallback);
   unityWidget.querySelector('.unity-action-area').append(uploadBtn);
-  const { default: initAppConnector } = await import('../../steps/app-connector.js');
   await initAppConnector(cfg, 'photoshop');
   await decorateDefaultLinkAnalytics(unityWidget);
   unityEl.addEventListener(interactiveSwitchEvent, async () => {
