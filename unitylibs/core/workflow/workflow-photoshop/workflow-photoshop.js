@@ -484,13 +484,15 @@ async function uploadCallback(cfg) {
 export default async function init(cfg) {
   const { targetEl, unityEl, unityWidget, interactiveSwitchEvent, refreshWidgetEvent } = cfg;
   resetWorkflowState(cfg);
-  await addProductIcon(cfg);
-  await changeVisibleFeature(cfg);
   const img = cfg.targetEl.querySelector('picture img');
-  const uploadBtn = await createUpload(cfg, img, uploadCallback);
+  const [uploadBtn] = await Promise.all([
+    createUpload(cfg, img, uploadCallback),
+    addProductIcon(cfg),
+    changeVisibleFeature(cfg),
+    initAppConnector(cfg, 'photoshop'),
+    decorateDefaultLinkAnalytics(unityWidget),
+  ]);
   unityWidget.querySelector('.unity-action-area').append(uploadBtn);
-  await initAppConnector(cfg, 'photoshop');
-  await decorateDefaultLinkAnalytics(unityWidget);
   unityEl.addEventListener(interactiveSwitchEvent, async () => {
     await changeVisibleFeature(cfg);
     await switchProdIcon(cfg, false);
