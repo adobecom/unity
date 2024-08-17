@@ -19,10 +19,11 @@ function getUnityLibs(prodLibs, project = 'unity') {
 export default async function init(el) {
   const projectName = 'unity';
   const unitylibs = getUnityLibs('/unitylibs', projectName);
-  const stylePromise = new Promise((resolve) => {
-    loadStyle(`${unitylibs}/core/styles/styles.css`, resolve);
-  });
-  await stylePromise;
-  const { default: wfinit } = await import(`${unitylibs}/core/workflow/workflow.js`);
+  const [{ default: wfinit }] = await Promise.all([
+    import(`${unitylibs}/core/workflow/workflow.js`),
+    new Promise((resolve) => {
+      loadStyle(`${unitylibs}/core/styles/styles.css`, resolve);
+    }),
+  ]);
   await wfinit(el, projectName, unitylibs);
 }
