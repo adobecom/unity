@@ -140,7 +140,6 @@ const miloLibs = setLibs(LIBS);
 }());
 
 const marquee = `
-    <main>
       <div>
         <div class="marquee split large">
           <div>
@@ -163,8 +162,7 @@ const marquee = `
             </div>
           </div>
         </div>
-      </div>
-    </main>`;
+      </div>`;
 
 (async function listenAndReload() {
   window.addEventListener("message", async (event) => {
@@ -172,10 +170,10 @@ const marquee = `
     if (!(source == 'milo-studio')) return;
     console.log('From unity page' , unity);
     const u = document.querySelector('.section');
-    u.innerHTML += unity;
     // const { default: init } = await import('../blocks/unity/unity.js');
-    document.querySelector('body').append(marquee);
-    init(u.querySelector('.unity'));
+    document.querySelector('body main').innerHTML = marquee;
+    document.querySelector('body').innerHTML += unity;
+    // init(u.querySelector('.unity'));
     const { loadArea } = await import(`${miloLibs}/utils/utils.js`);
     await loadArea();
   });
