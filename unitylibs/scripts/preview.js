@@ -172,7 +172,7 @@ const marquee = `
     const u = document.querySelector('.section');
     // const { default: init } = await import('../blocks/unity/unity.js');
     document.querySelector('body main').innerHTML = marquee;
-    document.querySelector('body main').innerHTML += unity;
+    document.querySelector('.marquee').parentElement.innerHTML += unity;
     // init(u.querySelector('.unity'));
     const { loadArea } = await import(`${miloLibs}/utils/utils.js`);
     await loadArea();
