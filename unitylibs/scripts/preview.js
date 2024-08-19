@@ -149,6 +149,6 @@ const miloLibs = setLibs(LIBS);
     const ih = parser.parseFromString(unity, "text/html");
     u.innerHTML += ih.querySelector('.unity').innerHTML;
     const { default: init } = await import('../blocks/unity/unity.js');
-    init(u);
+    init(u.querySelector('.unity'));
   });
 }());
