@@ -170,8 +170,9 @@ const marquee = `
     if (!(source == 'milo-studio')) return;
     console.log('From unity page' , unity);
     const u = document.querySelector('.section');
-    const res = await fetch(`https://main--unity--adobecom.hlx.live/unity/milostudio/marquee.plain.html`)
-    document.querySelector('body main').innerHTML = res.text;
+    const res = await fetch(`https://main--unity--adobecom.hlx.live/unity/milostudio/marquee.plain.html`);
+    const block = await res.text();
+    document.querySelector('body main').innerHTML = block;
     document.querySelector('.marquee').parentElement.innerHTML += unity;
     const { loadArea } = await import(`${miloLibs}/utils/utils.js`);
     await loadArea();
