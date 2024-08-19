@@ -147,10 +147,9 @@ const marquee = `
           </div>
           <div>
             <div data-valign="middle">
-              <h2 id="marquee-large-light"><strong>Marquee Large Light</strong></h2>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
-              <p><em><a href="https://www.adobe.com/">Secondary action</a></em> <strong><a href="https://www.adobe.com/">Call to action</a></strong></p>
-              <p>Duis aute irure dolor in reprehenderit.</p>
+              <h2 id="marquee-large-light"><strong>Welcome to Unity Preview</strong></h2>
+              <p>Discover how our product can elevate your pages to new heights. Here’s a glimpse of how your page will look with unity.</p>
+              <p><em><a href="https://wiki.corp.adobe.com/display/adobedotcom/Unity+Authoring">Authoring guide</a></em> <strong><a href="https://wiki.corp.adobe.com/display/adobedotcom/Project+Unity+Engineering+Team">Learn More</a></strong></p>
             </div>
             <div data-valign="middle">
               <picture>
