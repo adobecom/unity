@@ -173,7 +173,7 @@ const marquee = `
     console.log('From unity page' , unity);
     const u = document.querySelector('.section');
     u.innerHTML += unity;
-    const { default: init } = await import('../blocks/unity/unity.js');
+    // const { default: init } = await import('../blocks/unity/unity.js');
     document.querySelector('body').append(marquee);
     init(u.querySelector('.unity'));
     const { loadArea } = await import(`${miloLibs}/utils/utils.js`);
