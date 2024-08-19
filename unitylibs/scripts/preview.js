@@ -150,6 +150,7 @@ const marquee = `
               <h2 id="marquee-large-light"><strong>Welcome to Unity Preview</strong></h2>
               <p>Discover how our product can elevate your pages to new heights. Here’s a glimpse of how your page will look with unity.</p>
               <p><em><a href="https://wiki.corp.adobe.com/display/adobedotcom/Unity+Authoring">Authoring guide</a></em> <strong><a href="https://wiki.corp.adobe.com/display/adobedotcom/Project+Unity+Engineering+Team">Learn More</a></strong></p>
+              <p>You are in the preview mode. Copy the block to your document see it in action</p>
             </div>
             <div data-valign="middle">
               <picture>
