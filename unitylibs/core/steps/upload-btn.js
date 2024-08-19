@@ -45,7 +45,6 @@ export default async function createUpload(cfg, target, callback = null) {
     resetClasses(target, targetEl);
     target.src = objUrl;
     target.onload = async () => {
-      // Throw error if uploaded image is greater than 4K
       if (target.naturalWidth > 8000 || target.naturalHeight > 8000) {
         await showErrorToast(targetEl, unityEl, '.icon-error-filetype');
         return;
