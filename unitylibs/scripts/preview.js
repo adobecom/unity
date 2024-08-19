@@ -139,31 +139,6 @@ const miloLibs = setLibs(LIBS);
   await loadArea();
 }());
 
-const marquee = `
-      <div>
-        <div class="marquee split large">
-          <div>
-            <div data-valign="middle">black</div>
-          </div>
-          <div>
-            <div data-valign="middle">
-              <h2 id="marquee-large-light"><strong>Welcome to Unity Preview</strong></h2>
-              <p>Discover how our product can elevate your pages to new heights. Here’s a glimpse of how your page will look with unity.</p>
-              <p><em><a href="https://wiki.corp.adobe.com/display/adobedotcom/Unity+Authoring">Authoring guide</a></em> <strong><a href="https://wiki.corp.adobe.com/display/adobedotcom/Project+Unity+Engineering+Team">Learn More</a></strong></p>
-              <p class='body-s'>You are in the preview mode.</p>
-            </div>
-            <div data-valign="middle">
-              <picture>
-                <source type="image/webp" srcset="./media_1e06bce27675a728157c3c7930d66909c9f8d6d5d.jpeg?width=2000&amp;format=webply&amp;optimize=medium" media="(min-width: 600px)">
-                <source type="image/webp" srcset="./media_1e06bce27675a728157c3c7930d66909c9f8d6d5d.jpeg?width=750&amp;format=webply&amp;optimize=medium">
-                <source type="image/jpeg" srcset="./media_1e06bce27675a728157c3c7930d66909c9f8d6d5d.jpeg?width=2000&amp;format=jpeg&amp;optimize=medium" media="(min-width: 600px)">
-                <img loading="lazy" alt="" src="./media_1e06bce27675a728157c3c7930d66909c9f8d6d5d.jpeg?width=750&amp;format=jpeg&amp;optimize=medium" width="570" height="570">
-              </picture>
-            </div>
-          </div>
-        </div>
-      </div>`;
-
 (async function listenAndReload() {
   window.addEventListener("message", async (event) => {
     const { source, unity } = JSON.parse(event.data);
