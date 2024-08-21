@@ -8,7 +8,16 @@ import {
   decorateDefaultLinkAnalytics,
   createIntersectionObserver,
 } from '../../../scripts/utils.js';
+import {
+  IMG_LANDSCAPE,
+  IMG_PORTRAIT,
+  IMG_REMOVE_BG,
+  resetClasses,
+  default as createUpload,
+} from '../../steps/upload-btn.js';
+import initAppConnector from '../../steps/app-connector.js';
 
+const preloadedSvgs = {};
 function resetSliders(unityWidget) {
   const adjustmentCircles = unityWidget.querySelectorAll('.adjustment-circle');
   adjustmentCircles.forEach((c) => { c.style = ''; });
@@ -50,14 +59,12 @@ async function addProductIcon(cfg) {
   const refreshCfg = unityEl.querySelector('.icon-product-icon');
   if (!refreshCfg) return;
   const [prodIcon, refreshIcon] = refreshCfg.closest('li').querySelectorAll('img[src*=".svg"]');
-  const unityOrigin = getUnityLibs().split('/unitylibs')[0];
-  prodIcon.src = `${unityOrigin}${new URL(prodIcon.src).pathname}`;
-  const iconHolder = createTag('div', { class: 'widget-product-icon show' }, prodIcon);
-  const refreshSvg = await loadSvg(`${unityOrigin}${new URL(refreshIcon.src).pathname}`);
+  const prodIconSvg = await preloadedSvgs[prodIcon.src];
+  const iconHolder = createTag('div', { class: 'widget-product-icon show' }, prodIconSvg);
+  const refreshSvg = await preloadedSvgs[refreshIcon.src];
   const refreshAnalyics = createTag('div', { class: 'widget-refresh-text' }, 'Restart');
   const refreshHolder = createTag('a', { href: '#', class: 'widget-refresh-button' }, refreshSvg);
   refreshHolder.append(refreshAnalyics);
-  await loadImg(prodIcon);
   unityWidget.querySelector('.unity-action-area').append(iconHolder);
   if (!refreshIcon) return;
   cfg.refreshEnabled = true;
@@ -89,11 +96,6 @@ async function handleEvent(cfg, eventHandler) {
 async function updateImgClasses(cfg, img) {
   const { imgDisplay } = cfg;
   if (imgDisplay === 'landscape' || imgDisplay === 'portrait') {
-    const {
-      IMG_LANDSCAPE,
-      IMG_PORTRAIT,
-      IMG_REMOVE_BG,
-    } = await import('../../steps/upload-btn.js');
     if (cfg.imgDisplay === 'landscape') {
       if (img.classList.contains(IMG_LANDSCAPE)) img.classList.remove(IMG_LANDSCAPE);
     } else if (cfg.imgDisplay === 'portrait') {
@@ -201,7 +203,11 @@ async function removebg(cfg, featureName) {
   const { wfDetail, unityWidget } = cfg;
   const removebgBtn = unityWidget.querySelector('.ps-action-btn.removebg-button');
   if (removebgBtn) return removebgBtn;
-  const btn = await createActionBtn(wfDetail[featureName].authorCfg, 'ps-action-btn removebg-button show');
+  const btn = await createActionBtn({
+    btnCfg: wfDetail[featureName].authorCfg,
+    btnClass: 'ps-action-btn removebg-button show',
+    preloadedSvgs,
+  });
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
     handleEvent(cfg, () => removeBgHandler(cfg));
@@ -270,7 +276,10 @@ async function changebg(cfg, featureName) {
   const { authorCfg } = wfDetail[featureName];
   const changebgBtn = unityWidget.querySelector('.ps-action-btn.changebg-button');
   if (changebgBtn) return changebgBtn;
-  const btn = await createActionBtn(authorCfg, 'ps-action-btn changebg-button subnav-active show');
+  const btn = await createActionBtn({
+    btnCfg: authorCfg,
+    btnClass: 'ps-action-btn changebg-button subnav-active show',
+  });
   btn.classList.add('focus');
   btn.dataset.optionsTray = 'changebg-options-tray';
   const bgSelectorTray = createTag('div', { class: 'changebg-options-tray show' });
@@ -364,7 +373,10 @@ async function changeAdjustments(cfg, featureName) {
     updateAdjustment(cfg, saturationCssFilter, 'saturation', saturationZeroVal);
     return adjustmentBtn;
   }
-  const btn = await createActionBtn(authorCfg, 'ps-action-btn adjustment-button subnav-active show');
+  const btn = await createActionBtn({
+    btnCfg: authorCfg,
+    btnClass: 'ps-action-btn adjustment-button subnav-active show',
+  });
   btn.classList.add('focus');
   btn.dataset.optionsTray = 'adjustment-options-tray';
   const sliderTray = createTag('div', { class: 'adjustment-options-tray show' });
@@ -452,7 +464,6 @@ async function resetWidgetState(cfg) {
   unityWidget.querySelector('.widget-product-icon')?.classList.add('show');
   unityWidget.querySelector('.widget-refresh-button').classList.remove('show');
   targetEl.querySelector(':scope > .widget-refresh-button').classList.remove('show');
-  const { resetClasses } = await import('../../steps/upload-btn.js');
   resetClasses(img, targetEl);
   resetSliders(unityWidget);
   await loadImg(img);
@@ -479,17 +490,27 @@ async function uploadCallback(cfg) {
   cfg.isUpload = false;
 }
 
+async function resolveSvgs(cfg) {
+  const { unityEl } = cfg;
+  const unityOrigin = getUnityLibs().split('/unitylibs')[0];
+  [...unityEl.querySelectorAll('img[src*=".svg"]')]
+    .forEach((img) => {
+      if (preloadedSvgs[img.src]) return;
+      preloadedSvgs[img.src] = loadSvg(`${unityOrigin}${new URL(img.src).pathname}`);
+    });
+  return Promise.all(Object.values(preloadedSvgs));
+}
+
 export default async function init(cfg) {
   const { targetEl, unityEl, unityWidget, interactiveSwitchEvent, refreshWidgetEvent } = cfg;
   resetWorkflowState(cfg);
+  const img = cfg.targetEl.querySelector('picture img');
+  await resolveSvgs(cfg);
   await addProductIcon(cfg);
   await changeVisibleFeature(cfg);
-  const img = cfg.targetEl.querySelector('picture img');
-  const { default: createUpload } = await import('../../steps/upload-btn.js');
-  const uploadBtn = await createUpload(cfg, img, uploadCallback);
+  const uploadBtn = await createUpload(cfg, img, uploadCallback, preloadedSvgs);
   unityWidget.querySelector('.unity-action-area').append(uploadBtn);
-  const { default: initAppConnector } = await import('../../steps/app-connector.js');
-  await initAppConnector(cfg, 'photoshop');
+  await initAppConnector(cfg, 'photoshop', preloadedSvgs);
   await decorateDefaultLinkAnalytics(unityWidget);
   unityEl.addEventListener(interactiveSwitchEvent, async () => {
     await changeVisibleFeature(cfg);

@@ -1,8 +1,6 @@
 import {
   createTag,
-  loadStyle,
   setUnityLibs,
-  getUnityLibs,
   unityConfig,
   defineDeviceByScreenSize,
   getConfig,
@@ -81,24 +79,8 @@ function getEnabledFeatures(unityEl, wfDetail) {
   return enabledFeatures;
 }
 
-function getWorkFlowInformation(el) {
-  let wfName = '';
-  const workflowCfg = {
-    'workflow-photoshop': {
-      removebg: { endpoint: 'providers/PhotoshopRemoveBackground' },
-      changebg: { endpoint: 'providers/PhotoshopChangeBackground' },
-      slider: {},
-    },
-  };
-  [...el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
-  if (!wfName || !workflowCfg[wfName]) return [];
-  return [wfName, workflowCfg[wfName]];
-}
-
-async function initWorkflow(cfg) {
-  loadStyle(`${getUnityLibs()}/core/workflow/${cfg.wfName}/${cfg.wfName}.css`);
-  const { default: wfinit } = await import(`./${cfg.wfName}/${cfg.wfName}.js`);
-  await wfinit(cfg);
+async function initWorkflow(cfg, productWfInit) {
+  await productWfInit(cfg);
   cfg.unityWidget?.classList.remove('decorating');
   const actionBtn = cfg.unityWidget.querySelector('.unity-action-btn');
   actionBtn?.classList.add('animate-btn');
@@ -107,14 +89,15 @@ async function initWorkflow(cfg) {
   }, { once: true });
 }
 
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs') {
+export default async function init({
+  el, project = 'unity', unityLibs = '/unitylibs', wfName, wfDetail, productWfInit,
+}) {
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
   const [targetBlock, unityWidget] = await getTargetArea(el);
   if (!targetBlock) return;
-  const [wfName, wfDetail] = getWorkFlowInformation(el);
-  if (!wfName || !wfDetail) return;
+
   const enabledFeatures = getEnabledFeatures(el, wfDetail);
   if (!enabledFeatures) return;
   const wfConfig = {
@@ -127,5 +110,5 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
     uploadState: { },
     ...unityConfig,
   };
-  await initWorkflow(wfConfig);
+  await initWorkflow(wfConfig, productWfInit);
 }

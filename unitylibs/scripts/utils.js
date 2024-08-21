@@ -83,7 +83,18 @@ export function loadImg(img) {
   });
 }
 
-export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapOrder = false) {
+function svgToDataUrl(svg) {
+  const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+  return URL.createObjectURL(svgBlob);
+}
+
+export async function createActionBtn({
+  btnCfg,
+  btnClass,
+  iconAsImg = false,
+  swapOrder = false,
+  preloadedSvgs = {},
+} = {}) {
   const txt = btnCfg.innerText;
   const img = btnCfg.querySelector('img[src*=".svg"]');
   const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
@@ -91,8 +102,9 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
     let btnImg = null;
     const { pathname } = new URL(img.src);
     const libSrcPath = `${getUnityLibs().split('/unitylibs')[0]}${pathname}`;
-    if (iconAsImg) btnImg = createTag('img', { src: libSrcPath });
-    else btnImg = await loadSvg(libSrcPath);
+    const preloadedSvg = await preloadedSvgs[img.src];
+    if (iconAsImg) btnImg = preloadedSvg ? createTag('img', { src: svgToDataUrl(preloadedSvg) }) : createTag('img', { src: libSrcPath });
+    else btnImg = await preloadedSvg || await loadSvg(libSrcPath);
     const btnIcon = createTag('div', { class: 'btn-icon' }, btnImg);
     actionBtn.append(btnIcon);
   }
