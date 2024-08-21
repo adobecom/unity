@@ -21,7 +21,7 @@ function getPreludeData(cfg) {
   return dataObj;
 }
 
-async function continueInApp(cfg, appName, btnConfig) {
+async function continueInApp(cfg, appName, btnCfg, preloadedSvgs) {
   const {
     apiKey,
     connectorApiEndPoint,
@@ -32,7 +32,13 @@ async function continueInApp(cfg, appName, btnConfig) {
   } = cfg;
   const continuebtn = unityWidget.querySelector(`continue-in-${appName}`);
   if (continuebtn) return continuebtn;
-  const btn = await createActionBtn(btnConfig, `continue-in-app continue-in-${appName}`, true, true);
+  const btn = await createActionBtn({
+    btnCfg,
+    btnClass: `continue-in-app continue-in-${appName}`,
+    iconAsImg: true,
+    swapOrder: true,
+    preloadedSvgs,
+  });
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
     const { showErrorToast } = await import('../../scripts/utils.js');
@@ -65,12 +71,12 @@ function resetAppConnector(cfg) {
   connectBtn?.classList.remove('show');
 }
 
-export default async function initAppConnector(cfg, appName) {
+export default async function initAppConnector(cfg, appName, preloadedSvgs) {
   const { unityEl, unityWidget, refreshWidgetEvent, interactiveSwitchEvent, targetEl } = cfg;
   const isContinueEnabled = unityEl.querySelector('.icon-app-connector');
   if (!isContinueEnabled) return;
   const btnConfig = isContinueEnabled.closest('li');
-  const connectBtn = await continueInApp(cfg, appName, btnConfig);
+  const connectBtn = await continueInApp(cfg, appName, btnConfig, preloadedSvgs);
   unityWidget.querySelector('.unity-action-area').append(connectBtn);
   unityEl.addEventListener(refreshWidgetEvent, () => {
     connectBtn?.classList.remove('show');

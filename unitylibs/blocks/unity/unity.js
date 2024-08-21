@@ -37,6 +37,7 @@ export default async function init(el) {
   const [{ default: wfinit }, { default: productWfInit }] = await Promise.all([
     import(`${unitylibs}/core/workflow/workflow.js`),
     import(`${unitylibs}/core/workflow/${wfName}/${wfName}.js`),
+    import(`${unitylibs}/scripts/utils.js`),
     new Promise((resolve) => {
       loadStyle(`${unitylibs}/core/styles/styles.css`, resolve);
     }),
@@ -45,7 +46,6 @@ export default async function init(el) {
     }),
     import(`${unitylibs}/core/steps/app-connector.js`),
     import(`${unitylibs}/core/steps/upload-btn.js`),
-    import(`${unitylibs}/core/workflow/${wfName}/${wfName}.js`),
   ]);
   await wfinit({
     el, projectName, unitylibs, wfName, wfDetail, productWfInit,

@@ -17,10 +17,10 @@ export function resetClasses(img, targetEl) {
   if (targetEl.classList.contains(GRAY_BG)) targetEl.classList.remove(GRAY_BG);
 }
 
-export default async function createUpload(cfg, target, callback = null) {
+export default async function createUpload(cfg, target, callback = null, preloadedSvgs) {
   const { refreshWidgetEvent, targetEl, unityEl } = cfg;
   const li = unityEl.querySelector('.icon-upload').parentElement;
-  const a = await createActionBtn(li, 'show');
+  const a = await createActionBtn({ btnCfg: li, btnClass: 'show', preloadedSvgs });
   const input = createTag('input', { class: 'file-upload', type: 'file', accept: 'image/png,image/jpg,image/jpeg', tabIndex: -1 });
   a.append(input);
   a.addEventListener('keydown', (e) => {
@@ -60,9 +60,9 @@ export default async function createUpload(cfg, target, callback = null) {
           }
           if (!targetEl.classList.contains(GRAY_BG)) targetEl.classList.add(GRAY_BG);
           if (target.naturalWidth > targetElWidth) {
-              cfg.imgDisplay = 'landscape';
-              if (!target.classList.contains(IMG_LANDSCAPE)) target.classList.add(IMG_LANDSCAPE);
-              if (target.classList.contains(FULL_HEIGHT)) target.classList.remove(FULL_HEIGHT);
+            cfg.imgDisplay = 'landscape';
+            if (!target.classList.contains(IMG_LANDSCAPE)) target.classList.add(IMG_LANDSCAPE);
+            if (target.classList.contains(FULL_HEIGHT)) target.classList.remove(FULL_HEIGHT);
           } else {
             cfg.imgDisplay = 'portrait';
             if (!target.classList.contains(IMG_PORTRAIT)) target.classList.add(IMG_PORTRAIT);
