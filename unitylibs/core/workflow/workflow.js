@@ -9,7 +9,7 @@ import {
 // import { createErrorToast } from '../steps/upload-btn.js';
 // import createProgressCircle from '../features/progress-circle/progress-circle.js';
 
-export default class WfInitiator {
+export class WfInitiator {
   constructor() {
     this.el = null;
     this.targetBlock = {};
@@ -168,37 +168,6 @@ export default class WfInitiator {
   }
 }
 
-// {
-//   "marquee": {
-//     "type": "img",
-//     "selector": ".asset picture, .image picture",
-//     "handler": "render",
-//     "renderWidget": true,
-//     "source": ".asset picture img",
-//     "target": ".asset picture img"
-//   },
-//   "marquee.custom1": {
-//     "type": "img",
-//     "selector": ".asset picture, .image picture",
-//     "handler": "render",
-//     "renderWidget": false,
-//     "source": ".asset picture img",
-//     "target": ".asset picture img",
-//     "workflow-config": {
-//       ".action-area .con-button": "removebg",
-//       ".action-area .con-button:nth-child(2)": "changebg"
-//     }
-//   },
-//   "aside": {
-//     "type": "img",
-//     "selector": ".asset picture, .image picture",
-//     "handler": "render",
-//     "renderWidget": true
-//   },
-//   "dc-marquee": {
-//     "type": "img",
-//     "selector": ".asset picture, .image picture",
-//     "handler": "render",
-//     "renderWidget": false
-//   }
-// }
+export default async function wfinit(el, projectName, unitylibs) {
+  await new WfInitiator().init(el, projectName, unitylibs);
+}
