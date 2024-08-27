@@ -1,5 +1,4 @@
 import { loadStyle } from '../../scripts/utils.js';
-let count = 1;
 function getUnityLibs(prodLibs, project = 'unity') {
   const { hostname, origin } = window.location;
   if (project === 'unity') { return `${origin}/unitylibs`; }
@@ -14,7 +13,6 @@ function getUnityLibs(prodLibs, project = 'unity') {
 }
 
 export default async function init(el) {
-  if (count > 1) return;
   const unitylibs = getUnityLibs();
   const stylePromise = new Promise((resolve) => {
     loadStyle(`${unitylibs}/core/styles/styles.css`, resolve);
@@ -24,5 +22,4 @@ export default async function init(el) {
   // await wfinit(el, 'cc', unitylibs);
   const { default: WfInit } = await import(`${unitylibs}/core/workflow/workflow.js`);
   await new WfInit().init(el, unitylibs);
-  count += 1;
 }
