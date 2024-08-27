@@ -1,0 +1,16 @@
+{
+  "marquee": {
+    "type": "img",
+    "selector": ".asset picture, .image picture",
+    "handler": "render",
+    "renderWidget": true,
+    "source": ".asset picture img",
+    "target": ".asset picture img"
+  },
+  "aside": {
+    "type": "img",
+    "selector": ".asset picture, .image picture",
+    "handler": "render",
+    "renderWidget": true
+  }
+}

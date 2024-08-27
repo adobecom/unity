@@ -29,8 +29,8 @@ export function decorateArea(area = document) {}
 
 const miloLibs = setLibs('/libs');
 
-const { createTag, getConfig, loadStyle } = await import(`${miloLibs}/utils/utils.js`);
-export { createTag, loadStyle, getConfig };
+const { createTag, getConfig, loadStyle, loadLink } = await import(`${miloLibs}/utils/utils.js`);
+export { createTag, loadStyle, getConfig, loadLink };
 const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
 export { decorateDefaultLinkAnalytics };
 
@@ -71,24 +71,17 @@ export function loadImg(img) {
   });
 }
 
-export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapOrder = false) {
+export function createActionBtn(btnCfg, btnClass, hasInputel = false, swapOrder = false) {
   const txt = btnCfg.innerText;
   const img = btnCfg.querySelector('img[src*=".svg"]');
   const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
-  if (img) {
-    let btnImg = null;
-    const { pathname } = new URL(img.src);
-    const libSrcPath = `${getUnityLibs().split('/unitylibs')[0]}${pathname}`;
-    if (iconAsImg) btnImg = createTag('img', { src: libSrcPath });
-    else btnImg = await loadSvg(libSrcPath);
-    const btnIcon = createTag('div', { class: 'btn-icon' }, btnImg);
-    actionBtn.append(btnIcon);
-  }
+  if (img) { actionBtn.append(createTag('div', { class: 'btn-icon' }, img)); }
   if (txt) {
     const btnTxt = createTag('div', { class: 'btn-text' }, txt.split('\n')[0].trim());
     if (swapOrder) actionBtn.prepend(btnTxt);
     else actionBtn.append(btnTxt);
   }
+  if (!hasInputel) actionBtn.addEventListener('click', (e) => { e.preventDefault(); });
   return actionBtn;
 }
 
@@ -104,12 +97,26 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   return io;
 }
 
-export const unityConfig = {
-  apiEndPoint: 'https://assistant-int.adobe.io/api/v1',
-  connectorApiEndPoint: 'https://assistant-dev2.adobe.io/api/v1/asset/connector',
-  apiKey: 'leo',
-  progressCircleEvent: 'unity:progress-circle',
-  errorToastEvent: 'unity:error-toast',
-  refreshWidgetEvent: 'unity:refresh-widget',
-  interactiveSwitchEvent: 'unity:interactive-switch',
-};
+export const unityConfig = (() => {
+  const { host } = window.location;
+  const cfg = {
+    prod: {
+      apiKey: 'leo',
+      apiEndPoint: 'https://unity.adobe.io/api/v1',
+      connectorApiEndPoint: 'https://unity.adobe.io/api/v1/asset/connector',
+    },
+    stage: {
+      apiKey: 'leo',
+      apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
+      connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
+    },
+  };
+  if (host.includes('hlx.page')
+    || host.includes('localhost')
+    || host.includes('stage.adobe')
+    || host.includes('corp.adobe')
+    || host.includes('graybox.adobe')) {
+    return cfg.stage;
+  }
+  return cfg.prod;
+})();

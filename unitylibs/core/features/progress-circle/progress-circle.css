@@ -1,4 +1,4 @@
-.unity-enabled .interactive-area .progress-holder {
+.unity-enabled .interactive-area .progress-circle {
   display: none;
   justify-content: center;
   align-items: center;
@@ -11,7 +11,7 @@
   z-index: 2;
 }
 
-.unity-enabled .interactive-area.loading .progress-holder {
+.unity-enabled .interactive-area .progress-circle.show {
   display: flex;
 }
 

@@ -1,7 +1,12 @@
-import { createTag } from '../../../scripts/utils.js';
+import {
+  createTag,
+  loadStyle,
+  getUnityLibs,
+} from '../../../scripts/utils.js';
 
-export default function createProgressCircle(cfg) {
-  const { unityEl, targetEl, progressCircleEvent } = cfg;
+export default function createProgressCircle() {
+  loadStyle(`${getUnityLibs()}/core/features/progress-circle/progress-circle.css`);
+  debugger;
   const pdom = `<div class="spectrum-ProgressCircle-track"></div>
   <div class="spectrum-ProgressCircle-fills">
     <div class="spectrum-ProgressCircle-fillMask1">
@@ -17,9 +22,5 @@ export default function createProgressCircle(cfg) {
   </div>`;
   const prgc = createTag('div', { class: 'spectrum-ProgressCircle spectrum-ProgressCircle--indeterminate' }, pdom);
   const layer = createTag('div', { class: 'progress-holder' }, prgc);
-  unityEl.addEventListener(progressCircleEvent, () => {
-    if (targetEl.classList.contains('loading')) targetEl.classList.remove('loading');
-    else targetEl.classList.add('loading');
-  });
   return layer;
 }

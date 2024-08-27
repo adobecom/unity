@@ -133,12 +133,12 @@
 }
 
 .unity-enabled .interactive-area .widget-refresh-button svg path,
-.unity-enabled .interactive-area .unity-action-btn .btn-icon svg path {
+.unity-enabled .interactive-area .unity-action-btn:not(.continue-in-app-button) .btn-icon svg path {
   fill: var(--color-white);
 }
 
 .unity-enabled .interactive-area.light .widget-refresh-button svg path,
-.unity-enabled .interactive-area.light .unity-action-btn .btn-icon svg path {
+.unity-enabled .interactive-area.light .unity-action-btn:not(.continue-in-app-button) .btn-icon svg path {
   fill: var(--color-black);
 }
 
@@ -158,6 +158,10 @@
   margin-right: auto;
   left: 0;
   right: 0;
+}
+
+.unity-enabled .interactive-area .alert-toast.show {
+  display: flex;
 }
 
 .unity-enabled .interactive-area .alert-toast .alert-content {
