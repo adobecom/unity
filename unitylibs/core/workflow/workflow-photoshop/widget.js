@@ -40,8 +40,12 @@ export default class UnityWidget {
     [...svgs].forEach((svg) => {
       promiseArr.push(
         fetch(svg.src)
-          .then((res) => res.text())
-          .then((txt) => { svg.parentElement.innerHTML = txt; }),
+          .then((res) => { 
+            if (res.ok) return res.text();
+            else throw new Error('Could not fetch SVG');
+          })
+          .then((txt) => { svg.parentElement.innerHTML = txt; })
+          .catch((e) => {}),
       );
     });
     await Promise.all(promiseArr);
