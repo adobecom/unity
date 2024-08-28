@@ -1,0 +1,46 @@
+{
+  "marquee.unityconfig": {
+    "type": "img",
+    "selector": ".asset picture, .image picture",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".asset picture img",
+    "target": ".asset picture img",
+    "actionMap": {
+        ".action-area .con-button": [
+          {
+              "actionType": "setCssStyle",
+              "propertyName": "opacity",
+              "propertyValue": 0.5,
+              "targets": [".asset picture img, .image picture img"]
+          },
+          {
+              "itemType": "button",
+              "actionType": "removebg",
+              "source": ".asset picture img, .image picture img",
+              "target": ".asset picture img, .image picture img"
+          },
+          {
+            "actionType": "setCssStyle",
+            "propertyName": "opacity",
+            "propertyValue": 1,
+            "targets": [".asset picture img, .image picture img"]
+        }
+      ]
+    }
+  },
+  "marquee": {
+    "type": "img",
+    "selector": ".asset picture, .image picture",
+    "handler": "render",
+    "renderWidget": true,
+    "source": ".asset picture img",
+    "target": ".asset picture img"
+  },
+  "aside": {
+    "type": "img",
+    "selector": ".asset picture, .image picture",
+    "handler": "render",
+    "renderWidget": true
+  }
+}
