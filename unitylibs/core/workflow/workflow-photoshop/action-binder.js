@@ -9,6 +9,7 @@ import {
   loadImg,
   loadStyle,
   createTag,
+  loadSVG,
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -66,15 +67,7 @@ export default class ActionBinder {
     );
     if (this.workflowCfg.targetCfg.renderWidget) {
       const svgs = this.canvasArea.querySelectorAll('.unity-widget img[src*=".svg"');
-      const promiseArr = [];
-      [...svgs].forEach((svg) => {
-        promiseArr.push(
-          fetch(svg.src)
-            .then((res) => res.text())
-            .then((txt) => { svg.parentElement.innerHTML = txt; }),
-        );
-      });
-      await Promise.all(promiseArr);
+      await loadSVG(svgs);
       if (!this.progressCircleEl) {
         this.progressCircleEl = await this.createSpectrumProgress();
         this.canvasArea.append(this.progressCircleEl);

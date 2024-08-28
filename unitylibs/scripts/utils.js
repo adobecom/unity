@@ -48,6 +48,22 @@ export function defineDeviceByScreenSize() {
   return 'TABLET';
 }
 
+export async function loadSVG(svgs) {
+  const promiseArr = [];
+  [...svgs].forEach((svg) => {
+    promiseArr.push(
+      fetch(svg.src)
+        .then((res) => { 
+          if (res.ok) return res.text();
+          else throw new Error('Could not fetch SVG');
+        })
+        .then((txt) => { svg.parentElement.innerHTML = txt; })
+        .catch((e) => { svg.remove() }),
+    );
+  });
+  await Promise.all(promiseArr);
+}
+
 export function loadImg(img) {
   return new Promise((res) => {
     img.loading = 'eager';

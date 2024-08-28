@@ -2,6 +2,7 @@ import {
   createTag,
   createActionBtn,
   decorateDefaultLinkAnalytics,
+  loadSVG,
 } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
@@ -36,19 +37,7 @@ export default class UnityWidget {
     if (continueInApp) this.addFeatureButtons('continue-in-app', continueInApp.closest('li'), unityaa, unityoa, '');
     this.widget = iWidget;
     const svgs = iWidget.querySelectorAll('.show img[src*=".svg"');
-    const promiseArr = [];
-    [...svgs].forEach((svg) => {
-      promiseArr.push(
-        fetch(svg.src)
-          .then((res) => { 
-            if (res.ok) return res.text();
-            else throw new Error('Could not fetch SVG');
-          })
-          .then((txt) => { svg.parentElement.innerHTML = txt; })
-          .catch((e) => { svg.remove() }),
-      );
-    });
-    await Promise.all(promiseArr);
+    await loadSVG(svgs);
     this.target.append(iWidget);
     decorateDefaultLinkAnalytics(iWidget);
     return this.actionMap;
