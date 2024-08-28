@@ -45,7 +45,7 @@ export default class UnityWidget {
             else throw new Error('Could not fetch SVG');
           })
           .then((txt) => { svg.parentElement.innerHTML = txt; })
-          .catch((e) => {}),
+          .catch((e) => { svg.remove() }),
       );
     });
     await Promise.all(promiseArr);
