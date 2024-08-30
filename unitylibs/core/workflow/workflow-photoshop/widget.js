@@ -32,7 +32,7 @@ export default class UnityWidget {
       );
     });
     const uploadCfg = this.el.querySelector('.icon-upload');
-    if (uploadCfg) this.addFeatureButtons('upload', uploadCfg.closest('li'), unityaa, unityoa, 'show', true);
+    if (uploadCfg) this.addFeatureButtons('upload', uploadCfg.closest('li'), unityaa, unityoa, 'show');
     const continueInApp = this.el.querySelector('.icon-app-connector');
     if (continueInApp) this.addFeatureButtons('continue-in-app', continueInApp.closest('li'), unityaa, unityoa, '');
     this.widget = iWidget;
@@ -81,8 +81,8 @@ export default class UnityWidget {
     this.target.append(mobileRefreshHolder);
   }
 
-  addFeatureButtons(featName, authCfg, actionArea, optionArea, addClasses, hasInputel = false) {
-    const btn = createActionBtn(authCfg, `${featName}-button ${addClasses}`, hasInputel);
+  addFeatureButtons(featName, authCfg, actionArea, optionArea, addClasses) {
+    const btn = createActionBtn(authCfg, `${featName}-button ${addClasses}`);
     actionArea.append(btn);
     if (!authCfg.querySelector('ul')) {
       switch (featName) {

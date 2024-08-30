@@ -76,7 +76,7 @@ export function loadImg(img) {
   });
 }
 
-export function createActionBtn(btnCfg, btnClass, hasInputel = false, swapOrder = false) {
+export function createActionBtn(btnCfg, btnClass, swapOrder = false) {
   const txt = btnCfg.innerText;
   const img = btnCfg.querySelector('img[src*=".svg"]');
   const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
@@ -86,7 +86,6 @@ export function createActionBtn(btnCfg, btnClass, hasInputel = false, swapOrder 
     if (swapOrder) actionBtn.prepend(btnTxt);
     else actionBtn.append(btnTxt);
   }
-  // if (!hasInputel) actionBtn.addEventListener('click', (e) => { e.preventDefault(); });
   return actionBtn;
 }
 
