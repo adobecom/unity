@@ -29,7 +29,7 @@
       ]
     }
   },
-  "marquee.brickunityconfig": {
+  "brick.brickunityconfig": {
     "type": "img",
     "selector": ".brick-media picture",
     "handler": "render",
