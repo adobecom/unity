@@ -29,6 +29,36 @@
       ]
     }
   },
+  "marquee.brickunityconfig": {
+    "type": "img",
+    "selector": ".brick-media picture",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".brick-media picture img",
+    "target": ".brick-media picture img",
+    "actionMap": {
+        ".action-area .con-button": [
+          {
+              "actionType": "setCssStyle",
+              "propertyName": "opacity",
+              "propertyValue": 0.5,
+              "targets": [".brick-media picture img"]
+          },
+          {
+              "itemType": "button",
+              "actionType": "removebg",
+              "source": ".brick-media picture img",
+              "target": ".brick-media picture img"
+          },
+          {
+            "actionType": "setCssStyle",
+            "propertyName": "opacity",
+            "propertyValue": 1,
+            "targets": [".brick-media picture img"]
+        }
+      ]
+    }
+  },
   "marquee": {
     "type": "img",
     "selector": ".asset picture, .image picture",
