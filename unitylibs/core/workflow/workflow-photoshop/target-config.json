@@ -1,5 +1,5 @@
 {
-  "marquee.unityconfig": {
+  "marquee.removebg": {
     "type": "img",
     "selector": ".asset picture, .image picture",
     "handler": "render",
