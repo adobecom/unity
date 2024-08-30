@@ -1,5 +1,6 @@
 {
   "acom-widget": {
+    "verb": "fillsign",
     "type": "pdf",
     "selector": ".acom-widget.fillsign",
     "handler": "render",
