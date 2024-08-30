@@ -86,7 +86,7 @@ export function createActionBtn(btnCfg, btnClass, hasInputel = false, swapOrder 
     if (swapOrder) actionBtn.prepend(btnTxt);
     else actionBtn.append(btnTxt);
   }
-  if (!hasInputel) actionBtn.addEventListener('click', (e) => { e.preventDefault(); });
+  // if (!hasInputel) actionBtn.addEventListener('click', (e) => { e.preventDefault(); });
   return actionBtn;
 }
 

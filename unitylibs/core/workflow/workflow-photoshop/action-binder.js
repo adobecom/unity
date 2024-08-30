@@ -124,6 +124,7 @@ export default class ActionBinder {
         case el.nodeName === 'A':
           el.href = '#';
           el.addEventListener('click', async (e) => {
+            e.preventDefault();
             await this.psActionMaps(values, e);
           });
           break;
