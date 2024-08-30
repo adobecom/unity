@@ -7,7 +7,10 @@
   --separator-gray: #CCC;
 }
 
-.unity,
+.unity {
+  display: none !important;
+}
+
 .unity-enabled .interactive-area .unity-widget.decorating {
   display: none;
 }
