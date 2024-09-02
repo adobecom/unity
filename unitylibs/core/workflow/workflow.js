@@ -6,7 +6,7 @@ import {
   unityConfig,
   defineDeviceByScreenSize,
   getConfig,
-  priorityLoad,
+  loadLink,
 } from '../../scripts/utils.js';
 
 export function getImgSrc(pic) {
@@ -109,7 +109,7 @@ async function initWorkflow(cfg) {
   }, { once: true });
 }
 
-class WfInitiator {
+export class WfInitiator {
   constructor() {
     this.el = null;
     this.targetBlock = {};
@@ -131,18 +131,28 @@ class WfInitiator {
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`,
       );
     }
-    await priorityLoad(priorityList);
+    const promiseArr = [];
+    priorityList.forEach((p) => {
+      if (p.endsWith('.js')) {
+        const pr = new Promise((res) => { loadLink(p, { as: 'script', rel: 'modulepreload', callback: res }); });
+        promiseArr.push(pr);
+      } else if (p.endsWith('.css')) {
+        const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
+        promiseArr.push(pr);
+      } else {
+        promiseArr.push(fetch(p));
+      }
+    });
+    await Promise.all(promiseArr);
   }
 
-  async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion, langCode) {
+  async init(el, project = 'unity', unityLibs = '/unitylibs') {
     setUnityLibs(unityLibs, project);
     this.el = el;
     this.unityLibs = unityLibs;
     this.project = project;
     this.enabledFeatures = [];
     this.workflowCfg = this.getWorkFlowInformation();
-    this.workflowCfg.langRegion = langRegion;
-    this.workflowCfg.langCode = langCode;
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget();
     this.getEnabledFeatures();
     this.callbackMap = {};
@@ -159,15 +169,12 @@ class WfInitiator {
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
-    this.limits = this.targetConfig.limits;
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     await new ActionBinder(
-      this.el,
       this.workflowCfg,
       this.targetBlock,
       this.interactiveArea,
       this.actionMap,
-      this.limits,
     ).initActionListeners();
   }
 
@@ -243,24 +250,16 @@ class WfInitiator {
   getWorkFlowInformation() {
     let wfName = '';
     const workflowCfg = {
-      'workflow-photoshop': {
-        productName: 'Photoshop',
-        sfList: new Set(['removebg', 'changebg', 'slider']),
-      },
-      'workflow-acrobat': {
-        productName: 'acrobat',
-        sfList: new Set(['fillsign']),
-      }
+      'workflow-photoshop': new Set(['removebg', 'changebg', 'slider']),
+      'workflow-acrobat': new Set([]),
     };
     [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
       name: wfName,
-      productName: workflowCfg[wfName].productName,
-      supportedFeatures: workflowCfg[wfName].sfList,
+      supportedFeatures: workflowCfg[wfName],
       enabledFeatures: [],
       featureCfg: [],
-      errors: {},
     };
   }
 
@@ -274,21 +273,20 @@ class WfInitiator {
       if (supportedFeatures.has(fn)) {
         this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
-      } else if (fn.includes('error')) {
-        this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       }
     });
   }
 }
 
 
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
+export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1') {
   const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
-  const { imsClientId } = getConfig();
-  if (imsClientId) unityConfig.apiKey = imsClientId;
-  setUnityLibs(unityLibs, project);
+  console.log(uv);
   switch (uv) {
     case 'v1':
+      const { imsClientId } = getConfig();
+      if (imsClientId) unityConfig.apiKey = imsClientId;
+      setUnityLibs(unityLibs, project);
       const [targetBlock, unityWidget] = await getTargetArea(el);
       if (!targetBlock) return;
       const [wfName, wfDetail] = getWorkFlowInformation(el);
@@ -308,8 +306,7 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
       await initWorkflow(wfConfig);
       break;
     case 'v2':
-      await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
-      break;
+      await new WfInitiator().init(el, project, unityLibs);
     default:
       break;
   }
