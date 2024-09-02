@@ -109,7 +109,7 @@ async function initWorkflow(cfg) {
   }, { once: true });
 }
 
-export class WfInitiator {
+class WfInitiator {
   constructor() {
     this.el = null;
     this.targetBlock = {};
