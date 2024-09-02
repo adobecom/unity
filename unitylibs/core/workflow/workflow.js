@@ -281,7 +281,6 @@ class WfInitiator {
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1') {
   const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
-  console.log(uv);
   switch (uv) {
     case 'v1':
       const { imsClientId } = getConfig();
