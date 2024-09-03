@@ -1,6 +1,21 @@
 {
   "acom-widget": {
     "type": "pdf",
+    "selector": ".acom-widget.fillsign",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".acom-widget.fillsign #file-upload",
+    "target": "",
+    "actionMap": {
+      "#file-upload": [
+        {
+          "actionType": "upload"
+        }
+      ]
+    }
+  },
+  "marquee": {
+    "type": "pdf",
     "selector": ".unity-enabled .action-area",
     "handler": "render",
     "renderWidget": false,
