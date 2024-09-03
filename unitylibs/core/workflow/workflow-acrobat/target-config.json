@@ -1,13 +1,13 @@
 {
   "acom-widget": {
     "type": "pdf",
-    "selector": ".acom-widget.fillsign",
+    "selector": ".unity-enabled .action-area",
     "handler": "render",
     "renderWidget": false,
-    "source": ".acom-widget.fillsign #file-upload",
+    "source": ".unity-enabled .action-area .con-button",
     "target": "",
     "actionMap": {
-      "#file-upload": [
+      ".action-area .con-button": [
         {
           "actionType": "upload"
         }
