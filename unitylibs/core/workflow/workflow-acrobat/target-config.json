@@ -5,7 +5,7 @@
     "handler": "render",
     "renderWidget": false,
     "source": ".acom-widget.fillsign #file-upload",
-    "target": "",
+    "target": ".acom-widget.fillsign #file-upload",
     "actionMap": {
       "#file-upload": [
         {
@@ -20,7 +20,7 @@
     "handler": "render",
     "renderWidget": false,
     "source": ".unity-enabled .action-area .con-button",
-    "target": "",
+    "target": ".unity-enabled .action-area .con-button",
     "actionMap": {
       ".action-area .con-button": [
         {
