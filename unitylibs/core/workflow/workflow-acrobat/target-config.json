@@ -16,11 +16,11 @@
   },
   "marquee": {
     "type": "pdf",
-    "selector": ".unity-enabled .action-area",
+    "selector": ".action-area",
     "handler": "render",
     "renderWidget": false,
-    "source": ".unity-enabled .action-area .con-button",
-    "target": ".unity-enabled .action-area .con-button",
+    "source": ".action-area .con-button",
+    "target": ".action-area .con-button",
     "actionMap": {
       ".action-area .con-button": [
         {
