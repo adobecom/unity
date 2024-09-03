@@ -90,6 +90,7 @@ function getWorkFlowInformation(el) {
       changebg: { endpoint: 'providers/PhotoshopChangeBackground' },
       slider: {},
     },
+    'workflow-acrobat': {},
   };
   [...el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
   if (!wfName || !workflowCfg[wfName]) return [];
