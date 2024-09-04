@@ -28,7 +28,7 @@ export default class ActionBinder {
   getPsApiConfig() {
     unityConfig.psEndPoint = {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
-      acmpCheck: `${unityConfig.apiEndPoint}/finalize`,
+      acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
       removeBackground: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`,
       changeBackground: `${unityConfig.apiEndPoint}/providers/PhotoshopChangeBackground`,
     };
@@ -196,7 +196,6 @@ export default class ActionBinder {
     const fileType = this.getFileType();
     const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
     const { origin } = new URL(imgUrl);
-    debugger;
     if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
     return assetId;
   }
@@ -213,7 +212,6 @@ export default class ActionBinder {
     const objUrl = URL.createObjectURL(file);
     const { target } = params;
     target.src = objUrl;
-    this.userAsset = true;
   }
 
   async removeBackground(params) {
@@ -323,7 +321,7 @@ export default class ActionBinder {
   continueInApp() {
     const cOpts = {
       assetId: null,
-      targetProduct: 'Photoshop',
+      targetProduct: this.workflowCfg.productName,
       payload: {
         finalAssetId: null,
         operations: [],
