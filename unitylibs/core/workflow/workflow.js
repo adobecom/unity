@@ -281,11 +281,11 @@ class WfInitiator {
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1') {
   const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
+  const { imsClientId } = getConfig();
+  if (imsClientId) unityConfig.apiKey = imsClientId;
+  setUnityLibs(unityLibs, project);
   switch (uv) {
     case 'v1':
-      const { imsClientId } = getConfig();
-      if (imsClientId) unityConfig.apiKey = imsClientId;
-      setUnityLibs(unityLibs, project);
       const [targetBlock, unityWidget] = await getTargetArea(el);
       if (!targetBlock) return;
       const [wfName, wfDetail] = getWorkFlowInformation(el);
@@ -306,6 +306,7 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
       break;
     case 'v2':
       await new WfInitiator().init(el, project, unityLibs);
+      break;
     default:
       break;
   }
