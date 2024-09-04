@@ -250,14 +250,21 @@ class WfInitiator {
   getWorkFlowInformation() {
     let wfName = '';
     const workflowCfg = {
-      'workflow-photoshop': new Set(['removebg', 'changebg', 'slider']),
-      'workflow-acrobat': new Set([]),
+      'workflow-photoshop': {
+        productName: 'Photoshop',
+        sfList: new Set(['removebg', 'changebg', 'slider']),
+      },
+      'workflow-acrobat': {
+        productName: 'Acrobat',
+        sfList: new Set(['removebg', 'changebg', 'slider']),
+      }
     };
     [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
       name: wfName,
-      supportedFeatures: workflowCfg[wfName],
+      productName: workflowCfg[wfName].productName,
+      supportedFeatures: workflowCfg[wfName].sfList,
       enabledFeatures: [],
       featureCfg: [],
     };
