@@ -1,36 +1,15 @@
 {
-  "verb-widget.fillsign": {
+  "acom-widget": {
     "type": "pdf",
-    "selector": ".verb-wrapper",
+    "selector": ".acom-widget.fillsign",
     "handler": "render",
     "renderWidget": false,
-    "source": ".verb-wrapper .verb-container",
-    "target": ".verb-wrapper .verb-container",
-    "limits": {
-      "maxNumFiles": 1,
-      "maxFileSize": 104857600,
-      "maxNumPages": 100
-    },
-    "showSplashScreen": true,
-    "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
-      "splashScreenParent": "body"
-    },
+    "source": ".acom-widget.fillsign #file-upload",
+    "target": ".acom-widget.fillsign #file-upload",
     "actionMap": {
-      ".verb-wrapper": [
-        {
-          "actionType": "fillsign"
-        },
-        {
-          "actionType": "continueInApp"
-        }
-      ],
       "#file-upload": [
         {
-          "actionType": "fillsign"
-        },
-        {
-          "actionType": "continueInApp"
+          "actionType": "upload"
         }
       ]
     }

@@ -5,7 +5,6 @@
 
 import {
   getGuestAccessToken,
-  unityConfig,
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
@@ -14,39 +13,14 @@ export default class ServiceHandler {
     this.canvasArea = canvasArea;
   }
 
-  getHeaders() {
+  getHeaders(apiKey) {
     return {
       headers: {
         'Content-Type': 'application/json',
         Authorization: getGuestAccessToken(),
-        'x-api-key': unityConfig.apiKey,
+        'x-api-key': 'leo',
       },
     };
-  }
-
-  async fetchFromService(url, options) {
-    try {
-      const response = await fetch(url, options);
-      const error = new Error();
-      const contentLength = response.headers.get('Content-Length');
-      if (response.status !== 200) {
-        if (contentLength !== '0') {
-          const resJson = await response.json();
-          ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-            if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
-          });
-        }
-        error.status = response.status;
-        throw error;
-      }
-      if (contentLength === '0') return {};
-      return response.json();
-    } catch (error) {
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        error.status = 504;
-      }
-      throw error;
-    }
   }
 
   async postCallToService(api, options) {
@@ -55,16 +29,17 @@ export default class ServiceHandler {
       ...this.getHeaders(),
       ...options,
     };
-    return this.fetchFromService(api, postOpts);
+    try {
+      const response = await fetch(api, postOpts);
+      if (response.status !== 200) {
+        return { status: response.status };
+      }
+      const resJson = await response.json();
+      return resJson;
+    } catch (err) {
+      // if (this.renderWidget) await this.errorToast(err);
+    }
   }
 
-  async getCallToService(api, params) {
-    const getOpts = {
-      method: 'GET',
-      ...this.getHeaders(),
-    };
-    const queryString = new URLSearchParams(params).toString();
-    const url = `${api}?${queryString}`;
-    return this.fetchFromService(url, getOpts);
-  }
+  // TODO: Define PDF chunking function
 }
