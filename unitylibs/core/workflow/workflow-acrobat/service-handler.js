@@ -4,7 +4,7 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getGuestAccessToken, showErrorToast,
+  getGuestAccessToken,
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
