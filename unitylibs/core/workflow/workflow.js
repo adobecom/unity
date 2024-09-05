@@ -146,13 +146,15 @@ class WfInitiator {
     await Promise.all(promiseArr);
   }
 
-  async init(el, project = 'unity', unityLibs = '/unitylibs') {
+  async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion, langCode) {
     setUnityLibs(unityLibs, project);
     this.el = el;
     this.unityLibs = unityLibs;
     this.project = project;
     this.enabledFeatures = [];
     this.workflowCfg = this.getWorkFlowInformation();
+    this.workflowCfg.langRegion = langRegion;
+    this.workflowCfg.langCode = langCode;
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget();
     this.getEnabledFeatures();
     this.callbackMap = {};
@@ -255,8 +257,8 @@ class WfInitiator {
         sfList: new Set(['removebg', 'changebg', 'slider']),
       },
       'workflow-acrobat': {
-        productName: 'Acrobat',
-        sfList: new Set(['removebg', 'changebg', 'slider']),
+        productName: 'acrobat',
+        sfList: new Set(['fillsign']),
       }
     };
     [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
@@ -286,7 +288,7 @@ class WfInitiator {
 }
 
 
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1') {
+export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
   const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
@@ -312,7 +314,7 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
       await initWorkflow(wfConfig);
       break;
     case 'v2':
-      await new WfInitiator().init(el, project, unityLibs);
+      await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
       break;
     default:
       break;
