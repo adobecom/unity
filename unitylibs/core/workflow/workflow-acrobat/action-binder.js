@@ -28,7 +28,11 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(values, e) {
-    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
+    const { default: ServiceHandler } = await import(
+      `${getUnityLibs()}/core/workflow/${
+        this.workflowCfg.name
+      }/service-handler.js`
+    );
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
@@ -66,6 +70,74 @@ export default class ActionBinder {
     }
   }
 
+  async getBlobData(file) {
+    const objUrl = URL.createObjectURL(file);
+    const response = await fetch(objUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch blob: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    URL.revokeObjectURL(objUrl);
+    return blob;
+  }
+
+  async uploadFileToUnity(storageUrl, id, blobData, fileType) {
+    const uploadOptions = {
+      method: 'PUT',
+      headers: { 'Content-Type': fileType },
+      body: blobData,
+    };
+    const response = await fetch(storageUrl, uploadOptions);
+    if (response.status != 200) {
+      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: eft } }));
+      // return;
+    }
+  }
+
+  async chunkPdf(assetData, blobData, filetype) {
+    const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
+    if (assetData.uploadUrls.length !== totalChunks) {
+      // handle error incorrect temp url to upload chunk
+      return;
+    }
+    const uploadPromises = Array.from({ length: totalChunks }, (_, i) => {
+      const start = i * assetData.blocksize;
+      const end = Math.min(start + assetData.blocksize, blobData.size);
+      const chunk = blobData.slice(start, end);
+
+      const url = assetData.uploadUrls[i];
+      return this.uploadFileToUnity(url.href, chunk, filetype);
+    });
+    // Wait for all uploads to complete
+    await Promise.all(uploadPromises);
+  }
+
+  async continueInApp(assetId, filename, filesize, filetype) {
+    const cOpts = {
+      assetId,
+      targetProduct: this.workflowCfg.productName,
+      payload: {
+        languageRegion: this.workflowCfg.langRegion,
+        languageCode: this.workflowCfg.langCode,
+        verb: this.workflowCfg.enabledFeatures[0],
+        assetMetadata: {
+          [assetId]: {
+            name: filename,
+            size: filesize,
+            type: filetype,
+          },
+        },
+      },
+    };
+    const response = await this.serviceHandler.postCallToService(
+      this.acrobatApiConfig.connectorApiEndPoint,
+      { body: JSON.stringify(cOpts) },
+    );
+    return response;
+  }
+
+  isEmpty = (obj) => Object.keys(obj).length === 0;
+
   async userPdfUpload(params, e) {
     const files = e.target.files;
     if (!files || files.length !== 1) {
@@ -87,38 +159,46 @@ export default class ActionBinder {
       // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Unsupported file type' } }));
       // return;
     }
+    const blobData = await this.getBlobData(file);
     // Create asset
+    const data = {
+      surfaceId: this.workflowCfg.productName,
+      name: file.name,
+      size: file.size,
+      format: file.type,
+    };
     const assetData = await this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.createAsset,
-      {
-        'surfaceId': 'acrobat',
-        'name': file.name,
-        'size': file.size,
-        'format': file.type
-      }
+      { body: JSON.stringify(data) },
     );
-    if (assetData?.status !== 200) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Unable to process the request' } }));
-      // return;
+    if (this.isEmpty(assetData)) {
+      return;
     }
     // Chunk PDF and upload
-    const pdfUpload = chunkPdf(assetData);
-    if (pdfUpload?.status !== 200) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Unable to process the request' } }));
-      // return;
-    }
+    await this.chunkPdf(assetData, blobData, file.type);
+
     // Finalize asset
-    const finalizeAsset = await this.serviceHandler.postCallToService(
+    const finalAssetData = {
+      surfaceId: this.workflowCfg.productName,
+      assetId: assetData.id,
+    };
+    const finalizeResp = await this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-      {
-        'surfaceId': 'acrobat',
-        'assetId': assetData.id
-      }
+      { body: JSON.stringify(finalAssetData) },
     );
-    if (finalizeAsset?.status !== 200) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Unable to process the request' } }));
+    if (finalizeResp?.status !== 200) {
       // return;
     }
-    // TODO: Redirect to Acrobat Product
+    // Redirect to Acrobat Product
+    const continueResp = await this.continueInApp(
+      assetData.id,
+      file.name,
+      file.size,
+      file.type,
+    );
+    if (this.isEmpty(continueResp)) {
+      return;
+    }
+    window.location.href = continueResp.url;
   }
 }

@@ -1,12 +1,17 @@
 {
   "acom-widget": {
     "type": "pdf",
-    "selector": ".acom-widget.fillsign",
+    "selector": ".acom-wrapper",
     "handler": "render",
     "renderWidget": false,
-    "source": ".acom-widget.fillsign #file-upload",
-    "target": ".acom-widget.fillsign #file-upload",
+    "source": ".acom-wrapper .acom-container",
+    "target": ".acom-wrapper .acom-container",
     "actionMap": {
+      ".acom-wrapper": [
+        {
+          "actionType": "drop"
+        }
+      ],
       "#file-upload": [
         {
           "actionType": "upload"

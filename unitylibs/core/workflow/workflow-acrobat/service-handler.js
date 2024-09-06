@@ -32,13 +32,15 @@ export default class ServiceHandler {
     try {
       const response = await fetch(api, postOpts);
       if (response.status !== 200) {
-        return { status: response.status };
+        //dipatchEvent to DC for error handling
+        return {};
       }
       const resJson = await response.json();
       return resJson;
     } catch (err) {
       // if (this.renderWidget) await this.errorToast(err);
     }
+    return {};
   }
 
   // TODO: Define PDF chunking function
