@@ -81,7 +81,7 @@ export default class ActionBinder {
     return blob;
   }
 
-  async uploadFileToUnity(storageUrl, id, blobData, fileType) {
+  async uploadFileToUnity(storageUrl, blobData, fileType) {
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
@@ -197,7 +197,7 @@ export default class ActionBinder {
       file.type,
     );
     if (this.isEmpty(continueResp)) {
-      return;
+      // Handle error
     }
     window.location.href = continueResp.url;
   }
