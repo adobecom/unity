@@ -28,10 +28,14 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(values, e) {
-    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
+    const { default: ServiceHandler } = await import(
+      `${getUnityLibs()}/core/workflow/${
+        this.workflowCfg.name
+      }/service-handler.js`
+    );
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
+      this.canvasArea
     );
     for (const value of values) {
       switch (true) {
@@ -67,22 +71,15 @@ export default class ActionBinder {
   }
 
   async getBlobData(file) {
-    try {
-      const objUrl = URL.createObjectURL(file);
-      const response = await fetch(objUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch blob: ${response.statusText}`);
-      }
-      const blob = await response.blob();
-      URL.revokeObjectURL(objUrl);
-      return blob;
-    } catch (error) {
-      //handle error
-      console.error('Error fetching blob data:', error);
-      return;
+    const objUrl = URL.createObjectURL(file);
+    const response = await fetch(objUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch blob: ${response.statusText}`);
     }
+    const blob = await response.blob();
+    URL.revokeObjectURL(objUrl);
+    return blob;
   }
-  
 
   async uploadFileToUnity(storageUrl, id, blobData, fileType) {
     const uploadOptions = {
@@ -92,33 +89,32 @@ export default class ActionBinder {
     };
     const response = await fetch(storageUrl, uploadOptions);
     if (response.status != 200) {
-      //Send an event to DC to handle error
-      return;
+      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: eft } }));
+      // return;
     }
   }
 
   async chunkPdf(assetData, blobData, filetype) {
     const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-    const uploadPromises = [];
-    if(assetData.uploadUrls.length !== totalChunks) {
+    if (assetData.uploadUrls.length !== totalChunks) {
       //handle error incorrect temp url to upload chunk
       return;
     }
-    for (let i = 0; i < totalChunks; i++) {
+    const uploadPromises = Array.from({ length: totalChunks }, (_, i) => {
       const start = i * assetData.blocksize;
       const end = Math.min(start + assetData.blocksize, blobData.size);
       const chunk = blobData.slice(start, end);
 
       const url = assetData.uploadUrls[i];
-      uploadPromises.push(this.uploadFileToUnity(url.href, assetData.id, chunk, filetype));
-}
+      return this.uploadFileToUnity(url.href, chunk, filetype);
+    });
     // Wait for all uploads to complete
     await Promise.all(uploadPromises);
   }
 
   async continueInApp(assetId, filename, filesize, filetype) {
     const cOpts = {
-      assetId: assetId,
+      assetId,
       targetProduct: this.workflowCfg.productName,
       payload: {
         languageRegion: this.workflowCfg.langRegion,
@@ -129,7 +125,7 @@ export default class ActionBinder {
             name: filename,
             size: filesize,
             type: filetype,
-          }
+          },
         },
       },
     };
@@ -137,7 +133,7 @@ export default class ActionBinder {
       this.acrobatApiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
     );
-   return response;
+    return response;
   }
 
   isEmpty = (obj) => Object.keys(obj).length === 0;
@@ -163,17 +159,17 @@ export default class ActionBinder {
       // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Unsupported file type' } }));
       // return;
     }
-    const blobData =  await this.getBlobData(file);
+    const blobData = await this.getBlobData(file);
     // Create asset
     const data = {
       surfaceId: this.workflowCfg.productName,
       name: file.name,
       size: file.size,
-      format: file.type
+      format: file.type,
     };
     const assetData = await this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.createAsset,
-      { body: JSON.stringify(data)},
+      { body: JSON.stringify(data) },
     );
     if (this.isEmpty(assetData)) {
       return;
@@ -182,17 +178,25 @@ export default class ActionBinder {
     await this.chunkPdf(assetData, blobData, file.type);
 
     // Finalize asset
-    const finalAssetData = { surfaceId: this.workflowCfg.productName, assetId: assetData.id };
+    const finalAssetData = {
+      surfaceId: this.workflowCfg.productName,
+      assetId: assetData.id,
+    };
     const finalizeResp = await this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-      { body: JSON.stringify(finalAssetData)},
+      { body: JSON.stringify(finalAssetData) },
     );
     if (finalizeResp?.status !== 200) {
       //return;
     }
-   //Redirect to Acrobat Product
-    const continueResp = await this.continueInApp(assetData.id, file.name, file.size, file.type)
-    if(this.isEmpty(continueResp)) {
+    //Redirect to Acrobat Product
+    const continueResp = await this.continueInApp(
+      assetData.id,
+      file.name,
+      file.size,
+      file.type,
+    );
+    if (this.isEmpty(continueResp)) {
       return;
     }
     window.location.href = continueResp.url;
