@@ -8,17 +8,16 @@ import {
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null) {
-    this.renderWidget = renderWidget;
-    this.canvasArea = canvasArea;
+  constructor(apiKey = null) {
+    this.apiKey = apiKey;
   }
 
-  getHeaders(apiKey) {
+  getHeaders() {
     return {
       headers: {
         'Content-Type': 'application/json',
         Authorization: getGuestAccessToken(),
-        'x-api-key': 'leo',
+        'x-api-key': this.apiKey,
       },
     };
   }
@@ -42,6 +41,4 @@ export default class ServiceHandler {
     }
     return {};
   }
-
-  // TODO: Define PDF chunking function
 }

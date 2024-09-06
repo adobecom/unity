@@ -192,7 +192,6 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
 export const unityConfig = (() => {
   const { host } = window.location;
   const commoncfg = {
-    apiKey: 'leo',
     refreshWidgetEvent: 'unity:refresh-widget',
     interactiveSwitchEvent: 'unity:interactive-switch',
   };

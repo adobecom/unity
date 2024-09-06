@@ -14,7 +14,6 @@ export default class ActionBinder {
     this.block = wfblock;
     this.actionMap = actionMap;
     this.canvasArea = canvasArea;
-    this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
     this.serviceHandler = null;
   }
@@ -27,23 +26,18 @@ export default class ActionBinder {
     return unityConfig;
   }
 
-  async acrobatActionMaps(values, e) {
+  async acrobatActionMaps(values, files) {
     const { default: ServiceHandler } = await import(
       `${getUnityLibs()}/core/workflow/${
         this.workflowCfg.name
       }/service-handler.js`
     );
     this.serviceHandler = new ServiceHandler(
-      this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
+      unityConfig.apiKey
     );
     for (const value of values) {
-      switch (true) {
-        case value.actionType == 'upload':
-          this.userPdfUpload(value, e);
-          break;
-        default:
-          break;
+      if (value.actionType === 'upload' || value.actionType === 'drop') {
+        this.userPdfUpload(files);
       }
     }
   }
@@ -53,21 +47,41 @@ export default class ActionBinder {
       const el = this.block.querySelector(key);
       if (!el) return;
       switch (true) {
-        case el.nodeName === 'A':
-          el.href = '#';
-          el.addEventListener('click', async (e) => {
-            await this.acrobatActionMaps(values, e);
+        case el.nodeName === 'DIV':
+          el.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const files = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files);
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
-            await this.acrobatActionMaps(values, e);
+            const files = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files);
+            e.target.value = '';
           });
           break;
         default:
           break;
       }
     }
+  }
+
+  extractFiles(e) {
+    const files = [];
+    if (e.dataTransfer?.items) {
+      [...e.dataTransfer.items].forEach((item) => {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          files.push(file);
+        }
+      });
+    } else if (e.target?.files) {
+      [...e.target.files].forEach((file) => {
+        files.push(file);
+      });
+    }
+    return files;
   }
 
   async getBlobData(file) {
@@ -138,13 +152,11 @@ export default class ActionBinder {
 
   isEmpty = (obj) => Object.keys(obj).length === 0;
 
-  async userPdfUpload(params, e) {
-    const files = e.target.files;
+  async userPdfUpload(files) {
     if (!files || files.length !== 1) {
       // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Only one file can be uploaded at a time.' } }));
       // return;
     }
-    // TODO: check acrobat verb limitations
     const file = files[0];
     if (!file) return;
     const MAX_FILE_SIZE = 1000000000;
