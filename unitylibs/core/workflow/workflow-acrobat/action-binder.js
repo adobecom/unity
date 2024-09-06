@@ -35,7 +35,7 @@ export default class ActionBinder {
     );
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea
+      this.canvasArea,
     );
     for (const value of values) {
       switch (true) {
@@ -97,7 +97,7 @@ export default class ActionBinder {
   async chunkPdf(assetData, blobData, filetype) {
     const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
     if (assetData.uploadUrls.length !== totalChunks) {
-      //handle error incorrect temp url to upload chunk
+      // handle error incorrect temp url to upload chunk
       return;
     }
     const uploadPromises = Array.from({ length: totalChunks }, (_, i) => {
@@ -187,9 +187,9 @@ export default class ActionBinder {
       { body: JSON.stringify(finalAssetData) },
     );
     if (finalizeResp?.status !== 200) {
-      //return;
+      // return;
     }
-    //Redirect to Acrobat Product
+    // Redirect to Acrobat Product
     const continueResp = await this.continueInApp(
       assetData.id,
       file.name,
