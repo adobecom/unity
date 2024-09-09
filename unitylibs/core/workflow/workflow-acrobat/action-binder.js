@@ -18,7 +18,6 @@ export default class ActionBinder {
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
     this.serviceHandler = null;
-    this.MAX_FILE_SIZE = 1000000000;
   }
 
   getAcrobatApiConfig() {
