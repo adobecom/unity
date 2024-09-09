@@ -1,4 +1,3 @@
-/* eslint-disable eqeqeq */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
@@ -40,7 +39,11 @@ export default class ActionBinder {
     for (const value of values) {
       switch (true) {
         case value.actionType == 'upload':
-          this.userPdfUpload(value, e);
+          await this.userPdfUpload(e);
+          break;
+        case value.actionType == 'continueInApp':
+          console.log("Starting continue in app")
+          await this.continueInApp();
           break;
         default:
           break;
@@ -88,18 +91,11 @@ export default class ActionBinder {
       body: blobData,
     };
     const response = await fetch(storageUrl, uploadOptions);
-    if (response.status != 200) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: eft } }));
-      // return;
-    }
   }
 
   async chunkPdf(assetData, blobData, filetype) {
     const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-    if (assetData.uploadUrls.length !== totalChunks) {
-      // handle error incorrect temp url to upload chunk
-      return;
-    }
+    if (assetData.uploadUrls.length !== totalChunks) return;
     const uploadPromises = Array.from({ length: totalChunks }, (_, i) => {
       const start = i * assetData.blocksize;
       const end = Math.min(start + assetData.blocksize, blobData.size);
@@ -108,11 +104,11 @@ export default class ActionBinder {
       const url = assetData.uploadUrls[i];
       return this.uploadFileToUnity(url.href, chunk, filetype);
     });
-    // Wait for all uploads to complete
     await Promise.all(uploadPromises);
   }
 
-  async continueInApp(assetId, filename, filesize, filetype) {
+  async continueInApp() {
+    const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
@@ -133,34 +129,26 @@ export default class ActionBinder {
       this.acrobatApiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
     );
-    return response;
+    if (!response) return;
+    // window.location.href = continueResp.url;
+    console.log(response.url);
   }
 
   isEmpty = (obj) => Object.keys(obj).length === 0;
 
-  async userPdfUpload(params, e) {
+  async userPdfUpload(e) {
     const files = e.target.files;
     if (!files || files.length !== 1) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Only one file can be uploaded at a time.' } }));
-      // return;
     }
-    // TODO: check acrobat verb limitations
     const file = files[0];
     if (!file) return;
     const MAX_FILE_SIZE = 1000000000;
     if (file.size == 0) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: File is empty. } }));
-      // return;
     } else if (file.size > MAX_FILE_SIZE) {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'File too large.' } }));
-      // return;
     }
     if (file.type != 'application/pdf') {
-      // unityEl.dispatchEvent(new CustomEvent(errorToastEvent, { detail: { msg: 'Unsupported file type' } }));
-      // return;
     }
     const blobData = await this.getBlobData(file);
-    // Create asset
     const data = {
       surfaceId: this.workflowCfg.productName,
       name: file.name,
@@ -171,13 +159,15 @@ export default class ActionBinder {
       this.acrobatApiConfig.acrobatEndpoint.createAsset,
       { body: JSON.stringify(data) },
     );
-    if (this.isEmpty(assetData)) {
-      return;
-    }
-    // Chunk PDF and upload
+    if (!assetData) return;
     await this.chunkPdf(assetData, blobData, file.type);
-
-    // Finalize asset
+    const operationItem = {
+      assetId: assetData.id,
+      filename: file.name,
+      filesize: file.size,
+      filetype: file.type,
+    };
+    this.operations.push(operationItem);
     const finalAssetData = {
       surfaceId: this.workflowCfg.productName,
       assetId: assetData.id,
@@ -186,19 +176,5 @@ export default class ActionBinder {
       this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
       { body: JSON.stringify(finalAssetData) },
     );
-    if (finalizeResp?.status !== 200) {
-      // return;
-    }
-    // Redirect to Acrobat Product
-    const continueResp = await this.continueInApp(
-      assetData.id,
-      file.name,
-      file.size,
-      file.type,
-    );
-    if (this.isEmpty(continueResp)) {
-      // Handle error
-    }
-    window.location.href = continueResp.url;
   }
 }

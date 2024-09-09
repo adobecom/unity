@@ -31,10 +31,7 @@ export default class ServiceHandler {
     };
     try {
       const response = await fetch(api, postOpts);
-      if (response.status !== 200) {
-        //dipatchEvent to DC for error handling
-        return {};
-      }
+      if (response.status !== 200) return null;
       const resJson = await response.json();
       return resJson;
     } catch (err) {
