@@ -131,7 +131,7 @@ export default class ActionBinder {
       { body: JSON.stringify(cOpts) },
     );
     if (!response) return;
-    window.location.href = continueResp.url;
+    window.location.href = response.url;
     // console.log(response.url);
   }
 
