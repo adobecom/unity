@@ -43,9 +43,9 @@ export default class ActionBinder {
         case value.actionType == 'upload':
           await this.userPdfUpload(value, e);
           break;
-        // case value.actionType == 'continueInApp':
-        //   await this.continueInApp();
-        //   break;
+        case value.actionType == 'continueInApp':
+          await this.continueInApp();
+          break;
         default:
           break;
       }
