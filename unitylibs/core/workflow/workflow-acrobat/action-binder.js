@@ -148,12 +148,12 @@ export default class ActionBinder {
 
   async userPdfUpload(params, e) {
     const files = e.target.files;
-    if (!files || files.length !== 1) {
-    }
+    if (!files || files.length > params.maxFileCount) return;
     const file = files[0];
     if (!file) return;
     if (file.type != 'application/pdf') return;
-    if ((file.size == 0) || file.size > this.MAX_FILE_SIZE) return;
+    const [minsize, maxsize] = params.allowedFileSize;
+    if (!((file.size > minsize) && (file.size <= maxsize))) return;
     this.handleSplashScreen(params);
     const blobData = await this.getBlobData(file);
     const data = {
