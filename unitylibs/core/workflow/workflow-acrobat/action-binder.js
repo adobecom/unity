@@ -156,7 +156,6 @@ export default class ActionBinder {
     if (file.type != 'application/pdf') return;
     if ((file.size == 0) || file.size > this.MAX_FILE_SIZE) return;
     this.handleSplashScreen(params);
-    return;
     const blobData = await this.getBlobData(file);
     const data = {
       surfaceId: this.workflowCfg.productName,
