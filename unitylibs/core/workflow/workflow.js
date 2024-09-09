@@ -173,6 +173,7 @@ class WfInitiator {
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     await new ActionBinder(
+      this.el,
       this.workflowCfg,
       this.targetBlock,
       this.interactiveArea,

@@ -5,10 +5,12 @@
 import {
   unityConfig,
   getUnityLibs,
+  loadLink
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
-  constructor(workflowCfg, wfblock, canvasArea, actionMap = {}) {
+  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
+    this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
     this.block = wfblock;
     this.actionMap = actionMap;
@@ -16,6 +18,7 @@ export default class ActionBinder {
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
     this.serviceHandler = null;
+    this.MAX_FILE_SIZE = 1000000000;
   }
 
   getAcrobatApiConfig() {
@@ -27,11 +30,10 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(values, e) {
-    const { default: ServiceHandler } = await import(
-      `${getUnityLibs()}/core/workflow/${
-        this.workflowCfg.name
-      }/service-handler.js`
-    );
+    const [{ default: ServiceHandler }] = await Promise.all([
+      import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`),
+      new Promise((res) => { loadLink(`${getUnityLibs()}/core/styles/splash-screen.css`, { rel: 'stylesheet', callback: res }); })
+    ]);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
@@ -39,12 +41,11 @@ export default class ActionBinder {
     for (const value of values) {
       switch (true) {
         case value.actionType == 'upload':
-          await this.userPdfUpload(e);
+          await this.userPdfUpload(value, e);
           break;
-        case value.actionType == 'continueInApp':
-          console.log("Starting continue in app")
-          await this.continueInApp();
-          break;
+        // case value.actionType == 'continueInApp':
+        //   await this.continueInApp();
+        //   break;
         default:
           break;
       }
@@ -134,20 +135,28 @@ export default class ActionBinder {
     console.log(response.url);
   }
 
-  isEmpty = (obj) => Object.keys(obj).length === 0;
+  handleSplashScreen(params) {
+    if (!params.showSplashScreen) return;
+    const splashDom = this.unityEl.querySelector('.icon-splash-screen')?.closest('li')?.querySelector('.section');
+    if (!splashDom) return;
+    splashDom.classList.add('splash-loader');
+    splashDom.classList.remove('section');
+    const parSelector = (params.splashScreenConfig?.splashScreenParent) ? params.splashScreenConfig.splashScreenParent : 'main';
+    debugger;
+    const splashParent = document.querySelector(parSelector);
+    splashParent.prepend(splashDom);
+  }
 
-  async userPdfUpload(e) {
+  async userPdfUpload(params, e) {
     const files = e.target.files;
     if (!files || files.length !== 1) {
     }
     const file = files[0];
     if (!file) return;
-    const MAX_FILE_SIZE = 1000000000;
-    if (file.size == 0) {
-    } else if (file.size > MAX_FILE_SIZE) {
-    }
-    if (file.type != 'application/pdf') {
-    }
+    if (file.type != 'application/pdf') return;
+    if ((file.size == 0) || file.size > this.MAX_FILE_SIZE) return;
+    this.handleSplashScreen(params);
+    return;
     const blobData = await this.getBlobData(file);
     const data = {
       surfaceId: this.workflowCfg.productName,

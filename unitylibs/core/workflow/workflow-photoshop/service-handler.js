@@ -17,12 +17,12 @@ export default class ServiceHandler {
     this.canvasArea = canvasArea;
   }
 
-  getHeaders(apiKey) {
+  getHeaders() {
     return {
       headers: {
         'Content-Type': 'application/json',
         Authorization: getGuestAccessToken(),
-        'x-api-key': 'leo',
+        'x-api-key': unityConfig.apiKey,
       },
     };
   }

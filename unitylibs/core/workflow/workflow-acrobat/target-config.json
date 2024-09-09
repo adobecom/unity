@@ -15,9 +15,9 @@
       "#file-upload": [
         {
           "actionType": "upload",
-          "flashScreenConfig": {
-            "showFlashScreen": "true",
-            "flashScreenParent": "main"
+          "showSplashScreen": true,
+          "splashScreenConfig": {
+            "splashScreenParent": "body"
           }
         },
         {
