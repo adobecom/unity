@@ -131,8 +131,8 @@ export default class ActionBinder {
       { body: JSON.stringify(cOpts) },
     );
     if (!response) return;
-    // window.location.href = continueResp.url;
-    console.log(response.url);
+    window.location.href = continueResp.url;
+    // console.log(response.url);
   }
 
   handleSplashScreen(params) {
@@ -142,7 +142,6 @@ export default class ActionBinder {
     splashDom.classList.add('splash-loader');
     splashDom.classList.remove('section');
     const parSelector = (params.splashScreenConfig?.splashScreenParent) ? params.splashScreenConfig.splashScreenParent : 'main';
-    debugger;
     const splashParent = document.querySelector(parSelector);
     splashParent.prepend(splashDom);
   }
