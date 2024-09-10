@@ -1,5 +1,5 @@
 body > .splash-loader {
-  z-index: 10000000;
+  z-index: 11;
 }
 
 .splash-loader {
@@ -23,7 +23,7 @@ body > .splash-loader {
 }
 
 .splash-loader.show {
-  display: flex !important;
+  display: flex;
 }
 
 .splash-loader .text {
@@ -35,116 +35,7 @@ body > .splash-loader {
   justify-content: center;
 }
 
-.splash-loader .text .con-button {
-  display: none;
+.splash-loader .text img {
+  height: 300px;
+  width: auto;
 }
-
-.progress-holder {
-  width: 100%;
-}
-
-.hide-splash-overflow {
-  overflow: hidden;
-}
-
-.progress-holder .spectrum-ProgressBar {
-	position: relative;
-	display: inline-flex;
-	flex-flow: row wrap;
-	justify-content: space-between;
-	align-items: center;
-	font-size: 15px;
-	vertical-align: top;
-	inline-size: 192px;
-  width: 100%;
-}
-
-.progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-label,
-.progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-percentage {
-		text-align: start;
-		color: rgba(34,34,34);
-	}
-
-.progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-label {
-  display: none;
-}
-
-.progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-percentage {
-		align-self: flex-start;
-		margin-inline-start: 5px;
-}
-
-.progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-track {
-		overflow: hidden;
-		inline-size: 100%;
-		block-size: 8px;
-		border-radius: 5px;
-		background: rgba(213,213,213);
-}
-
-.progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-fill {
-		border: none;
-		block-size: 8px;
-		transition: width 1s;
-		background: #FA0F00;
-}
-
-.progress-holder .spectrum-ProgressBar--sideLabel {
-	display: inline-flex;
-	flex-flow: row;
-	justify-content: space-between;
-}
-
-.progress-holder .spectrum-ProgressBar--sideLabel .spectrum-ProgressBar-track {
-  flex: 1 1 10px;
-}
-
-.progress-holder .spectrum-ProgressBar--sideLabel .spectrum-ProgressBar-label {
-  flex-grow: 0;
-  margin-inline-end: 12px;
-  margin-block-end: 0;
-}
-
-.progress-holder .spectrum-ProgressBar--sideLabel .spectrum-ProgressBar-percentage {
-  order: 3;
-  text-align: end;
-  margin-inline-start: 12px;
-  font-size: var(--type-body-l-size);
-  line-height: var(--type-body-l-lh);
-  font-weight: 700;
-}
-
-.splash-loader .text .icon-area img,
-.splash-loader .text video {
-  width: 104px;
-  height: auto;
-}
-
-@media screen and (min-width: 600px) {
-  .splash-loader .text .icon-area img,
-  .splash-loader .text video {
-    width: 286px;
-    height: auto;
-  }
-
-  .splash-loader h1,
-  .splash-loader h2,
-  .splash-loader h3,
-  .splash-loader h4,
-  .splash-loader h5 {
-    font-size: var(--type-heading-xl-size);
-    line-height: var(--type-heading-xl-lh);
-    font-weight: 700;
-  }
-}
-
-@media screen and (min-width: 1200px) {
-  .splash-loader .text .con-button {
-    display: flex;
-  }
-
-  .progress-holder {
-    min-width: 400px;
-  }
-}
-

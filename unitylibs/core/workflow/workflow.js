@@ -7,6 +7,7 @@ import {
   defineDeviceByScreenSize,
   getConfig,
   loadLink,
+  priorityLoad,
 } from '../../scripts/utils.js';
 
 export function getImgSrc(pic) {
@@ -131,19 +132,7 @@ class WfInitiator {
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`,
       );
     }
-    const promiseArr = [];
-    priorityList.forEach((p) => {
-      if (p.endsWith('.js')) {
-        const pr = new Promise((res) => { loadLink(p, { as: 'script', rel: 'modulepreload', callback: res }); });
-        promiseArr.push(pr);
-      } else if (p.endsWith('.css')) {
-        const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
-        promiseArr.push(pr);
-      } else {
-        promiseArr.push(fetch(p));
-      }
-    });
-    await Promise.all(promiseArr);
+    await priorityLoad(priorityList);
   }
 
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion, langCode) {

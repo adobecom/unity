@@ -29,8 +29,8 @@ export function decorateArea(area = document) {}
 
 const miloLibs = setLibs('/libs');
 
-const { createTag, getConfig, loadStyle, loadLink } = await import(`${miloLibs}/utils/utils.js`);
-export { createTag, loadStyle, getConfig, loadLink };
+const { createTag, getConfig, loadStyle, loadLink, localizeLink } = await import(`${miloLibs}/utils/utils.js`);
+export { createTag, loadStyle, getConfig, loadLink, localizeLink};
 const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
 export { decorateDefaultLinkAnalytics };
 
@@ -124,7 +124,7 @@ export async function priorityLoad(parr) {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      const pr = loadScript(p, 'module', { mode: 'async' });
+      const pr = new Promise((res) => { loadLink(p, { as: 'script', rel: 'modulepreload', callback: res }); });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });

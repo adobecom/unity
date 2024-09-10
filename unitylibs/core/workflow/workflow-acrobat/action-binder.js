@@ -3,9 +3,12 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
+  getLibs,
   unityConfig,
   getUnityLibs,
-  loadLink
+  createTag,
+  localizeLink,
+  priorityLoad
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -18,6 +21,7 @@ export default class ActionBinder {
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
     this.serviceHandler = null;
+    this.splashScreenEl = null;
   }
 
   getAcrobatApiConfig() {
@@ -28,11 +32,19 @@ export default class ActionBinder {
     return unityConfig;
   }
 
+  async handlePreloads(params) {
+    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`]
+    if (params[0].showSplashScreen) {
+      parr.push(
+        `${getLibs()}/blocks/fragment/fragment.js`,
+        `${getUnityLibs()}/core/styles/splash-screen.css`)
+    }
+    await priorityLoad(parr);
+  }
+
   async acrobatActionMaps(values, e) {
-    const [{ default: ServiceHandler }] = await Promise.all([
-      import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`),
-      new Promise((res) => { loadLink(`${getUnityLibs()}/core/styles/splash-screen.css`, { rel: 'stylesheet', callback: res }); })
-    ]);
+    await this.handlePreloads(values);
+    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
@@ -130,20 +142,36 @@ export default class ActionBinder {
       this.acrobatApiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
     );
-    if (!response) return;
-    window.location.href = response.url;
+    if (!response) return await this.handleSplashScreen(params);
     // console.log(response.url);
+    window.location.href = response.url;
   }
 
-  handleSplashScreen(params) {
+  async handleSplashScreen(params) {
     if (!params.showSplashScreen) return;
-    const splashDom = this.unityEl.querySelector('.icon-splash-screen')?.closest('li')?.querySelector('.section');
-    if (!splashDom) return;
-    splashDom.classList.add('splash-loader');
-    splashDom.classList.remove('section');
-    const parSelector = (params.splashScreenConfig?.splashScreenParent) ? params.splashScreenConfig.splashScreenParent : 'main';
-    const splashParent = document.querySelector(parSelector);
-    splashParent.prepend(splashDom);
+    if (this.splashScreenEl) {
+      if (this.splashScreenEl.classList.contains('show')) this.splashScreenEl.classList.remove('show');
+      else this.splashScreenEl.classList.add('show');
+      return;
+    }
+    const { default: init} = await import(`${getLibs()}/blocks/fragment/fragment.js`);
+    const fragmentLink = localizeLink(`${window.location.origin}${params.splashScreenConfig.fragmentLink}`);
+    const a = createTag('a', { href: fragmentLink, class: 'splash-loader'}, fragmentLink);
+    const splashDiv = document.querySelector(params.splashScreenConfig.parentSelector);
+    splashDiv.append(a);
+    await init(a);
+    this.splashScreenEl = splashDiv.querySelector(`.fragment[data-path*="${params.splashScreenConfig.fragmentLink}"`);
+    const pbarPlaceholder = this.splashScreenEl.querySelector('.icon-progress-bar');
+    if (pbarPlaceholder) {
+      await priorityLoad([
+        `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
+        `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`
+      ]);
+      const { default: createProgressBar } = await import(`${getUnityLibs()}/core/features/progress-bar/progress-bar.js`);
+      const pb = createProgressBar();
+      pbarPlaceholder.replaceWith(pb);
+    }
+    this.splashScreenEl.classList.add('splash-loader', 'show');
   }
 
   async userPdfUpload(params, e) {
@@ -154,7 +182,7 @@ export default class ActionBinder {
     if (file.type != 'application/pdf') return;
     const [minsize, maxsize] = params.allowedFileSize;
     if (!((file.size > minsize) && (file.size <= maxsize))) return;
-    this.handleSplashScreen(params);
+    await this.handleSplashScreen(params);
     const blobData = await this.getBlobData(file);
     const data = {
       surfaceId: this.workflowCfg.productName,
@@ -166,7 +194,7 @@ export default class ActionBinder {
       this.acrobatApiConfig.acrobatEndpoint.createAsset,
       { body: JSON.stringify(data) },
     );
-    if (!assetData) return;
+    if (!assetData) return await this.handleSplashScreen(params);
     await this.chunkPdf(assetData, blobData, file.type);
     const operationItem = {
       assetId: assetData.id,
@@ -179,7 +207,7 @@ export default class ActionBinder {
       surfaceId: this.workflowCfg.productName,
       assetId: assetData.id,
     };
-    const finalizeResp = await this.serviceHandler.postCallToService(
+    this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
       { body: JSON.stringify(finalAssetData) },
     );

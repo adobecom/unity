@@ -19,7 +19,8 @@
           "maxFileCount": 1,
           "showSplashScreen": true,
           "splashScreenConfig": {
-            "splashScreenParent": "body"
+            "fragmentLink": "/drafts/mathuria/fragments/flashscreen",
+            "parentSelector": "body"
           }
         },
         {
