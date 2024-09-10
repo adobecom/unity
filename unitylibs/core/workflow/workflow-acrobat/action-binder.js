@@ -108,6 +108,7 @@ export default class ActionBinder {
   }
 
   async continueInApp() {
+    if (!this.operations.length) return;
     const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
     const cOpts = {
       assetId,
