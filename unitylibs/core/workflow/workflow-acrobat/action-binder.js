@@ -160,8 +160,8 @@ export default class ActionBinder {
     const splashDiv = document.querySelector(params.splashScreenConfig.parentSelector);
     splashDiv.append(a);
     await init(a);
-    this.splashScreenEl = splashDiv.querySelector(`.fragment[data-path*="${params.splashScreenConfig.fragmentLink}"`);
-    const pbarPlaceholder = this.splashScreenEl.querySelector('.icon-progress-bar');
+    const sel = splashDiv.querySelector(`.fragment[data-path*="${params.splashScreenConfig.fragmentLink}"`);
+    const pbarPlaceholder = sel.querySelector('.icon-progress-bar');
     if (pbarPlaceholder) {
       await priorityLoad([
         `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
@@ -171,6 +171,16 @@ export default class ActionBinder {
       const pb = createProgressBar();
       pbarPlaceholder.replaceWith(pb);
     }
+    const hasCancel = sel.querySelector('a.con-button[href*="#_cancel"]');
+    if (hasCancel) {
+      hasCancel.href = '#'
+      hasCancel.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.splash-loader').classList.remove('show');
+        console.log(this.unityEl);
+      });
+    }
+    this.splashScreenEl = sel;
     this.splashScreenEl.classList.add('splash-loader', 'show');
   }
 
