@@ -160,6 +160,7 @@ class WfInitiator {
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
+    this.limits = this.targetConfig.limits;
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     await new ActionBinder(
       this.el,
@@ -167,6 +168,7 @@ class WfInitiator {
       this.targetBlock,
       this.interactiveArea,
       this.actionMap,
+      this.limits,
     ).initActionListeners();
   }
 

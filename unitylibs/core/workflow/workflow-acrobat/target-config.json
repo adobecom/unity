@@ -6,17 +6,26 @@
     "renderWidget": false,
     "source": ".verb-wrapper .verb-container",
     "target": ".verb-wrapper .verb-container",
+    "limits": {
+      "maxNumFiles": 1,
+      "allowedFileSize": [0, 1000000000]
+    },
     "actionMap": {
       ".verb-wrapper": [
         {
-          "actionType": "drop"
+          "actionType": "drop",
+          "showSplashScreen": true,
+          "splashScreenConfig": {
+            "splashScreenParent": "body"
+          }
+        },
+        {
+          "actionType": "continueInApp"
         }
       ],
       "#file-upload": [
         {
           "actionType": "upload",
-          "allowedFileSize": [0, 1000000000],
-          "maxFileCount": 1,
           "showSplashScreen": true,
           "splashScreenConfig": {
             "fragmentLink": "/drafts/mathuria/fragments/flashscreen",

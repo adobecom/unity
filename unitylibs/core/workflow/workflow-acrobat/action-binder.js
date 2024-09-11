@@ -12,16 +12,16 @@ import {
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
-  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
+  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
     this.block = wfblock;
     this.actionMap = actionMap;
+    this.limits = limits;
     this.canvasArea = canvasArea;
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
     this.serviceHandler = null;
-    this.splashScreenEl = null;
   }
 
   getAcrobatApiConfig() {
@@ -42,17 +42,19 @@ export default class ActionBinder {
     await priorityLoad(parr);
   }
 
-  async acrobatActionMaps(values, e) {
-    await this.handlePreloads(values);
-    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
+  async acrobatActionMaps(values, files) {
+    const [{ default: ServiceHandler }] = await Promise.all([
+      import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`),
+      new Promise((res) => { loadLink(`${getUnityLibs()}/core/styles/splash-screen.css`, { rel: 'stylesheet', callback: res }); })
+    ]);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
     );
     for (const value of values) {
       switch (true) {
-        case value.actionType == 'upload':
-          await this.userPdfUpload(value, e);
+        case value.actionType == 'upload' || value.actionType == 'drop':
+          await this.userPdfUpload(value, files);
           break;
         case value.actionType == 'continueInApp':
           await this.continueInApp();
@@ -68,21 +70,41 @@ export default class ActionBinder {
       const el = this.block.querySelector(key);
       if (!el) return;
       switch (true) {
-        case el.nodeName === 'A':
-          el.href = '#';
-          el.addEventListener('click', async (e) => {
-            await this.acrobatActionMaps(values, e);
+        case el.nodeName === 'DIV':
+          el.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const files = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files);
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
-            await this.acrobatActionMaps(values, e);
+            const files = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files);
+            e.target.value = '';
           });
           break;
         default:
           break;
       }
     }
+  }
+
+  extractFiles(e) {
+    const files = [];
+    if (e.dataTransfer?.items) {
+      [...e.dataTransfer.items].forEach((item) => {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          files.push(file);
+        }
+      });
+    } else if (e.target?.files) {
+      [...e.target.files].forEach((file) => {
+        files.push(file);
+      });
+    }
+    return files;
   }
 
   async getBlobData(file) {
@@ -124,13 +146,7 @@ export default class ActionBinder {
   }
 
   async continueInApp() {
-    if (!this.operations.length) return;
-    debugger;
-    if (this.cancelOperation) {
-      this.cancelOperation = false;
-      return;
-    }
-    this.updateSplashScreenLoader(100);
+    if (this.operations.length < 1) return;
     const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
     const cOpts = {
       assetId,
@@ -159,18 +175,6 @@ export default class ActionBinder {
     }
     // console.log(response.url);
     window.location.href = response.url;
-  }
-
-  cancelAcrobatOperation(e) {
-    debugger;
-    this.cancelOperation = true;
-    e.target.closest('.splash-loader').classList.remove('show');
-  }
-
-  updateSplashScreenLoader(p = null) {
-    if (!this.splashScreenEl) return;
-    if (p) this.splashScreenEl.querySelector('.progress-holder')?.dispatchEvent(new CustomEvent("unity:progress-bar-update", {detail: { percentage: p }}));
-    else this.splashScreenEl.querySelector('.progress-holder')?.dispatchEvent(new CustomEvent("unity:progress-bar-update"));
   }
 
   async handleSplashScreen(params) {
@@ -209,13 +213,12 @@ export default class ActionBinder {
     this.splashScreenEl.classList.add('splash-loader', 'show');
   }
 
-  async userPdfUpload(params, e) {
-    const files = e.target.files;
-    if (!files || files.length > params.maxFileCount) return;
+  async userPdfUpload(params, files) {
+    if (!files || files.length > this.limits.maxNumFiles) return;
     const file = files[0];
     if (!file) return;
     if (file.type != 'application/pdf') return;
-    const [minsize, maxsize] = params.allowedFileSize;
+    const [minsize, maxsize] = this.limits.allowedFileSize;
     if (!((file.size > minsize) && (file.size <= maxsize))) return;
     await this.handleSplashScreen(params);
     const blobData = await this.getBlobData(file);
