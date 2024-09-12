@@ -8,6 +8,7 @@ import {
   createTag,
   getGuestAccessToken,
   decorateDefaultLinkAnalytics,
+  unityConfig,
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
