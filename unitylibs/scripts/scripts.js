@@ -116,6 +116,7 @@ const CONFIG = {
     enableGuestTokenForceRefresh: true,
   },
   prodDomains: ['www.adobe.com'],
+  surfaceId: 'unity',
   decorateArea,
 };
 decorateArea();
