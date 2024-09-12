@@ -129,7 +129,7 @@ export default class ActionBinder {
       headers: { 'Content-Type': fileType },
       body: blobData,
     };
-    const response = await fetch(storageUrl, uploadOptions);
+    const response = await fetch(storageUrl, uploadOptions); //Handle error
   }
 
   async chunkPdf(assetData, blobData, filetype) {
@@ -223,7 +223,8 @@ export default class ActionBinder {
     await this.handleSplashScreen(params);
     const blobData = await this.getBlobData(file);
     const data = {
-      surfaceId: this.workflowCfg.productName,
+      surfaceId: unityConfig.surfaceId, 
+      targetProduct: this.workflowCfg.productName,
       name: file.name,
       size: file.size,
       format: file.type,
@@ -242,7 +243,8 @@ export default class ActionBinder {
     };
     this.operations.push(operationItem);
     const finalAssetData = {
-      surfaceId: this.workflowCfg.productName,
+      surfaceId: unityConfig.surfaceId, 
+      targetProduct: this.workflowCfg.productName,
       assetId: assetData.id,
     };
     this.serviceHandler.postCallToService(

@@ -211,8 +211,6 @@ export const unityConfig = (() => {
     apiKey: 'leo',
     refreshWidgetEvent: 'unity:refresh-widget',
     interactiveSwitchEvent: 'unity:interactive-switch',
-    trackAnalyticsEvent: 'unity:track-analytics',
-    errorToastEvent: 'unity:show-error-toast',
     surfaceId: 'unity',
   };
   const cfg = {
