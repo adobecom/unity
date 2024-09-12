@@ -13,7 +13,7 @@ import {
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
-  constructor(workflowCfg, wfblock, canvasArea, actionMap = {}) {
+  constructor(workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.workflowCfg = workflowCfg;
     this.block = wfblock;
     this.actionMap = actionMap;
