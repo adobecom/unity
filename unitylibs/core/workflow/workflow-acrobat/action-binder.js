@@ -60,12 +60,14 @@ export default class ActionBinder {
         case el.nodeName === 'DIV':
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
+            this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'drop' } }));
             const files = this.extractFiles(e);
             await this.acrobatActionMaps(values, files);
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
+            this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'change' } }));
             const files = this.extractFiles(e);
             await this.acrobatActionMaps(values, files);
             e.target.value = '';
