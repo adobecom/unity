@@ -11,11 +11,18 @@ const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spect
 export default function createProgressBar() {
   const layer = createTag('div', { class: 'progress-holder' }, pdom);
   layer.addEventListener('unity:progress-bar-update', (e) => {
-    const spb = layer.querySelector('.spectrum-ProgressBar')
-    spb.setAttribute('value', e.detail.percentage);
-    spb.setAttribute('aria-valuenow', e.detail.percentage);
-    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${e.detail.percentage}%`;
-    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${e.detail.percentage}%`;
+    let p = 0;
+    if (e.detail?.percentage) {
+      p = e.detail?.percentage;
+    } else {
+      const currVal = parseInt(layer.querySelector('.spectrum-ProgressBar-fill').style.width);
+      p = Math.min(currVal + 10, 100);
+    }
+    const spb = layer.querySelector('.spectrum-ProgressBar');
+    spb.setAttribute('value', p);
+    spb.setAttribute('aria-valuenow', p);
+    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
+    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
   })
   return layer;
 }

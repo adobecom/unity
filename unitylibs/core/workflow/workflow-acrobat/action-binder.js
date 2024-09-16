@@ -97,6 +97,11 @@ export default class ActionBinder {
   }
 
   async uploadFileToUnity(storageUrl, blobData, fileType) {
+    this.updateSplashScreenLoader();
+    if (this.cancelOperation) {
+      this.cancelOperation = false;
+      return;
+    }
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
@@ -112,7 +117,6 @@ export default class ActionBinder {
       const start = i * assetData.blocksize;
       const end = Math.min(start + assetData.blocksize, blobData.size);
       const chunk = blobData.slice(start, end);
-
       const url = assetData.uploadUrls[i];
       return this.uploadFileToUnity(url.href, chunk, filetype);
     });
@@ -121,6 +125,12 @@ export default class ActionBinder {
 
   async continueInApp() {
     if (!this.operations.length) return;
+    debugger;
+    if (this.cancelOperation) {
+      this.cancelOperation = false;
+      return;
+    }
+    this.updateSplashScreenLoader(100);
     const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
     const cOpts = {
       assetId,
@@ -143,8 +153,24 @@ export default class ActionBinder {
       { body: JSON.stringify(cOpts) },
     );
     if (!response) return await this.handleSplashScreen(params);
+    if (this.cancelOperation) {
+      this.cancelOperation = false;
+      return;
+    }
     // console.log(response.url);
     window.location.href = response.url;
+  }
+
+  cancelAcrobatOperation(e) {
+    debugger;
+    this.cancelOperation = true;
+    e.target.closest('.splash-loader').classList.remove('show');
+  }
+
+  updateSplashScreenLoader(p = null) {
+    if (!this.splashScreenEl) return;
+    if (p) this.splashScreenEl.querySelector('.progress-holder')?.dispatchEvent(new CustomEvent("unity:progress-bar-update", {detail: { percentage: p }}));
+    else this.splashScreenEl.querySelector('.progress-holder')?.dispatchEvent(new CustomEvent("unity:progress-bar-update"));
   }
 
   async handleSplashScreen(params) {
@@ -176,8 +202,7 @@ export default class ActionBinder {
       hasCancel.href = '#'
       hasCancel.addEventListener('click', (e) => {
         e.preventDefault();
-        e.target.closest('.splash-loader').classList.remove('show');
-        console.log(this.unityEl);
+        this.cancelAcrobatOperation(e);
       });
     }
     this.splashScreenEl = sel;
