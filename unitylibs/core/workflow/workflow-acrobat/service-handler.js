@@ -24,7 +24,7 @@ export default class ServiceHandler {
     };
   }
 
-  async postCallToService(api, options) {
+  async postCallToService(api, options, handleError = true) {
     const postOpts = {
       method: 'POST',
       ...this.getHeaders(),
@@ -36,7 +36,7 @@ export default class ServiceHandler {
       const resJson = await response.json();
       return resJson;
     } catch (err) {
-      throw new Error('Error connecting with the service.');
+      if (handleError) throw new Error('Error connecting with the service.');
     }
   }
 

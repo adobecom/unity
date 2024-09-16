@@ -62,7 +62,7 @@ export default class ActionBinder {
           await this.userPdfUpload(value, files);
           break;
         case value.actionType == 'continueInApp':
-          await this.continueInApp();
+          await this.continueInApp(value);
           break;
         case value.actionType == 'interrupt':
           await this.cancelAcrobatOperation(values);
@@ -183,10 +183,12 @@ export default class ActionBinder {
     .then((resArr) => {
       this.progressUpdater(this.splashScreenEl, 100);
       const response = resArr[resArr.length - 1];
+      if (!response?.url) throw new Error("Error connecting to App");
       window.location.href = response.url;
     })
     .catch(() => {
-      this.handleSplashScreen(params);
+      this.handleSplashScreen();
+      throw new Error("Error connecting to App");
     });
   }
 
@@ -210,12 +212,12 @@ export default class ActionBinder {
     }, delay);
   }
 
-  async handleSplashScreen(params) {
-    if (!params.showSplashScreen) return;
+  async handleSplashScreen(params, displayOn = false) {
+    if (!this.splashScreenEl && !params.showSplashScreen) return;
     if (this.splashScreenEl) {
       if (this.splashScreenEl.classList.contains('show')) {
         this.splashScreenEl.classList.remove('show');
-      } else {
+      } else if (displayOn) {
         this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
         this.splashScreenEl.classList.add('show');
       }
@@ -264,7 +266,7 @@ export default class ActionBinder {
     if (!((file.size > minsize) && (file.size <= maxsize))) return;
     let assetData = null;
     try {
-      await this.handleSplashScreen(params);
+      await this.handleSplashScreen(params, true);
       const blobData = await this.getBlobData(file);
       const data = {
         surfaceId: unityConfig.surfaceId, 
@@ -297,6 +299,7 @@ export default class ActionBinder {
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         { body: JSON.stringify(finalAssetData) },
+        false
       );
     } catch (e) {
       // Failed in finalize
