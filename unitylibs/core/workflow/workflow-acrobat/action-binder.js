@@ -313,6 +313,6 @@ export default class ActionBinder {
     } catch (e) {
       await this.handleSplashScreen(params);
     }
-    verifyContent(assetData);
+    this.verifyContent(assetData);
   }
 }
