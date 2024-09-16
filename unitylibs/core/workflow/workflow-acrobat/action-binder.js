@@ -41,7 +41,9 @@ export default class ActionBinder {
     if (params[0].showSplashScreen) {
       parr.push(
         `${getLibs()}/blocks/fragment/fragment.js`,
-        `${getUnityLibs()}/core/styles/splash-screen.css`)
+        `${getUnityLibs()}/core/styles/splash-screen.css`,
+        `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
+        `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`)
     }
     await priorityLoad(parr);
   }
@@ -63,7 +65,7 @@ export default class ActionBinder {
           await this.continueInApp();
           break;
         case value.actionType == 'interrupt':
-          this.cancelAcrobatOperation(values);
+          await this.cancelAcrobatOperation(values);
         default:
           break;
       }
@@ -179,7 +181,7 @@ export default class ActionBinder {
     ));
     await Promise.all(this.promiseStack)
     .then(() => {
-      this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, 100);
+      this.progressUpdater(this.splashScreenEl, 100);
       const response = this.promiseStack[this.promiseStack.length - 1];
       window.location.href = response.url;
     })
@@ -188,20 +190,22 @@ export default class ActionBinder {
     });
   }
 
-  cancelAcrobatOperation(params) {
-    this.handleSplashScreen(params);
+  async cancelAcrobatOperation(params) {
+    await this.handleSplashScreen(params);
     const cancelPromise = Promise.reject(new Error('Operation termination requested.'));
     this.promiseStack.unshift(cancelPromise);
   }
 
   progressBarHandler(s, delay, i, initialize = false) {
+    if (!s) return;
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (progressBar.getAttribute('value') == 100) return;
+    if (!initialize && progressBar?.getAttribute('value') == 100) return;
+    if (initialize) this.progressUpdater(s, 0);
     setTimeout(() => {
-      let v = initialize ? 0 : parseInt(s.querySelector('.spectrum-ProgressBar').getAttribute('value'));
-      s.querySelector('.progress-holder')?.dispatchEvent(new CustomEvent("unity:progress-bar-update", {detail: { percentage: (v + i) }}));
+      let v = initialize ? 0 : parseInt(progressBar.getAttribute('value'));
+      this.progressUpdater(s, v + i);
       this.progressBarHandler(s, delay, i);
     }, delay);
   }
@@ -230,7 +234,8 @@ export default class ActionBinder {
         `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
         `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`
       ]);
-      const { default: createProgressBar } = await import(`${getUnityLibs()}/core/features/progress-bar/progress-bar.js`);
+      const { default: createProgressBar, updateProgressBar: updateProgressBar} = await import(`${getUnityLibs()}/core/features/progress-bar/progress-bar.js`);
+      this.progressUpdater = updateProgressBar;
       const pb = createProgressBar();
       pbarPlaceholder.replaceWith(pb);
       this.progressBarHandler(sel, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
