@@ -180,9 +180,9 @@ export default class ActionBinder {
         { body: JSON.stringify(cOpts) },
     ));
     await Promise.all(this.promiseStack)
-    .then(() => {
+    .then((resArr) => {
       this.progressUpdater(this.splashScreenEl, 100);
-      const response = this.promiseStack[this.promiseStack.length - 1];
+      const response = resArr[resArr.length - 1];
       window.location.href = response.url;
     })
     .catch(() => {
