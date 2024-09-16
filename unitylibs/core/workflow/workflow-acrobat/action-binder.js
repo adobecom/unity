@@ -212,49 +212,72 @@ export default class ActionBinder {
     }, delay);
   }
 
-  async handleSplashScreen(params, displayOn = false) {
-    if (!this.splashScreenEl && !params.showSplashScreen) return;
-    if (this.splashScreenEl) {
-      if (this.splashScreenEl.classList.contains('show')) {
-        this.splashScreenEl.classList.remove('show');
-      } else if (displayOn) {
-        this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
-        this.splashScreenEl.classList.add('show');
-      }
-      return;
+  splashVisibilityController(displayOn) {
+    if (this.splashScreenEl.classList.contains('show')) {
+      this.splashScreenEl.classList.remove('show');
+    } else if (displayOn) {
+      this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
+      this.splashScreenEl.classList.add('show');
     }
+  }
+
+  async loadSplashFragment(params) {
     const { default: init} = await import(`${getLibs()}/blocks/fragment/fragment.js`);
     const fragmentLink = localizeLink(`${window.location.origin}${params.splashScreenConfig.fragmentLink}`);
     const a = createTag('a', { href: fragmentLink, class: 'splash-loader'}, fragmentLink);
     const splashDiv = document.querySelector(params.splashScreenConfig.parentSelector);
     splashDiv.append(a);
     await init(a);
-    const sel = splashDiv.querySelector(`.fragment[data-path*="${params.splashScreenConfig.fragmentLink}"`);
-    const pbarPlaceholder = sel.querySelector('.icon-progress-bar');
-    if (pbarPlaceholder) {
-      await priorityLoad([
-        `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
-        `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`
-      ]);
-      const { default: createProgressBar, updateProgressBar: updateProgressBar} = await import(`${getUnityLibs()}/core/features/progress-bar/progress-bar.js`);
-      this.progressUpdater = updateProgressBar;
-      const pb = createProgressBar();
-      pbarPlaceholder.replaceWith(pb);
-      this.progressBarHandler(sel, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
+    return splashDiv.querySelector(`.fragment[data-path*="${params.splashScreenConfig.fragmentLink}"`);
+  }
+
+  async handleSplashProgressBar() {
+    await priorityLoad([
+      `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
+      `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`
+    ]);
+    const { default: createProgressBar, updateProgressBar: updateProgressBar} = await import(`${getUnityLibs()}/core/features/progress-bar/progress-bar.js`);
+    this.progressUpdater = updateProgressBar;
+    const pb = createProgressBar();
+    this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
+    this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
+  }
+
+  handleSplashCancel() {
+    const actMap = {
+      'a.con-button[href*="#_cancel"]': [
+        {
+          "actionType": "interrupt"
+        }
+      ]
     }
-    const hasCancel = sel.querySelector('a.con-button[href*="#_cancel"]');
-    if (hasCancel) {
-      const actMap = {
-        'a.con-button[href*="#_cancel"]': [
-          {
-            "actionType": "interrupt"
-          }
-        ]
-      }
-      this.initActionListeners(sel, actMap);
-    }
-    this.splashScreenEl = sel;
+    this.initActionListeners(this.splashScreenEl, actMap);
+  }
+
+  async handleSplashScreen(params, displayOn = false) {
+    if (!this.splashScreenEl && !params.showSplashScreen) return;
+    if (this.splashScreenEl) return this.splashVisibilityController(displayOn);
+    this.splashScreenEl = await this.loadSplashFragment(params);
+    if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
+    if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleSplashCancel();
     this.splashScreenEl.classList.add('splash-loader', 'show');
+  }
+
+  verifyContent(assetData) {
+    try {
+      const finalAssetData = {
+        surfaceId: unityConfig.surfaceId, 
+        targetProduct: this.workflowCfg.productName,
+        assetId: assetData.id,
+      };
+      this.serviceHandler.postCallToService(
+        this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
+        { body: JSON.stringify(finalAssetData) },
+        false
+      );
+    } catch (e) {
+      // Failed in finalize
+    }
   }
 
   async userPdfUpload(params, files) {
@@ -290,19 +313,6 @@ export default class ActionBinder {
     } catch (e) {
       await this.handleSplashScreen(params);
     }
-    try {
-      const finalAssetData = {
-        surfaceId: unityConfig.surfaceId, 
-        targetProduct: this.workflowCfg.productName,
-        assetId: assetData.id,
-      };
-      this.serviceHandler.postCallToService(
-        this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData) },
-        false
-      );
-    } catch (e) {
-      // Failed in finalize
-    }
+    verifyContent(assetData);
   }
 }
