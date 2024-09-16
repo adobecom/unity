@@ -35,7 +35,39 @@ body > .splash-loader {
   justify-content: center;
 }
 
-.splash-loader .text img {
-  height: 300px;
-  width: auto;
+.splash-loader .text .con-button {
+  display: none;
+}
+
+
+@media screen and (max-width: 600px) {
+  .splash-loader .text .icon-area img {
+    width: 104px;
+    min-width: 104px;
+    height: auto;
+  }
+}
+
+@media screen and (min-width: 600px) {
+  .splash-loader .text .icon-area img {
+    width: 286px;
+    min-width: 286px;
+    height: auto;
+  }
+
+  .splash-loader h1,
+  .splash-loader h2,
+  .splash-loader h3,
+  .splash-loader h4,
+  .splash-loader h5 {
+    font-size: var(--type-heading-xl-size);
+    line-height: var(--type-heading-xl-lh);
+    font-weight: 700;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .splash-loader .text .con-button {
+    display: flex;
+  }
 }
