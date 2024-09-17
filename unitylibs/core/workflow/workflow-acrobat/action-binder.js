@@ -62,7 +62,7 @@ export default class ActionBinder {
           await this.userPdfUpload(value, files);
           break;
         case value.actionType == 'continueInApp':
-          await this.continueInApp(value);
+          await this.continueInApp();
           break;
         case value.actionType == 'interrupt':
           await this.cancelAcrobatOperation(values);
