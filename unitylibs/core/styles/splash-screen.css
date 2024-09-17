@@ -114,7 +114,6 @@ body > .splash-loader {
   .splash-loader .text .icon-area img,
   .splash-loader .text video {
     width: 104px;
-    min-width: 104px;
     height: auto;
   }
 }
@@ -123,7 +122,6 @@ body > .splash-loader {
   .splash-loader .text .icon-area img,
   .splash-loader .text video {
     width: 286px;
-    min-width: 286px;
     height: auto;
   }
 
@@ -142,7 +140,7 @@ body > .splash-loader {
   .splash-loader .text .con-button {
     display: flex;
   }
-  
+
   .progress-holder {
     min-width: 400px;
   }
