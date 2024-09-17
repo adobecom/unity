@@ -42,12 +42,12 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
       parr.push(
+        `${getUnityLibs()}/core/styles/splash-screen.css`,
+        `${this.splashFragmentLink}.plain.html`,
         `${getLibs()}/blocks/text/text.js`,
         `${getLibs()}/blocks/text/text.css`,
         `${getLibs()}/blocks/video/video.js`,
-        `${getLibs()}/blocks/video/video.css`,
-        `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${this.splashFragmentLink}.plain.html`);
+        `${getLibs()}/blocks/video/video.css`);
     }
     await priorityLoad(parr);
   }
