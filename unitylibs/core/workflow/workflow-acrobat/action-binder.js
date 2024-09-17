@@ -42,7 +42,6 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
       parr.push(
-        `${getLibs()}/blocks/fragment/fragment.js`,
         `${getLibs()}/blocks/text/text.js`,
         `${getLibs()}/blocks/text/text.css`,
         `${getLibs()}/blocks/video/video.js`,
