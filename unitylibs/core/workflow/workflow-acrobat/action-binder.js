@@ -256,7 +256,7 @@ export default class ActionBinder {
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
-  async handleSplashScreen(params, displayOn = false) {
+  async handleSplashScreen(params = {}, displayOn = false) {
     if (!this.splashScreenEl && !params.showSplashScreen) return;
     if (this.splashScreenEl) return this.splashVisibilityController(displayOn);
     this.splashScreenEl = await this.loadSplashFragment(params);
