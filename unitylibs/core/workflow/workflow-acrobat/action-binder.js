@@ -266,20 +266,16 @@ export default class ActionBinder {
   }
 
   verifyContent(assetData) {
-    try {
-      const finalAssetData = {
-        surfaceId: unityConfig.surfaceId, 
-        targetProduct: this.workflowCfg.productName,
-        assetId: assetData.id,
-      };
-      this.serviceHandler.postCallToService(
-        this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData) },
-        false
-      );
-    } catch (e) {
-      // Failed in finalize
-    }
+    const finalAssetData = {
+      surfaceId: unityConfig.surfaceId, 
+      targetProduct: this.workflowCfg.productName,
+      assetId: assetData.id,
+    };
+    this.serviceHandler.postCallToService(
+      this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
+      { body: JSON.stringify(finalAssetData) },
+      false
+    );
   }
 
   async userPdfUpload(params, files) {
