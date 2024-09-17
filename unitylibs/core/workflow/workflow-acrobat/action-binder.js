@@ -55,10 +55,10 @@ export default class ActionBinder {
   updateProgressBar(layer, percentage) {
     const p = Math.min(percentage, 100);
     const spb = layer.querySelector('.spectrum-ProgressBar');
-    spb.setAttribute('value', p);
-    spb.setAttribute('aria-valuenow', p);
-    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
-    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
+    spb?.setAttribute('value', p);
+    spb?.setAttribute('aria-valuenow', p);
+    layer?.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
+    layer?.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
   }
 
   createProgressBar() {
@@ -69,8 +69,7 @@ export default class ActionBinder {
       <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
     </div>
     </div>`;
-    const layer = createTag('div', { class: 'progress-holder' }, pdom);
-    return layer;
+    return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
   async acrobatActionMaps(values, files) {
