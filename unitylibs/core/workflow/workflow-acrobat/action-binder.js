@@ -305,8 +305,6 @@ export default class ActionBinder {
   }
 
   async userPdfUpload(params, files) {
-    await this.handleSplashScreen(true);
-    return;
     if (!files || files.length > this.limits.maxNumFiles) return;
     const file = files[0];
     if (!file) return;
