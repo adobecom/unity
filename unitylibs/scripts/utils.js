@@ -29,8 +29,8 @@ export function decorateArea(area = document) {}
 
 const miloLibs = setLibs('/libs');
 
-const { createTag, getConfig, loadStyle, loadLink, localizeLink } = await import(`${miloLibs}/utils/utils.js`);
-export { createTag, loadStyle, getConfig, loadLink, localizeLink};
+const { createTag, getConfig, loadStyle, loadLink, localizeLink, loadArea } = await import(`${miloLibs}/utils/utils.js`);
+export { createTag, loadStyle, getConfig, loadLink, localizeLink, loadArea};
 const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
 export { decorateDefaultLinkAnalytics };
 

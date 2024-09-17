@@ -8,7 +8,8 @@ import {
   getUnityLibs,
   createTag,
   localizeLink,
-  priorityLoad
+  priorityLoad,
+  loadArea
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -36,20 +37,44 @@ export default class ActionBinder {
     return unityConfig;
   }
 
-  async handlePreloads(params) {
-    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`]
-    if (params[0].showSplashScreen) {
+  async handlePreloads() {
+    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`];
+    if (this.workflowCfg.targetCfg.showSplashScreen) {
+      this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
       parr.push(
         `${getLibs()}/blocks/fragment/fragment.js`,
+        `${getLibs()}/blocks/text/text.js`,
+        `${getLibs()}/blocks/text/text.css`,
+        `${getLibs()}/blocks/video/video.js`,
+        `${getLibs()}/blocks/video/video.css`,
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
-        `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`)
+        `${this.splashFragmentLink}.plain.html`);
     }
     await priorityLoad(parr);
   }
+  
+  updateProgressBar(layer, percentage) {
+    const p = Math.min(percentage, 100);
+    const spb = layer.querySelector('.spectrum-ProgressBar');
+    spb.setAttribute('value', p);
+    spb.setAttribute('aria-valuenow', p);
+    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
+    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
+  }
+
+  createProgressBar() {
+    const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spectrum-ProgressBar--sideLabel" value="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+    <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
+    <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
+    <div class="spectrum-ProgressBar-track">
+      <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
+    </div>
+    </div>`;
+    const layer = createTag('div', { class: 'progress-holder' }, pdom);
+    return layer;
+  }
 
   async acrobatActionMaps(values, files) {
-    await this.handlePreloads(values);
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
@@ -65,7 +90,7 @@ export default class ActionBinder {
           await this.continueInApp();
           break;
         case value.actionType == 'interrupt':
-          await this.cancelAcrobatOperation(values);
+          await this.cancelAcrobatOperation();
         default:
           break;
       }
@@ -84,6 +109,9 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
+          el.addEventListener('dragenter', async (ev) => {
+            await this.handlePreloads();
+          }, { once: true });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'drop' } }));
@@ -92,6 +120,9 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'INPUT':
+          el.addEventListener('click', async (ev) => {
+            await this.handlePreloads();
+          }, { once: true });
           el.addEventListener('change', async (e) => {
             this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'change' } }));
             const files = this.extractFiles(e);
@@ -183,7 +214,6 @@ export default class ActionBinder {
     ));
     await Promise.all(this.promiseStack)
     .then((resArr) => {
-      this.progressUpdater(this.splashScreenEl, 100);
       const response = resArr[resArr.length - 1];
       if (!response?.url) throw new Error("Error connecting to App");
       window.location.href = response.url;
@@ -194,8 +224,8 @@ export default class ActionBinder {
     });
   }
 
-  async cancelAcrobatOperation(params) {
-    await this.handleSplashScreen(params);
+  async cancelAcrobatOperation() {
+    await this.handleSplashScreen();
     const cancelPromise = Promise.reject(new Error('Operation termination requested.'));
     this.promiseStack.unshift(cancelPromise);
   }
@@ -206,10 +236,10 @@ export default class ActionBinder {
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
     if (!initialize && progressBar?.getAttribute('value') == 100) return;
-    if (initialize) this.progressUpdater(s, 0);
+    if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
       let v = initialize ? 0 : parseInt(progressBar.getAttribute('value'));
-      this.progressUpdater(s, v + i);
+      this.updateProgressBar(s, v + i);
       this.progressBarHandler(s, delay, i);
     }, delay);
   }
@@ -223,24 +253,21 @@ export default class ActionBinder {
     }
   }
 
-  async loadSplashFragment(params) {
-    const { default: init} = await import(`${getLibs()}/blocks/fragment/fragment.js`);
-    const fragmentLink = localizeLink(`${window.location.origin}${params.splashScreenConfig.fragmentLink}`);
-    const a = createTag('a', { href: fragmentLink, class: 'splash-loader'}, fragmentLink);
-    const splashDiv = document.querySelector(params.splashScreenConfig.parentSelector);
-    splashDiv.append(a);
-    await init(a);
-    return splashDiv.querySelector(`.fragment[data-path*="${params.splashScreenConfig.fragmentLink}"`);
+  async loadSplashFragment() {
+    const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
+    const html = await resp.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const sections = doc.querySelectorAll('body > div');
+    const f = createTag('div', { class: 'fragment splash-loader'});
+    f.append(...sections);
+    const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
+    splashDiv.append(f);
+    await loadArea(f);
+    return f;
   }
 
   async handleSplashProgressBar() {
-    await priorityLoad([
-      `${getUnityLibs()}/core/features/progress-bar/progress-bar.css`,
-      `${getUnityLibs()}/core/features/progress-bar/progress-bar.js`
-    ]);
-    const { default: createProgressBar, updateProgressBar: updateProgressBar} = await import(`${getUnityLibs()}/core/features/progress-bar/progress-bar.js`);
-    this.progressUpdater = updateProgressBar;
-    const pb = createProgressBar();
+    const pb = this.createProgressBar();
     this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }
@@ -256,10 +283,10 @@ export default class ActionBinder {
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
-  async handleSplashScreen(params = {}, displayOn = false) {
-    if (!this.splashScreenEl && !params.showSplashScreen) return;
+  async handleSplashScreen(displayOn = false) {
+    if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl) return this.splashVisibilityController(displayOn);
-    this.splashScreenEl = await this.loadSplashFragment(params);
+    this.splashScreenEl = await this.loadSplashFragment();
     if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
     if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleSplashCancel();
     this.splashScreenEl.classList.add('splash-loader', 'show');
@@ -279,6 +306,8 @@ export default class ActionBinder {
   }
 
   async userPdfUpload(params, files) {
+    await this.handleSplashScreen(true);
+    return;
     if (!files || files.length > this.limits.maxNumFiles) return;
     const file = files[0];
     if (!file) return;
@@ -287,7 +316,7 @@ export default class ActionBinder {
     if (!((file.size > minsize) && (file.size <= maxsize))) return;
     let assetData = null;
     try {
-      await this.handleSplashScreen(params, true);
+      await this.handleSplashScreen(true);
       const blobData = await this.getBlobData(file);
       const data = {
         surfaceId: unityConfig.surfaceId, 
@@ -309,7 +338,7 @@ export default class ActionBinder {
       };
       this.operations.push(operationItem);
     } catch (e) {
-      await this.handleSplashScreen(params);
+      await this.handleSplashScreen();
     }
     this.verifyContent(assetData);
   }

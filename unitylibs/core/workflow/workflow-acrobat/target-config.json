@@ -10,14 +10,15 @@
       "maxNumFiles": 1,
       "allowedFileSize": [0, 1000000000]
     },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/drafts/mathuria/fragments/splashscreen",
+      "splashScreenParent": "body"
+    },
     "actionMap": {
       ".verb-wrapper": [
         {
-          "actionType": "drop",
-          "showSplashScreen": true,
-          "splashScreenConfig": {
-            "splashScreenParent": "body"
-          }
+          "actionType": "drop"
         },
         {
           "actionType": "continueInApp"
@@ -25,12 +26,7 @@
       ],
       "#file-upload": [
         {
-          "actionType": "upload",
-          "showSplashScreen": true,
-          "splashScreenConfig": {
-            "fragmentLink": "/drafts/mathuria/fragments/flashscreen",
-            "parentSelector": "body"
-          }
+          "actionType": "upload"
         },
         {
           "actionType": "continueInApp"
