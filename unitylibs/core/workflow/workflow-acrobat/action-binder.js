@@ -43,11 +43,7 @@ export default class ActionBinder {
       this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${this.splashFragmentLink}.plain.html`,
-        `${getLibs()}/blocks/text/text.js`,
-        `${getLibs()}/blocks/text/text.css`,
-        `${getLibs()}/blocks/video/video.js`,
-        `${getLibs()}/blocks/video/video.css`);
+        `${this.splashFragmentLink}.plain.html`);
     }
     await priorityLoad(parr);
   }
@@ -57,8 +53,8 @@ export default class ActionBinder {
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
     spb?.setAttribute('aria-valuenow', p);
-    layer?.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
-    layer?.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
+    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
+    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
   }
 
   createProgressBar() {
@@ -73,6 +69,7 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(values, files) {
+    await this.handlePreloads();
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
@@ -107,9 +104,6 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
-          el.addEventListener('dragenter', async (ev) => {
-            await this.handlePreloads();
-          }, { once: true });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'drop' } }));
@@ -118,9 +112,6 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'INPUT':
-          el.addEventListener('click', async (ev) => {
-            await this.handlePreloads();
-          }, { once: true });
           el.addEventListener('change', async (e) => {
             this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'change' } }));
             const files = this.extractFiles(e);
