@@ -250,9 +250,9 @@ export default class ActionBinder {
     f.append(...sections);
     const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
     splashDiv.append(f);
-    await loadArea(f);
     const img = f.querySelector('img');
     if (img) loadImg(img);
+    await loadArea(f);
     return f;
   }
 
