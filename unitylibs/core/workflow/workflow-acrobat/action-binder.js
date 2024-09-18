@@ -3,7 +3,6 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getLibs,
   unityConfig,
   getUnityLibs,
   createTag,
@@ -78,7 +77,7 @@ export default class ActionBinder {
       switch (true) {
         case value.actionType == 'upload' || value.actionType == 'drop':
           this.promiseStack = [];
-          await this.userPdfUpload(value, files);
+          await this.userPdfUpload(files);
           break;
         case value.actionType == 'continueInApp':
           await this.continueInApp();
@@ -122,7 +121,7 @@ export default class ActionBinder {
           break;
       }
     }
-    if (b == this.block) await this.loadSplashFragment();
+    if (b == this.block) this.splashScreenEl = await this.loadSplashFragment();
   }
 
   extractFiles(e) {
@@ -250,7 +249,8 @@ export default class ActionBinder {
     f.append(...sections);
     const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
     splashDiv.append(f);
-    this.splashScreenEl = f;
+    await loadArea(f);
+    return f;
   }
 
   async handleSplashProgressBar() {
@@ -273,7 +273,6 @@ export default class ActionBinder {
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
-      await loadArea(this.splashScreenEl);
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.splashScreenEl.classList.remove('decorate');
@@ -282,19 +281,21 @@ export default class ActionBinder {
   }
 
   verifyContent(assetData) {
-    const finalAssetData = {
-      surfaceId: unityConfig.surfaceId, 
-      targetProduct: this.workflowCfg.productName,
-      assetId: assetData.id,
-    };
-    this.serviceHandler.postCallToService(
-      this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-      { body: JSON.stringify(finalAssetData) },
-      false
-    );
+    try {
+      const finalAssetData = {
+        surfaceId: unityConfig.surfaceId, 
+        targetProduct: this.workflowCfg.productName,
+        assetId: assetData.id,
+      };
+      this.serviceHandler.postCallToService(
+        this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
+        { body: JSON.stringify(finalAssetData) },
+        false
+      );
+    } catch (e) {}
   }
 
-  async userPdfUpload(params, files) {
+  async userPdfUpload(files) {
     if (!files || files.length > this.limits.maxNumFiles) return;
     const file = files[0];
     if (!file) return;
