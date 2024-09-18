@@ -40,7 +40,6 @@ export default class ActionBinder {
   async handlePreloads() {
     const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
-      this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
         `${this.splashFragmentLink}.plain.html`);
@@ -92,7 +91,7 @@ export default class ActionBinder {
     }
   }
 
-  initActionListeners(b = this.block, actMap = this.actionMap) {
+  async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, values] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
@@ -123,6 +122,7 @@ export default class ActionBinder {
           break;
       }
     }
+    if (b == this.block) await this.loadSplashFragment();
   }
 
   extractFiles(e) {
@@ -208,13 +208,13 @@ export default class ActionBinder {
       window.location.href = response.url;
     })
     .catch(() => {
-      this.handleSplashScreen();
+      this.showSplashScreen();
       throw new Error("Error connecting to App");
     });
   }
 
   async cancelAcrobatOperation() {
-    await this.handleSplashScreen();
+    await this.showSplashScreen();
     const cancelPromise = Promise.reject(new Error('Operation termination requested.'));
     this.promiseStack.unshift(cancelPromise);
   }
@@ -234,25 +234,23 @@ export default class ActionBinder {
   }
 
   splashVisibilityController(displayOn) {
-    if (this.splashScreenEl.classList.contains('show')) {
-      this.splashScreenEl.classList.remove('show');
-    } else if (displayOn) {
-      this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
-      this.splashScreenEl.classList.add('show');
-    }
+    if (!displayOn) return this.splashScreenEl.classList.remove('show');
+    this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
+    this.splashScreenEl.classList.add('show');
   }
 
   async loadSplashFragment() {
+    if (!this.workflowCfg.targetCfg.showSplashScreen) return;
+    this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections = doc.querySelectorAll('body > div');
-    const f = createTag('div', { class: 'fragment splash-loader'});
+    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none'});
     f.append(...sections);
     const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
     splashDiv.append(f);
-    await loadArea(f);
-    return f;
+    this.splashScreenEl = f;
   }
 
   async handleSplashProgressBar() {
@@ -261,7 +259,7 @@ export default class ActionBinder {
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }
 
-  handleSplashCancel() {
+  handleOperationCancel() {
     const actMap = {
       'a.con-button[href*="#_cancel"]': [
         {
@@ -272,13 +270,15 @@ export default class ActionBinder {
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
-  async handleSplashScreen(displayOn = false) {
+  async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen) return;
-    if (this.splashScreenEl) return this.splashVisibilityController(displayOn);
-    this.splashScreenEl = await this.loadSplashFragment();
-    if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
-    if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleSplashCancel();
-    this.splashScreenEl.classList.add('splash-loader', 'show');
+    if (this.splashScreenEl.classList.contains('decorate')) {
+      await loadArea(this.splashScreenEl);
+      if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
+      if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
+      this.splashScreenEl.classList.remove('decorate');
+    }
+    this.splashVisibilityController(displayOn);
   }
 
   verifyContent(assetData) {
@@ -303,7 +303,7 @@ export default class ActionBinder {
     if (!((file.size > minsize) && (file.size <= maxsize))) return;
     let assetData = null;
     try {
-      await this.handleSplashScreen(true);
+      await this.showSplashScreen(true);
       const blobData = await this.getBlobData(file);
       const data = {
         surfaceId: unityConfig.surfaceId, 
@@ -325,7 +325,8 @@ export default class ActionBinder {
       };
       this.operations.push(operationItem);
     } catch (e) {
-      await this.handleSplashScreen();
+      console.log(e);
+      await this.showSplashScreen();
     }
     this.verifyContent(assetData);
   }

@@ -23,7 +23,7 @@ body > .splash-loader {
 }
 
 .splash-loader.show {
-  display: flex;
+  display: flex !important;
 }
 
 .splash-loader .text {
