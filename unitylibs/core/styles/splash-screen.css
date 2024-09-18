@@ -110,12 +110,10 @@ body > .splash-loader {
   font-weight: 700;
 }
 
-@media screen and (max-width: 600px) {
-  .splash-loader .text .icon-area img,
-  .splash-loader .text video {
-    width: 104px;
-    height: auto;
-  }
+.splash-loader .text .icon-area img,
+.splash-loader .text video {
+  width: 104px;
+  height: auto;
 }
 
 @media screen and (min-width: 600px) {
