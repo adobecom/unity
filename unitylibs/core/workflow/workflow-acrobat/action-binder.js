@@ -8,7 +8,8 @@ import {
   createTag,
   localizeLink,
   priorityLoad,
-  loadArea
+  loadArea,
+  loadImg
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -250,6 +251,8 @@ export default class ActionBinder {
     const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
     splashDiv.append(f);
     await loadArea(f);
+    const img = f.querySelector('img');
+    if (img) loadImg(img);
     return f;
   }
 
