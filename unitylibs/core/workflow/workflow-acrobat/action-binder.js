@@ -9,8 +9,9 @@ import {
   localizeLink,
   priorityLoad,
   loadArea,
-  loadImg
+  loadImg,
 } from '../../../scripts/utils.js';
+import getError from '../../../scripts/errors.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
@@ -42,11 +43,12 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${this.splashFragmentLink}.plain.html`);
+        `${this.splashFragmentLink}.plain.html`,
+      );
     }
     await priorityLoad(parr);
   }
-  
+
   updateProgressBar(layer, percentage) {
     const p = Math.min(percentage, 100);
     const spb = layer.querySelector('.spectrum-ProgressBar');
@@ -76,15 +78,16 @@ export default class ActionBinder {
     );
     for (const value of values) {
       switch (true) {
-        case value.actionType == 'upload' || value.actionType == 'drop':
+        case value.actionType === 'fillsign':
           this.promiseStack = [];
-          await this.userPdfUpload(files);
+          await this.fillsign(files);
           break;
-        case value.actionType == 'continueInApp':
+        case value.actionType === 'continueInApp':
           await this.continueInApp();
           break;
-        case value.actionType == 'interrupt':
+        case value.actionType === 'interrupt':
           await this.cancelAcrobatOperation();
+          break;
         default:
           break;
       }
@@ -122,7 +125,7 @@ export default class ActionBinder {
           break;
       }
     }
-    if (b == this.block) this.splashScreenEl = await this.loadSplashFragment();
+    if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
   }
 
   extractFiles(e) {
@@ -142,11 +145,34 @@ export default class ActionBinder {
     return files;
   }
 
+  dispatchErrorToast(code) {
+    const message = code in this.workflowCfg.errors
+      ? this.workflowCfg.errors[code]
+      : getError(this.workflowCfg.enabledFeatures[0], code);
+    // TODO: send default error message if message is '' (ie. error file fails to load)
+    this.block.dispatchEvent(new CustomEvent(
+      unityConfig.errorToastEvent,
+      { detail: { code, message } },
+    ));
+  }
+
+  async fillsign(files) {
+    if (!files || files.length > this.limits.maxNumFiles) {
+      this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      return;
+    }
+    const file = files[0];
+    if (!file) return;
+    this.singleFileUpload(file);
+  }
+
   async getBlobData(file) {
     const objUrl = URL.createObjectURL(file);
     const response = await fetch(objUrl);
     if (!response.ok) {
-      throw new Error(`Failed to fetch blob: ${response.statusText}`);
+      const error = new Error();
+      error.status = response.status;
+      throw error;
     }
     const blob = await response.blob();
     URL.revokeObjectURL(objUrl);
@@ -200,17 +226,18 @@ export default class ActionBinder {
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
-    ));
+      ),
+    );
     await Promise.all(this.promiseStack)
-    .then((resArr) => {
-      const response = resArr[resArr.length - 1];
-      if (!response?.url) throw new Error("Error connecting to App");
-      window.location.href = response.url;
-    })
-    .catch(() => {
-      this.showSplashScreen();
-      throw new Error("Error connecting to App");
-    });
+      .then((resArr) => {
+        const response = resArr[resArr.length - 1];
+        if (!response?.url) throw new Error('Error connecting to App');
+        window.location.href = response.url;
+      })
+      .catch((e) => {
+        this.showSplashScreen();
+        this.dispatchErrorToast('verb_upload_error_generic');
+      });
   }
 
   async cancelAcrobatOperation() {
@@ -224,10 +251,10 @@ export default class ActionBinder {
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (!initialize && progressBar?.getAttribute('value') == 100) return;
+    if (!initialize && progressBar?.getAttribute('value') === 100) return;
     if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
-      let v = initialize ? 0 : parseInt(progressBar.getAttribute('value'));
+      const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       this.updateProgressBar(s, v + i);
       this.progressBarHandler(s, delay, i);
     }, delay);
@@ -246,7 +273,7 @@ export default class ActionBinder {
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections = doc.querySelectorAll('body > div');
-    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none'});
+    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
     f.append(...sections);
     const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
     splashDiv.append(f);
@@ -263,13 +290,7 @@ export default class ActionBinder {
   }
 
   handleOperationCancel() {
-    const actMap = {
-      'a.con-button[href*="#_cancel"]': [
-        {
-          "actionType": "interrupt"
-        }
-      ]
-    }
+    const actMap = { 'a.con-button[href*="#_cancel"]': [{ actionType: 'interrupt' }] };
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
@@ -286,31 +307,38 @@ export default class ActionBinder {
   verifyContent(assetData) {
     try {
       const finalAssetData = {
-        surfaceId: unityConfig.surfaceId, 
+        surfaceId: unityConfig.surfaceId,
         targetProduct: this.workflowCfg.productName,
         assetId: assetData.id,
       };
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         { body: JSON.stringify(finalAssetData) },
-        false
       );
-    } catch (e) {}
+    } catch (e) {
+      this.dispatchErrorToast('verb_upload_error_generic');
+    }
   }
 
-  async userPdfUpload(files) {
-    if (!files || files.length > this.limits.maxNumFiles) return;
-    const file = files[0];
-    if (!file) return;
-    if (file.type != 'application/pdf') return;
-    const [minsize, maxsize] = this.limits.allowedFileSize;
-    if (!((file.size > minsize) && (file.size <= maxsize))) return;
+  async singleFileUpload(file) {
+    if (file.type !== 'application/pdf') {
+      this.dispatchErrorToast('verb_upload_error_unsupported_type');
+      return;
+    }
+    if (!file.size) {
+      this.dispatchErrorToast('verb_upload_error_empty_file');
+      return;
+    }
+    if (file.size > this.limits.maxFileSize) {
+      this.dispatchErrorToast('verb_upload_error_file_too_large');
+      return;
+    }
     let assetData = null;
     try {
       await this.showSplashScreen(true);
       const blobData = await this.getBlobData(file);
       const data = {
-        surfaceId: unityConfig.surfaceId, 
+        surfaceId: unityConfig.surfaceId,
         targetProduct: this.workflowCfg.productName,
         name: file.name,
         size: file.size,
@@ -329,8 +357,10 @@ export default class ActionBinder {
       };
       this.operations.push(operationItem);
     } catch (e) {
-      console.log(e);
       await this.showSplashScreen();
+      if (!e.status || e.status !== 409) this.dispatchErrorToast('verb_upload_error_generic');
+      else this.dispatchErrorToast('verb_upload_error_duplicate_asset');
+      return;
     }
     this.verifyContent(assetData);
   }

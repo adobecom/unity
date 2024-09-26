@@ -6,7 +6,6 @@ import {
   unityConfig,
   defineDeviceByScreenSize,
   getConfig,
-  loadLink,
   priorityLoad,
 } from '../../scripts/utils.js';
 
@@ -261,6 +260,7 @@ class WfInitiator {
       supportedFeatures: workflowCfg[wfName].sfList,
       enabledFeatures: [],
       featureCfg: [],
+      errors: {},
     };
   }
 
@@ -274,6 +274,8 @@ class WfInitiator {
       if (supportedFeatures.has(fn)) {
         this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
+      } else if (fn.includes('error')) {
+        this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       }
     });
   }

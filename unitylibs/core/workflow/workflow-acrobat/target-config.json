@@ -8,7 +8,7 @@
     "target": ".verb-wrapper .verb-container",
     "limits": {
       "maxNumFiles": 1,
-      "allowedFileSize": [0, 1000000000]
+      "maxFileSize": 1000000000
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
@@ -18,7 +18,7 @@
     "actionMap": {
       ".verb-wrapper": [
         {
-          "actionType": "drop"
+          "actionType": "fillsign"
         },
         {
           "actionType": "continueInApp"
@@ -26,7 +26,7 @@
       ],
       "#file-upload": [
         {
-          "actionType": "upload"
+          "actionType": "fillsign"
         },
         {
           "actionType": "continueInApp"
