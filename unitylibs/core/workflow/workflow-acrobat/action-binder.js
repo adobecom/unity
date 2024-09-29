@@ -69,7 +69,7 @@ export default class ActionBinder {
     return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
-  async acrobatActionMaps(values, files, event) {
+  async acrobatActionMaps(values, files, eventName) {
     await this.handlePreloads();
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
@@ -80,7 +80,7 @@ export default class ActionBinder {
       switch (true) {
         case value.actionType === 'fillsign':
           this.promiseStack = [];
-          await this.fillsign(files, event);
+          await this.fillsign(files, eventName);
           break;
         case value.actionType === 'continueInApp':
           await this.continueInApp();
@@ -154,14 +154,14 @@ export default class ActionBinder {
     ));
   }
 
-  async fillsign(files, event) {
+  async fillsign(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
     const file = files[0];
     if (!file) return;
-    this.singleFileUpload(file, event);
+    this.singleFileUpload(file, eventName);
   }
 
   async getBlobData(file) {
