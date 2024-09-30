@@ -160,7 +160,7 @@ export default class ActionBinder {
     }
     const file = files[0];
     if (!file) return;
-    this.singleFileUpload(file, eventName);
+    await this.singleFileUpload(file, eventName);
   }
 
   async getBlobData(file) {
