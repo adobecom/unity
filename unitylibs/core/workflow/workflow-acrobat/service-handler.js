@@ -36,6 +36,7 @@ export default class ServiceHandler {
       error.status = response.status;
       throw error;
     }
+    if (response.headers.get('Content-Length') === '0') return {};
     const resJson = await response.json();
     return resJson;
   }

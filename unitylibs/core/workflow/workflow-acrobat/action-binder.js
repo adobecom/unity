@@ -149,10 +149,9 @@ export default class ActionBinder {
     const message = code in this.workflowCfg.errors
       ? this.workflowCfg.errors[code]
       : await getError(this.workflowCfg.enabledFeatures[0], code);
-    // TODO: send default error message if message is '' (ie. error file fails to load)
     this.block.dispatchEvent(new CustomEvent(
       unityConfig.errorToastEvent,
-      { detail: { code, message } },
+      { detail: { code, message: message || 'Unable to process the request'} },
     ));
   }
 
