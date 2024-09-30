@@ -69,7 +69,7 @@ export default class ActionBinder {
     return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
-  async acrobatActionMaps(values, files) {
+  async acrobatActionMaps(values, files, eventName) {
     await this.handlePreloads();
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
@@ -80,7 +80,7 @@ export default class ActionBinder {
       switch (true) {
         case value.actionType === 'fillsign':
           this.promiseStack = [];
-          await this.fillsign(files);
+          await this.fillsign(files, eventName);
           break;
         case value.actionType === 'continueInApp':
           await this.continueInApp();
@@ -108,16 +108,14 @@ export default class ActionBinder {
         case el.nodeName === 'DIV':
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
-            this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'drop' } }));
             const files = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files);
+            await this.acrobatActionMaps(values, files, 'drop');
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
-            this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'change' } }));
             const files = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files);
+            await this.acrobatActionMaps(values, files, 'change');
             e.target.value = '';
           });
           break;
@@ -156,14 +154,14 @@ export default class ActionBinder {
     ));
   }
 
-  async fillsign(files) {
+  async fillsign(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
     const file = files[0];
     if (!file) return;
-    this.singleFileUpload(file);
+    this.singleFileUpload(file, eventName);
   }
 
   async getBlobData(file) {
@@ -320,7 +318,7 @@ export default class ActionBinder {
     }
   }
 
-  async singleFileUpload(file) {
+  async singleFileUpload(file, eventName) {
     if (file.type !== 'application/pdf') {
       this.dispatchErrorToast('verb_upload_error_unsupported_type');
       return;
@@ -333,6 +331,16 @@ export default class ActionBinder {
       this.dispatchErrorToast('verb_upload_error_file_too_large');
       return;
     }
+    const fileData = {
+      type: file.type,
+      size: file.size,
+      count: 1,
+    };
+    this.block.dispatchEvent(
+      new CustomEvent(unityConfig.trackAnalyticsEvent, {
+        detail: { event: eventName, data: fileData },
+      }),
+    );
     let assetData = null;
     try {
       await this.showSplashScreen(true);
@@ -348,6 +356,7 @@ export default class ActionBinder {
         this.acrobatApiConfig.acrobatEndpoint.createAsset,
         { body: JSON.stringify(data) },
       );
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading' } }));
       await this.chunkPdf(assetData, blobData, file.type);
       const operationItem = {
         assetId: assetData.id,
@@ -363,5 +372,7 @@ export default class ActionBinder {
       return;
     }
     this.verifyContent(assetData);
+    // TODO: Call to check for asset metadata of uploaded file goes here
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 }
