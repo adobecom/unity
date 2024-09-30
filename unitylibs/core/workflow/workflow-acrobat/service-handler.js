@@ -24,21 +24,19 @@ export default class ServiceHandler {
     };
   }
 
-  async postCallToService(api, options, handleError = true) {
+  async postCallToService(api, options) {
     const postOpts = {
       method: 'POST',
       ...this.getHeaders(),
       ...options,
     };
-    try {
-      const response = await fetch(api, postOpts);
-      if (response.status !== 200) throw new Error('Error connecting with the service.');
-      const resJson = await response.json();
-      return resJson;
-    } catch (err) {
-      if (handleError) throw new Error('Error connecting with the service.');
+    const response = await fetch(api, postOpts);
+    const error = new Error();
+    if (response.status !== 200) {
+      error.status = response.status;
+      throw error;
     }
+    const resJson = await response.json();
+    return resJson;
   }
-
-  // TODO: Define PDF chunking function
 }
