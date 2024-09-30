@@ -145,10 +145,10 @@ export default class ActionBinder {
     return files;
   }
 
-  dispatchErrorToast(code) {
+  async dispatchErrorToast(code) {
     const message = code in this.workflowCfg.errors
       ? this.workflowCfg.errors[code]
-      : getError(this.workflowCfg.enabledFeatures[0], code);
+      : await getError(this.workflowCfg.enabledFeatures[0], code);
     // TODO: send default error message if message is '' (ie. error file fails to load)
     this.block.dispatchEvent(new CustomEvent(
       unityConfig.errorToastEvent,
@@ -158,7 +158,7 @@ export default class ActionBinder {
 
   async fillsign(files) {
     if (!files || files.length > this.limits.maxNumFiles) {
-      this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
     const file = files[0];
@@ -234,9 +234,9 @@ export default class ActionBinder {
         if (!response?.url) throw new Error('Error connecting to App');
         window.location.href = response.url;
       })
-      .catch((e) => {
-        this.showSplashScreen();
-        this.dispatchErrorToast('verb_upload_error_generic');
+      .catch(async (e) => {
+        await this.showSplashScreen();
+        await this.dispatchErrorToast('verb_upload_error_generic');
       });
   }
 
@@ -304,7 +304,7 @@ export default class ActionBinder {
     this.splashVisibilityController(displayOn);
   }
 
-  verifyContent(assetData) {
+  async verifyContent(assetData) {
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
@@ -316,21 +316,21 @@ export default class ActionBinder {
         { body: JSON.stringify(finalAssetData) },
       );
     } catch (e) {
-      this.dispatchErrorToast('verb_upload_error_generic');
+      await this.dispatchErrorToast('verb_upload_error_generic');
     }
   }
 
   async singleFileUpload(file) {
     if (file.type !== 'application/pdf') {
-      this.dispatchErrorToast('verb_upload_error_unsupported_type');
+      await this.dispatchErrorToast('verb_upload_error_unsupported_type');
       return;
     }
     if (!file.size) {
-      this.dispatchErrorToast('verb_upload_error_empty_file');
+      await this.dispatchErrorToast('verb_upload_error_empty_file');
       return;
     }
     if (file.size > this.limits.maxFileSize) {
-      this.dispatchErrorToast('verb_upload_error_file_too_large');
+      await this.dispatchErrorToast('verb_upload_error_file_too_large');
       return;
     }
     let assetData = null;
@@ -358,8 +358,8 @@ export default class ActionBinder {
       this.operations.push(operationItem);
     } catch (e) {
       await this.showSplashScreen();
-      if (!e.status || e.status !== 409) this.dispatchErrorToast('verb_upload_error_generic');
-      else this.dispatchErrorToast('verb_upload_error_duplicate_asset');
+      if (!e.status || e.status !== 409) await this.dispatchErrorToast('verb_upload_error_generic');
+      else await this.dispatchErrorToast('verb_upload_error_duplicate_asset');
       return;
     }
     this.verifyContent(assetData);
