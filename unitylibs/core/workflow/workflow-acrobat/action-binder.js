@@ -370,7 +370,7 @@ export default class ActionBinder {
       else await this.dispatchErrorToast('verb_upload_error_duplicate_asset');
       return;
     }
-    this.verifyContent(assetData);
+    await this.verifyContent(assetData);
     // TODO: Call to check for asset metadata of uploaded file goes here
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
