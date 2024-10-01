@@ -12,7 +12,7 @@
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/drafts/mathuria/fragments/splashscreen",
+      "fragmentLink": "/acrobat/online/test/fragments/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
