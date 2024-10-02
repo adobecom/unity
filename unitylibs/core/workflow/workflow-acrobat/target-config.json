@@ -8,7 +8,8 @@
     "target": ".verb-wrapper .verb-container",
     "limits": {
       "maxNumFiles": 1,
-      "maxFileSize": 1000000000
+      "maxFileSize": 1000000000,
+      "maxNumPages": 100
     },
     "showSplashScreen": true,
     "splashScreenConfig": {

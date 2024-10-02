@@ -34,6 +34,7 @@ export default class ActionBinder {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
     };
     return unityConfig;
   }
@@ -149,7 +150,7 @@ export default class ActionBinder {
       : await getError(this.workflowCfg.enabledFeatures[0], code);
     this.block.dispatchEvent(new CustomEvent(
       unityConfig.errorToastEvent,
-      { detail: { code, message: message || 'Unable to process the request'} },
+      { detail: { code, message: message || 'Unable to process the request' } },
     ));
   }
 
@@ -308,12 +309,50 @@ export default class ActionBinder {
         targetProduct: this.workflowCfg.productName,
         assetId: assetData.id,
       };
-      this.serviceHandler.postCallToService(
+      const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         { body: JSON.stringify(finalAssetData) },
       );
+      if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
+        await this.showSplashScreen();
+        await this.dispatchErrorToast('verb_upload_error_generic');
+        return false;
+      }
+      const intervalDuration = 500;
+      const totalDuration = 5000;
+      let metadata = {};
+      let intervalId;
+      let requestInProgress = false;
+      return new Promise((resolve) => {
+        intervalId = setInterval(async () => {
+          if (requestInProgress) return;
+          requestInProgress = true;
+          metadata = await this.serviceHandler.getCallToService(
+            this.acrobatApiConfig.acrobatEndpoint.getMetadata,
+            { id: assetData.id },
+          );
+          requestInProgress = false;
+          if (metadata?.numPages !== undefined) {
+            clearInterval(intervalId);
+            if (metadata.numPages > this.limits.maxNumPages) {
+              await this.showSplashScreen();
+              await this.dispatchErrorToast('verb_upload_error_max_page_count');
+              resolve(false);
+            } else {
+              resolve(true);
+            }
+            return;
+          }
+        }, intervalDuration);
+        setTimeout(() => {
+          clearInterval(intervalId);
+          resolve(true);
+        }, totalDuration);
+      });
     } catch (e) {
+      await this.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic');
+      return false;
     }
   }
 
@@ -336,9 +375,10 @@ export default class ActionBinder {
       count: 1,
     };
     this.block.dispatchEvent(
-      new CustomEvent(unityConfig.trackAnalyticsEvent, {
-        detail: { event: eventName, data: fileData },
-      }),
+      new CustomEvent(
+        unityConfig.trackAnalyticsEvent,
+        { detail: { event: eventName, data: fileData } },
+      ),
     );
     let assetData = null;
     try {
@@ -370,8 +410,8 @@ export default class ActionBinder {
       else await this.dispatchErrorToast('verb_upload_error_duplicate_asset');
       return;
     }
-    await this.verifyContent(assetData);
-    // TODO: Call to check for asset metadata of uploaded file goes here
+    const verified = await this.verifyContent(assetData);
+    if (!verified) return;
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 }
