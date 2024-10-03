@@ -265,6 +265,14 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
   unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
 }
 
+function updateQueryParam(url, params) {
+  const parsedUrl = new URL(url);
+  Object.entries(params).forEach(([key, value]) => {
+    parsedUrl.searchParams.set(key, value);
+  });
+  return parsedUrl;
+}
+
 async function changebg(cfg, featureName) {
   const { unityWidget, wfDetail } = cfg;
   const { authorCfg } = wfDetail[featureName];
@@ -278,9 +286,10 @@ async function changebg(cfg, featureName) {
   [...bgOptions].forEach((o) => {
     let thumbnail = null;
     let bgImg = null;
-    [thumbnail, bgImg] = o.querySelectorAll('img');
-    if (!bgImg) bgImg = thumbnail;
+    bgImg = o.querySelector('img');
+    thumbnail = bgImg;
     thumbnail.dataset.backgroundImg = bgImg.src;
+    thumbnail.setAttribute('src', updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
     const a = createTag('a', { href: '#', class: 'changebg-option' }, thumbnail);
     bgSelectorTray.append(a);
     a.addEventListener('click', async (evt) => {
