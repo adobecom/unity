@@ -406,8 +406,21 @@ export default class ActionBinder {
       this.operations.push(operationItem);
     } catch (e) {
       await this.showSplashScreen();
-      if (!e.status || e.status !== 409) await this.dispatchErrorToast('verb_upload_error_generic');
-      else await this.dispatchErrorToast('verb_upload_error_duplicate_asset');
+      switch (e.status) {
+        case 409:
+          await this.dispatchErrorToast('verb_upload_error_duplicate_asset');
+          break;
+        case 401:
+          await this.dispatchErrorToast(e.message === 'notentitled' ? 'verb_upload_error_no_storage_provision' : 'verb_upload_error_generic');
+          break;
+        case 403:
+          if (e.message === 'quotaexceeded') await this.dispatchErrorToast('verb_upload_error_max_quota_exceeded');
+          else await this.dispatchErrorToast('verb_upload_error_no_storage_provision');
+          break;
+        default:
+          await this.dispatchErrorToast('verb_upload_error_generic');
+          break;
+      }
       return;
     }
     const verified = await this.verifyContent(assetData);

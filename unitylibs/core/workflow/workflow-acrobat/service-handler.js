@@ -27,13 +27,19 @@ export default class ServiceHandler {
   async fetchFromService(url, options) {
     const response = await fetch(url, options);
     const error = new Error();
+    const contentLength = response.headers.get('Content-Length');
     if (response.status !== 200) {
+      if (contentLength !== '0') {
+        const resJson = await response.json();
+        ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
+          if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
+        });
+      }
       error.status = response.status;
       throw error;
     }
-    if (response.headers.get('Content-Length') === '0') return {};
-    const resJson = await response.json();
-    return resJson;
+    if (contentLength === '0') return {};
+    return response.json();
   }
 
   async postCallToService(api, options) {
