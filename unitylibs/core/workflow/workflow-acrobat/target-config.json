@@ -13,7 +13,7 @@
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/acrobat/online/test/fragments/splashscreen",
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
