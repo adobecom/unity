@@ -1,5 +1,5 @@
 body > .splash-loader {
-  z-index: 11;
+  z-index: 10000000;
 }
 
 .splash-loader {
