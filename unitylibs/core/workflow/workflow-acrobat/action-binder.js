@@ -145,7 +145,7 @@ export default class ActionBinder {
   }
 
   async dispatchErrorToast(code, showError = true) {
-    if (!showError) {
+    if (showError) {
       const message = code in this.workflowCfg.errors
         ? this.workflowCfg.errors[code]
         : await getError(this.workflowCfg.enabledFeatures[0], code);
