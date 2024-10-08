@@ -226,16 +226,16 @@ export default class ActionBinder {
         { body: JSON.stringify(cOpts) },
       ),
     );
-    await Promise.all(this.promiseStack)
-      .then((resArr) => {
-        const response = resArr[resArr.length - 1];
-        if (!response?.url) throw new Error('Error connecting to App');
-        window.location.href = response.url;
-      })
-      .catch(async (e) => {
-        await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic');
-      });
+    // await Promise.all(this.promiseStack)
+    //   .then((resArr) => {
+    //     const response = resArr[resArr.length - 1];
+    //     if (!response?.url) throw new Error('Error connecting to App');
+    //     window.location.href = response.url;
+    //   })
+    //   .catch(async (e) => {
+    //     await this.showSplashScreen();
+    //     await this.dispatchErrorToast('verb_upload_error_generic');
+    //   });
   }
 
   async cancelAcrobatOperation() {
