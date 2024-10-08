@@ -10,6 +10,7 @@ import {
   loadStyle,
   createTag,
   loadSvgs,
+  getConfig,
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
