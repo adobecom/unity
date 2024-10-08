@@ -323,7 +323,17 @@ export default class ActionBinder {
       let metadata = {};
       let intervalId;
       let requestInProgress = false;
+      let metadataExists = false;
       return new Promise((resolve) => {
+        const handleMetadata = async () => {
+          if (metadata.numPages > this.limits.maxNumPages) {
+            await this.showSplashScreen();
+            await this.dispatchErrorToast('verb_upload_error_max_page_count');
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        }
         intervalId = setInterval(async () => {
           if (requestInProgress) return;
           requestInProgress = true;
@@ -334,19 +344,15 @@ export default class ActionBinder {
           requestInProgress = false;
           if (metadata?.numPages !== undefined) {
             clearInterval(intervalId);
-            if (metadata.numPages > this.limits.maxNumPages) {
-              await this.showSplashScreen();
-              await this.dispatchErrorToast('verb_upload_error_max_page_count');
-              resolve(false);
-            } else {
-              resolve(true);
-            }
-            return;
+            clearTimeout(timeoutId);
+            metadataExists = true;
+            await handleMetadata();
           }
         }, intervalDuration);
-        setTimeout(() => {
+        const timeoutId = setTimeout(async () => {
           clearInterval(intervalId);
-          resolve(true);
+          if (!metadataExists) resolve(true);
+          else await handleMetadata();
         }, totalDuration);
       });
     } catch (e) {
@@ -424,7 +430,10 @@ export default class ActionBinder {
       return;
     }
     const verified = await this.verifyContent(assetData);
-    if (!verified) return;
+    if (!verified) {
+      this.operations = [];
+      return;
+    }
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 }
