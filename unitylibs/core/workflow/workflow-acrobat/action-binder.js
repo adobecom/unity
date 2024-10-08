@@ -266,7 +266,7 @@ export default class ActionBinder {
     }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
-    this.splashScreenEl?.parentElement.classList.add('hide-overflow');
+    this.splashScreenEl.parentElement?.classList.add('hide-overflow');
   }
 
   async loadSplashFragment() {
