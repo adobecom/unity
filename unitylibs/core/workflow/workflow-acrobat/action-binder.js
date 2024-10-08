@@ -272,6 +272,7 @@ export default class ActionBinder {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
+    if (document.querySelector('meta[name="jarvis-chat"]')) f.classList.add('has-jarvis');
     f.append(...sections);
     const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
     splashDiv.append(f);

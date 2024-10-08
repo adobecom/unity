@@ -1,4 +1,8 @@
 body > .splash-loader {
+  z-index: 11;
+}
+
+body > .splash-loader.has-jarvis {
   z-index: 10000000;
 }
 
