@@ -22,6 +22,7 @@ export default class ActionBinder {
     this.progressCircleEl = null;
     this.errorToastEl = null;
     this.psApiConfig = this.getPsApiConfig();
+    this.locale = this.getLocale();
     this.serviceHandler = null;
   }
 
@@ -33,6 +34,14 @@ export default class ActionBinder {
       changeBackground: `${unityConfig.apiEndPoint}/providers/PhotoshopChangeBackground`,
     };
     return unityConfig;
+  }
+
+  getLocale() {
+    const urlLocale = window.location.pathname.split('/')[1];
+    const config = getConfig();
+    const { locales } = config;
+    const locale = Object.entries(locales).find(([key]) => key === urlLocale);
+    return locale ? locale[1].ietf : 'en_US';
   }
 
   hideElement(item, b) {
@@ -323,6 +332,7 @@ export default class ActionBinder {
       assetId: null,
       targetProduct: this.workflowCfg.productName,
       payload: {
+        locale: this.locale,
         finalAssetId: null,
         operations: [],
       },
