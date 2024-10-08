@@ -41,7 +41,7 @@ export default class ActionBinder {
     const config = getConfig();
     const { locales } = config;
     const locale = Object.entries(locales).find(([key]) => key === urlLocale);
-    return locale ? locale.ietf : 'en_US';
+    return locale ? locale[1].ietf : 'en_US';
   }
 
   hideElement(item, b) {
