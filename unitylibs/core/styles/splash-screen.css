@@ -43,6 +43,10 @@ body > .splash-loader {
   width: 100%;
 }
 
+.hide-splash-overflow {
+  overflow: hidden;
+}
+
 .progress-holder .spectrum-ProgressBar {
 	position: relative;
 	display: inline-flex;
