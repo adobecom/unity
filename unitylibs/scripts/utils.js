@@ -148,7 +148,7 @@ export async function priorityLoad(parr) {
   });  
   try {
     console.log('Promises:', promiseArr);
-    await Promise.all(promiseArr);
+    await Promise.all([...promiseArr, timeoutPromise(10000)]);
   } catch (e) {
     console.error('Error in Promise.all:', e);
     throw e;
