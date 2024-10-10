@@ -137,7 +137,11 @@ export async function priorityLoad(parr) {
       promiseArr.push(fetch(p));
     }
   });
+  try {
   await Promise.all(promiseArr);
+  } catch(e) {
+    throw e
+  } 
 }
 
 async function createErrorToast() {
