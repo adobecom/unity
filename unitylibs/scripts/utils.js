@@ -143,7 +143,7 @@ export async function priorityLoad(parr) {
         console.error(`Fetch failed for ${p}:`, err);
         throw err;
       });
-      promiseArr.push(fetchPromise);
+      promiseArr.push([fetchPromise]);
     }
   });  
   try {
