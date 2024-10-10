@@ -126,7 +126,7 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
 
 export async function priorityLoad(parr) {
   const promiseArr = [];
-  
+  const timeoutPromise = '1000';
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
       const pr = new Promise((res, rej) => { 
@@ -149,7 +149,7 @@ export async function priorityLoad(parr) {
   try {
     console.log('Promises:', promiseArr);
     console.log('Is array: '+Array.isArray(promiseArr));
-    await Promise.all(promiseArr);
+    await Promise.all([promiseArr, timeoutPromise]);
   } catch (e) {
     console.error('Error in Promise.all:', e);
     throw e;
