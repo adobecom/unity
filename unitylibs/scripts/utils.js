@@ -138,6 +138,7 @@ export async function priorityLoad(parr) {
     }
   });
   try {
+  console.log('Promises:', promiseArr);
   await Promise.all(promiseArr);
   } catch(e) {
     console.log('Error: '+e.message);
