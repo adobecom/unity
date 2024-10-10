@@ -126,24 +126,33 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
 
 export async function priorityLoad(parr) {
   const promiseArr = [];
+  
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      const pr = new Promise((res) => { loadLink(p, { as: 'script', rel: 'modulepreload', callback: res }); });
+      const pr = new Promise((res, rej) => { 
+        loadLink(p, { as: 'script', rel: 'modulepreload', callback: res }); 
+      });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
-      const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
+      const pr = new Promise((res, rej) => { 
+        loadLink(p, { rel: 'stylesheet', callback: res }); 
+      });
       promiseArr.push(pr);
     } else {
-      promiseArr.push(fetch(p));
+      const fetchPromise = fetch(p).catch(err => {
+        console.error(`Fetch failed for ${p}:`, err);
+        throw err;
+      });
+      promiseArr.push(fetchPromise);
     }
-  });
+  });  
   try {
-  console.log('Promises:', promiseArr);
-  await Promise.all(...promiseArr);
-  } catch(e) {
-    console.log('Error: '+e.message);
-    throw e
-  } 
+    console.log('Promises:', promiseArr);
+    await Promise.all(promiseArr);
+  } catch (e) {
+    console.error('Error in Promise.all:', e);
+    throw e;
+  }
 }
 
 async function createErrorToast() {
