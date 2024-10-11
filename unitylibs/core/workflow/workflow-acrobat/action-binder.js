@@ -144,14 +144,16 @@ export default class ActionBinder {
     return files;
   }
 
-  async dispatchErrorToast(code) {
-    const message = code in this.workflowCfg.errors
-      ? this.workflowCfg.errors[code]
-      : await getError(this.workflowCfg.enabledFeatures[0], code);
-    this.block.dispatchEvent(new CustomEvent(
-      unityConfig.errorToastEvent,
-      { detail: { code, message: message || 'Unable to process the request' } },
-    ));
+  async dispatchErrorToast(code, showError = true, status = null) {
+    if (showError) {
+      const message = code in this.workflowCfg.errors
+        ? this.workflowCfg.errors[code]
+        : await getError(this.workflowCfg.enabledFeatures[0], code);
+      this.block.dispatchEvent(new CustomEvent(
+        unityConfig.errorToastEvent,
+        { detail: { code, message: message || 'Unable to process the request', ...(status !== null && { status }) } },
+      ));
+    }
   }
 
   async fillsign(files, eventName) {
@@ -234,13 +236,16 @@ export default class ActionBinder {
       })
       .catch(async (e) => {
         await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic');
+        await this.dispatchErrorToast('verb_upload_error_generic', e?.showError);
       });
   }
 
   async cancelAcrobatOperation() {
     await this.showSplashScreen();
-    const cancelPromise = Promise.reject(new Error('Operation termination requested.'));
+    const e = new Error();
+    e.message = 'Operation termination requested.';
+    e.showError = false;
+    const cancelPromise = Promise.reject(e);
     this.promiseStack.unshift(cancelPromise);
   }
 
@@ -311,11 +316,12 @@ export default class ActionBinder {
       };
       const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData) },
+        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout(15000)},
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic');
+        this.operations = [];
         return false;
       }
       const intervalDuration = 500;
@@ -357,7 +363,8 @@ export default class ActionBinder {
       });
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic');
+      await this.dispatchErrorToast('verb_upload_error_generic', e?.showError, e?.status);
+      this.operations = [];
       return false;
     }
   }
@@ -414,17 +421,17 @@ export default class ActionBinder {
       await this.showSplashScreen();
       switch (e.status) {
         case 409:
-          await this.dispatchErrorToast('verb_upload_error_duplicate_asset');
+          await this.dispatchErrorToast('verb_upload_error_duplicate_asset', e.showError);
           break;
         case 401:
-          await this.dispatchErrorToast(e.message === 'notentitled' ? 'verb_upload_error_no_storage_provision' : 'verb_upload_error_generic');
+          await this.dispatchErrorToast(e.message === 'notentitled' ? 'verb_upload_error_no_storage_provision' : 'verb_upload_error_generic', e.showError);
           break;
         case 403:
-          if (e.message === 'quotaexceeded') await this.dispatchErrorToast('verb_upload_error_max_quota_exceeded');
-          else await this.dispatchErrorToast('verb_upload_error_no_storage_provision');
+          if (e.message === 'quotaexceeded') await this.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.showError);
+          else await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.showError);
           break;
         default:
-          await this.dispatchErrorToast('verb_upload_error_generic');
+          await this.dispatchErrorToast('verb_upload_error_generic', e.showError, e.status);
           break;
       }
       return;
