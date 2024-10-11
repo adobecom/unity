@@ -160,7 +160,7 @@ export async function priorityLoad(parr) {
     }
   });  
   try {
-    await promiseAllWithTimeout(promiseArr, 15000)
+    await promiseAllWithTimeout(promiseArr, 20000)
     .then(results => console.log(results))
     .catch(error => console.error(error.message));
   } catch (e) {
