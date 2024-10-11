@@ -152,20 +152,25 @@ export async function priorityLoad(parr) {
       });
       promiseArr.push(pr);
     } else {
-      const fetchPromise = fetch(p).catch(err => {
-        console.error(`Fetch failed for ${p}:`, err);
-        throw err;
-      });
+      const fetchPromise = fetch(p, { cache: 'no-cache' })
+        .then(res => {
+          if (!res.ok) throw new Error(`Network response was not ok: ${res.statusText}`);
+          return res;
+        })
+        .catch(err => {
+          console.error(`Fetch failed for ${p}:`, err);
+          throw err;
+        });
       promiseArr.push(fetchPromise);
     }
   });  
+
   try {
-    await promiseAllWithTimeout(promiseArr, 20000)
-    .then(results => console.log(results))
-    .catch(error => console.error(error.message));
-  } catch (e) {
-    console.error('Error in Promise.all:', e);
-    throw e;
+    await Promise.all(promiseArr);
+    console.log('All promises resolved');
+  } catch (error) {
+    console.error('Error in Promise.all:', error);
+    throw error; // Optional: rethrow or handle as needed
   }
 }
 
