@@ -125,29 +125,21 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
 }
 
 function promiseAllWithTimeout(promises, timeout) {
-    return new Promise((resolve, reject) => {
-        // Create a timeout promise
-        const timeoutPromise = new Promise((_, rejectTimeout) => {
-            setTimeout(() => {
-                rejectTimeout(new Error('Promise timed out'));
-            }, timeout);
-        });
-
-        // Use Promise.all to wait for both the original promises and the timeout
-        Promise.all(promises)
-            .then(resolve)  // Resolve if all promises complete successfully
-            .catch(reject); // Reject if any promise fails
-
-        // Race the timeout against the promises
-        Promise.race([Promise.all(promises), timeoutPromise])
-            .then(resolve)
-            .catch(reject);
+  return new Promise((resolve, reject) => {
+    const timeoutPromise = new Promise((_, rejectTimeout) => {
+      setTimeout(() => {
+        rejectTimeout(new Error('Promise timed out'));
+      }, timeout);
     });
+    Promise.all(promises).then(resolve).catch(reject);
+    Promise.race([Promise.all(promises), timeoutPromise])
+      .then(resolve)
+      .catch(reject);
+  });
 }
 
 export async function priorityLoad(parr) {
   const promiseArr = [];
-  const timeoutPromise = '1000';
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
       const pr = new Promise((res, rej) => { 
@@ -170,10 +162,9 @@ export async function priorityLoad(parr) {
   try {
     console.log('Promises:', promiseArr);
     console.log('Is array: '+Array.isArray(promiseArr));
-    await promiseAllWithTimeout(promiseArr, 1200)
+    await promiseAllWithTimeout(promiseArr, 15000)
     .then(results => console.log(results))
     .catch(error => console.error(error.message));
-    //await Promise.all([promiseArr, timeoutPromise]);
   } catch (e) {
     console.error('Error in Promise.all:', e);
     throw e;
