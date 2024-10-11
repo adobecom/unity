@@ -160,8 +160,6 @@ export async function priorityLoad(parr) {
     }
   });  
   try {
-    console.log('Promises:', promiseArr);
-    console.log('Is array: '+Array.isArray(promiseArr));
     await promiseAllWithTimeout(promiseArr, 15000)
     .then(results => console.log(results))
     .catch(error => console.error(error.message));
