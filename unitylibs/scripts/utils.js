@@ -167,35 +167,16 @@ export async function priorityLoad(parr) {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      const pr = new Promise((res, rej) => { 
-        loadLinks(p, { as: 'script', rel: 'modulepreload', callback: res }); 
-      });
+      const pr = new Promise((res) => { loadLinks(p, { as: 'script', rel: 'modulepreload', callback: res }); });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
-      const pr = new Promise((res, rej) => { 
-        loadLinks(p, { rel: 'stylesheet', callback: res }); 
-      });
+      const pr = new Promise((res) => { loadLinks(p, { rel: 'stylesheet', callback: res }); });
       promiseArr.push(pr);
     } else {
-      const fetchPromise = fetch(p, { cache: 'no-cache' })
-        .then(res => {
-          if (!res.ok) throw new Error(`Network response was not ok: ${res.statusText}`);
-          return res;
-        })
-        .catch(err => {
-          console.error(`Fetch failed for ${p}:`, err);
-          throw err;
-        });
-      promiseArr.push(fetchPromise);
+      promiseArr.push(fetch(p));
     }
-  });  
-  try {
-    await Promise.all(promiseArr);
-    console.log('All promises resolved');
-  } catch (error) {
-    console.error('Error in Promise.all:', error);
-    throw error;
-  }
+  });
+  await Promise.all(promiseArr);
 }
 
 async function createErrorToast() {
