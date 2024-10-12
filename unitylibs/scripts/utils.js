@@ -148,6 +148,7 @@ export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority 
       element = document.body.querySelector(`script[src="${href}"]`) || document.createElement('script');
       element.src = href;
       element.async = true;
+      element.type = 'module';
       element.onload = () => {
         if (callback) callback('load');
         resolve('JS loaded');
