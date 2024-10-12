@@ -168,10 +168,10 @@ export async function priorityLoad(parr) {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      const pr = new Promise((res) => { loadLinks(p, { as: 'script', rel: 'modulepreload', callback: res }); });
+      const pr = loadLinks(p, { as: 'script', rel: 'modulepreload' });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
-      const pr = new Promise((res) => { loadLinks(p, { rel: 'stylesheet', callback: res }); });
+      const pr = loadLinks(p, { rel: 'stylesheet' });
       promiseArr.push(pr);
     } else {
       promiseArr.push(fetch(p));
