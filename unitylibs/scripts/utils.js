@@ -124,40 +124,31 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   return actionBtn;
 }
 
-function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
+export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
   return new Promise((resolve, reject) => {
-    let element;
-    if (rel === 'stylesheet' || as === 'style') {
-      element = document.head.querySelector(`link[href="${href}"]`) || document.createElement('link');
-      element.setAttribute('rel', rel);
-      if (as) element.setAttribute('as', as);
-      if (crossorigin) element.setAttribute('crossorigin', crossorigin);
-      if (fetchpriority) element.setAttribute('fetchpriority', fetchpriority);
-      element.setAttribute('href', href);
-      element.onload = () => {
-        if (callback) callback('load');
-        resolve('CSS loaded');
+    let link = document.head.querySelector(`link[href="${href}"]`);
+    
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', rel);
+      if (as) link.setAttribute('as', as);
+      if (crossorigin) link.setAttribute('crossorigin', crossorigin);
+      if (fetchpriority) link.setAttribute('fetchpriority', fetchpriority);
+      link.setAttribute('href', href);
+
+      link.onload = (e) => {
+        if (callback) callback(e.type);
+        resolve(link);
       };
-      element.onerror = () => {
-        if (callback) callback('error');
-        reject(new Error(`Failed to load CSS: ${href}`));
+      link.onerror = (e) => {
+        if (callback) callback(e.type);
+        reject(new Error(`Failed to load link: ${href}`));
       };
-      document.head.appendChild(element);
-    } else if (rel === 'script' || as === 'script') {
-      element = document.body.querySelector(`script[src="${href}"]`) || document.createElement('script');
-      element.src = href;
-      element.async = true;
-      element.onload = () => {
-        if (callback) callback('load');
-        resolve('JS loaded');
-      };
-      element.onerror = () => {
-        if (callback) callback('error');
-        reject(new Error(`Failed to load JS: ${href}`));
-      };
-      document.body.appendChild(element);
+
+      document.head.appendChild(link);
     } else {
-      reject(new Error('Unsupported resource type'));
+      if (callback) callback('noop');
+      resolve(link);
     }
   });
 }
