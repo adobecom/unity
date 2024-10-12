@@ -154,7 +154,9 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
 }*/
 
 export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
+  return new Promise((resolve, reject) => {
     let element;
+
     if (rel === 'stylesheet' || as === 'style') {
       element = document.head.querySelector(`link[href="${href}"]`) || document.createElement('link');
       element.setAttribute('rel', rel);
@@ -188,17 +190,17 @@ export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority 
     } else {
       reject(new Error('Unsupported resource type'));
     }
-  return element;
+  });
 }
 
 export async function priorityLoad(parr) {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      const pr = new Promise((res) => { loadLinks(p, { as: 'script', rel: 'modulepreload', callback: res }); });
+      const pr = loadLinks(p, { as: 'script', rel: 'modulepreload', callback: res });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
-      const pr = new Promise((res) => { loadLinks(p, { rel: 'stylesheet', callback: res }); });
+      const pr = loadLinks(p, { rel: 'stylesheet', callback: res });
       promiseArr.push(pr);
     } else {
       promiseArr.push(fetch(p));
