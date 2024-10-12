@@ -124,26 +124,11 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   return actionBtn;
 }
 
-function promiseAllWithTimeout(promises, timeout) {
-  return new Promise((resolve, reject) => {
-    const timeoutPromise = new Promise((_, rejectTimeout) => {
-      setTimeout(() => {
-        rejectTimeout(new Error('Promise timed out'));
-      }, timeout);
-    });
-    Promise.all(promises).then(resolve).catch(reject);
-    Promise.race([Promise.all(promises), timeoutPromise])
-      .then(resolve)
-      .catch(reject);
-  });
-}
-
 export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
   return new Promise((resolve, reject) => {
     let element;
 
     if (rel === 'stylesheet' || as === 'style') {
-      // Handle CSS link
       element = document.head.querySelector(`link[href="${href}"]`) || document.createElement('link');
       element.setAttribute('rel', rel);
       if (as) element.setAttribute('as', as);
@@ -160,7 +145,6 @@ export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority 
       };
       document.head.appendChild(element);
     } else if (rel === 'script' || as === 'script') {
-      // Handle JS script
       element = document.body.querySelector(`script[src="${href}"]`) || document.createElement('script');
       element.src = href;
       element.async = true;
@@ -205,13 +189,12 @@ export async function priorityLoad(parr) {
       promiseArr.push(fetchPromise);
     }
   });  
-
   try {
     await Promise.all(promiseArr);
     console.log('All promises resolved');
   } catch (error) {
     console.error('Error in Promise.all:', error);
-    throw error; // Optional: rethrow or handle as needed
+    throw error;
   }
 }
 
