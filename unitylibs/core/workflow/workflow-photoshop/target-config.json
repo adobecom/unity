@@ -7,24 +7,24 @@
     "source": ".asset picture img",
     "target": ".asset picture img",
     "actionMap": {
-        ".action-area .con-button": [
-          {
-              "actionType": "setCssStyle",
-              "propertyName": "opacity",
-              "propertyValue": 0.5,
-              "targets": [".asset picture img, .image picture img"]
-          },
-          {
-              "itemType": "button",
-              "actionType": "removebg",
-              "source": ".asset picture img, .image picture img",
-              "target": ".asset picture img, .image picture img"
-          },
-          {
-            "actionType": "setCssStyle",
-            "propertyName": "opacity",
-            "propertyValue": 1,
-            "targets": [".asset picture img, .image picture img"]
+      ".action-area .con-button": [
+        {
+          "actionType": "setCssStyle",
+          "propertyName": "opacity",
+          "propertyValue": 0.5,
+          "targets": [".asset picture img, .image picture img"]
+        },
+        {
+          "itemType": "button",
+          "actionType": "removebg",
+          "source": ".asset picture img, .image picture img",
+          "target": ".asset picture img, .image picture img"
+        },
+        {
+          "actionType": "setCssStyle",
+          "propertyName": "opacity",
+          "propertyValue": 1,
+          "targets": [".asset picture img, .image picture img"]
         }
       ]
     }
@@ -37,24 +37,24 @@
     "source": ".brick-media picture img",
     "target": ".brick-media picture img",
     "actionMap": {
-        ".action-area .con-button": [
-          {
-              "actionType": "setCssStyle",
-              "propertyName": "opacity",
-              "propertyValue": 0.5,
-              "targets": [".brick-media picture img"]
-          },
-          {
-              "itemType": "button",
-              "actionType": "removebg",
-              "source": ".brick-media picture img",
-              "target": ".brick-media picture img"
-          },
-          {
-            "actionType": "setCssStyle",
-            "propertyName": "opacity",
-            "propertyValue": 1,
-            "targets": [".brick-media picture img"]
+      ".action-area .con-button": [
+        {
+          "actionType": "setCssStyle",
+          "propertyName": "opacity",
+          "propertyValue": 0.5,
+          "targets": [".brick-media picture img"]
+        },
+        {
+          "itemType": "button",
+          "actionType": "removebg",
+          "source": ".brick-media picture img",
+          "target": ".brick-media picture img"
+        },
+        {
+          "actionType": "setCssStyle",
+          "propertyName": "opacity",
+          "propertyValue": 1,
+          "targets": [".brick-media picture img"]
         }
       ]
     }
@@ -72,5 +72,38 @@
     "selector": ".asset picture, .image picture",
     "handler": "render",
     "renderWidget": true
+  },
+  "fqa-unity": {
+    "renderWidget": false,
+    "selector": ".dropzone-container",
+    "actionMap": {
+      ".file-input": [
+        {
+          "itemType": "button",
+          "actionType": "upload",
+          "assetType": "img",
+          "target": ".qa-workspace .canvas img"
+        },
+        {
+          "actionType": "setCssStyle",
+          "propertyName": "opacity",
+          "propertyValue": 0.5,
+          "targets": [".qa-workspace .canvas img"]
+        },
+        {
+          "itemType": "button",
+          "actionType": "removebg",
+          "assetType": "img",
+          "target": ".qa-workspace .canvas img",
+          "source": ".qa-workspace .canvas img"
+        },
+        {
+          "actionType": "setCssStyle",
+          "propertyName": "opacity",
+          "propertyValue": 1,
+          "targets": [".qa-workspace .canvas img"]
+        }
+      ]
+    }
   }
 }

@@ -201,7 +201,7 @@ export default class ActionBinder {
   }
 
   userImgUpload(params, e) {
-    this.canvasArea.querySelector('img').style.filter = '';
+    if (this.canvasArea) this.canvasArea.querySelector('img').style.filter = '';
     this.operations = [];
     const file = e.target.files[0];
     if (!file) return;
@@ -210,7 +210,8 @@ export default class ActionBinder {
       // return;
     }
     const objUrl = URL.createObjectURL(file);
-    const { target } = params;
+    let { target } = params;
+    if (typeof target === 'string') target = this.block.querySelector(target);
     target.src = objUrl;
   }
 
