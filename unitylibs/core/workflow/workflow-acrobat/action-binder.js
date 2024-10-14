@@ -264,9 +264,14 @@ export default class ActionBinder {
   }
 
   splashVisibilityController(displayOn) {
-    if (!displayOn) return this.splashScreenEl.classList.remove('show');
+    if (!displayOn) {
+      this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
+      this.splashScreenEl.classList.remove('show');
+      return;
+    }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
+    this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
   }
 
   async loadSplashFragment() {
