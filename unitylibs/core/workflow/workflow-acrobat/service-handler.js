@@ -25,21 +25,28 @@ export default class ServiceHandler {
   }
 
   async fetchFromService(url, options) {
-    const response = await fetch(url, options);
-    const error = new Error();
-    const contentLength = response.headers.get('Content-Length');
-    if (response.status !== 200) {
-      if (contentLength !== '0') {
-        const resJson = await response.json();
-        ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-          if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
-        });
+    try {
+      const response = await fetch(url, options);
+      const error = new Error();
+      const contentLength = response.headers.get('Content-Length');
+      if (response.status !== 200) {
+        if (contentLength !== '0') {
+          const resJson = await response.json();
+          ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
+            if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
+          });
+        }
+        error.status = response.status;
+        throw error;
       }
-      error.status = response.status;
+      if (contentLength === '0') return {};
+      return response.json();
+    } catch (error) {
+      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+        error.status = 504;
+      }
       throw error;
     }
-    if (contentLength === '0') return {};
-    return response.json();
   }
 
   async postCallToService(api, options) {

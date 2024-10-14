@@ -144,14 +144,14 @@ export default class ActionBinder {
     return files;
   }
 
-  async dispatchErrorToast(code, showError = true) {
+  async dispatchErrorToast(code, showError = true, status = null) {
     if (showError) {
       const message = code in this.workflowCfg.errors
         ? this.workflowCfg.errors[code]
         : await getError(this.workflowCfg.enabledFeatures[0], code);
       this.block.dispatchEvent(new CustomEvent(
         unityConfig.errorToastEvent,
-        { detail: { code, message: message || 'Unable to process the request' } },
+        { detail: { code, message: message || 'Unable to process the request', ...(status !== null && { status }) } },
       ));
     }
   }
@@ -264,9 +264,14 @@ export default class ActionBinder {
   }
 
   splashVisibilityController(displayOn) {
-    if (!displayOn) return this.splashScreenEl.classList.remove('show');
+    if (!displayOn) {
+      this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
+      this.splashScreenEl.classList.remove('show');
+      return;
+    }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
+    this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
   }
 
   async loadSplashFragment() {
@@ -316,11 +321,12 @@ export default class ActionBinder {
       };
       const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData) },
+        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout(15000)},
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic');
+        this.operations = [];
         return false;
       }
       const intervalDuration = 500;
@@ -328,7 +334,17 @@ export default class ActionBinder {
       let metadata = {};
       let intervalId;
       let requestInProgress = false;
+      let metadataExists = false;
       return new Promise((resolve) => {
+        const handleMetadata = async () => {
+          if (metadata.numPages > this.limits.maxNumPages) {
+            await this.showSplashScreen();
+            await this.dispatchErrorToast('verb_upload_error_max_page_count');
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        }
         intervalId = setInterval(async () => {
           if (requestInProgress) return;
           requestInProgress = true;
@@ -339,24 +355,21 @@ export default class ActionBinder {
           requestInProgress = false;
           if (metadata?.numPages !== undefined) {
             clearInterval(intervalId);
-            if (metadata.numPages > this.limits.maxNumPages) {
-              await this.showSplashScreen();
-              await this.dispatchErrorToast('verb_upload_error_max_page_count');
-              resolve(false);
-            } else {
-              resolve(true);
-            }
-            return;
+            clearTimeout(timeoutId);
+            metadataExists = true;
+            await handleMetadata();
           }
         }, intervalDuration);
-        setTimeout(() => {
+        const timeoutId = setTimeout(async () => {
           clearInterval(intervalId);
-          resolve(true);
+          if (!metadataExists) resolve(true);
+          else await handleMetadata();
         }, totalDuration);
       });
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', e?.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', e?.showError, e?.status);
+      this.operations = [];
       return false;
     }
   }
@@ -423,13 +436,16 @@ export default class ActionBinder {
           else await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.showError);
           break;
         default:
-          await this.dispatchErrorToast('verb_upload_error_generic', e.showError);
+          await this.dispatchErrorToast('verb_upload_error_generic', e.showError, e.status);
           break;
       }
       return;
     }
     const verified = await this.verifyContent(assetData);
-    if (!verified) return;
+    if (!verified) {
+      this.operations = [];
+      return;
+    }
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 }

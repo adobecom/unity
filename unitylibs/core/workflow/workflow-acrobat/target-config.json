@@ -8,12 +8,12 @@
     "target": ".verb-wrapper .verb-container",
     "limits": {
       "maxNumFiles": 1,
-      "maxFileSize": 1000000000,
+      "maxFileSize": 104857600,
       "maxNumPages": 100
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/acrobat/online/test/fragments/splashscreen",
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
