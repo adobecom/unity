@@ -127,7 +127,6 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
 export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
   return new Promise((resolve, reject) => {
     let element;
-
     if (rel === 'stylesheet' || as === 'style') {
       element = document.head.querySelector(`link[href="${href}"]`) || document.createElement('link');
       element.setAttribute('rel', rel);
