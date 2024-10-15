@@ -50,8 +50,8 @@ export default class ActionBinder {
     await priorityLoad(parr);
   }
 
-  updateProgressBar(layer, percentage) {
-    const p = Math.min(percentage, 100);
+  updateProgressBar(layer, percentage, maxVal = 90) {
+    const p = Math.min(percentage, maxVal);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
     spb?.setAttribute('aria-valuenow', p);
@@ -84,7 +84,7 @@ export default class ActionBinder {
           await this.fillsign(files, eventName);
           break;
         case value.actionType === 'continueInApp':
-          this.updateProgressBar(this.splashScreenEl, 100);
+          this.updateProgressBar(this.splashScreenEl, 100, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
