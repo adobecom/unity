@@ -29,7 +29,6 @@ export default class ActionBinder {
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
     this.LOADER_LIMIT = 80;
-    this.splashTimeout = null;
   }
 
   getAcrobatApiConfig() {
@@ -260,7 +259,7 @@ export default class ActionBinder {
     const progressBar = s.querySelector('.spectrum-ProgressBar');
     if (!initialize && progressBar?.getAttribute('value') === 100) return;
     if (initialize) this.updateProgressBar(s, 0);
-    this.splashTimeout = setTimeout(() => {
+    setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       this.updateProgressBar(s, v + i);
       this.progressBarHandler(s, delay, i);
@@ -272,9 +271,6 @@ export default class ActionBinder {
     if (!displayOn) {
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
-      if (!this.splashTimeout) return;
-      clearTimeout(this.splashTimeout);
-      this.splashTimeout = null;
     }
     this.LOADER_LIMIT = 80;
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
