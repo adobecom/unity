@@ -86,6 +86,7 @@ export default class ActionBinder {
           await this.fillsign(files, eventName);
           break;
         case value.actionType === 'continueInApp':
+          this.LOADER_LIMIT = 100;
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
@@ -454,6 +455,5 @@ export default class ActionBinder {
       return;
     }
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
-    this.LOADER_LIMIT = 100;
   }
 }
