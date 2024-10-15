@@ -50,7 +50,7 @@ export default class ActionBinder {
     await priorityLoad(parr);
   }
 
-  updateProgressBar(layer, percentage, maxVal = 90) {
+  updateProgressBar(layer, percentage, maxVal = 100) {
     const p = Math.min(percentage, maxVal);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
@@ -256,11 +256,11 @@ export default class ActionBinder {
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (!initialize && progressBar?.getAttribute('value') > 90) return;
+    if (!initialize && progressBar?.getAttribute('value') >= 90) return;
     if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
-      this.updateProgressBar(s, v + i);
+      this.updateProgressBar(s, v + i, 90);
       this.progressBarHandler(s, delay, i);
     }, delay);
   }
