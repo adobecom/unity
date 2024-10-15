@@ -267,7 +267,6 @@ export default class ActionBinder {
   }
 
   splashVisibilityController(displayOn) {
-    console.log('mathuria');
     if (!displayOn) {
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
