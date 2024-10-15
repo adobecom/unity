@@ -53,6 +53,7 @@ export default class ActionBinder {
   }
 
   updateProgressBar(layer, percentage) {
+    debugger;
     const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
