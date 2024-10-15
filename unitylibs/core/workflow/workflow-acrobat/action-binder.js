@@ -436,6 +436,7 @@ export default class ActionBinder {
           else await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.showError);
           break;
         default:
+          if (e.message === 'imsError') await this.dispatchErrorToast('verb_upload_error_ims_error', e.showError);
           await this.dispatchErrorToast('verb_upload_error_generic', e.showError, e.status);
           break;
       }
