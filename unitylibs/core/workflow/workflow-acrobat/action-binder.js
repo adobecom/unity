@@ -86,7 +86,7 @@ export default class ActionBinder {
           break;
         case value.actionType === 'continueInApp':
           this.LOADER_LIMIT = 100;
-          this.updateProgressBar(this.splashScreenEl, 100, 100);
+          this.updateProgressBar(this.splashScreenEl, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
