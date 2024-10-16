@@ -157,7 +157,7 @@ export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority 
         if (callback) callback('error');
         reject(new Error(`Failed to load JS: ${href}`));
       };
-      document.head.appendChild(element);
+      document.body.appendChild(element);
     } else {
       reject(new Error('Unsupported resource type'));
     }
