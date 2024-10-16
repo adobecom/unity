@@ -157,7 +157,7 @@ export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority 
         if (callback) callback('error');
         reject(new Error(`Failed to load JS: ${href}`));
       };
-      document.body.appendChild(element);
+      document.head.appendChild(element);
     } else {
       reject(new Error('Unsupported resource type'));
     }
@@ -188,10 +188,10 @@ export async function priorityLoad(parr) {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      const pr = loadScripts(p, 'module', 'async');
+      const pr = loadLinks(p, { as: 'script', rel: 'modulepreload' });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
-      const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
+      const pr = loadLinks(p, { rel: 'stylesheet' });
       promiseArr.push(pr);
     } else {
       promiseArr.push(fetch(p));
