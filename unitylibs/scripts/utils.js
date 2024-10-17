@@ -124,51 +124,10 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   return actionBtn;
 }
 
-export function loadLinks(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
-  return new Promise((resolve, reject) => {
-    let element;
-
-    if (rel === 'stylesheet' || as === 'style') {
-      element = document.head.querySelector(`link[href="${href}"]`) || document.createElement('link');
-      element.setAttribute('rel', rel);
-      if (as) element.setAttribute('as', as);
-      if (crossorigin) element.setAttribute('crossorigin', crossorigin);
-      if (fetchpriority) element.setAttribute('fetchpriority', fetchpriority);
-      element.setAttribute('href', href);
-      element.onload = () => {
-        if (callback) callback('load');
-        resolve('CSS loaded');
-      };
-      element.onerror = () => {
-        if (callback) callback('error');
-        reject(new Error(`Failed to load CSS: ${href}`));
-      };
-      document.head.appendChild(element);
-    } else if (rel === 'script' || as === 'script') {
-      element = document.body.querySelector(`script[src="${href}"]`) || document.createElement('script');
-      element.src = href;
-      element.async = true;
-      element.type = 'module';
-      element.onload = () => {
-        if (callback) callback('load');
-        resolve('JS loaded');
-      };
-      element.onerror = () => {
-        if (callback) callback('error');
-        reject(new Error(`Failed to load JS: ${href}`));
-      };
-      document.head.appendChild(element);
-    } else {
-      reject(new Error('Unsupported resource type'));
-    }
-  });
-}
-
 export async function priorityLoad(parr) {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
-      //const pr = loadLinks(p, { as: 'script', rel: 'modulepreload' });
       const pr = loadScript(p, 'module', 'async');
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
