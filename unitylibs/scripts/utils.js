@@ -171,7 +171,7 @@ export async function priorityLoad(parr) {
       const pr = loadLinks(p, { as: 'script', rel: 'modulepreload' });
       promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
-      const pr = loadLinks(p, { rel: 'stylesheet' });
+      const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
       promiseArr.push(pr);
     } else {
       promiseArr.push(fetch(p));
