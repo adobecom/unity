@@ -9,7 +9,7 @@
 }
 
 .unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option {
-  border-radius: var(--s-rounded-corners);
+  border-radius: 4px;
   cursor: pointer;
   border: 3px solid transparent;
   overflow: hidden;
