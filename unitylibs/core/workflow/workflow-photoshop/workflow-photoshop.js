@@ -291,7 +291,7 @@ async function changebg(cfg, featureName) {
     bgImg = o.querySelector('img');
     thumbnail = bgImg;
     thumbnail.dataset.backgroundImg = bgImg.src;
-    thumbnail.setAttribute('src', updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
+    thumbnail.setAttribute('src', updateQueryParam(bgImg.src, { format: 'webp', width: '68', height: '68' }));
     thumbnailSrc.push(thumbnail.getAttribute('src'));
     const a = createTag('a', { href: '#', class: 'changebg-option' }, thumbnail);
     bgSelectorTray.append(a);
