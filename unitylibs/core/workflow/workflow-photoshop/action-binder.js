@@ -13,7 +13,7 @@ import {
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
-  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
+  constructor(workflowCfg, wfblock, canvasArea, actionMap = {}) {
     this.workflowCfg = workflowCfg;
     this.block = wfblock;
     this.actionMap = actionMap;
@@ -28,7 +28,6 @@ export default class ActionBinder {
   getPsApiConfig() {
     unityConfig.psEndPoint = {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
-      acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
       removeBackground: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`,
       changeBackground: `${unityConfig.apiEndPoint}/providers/PhotoshopChangeBackground`,
     };
@@ -172,20 +171,6 @@ export default class ActionBinder {
     return 'image/jpeg';
   }
 
-  async scanImgForSafety(assetId) {
-    const assetData = { assetId, targetProduct: this.workflowCfg.productName };
-    const optionsBody = { body: JSON.stringify(assetData) };
-    try {
-      this.serviceHandler.postCallToService(
-        this.psApiConfig.psEndPoint.acmpCheck,
-        optionsBody,
-      );
-    }
-    catch(e) {
-      // Finalize Api call
-    }
-  }
-
   async uploadAsset(imgUrl) {
     const resJson = await this.serviceHandler.postCallToService(
       this.psApiConfig.psEndPoint.assetUpload,
@@ -195,8 +180,6 @@ export default class ActionBinder {
     const blobData = await this.getImageBlobData(imgUrl);
     const fileType = this.getFileType();
     const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
-    const { origin } = new URL(imgUrl);
-    if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
     return assetId;
   }
 
@@ -221,7 +204,6 @@ export default class ActionBinder {
     if (typeof(target) == 'string') target = this.block.querySelector(target);
     const operationItem = {
       operationType: optype,
-      sourceAssetId: null,
       sourceSrc: source.src,
       assetId: null,
       assetUrl: null,
@@ -229,7 +211,6 @@ export default class ActionBinder {
     let assetId = null;
     if (this.operations.length) assetId = this.operations[this.operations - 1].assetId;
     else assetId = await this.uploadAsset(source.src);
-    operationItem.sourceAssetId = assetId;
     const removeBgOptions = { body: `{"surfaceId":"Unity","assets":[{"id": "${assetId}"}]}` };
     const resJson = await this.serviceHandler.postCallToService(
       this.psApiConfig.psEndPoint[optype],
@@ -321,7 +302,7 @@ export default class ActionBinder {
   continueInApp() {
     const cOpts = {
       assetId: null,
-      targetProduct: this.workflowCfg.productName,
+      targetProduct: 'Photoshop',
       payload: {
         finalAssetId: null,
         operations: [],
@@ -333,7 +314,7 @@ export default class ActionBinder {
         cOpts.payload.operations[idx - 1][op.adjustmentType] = parseInt(op.filterValue.sliderElem.value, 10);
       } else {
         cOpts.payload.operations.push({ name: op.operationType });
-        if (op.sourceAssetId && !cOpts.assetId) cOpts.assetId = op.sourceAssetId;
+        if (op.assetId && !cOpts.assetId) cOpts.assetId = op.assetId;
         if (op.assetId) cOpts.payload.finalAssetId = op.assetId;
         if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].assetIds = [op.assetId];
         if (op.adjustmentType && op.filterValue) {

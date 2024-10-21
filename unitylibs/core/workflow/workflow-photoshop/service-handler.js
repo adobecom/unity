@@ -8,7 +8,6 @@ import {
   createTag,
   getGuestAccessToken,
   decorateDefaultLinkAnalytics,
-  unityConfig,
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
@@ -18,12 +17,12 @@ export default class ServiceHandler {
     this.canvasArea = canvasArea;
   }
 
-  getHeaders() {
+  getHeaders(apiKey) {
     return {
       headers: {
         'Content-Type': 'application/json',
         Authorization: getGuestAccessToken(),
-        'x-api-key': unityConfig.apiKey,
+        'x-api-key': 'leo',
       },
     };
   }
