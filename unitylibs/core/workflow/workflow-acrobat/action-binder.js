@@ -232,6 +232,7 @@ export default class ActionBinder {
       .then((resArr) => {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
         window.location.href = response.url;
       })
       .catch(async (e) => {
