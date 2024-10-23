@@ -28,6 +28,7 @@ export default class ActionBinder {
     this.promiseStack = [];
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
+    this.LOADER_LIMIT = 95;
   }
 
   getAcrobatApiConfig() {
@@ -51,7 +52,7 @@ export default class ActionBinder {
   }
 
   updateProgressBar(layer, percentage) {
-    const p = Math.min(percentage, 100);
+    const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
     spb?.setAttribute('aria-valuenow', p);
@@ -84,6 +85,8 @@ export default class ActionBinder {
           await this.fillsign(files, eventName);
           break;
         case value.actionType === 'continueInApp':
+          this.LOADER_LIMIT = 100;
+          this.updateProgressBar(this.splashScreenEl, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
@@ -255,7 +258,7 @@ export default class ActionBinder {
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (!initialize && progressBar?.getAttribute('value') === 100) return;
+    if (!initialize && progressBar?.getAttribute('value') >= this.LOADER_LIMIT) return;
     if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
@@ -266,6 +269,7 @@ export default class ActionBinder {
 
   splashVisibilityController(displayOn) {
     if (!displayOn) {
+      this.LOADER_LIMIT = 95;
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
       return;
