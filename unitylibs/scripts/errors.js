@@ -35,7 +35,7 @@ async function loadErrorMessages(verb) {
   window.uem = createErrorMap(errorJson?.data);
 }
 
-export default async function getError(verb, code) {
+export async function getError(verb, code) {
   try {
     if (!window.uem) await loadErrorMessages(verb);
     return window.uem?.[code];
