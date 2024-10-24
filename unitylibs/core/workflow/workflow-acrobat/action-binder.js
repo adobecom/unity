@@ -326,7 +326,7 @@ export default class ActionBinder {
       };
       const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData) },
+        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(65000) },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         await this.showSplashScreen();
