@@ -326,7 +326,7 @@ export default class ActionBinder {
       };
       const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(15000)},
+        { body: JSON.stringify(finalAssetData) },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         await this.showSplashScreen();
@@ -340,7 +340,7 @@ export default class ActionBinder {
       let intervalId;
       let requestInProgress = false;
       let metadataExists = false;
-      return new Promise((resolve) => {
+      return new Promise((resolve) => { 
         const handleMetadata = async () => {
           if (metadata.numPages > this.limits.maxNumPages) {
             await this.showSplashScreen();
