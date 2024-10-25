@@ -1,4 +1,3 @@
-
 import {
   createTag,
   decorateDefaultLinkAnalytics,
