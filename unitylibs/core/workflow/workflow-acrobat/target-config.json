@@ -1,18 +1,20 @@
+
 {
-  "acom-widget": {
+  "verb-widget.fillsign": {
     "type": "pdf",
-    "selector": ".acom-widget.fillsign",
+    "selector": ".verb-wrapper",
     "handler": "render",
     "renderWidget": false,
     "source": ".verb-wrapper .verb-container",
     "target": ".verb-wrapper .verb-container",
     "limits": {
       "maxNumFiles": 1,
-      "allowedFileSize": [0, 1000000000]
+      "maxFileSize": 104857600,
+      "maxNumPages": 100
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/drafts/mathuria/fragments/splashscreen",
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {

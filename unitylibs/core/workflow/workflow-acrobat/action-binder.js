@@ -3,7 +3,6 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getLibs,
   unityConfig,
   getUnityLibs,
   createTag,
@@ -29,19 +28,21 @@ export default class ActionBinder {
     this.promiseStack = [];
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
+    this.LOADER_LIMIT = 95;
   }
 
   getAcrobatApiConfig() {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
     };
     return unityConfig;
   }
 
-  async handlePreloads(params) {
-    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`]
-    if (params[0].showSplashScreen) {
+  async handlePreloads() {
+    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`];
+    if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
         `${this.splashFragmentLink}.plain.html`,
@@ -51,7 +52,7 @@ export default class ActionBinder {
   }
 
   updateProgressBar(layer, percentage) {
-    const p = Math.min(percentage, 100);
+    const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
     spb?.setAttribute('aria-valuenow', p);
@@ -70,8 +71,8 @@ export default class ActionBinder {
     return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
-  async acrobatActionMaps(values, files) {
-    await this.handlePreloads(values);
+  async acrobatActionMaps(values, files, eventName) {
+    await this.handlePreloads();
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
@@ -81,9 +82,11 @@ export default class ActionBinder {
       switch (true) {
         case value.actionType === 'fillsign':
           this.promiseStack = [];
-          await this.fillsign(files);
+          await this.fillsign(files, eventName);
           break;
         case value.actionType === 'continueInApp':
+          this.LOADER_LIMIT = 100;
+          this.updateProgressBar(this.splashScreenEl, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
@@ -95,7 +98,7 @@ export default class ActionBinder {
     }
   }
 
-  initActionListeners(b = this.block, actMap = this.actionMap) {
+  async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, values] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
@@ -110,13 +113,13 @@ export default class ActionBinder {
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const files = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files);
+            await this.acrobatActionMaps(values, files, 'drop');
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
             const files = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files);
+            await this.acrobatActionMaps(values, files, 'change');
             e.target.value = '';
           });
           break;
@@ -144,25 +147,26 @@ export default class ActionBinder {
     return files;
   }
 
-  dispatchErrorToast(code) {
-    const message = code in this.workflowCfg.errors
-      ? this.workflowCfg.errors[code]
-      : getError(this.workflowCfg.enabledFeatures[0], code);
-    // TODO: send default error message if message is '' (ie. error file fails to load)
-    this.block.dispatchEvent(new CustomEvent(
-      unityConfig.errorToastEvent,
-      { detail: { code, message } },
-    ));
+  async dispatchErrorToast(code, showError = true, status = null) {
+    if (showError) {
+      const message = code in this.workflowCfg.errors
+        ? this.workflowCfg.errors[code]
+        : await getError(this.workflowCfg.enabledFeatures[0], code);
+      this.block.dispatchEvent(new CustomEvent(
+        unityConfig.errorToastEvent,
+        { detail: { code, message: message || 'Unable to process the request', ...(status !== null && { status }) } },
+      ));
+    }
   }
 
-  async fillsign(files) {
+  async fillsign(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
-      this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
     const file = files[0];
     if (!file) return;
-    this.singleFileUpload(file);
+    await this.singleFileUpload(file, eventName);
   }
 
   async getBlobData(file) {
@@ -195,7 +199,6 @@ export default class ActionBinder {
       const start = i * assetData.blocksize;
       const end = Math.min(start + assetData.blocksize, blobData.size);
       const chunk = blobData.slice(start, end);
-
       const url = assetData.uploadUrls[i];
       return this.uploadFileToUnity(url.href, chunk, filetype);
     });
@@ -232,25 +235,30 @@ export default class ActionBinder {
       .then((resArr) => {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
         window.location.href = response.url;
       })
-      .catch((e) => {
-        this.showSplashScreen();
-        this.dispatchErrorToast('verb_upload_error_generic');
+      .catch(async (e) => {
+        await this.showSplashScreen();
+        await this.dispatchErrorToast('verb_upload_error_generic', e?.showError);
       });
   }
 
-  cancelAcrobatOperation(params) {
-    this.handleSplashScreen(params);
-    const cancelPromise = Promise.reject(new Error('Operation termination requested.'));
+  async cancelAcrobatOperation() {
+    await this.showSplashScreen();
+    const e = new Error();
+    e.message = 'Operation termination requested.';
+    e.showError = false;
+    const cancelPromise = Promise.reject(e);
     this.promiseStack.unshift(cancelPromise);
   }
 
   progressBarHandler(s, delay, i, initialize = false) {
+    if (!s) return;
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (!initialize && progressBar?.getAttribute('value') === 100) return;
+    if (!initialize && progressBar?.getAttribute('value') >= this.LOADER_LIMIT) return;
     if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
@@ -260,9 +268,15 @@ export default class ActionBinder {
   }
 
   splashVisibilityController(displayOn) {
-    if (!displayOn) return this.splashScreenEl.classList.remove('show');
+    if (!displayOn) {
+      this.LOADER_LIMIT = 95;
+      this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
+      this.splashScreenEl.classList.remove('show');
+      return;
+    }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
+    this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
   }
 
   async loadSplashFragment() {
@@ -303,38 +317,95 @@ export default class ActionBinder {
     this.splashVisibilityController(displayOn);
   }
 
-  verifyContent(assetData) {
+  async verifyContent(assetData) {
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
         targetProduct: this.workflowCfg.productName,
         assetId: assetData.id,
       };
-      this.serviceHandler.postCallToService(
+      const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData) },
+        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
       );
+      if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
+        await this.showSplashScreen();
+        await this.dispatchErrorToast('verb_upload_error_generic');
+        this.operations = [];
+        return false;
+      }
+      const intervalDuration = 500;
+      const totalDuration = 5000;
+      let metadata = {};
+      let intervalId;
+      let requestInProgress = false;
+      let metadataExists = false;
+      return new Promise((resolve) => {
+        const handleMetadata = async () => {
+          if (metadata.numPages > this.limits.maxNumPages) {
+            await this.showSplashScreen();
+            await this.dispatchErrorToast('verb_upload_error_max_page_count');
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        }
+        intervalId = setInterval(async () => {
+          if (requestInProgress) return;
+          requestInProgress = true;
+          metadata = await this.serviceHandler.getCallToService(
+            this.acrobatApiConfig.acrobatEndpoint.getMetadata,
+            { id: assetData.id },
+          );
+          requestInProgress = false;
+          if (metadata?.numPages !== undefined) {
+            clearInterval(intervalId);
+            clearTimeout(timeoutId);
+            metadataExists = true;
+            await handleMetadata();
+          }
+        }, intervalDuration);
+        const timeoutId = setTimeout(async () => {
+          clearInterval(intervalId);
+          if (!metadataExists) resolve(true);
+          else await handleMetadata();
+        }, totalDuration);
+      });
     } catch (e) {
-      this.dispatchErrorToast('verb_upload_error_generic');
+      await this.showSplashScreen();
+      await this.dispatchErrorToast('verb_upload_error_generic', e?.showError, e?.status);
+      this.operations = [];
+      return false;
     }
   }
 
-  async singleFileUpload(file) {
+  async singleFileUpload(file, eventName) {
     if (file.type !== 'application/pdf') {
-      this.dispatchErrorToast('verb_upload_error_unsupported_type');
+      await this.dispatchErrorToast('verb_upload_error_unsupported_type');
       return;
     }
     if (!file.size) {
-      this.dispatchErrorToast('verb_upload_error_empty_file');
+      await this.dispatchErrorToast('verb_upload_error_empty_file');
       return;
     }
     if (file.size > this.limits.maxFileSize) {
-      this.dispatchErrorToast('verb_upload_error_file_too_large');
+      await this.dispatchErrorToast('verb_upload_error_file_too_large');
       return;
     }
+    const fileData = {
+      type: file.type,
+      size: file.size,
+      count: 1,
+    };
+    this.block.dispatchEvent(
+      new CustomEvent(
+        unityConfig.trackAnalyticsEvent,
+        { detail: { event: eventName, data: fileData } },
+      ),
+    );
     let assetData = null;
     try {
-      await this.handleSplashScreen(params);
+      await this.showSplashScreen(true);
       const blobData = await this.getBlobData(file);
       const data = {
         surfaceId: unityConfig.surfaceId,
@@ -347,6 +418,7 @@ export default class ActionBinder {
         this.acrobatApiConfig.acrobatEndpoint.createAsset,
         { body: JSON.stringify(data) },
       );
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading' } }));
       await this.chunkPdf(assetData, blobData, file.type);
       const operationItem = {
         assetId: assetData.id,
@@ -357,10 +429,28 @@ export default class ActionBinder {
       this.operations.push(operationItem);
     } catch (e) {
       await this.showSplashScreen();
-      if (!e.status || e.status !== 409) this.dispatchErrorToast('verb_upload_error_generic');
-      else this.dispatchErrorToast('verb_upload_error_duplicate_asset');
+      switch (e.status) {
+        case 409:
+          await this.dispatchErrorToast('verb_upload_error_duplicate_asset', e.showError);
+          break;
+        case 401:
+          await this.dispatchErrorToast(e.message === 'notentitled' ? 'verb_upload_error_no_storage_provision' : 'verb_upload_error_generic', e.showError);
+          break;
+        case 403:
+          if (e.message === 'quotaexceeded') await this.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.showError);
+          else await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.showError);
+          break;
+        default:
+          await this.dispatchErrorToast('verb_upload_error_generic', e.showError, e.status);
+          break;
+      }
       return;
     }
-    this.verifyContent(assetData);
+    const verified = await this.verifyContent(assetData);
+    if (!verified) {
+      this.operations = [];
+      return;
+    }
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 }

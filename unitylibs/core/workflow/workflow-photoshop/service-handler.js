@@ -1,3 +1,4 @@
+
 /* eslint-disable eqeqeq */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
@@ -8,6 +9,7 @@ import {
   createTag,
   getGuestAccessToken,
   decorateDefaultLinkAnalytics,
+  unityConfig,
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
@@ -17,12 +19,12 @@ export default class ServiceHandler {
     this.canvasArea = canvasArea;
   }
 
-  getHeaders(apiKey) {
+  getHeaders() {
     return {
       headers: {
         'Content-Type': 'application/json',
         Authorization: getGuestAccessToken(),
-        'x-api-key': 'leo',
+        'x-api-key': unityConfig.apiKey,
       },
     };
   }

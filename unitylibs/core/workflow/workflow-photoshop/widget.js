@@ -1,3 +1,4 @@
+
 import {
   createTag,
   decorateDefaultLinkAnalytics,
@@ -63,7 +64,7 @@ export default class UnityWidget {
     this.actionMap[w] = [
       {
         actionType: 'hide',
-        targets: ['.ps-action-btn.show', '.continue-in-app-button'],
+        targets: ['.ps-action-btn.show', '.unity-option-area .show', '.continue-in-app-button'],
       }, {
         actionType: 'show',
         targets: ['.ps-action-btn'],
