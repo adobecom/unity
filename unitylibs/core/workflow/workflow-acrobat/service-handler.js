@@ -15,10 +15,16 @@ export default class ServiceHandler {
   }
 
   getHeaders() {
+    const gat = getGuestAccessToken();
+    if (!gat) {
+      const error = new Error();
+      error.message = 'imsError';
+      throw error;
+    }
     return {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: getGuestAccessToken(),
+        Authorization: gat,
         'x-api-key': unityConfig.apiKey,
       },
     };
