@@ -11,7 +11,6 @@ import {
   loadArea,
   loadImg,
 } from '../../../scripts/utils.js';
-import getError from '../../../scripts/errors.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
@@ -151,7 +150,10 @@ export default class ActionBinder {
     if (showError) {
       const message = code in this.workflowCfg.errors
         ? this.workflowCfg.errors[code]
-        : await getError(this.workflowCfg.enabledFeatures[0], code);
+        : await (async () => {
+          const { getError } = await import('../../../scripts/errors.js');
+          return getError(this.workflowCfg.enabledFeatures[0], code);
+        })();
       this.block.dispatchEvent(new CustomEvent(
         unityConfig.errorToastEvent,
         { detail: { code, message: message || 'Unable to process the request', ...(status !== null && { status }) } },
