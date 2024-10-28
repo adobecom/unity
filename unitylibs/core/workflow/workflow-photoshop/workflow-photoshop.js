@@ -279,7 +279,7 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
 function updateQueryParam(url, params) {
   const parsedUrl = new URL(url);
   const domain = getOrigin(parsedUrl.origin);
-  parsedUrl.origin = domain;
+  parsedUrl.hostname = domain.replace('https://','');
   Object.entries(params).forEach(([key, value]) => {
     parsedUrl.searchParams.set(key, value);
   });
