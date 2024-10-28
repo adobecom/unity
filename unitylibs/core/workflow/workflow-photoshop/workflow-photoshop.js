@@ -10,6 +10,15 @@ import {
   priorityLoad,
 } from '../../../scripts/utils.js';
 
+const imageDomain = 'https://main--cc--adobecom.hlx.live';
+
+function getOrigin(origin) {
+  let domain = '';
+  if (origin.includes('adobe.com')) domain = imageDomain;
+  else domain = origin;
+  return domain;
+}
+
 function resetSliders(unityWidget) {
   const adjustmentCircles = unityWidget.querySelectorAll('.adjustment-circle');
   adjustmentCircles.forEach((c) => { c.style = ''; });
@@ -150,7 +159,8 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     return false;
   }
   const { hostname, origin, pathname } = new URL(img.src);
-  const imgUrl = srcUrl || (img.src.startsWith('blob:') ? img.src : `${origin}${pathname}`);
+  const domain = getOrigin(origin);
+  const imgUrl = srcUrl || (img.src.startsWith('blob:') ? img.src : `${domain}${pathname}`);
   const isImgModified = checkImgModified(hostname);
   cfg.presentState.removeBgState.srcUrl = imgUrl;
   const { uploadAsset } = await import('../../steps/upload-step.js');
@@ -227,7 +237,8 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
   const fgId = cfg.presentState.removeBgState.assetId;
   const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
   const { origin, pathname } = new URL(bgImg);
-  const bgImgUrl = `${origin}${pathname}`;
+  const domain = getOrigin(origin);
+  const bgImgUrl = `${domain}${pathname}`;
   const { uploadAsset } = await import('../../steps/upload-step.js');
   const bgId = await uploadAsset(cfg, bgImgUrl);
   if (!unityRetriggered && cfg.presentState.changeBgState[bgImgUrl]?.assetId) {
@@ -268,6 +279,8 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
 
 function updateQueryParam(url, params) {
   const parsedUrl = new URL(url);
+  const domain = getOrigin(parsedUrl.origin);
+  parsedUrl.replace(parsedUrl.origin, domain);
   Object.entries(params).forEach(([key, value]) => {
     parsedUrl.searchParams.set(key, value);
   });
