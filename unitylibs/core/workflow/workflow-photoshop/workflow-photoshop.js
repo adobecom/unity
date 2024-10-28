@@ -10,11 +10,9 @@ import {
   priorityLoad,
 } from '../../../scripts/utils.js';
 
-const imageDomain = 'https://main--cc--adobecom.hlx.live';
-
 function getOrigin(origin) {
   let domain = '';
-  if (origin.includes('adobe.com')) domain = imageDomain;
+  if (origin.includes('adobe.com')) domain = 'https://main--cc--adobecom.hlx.live';
   else domain = origin;
   return domain;
 }
