@@ -12,7 +12,8 @@ import {
 
 function getOrigin(origin) {
   let domain = '';
-  if (origin.includes('adobe.com')) domain = 'https://main--cc--adobecom.hlx.live';
+  if (origin.includes('www.adobe.com')) domain = 'https://main--cc--adobecom.hlx.live';
+  else if (origin.includes('www.stage.adobe.com')) domain = 'https://stage--cc--adobecom.hlx.page';
   else domain = origin;
   return domain;
 }
@@ -278,7 +279,7 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
 function updateQueryParam(url, params) {
   const parsedUrl = new URL(url);
   const domain = getOrigin(parsedUrl.origin);
-  parsedUrl.replace(parsedUrl.origin, domain);
+  parsedUrl.hostname = domain;
   Object.entries(params).forEach(([key, value]) => {
     parsedUrl.searchParams.set(key, value);
   });
