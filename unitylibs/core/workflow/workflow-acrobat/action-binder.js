@@ -548,23 +548,9 @@ export default class ActionBinder {
         this.acrobatApiConfig.acrobatEndpoint.createAsset,
         { body: JSON.stringify(data) },
       );
-      if (accountType === 'guest' && isNonPdf) {
-        cOpts = {
-          targetProduct: this.workflowCfg.productName,
-          payload: {
-            languageRegion: this.workflowCfg.langRegion,
-            languageCode: this.workflowCfg.langCode,
-            verb: this.workflowCfg.enabledFeatures[0],
-            feedback: 'nonpdf',
-          },
-        };
-        await this.getRedirectUrl(cOpts);
-        if (!this.redirectUrl) return;
-        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
-        this.redirectWithoutUpload = true;
-        return;
-      }
-      cOpts = {
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: assetData } }));
+      await this.chunkPdf(assetData, blobData, file.type);
+      const operationItem = {
         assetId: assetData.id,
         targetProduct: this.workflowCfg.productName,
         payload: {
@@ -584,7 +570,6 @@ export default class ActionBinder {
       await this.getRedirectUrl(cOpts);
       if (!this.redirectUrl) return;
       this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
-      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: assetData } }));
       await this.chunkPdf(assetData, blobData, file.type);
       this.operations.push(assetData.id);
     } catch (e) {
