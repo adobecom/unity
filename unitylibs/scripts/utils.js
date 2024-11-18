@@ -39,7 +39,7 @@ export function getGuestAccessToken() {
     const { token } = window.adobeIMS.getAccessToken();
     return `Bearer ${token}`;
   } catch (e) {
-    return '';
+    return window.token;
   }
 }
 
