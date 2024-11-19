@@ -172,8 +172,8 @@ export default class ActionBinder {
         unityConfig.errorToastEvent,
         {
           detail: {
-            code,
-            message: `${message}`,
+            code, 
+            message: `${message || 'Unable to process the request'}`, 
             status,
             info,
             accountType: this.getAccountType(),
@@ -269,21 +269,41 @@ export default class ActionBinder {
   };
 
   async continueInApp() {
-    if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
-    this.LOADER_LIMIT = 100;
-    this.updateProgressBar(this.splashScreenEl, 100);
-    try {
-      await this.waitForCookie(2000);
-      this.updateProgressBar(this.splashScreenEl, 100);
-      if (!this.checkCookie()) {
-        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
-        await new Promise(r => setTimeout(r, 500));
-      }
-      window.location.href = this.redirectUrl;
-    } catch (e) {
-      await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when redirecting to product.', e.showError);
-    }
+    if (!this.operations.length) return;
+    const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
+    const cOpts = {
+      assetId,
+      targetProduct: this.workflowCfg.productName,
+      payload: {
+        languageRegion: this.workflowCfg.langRegion,
+        languageCode: this.workflowCfg.langCode,
+        verb: this.workflowCfg.enabledFeatures[0],
+        assetMetadata: {
+          [assetId]: {
+            name: filename,
+            size: filesize,
+            type: filetype,
+          },
+        },
+      },
+    };
+    this.promiseStack.push(
+      this.serviceHandler.postCallToService(
+        this.acrobatApiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(cOpts) },
+      ),
+    );
+    await Promise.all(this.promiseStack)
+      .then((resArr) => {
+        const response = resArr[resArr.length - 1];
+        if (!response?.url) throw new Error('Error connecting to App');
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
+        window.location.href = response.url;
+      })
+      .catch(async (e) => {
+        await this.showSplashScreen();
+        await this.dispatchErrorToast('verb_upload_error_generic', 500, "Exception thrown when redirecting to product.", e.showError);
+      });
   }
 
   async cancelAcrobatOperation() {
@@ -461,7 +481,7 @@ export default class ActionBinder {
       });
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying PDF page count.', e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, "Exception thrown when verifying content.", e.showError);
       this.operations = [];
       return false;
     }
