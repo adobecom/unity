@@ -99,6 +99,7 @@ export default class ActionBinder {
           break;
         case value.actionType == 'removebg':
           await this.removeBackground(value);
+          this.progressCircleEl.classList.remove('show');
           break;
         case value.actionType == 'changebg':
           await this.changeBackground(value);
