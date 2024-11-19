@@ -88,7 +88,7 @@
         {
           "actionType": "setCssStyle",
           "propertyName": "opacity",
-          "propertyValue": 0.5,
+          "propertyValue": 1,
           "targets": [".qa-workspace .canvas img"]
         },
         {
