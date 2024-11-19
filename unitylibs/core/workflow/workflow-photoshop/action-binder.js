@@ -79,8 +79,8 @@ export default class ActionBinder {
       if (!this.progressCircleEl) {
         this.progressCircleEl = await this.createSpectrumProgress();
         document.querySelector('.canvas').classList.add('interactive-area');
-        document.querySelector('.canvas').classList.add('loading');
         document.querySelector('.canvas').append(this.progressCircleEl);
+        this.progressCircleEl.classList.add('show');
       }
     }
     for (const value of values) {
