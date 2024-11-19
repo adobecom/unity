@@ -1,3 +1,7 @@
+.canvas.interactive-area {
+  position: relative;
+}
+
 .unity-enabled .interactive-area .progress-holder,
 .unity-enabled .interactive-area .progress-circle {
   display: none;

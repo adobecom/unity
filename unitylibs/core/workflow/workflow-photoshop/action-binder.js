@@ -78,6 +78,7 @@ export default class ActionBinder {
     if(this.workflowCfg.targetCfg.loader) {
       if (!this.progressCircleEl) {
         this.progressCircleEl = await this.createSpectrumProgress();
+        document.querySelector('.canvas').classList.add('interactive-area');
         document.querySelector('.canvas').append(this.progressCircleEl);
       }
     }
