@@ -75,6 +75,7 @@
   },
   "fqa-unity": {
     "renderWidget": false,
+    "loader": true,
     "selector": ".dropzone-container",
     "actionMap": {
       ".file-input": [
