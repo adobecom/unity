@@ -233,6 +233,7 @@ class WfInitiator {
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
+    if(targetCfg.loader) return block.querySelector('.canvas');
     if (!targetCfg.renderWidget) return null;
     asset.insertAdjacentElement('beforebegin', iArea);
     iArea.append(asset);
