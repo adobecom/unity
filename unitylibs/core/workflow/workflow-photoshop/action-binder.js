@@ -66,7 +66,7 @@ export default class ActionBinder {
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
     );
-    if (this.workflowCfg.targetCfg.renderWidget || this.workflowCfg.loader) {
+    if (this.workflowCfg.targetCfg.renderWidget || this.workflowCfg.targetCfg.loader) {
       const svgs = this.canvasArea.querySelectorAll('.unity-widget img[src*=".svg"');
       await loadSvgs(svgs);
       if (!this.progressCircleEl) {
