@@ -66,12 +66,19 @@ export default class ActionBinder {
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
     );
-    if (this.workflowCfg.targetCfg.renderWidget || this.workflowCfg.targetCfg.loader) {
+    if (this.workflowCfg.targetCfg.renderWidget) {
       const svgs = this.canvasArea.querySelectorAll('.unity-widget img[src*=".svg"');
       await loadSvgs(svgs);
       if (!this.progressCircleEl) {
         this.progressCircleEl = await this.createSpectrumProgress();
         this.canvasArea.append(this.progressCircleEl);
+      }
+    }
+
+    if(this.workflowCfg.targetCfg.loader) {
+      if (!this.progressCircleEl) {
+        this.progressCircleEl = await this.createSpectrumProgress();
+        document.querySelector('.canvas').append(this.progressCircleEl);
       }
     }
     for (const value of values) {
