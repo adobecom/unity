@@ -102,7 +102,7 @@ export default class ActionBinder {
           this.progressCircleEl.classList.remove('show');
           document.querySelector('.open-in-app-cta').addEventListener('click', (e) => {
             e.preventDefault();
-            window.localtion.href = 'https://stage.projectx.corp.adobe.com/new?firefly-img=https://platform-cs-stage-jpn3.adobe.io/content/storage/path/urn:aaid:sc:AP:0328f3fd-6d25-5c0b-9cbc-6f7a142b26da/cloud-content/Uploads/output.png&referrer=firefly&height=1100&width=1450&intent=image-actions&edit-action=create-social-post&entryPoint=firefly-text-to-image&neural-feature=bitmap&mv=other&mv2=ccx&promoid=5JRH87QX';
+            window.location.href = 'https://stage.projectx.corp.adobe.com/new?firefly-img=https://platform-cs-stage-jpn3.adobe.io/content/storage/path/urn:aaid:sc:AP:0328f3fd-6d25-5c0b-9cbc-6f7a142b26da/cloud-content/Uploads/output.png&referrer=firefly&height=1100&width=1450&intent=image-actions&edit-action=create-social-post&entryPoint=firefly-text-to-image&neural-feature=bitmap&mv=other&mv2=ccx&promoid=5JRH87QX';
           })
           break;
         case value.actionType == 'changebg':
