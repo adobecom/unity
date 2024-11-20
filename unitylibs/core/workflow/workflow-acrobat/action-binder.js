@@ -222,6 +222,17 @@ export default class ActionBinder {
     await Promise.all(this.promiseStack);
   }
 
+  checkCookie(cookieName) {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith(cookieName + '=')) {
+            return true;
+        }
+    }
+    return false;
+}
+
   async continueInApp() {
     if (!this.operations.length) return;
     const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
@@ -252,7 +263,25 @@ export default class ActionBinder {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
         this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
-        window.location.href = response.url;
+        cookieNames = ['UTS_Uploaded', 'UTS_Redirect'];
+        const checkCookieInterval = setInterval(() => {
+          cookieNames.forEach((cookieName) => {
+            if (checkCookie(cookieName)) {
+              cookiesFound += 1;
+            }
+          });
+          if (cookiesFound === 2) {
+            clearInterval(checkCookieInterval);
+            window.location.href = response.url;
+          }
+        }, 100);
+        setTimeout(() => {
+          if (cookiesFound < 2) {
+            console.log('Timeout reached. Not all cookies found.');
+          }
+          clearInterval(checkCookieInterval);
+          window.location.href = response.url;
+        }, 1000);
       })
       .catch(async (e) => {
         await this.showSplashScreen();
