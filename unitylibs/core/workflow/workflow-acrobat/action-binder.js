@@ -296,20 +296,20 @@ export default class ActionBinder {
   }
 
   async loadSplashFragment() {
-    if (!this.workflowCfg.targetCfg.showSplashScreen) return;
-    this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
-    const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
-    const html = await resp.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const sections = doc.querySelectorAll('body > div');
-    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
-    f.append(...sections);
-    const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
-    splashDiv.append(f);
-    const img = f.querySelector('img');
-    if (img) loadImg(img);
-    await loadArea(f);
-    return f;
+    // if (!this.workflowCfg.targetCfg.showSplashScreen) return;
+    // this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
+    // const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
+    // const html = await resp.text();
+    // const doc = new DOMParser().parseFromString(html, 'text/html');
+    // const sections = doc.querySelectorAll('body > div');
+    // const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
+    // f.append(...sections);
+    // const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
+    // splashDiv.append(f);
+    // const img = f.querySelector('img');
+    // if (img) loadImg(img);
+    // await loadArea(f);
+    // return f;
   }
 
   async handleSplashProgressBar() {
