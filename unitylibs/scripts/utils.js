@@ -35,8 +35,6 @@ const {
 export {
   createTag, loadStyle, getConfig, loadLink, loadScript, localizeLink, loadArea,
 };
-const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
-export { decorateDefaultLinkAnalytics };
 
 export function getGuestAccessToken() {
   try {
@@ -172,6 +170,7 @@ async function createErrorToast() {
     e.preventDefault();
     e.target.closest('.alert-holder').style.display = 'none';
   });
+  const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
   decorateDefaultLinkAnalytics(errholder);
   return errholder;
 }

@@ -8,7 +8,11 @@ import {
   decorateDefaultLinkAnalytics,
   createIntersectionObserver,
   priorityLoad,
+  getLibs,
 } from '../../../scripts/utils.js';
+
+const miloLibs = getLibs('/libs');
+const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
 
 function resetSliders(unityWidget) {
   const adjustmentCircles = unityWidget.querySelectorAll('.adjustment-circle');
