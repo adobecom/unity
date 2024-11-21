@@ -257,7 +257,7 @@ export default class ActionBinder {
       assets: [{id}]
     });
     
-    const res1 = await fetch(url, {
+    const res1 = await fetch(`${baseURL}/providers/ExpressRemoveBackground`, {
       method: "POST",
       body: body1,
       ...headers,
