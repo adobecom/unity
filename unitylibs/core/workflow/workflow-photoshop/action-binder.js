@@ -98,6 +98,8 @@ export default class ActionBinder {
           value.targets.forEach((t) => this.toggleElement(t, this.block));
           break;
         case value.actionType == 'removebg':
+          console.log('here');
+          return;
           await this.removeBackground(value);
           this.progressCircleEl.classList.remove('show');
           document.querySelector('.open-in-app-cta').addEventListener('click', (e) => {
@@ -201,17 +203,33 @@ export default class ActionBinder {
   }
 
   async uploadAsset(imgUrl) {
-    const resJson = await this.serviceHandler.postCallToService(
-      this.psApiConfig.psEndPoint.assetUpload,
-      {},
-    );
-    const { id, href } = resJson;
+    // const resJson = await this.serviceHandler.postCallToService(
+    //   this.psApiConfig.psEndPoint.assetUpload,
+    //   {},
+    // );
+    // const { id, href } = resJson;
+    // const blobData = await this.getImageBlobData(imgUrl);
+    // const fileType = this.getFileType();
+    // const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
+    // const { origin } = new URL(imgUrl);
+    // if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
+    // return assetId;
+
     const blobData = await this.getImageBlobData(imgUrl);
     const fileType = this.getFileType();
-    const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
+    const uploadOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': fileType },
+      body: blobData,
+    };
+    const response = await fetch(storageUrl, uploadOptions);
+    if (response.status != 200) return '';
     const { origin } = new URL(imgUrl);
     if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
     return assetId;
+    
+
+
   }
 
   userImgUpload(params, e) {

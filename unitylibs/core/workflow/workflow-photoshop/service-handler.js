@@ -28,6 +28,30 @@ export default class ServiceHandler {
     };
   }
 
+  async postCallToServiceExpress(api, options, data) {
+    const postData = {
+      "surfaceId": "unity",
+      "targetProduct": "express",
+      ...data
+    };
+
+    const postOpts = {
+      method: 'POST',
+      data: JSON.stringify(postData),
+      ...this.getHeaders(),
+      ...options,
+    };
+
+    try {
+      const response = await fetch(api, postOpts);
+      const resJson = await response.json();
+      return resJson;
+    } catch (err) {
+      if (this.renderWidget) await this.errorToast(err);
+    }
+    return {};
+  }
+
   async postCallToService(api, options) {
     const postOpts = {
       method: 'POST',
