@@ -98,9 +98,8 @@ export default class ActionBinder {
           value.targets.forEach((t) => this.toggleElement(t, this.block));
           break;
         case value.actionType == 'removebg':
-          console.log('here');
-          return;
-          await this.removeBackground(value);
+          await this.removeBackgroundExpress();
+          //await this.removeBackground(value);
           this.progressCircleEl.classList.remove('show');
           document.querySelector('.open-in-app-cta').addEventListener('click', (e) => {
             e.preventDefault();
@@ -203,33 +202,17 @@ export default class ActionBinder {
   }
 
   async uploadAsset(imgUrl) {
-    // const resJson = await this.serviceHandler.postCallToService(
-    //   this.psApiConfig.psEndPoint.assetUpload,
-    //   {},
-    // );
-    // const { id, href } = resJson;
-    // const blobData = await this.getImageBlobData(imgUrl);
-    // const fileType = this.getFileType();
-    // const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
-    // const { origin } = new URL(imgUrl);
-    // if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
-    // return assetId;
-
+    const resJson = await this.serviceHandler.postCallToService(
+      this.psApiConfig.psEndPoint.assetUpload,
+      {},
+    );
+    const { id, href } = resJson;
     const blobData = await this.getImageBlobData(imgUrl);
     const fileType = this.getFileType();
-    const uploadOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': fileType },
-      body: blobData,
-    };
-    const response = await fetch(storageUrl, uploadOptions);
-    if (response.status != 200) return '';
+    const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
     const { origin } = new URL(imgUrl);
     if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
     return assetId;
-    
-
-
   }
 
   userImgUpload(params, e) {
@@ -245,6 +228,43 @@ export default class ActionBinder {
     let { target } = params;
     if (typeof target === 'string') target = this.block.querySelector(target);
     target.src = objUrl;
+  }
+
+  async removeBackgroundExpress() {
+    const baseURL = ' https://unity-dev.adobe.io/api/v1';
+    const file = document.querySelector('.file-input').files[0];
+    const headers = this.serviceHandler.getHeaders
+  
+    const formData = {
+      "surfaceId": "unity",
+      "targetProduct": "express",
+      "name": file.name,
+      "size": file.size,
+      "format": file.type
+    }
+    // Upload the image using fetch
+    const res = await fetch(`${baseURL}/asset`, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(formData)
+    });
+    response =  await res.json();
+    const { id } = response;
+
+    const body1 = JSON.stringify({
+      surfaceId: "unity",
+      targetProduct: "Express",
+      assets: [{id}]
+    });
+    
+    const res1 = await fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: body1
+    })
+
+    response =  await res1.json();
+    console.log(id);
   }
 
   async removeBackground(params) {
