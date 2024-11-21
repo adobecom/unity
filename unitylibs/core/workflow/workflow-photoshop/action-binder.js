@@ -279,6 +279,12 @@ export default class ActionBinder {
 
     const response2 =  await res2.json();
     console.log(response2);
+
+    document.querySelector('.open-in-app-cta').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = response2.url;
+    })
+
   }
 
   async removeBackground(params) {
