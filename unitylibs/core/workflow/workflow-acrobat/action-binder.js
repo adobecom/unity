@@ -128,7 +128,7 @@ export default class ActionBinder {
       }
     }
     //if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
-    await this.delayedSplashLoader();
+    if (b === this.block) await this.delayedSplashLoader();
   }
 
   extractFiles(e) {
@@ -316,18 +316,19 @@ export default class ActionBinder {
 
   async delayedSplashLoader() {
     const eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
-    const interactionHandler = () => {
-      this.loadSplashFragment();
+    const interactionHandler = async () => {
+      await this.loadSplashFragment();
+      this.workflowCfg.targetCfg.showSplashScreen = 
       cleanup(interactionHandler);
     };
 
-    const timeoutHandler = () => {
-      this.loadSplashFragment();
+    const timeoutHandler = async () => {
+      await this.loadSplashFragment();
       cleanup(interactionHandler);
     };
 
     // Timeout to load after 8 seconds
-    const timeoutId = setTimeout(timeoutHandler, 8000);
+    let timeoutId = setTimeout(timeoutHandler, 8000);
 
     const cleanup = (handler) => {
       if (timeoutId) {
