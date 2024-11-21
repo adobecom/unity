@@ -277,11 +277,12 @@ export default class ActionBinder {
         }, 100);
         setTimeout(() => {
           if (cookiesFound < 2) {
+            this.dispatchErrorToast('verb_upload_error_generic', 200, "Not all cookies found, redirecting anyway", false);
             console.log('Timeout reached. Not all cookies found.');
           }
           clearInterval(checkCookieInterval);
           window.location.href = response.url;
-        }, 1000);
+        }, 2000);
       })
       .catch(async (e) => {
         await this.showSplashScreen();
