@@ -124,6 +124,7 @@ class WfInitiator {
   async priorityLibFetch(renderWidget, workflowName) {
     const priorityList = [
       `${getUnityLibs()}/core/workflow/${workflowName}/action-binder.js`,
+      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/target-config.json`,
     ];
     if (renderWidget) {
       priorityList.push(
