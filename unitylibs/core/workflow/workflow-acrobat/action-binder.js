@@ -315,7 +315,7 @@ export default class ActionBinder {
   }
 
   async delayedSplashLoader() {
-    eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
+    const eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
     const interactionHandler = () => {
       this.loadSplashFragment();
       cleanup(interactionHandler);
