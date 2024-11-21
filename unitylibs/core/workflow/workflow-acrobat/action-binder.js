@@ -128,7 +128,7 @@ export default class ActionBinder {
       }
     }
     //if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
-    this.delayedSplashLoader();
+    await this.delayedSplashLoader();
   }
 
   extractFiles(e) {
