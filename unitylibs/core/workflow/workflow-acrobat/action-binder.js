@@ -263,7 +263,7 @@ export default class ActionBinder {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
         this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
-        cookieNames = ['UTS_Uploaded', 'UTS_Redirect'];
+        const cookieNames = ['UTS_Uploaded', 'UTS_Redirect'];
         const checkCookieInterval = setInterval(() => {
           cookieNames.forEach((cookieName) => {
             if (checkCookie(cookieName)) {
