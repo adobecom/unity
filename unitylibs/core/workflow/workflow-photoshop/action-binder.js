@@ -248,7 +248,7 @@ export default class ActionBinder {
       body: JSON.stringify(formData),
       ...headers,
     });
-    response =  await res.json();
+    const response =  await res.json();
     const { id } = response;
 
     const body1 = JSON.stringify({
@@ -263,8 +263,8 @@ export default class ActionBinder {
       ...headers,
     })
 
-    response =  await res1.json();
-    console.log(id);
+    response1 =  await res1.json();
+    console.log(response1);
   }
 
   async removeBackground(params) {
