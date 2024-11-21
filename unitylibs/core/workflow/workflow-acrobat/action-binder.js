@@ -315,27 +315,35 @@ export default class ActionBinder {
   }
 
   async delayedSplashLoader() {
-    if (!this.splashScreenEl) return null;
+    eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
+    const interactionHandler = () => {
+      this.loadSplashFragment();
+      cleanup(interactionHandler);
+    };
 
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(resolve, 8000);
-      // Single interaction handler
-      const loadHandler = async (event) => {
-        ['mousemove', 'keydown', 'touchstart', 'click'].forEach(type => 
-          window.removeEventListener(type, loadHandler)
+    const timeoutHandler = () => {
+      this.loadSplashFragment();
+      cleanup(interactionHandler);
+    };
+
+    // Timeout to load after 8 seconds
+    const timeoutId = setTimeout(timeoutHandler, 8000);
+
+    const cleanup = (handler) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (eventListeners) {
+        eventListeners.forEach((event) =>
+          document.removeEventListener(event, handler)
         );
-        clearTimeout(timer);
-        resolve();
-      };
-      ['mousemove', 'keydown', 'touchstart', 'click'].forEach(type => 
-        window.addEventListener(type, loadHandler, { 
-          once: false, 
-          passive: true 
-        })
-      );
-    }).then(async () => {
-      return this.loadSplashFragment();
-    });
+        eventListeners = null;
+      }
+    }
+    eventListeners.forEach((event) =>
+      document.addEventListener(event, interactionHandler, { once: true })
+    );
   }
 
   async handleSplashProgressBar() {
