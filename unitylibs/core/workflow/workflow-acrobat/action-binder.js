@@ -266,7 +266,7 @@ export default class ActionBinder {
         const cookieNames = ['UTS_Uploaded', 'UTS_Redirect'];
         const checkCookieInterval = setInterval(() => {
           cookieNames.forEach((cookieName) => {
-            if (checkCookie(cookieName)) {
+            if (this.checkCookie(cookieName)) {
               cookiesFound += 1;
             }
           });
