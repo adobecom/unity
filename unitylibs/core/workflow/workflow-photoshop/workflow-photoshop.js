@@ -5,7 +5,6 @@ import {
   loadImg,
   createActionBtn,
   loadSvg,
-  decorateDefaultLinkAnalytics,
   createIntersectionObserver,
   priorityLoad,
   getLibs,
