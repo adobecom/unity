@@ -318,7 +318,6 @@ export default class ActionBinder {
     let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
     const interactionHandler = async () => {
       await this.loadSplashFragment();
-      this.workflowCfg.targetCfg.showSplashScreen = 
       cleanup(interactionHandler);
     };
 
