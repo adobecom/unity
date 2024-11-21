@@ -233,7 +233,7 @@ export default class ActionBinder {
   async removeBackgroundExpress() {
     const baseURL = ' https://unity-dev.adobe.io/api/v1';
     const file = document.querySelector('.file-input').files[0];
-    const headers = this.serviceHandler.getHeaders
+    const headers = this.serviceHandler.getHeaders();
   
     const formData = {
       "surfaceId": "unity",
