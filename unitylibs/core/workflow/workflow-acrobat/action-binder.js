@@ -276,9 +276,11 @@ export default class ActionBinder {
             window.location.href = response.url;
           }
         }, 100);
-        setTimeout(() => {
+        setTimeout(async() => {
           if (cookiesFound < 2) {
-            this.dispatchErrorToast('', 200, "Not all cookies found, redirecting anyway", true);
+            await this.dispatchErrorToast('', 200, "Not all cookies found, redirecting anyway", true);  
+            const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
+            await sleep(500);        
             console.log('Timeout reached. Not all cookies found.');
           }
           clearInterval(checkCookieInterval);
