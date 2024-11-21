@@ -278,7 +278,7 @@ export default class ActionBinder {
         }, 100);
         setTimeout(() => {
           if (cookiesFound < 2) {
-            this.dispatchErrorToast('verb_upload_error_generic', 200, "Not all cookies found, redirecting anyway", false);
+            this.dispatchErrorToast('', 200, "Not all cookies found, redirecting anyway", true);
             console.log('Timeout reached. Not all cookies found.');
           }
           clearInterval(checkCookieInterval);
