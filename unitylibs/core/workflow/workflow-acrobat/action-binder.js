@@ -127,7 +127,8 @@ export default class ActionBinder {
           break;
       }
     }
-    if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
+    //if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
+    this.delayedSplashLoader();
   }
 
   extractFiles(e) {
@@ -296,20 +297,45 @@ export default class ActionBinder {
   }
 
   async loadSplashFragment() {
-    // if (!this.workflowCfg.targetCfg.showSplashScreen) return;
-    // this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
-    // const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
-    // const html = await resp.text();
-    // const doc = new DOMParser().parseFromString(html, 'text/html');
-    // const sections = doc.querySelectorAll('body > div');
-    // const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
-    // f.append(...sections);
-    // const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
-    // splashDiv.append(f);
-    // const img = f.querySelector('img');
-    // if (img) loadImg(img);
-    // await loadArea(f);
-    // return f;
+    if (!this.workflowCfg.targetCfg.showSplashScreen) return;
+    this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
+    const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
+    const html = await resp.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const sections = doc.querySelectorAll('body > div');
+    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
+    f.append(...sections);
+    const splashDiv = document.querySelector(this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent);
+    splashDiv.append(f);
+    const img = f.querySelector('img');
+    if (img) loadImg(img);
+    await loadArea(f);
+    this.splashScreenEl = f;
+    return f;
+  }
+
+  async delayedSplashLoader() {
+    if (!this.splashScreenEl) return null;
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(resolve, 8000);
+      // Single interaction handler
+      const loadHandler = async (event) => {
+        ['mousemove', 'keydown', 'touchstart', 'click'].forEach(type => 
+          window.removeEventListener(type, loadHandler)
+        );
+        clearTimeout(timer);
+        resolve();
+      };
+      ['mousemove', 'keydown', 'touchstart', 'click'].forEach(type => 
+        window.addEventListener(type, loadHandler, { 
+          once: false, 
+          passive: true 
+        })
+      );
+    }).then(async () => {
+      return this.loadSplashFragment();
+    });
   }
 
   async handleSplashProgressBar() {
