@@ -245,8 +245,8 @@ export default class ActionBinder {
     // Upload the image using fetch
     const res = await fetch(`${baseURL}/asset`, {
       method: "POST",
-      headers: headers,
-      body: JSON.stringify(formData)
+      body: JSON.stringify(formData),
+      ...headers,
     });
     response =  await res.json();
     const { id } = response;
@@ -259,8 +259,8 @@ export default class ActionBinder {
     
     const res1 = await fetch(url, {
       method: "POST",
-      headers: headers,
-      body: body1
+      body: body1,
+      ...headers,
     })
 
     response =  await res1.json();
