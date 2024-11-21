@@ -278,9 +278,9 @@ export default class ActionBinder {
         }, 100);
         setTimeout(async() => {
           if (cookiesFound < 2) {
-            await this.dispatchErrorToast('', 200, "Not all cookies found, redirecting anyway", true);  
-            //const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
-            //await sleep(500);        
+            await this.dispatchErrorToast('', 200, "Not all cookies found, redirecting anyway", true);
+            const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
+            await sleep(500); 
             console.log('Timeout reached. Not all cookies found.');
           }
           clearInterval(checkCookieInterval);
