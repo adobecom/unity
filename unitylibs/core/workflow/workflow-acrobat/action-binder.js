@@ -315,7 +315,7 @@ export default class ActionBinder {
   }
 
   async delayedSplashLoader() {
-    const eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
+    let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
     const interactionHandler = async () => {
       await this.loadSplashFragment();
       this.workflowCfg.targetCfg.showSplashScreen = 
