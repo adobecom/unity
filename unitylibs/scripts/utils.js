@@ -141,8 +141,8 @@ export async function priorityLoad(parr) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
       promiseArr.push(pr);
     }else if (p.endsWith('.json')) {
-      // const pr = new Promise((res) => { loadLink(p, { as: 'fetch', crossorigin: 'anonymous', rel: 'preload' }); });
-      // promiseArr.push(pr);
+      const pr = new Promise((res) => { loadLink(p, { as: 'fetch', crossorigin: 'anonymous', rel: 'preload', callback: res  }); });
+      promiseArr.push(pr);
       
     } else {
       promiseArr.push(fetch(p));
