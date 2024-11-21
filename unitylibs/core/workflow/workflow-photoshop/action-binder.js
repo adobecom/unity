@@ -251,20 +251,34 @@ export default class ActionBinder {
     const response =  await res.json();
     const { id } = response;
 
-    const body1 = JSON.stringify({
-      surfaceId: "unity",
-      targetProduct: "Express",
-      assets: [{id}]
+    // const body1 = JSON.stringify({
+    //   surfaceId: "unity",
+    //   targetProduct: "express",
+    //   assets: [{id}]
+    // });
+    
+    // const res1 = await fetch(`${baseURL}/providers/ExpressRemoveBackground`, {
+    //   method: "POST",
+    //   body: body1,
+    //   ...headers,
+    // })
+
+    // const response1 =  await res1.json();
+    // console.log(response1);
+
+    const body2 = JSON.stringify({
+      targetProduct: "express",
+      assetId: id
     });
     
-    const res1 = await fetch(`${baseURL}/providers/ExpressRemoveBackground`, {
+    const res2 = await fetch(`${baseURL}/asset/connector`, {
       method: "POST",
-      body: body1,
+      body: body2,
       ...headers,
     })
 
-    response1 =  await res1.json();
-    console.log(response1);
+    const response2 =  await res2.json();
+    console.log(response2);
   }
 
   async removeBackground(params) {
