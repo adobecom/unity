@@ -296,6 +296,8 @@ export default class ActionBinder {
       targetProduct: "express",
       assetId: response1.assetId
     });
+
+    document.querySelector('.canvas img').src = response1.outputUrl;
     
     const res2 = await fetch(`${baseURL}/asset/connector`, {
       method: "POST",
