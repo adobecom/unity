@@ -98,8 +98,8 @@ export default class ActionBinder {
           value.targets.forEach((t) => this.toggleElement(t, this.block));
           break;
         case value.actionType == 'removebg':
-          await this.removeBackgroundExpress();
-          //await this.removeBackground(value);
+          // await this.removeBackgroundExpress();
+          await this.removeBackground(value);
           this.progressCircleEl.classList.remove('show');
           document.querySelector('.open-in-app-cta').addEventListener('click', (e) => {
             e.preventDefault();
