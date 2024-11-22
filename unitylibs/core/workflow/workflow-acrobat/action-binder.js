@@ -233,7 +233,7 @@ export default class ActionBinder {
       const interval = 100;
       let elapsed = 0;
       const intervalId = setInterval(() => {
-        if (checkCookie() || elapsed >= timeout) {
+        if (this.checkCookie() || elapsed >= timeout) {
           clearInterval(intervalId);
           resolve();
         }
