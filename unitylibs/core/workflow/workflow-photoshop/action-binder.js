@@ -270,7 +270,7 @@ export default class ActionBinder {
     };
     const responseU = await fetch(href, uploadOptions);
 
-    const assetData = { assetId, targetProduct: 'express' };
+    const assetData = { assetId: id, targetProduct: 'express' };
     const imgScanOptions = {
       method: 'POST',
       headers: getHeaders(apiKey),
