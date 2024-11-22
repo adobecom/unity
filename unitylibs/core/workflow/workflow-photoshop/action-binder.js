@@ -273,8 +273,8 @@ export default class ActionBinder {
     const assetData = { assetId: id, targetProduct: 'express' };
     const imgScanOptions = {
       method: 'POST',
-      headers: this.getHeaders(apiKey),
       body: JSON.stringify(assetData),
+      ...headers
     };
     await fetch(`${baseURL}/asset/finalize`, imgScanOptions);
 
