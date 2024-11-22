@@ -339,11 +339,13 @@ function createSlider(cfg, tray, propertyName, label, cssFilter, valObj) {
   const actionSliderCircle = createTag('a', { href: '#', class: `adjustment-circle ${propertyName}` }, actionAnalytics);
   actionSliderDiv.append(actionSliderInput, actionSliderCircle);
   actionDiv.append(actionLabel, actionSliderDiv);
+  const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
   actionSliderInput.addEventListener('input', () => {
     const { value } = actionSliderInput;
     const centerOffset = (value - minVal) / (maxVal - minVal);
     const moveCircle = 3 + (centerOffset * 94);
-    actionSliderCircle.style.left = `${moveCircle}%`;
+    if (isRtl) actionSliderCircle.style.inlineEnd = `${moveCircle}%`;
+    else actionSliderCircle.style.inlineStart = `${moveCircle}%`;
     const img = targetEl.querySelector(':scope > picture img');
     updateAdjustment(cfg, cssFilter, propertyName, value);
     cfg.presentState.adjustments.modified = true;
