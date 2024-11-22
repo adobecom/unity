@@ -277,6 +277,9 @@ export default class ActionBinder {
         if (this.checkCookie()) {
           window.location.href = response.url;
         }
+        else {
+          await this.dispatchErrorToast('', 200, "Not all cookies found, redirecting anyway", true);
+        }
       })
       .catch(async (e) => {
         await this.showSplashScreen();
