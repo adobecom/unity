@@ -36,8 +36,8 @@ export { decorateDefaultLinkAnalytics };
 
 export function getGuestAccessToken() {
   try {
-    const { token } = window.token || window.adobeIMS.getAccessToken();
-    return `Bearer ${token}`;
+    const { token } =  window.adobeIMS.getAccessToken();
+    return `Bearer ${window.token || token}`;
   } catch (e) {
     return window.token;
   }
