@@ -292,10 +292,9 @@ export default class ActionBinder {
 
     const response1 =  await res1.json();
     console.log(response1);
-    return;
     const body2 = JSON.stringify({
       targetProduct: "express",
-      assetId: id
+      assetId: response1.assetId
     });
     
     const res2 = await fetch(`${baseURL}/asset/connector`, {
