@@ -344,8 +344,13 @@ function createSlider(cfg, tray, propertyName, label, cssFilter, valObj) {
     const { value } = actionSliderInput;
     const centerOffset = (value - minVal) / (maxVal - minVal);
     const moveCircle = 3 + (centerOffset * 94);
-    if (isRtl) actionSliderCircle.style.right = `${moveCircle}%`;
-    else actionSliderCircle.style.left = `${moveCircle}%`;
+    if (isRtl) {
+      actionSliderCircle.style.right = `${moveCircle}%`;
+      actionSliderCircle.style.left = '';
+    } else {
+      actionSliderCircle.style.left = `${moveCircle}%`;
+      actionSliderCircle.style.right = '';
+    }
     const img = targetEl.querySelector(':scope > picture img');
     updateAdjustment(cfg, cssFilter, propertyName, value);
     cfg.presentState.adjustments.modified = true;
