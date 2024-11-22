@@ -98,8 +98,8 @@ export default class ActionBinder {
           value.targets.forEach((t) => this.toggleElement(t, this.block));
           break;
         case value.actionType == 'removebg':
-          // await this.removeBackgroundExpress();
-          await this.removeBackground(value);
+          await this.removeBackgroundExpress();
+          // await this.removeBackground(value);
           this.progressCircleEl.classList.remove('show');
           document.querySelector('.open-in-app-cta').addEventListener('click', (e) => {
             e.preventDefault();
@@ -230,9 +230,21 @@ export default class ActionBinder {
     target.src = objUrl;
   }
 
+  async getBlobData(file) {
+    const objUrl = URL.createObjectURL(file);
+    const response = await fetch(objUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch blob: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    URL.revokeObjectURL(objUrl);
+    return blob;
+  }
+
   async removeBackgroundExpress() {
     const baseURL = ' https://unity-dev.adobe.io/api/v1';
     const file = document.querySelector('.file-input').files[0];
+    const blobData = await this.getBlobData(file);
     const headers = this.serviceHandler.getHeaders();
   
     const formData = {
@@ -249,7 +261,22 @@ export default class ActionBinder {
       ...headers,
     });
     const response =  await res.json();
-    const { id } = response;
+    const { href, id } = response;
+
+    const uploadOptions = {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: blobData,
+    };
+    const responseU = await fetch(href, uploadOptions);
+
+    const assetData = { assetId, targetProduct: 'express' };
+    const imgScanOptions = {
+      method: 'POST',
+      headers: getHeaders(apiKey),
+      body: JSON.stringify(assetData),
+    };
+    await fetch(`${baseURL}/asset/finalize`, imgScanOptions);
 
     const body1 = JSON.stringify({
       surfaceId: "unity",
