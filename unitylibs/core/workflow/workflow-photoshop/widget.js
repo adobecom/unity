@@ -92,6 +92,20 @@ export default class UnityWidget {
         mobileRefreshHolder.classList.remove('show');
       });
     });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) {
+          this.target.querySelector('img').style.filter = '';
+          iconHolder.classList.add('show');
+          refreshHolder.classList.remove('show');
+          mobileRefreshHolder.classList.remove('show');
+        }
+      });
+    });
+  
+    observer.observe(this.target);
+
     this.initRefreshActionMap('.unity-action-area .widget-refresh-button');
     this.initRefreshActionMap('.interactive-area > .widget-refresh-button');
     unityaa.append(refreshHolder);

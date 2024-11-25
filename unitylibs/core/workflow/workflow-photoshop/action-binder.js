@@ -129,6 +129,17 @@ export default class ActionBinder {
             e.preventDefault();
             await this.psActionMaps(values, e);
           });
+          if(values.find(v => v.actionType == 'refresh')) {
+            const observer = new IntersectionObserver((entries) => {
+              entries.forEach(async entry => {
+                if (!entry.isIntersecting) {
+                  await this.psActionMaps(values);
+                }
+              });
+            });
+          
+            observer.observe(this.canvasArea);
+          }
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
