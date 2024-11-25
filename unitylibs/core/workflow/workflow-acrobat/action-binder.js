@@ -86,7 +86,6 @@ export default class ActionBinder {
           break;
         case value.actionType === 'continueInApp':
           this.LOADER_LIMIT = 100;
-          this.updateProgressBar(this.splashScreenEl, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
@@ -274,6 +273,7 @@ export default class ActionBinder {
         if (!response?.url) throw new Error('Error connecting to App');
         this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));        
         await this.waitForCookie(2000);
+        this.updateProgressBar(this.splashScreenEl, 100);
         if (this.checkCookie()) {
           window.location.href = response.url;
         }
