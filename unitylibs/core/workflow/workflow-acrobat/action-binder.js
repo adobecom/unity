@@ -167,8 +167,8 @@ export default class ActionBinder {
         unityConfig.errorToastEvent,
         {
           detail: {
-            code, 
-            message: `${message || 'Unable to process the request'}`, 
+            code,
+            message: `${message || 'Unable to process the request'}`,
             status,
             info,
             accountType: this.getAccountType(),
@@ -225,7 +225,7 @@ export default class ActionBinder {
     await Promise.all(this.promiseStack);
   }
 
- checkCookie = () => {
+  checkCookie = () => {
     const cookies = document.cookie.split(';').map((item) => item.trim());
     const targets = [/^UTS_Uploading=/, /^UTS_Uploaded=/];
     return targets.every((regex) => cookies.some((item) => regex.test(item)));
@@ -275,7 +275,7 @@ export default class ActionBinder {
       .then(async (resArr) => {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
-        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));        
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
         await this.waitForCookie(2000);
         this.updateProgressBar(this.splashScreenEl, 100);
         if (this.checkCookie()) {
@@ -284,7 +284,7 @@ export default class ActionBinder {
         else {
           await this.dispatchErrorToast('verb_cookie_not_set', 200, "Not all cookies found, redirecting anyway", true);
           const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
-          await sleep(500); 
+          await sleep(500);
           window.location.href = response.url;
         }
       })
