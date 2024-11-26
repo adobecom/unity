@@ -339,7 +339,7 @@ function createSlider(cfg, tray, propertyName, label, cssFilter, valObj) {
   const actionSliderCircle = createTag('a', { href: '#', class: `adjustment-circle ${propertyName}` }, actionAnalytics);
   actionSliderDiv.append(actionSliderInput, actionSliderCircle);
   actionDiv.append(actionLabel, actionSliderDiv);
-  const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
+  const isRtl = document.dir === 'rtl';
   actionSliderInput.addEventListener('input', () => {
     const { value } = actionSliderInput;
     const centerOffset = (value - minVal) / (maxVal - minVal);
