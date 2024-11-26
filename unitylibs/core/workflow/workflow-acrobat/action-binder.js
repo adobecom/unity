@@ -156,9 +156,10 @@ export default class ActionBinder {
 
   async dispatchErrorToast(code, status, info = null, showError = true) {
     if (showError) {
-      const message = code in this.workflowCfg.errors
+      const errorMessage = code in this.workflowCfg.errors
         ? this.workflowCfg.errors[code]
         : await getError(this.workflowCfg.enabledFeatures[0], code);
+      const message = code.includes('cookie_not_set') ? '' : errorMessage || 'Unable to process the request';
       this.block.dispatchEvent(new CustomEvent(
         unityConfig.errorToastEvent,
         {
