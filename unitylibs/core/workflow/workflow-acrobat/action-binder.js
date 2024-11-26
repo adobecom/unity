@@ -224,7 +224,7 @@ export default class ActionBinder {
 
   checkCookie = () => {
     const cookies = document.cookie.split(';').map((item) => item.trim());
-    const targets = [/^UTS_Uploaded=/, /^UTS_Redirect=/];
+    const targets = [/^UTS_Uploading=/, /^UTS_Uploaded=/];
     return targets.every((regex) => cookies.some((item) => regex.test(item)));
   };
 
