@@ -11,6 +11,7 @@ import {
   loadArea,
   loadImg,
 } from '../../../scripts/utils.js';
+import getError from '../../../scripts/errors.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
@@ -85,7 +86,6 @@ export default class ActionBinder {
           break;
         case value.actionType === 'continueInApp':
           this.LOADER_LIMIT = 100;
-          this.updateProgressBar(this.splashScreenEl, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
@@ -126,8 +126,7 @@ export default class ActionBinder {
           break;
       }
     }
-    //if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
-    if (b === this.block) await this.delayedSplashLoader();
+    if (b === this.block) this.splashScreenEl = await this.loadSplashFragment();
   }
 
   extractFiles(e) {
@@ -157,18 +156,16 @@ export default class ActionBinder {
 
   async dispatchErrorToast(code, status, info = null, showError = true) {
     if (showError) {
-      const message = code in this.workflowCfg.errors
+      const errorMessage = code in this.workflowCfg.errors
         ? this.workflowCfg.errors[code]
-        : await (async () => {
-          const getError = (await import('../../../scripts/errors.js')).default;
-          return getError(this.workflowCfg.enabledFeatures[0], code);
-        })();
+        : await getError(this.workflowCfg.enabledFeatures[0], code);
+      const message = code.includes('cookie_not_set') ? '' : errorMessage || 'Unable to process the request';
       this.block.dispatchEvent(new CustomEvent(
         unityConfig.errorToastEvent,
         {
           detail: {
             code, 
-            message: `${message || 'Unable to process the request'}`, 
+            message: `${message}`, 
             status,
             info,
             accountType: this.getAccountType(),
@@ -225,6 +222,27 @@ export default class ActionBinder {
     await Promise.all(this.promiseStack);
   }
 
+  checkCookie = () => {
+    const cookies = document.cookie.split(';').map((item) => item.trim());
+    const targets = [/^UTS_Uploaded=/, /^UTS_Redirect=/];
+    return targets.every((regex) => cookies.some((item) => regex.test(item)));
+  };
+
+  waitForCookie = (timeout) => {
+    return new Promise((resolve) => {
+      const interval = 100;
+      let elapsed = 0;
+      const intervalId = setInterval(() => {
+        if (this.checkCookie() || elapsed >= timeout) {
+          clearInterval(intervalId);
+          resolve();
+        }
+        elapsed += interval;
+      }, interval);
+    });
+  };
+
+
   async continueInApp() {
     if (!this.operations.length) return;
     const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
@@ -251,11 +269,21 @@ export default class ActionBinder {
       ),
     );
     await Promise.all(this.promiseStack)
-      .then((resArr) => {
+      .then(async (resArr) => {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
-        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
-        window.location.href = response.url;
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));        
+        await this.waitForCookie(2000);
+        this.updateProgressBar(this.splashScreenEl, 100);
+        if (this.checkCookie()) {
+          window.location.href = response.url;
+        }
+        else {
+          await this.dispatchErrorToast('verb_cookie_not_set', 200, "Not all cookies found, redirecting anyway", true);
+          const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
+          await sleep(500); 
+          window.location.href = response.url;
+        }
       })
       .catch(async (e) => {
         await this.showSplashScreen();
@@ -312,40 +340,7 @@ export default class ActionBinder {
     const img = f.querySelector('img');
     if (img) loadImg(img);
     await loadArea(f);
-    this.splashScreenEl = f;
     return f;
-  }
-
-  async delayedSplashLoader() {
-    let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
-    const interactionHandler = async () => {
-      await this.loadSplashFragment();
-      cleanup(interactionHandler);
-    };
-
-    const timeoutHandler = async () => {
-      await this.loadSplashFragment();
-      cleanup(interactionHandler);
-    };
-
-    // Timeout to load after 8 seconds
-    let timeoutId = setTimeout(timeoutHandler, 8000);
-
-    const cleanup = (handler) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (eventListeners) {
-        eventListeners.forEach((event) =>
-          document.removeEventListener(event, handler)
-        );
-        eventListeners = null;
-      }
-    }
-    eventListeners.forEach((event) =>
-      document.addEventListener(event, interactionHandler, { once: true })
-    );
   }
 
   async handleSplashProgressBar() {
