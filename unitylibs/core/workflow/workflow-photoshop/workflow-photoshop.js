@@ -343,7 +343,7 @@ function createSlider(cfg, tray, propertyName, label, cssFilter, valObj) {
   actionSliderInput.addEventListener('input', () => {
     const { value } = actionSliderInput;
     const centerOffset = (value - minVal) / (maxVal - minVal);
-    const moveCircle = 3 + (centerOffset * 94);
+    const moveCircle = isRtl ? centerOffset * 94 - 3 : 3 + centerOffset * 94;
     actionSliderCircle.style[isRtl ? 'right' : 'left'] = `${moveCircle}%`;
     actionSliderCircle.style[isRtl ? 'left' : 'right'] = '';
     const img = targetEl.querySelector(':scope > picture img');
