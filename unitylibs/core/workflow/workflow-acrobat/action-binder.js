@@ -85,7 +85,6 @@ export default class ActionBinder {
           break;
         case value.actionType === 'continueInApp':
           this.LOADER_LIMIT = 100;
-          this.updateProgressBar(this.splashScreenEl, 100);
           await this.continueInApp();
           break;
         case value.actionType === 'interrupt':
@@ -157,12 +156,13 @@ export default class ActionBinder {
 
   async dispatchErrorToast(code, status, info = null, showError = true) {
     if (showError) {
-      const message = code in this.workflowCfg.errors
+      const errorMessage = code in this.workflowCfg.errors
         ? this.workflowCfg.errors[code]
         : await (async () => {
           const getError = (await import('../../../scripts/errors.js')).default;
           return getError(this.workflowCfg.enabledFeatures[0], code);
         })();
+      const message = code.includes('cookie_not_set') ? '' : errorMessage || 'Unable to process the request';
       this.block.dispatchEvent(new CustomEvent(
         unityConfig.errorToastEvent,
         {
@@ -225,6 +225,27 @@ export default class ActionBinder {
     await Promise.all(this.promiseStack);
   }
 
+ checkCookie = () => {
+    const cookies = document.cookie.split(';').map((item) => item.trim());
+    const targets = [/^UTS_Uploading=/, /^UTS_Uploaded=/];
+    return targets.every((regex) => cookies.some((item) => regex.test(item)));
+  };
+
+  waitForCookie = (timeout) => {
+    return new Promise((resolve) => {
+      const interval = 100;
+      let elapsed = 0;
+      const intervalId = setInterval(() => {
+        if (this.checkCookie() || elapsed >= timeout) {
+          clearInterval(intervalId);
+          resolve();
+        }
+        elapsed += interval;
+      }, interval);
+    });
+  };
+
+
   async continueInApp() {
     if (!this.operations.length) return;
     const { assetId, filename, filesize, filetype } = this.operations[this.operations.length - 1];
@@ -251,11 +272,21 @@ export default class ActionBinder {
       ),
     );
     await Promise.all(this.promiseStack)
-      .then((resArr) => {
+      .then(async (resArr) => {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
-        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
-        window.location.href = response.url;
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));        
+        await this.waitForCookie(2000);
+        this.updateProgressBar(this.splashScreenEl, 100);
+        if (this.checkCookie()) {
+          window.location.href = response.url;
+        }
+        else {
+          await this.dispatchErrorToast('verb_cookie_not_set', 200, "Not all cookies found, redirecting anyway", true);
+          const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
+          await sleep(500); 
+          window.location.href = response.url;
+        }
       })
       .catch(async (e) => {
         await this.showSplashScreen();
