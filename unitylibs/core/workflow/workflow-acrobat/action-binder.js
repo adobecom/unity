@@ -278,15 +278,11 @@ export default class ActionBinder {
         this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirect to product' } }));
         await this.waitForCookie(2000);
         this.updateProgressBar(this.splashScreenEl, 100);
-        if (this.checkCookie()) {
-          window.location.href = response.url;
-        }
-        else {
+        if (!this.checkCookie()) {
           await this.dispatchErrorToast('verb_cookie_not_set', 200, "Not all cookies found, redirecting anyway", true);
-          const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
-          await sleep(500);
-          window.location.href = response.url;
+          await new Promise(r => setTimeout(r, 500));
         }
+        window.location.href = response.url;
       })
       .catch(async (e) => {
         await this.showSplashScreen();
