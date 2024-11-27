@@ -168,7 +168,7 @@ export default class ActionBinder {
         {
           detail: {
             code,
-            message: `${message || 'Unable to process the request'}`,
+            message: `${message}`,
             status,
             info,
             accountType: this.getAccountType(),
