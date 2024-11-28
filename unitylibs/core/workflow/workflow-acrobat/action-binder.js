@@ -282,6 +282,7 @@ export default class ActionBinder {
           await this.dispatchErrorToast('verb_cookie_not_set', 200, "Not all cookies found, redirecting anyway", true);
           await new Promise(r => setTimeout(r, 500));
         }
+        await new Promise(r => setTimeout(r, 200));
         window.location.href = response.url;
       })
       .catch(async (e) => {
