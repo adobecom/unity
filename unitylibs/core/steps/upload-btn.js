@@ -23,10 +23,6 @@ export default async function createUpload(cfg, target, callback = null) {
   const a = await createActionBtn(li, 'show');
   const input = createTag('input', { class: 'file-upload', type: 'file', accept: 'image/png,image/jpg,image/jpeg', tabIndex: -1 });
   a.insertAdjacentElement('afterend', input);
-  a.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') input.click();
-  });
-  a.addEventListener('click', () => input.click()); 
   input.addEventListener('change', async (e) => {
     let flag = true;
     const fileUpload = e.target || input;
@@ -93,5 +89,9 @@ export default async function createUpload(cfg, target, callback = null) {
     };
     fileUpload.value = '';
   });
+  a.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') input.click();
+  });
+  a.addEventListener('click', () => input.click()); 
   return a;
 }
