@@ -22,11 +22,14 @@ export default async function createUpload(cfg, target, callback = null) {
   const li = unityEl.querySelector('.icon-upload').parentElement;
   const a = await createActionBtn(li, 'show');
   const input = createTag('input', { class: 'file-upload', type: 'file', accept: 'image/png,image/jpg,image/jpeg', tabIndex: -1 });
-  a.append(input);
+  a.insertAdjacentElement('afterend', input);
   a.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') input.click();
   });
-  a.addEventListener('change', async (e) => {
+  a.addEventListener('click', async (e) => {
+    input.click();
+  });  
+  input.addEventListener('change', async (e) => {
     let flag = true;
     const { default: showProgressCircle } = await import('../features/progress-circle/progress-circle.js');
     const { showErrorToast } = await import('../../scripts/utils.js');
