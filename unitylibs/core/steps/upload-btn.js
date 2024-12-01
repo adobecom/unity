@@ -29,9 +29,10 @@ export default async function createUpload(cfg, target, callback = null) {
   a.addEventListener('click', () => input.click()); 
   input.addEventListener('change', async (e) => {
     let flag = true;
+    const fileUpload = e.target || input;
     const { default: showProgressCircle } = await import('../features/progress-circle/progress-circle.js');
     const { showErrorToast } = await import('../../scripts/utils.js');
-    const file = e.target.files[0];
+    const file = fileUpload.files[0];
     if (!file) return;
     if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
       await showErrorToast(targetEl, unityEl, '.icon-error-filetype');
@@ -90,7 +91,7 @@ export default async function createUpload(cfg, target, callback = null) {
     target.onerror = async () => {
       await showErrorToast(targetEl, unityEl, '.icon-error-request');
     };
-    e.target.value = '';
+    fileUpload.value = '';
   });
   return a;
 }
