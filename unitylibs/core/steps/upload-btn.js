@@ -26,9 +26,7 @@ export default async function createUpload(cfg, target, callback = null) {
   a.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') input.click();
   });
-  a.addEventListener('click', async (e) => {
-    input.click();
-  });  
+  a.addEventListener('click', () => input.click()); 
   input.addEventListener('change', async (e) => {
     let flag = true;
     const { default: showProgressCircle } = await import('../features/progress-circle/progress-circle.js');
