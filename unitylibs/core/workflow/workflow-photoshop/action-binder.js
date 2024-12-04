@@ -24,6 +24,26 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.psApiConfig = this.getPsApiConfig();
     this.serviceHandler = null;
+    this.loadServiceHandler();
+    this.loadSVGsMaybe();
+  }
+
+  async loadServiceHandler() {
+    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
+    this.serviceHandler = new ServiceHandler(
+      this.workflowCfg.targetCfg.renderWidget,
+      this.canvasArea,
+    );
+  }
+  
+  async loadSVGsMaybe() {
+    if (this.workflowCfg.targetCfg.renderWidget) {
+      await loadSvgs(this.canvasArea.querySelectorAll('.unity-widget img[src*=".svg"'));
+      if (!this.progressCircleEl) {
+        this.progressCircleEl = await this.createSpectrumProgress();
+        this.canvasArea.append(this.progressCircleEl);
+      }
+    }
   }
 
   getPsApiConfig() {
@@ -62,19 +82,6 @@ export default class ActionBinder {
   }
 
   async psActionMaps(values, e) {
-    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
-    this.serviceHandler = new ServiceHandler(
-      this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
-    );
-    if (this.workflowCfg.targetCfg.renderWidget) {
-      const svgs = this.canvasArea.querySelectorAll('.unity-widget img[src*=".svg"');
-      await loadSvgs(svgs);
-      if (!this.progressCircleEl) {
-        this.progressCircleEl = await this.createSpectrumProgress();
-        this.canvasArea.append(this.progressCircleEl);
-      }
-    }
     for (const value of values) {
       switch (true) {
         case value.actionType == 'hide':
