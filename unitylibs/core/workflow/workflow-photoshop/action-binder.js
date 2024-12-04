@@ -269,6 +269,7 @@ export default class ActionBinder {
       body: blobData,
     };
     const responseU = await fetch(href, uploadOptions);
+    const responseu1 =  await responseU1.json();
 
     const assetData = { assetId: id, targetProduct: 'express' };
     const imgScanOptions = {
