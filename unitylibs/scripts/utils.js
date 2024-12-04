@@ -30,10 +30,10 @@ export function decorateArea(area = document) {}
 const miloLibs = setLibs('/libs');
 
 const {
-  createTag, getConfig, loadStyle, loadLink, loadScript, localizeLink, loadArea, decorateDefaultLinkAnalytics
+  createTag, getConfig, loadStyle, loadLink, loadScript, localizeLink, loadArea
 } = await import(`${miloLibs}/utils/utils.js`);
 export {
-  createTag, loadStyle, getConfig, loadLink, loadScript, localizeLink, loadArea, decorateDefaultLinkAnalytics
+  createTag, loadStyle, getConfig, loadLink, loadScript, localizeLink, loadArea
 };
 
 export function getGuestAccessToken() {

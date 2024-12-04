@@ -1,6 +1,6 @@
 import {
+  getLibs,
   createTag,
-  decorateDefaultLinkAnalytics,
   loadSvgs,
   priorityLoad,
   defineDeviceByScreenSize,
@@ -39,6 +39,7 @@ export default class UnityWidget {
     const svgs = iWidget.querySelectorAll('.show img[src*=".svg"');
     await loadSvgs(svgs);
     this.target.append(iWidget);
+    const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
     decorateDefaultLinkAnalytics(iWidget);
     return this.actionMap;
   }
