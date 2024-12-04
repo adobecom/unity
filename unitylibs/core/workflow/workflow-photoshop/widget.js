@@ -139,6 +139,9 @@ export default class UnityWidget {
         source: this.target.querySelector('img'),
         target: this.target.querySelector('img'),
       }, {
+        actionType: 'preloadImgs',
+        targets: ['.changebg-options-tray'],
+      }, {
         actionType: 'show',
         targets: ['.ps-action-btn.show + .ps-action-btn', '.changebg-options-tray', '.continue-in-app-button'],
       }, {
@@ -257,7 +260,6 @@ export default class UnityWidget {
       this.initChangeBgActions(`.changebg-option.option-${num}`, btn, bgImg, bgSelectorTray);
       a.addEventListener('click', (e) => { e.preventDefault(); });
     });
-    priorityLoad(thumbnailSrc);
     optionArea.append(bgSelectorTray);
     return bgSelectorTray;
   }

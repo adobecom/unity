@@ -11,6 +11,7 @@ import {
   createTag,
   loadSvgs,
   getLocale,
+  priorityLoad,
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -86,6 +87,9 @@ export default class ActionBinder {
         case value.actionType == 'show':
           value.targets.forEach((t) => this.showElement(t, this.block));
           break;
+        case value.actionType == 'preloadImgs':
+            priorityLoad([...value.targets.querySelectorAll('img')]);
+            break;
         case value.actionType == 'toggle':
           value.targets.forEach((t) => this.toggleElement(t, this.block));
           break;
