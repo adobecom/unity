@@ -7,7 +7,6 @@ import {
   getUnityLibs,
   createTag,
   getGuestAccessToken,
-  decorateDefaultLinkAnalytics,
   unityConfig,
 } from '../../../scripts/utils.js';
 
@@ -69,6 +68,7 @@ export default class ServiceHandler {
       e.preventDefault();
       e.target.closest('.alert-holder').classList.remove('show');
     });
+    const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
     decorateDefaultLinkAnalytics(errholder);
     return errholder;
   }
