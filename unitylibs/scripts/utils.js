@@ -113,7 +113,7 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   if (img) {
     let btnImg = null;
     const { pathname } = new URL(img.src);
-    const libSrcPath = `${getUnityLibs().split('/unitylibs')[0]}${pathname}`;
+    const libSrcPath = img.src;
     if (iconAsImg) btnImg = createTag('img', { src: libSrcPath });
     else btnImg = await loadSvg(libSrcPath);
     const btnIcon = createTag('div', { class: 'btn-icon' }, btnImg);

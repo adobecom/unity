@@ -55,9 +55,9 @@ async function addProductIcon(cfg) {
   if (!refreshCfg) return;
   const [prodIcon, refreshIcon] = refreshCfg.closest('li').querySelectorAll('img[src*=".svg"]');
   const unityOrigin = getUnityLibs().split('/unitylibs')[0];
-  prodIcon.src = `${unityOrigin}${new URL(prodIcon.src).pathname}`;
+  prodIcon.src = prodIcon.src;
   const iconHolder = createTag('div', { class: 'widget-product-icon show' }, prodIcon);
-  const refreshSvg = await loadSvg(`${unityOrigin}${new URL(refreshIcon.src).pathname}`);
+  const refreshSvg = await loadSvg(prodIcon.src);
   const refreshAnalyics = createTag('div', { class: 'widget-refresh-text' }, 'Restart');
   const refreshHolder = createTag('a', { href: '#', class: 'widget-refresh-button' }, refreshSvg);
   refreshHolder.append(refreshAnalyics);
