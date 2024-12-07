@@ -35,9 +35,9 @@ body > .splash-loader {
   justify-content: center;
 }
 
-.splash-loader .text .con-button {
+/*.splash-loader .text .con-button {
   display: none;
-}
+}*/
 
 .progress-holder {
   width: 100%;
