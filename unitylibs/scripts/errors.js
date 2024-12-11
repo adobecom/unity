@@ -23,7 +23,7 @@ function createErrorMap(errorList) {
 
 async function loadErrorMessages(verb) {
   const { locale } = getConfig();
-  const baseUrl = 'https://main--unity--adobecom.hlx.live';
+  const baseUrl = 'https://main--unity--adobecom.hlx.page';
   const errorFile = locale.prefix && locale.prefix !== '/'
     ? `${baseUrl}/${locale.prefix}/configs/errors/${verb}.json`
     : `${baseUrl}/unity/configs/errors/${verb}.json`;
