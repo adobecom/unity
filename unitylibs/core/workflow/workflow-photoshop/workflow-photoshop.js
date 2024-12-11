@@ -27,6 +27,16 @@ function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newV
   }
 }
 
+async function scanForCsam(cfg, id) {
+  const { scanImgForSafety } = await import('../../steps/upload-step.js');
+  let scanResponse = await scanImgForSafety(cfg, id);
+  if (scanResponse.status === 429
+    || (scanResponse.status >= 500 && scanResponse.status < 600)) {
+    const { retryRequestUntilProductRedirect } = await import('../../../scripts/utils.js');
+    scanResponse = await retryRequestUntilProductRedirect(cfg, () => scanImgForSafety(cfg, id));
+  }
+}
+
 function resetWorkflowState(cfg) {
   cfg.presentState = {
     activeIdx: cfg.isUpload ? 0 : -1,
@@ -163,18 +173,7 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     return false;
   }
   if (isImgModified) {
-    const { scanImgForSafety } = await import('../../steps/upload-step.js');
-    let scanResponse = await scanImgForSafety(cfg, id);
-    if (scanResponse.status === 403) {
-      unityEl.dispatchEvent(new CustomEvent(refreshWidgetEvent));
-      await showErrorToast(targetEl, unityEl, '.icon-error-acmp');
-      return false;
-    }
-    if (scanResponse.status === 429
-      || (scanResponse.status >= 500 && scanResponse.status < 600)) {
-      const { retryRequestUntilProductRedirect } = await import('../../../scripts/utils.js');
-      scanResponse = await retryRequestUntilProductRedirect(cfg, () => scanImgForSafety(cfg, id));
-    }
+    scanForCsam(cfg, id);
   }
   cfg.preludeState.assetId = id;
   const removeBgOptions = {
