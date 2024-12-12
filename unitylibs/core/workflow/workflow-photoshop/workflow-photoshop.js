@@ -241,7 +241,7 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
   const { endpoint } = cfg.wfDetail.changebg;
   const unityRetriggered = await removeBgHandler(cfg, false);
   const img = targetEl.querySelector('picture img');
-  if(cfg.presentState.presentCache && cachedImg) {
+  if(cfg.presentState.cache && cachedImg) {
     await delay(500)
     img.src = cachedImg.src;
     await loadImg(img);
