@@ -516,6 +516,7 @@ async function switchProdIcon(cfg, forceRefresh = true) {
 async function uploadCallback(cfg) {
   const { enabledFeatures } = cfg;
   resetWorkflowState(cfg);
+  cfg.presentState.cache = false;
   if (enabledFeatures.length === 1) return;
   await removeBgHandler(cfg);
   cfg.isUpload = false;
