@@ -12,6 +12,7 @@ import {
 
 const miloLibs = getLibs('/libs');
 const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
+const cachedId = 'noop_string';
 
 function resetSliders(unityWidget) {
   const adjustmentCircles = unityWidget.querySelectorAll('.adjustment-circle');
@@ -27,11 +28,11 @@ function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newV
   }
 }
 
-function delay(duration=1000) {
+function delay(durationMs=1000) {
   return new Promise((resolve) => {
       setTimeout(() => {
           resolve('Resolved after 1 second');
-      }, duration); // 1000 milliseconds = 1 second
+      }, durationMs);
   });
 }
 
@@ -153,7 +154,8 @@ async function removeBgHandler(cfg, changeDisplay = true) {
   if(cfg.presentState.cache) {
     await delay(500);
     cfg.presentState.removeBgState.assetUrl=cfg.wfDetail.removebg.authorCfg.querySelectorAll('picture img')[1].src;
-    cfg.presentState.removeBgState.assetId = 1; 
+    cfg.presentState.removeBgState.assetId = cachedId; 
+    
   }
   const { srcUrl, assetUrl } = cfg.presentState.removeBgState;
   const urlIsValid = assetUrl ? await fetch(assetUrl) : null;
@@ -245,7 +247,7 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
     await delay(500)
     img.src = cachedImg.src;
     await loadImg(img);
-    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'assetIds', [2], { name: 'changeBackground', assetIds: [2] });
+    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'hrefs', [cachedImg.src], { name: 'changeBackground', hrefs: [cachedImg.src] });
     unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
     return;
   }
