@@ -27,8 +27,17 @@ function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newV
   }
 }
 
+function delay(duration=1000) {
+  return new Promise((resolve) => {
+      setTimeout(() => {
+          resolve('Resolved after 1 second');
+      }, duration); // 1000 milliseconds = 1 second
+  });
+}
+
 function resetWorkflowState(cfg) {
   cfg.presentState = {
+    cache: cfg.cacheDefault,
     activeIdx: cfg.isUpload ? 0 : -1,
     removeBgState: {
       assetId: null,
@@ -141,6 +150,11 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     cfg.presentState.assetId = null;
     cfg.preludeState.operations = [];
   }
+  if(cfg.presentState.cache) {
+    await delay(500);
+    cfg.presentState.removeBgState.assetUrl=cfg.wfDetail.removebg.authorCfg.querySelectorAll('picture img')[1].src;
+    cfg.presentState.removeBgState.assetId = 1; 
+  }
   const { srcUrl, assetUrl } = cfg.presentState.removeBgState;
   const urlIsValid = assetUrl ? await fetch(assetUrl) : null;
   if (cfg.presentState.removeBgState.assetId && urlIsValid?.status === 200) {
@@ -213,7 +227,7 @@ async function removebg(cfg, featureName) {
   return btn;
 }
 
-async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
+async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cachedImg = null) {
   if (refreshState) resetWorkflowState();
   const {
     apiEndPoint,
@@ -227,6 +241,14 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true) {
   const { endpoint } = cfg.wfDetail.changebg;
   const unityRetriggered = await removeBgHandler(cfg, false);
   const img = targetEl.querySelector('picture img');
+  if(cfg.presentState.presentCache && cachedImg) {
+    await delay(500)
+    img.src = cachedImg.src;
+    await loadImg(img);
+    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'assetIds', [2], { name: 'changeBackground', assetIds: [2] });
+    unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
+    return;
+  }
   const fgId = cfg.presentState.removeBgState.assetId;
   const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
   const { origin, pathname } = new URL(bgImg);
@@ -286,12 +308,13 @@ async function changebg(cfg, featureName) {
   btn.classList.add('focus');
   btn.dataset.optionsTray = 'changebg-options-tray';
   const bgSelectorTray = createTag('div', { class: 'changebg-options-tray show' });
-  const bgOptions = authorCfg.querySelectorAll(':scope ul li');
+  const bgOptions = authorCfg.querySelectorAll(':scope>ul>li');
   const thumbnailSrc = [];
   [...bgOptions].forEach((o) => {
     let thumbnail = null;
     let bgImg = null;
-    bgImg = o.querySelector('img');
+    let imgs = o.querySelectorAll('img');
+    bgImg = imgs[0]
     thumbnail = bgImg;
     thumbnail.dataset.backgroundImg = bgImg.src;
     thumbnail.setAttribute('src', updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
@@ -300,7 +323,7 @@ async function changebg(cfg, featureName) {
     bgSelectorTray.append(a);
     a.addEventListener('click', async (evt) => {
       evt.preventDefault();
-      handleEvent(cfg, () => changeBgHandler(cfg, bgImg.src, false));
+      handleEvent(cfg, () => changeBgHandler(cfg, bgImg.src, false, imgs[1]));
     });
   });
   priorityLoad(thumbnailSrc);
@@ -459,6 +482,7 @@ async function changeVisibleFeature(cfg) {
 async function resetWidgetState(cfg) {
   const { unityWidget, unityEl, targetEl } = cfg;
   cfg.presentState.activeIdx = -1;
+  cfg.presentState.cache = cfg.cacheDefault;
   cfg.preludeState.operations = [];
   cfg.isUpload = false;
   cfg.imgDisplay = '';
@@ -499,6 +523,9 @@ async function uploadCallback(cfg) {
 
 export default async function init(cfg) {
   const { targetEl, unityEl, unityWidget, interactiveSwitchEvent, refreshWidgetEvent } = cfg;
+  //check if caching is enabled
+  const cached = !!cfg.wfDetail?.removebg?.authorCfg?.querySelectorAll('picture img')[1];
+  cfg.cacheDefault = cached;
   resetWorkflowState(cfg);
   await addProductIcon(cfg);
   await changeVisibleFeature(cfg);
