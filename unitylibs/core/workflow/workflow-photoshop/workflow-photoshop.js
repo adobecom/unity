@@ -128,7 +128,7 @@ function checkImgModified(hostname) {
   return isModified;
 }
 
-async function removeBgHandler(cfg, changeDisplay = true) {
+async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
   const {
     apiEndPoint,
     apiKey,
@@ -151,11 +151,12 @@ async function removeBgHandler(cfg, changeDisplay = true) {
     cfg.presentState.assetId = null;
     cfg.preludeState.operations = [];
   }
-  if(cfg.presentState.cache) {
+  if(cfg.presentState.cache && cachedImg) {
     await delay(500);
-    cfg.presentState.removeBgState.assetUrl=cfg.wfDetail.removebg.authorCfg.querySelectorAll('picture img')[1].src;
+    cfg.presentState.removeBgState.assetUrl=cachedImg.src;
     cfg.presentState.removeBgState.assetId = cachedId; 
-    
+    cfg.preludeState.href = cachedImg.src;
+    cfg.preludeState.finalAssetUrl = cachedImg.src;
   }
   const { srcUrl, assetUrl } = cfg.presentState.removeBgState;
   const urlIsValid = assetUrl ? await fetch(assetUrl) : null;
@@ -221,10 +222,11 @@ async function removebg(cfg, featureName) {
   const { wfDetail, unityWidget } = cfg;
   const removebgBtn = unityWidget.querySelector('.ps-action-btn.removebg-button');
   if (removebgBtn) return removebgBtn;
-  const btn = await createActionBtn(wfDetail[featureName].authorCfg, 'ps-action-btn removebg-button show');
+  const { authorCfg }  = wfDetail[featureName];
+  const btn = await createActionBtn(authorCfg, 'ps-action-btn removebg-button show');
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
-    handleEvent(cfg, () => removeBgHandler(cfg));
+    handleEvent(cfg, () => removeBgHandler(cfg, true, authorCfg.removebg?.querySelectorAll('picture img')[1]));
   });
   return btn;
 }
