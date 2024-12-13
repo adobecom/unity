@@ -226,7 +226,7 @@ async function removebg(cfg, featureName) {
   const btn = await createActionBtn(authorCfg, 'ps-action-btn removebg-button show');
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
-    handleEvent(cfg, () => removeBgHandler(cfg, true, authorCfg.removebg?.querySelectorAll('picture img')[1]));
+    handleEvent(cfg, () => removeBgHandler(cfg, true, authorCfg.querySelectorAll('picture img')[1]));
   });
   return btn;
 }
