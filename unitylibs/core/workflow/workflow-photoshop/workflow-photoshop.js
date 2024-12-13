@@ -8,6 +8,8 @@ import {
   createIntersectionObserver,
   priorityLoad,
   getLibs,
+  delay,
+  updateQueryParameter
 } from '../../../scripts/utils.js';
 
 const miloLibs = getLibs('/libs');
@@ -26,14 +28,6 @@ function addOrUpdateOperation(array, keyToCheck, valueToCheck, keyToUpdate, newV
   } else {
     array.push(newObject);
   }
-}
-
-function delay(durationMs=1000) {
-  return new Promise((resolve) => {
-      setTimeout(() => {
-          resolve('Resolved after 1 second');
-      }, durationMs);
-  });
 }
 
 function resetWorkflowState(cfg) {
@@ -158,8 +152,8 @@ async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
     await delay(500);
     cfg.presentState.removeBgState.assetUrl=cachedImg.src;
     cfg.presentState.removeBgState.assetId = cachedId; 
-    cfg.preludeState.href = img.src;
-    cfg.preludeState.finalAssetUrl = cachedImg.src;
+    cfg.preludeState.href = updateQueryParameter(img.src, "format", "webply", "jpeg");
+    cfg.preludeState.finalAssetUrl = updateQueryParameter(cachedImg.src, "format", "webply", "jpeg");
   }
   const { srcUrl, assetUrl } = cfg.presentState.removeBgState;
   const urlIsValid = assetUrl ? await fetch(assetUrl) : null;
@@ -255,8 +249,9 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
     await delay(500)
     img.src = cachedImg.src;
     await loadImg(img);
-    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'hrefs', [bgImgUrl], { name: 'changeBackground', hrefs: [bgImgUrl] });
-    cfg.preludeState.finalAssetUrl = cachedImg.src;
+    const bgImgUrlUpdated = updateQueryParameter(bgImgUrl, "format", "webply", "jpeg");
+    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'hrefs', [bgImgUrlUpdated], { name: 'changeBackground', hrefs: [bgImgUrlUpdated] });
+    cfg.preludeState.finalAssetUrl = updateQueryParameter(cachedImg.src, "format", "webply", "jpeg");
     unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
     return;
   }

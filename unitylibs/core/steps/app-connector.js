@@ -49,8 +49,6 @@ async function continueInApp(cfg, appName, btnConfig) {
       return false;
     }
     const data = getPreludeData(cfg);
-    console.log(data);
-    return;
     const connectorOptions = {
       method: 'POST',
       headers: getHeaders(apiKey),
