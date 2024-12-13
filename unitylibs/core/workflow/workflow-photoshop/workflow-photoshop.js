@@ -150,12 +150,15 @@ async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
     cfg.presentState.adjustments = {};
     cfg.presentState.assetId = null;
     cfg.preludeState.operations = [];
+    if(cfg.preludeState.href) {
+      cfg.preludeState.href = null;
+    }
   }
   if(cfg.presentState.cache && cachedImg) {
     await delay(500);
     cfg.presentState.removeBgState.assetUrl=cachedImg.src;
     cfg.presentState.removeBgState.assetId = cachedId; 
-    cfg.preludeState.href = cachedImg.src;
+    cfg.preludeState.href = img.src;
     cfg.preludeState.finalAssetUrl = cachedImg.src;
   }
   const { srcUrl, assetUrl } = cfg.presentState.removeBgState;
@@ -245,18 +248,19 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
   const { endpoint } = cfg.wfDetail.changebg;
   const unityRetriggered = await removeBgHandler(cfg, false);
   const img = targetEl.querySelector('picture img');
+  const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
+  const { origin, pathname } = new URL(bgImg);
+  const bgImgUrl = `${origin}${pathname}`;
   if(cfg.presentState.cache && cachedImg) {
     await delay(500)
     img.src = cachedImg.src;
     await loadImg(img);
-    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'hrefs', [cachedImg.src], { name: 'changeBackground', hrefs: [cachedImg.src] });
+    addOrUpdateOperation(cfg.preludeState.operations, 'name', 'changeBackground', 'hrefs', [bgImgUrl], { name: 'changeBackground', hrefs: [bgImgUrl] });
+    cfg.preludeState.finalAssetUrl = cachedImg.src;
     unityEl.dispatchEvent(new CustomEvent(interactiveSwitchEvent));
     return;
   }
   const fgId = cfg.presentState.removeBgState.assetId;
-  const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
-  const { origin, pathname } = new URL(bgImg);
-  const bgImgUrl = `${origin}${pathname}`;
   const { uploadAsset } = await import('../../steps/upload-step.js');
   const bgId = await uploadAsset(cfg, bgImgUrl);
   if (!unityRetriggered && cfg.presentState.changeBgState[bgImgUrl]?.assetId) {
