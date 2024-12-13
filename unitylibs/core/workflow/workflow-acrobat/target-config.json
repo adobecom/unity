@@ -57,8 +57,6 @@
     "renderWidget": false,
     "source": ".verb-wrapper .verb-container",
     "target": ".verb-wrapper .verb-container",
-    "limits": {
-    },
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
