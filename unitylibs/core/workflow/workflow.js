@@ -271,7 +271,7 @@ class WfInitiator {
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
       if (!cfName) return;
-      const fn = cfName.replace('icon-','');
+      const fn = cfName.trim().replace('icon-','');
       if (supportedFeatures.has(fn)) {
         this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
