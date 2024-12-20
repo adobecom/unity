@@ -198,7 +198,7 @@ export default class ActionBinder {
     const file = files[0];
     if (!file) return;
     if (files.length === 1) await this.singleFileUpload(file, eventName);
-    else await this.multiFileUpload(file.length);
+    else await this.multiFileUpload(files.length);
   }
 
 
