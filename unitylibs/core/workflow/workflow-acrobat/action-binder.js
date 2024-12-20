@@ -604,7 +604,7 @@ export default class ActionBinder {
 
   async multiFileUpload(fileLength) {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileLength } }));
-    cOpts = {
+    const cOpts = {
       targetProduct: this.workflowCfg.productName,
       payload: {
         languageRegion: this.workflowCfg.langRegion,
