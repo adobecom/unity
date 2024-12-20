@@ -72,7 +72,7 @@ function getEnabledFeatures(unityEl, wfDetail) {
   configuredFeatures.forEach((cf) => {
     const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
     if (!cfName) return;
-    const fn = cfName.split('-')[1];
+    const fn = cfName.replace('icon-', '');
     const isEnabled = supportedFeatures.indexOf(fn);
     if (isEnabled > -1) {
       enabledFeatures.push(fn);
