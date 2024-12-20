@@ -250,7 +250,7 @@ class WfInitiator {
       },
       'workflow-acrobat': {
         productName: 'acrobat',
-        sfList: new Set(['fillsign']),
+        sfList: new Set(['fillsign', 'compress-pdf']),
       }
     };
     [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
