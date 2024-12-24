@@ -127,8 +127,24 @@ body > .splash-loader {
   -webkit-mask-image: -webkit-radial-gradient(white, black);
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
-  width: 286px;
-  height: 230px;
+}
+
+@media screen and (min-width: 600px) {
+  .splash-loader .text .icon-area img,
+  .splash-loader .text video {
+    width: 286px;
+    height: 230px;
+  }
+
+  .splash-loader h1,
+  .splash-loader h2,
+  .splash-loader h3,
+  .splash-loader h4,
+  .splash-loader h5 {
+    font-size: var(--type-heading-xl-size);
+    line-height: var(--type-heading-xl-lh);
+    font-weight: 700;
+  }
 }
 
 .splash-loader .text h1:first-of-type,
@@ -141,23 +157,8 @@ body > .splash-loader {
   line-height: var(--type-heading-l-lh);
 }
 
-
-@media screen and (min-width: 600px) {
-  .splash-loader .text .icon-area img,
-  .splash-loader .text video {
-    width: 286px;
-    height: auto;
-  }
-
-  .splash-loader h1,
-  .splash-loader h2,
-  .splash-loader h3,
-  .splash-loader h4,
-  .splash-loader h5 {
-    font-size: var(--type-heading-xl-size);
-    line-height: var(--type-heading-xl-lh);
-    font-weight: 700;
-  }
+.text-block [class^="heading"]:first-of-type {
+  margin: 0 0 var(--spacing-l) 0;
 }
 
 @media screen and (min-width: 1000px) {
