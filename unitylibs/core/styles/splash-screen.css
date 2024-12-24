@@ -156,11 +156,11 @@ body > .splash-loader {
     line-height: var(--type-heading-l-lh);
   }
 
-  .text-block [class^="heading"]:first-of-type {
+  .splash-loader .text-block [class^="heading"]:first-of-type {
     margin: 0 0 var(--spacing-l) 0;
   }
   
-  .text-block p.icon-area {
+  .splash-loader .text-block p.icon-area {
     margin-block: var(--spacing-s);
   }
 }
