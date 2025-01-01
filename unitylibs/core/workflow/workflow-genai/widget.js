@@ -10,13 +10,8 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    const [iWidget, unityaa, unityoa] = [
-      'unity-widget',
-      'unity-action-area',
-      'unity-option-area',
-    ].map((c) => createTag('div', { class: c }));
-    iWidget.append(unityoa, unityaa);
-    this.widget = iWidget;
+    this.widget = createTag('div', { class: 'unity-widget' });
+
     const con = createTag('div', {
       class: 'autocomplete',
       role: 'combobox',
@@ -24,8 +19,18 @@ export default class UnityWidget {
       ariaOwns: 'dropdown',
       ariaHaspopup: 'listbox',
     });
+
+    Object.keys(this.workflowCfg.targetCfg.actionMap).forEach((cls, idx) => {
+      const el = createTag(idx === 0 ? 'input' : 'a', {
+        class: cls,
+        ...(idx === 0 ? { type: 'text' } : { href: '#' }),
+      });
+      con.append(el);
+    });
+
     this.widget.append(con);
-    this.target.append(iWidget);
+    this.target.append(this.widget);
+
     return this.actionMap;
   }
 }
