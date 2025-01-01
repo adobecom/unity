@@ -3,7 +3,7 @@
     "type": "text",
     "selector": ".text",
     "handler": "render",
-    "renderWidget": false,
+    "renderWidget": true,
     "source": ".text .body-m",
     "target": ".text .body-m",
     "actionMap": {
