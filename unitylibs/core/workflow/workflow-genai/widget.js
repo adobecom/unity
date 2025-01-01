@@ -21,12 +21,17 @@ export default class UnityWidget {
 
     Object.keys(this.workflowCfg.targetCfg.actionMap).forEach((cls, idx) => {
       const el = createTag(idx === 0 ? 'input' : 'a', {
-        class: cls,
+        class: cls.replace('.', ''),
         ...(idx === 0 ? { type: 'text' } : { href: '#' }),
       });
       con.append(el);
     });
-
+    const dropCon = createTag('ul', {
+      class: 'dropdown hidden',
+      role: 'listbox',
+      ariaLabelledby: 'promptInput',
+    });
+    con.append(dropCon);
     this.widget.append(con);
     const interactiveArea = this.target.querySelector(
       'div[data-valign="middle"].text'
