@@ -23,6 +23,7 @@ export default class UnityWidget {
       const el = createTag(idx === 0 ? 'input' : 'a', {
         class: cls.replace('.', ''),
         ...(idx === 0 ? { type: 'text' } : { href: '#' }),
+        ...(idx !== 0 ? this.workflowCfg.supportedTexts[cls.replace('.', '').split('-')[0]]?.innerText : '')
       });
       con.append(el);
     });

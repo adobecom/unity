@@ -347,11 +347,8 @@ class WfInitiator {
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       } else if (supportedTexts.has(fn)) {
-        if (!this.workflowCfg.supportedTexts[fn]) {
-          this.workflowCfg.supportedTexts[fn] = [cf.closest('li').innerText];
-        } else {
-          this.workflowCfg.supportedTexts[fn].push(cf.closest('li').innerText);
-        }
+        this.workflowCfg.supportedTexts[fn] = this.workflowCfg.supportedTexts[fn] || [];
+        this.workflowCfg.supportedTexts[fn].push(cf.closest('li'));
       }
     });
   }
