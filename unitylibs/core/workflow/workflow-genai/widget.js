@@ -11,7 +11,6 @@ export default class UnityWidget {
 
   async initWidget() {
     this.widget = createTag('div', { class: 'unity-widget' });
-
     const con = createTag('div', {
       class: 'autocomplete',
       role: 'combobox',
@@ -29,8 +28,11 @@ export default class UnityWidget {
     });
 
     this.widget.append(con);
-    this.target.append(this.widget);
-
+    const interactiveArea = this.target.querySelector(
+      'div[data-valign="middle"].text'
+    );
+    const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
+    interactiveArea.insertBefore(this.widget, Paragraphs[1]);
     return this.actionMap;
   }
 }
