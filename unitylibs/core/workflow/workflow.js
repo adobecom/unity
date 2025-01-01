@@ -12,22 +12,36 @@ import {
 export function getImgSrc(pic) {
   const viewport = defineDeviceByScreenSize();
   let source = '';
-  if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
+  if (viewport === 'MOBILE')
+    source = pic.querySelector('source[type="image/webp"]:not([media])');
   else source = pic.querySelector('source[type="image/webp"][media]');
   return source.srcset;
 }
 
 function checkRenderStatus(targetBlock, res, rej, etime, rtime) {
-  if (etime > 20000) { rej(); return; }
-  if (targetBlock.querySelector('.text') && targetBlock.querySelector('.asset, .image')) res();
-  else setTimeout(() => checkRenderStatus(targetBlock, res, rej, etime + rtime), rtime);
+  if (etime > 20000) {
+    rej();
+    return;
+  }
+  if (
+    targetBlock.querySelector('.text') &&
+    targetBlock.querySelector('.asset, .image')
+  )
+    res();
+  else
+    setTimeout(
+      () => checkRenderStatus(targetBlock, res, rej, etime + rtime),
+      rtime
+    );
 }
 
 function intEnbReendered(targetBlock) {
   return new Promise((res, rej) => {
     try {
       checkRenderStatus(targetBlock, res, rej, 0, 100);
-    } catch (err) { rej(); }
+    } catch (err) {
+      rej();
+    }
   });
 }
 
@@ -54,8 +68,11 @@ async function getTargetArea(el) {
   try {
     intEnb.classList.add('unity-enabled');
     await intEnbReendered(intEnb);
-  } catch (err) { return null; }
-  if (el.classList.contains('mobile-image-bottom')) intEnb.classList.add('mobile-image-bottom');
+  } catch (err) {
+    return null;
+  }
+  if (el.classList.contains('mobile-image-bottom'))
+    intEnb.classList.add('mobile-image-bottom');
   const asset = intEnb.querySelector('.asset picture, .image picture');
   const container = asset.closest('p');
   const [iArea, iWidget] = createInteractiveArea(el, asset);
@@ -68,7 +85,9 @@ async function getTargetArea(el) {
 function getEnabledFeatures(unityEl, wfDetail) {
   const enabledFeatures = [];
   const supportedFeatures = Object.keys(wfDetail);
-  const configuredFeatures = unityEl.querySelectorAll(':scope ul > li > span.icon');
+  const configuredFeatures = unityEl.querySelectorAll(
+    ':scope ul > li > span.icon'
+  );
   configuredFeatures.forEach((cf) => {
     const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
     if (!cfName) return;
@@ -92,7 +111,9 @@ function getWorkFlowInformation(el) {
     },
     'workflow-acrobat': {},
   };
-  [...el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
+  [...el.classList].forEach((cn) => {
+    if (cn.match('workflow-')) wfName = cn;
+  });
   if (!wfName || !workflowCfg[wfName]) return [];
   return [wfName, workflowCfg[wfName]];
 }
@@ -104,9 +125,13 @@ async function initWorkflow(cfg) {
   cfg.unityWidget?.classList.remove('decorating');
   const actionBtn = cfg.unityWidget.querySelector('.unity-action-btn');
   actionBtn?.classList.add('animate-btn');
-  cfg.unityWidget.addEventListener('mouseover', () => {
-    actionBtn?.classList.remove('animate-btn');
-  }, { once: true });
+  cfg.unityWidget.addEventListener(
+    'mouseover',
+    () => {
+      actionBtn?.classList.remove('animate-btn');
+    },
+    { once: true }
+  );
 }
 
 class WfInitiator {
@@ -124,18 +149,26 @@ class WfInitiator {
   async priorityLibFetch(renderWidget, workflowName) {
     const priorityList = [
       `${getUnityLibs()}/core/workflow/${workflowName}/action-binder.js`,
-      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/target-config.json`,
+      `${getUnityLibs()}/core/workflow/${
+        this.workflowCfg.name
+      }/target-config.json`,
     ];
     if (renderWidget) {
       priorityList.push(
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.css`,
-        `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`,
+        `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`
       );
     }
     await priorityLoad(priorityList);
   }
 
-  async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion, langCode) {
+  async init(
+    el,
+    project = 'unity',
+    unityLibs = '/unitylibs',
+    langRegion,
+    langCode
+  ) {
     setUnityLibs(unityLibs, project);
     this.el = el;
     this.unityLibs = unityLibs;
@@ -144,50 +177,75 @@ class WfInitiator {
     this.workflowCfg = this.getWorkFlowInformation();
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
-    await this.priorityLibFetch(this.targetConfig.renderWidget, this.workflowCfg.name);
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget();
+    await this.priorityLibFetch(
+      this.targetConfig.renderWidget,
+      this.workflowCfg.name
+    );
+    [this.targetBlock, this.interactiveArea, this.targetConfig] =
+      await this.getTarget();
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     if (this.targetConfig.renderWidget) {
-      loadStyle(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.css`);
-      const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
+      loadStyle(
+        `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.css`
+      );
+      const { default: UnityWidget } = await import(
+        `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`
+      );
       this.actionMap = await new UnityWidget(
         this.interactiveArea,
         this.el,
-        this.workflowCfg,
+        this.workflowCfg
       ).initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
     this.limits = this.targetConfig.limits;
-    const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
+    const { default: ActionBinder } = await import(
+      `${getUnityLibs()}/core/workflow/${
+        this.workflowCfg.name
+      }/action-binder.js`
+    );
     await new ActionBinder(
       this.el,
       this.workflowCfg,
       this.targetBlock,
       this.interactiveArea,
       this.actionMap,
-      this.limits,
+      this.limits
     ).initActionListeners();
   }
 
   checkRenderStatus(block, selector, res, rej, etime, rtime) {
-    if (etime > 20000) { rej(); return; }
+    if (etime > 20000) {
+      rej();
+      return;
+    }
     if (block.querySelector(selector)) res();
-    else setTimeout(() => this.checkRenderStatus(block, selector, res, rej, etime + rtime), rtime);
+    else
+      setTimeout(
+        () => this.checkRenderStatus(block, selector, res, rej, etime + rtime),
+        rtime
+      );
   }
 
   intEnbReendered(block, selector) {
     return new Promise((res, rej) => {
       try {
         this.checkRenderStatus(block, selector, res, rej, 0, 100);
-      } catch (err) { rej(); }
+      } catch (err) {
+        rej();
+      }
     });
   }
 
   async getTarget() {
-    const res = await fetch(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/target-config.json`);
+    const res = await fetch(
+      `${getUnityLibs()}/core/workflow/${
+        this.workflowCfg.name
+      }/target-config.json`
+    );
     const targetConfig = await res.json();
     const prevElem = this.el.previousElementSibling;
     const supportedBlocks = Object.keys(targetConfig);
@@ -219,7 +277,8 @@ class WfInitiator {
   getImgSrc(pic) {
     const viewport = defineDeviceByScreenSize();
     let source = '';
-    if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
+    if (viewport === 'MOBILE')
+      source = pic.querySelector('source[type="image/webp"]:not([media])');
     else source = pic.querySelector('source[type="image/webp"][media]');
     return source ? source.srcset : pic.querySelector('img').src;
   }
@@ -256,9 +315,11 @@ class WfInitiator {
         productName: 'Express',
         sfList: new Set(['text2image']),
         stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
-      }
+      },
     };
-    [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
+    [...this.el.classList].forEach((cn) => {
+      if (cn.match('workflow-')) wfName = cn;
+    });
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
       name: wfName,
@@ -267,13 +328,15 @@ class WfInitiator {
       enabledFeatures: [],
       featureCfg: [],
       errors: {},
-      supportedTexts: {},
+      supportedTexts: workflowCfg[wfName]?.stList ?? {},
     };
   }
 
   getEnabledFeatures() {
-    const { supportedFeatures } = this.workflowCfg;
-    const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
+    const { supportedFeatures, supportedTexts } = this.workflowCfg;
+    const configuredFeatures = this.el.querySelectorAll(
+      ':scope > div > div > ul > li > span.icon'
+    );
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
       if (!cfName) return;
@@ -294,9 +357,17 @@ class WfInitiator {
   }
 }
 
-
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
-  const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
+export default async function init(
+  el,
+  project = 'unity',
+  unityLibs = '/unitylibs',
+  unityVersion = 'v1',
+  langRegion = 'us',
+  langCode = 'en'
+) {
+  const uv =
+    new URLSearchParams(window.location.search).get('unityversion') ||
+    unityVersion;
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
@@ -315,13 +386,19 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
         wfName,
         wfDetail,
         enabledFeatures,
-        uploadState: { },
+        uploadState: {},
         ...unityConfig,
       };
       await initWorkflow(wfConfig);
       break;
     case 'v2':
-      await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
+      await new WfInitiator().init(
+        el,
+        project,
+        unityLibs,
+        langRegion,
+        langCode
+      );
       break;
     default:
       break;
