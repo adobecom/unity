@@ -88,7 +88,7 @@ export default class ActionBinder {
         case value.actionType === 'compress':
           this.promiseStack = [];
           await this.compress(files, eventName);
-          break;      
+          break;    
         case value.actionType === 'continueInApp':
           this.LOADER_LIMIT = 100;
           await this.continueInApp();
@@ -195,12 +195,13 @@ export default class ActionBinder {
   }
 
   async compress(files, eventName) {
-    const file = files[0];
-    if (!file) return;
-    if (files.length === 1) await this.singleFileUpload(file, eventName);
-    else await this.multiFileUpload(files.length);
+    if (!files) {
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      return;
+    }
+    if (files.length === 1) await this.singleFileUpload(files[0], eventName);
+    else await this.multiFileUpload(files.length, eventName);
   }
-
 
   async getBlobData(file) {
     const objUrl = URL.createObjectURL(file);
@@ -265,13 +266,13 @@ export default class ActionBinder {
       await this.waitForCookie(2000);
       this.updateProgressBar(this.splashScreenEl, 100);
       if (!this.checkCookie()) {
-        await this.dispatchErrorToast('verb_cookie_not_set', 200, "Not all cookies found, redirecting anyway", true);
+        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
         await new Promise(r => setTimeout(r, 500));
       }
       window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, "Exception thrown when redirecting to product.", e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when redirecting to product.', e.showError);
     }
   }
 
@@ -401,7 +402,7 @@ export default class ActionBinder {
       }
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, "Exception thrown when verifying content.", e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', e.showError);
       this.operations = [];
       return false;
     }
@@ -425,7 +426,7 @@ export default class ActionBinder {
             return;
           }
           resolve(false);
-        }
+        };
         intervalId = setInterval(async () => {
           if (requestInProgress) return;
           requestInProgress = true;
@@ -449,7 +450,7 @@ export default class ActionBinder {
       });
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, "Exception thrown when verifying PDF page count.", e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying PDF page count.', e.showError);
       this.operations = [];
       return false;
     }
@@ -486,7 +487,7 @@ export default class ActionBinder {
       })
       .catch(async (e) => {
         await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', 500, "Exception thrown when retrieving redirect URL.", e.showError);
+        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', e.showError);
       });
   }
 
@@ -602,8 +603,15 @@ export default class ActionBinder {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 
-  async multiFileUpload(fileLength) {
-    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileLength } }));
+  async multiFileUpload(fileCount, eventName) {
+    this.block.dispatchEvent(
+      new CustomEvent(
+        unityConfig.trackAnalyticsEvent,
+        { detail: { event: eventName } },
+      ),
+    );
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileCount } }));
+    await this.showSplashScreen();
     const cOpts = {
       targetProduct: this.workflowCfg.productName,
       payload: {
@@ -615,6 +623,7 @@ export default class ActionBinder {
     };
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return;
+    this.updateProgressBar(this.splashScreenEl, 100);
     window.location.href = this.redirectUrl;
   }
 }
