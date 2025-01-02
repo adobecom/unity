@@ -35,7 +35,7 @@ export default class UnityWidget {
     con.append(inpText, surBtn, genBtn, dropCon);
     this.widget.append(con);
     this.target.append(this.widget);
-    return this.actionMap;
+    return this.workflowCfg.targetCfg.actionMap;
   }
 
   createDropdown() {
