@@ -611,7 +611,7 @@ export default class ActionBinder {
       ),
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileCount } }));
-    await this.showSplashScreen();
+    await this.showSplashScreen(true);
     const cOpts = {
       targetProduct: this.workflowCfg.productName,
       payload: {
