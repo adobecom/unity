@@ -34,7 +34,9 @@ export default class UnityWidget {
     const dropCon = this.createDropdown();
     con.append(inpText, surBtn, genBtn, dropCon);
     this.widget.append(con);
-    this.target.append(this.widget);
+    const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
+    const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
+    interactiveArea.insertBefore(this.widget, Paragraphs[1]);
     return this.workflowCfg.targetCfg.actionMap;
   }
 
