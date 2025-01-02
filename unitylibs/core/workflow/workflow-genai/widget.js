@@ -46,12 +46,10 @@ export default class UnityWidget {
     });
     const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, 'Prompt Suggestions');
     dropCon.append(promptTitle);
-    if (this.workflowCfg?.supportedTexts?.prompt?.array) {
-      this.workflowCfg.supportedTexts.prompt.array.forEach((text) => {
-        const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, text);
-        dropCon.append(prompt);
-      });
-    }
+    this.workflowCfg.supportedTexts.prompt.array.forEach((el) => {
+      const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, el.innerText);
+      dropCon.append(prompt);
+    });
     const separator = createTag('li', { class: 'dropdown-separator', role: 'separator' });
     dropCon.append(separator);
 
