@@ -314,7 +314,7 @@ class WfInitiator {
       'workflow-genai': {
         productName: 'Express',
         sfList: new Set(['text2image']),
-        stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
+        stList: new Set(['prompts', 'tip', 'legal', 'surpriseMe', 'generate']),
       },
     };
     [...this.el.classList].forEach((cn) => {
@@ -348,7 +348,7 @@ class WfInitiator {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       } else if (supportedTexts.has(fn)) {
         this.workflowCfg.supportedTexts[fn] = this.workflowCfg.supportedTexts[fn] || [];
-        this.workflowCfg.supportedTexts[fn].push(cf.closest('li'));
+        this.workflowCfg.supportedTexts[fn].push(cf.closest('li').innerText);
       }
     });
   }
