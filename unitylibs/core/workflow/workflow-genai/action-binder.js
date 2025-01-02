@@ -63,12 +63,12 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'INPUT':
-          el.addEventListener('input', async (e) => {
+          el.addEventListener('input', (e) => {
             this.query = e.target.value.trim();
             clearTimeout(debounceTimer);
-            if (query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
+            if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
               debounceTimer = setTimeout(async () => {
-                await this.expressActionMaps(values);
+                await this.expressActionMaps(this.query);
               }, 1000);
             }
           });
