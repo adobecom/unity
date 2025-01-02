@@ -220,7 +220,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
 export const unityConfig = (() => {
   const { host } = window.location;
   const commoncfg = {
-    apiKey: 'leo',
+    apiKey: 'leo_playground',
     refreshWidgetEvent: 'unity:refresh-widget',
     interactiveSwitchEvent: 'unity:interactive-switch',
     trackAnalyticsEvent: 'unity:track-analytics',
