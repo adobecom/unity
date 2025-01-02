@@ -56,8 +56,8 @@ export default class UnityWidget {
     dropCon.append(separator);
 
     const footer = createTag('li', { class: 'dropdown-footer' });
-    const tipText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.tip.array[0].innerText);
-    const legalText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.tip.array[0].querySelector('a'));
+    const tipText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.tip[0].innerText);
+    const legalText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.legal[0].querySelector('a'));
     footer.append(tipText);
     footer.append(legalText);
     dropCon.append(footer);
