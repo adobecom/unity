@@ -261,7 +261,7 @@ export default class ActionBinder {
   };
 
   async continueInApp() {
-    if (!(this.operations.length || this.redirectWithoutUpload)) return;
+    if (!(this.operations.length || this.redirectWithoutUpload || this.redirectUrl)) return;
     try {
       await this.waitForCookie(2000);
       this.updateProgressBar(this.splashScreenEl, 100);
