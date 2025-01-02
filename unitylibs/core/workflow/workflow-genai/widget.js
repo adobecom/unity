@@ -48,7 +48,8 @@ export default class UnityWidget {
     });
     const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, 'Prompt Suggestions');
     dropCon.append(promptTitle);
-    this.workflowCfg.supportedTexts.prompt.forEach((el) => {
+    const prompts = this.el.querySelectorAll('.icon-prompt');
+    prompts.forEach((el) => {
       const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, el.innerText);
       dropCon.append(prompt);
     });
@@ -56,8 +57,10 @@ export default class UnityWidget {
     dropCon.append(separator);
 
     const footer = createTag('li', { class: 'dropdown-footer' });
-    const tipText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.tip[0].innerText);
-    const legalText = createTag('a', { href: this.workflowCfg.supportedTexts.legal[0].querySelector('a').href, class: 'legal-text' }, this.workflowCfg.supportedTexts.legal[0].querySelector('a').innerText);
+    const tipEl = this.el.querySelectorAll('.icon-tip');
+    const tipText = createTag('span', { class: 'tip-text' }, tipEl.innerText);
+    const legalEl = this.el.querySelectorAll('.icon-legal');
+    const legalText = createTag('a', { href: legalEl.querySelector('a').href, class: 'legal-text' }, legalEl.querySelector('a').innerText);
     footer.append(tipText);
     footer.append(legalText);
     dropCon.append(footer);
