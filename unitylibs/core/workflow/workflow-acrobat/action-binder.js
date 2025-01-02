@@ -278,6 +278,7 @@ export default class ActionBinder {
 
   async cancelAcrobatOperation() {
     await this.showSplashScreen();
+    this.operations = []
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'cancel' } }));
     const e = new Error();
     e.message = 'Operation termination requested.';
@@ -625,6 +626,7 @@ export default class ActionBinder {
     if (!this.redirectUrl) return;
     setTimeout(() => {
       this.updateProgressBar(this.splashScreenEl, 100);
+      if (!this.operations.length) return;
       window.location.href = this.redirectUrl;
     }, 5000);
   }
