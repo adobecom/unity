@@ -314,7 +314,7 @@ class WfInitiator {
       'workflow-genai': {
         productName: 'Express',
         sfList: new Set(['text2image']),
-        stList: new Set(['prompts', 'tip', 'legal', 'surpriseMe', 'generate']),
+        stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
       },
     };
     [...this.el.classList].forEach((cn) => {

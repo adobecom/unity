@@ -95,7 +95,7 @@ export default class ActionBinder {
   }
 
   async surpriseMe() {
-    const prompts = this.workflowCfg.supportedTexts.prompts;
+    const prompts = this.workflowCfg.supportedTexts.prompt;
     if (!prompts) return;
     const randomIndex = Math.floor(Math.random() * prompts.length);
     this.query = prompts[randomIndex];
