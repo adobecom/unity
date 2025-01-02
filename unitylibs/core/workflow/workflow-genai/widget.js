@@ -24,11 +24,11 @@ export default class UnityWidget {
       placeholder: 'Something for placeholder',
     });
     const surBtn = this.createActionBtn(
-      this.el.querySelector('icon-surpriseMe')?.closest('li'),
+      this.el.querySelector('.icon-surpriseMe')?.closest('li'),
       'surprise-btn-class'
     );
     const genBtn = this.createActionBtn(
-      this.el.querySelector('icon-generate')?.closest('li'),
+      this.el.querySelector('.icon-generate')?.closest('li'),
       'generate-btn-class'
     );
     const dropCon = this.createDropdown();
@@ -55,7 +55,7 @@ export default class UnityWidget {
 
     const footer = createTag('li', { class: 'dropdown-footer' });
     const tipText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.tip[0].innerText);
-    const legalText = createTag('span', { class: 'tip-text' }, this.workflowCfg.supportedTexts.legal[0].querySelector('a'));
+    const legalText = createTag('a', { href: this.workflowCfg.supportedTexts.legal[0].querySelector('a').href, class: 'legal-text' }, this.workflowCfg.supportedTexts.legal[0].querySelector('a').innerText);
     footer.append(tipText);
     footer.append(legalText);
     dropCon.append(footer);
