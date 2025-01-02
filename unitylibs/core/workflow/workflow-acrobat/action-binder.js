@@ -628,6 +628,5 @@ export default class ActionBinder {
       await new Promise(r => setTimeout(r, 500));
       window.location.href = this.redirectUrl;
     }, 5000);
-    window.location.href = this.redirectUrl;
   }
 }
