@@ -46,7 +46,7 @@ export default class UnityWidget {
     });
     const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, 'Prompt Suggestions');
     dropCon.append(promptTitle);
-    this.workflowCfg.supportedTexts.prompt.array.forEach((el) => {
+    this.workflowCfg.supportedTexts.prompt.forEach((el) => {
       const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, el.innerText);
       dropCon.append(prompt);
     });
