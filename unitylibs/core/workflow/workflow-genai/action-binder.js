@@ -82,7 +82,7 @@ export default class ActionBinder {
   async fetchAutocompleteSuggestions() {
     let suggestions = null;
     try {
-      const data = { query: this.query };
+      const data = { query: this.query, targetProduct: this.workflowCfg.productName };
       suggestions = await this.serviceHandler.postCallToService(
         this.expressApiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(data) },
