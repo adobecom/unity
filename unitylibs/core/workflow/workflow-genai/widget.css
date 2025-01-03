@@ -55,3 +55,10 @@
     font-weight: 700;
     line-height: normal;
 }
+
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class {
+    display: flex;
+    align-items: flex-start;
+    border-radius: 16px;
+    background: #292929;
+}
