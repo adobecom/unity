@@ -10,7 +10,7 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    this.widget = createTag('div', { class: 'unity-widget' });
+    this.widget = createTag('div', { class: 'express-unity-widget' });
     const con = createTag('div', {
       class: 'autocomplete',
       role: 'combobox',
