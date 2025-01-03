@@ -40,6 +40,12 @@
     padding: 6px 6px 6px 14px;
 }
 
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn .btn-text {
+    display: flex;
+    padding: 6px 16px 8px 0px;
+    align-items: flex-start;
+}
+
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn-class {
     border-radius: 16px;
     border: 2px solid #292929;
@@ -48,10 +54,4 @@
     font-style: normal;
     font-weight: 700;
     line-height: normal;
-}
-
-.unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn .btn-icon .btn-text {
-    display: flex;
-    padding: 6px 16px 8px 0px;
-    align-items: flex-start;
 }
