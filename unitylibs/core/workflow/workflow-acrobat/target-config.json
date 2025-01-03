@@ -14,7 +14,7 @@
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/drafts/ruchika/splashscreen",
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
