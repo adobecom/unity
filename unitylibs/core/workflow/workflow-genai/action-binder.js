@@ -56,34 +56,36 @@ export default class ActionBinder {
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     let debounceTimer;
     for (const [key, values] of Object.entries(actMap)) {
-      const el = b.querySelector(key);
-      if (!el) return;
-      switch (true) {
-        case el.nodeName === 'A':
-          el.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await this.expressActionMaps(values);
-          });
-          break;
-        case el.nodeName === 'INPUT':
-          el.addEventListener('input', (e) => {
-            this.query = e.target.value.trim();
-            clearTimeout(debounceTimer);
-            if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
-              debounceTimer = setTimeout(async () => {
-                await this.expressActionMaps(values);
-              }, 1000);
-            }
-          });
-          break;
-        case el.nodeName === 'LI':
-          el.addEventListener('click', async () => {
-            await this.expressActionMaps(values, el);
-          });
-          break;
-        default:
-          break;
-      }
+      const elem = b.querySelectorAll(key);
+      if (!elem.length) return;
+      elem.forEach((el) => {
+        switch (true) {
+          case el.nodeName === 'A':
+            el.addEventListener('click', async (e) => {
+              e.preventDefault();
+              await this.expressActionMaps(values);
+            });
+            break;
+          case el.nodeName === 'INPUT':
+            el.addEventListener('input', (e) => {
+              this.query = e.target.value.trim();
+              clearTimeout(debounceTimer);
+              if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
+                debounceTimer = setTimeout(async () => {
+                  await this.expressActionMaps(values);
+                }, 1000);
+              }
+            });
+            break;
+          case el.nodeName === 'LI':
+            el.addEventListener('click', async () => {
+              await this.expressActionMaps(values, el);
+            });
+            break;
+          default:
+            break;
+        }
+      });
     }
   }
 
