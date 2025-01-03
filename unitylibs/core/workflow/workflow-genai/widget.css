@@ -1,5 +1,7 @@
-.aside.text2image .container .interactive-area .text {
-  width: 720px;
+@media screen and (min-width: 1200px) {
+  .aside.text2image .container .interactive-area .text {
+    width: 720px;
+  }
 }
 
 .unity-enabled .interactive-area .express-unity-widget {
