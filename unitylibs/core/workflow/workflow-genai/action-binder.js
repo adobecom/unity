@@ -105,11 +105,11 @@ export default class ActionBinder {
   async generate() {
     try {
       const cOpts = { query: this.query, targetProduct: this.workflowCfg.productName };
-      const connectorUrl = await this.serviceHandler.postCallToService(
+      const connector = await this.serviceHandler.postCallToService(
         this.expressApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
       );
-      window.location.href = connectorUrl;
+      window.location.href = connector.url;
     } catch (e) {
       console.log('Error fetching connector URL to express:', e);
     }
