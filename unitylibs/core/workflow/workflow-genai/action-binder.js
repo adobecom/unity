@@ -105,7 +105,7 @@ export default class ActionBinder {
   async generate() {
     try {
       const cOpts = { query: this.query, targetProduct: this.workflowCfg.productName };
-      connectorUrl = await this.serviceHandler.postCallToService(
+      const connectorUrl = await this.serviceHandler.postCallToService(
         this.expressApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
       );
