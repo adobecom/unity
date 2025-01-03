@@ -62,3 +62,11 @@
     border-radius: 16px;
     background: #292929;
 }
+
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class .btn-text {
+    color: #FFF;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 130%;
+}
