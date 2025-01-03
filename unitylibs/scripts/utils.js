@@ -234,8 +234,8 @@ export const unityConfig = (() => {
       ...commoncfg,
     },
     stage: {
-      apiEndPoint: 'https://unity-dev2.adobe.io',
-      connectorApiEndPoint: 'https://unity-dev2.adobe.io/api/v1/asset/connector',
+      apiEndPoint: 'https://unity-dev.adobe.io',
+      connectorApiEndPoint: 'https://unity-dev.adobe.io/api/v1/asset/connector',
       ...commoncfg,
     },
   };
