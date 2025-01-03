@@ -52,7 +52,7 @@ export default class UnityWidget {
     });
     const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, 'Prompt Suggestions');
     dropCon.append(promptTitle);
-    const prompts = this.el.querySelectorAll('.icon-prompt');
+    const prompts = this.el.querySelectorAll('.icon-prompt').closest('li');
     prompts.forEach((el) => {
       const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, el.innerText);
       dropCon.append(prompt);

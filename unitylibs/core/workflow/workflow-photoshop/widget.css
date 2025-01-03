@@ -4,11 +4,18 @@
   padding: 8px;
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-options-tray.show {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .changebg-options-tray.show {
   display: flex;
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .changebg-options-tray
+  .changebg-option {
   border-radius: 5.36px;
   cursor: pointer;
   border: 3px solid transparent;
@@ -20,7 +27,11 @@
   height: 67px;
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option:focus-visible {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .changebg-options-tray
+  .changebg-option:focus-visible {
   outline: none;
 }
 
@@ -31,31 +42,66 @@
   padding: 16px 16px 0;
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray.show {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray.show {
   display: flex;
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-container {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-container {
   height: 2px;
   border-radius: 1px;
   margin: 7px 0;
   position: relative;
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-label {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-label {
   font-size: var(--type-body-m-size);
   line-height: var(--type-body-m-lh);
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-container.hue {
-  background: linear-gradient(90deg, #E90B03 0%, #EF9100 9%, #FFE003 20.5%, #5AFE00 32.5%, #00FF84 43.5%, #00F1EF 53.5%, #001AFF 66.86%, #8700FC 77.17%, #FD00D6 89.5%, #FF0015 100%);
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-container.hue {
+  background: linear-gradient(
+    90deg,
+    #e90b03 0%,
+    #ef9100 9%,
+    #ffe003 20.5%,
+    #5afe00 32.5%,
+    #00ff84 43.5%,
+    #00f1ef 53.5%,
+    #001aff 66.86%,
+    #8700fc 77.17%,
+    #fd00d6 89.5%,
+    #ff0015 100%
+  );
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-container.saturation {
-  background: linear-gradient(90deg, #000 0%, #F20000 100%);
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-container.saturation {
+  background: linear-gradient(90deg, #000 0%, #f20000 100%);
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-slider {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-slider {
   width: 100%;
   opacity: 0;
   position: absolute;
@@ -64,7 +110,11 @@
   margin: 0;
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-slider::-webkit-slider-thumb {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-slider::-webkit-slider-thumb {
   height: 20px;
   width: 20px;
   position: relative;
@@ -75,11 +125,15 @@
   z-index: 2;
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-circle {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-circle {
   position: absolute;
   block-size: 16px;
   inline-size: 16px;
-  background-color: #A2A2A2;
+  background-color: #a2a2a2;
   border-radius: 50%;
   top: -7px;
   inset-block-start: 50%;
@@ -87,12 +141,25 @@
   transform: translate(-50%, -50%);
 }
 
-.unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-circle .analytics-content {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .adjustment-options-tray
+  .adjustment-circle
+  .analytics-content {
   display: none;
 }
 
-.unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option:focus-visible,
-.unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option:hover {
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .changebg-options-tray
+  .changebg-option:focus-visible,
+.unity-enabled
+  .interactive-area
+  .unity-option-area
+  .changebg-options-tray
+  .changebg-option:hover {
   border: 3px solid var(--highlight-blue);
 }
 
@@ -121,11 +188,20 @@
     border-radius: 8px 8px 0 0;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option {
+  .unity-enabled
+    .interactive-area
+    .unity-option-area
+    .changebg-options-tray
+    .changebg-option {
     width: 100%;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray .changebg-option img {
+  .unity-enabled
+    .interactive-area
+    .unity-option-area
+    .changebg-options-tray
+    .changebg-option
+    img {
     width: 100%;
     height: 67px;
     min-height: 67px;
@@ -157,7 +233,11 @@
     padding: 5px;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .changebg-options-tray img {
+  .unity-enabled
+    .interactive-area
+    .unity-option-area
+    .changebg-options-tray
+    img {
     height: 67px;
     min-height: 67px;
     max-height: 67px;
@@ -172,11 +252,15 @@
     min-width: 212px;
   }
 
-  .unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-label {
+  .unity-enabled
+    .interactive-area
+    .unity-option-area
+    .adjustment-options-tray
+    .adjustment-label {
     font-weight: bold;
   }
 
-  [dir="rtl"] .removebg-button {
+  [dir='rtl'] .removebg-button {
     order: 1;
   }
 }
