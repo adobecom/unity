@@ -57,7 +57,6 @@ export default class ActionBinder {
     let debounceTimer;
     for (const [key, values] of Object.entries(actMap)) {
       const elem = b.querySelectorAll(key);
-      if (!elem.length) return;
       elem.forEach((el) => {
         switch (true) {
           case el.nodeName === 'A':

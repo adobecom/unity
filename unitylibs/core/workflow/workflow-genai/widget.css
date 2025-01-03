@@ -1,3 +1,7 @@
+.unity-enabled .interactive-area .express-unity-widget {
+  display: flex;
+  width: 720px;
+}
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
     display: flex;
     padding: 12px 16px;
