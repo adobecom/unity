@@ -1,12 +1,12 @@
 @media screen and (min-width: 1200px) {
-  .aside.text2image .foreground.container .interactive-area .text {
-    width: 720px;
+  .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
+    max-width: 720px;
+    margin: 0 auto;
   }
 }
 
 .unity-enabled .interactive-area .express-unity-widget {
-  display: flex;
-  width: 720px;
+  width: 100%;
 }
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
     display: flex;
@@ -30,6 +30,7 @@
     font-weight: 400;
     line-height: 130%;
     border: none;
+    min-height: 40px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper {
