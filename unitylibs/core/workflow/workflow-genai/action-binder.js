@@ -27,7 +27,7 @@ export default class ActionBinder {
     return unityConfig;
   }
 
-  async expressActionMaps(values) {
+  async expressActionMaps(values, el = null) {
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
@@ -45,7 +45,7 @@ export default class ActionBinder {
           await this.generate();
           break;
         case value.actionType === 'getPromptValue':
-          this.getPromptValue();
+          this.getPromptValue(el);
           break;
         default:
           break;
@@ -78,7 +78,7 @@ export default class ActionBinder {
           break;
         case el.nodeName === 'LI':
           el.addEventListener('click', async () => {
-            await this.expressActionMaps(values);
+            await this.expressActionMaps(values, el);
           });
           break;
         default:
@@ -123,7 +123,10 @@ export default class ActionBinder {
     }
   }
 
-  getPromptValue() {
-    console.log('getPromptValue is calling');
+  getPromptValue(el) {
+    const input = this.unityEl.querySelector('.input-class');
+    const promptText = el.textContent.trim();
+    input.value = promptText;
+    input.focus();
   }
 }
