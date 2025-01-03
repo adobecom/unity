@@ -1,3 +1,7 @@
+.text2image .container .interactive-area .text {
+  width: 720px;
+}
+
 .unity-enabled .interactive-area .express-unity-widget {
   display: flex;
   width: 720px;
