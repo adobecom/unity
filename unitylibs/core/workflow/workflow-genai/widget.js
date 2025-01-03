@@ -18,7 +18,7 @@ export default class UnityWidget {
       ariaOwns: 'dropdown',
       ariaHaspopup: 'listbox',
     });
-    const inputCon = createTag('div', { class: 'input-con' });
+    const inputCon = createTag('div', { class: 'input-wrapper' });
     const inpText = createTag('input', {
       class: 'input-class',
       type: 'text',
