@@ -6,7 +6,8 @@
     border-radius: 16px;
     border: 1px solid #FFF;
     background: linear-gradient(89deg, rgba(255, 255, 255, 0.80) 1.01%, rgba(255, 255, 255, 0.20) 111.14%);
-    box-shadow: 0px 2px 8px 0px var(--Alias-drop-shadow-emphasized-hover, rgba(0, 0, 0, 0.16));
+    box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.16);
+    gap: 40px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper .input-class {
@@ -18,4 +19,5 @@
     font-style: italic;
     font-weight: 400;
     line-height: 130%;
+    border: none;
 }

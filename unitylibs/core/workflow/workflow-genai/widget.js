@@ -19,6 +19,7 @@ export default class UnityWidget {
       ariaHaspopup: 'listbox',
     });
     const inputCon = createTag('div', { class: 'input-wrapper' });
+    const actionCon = createTag('div', { class: 'action-wrapper' });
     const inpText = createTag('input', {
       class: 'input-class',
       type: 'text',
@@ -33,7 +34,8 @@ export default class UnityWidget {
       'generate-btn-class'
     );
     const dropCon = this.createDropdown();
-    inputCon.append(inpText, surBtn, genBtn);
+    actionCon.append(surBtn, genBtn);
+    inputCon.append(inpText, actionCon);
     con.append(inputCon, dropCon);
     this.widget.append(con);
     const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
