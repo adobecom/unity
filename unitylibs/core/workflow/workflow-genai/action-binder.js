@@ -124,7 +124,7 @@ export default class ActionBinder {
   }
 
   getPromptValue(el) {
-    const input = this.unityEl.querySelector('.input-class');
+    const input = this.block.querySelector('.input-class');
     const promptText = el.textContent.trim();
     input.value = promptText;
     input.focus();
