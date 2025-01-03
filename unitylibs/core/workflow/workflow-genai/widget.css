@@ -71,3 +71,64 @@
     font-weight: 700;
     line-height: 130%;
 }
+
+.unity-enabled .interactive-area .express-unity-widget .dropdown {
+    background-color: #fff; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 8px; /* Rounded corners */
+    padding: 8px 0; /* Padding inside the dropdown */
+    max-width: 400px; /* Restrict the width */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    font-family: Arial, sans-serif; /* Default font */
+    list-style: none; /* Remove default bullet points */
+    margin: 0; /* Remove default margin */
+    position: absolute; /* Position dropdown absolutely */
+    z-index: 10; /* Ensure it's on top */
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-title {
+    font-weight: bold;
+    color: #333; /* Dark gray */
+    padding: 8px 16px; /* Inner spacing */
+    margin-bottom: 4px; /* Space below the title */
+    cursor: default; /* Indicate it's not selectable */
+    font-size: 14px;
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-item {
+    padding: 8px 16px;
+    cursor: pointer; /* Indicate it's clickable */
+    color: #333;
+    font-size: 14px;
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-item:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-separator {
+    border-top: 1px solid #ccc; /* Horizontal line */
+    margin: 8px 16px; /* Space around the separator */
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer {
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #666; /* Light gray text */
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .tip-text {
+    margin-right: 8px;
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text {
+    color: #0073e6; /* Blue link */
+    text-decoration: none;
+  }
+  
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:hover {
+    text-decoration: underline;
+  }  
