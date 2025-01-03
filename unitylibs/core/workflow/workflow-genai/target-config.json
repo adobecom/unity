@@ -21,6 +21,11 @@
         {
           "actionType": "generate"
         }
+      ],
+      ".dropdown-item": [
+        {
+          "actionType": "getPromptValue"
+        }
       ]
     }
   }

@@ -44,6 +44,9 @@ export default class ActionBinder {
         case value.actionType === 'generate':
           await this.generate();
           break;
+        case value.actionType === 'getPromptValue':
+          this.getPromptValue();
+          break;
         default:
           break;
       }
@@ -71,6 +74,11 @@ export default class ActionBinder {
                 await this.expressActionMaps(values);
               }, 1000);
             }
+          });
+          break;
+        case el.nodeName === 'LI':
+          el.addEventListener('click', async () => {
+            await this.expressActionMaps(values);
           });
           break;
         default:
@@ -113,5 +121,9 @@ export default class ActionBinder {
     } catch (e) {
       console.log('Error fetching connector URL to express:', e);
     }
+  }
+
+  getPromptValue() {
+    console.log('getPromptValue is calling');
   }
 }
