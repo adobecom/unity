@@ -24,6 +24,7 @@
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper {
     display: flex;
+    gap: 10px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn {
