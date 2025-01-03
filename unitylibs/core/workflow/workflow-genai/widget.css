@@ -31,6 +31,7 @@
     min-width: 72px;
     justify-content: center;
     align-items: flex-start;
+    text-decoration: none;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn .btn-icon {
@@ -47,4 +48,10 @@
     font-style: normal;
     font-weight: 700;
     line-height: normal;
+}
+
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn .btn-icon .btn-text {
+    display: flex;
+    padding: 6px 16px 8px 0px;
+    align-items: flex-start;
 }
