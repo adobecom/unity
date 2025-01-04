@@ -140,7 +140,7 @@ export default class ActionBinder {
     switch (e.key) {
       case 'ArrowDown': // Navigate to the next dropdown item
         e.preventDefault();
-        activeIndex = (activeIndex + 1) % dropdownItems.length;
+        activeIndex = (activeIndex + 1) % dropdownItems.length; // Increment index and wrap around
         this.updateActiveDescendant(dropdownItems, activeIndex, input);
         break;
 
@@ -153,12 +153,18 @@ export default class ActionBinder {
       case 'Enter': // Select the current dropdown item
         e.preventDefault();
         if (activeIndex >= 0) {
-          dropdownItems[activeIndex].click(); // Trigger the click event
+          dropdownItems[activeIndex].click(); // Trigger the click event for the active item
         }
         break;
 
+      case 'Escape': // Close the dropdown
+        // dropdown.classList.add('hidden');
+        input.setAttribute('aria-expanded', 'false');
+        activeIndex = -1; // Reset active index
+        break;
+
       default:
-        // Allow normal character input for other keys
+        // Allow normal input behavior for other keys
         break;
     }
   }
