@@ -55,6 +55,7 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     let debounceTimer;
+    const dropdown = document.querySelector('.dropdown');
     for (const [key, values] of Object.entries(actMap)) {
       const elem = b.querySelectorAll(key);
       elem.forEach((el) => {
@@ -82,13 +83,13 @@ export default class ActionBinder {
             });
             // Handle focus and blur for dropdown visibility
             el.addEventListener('focus', () => {
-              // dropdown.classList.remove('hidden');
+              dropdown.classList.remove('hidden');
               el.setAttribute('aria-expanded', 'true');
             });
 
             el.addEventListener('blur', () => {
               setTimeout(() => {
-                // dropdown.classList.add('hidden');
+                dropdown.classList.add('hidden');
                 el.setAttribute('aria-expanded', 'false');
                 activeIndex = -1; // Reset active index on blur
               }, 200); // Delay to allow click events on dropdown items
