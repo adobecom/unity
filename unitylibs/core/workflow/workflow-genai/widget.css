@@ -94,6 +94,7 @@
     width: inherit;
     border-radius: 16px;
     padding: 8px 16px;
+    text-align: left;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title {
@@ -135,8 +136,10 @@
     color: #5258E4;
     text-decoration: none;
     font-weight: 500;
-    font-size:14px;
-    line-height: 17.53px;
+    font-size: 14px;
+    border-left: 1px solid #C6C6C6;
+    padding-left: 5px;
+    line-height: 10px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:hover {
