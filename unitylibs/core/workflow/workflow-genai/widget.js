@@ -1,4 +1,4 @@
-import { createTag, getUnityLibs } from '../../../scripts/utils.js';
+import { createTag } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg) {
@@ -14,16 +14,19 @@ export default class UnityWidget {
     const con = createTag('div', {
       class: 'autocomplete',
       role: 'combobox',
-      ariaExpanded: 'false',
-      ariaOwns: 'dropdown',
-      ariaHaspopup: 'listbox',
+      'aria-expanded': 'false',
+      'aria-owns': 'dropdown',
+      'aria-haspopup': 'listbox',
     });
     const inputCon = createTag('div', { class: 'input-wrapper' });
     const actionCon = createTag('div', { class: 'action-wrapper' });
     const inpText = createTag('input', {
+      id: 'promptInput',
       class: 'input-class',
       type: 'text',
-      placeholder: 'Something for placeholder',
+      placeholder: 'Describe your image...',
+      'aria-autocomplete': 'list',
+      'aria-controls': 'dropdown',
     });
     const surBtn = this.createActionBtn(
       this.el.querySelector('.icon-surpriseMe')?.closest('li'),

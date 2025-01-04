@@ -75,6 +75,9 @@ export default class ActionBinder {
                 }, 1000);
               }
             });
+            el.addEventListener('keydown', (e) => {
+              this.addAccessibilityFeatures(e,el);
+            });
             break;
           case el.nodeName === 'LI':
             el.addEventListener('click', async () => {
@@ -129,5 +132,35 @@ export default class ActionBinder {
     const promptText = el.textContent.trim();
     input.value = promptText;
     input.focus();
+  }
+
+  addAccessibilityFeatures(e, input) {
+    const dropdownItems = this.block.querySelectorAll('.dropdown-item');
+    let activeIndex = -1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % dropdownItems.length;
+      this.updateActiveDescendant(dropdownItems, activeIndex, input);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+      this.updateActiveDescendant(dropdownItems, activeIndex, input);
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      dropdownItems[activeIndex].click();
+    }
+  }
+
+  updateActiveDescendant(items, index, input) {
+    items.forEach((item, i) => {
+      if (i === index) {
+        item.classList.add('active');
+        item.setAttribute('aria-selected', 'true');
+        input.setAttribute('aria-activedescendant', item.id || `dropdown-item-${i}`);
+      } else {
+        item.classList.remove('active');
+        item.setAttribute('aria-selected', 'false');
+      }
+    });
   }
 }
