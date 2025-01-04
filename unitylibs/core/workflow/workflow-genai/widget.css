@@ -30,7 +30,6 @@
     font-weight: 400;
     line-height: 130%;
     border: none;
-    min-height: 40px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper {
@@ -40,7 +39,6 @@
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn {
     display: flex;
-    min-width: 72px;
     justify-content: center;
     align-items: flex-start;
     text-decoration: none;
@@ -61,7 +59,7 @@
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn-class {
     border-radius: 16px;
     border: 2px solid #292929;
-    color: var(--Alias-content-neutral-default, var(--Alias-content-neutral-default, #292929));
+    color: #292929;
     font-size: 14px;
     font-style: normal;
     font-weight: 700;
