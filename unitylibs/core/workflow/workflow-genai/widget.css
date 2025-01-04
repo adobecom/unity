@@ -166,10 +166,18 @@
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
-    border-left: 1px solid #C6C6C6;
-    padding-left: 5px;
     line-height: 12px;
     margin-left: auto;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:before {
+    content: "|";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    color: #C6C6C6;
+    background-repeat: no-repeat;
+    margin-right: 8px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:hover {
