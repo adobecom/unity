@@ -45,9 +45,13 @@ export default class UnityWidget {
   }
 
   async createDropdown() {
-    const [promptImg] = await Promise.all([
-      fetch(`${getUnityLibs()}/img/icons/prompt.svg`).then((res) => res.text()),
-    ]);
+    const promptImg = await fetch(`${getUnityLibs()}/img/icons/prompt.svg`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch prompt image: ${res.status} ${res.statusText}`);
+        }
+        return res.text();
+      });
     const promptIcon = createTag('div', { class: 'alert-icon' }, promptImg);
     const dropCon = createTag('ul', {
       class: 'dropdown hidden',
