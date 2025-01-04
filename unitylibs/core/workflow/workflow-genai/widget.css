@@ -93,7 +93,7 @@
     list-style: none;
     width: inherit;
     border-radius: 16px;
-    padding: 8px 16px;
+    padding: 8px 0;
     text-align: left;
   }
   
@@ -102,6 +102,7 @@
     font-size: 16px;
     color: #292929;
     line-height: 20.8px;
+    padding: 0 16px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item {
@@ -110,18 +111,17 @@
     font-size: 16px;
     font-weight: 400;
     line-height: 24px;
-    padding: 8px 0;
+    padding: 8px 16px;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:before {
     content: "";
-    display: inline-block; /* Ensure it behaves like an inline element */
-    width: 24px; /* Set desired width */
-    height: 24px; /* Set desired height */
-    background-image: url('../../../img/icons/prompt.svg'); /* Image URL */
-    background-size: contain; /* Ensure the image fits inside the dimensions */
-    background-repeat: no-repeat; /* Prevent repeating the image */
-    margin-right: 8px; /* Add spacing between the image and text */
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-image: url(../../../img/icons/prompt.svg);
+    background-repeat: no-repeat;
+    margin-right: 8px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:hover {
@@ -133,7 +133,7 @@
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer {
-    padding: 8px 0;
+    padding: 8px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
