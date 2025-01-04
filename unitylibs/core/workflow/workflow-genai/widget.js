@@ -44,7 +44,7 @@ export default class UnityWidget {
     return this.workflowCfg.targetCfg.actionMap;
   }
 
-  async createDropdown() {
+  createDropdown() {
     // const promptImg = await fetch(`${getUnityLibs()}/img/icons/prompt.svg`)
     //   .then((res) => {
     //     if (!res.ok) {
