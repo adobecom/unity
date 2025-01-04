@@ -45,14 +45,6 @@ export default class UnityWidget {
   }
 
   createDropdown() {
-    // const promptImg = await fetch(`${getUnityLibs()}/img/icons/prompt.svg`)
-    //   .then((res) => {
-    //     if (!res.ok) {
-    //       throw new Error(`Failed to fetch prompt image: ${res.status} ${res.statusText}`);
-    //     }
-    //     return res.text();
-    //   });
-    // const promptIcon = createTag('div', { class: 'alert-icon' }, promptImg);
     const dropCon = createTag('ul', {
       class: 'dropdown hidden',
       role: 'listbox',
@@ -63,7 +55,6 @@ export default class UnityWidget {
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el) => {
       const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, el.closest('li').innerText);
-      // prompt.prepend(promptIcon);
       dropCon.append(prompt);
     });
     const separator = createTag('li', { class: 'dropdown-separator', role: 'separator' });
@@ -71,10 +62,12 @@ export default class UnityWidget {
 
     const footer = createTag('li', { class: 'dropdown-footer' });
     const tipEl = this.el.querySelector('.icon-tip').closest('li');
+    const tipCon = createTag('div', { class: 'tip-con' }, 'Tip:');
     const tipText = createTag('span', { class: 'tip-text' }, tipEl.innerText);
     const legalEl = this.el.querySelector('.icon-legal').closest('li');
     const legalText = createTag('a', { href: legalEl.querySelector('a').href, class: 'legal-text' }, legalEl.querySelector('a').innerText);
-    footer.append(tipText);
+    tipCon.append(tipText);
+    footer.append(tipCon);
     footer.append(legalText);
     dropCon.append(footer);
     return dropCon;

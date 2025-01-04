@@ -95,6 +95,7 @@
     border-radius: 16px;
     padding: 8px 0;
     text-align: left;
+    margin: 8px 0 0 0;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title {
@@ -144,6 +145,16 @@
     color: #292929;
     font-weight: 400;
     line-height: 24px;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer:before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url(../../../img/icons/info.svg);
+    background-repeat: no-repeat;
+    margin-right: 8px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text {
