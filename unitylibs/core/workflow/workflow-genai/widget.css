@@ -117,6 +117,10 @@
     align-items: center;
   }
 
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-item .active {
+    outline: 1px solid #005FCC;
+  }
+
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:before {
     content: "";
     display: inline-block;
