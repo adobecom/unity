@@ -172,11 +172,7 @@
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:before {
     content: "|";
-    display: inline-block;
-    width: 20px;
-    height: 20px;
     color: #C6C6C6;
-    background-repeat: no-repeat;
     margin-right: 8px;
   }
   
