@@ -48,6 +48,7 @@ export default class UnityWidget {
     const [promptImg] = await Promise.all([
       fetch(`${getUnityLibs()}/img/icons/prompt.svg`).then((res) => res.text()),
     ]);
+    const promptIcon = createTag('div', { class: 'alert-icon' }, promptImg);
     const dropCon = createTag('ul', {
       class: 'dropdown hidden',
       role: 'listbox',
@@ -58,7 +59,7 @@ export default class UnityWidget {
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el) => {
       const prompt = createTag('li', { class: 'dropdown-item', role: 'option' }, el.closest('li').innerText);
-      prompt.prepend(promptImg);
+      prompt.prepend(promptIcon);
       dropCon.append(prompt);
     });
     const separator = createTag('li', { class: 'dropdown-separator', role: 'separator' });
