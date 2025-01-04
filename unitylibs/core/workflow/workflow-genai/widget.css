@@ -114,7 +114,7 @@
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:hover {
-    background-color: #E1E1E1;
+    background-color: #e6e6e6;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-separator {
@@ -139,7 +139,7 @@
     font-size: 14px;
     border-left: 1px solid #C6C6C6;
     padding-left: 5px;
-    line-height: 10px;
+    line-height: 12px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:hover {
