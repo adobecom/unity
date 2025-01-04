@@ -137,17 +137,29 @@ export default class ActionBinder {
   addAccessibilityFeatures(e, input) {
     const dropdownItems = this.block.querySelectorAll('.dropdown-item');
     let activeIndex = -1;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeIndex = (activeIndex + 1) % dropdownItems.length;
-      this.updateActiveDescendant(dropdownItems, activeIndex, input);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-      this.updateActiveDescendant(dropdownItems, activeIndex, input);
-    } else if (e.key === 'Enter' && activeIndex >= 0) {
-      e.preventDefault();
-      dropdownItems[activeIndex].click();
+    switch (e.key) {
+      case 'ArrowDown': // Navigate to the next dropdown item
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % dropdownItems.length;
+        this.updateActiveDescendant(dropdownItems, activeIndex, input);
+        break;
+
+      case 'ArrowUp': // Navigate to the previous dropdown item
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+        this.updateActiveDescendant(dropdownItems, activeIndex, input);
+        break;
+
+      case 'Enter': // Select the current dropdown item
+        e.preventDefault();
+        if (activeIndex >= 0) {
+          dropdownItems[activeIndex].click(); // Trigger the click event
+        }
+        break;
+
+      default:
+        // Allow normal character input for other keys
+        break;
     }
   }
 
@@ -156,7 +168,7 @@ export default class ActionBinder {
       if (i === index) {
         item.classList.add('active');
         item.setAttribute('aria-selected', 'true');
-        input.setAttribute('aria-activedescendant', item.id || `dropdown-item-${i}`);
+        input.setAttribute('aria-activedescendant', item.id);
       } else {
         item.classList.remove('active');
         item.setAttribute('aria-selected', 'false');
