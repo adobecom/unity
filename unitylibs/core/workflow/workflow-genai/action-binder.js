@@ -75,9 +75,6 @@ export default class ActionBinder {
                 }, 1000);
               }
             });
-            el.addEventListener('keydown', (e) => {
-              this.addAccessibilityFeatures(e,el);
-            });
             break;
           case el.nodeName === 'LI':
             el.addEventListener('click', async () => {
@@ -89,6 +86,7 @@ export default class ActionBinder {
         }
       });
     }
+    this.addAccessibilityFeatures();
   }
 
   async fetchAutocompleteSuggestions() {
@@ -134,9 +132,14 @@ export default class ActionBinder {
     input.focus();
   }
 
-  addAccessibilityFeatures(e, input) {
-    const dropdownItems = this.block.querySelectorAll('.dropdown-item');
+  addAccessibilityFeatures() {
+    const dropdownItems = Array.from(this.block.querySelectorAll('.dropdown-item'));
     let activeIndex = -1;
+    const input = document.querySelector('.input-class');
+  // Handle keyboard navigation
+  input.addEventListener('keydown', (e) => {
+    if (dropdownItems.length === 0) return;
+
     switch (e.key) {
       case 'ArrowDown': // Navigate to the next dropdown item
         e.preventDefault();
@@ -146,7 +149,7 @@ export default class ActionBinder {
 
       case 'ArrowUp': // Navigate to the previous dropdown item
         e.preventDefault();
-        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length; // Decrement index and wrap around
         this.updateActiveDescendant(dropdownItems, activeIndex, input);
         break;
 
