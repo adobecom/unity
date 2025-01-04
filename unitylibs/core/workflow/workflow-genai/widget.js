@@ -62,11 +62,11 @@ export default class UnityWidget {
 
     const footer = createTag('li', { class: 'dropdown-footer' });
     const tipEl = this.el.querySelector('.icon-tip').closest('li');
-    const tipCon = createTag('div', { class: 'tip-con' }, 'Tip:');
-    const tipText = createTag('span', { class: 'tip-text' }, tipEl.innerText);
+    const tipCon = createTag('div', { class: 'tip-con' }, tipEl.innerText);
+    const tipText = createTag('span', { class: 'tip-text' }, 'Tip:');
     const legalEl = this.el.querySelector('.icon-legal').closest('li');
     const legalText = createTag('a', { href: legalEl.querySelector('a').href, class: 'legal-text' }, legalEl.querySelector('a').innerText);
-    tipCon.append(tipText);
+    tipCon.prepend(tipText);
     footer.append(tipCon);
     footer.append(legalText);
     dropCon.append(footer);
