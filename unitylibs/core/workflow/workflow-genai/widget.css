@@ -156,6 +156,10 @@
     background-repeat: no-repeat;
     margin-right: 8px;
   }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .tip-con .tip-text {
+    font-weight: 700;
+  }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text {
     color: #5258E4;
