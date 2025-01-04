@@ -97,6 +97,10 @@
     text-align: left;
     margin: 8px 0 0 0;
   }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown.hidden {
+    display: none;
+  }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title {
     font-weight: 700;

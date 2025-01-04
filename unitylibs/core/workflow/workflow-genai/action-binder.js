@@ -80,6 +80,19 @@ export default class ActionBinder {
             el.addEventListener('click', async () => {
               await this.expressActionMaps(values, el);
             });
+            // Handle focus and blur for dropdown visibility
+            el.addEventListener('focus', () => {
+              // dropdown.classList.remove('hidden');
+              el.setAttribute('aria-expanded', 'true');
+            });
+
+            el.addEventListener('blur', () => {
+              setTimeout(() => {
+                // dropdown.classList.add('hidden');
+                el.setAttribute('aria-expanded', 'false');
+                activeIndex = -1; // Reset active index on blur
+              }, 200); // Delay to allow click events on dropdown items
+            });
             break;
           default:
             break;
