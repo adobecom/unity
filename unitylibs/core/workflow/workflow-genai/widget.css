@@ -161,21 +161,20 @@
     font-weight: 700;
   }
   
-  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text {
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-con {
+    margin-left: auto;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-con:before {
+    content: "|";
+    color: #C6C6C6;
+    margin-right: 8px;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-con .legal-text {
     color: #5258E4;
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
     line-height: 12px;
-    margin-left: auto;
-  }
-
-  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:before {
-    content: "|";
-    color: #C6C6C6;
-    margin-right: 8px;
-  }
-  
-  .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:hover {
-    text-decoration: underline;
-  }  
+  } 
