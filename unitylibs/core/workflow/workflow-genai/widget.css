@@ -21,7 +21,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper .input-class {
-    padding: 9px 0px 10px 0px;
+    padding: 9px 5px 10px;
     align-items: flex-start;
     flex: 1 0 0;
     color: #222;
@@ -165,6 +165,7 @@
     border-left: 1px solid #C6C6C6;
     padding-left: 5px;
     line-height: 12px;
+    margin-left: auto;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-footer .legal-text:hover {
