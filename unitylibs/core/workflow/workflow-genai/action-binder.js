@@ -81,19 +81,6 @@ export default class ActionBinder {
             el.addEventListener('click', async () => {
               await this.expressActionMaps(values, el);
             });
-            // Handle focus and blur for dropdown visibility
-            el.addEventListener('focus', () => {
-              dropdown.classList.remove('hidden');
-              el.setAttribute('aria-expanded', 'true');
-            });
-
-            el.addEventListener('blur', () => {
-              setTimeout(() => {
-                dropdown.classList.add('hidden');
-                el.setAttribute('aria-expanded', 'false');
-                activeIndex = -1; // Reset active index on blur
-              }, 200); // Delay to allow click events on dropdown items
-            });
             break;
           default:
             break;
@@ -147,6 +134,7 @@ export default class ActionBinder {
   }
 
   addAccessibilityFeatures() {
+    const dropdown = this.block.querySelectorAll('.dropdown');
     const dropdownItems = Array.from(this.block.querySelectorAll('.dropdown-item'));
     let activeIndex = -1;
     const input = document.querySelector('.input-class');
@@ -184,6 +172,20 @@ export default class ActionBinder {
           // Allow normal input behavior for other keys
           break;
       }
+    });
+
+    // Handle focus and blur for dropdown visibility
+    input.addEventListener('focus', () => {
+      dropdown.classList.remove('hidden');
+      input.setAttribute('aria-expanded', 'true');
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        dropdown.classList.add('hidden');
+        input.setAttribute('aria-expanded', 'false');
+        activeIndex = -1; // Reset active index on blur
+      }, 200); // Delay to allow click events on dropdown items
     });
   }
 
