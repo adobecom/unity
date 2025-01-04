@@ -134,7 +134,7 @@ export default class ActionBinder {
   }
 
   addAccessibilityFeatures() {
-    const dropdown = this.block.querySelectorAll('.dropdown');
+    const dropdown = this.block.querySelector('.dropdown');
     const dropdownItems = Array.from(this.block.querySelectorAll('.dropdown-item'));
     let activeIndex = -1;
     const input = document.querySelector('.input-class');
