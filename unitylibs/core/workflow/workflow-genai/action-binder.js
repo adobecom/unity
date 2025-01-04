@@ -137,39 +137,40 @@ export default class ActionBinder {
     let activeIndex = -1;
     const input = document.querySelector('.input-class');
   // Handle keyboard navigation
-  input.addEventListener('keydown', (e) => {
-    if (dropdownItems.length === 0) return;
+    input.addEventListener('keydown', (e) => {
+      if (dropdownItems.length === 0) return;
 
-    switch (e.key) {
-      case 'ArrowDown': // Navigate to the next dropdown item
-        e.preventDefault();
-        activeIndex = (activeIndex + 1) % dropdownItems.length; // Increment index and wrap around
-        this.updateActiveDescendant(dropdownItems, activeIndex, input);
-        break;
+      switch (e.key) {
+        case 'ArrowDown': // Navigate to the next dropdown item
+          e.preventDefault();
+          activeIndex = (activeIndex + 1) % dropdownItems.length; // Increment index and wrap around
+          this.updateActiveDescendant(dropdownItems, activeIndex, input);
+          break;
 
-      case 'ArrowUp': // Navigate to the previous dropdown item
-        e.preventDefault();
-        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length; // Decrement index and wrap around
-        this.updateActiveDescendant(dropdownItems, activeIndex, input);
-        break;
+        case 'ArrowUp': // Navigate to the previous dropdown item
+          e.preventDefault();
+          activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length; // Decrement index and wrap around
+          this.updateActiveDescendant(dropdownItems, activeIndex, input);
+          break;
 
-      case 'Enter': // Select the current dropdown item
-        e.preventDefault();
-        if (activeIndex >= 0) {
-          dropdownItems[activeIndex].click(); // Trigger the click event for the active item
-        }
-        break;
+        case 'Enter': // Select the current dropdown item
+          e.preventDefault();
+          if (activeIndex >= 0) {
+            dropdownItems[activeIndex].click(); // Trigger the click event for the active item
+          }
+          break;
 
-      case 'Escape': // Close the dropdown
-        // dropdown.classList.add('hidden');
-        input.setAttribute('aria-expanded', 'false');
-        activeIndex = -1; // Reset active index
-        break;
+        case 'Escape': // Close the dropdown
+          // dropdown.classList.add('hidden');
+          input.setAttribute('aria-expanded', 'false');
+          activeIndex = -1; // Reset active index
+          break;
 
-      default:
-        // Allow normal input behavior for other keys
-        break;
-    }
+        default:
+          // Allow normal input behavior for other keys
+          break;
+      }
+    });
   }
 
   updateActiveDescendant(items, index, input) {
