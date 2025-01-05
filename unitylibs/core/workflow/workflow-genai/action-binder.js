@@ -127,16 +127,14 @@ export default class ActionBinder {
         role: 'option',
       }, suggestion);
       dropdown.prepend(item);
-
-      // // Add click event listener to set input value
-      // item.addEventListener('click', () => {
-      //   const input = this.block.querySelector('.input-class');
-      //   input.value = suggestion; // Set input value
-      //   input.focus(); // Focus back on input
-      //   dropdown.classList.add('hidden'); // Hide the dropdown
-      // });
-
-      // dynamicContainer.appendChild(item);
+      const values = this.actionMap['.dropdown-item'];
+      item.addEventListener('click', async () => {
+        // const input = this.block.querySelector('.input-class');
+        // input.value = suggestion; // Set input value
+        // input.focus(); // Focus back on input
+        // dropdown.classList.add('hidden');
+        await this.expressActionMaps(values, item);
+      });
     });
 
     // dropdown.classList.remove('hidden');
