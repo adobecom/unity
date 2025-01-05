@@ -109,17 +109,25 @@ export default class ActionBinder {
     }
   }
 
+  createSuggestionHeader() {
+    const header = createTag('li', { class: '.dropdown-title dynamic' });
+    const textSpan = createTag('span', { class: '.dropdown-title' }, 'Suggestions (English only)');
+    const refreshBtn = createTag('button', { class: '.refresh-btn dynamic', ariaLabel:'Refresh suggestions' });
+    const closeBtn = createTag('button', { class: '.refresh-btn dynamic', ariaLabel:'Close suggestions' });
+    header.appendChild(textSpan);
+    header.appendChild(refreshBtn);
+    header.appendChild(closeBtn);
+    return header;
+  }
+
   displaySuggestions(suggestions) {
+    if (!suggestions.length) return;
     const dropdown = this.block.querySelector('.dropdown');
     // Hide existing default suggestions
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
-
-    // Show dynamic suggestions
-    // const dynamicContainer = dropdown.querySelector('.dynamic-container');
-    // dynamicContainer.innerHTML = ''; // Clear existing dynamic suggestions
-
     // Add new dynamic suggestions
+    const sugTitle = this.createSuggestionHeader();
     suggestions.forEach((suggestion, index) => {
       const item = createTag('li', {
         id: `dynamic-item-${index}`,
@@ -127,17 +135,9 @@ export default class ActionBinder {
         role: 'option',
       }, suggestion);
       dropdown.prepend(item);
-      const values = this.actionMap['.dropdown-item'];
-      item.addEventListener('click', async () => {
-        // const input = this.block.querySelector('.input-class');
-        // input.value = suggestion; // Set input value
-        // input.focus(); // Focus back on input
-        // dropdown.classList.add('hidden');
-        await this.expressActionMaps(values, item);
-      });
+      dropdown.prepend(sugTitle);
     });
-
-    // dropdown.classList.remove('hidden');
+    this.initActionListeners();
   }
 
   async surpriseMe() {
@@ -145,7 +145,7 @@ export default class ActionBinder {
     if (!prompts) return;
     const randomIndex = Math.floor(Math.random() * prompts.length);
     this.query = prompts[randomIndex];
-    return this.generate();
+    this.generate();
   }
 
   async generate() {
