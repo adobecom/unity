@@ -112,7 +112,7 @@ export default class ActionBinder {
   displaySuggestions(suggestions) {
     const dropdown = this.block.querySelector('.dropdown');
     // Hide existing default suggestions
-    const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title, .dropdown-separator');
+    const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
 
     // Show dynamic suggestions
@@ -126,7 +126,7 @@ export default class ActionBinder {
         class: 'dropdown-item dynamic',
         role: 'option',
       }, suggestion);
-      dropdown.append(item);
+      dropdown.prepend(item);
 
       // // Add click event listener to set input value
       // item.addEventListener('click', () => {
