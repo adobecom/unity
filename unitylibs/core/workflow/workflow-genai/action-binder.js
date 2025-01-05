@@ -4,7 +4,8 @@
 
 import {
   unityConfig,
-  getUnityLibs
+  getUnityLibs,
+  createTag,
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -99,10 +100,46 @@ export default class ActionBinder {
         { body: JSON.stringify(data) },
       );
       if (!suggestions) return;
-      displaySuggestions(suggestions.completions); // to be implemented
+      if (suggestions.completions.length === 0) {
+        suggestions.completions = ['spring', 'spring flower', 'spring break'];
+      }
+      this.displaySuggestions(suggestions.completions); // to be implemented
     } catch (e) {
       console.log('Error fetching autocomplete suggestions:', e);
     }
+  }
+
+  displaySuggestions(suggestions) {
+    const dropdown = this.block.querySelector('.dropdown');
+    // Hide existing default suggestions
+    const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title, .dropdown-separator');
+    defaultItems.forEach((item) => item.classList.add('hidden'));
+
+    // Show dynamic suggestions
+    // const dynamicContainer = dropdown.querySelector('.dynamic-container');
+    // dynamicContainer.innerHTML = ''; // Clear existing dynamic suggestions
+
+    // Add new dynamic suggestions
+    suggestions.forEach((suggestion, index) => {
+      const item = createTag('li', {
+        id: `dynamic-item-${index}`,
+        class: 'dropdown-item dynamic',
+        role: 'option',
+      }, suggestion);
+      dropdown.append(item);
+
+      // // Add click event listener to set input value
+      // item.addEventListener('click', () => {
+      //   const input = this.block.querySelector('.input-class');
+      //   input.value = suggestion; // Set input value
+      //   input.focus(); // Focus back on input
+      //   dropdown.classList.add('hidden'); // Hide the dropdown
+      // });
+
+      // dynamicContainer.appendChild(item);
+    });
+
+    // dropdown.classList.remove('hidden');
   }
 
   async surpriseMe() {
