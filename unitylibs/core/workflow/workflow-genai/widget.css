@@ -78,6 +78,10 @@
     border: 2px solid #292929;
 }
 
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class.hidden {
+  display: none;
+}
+
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class .btn-text {
     color: #FFF;
     font-size: 14px;

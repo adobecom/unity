@@ -59,7 +59,6 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     let debounceTimer;
-    const dropdown = document.querySelector('.dropdown');
     for (const [key, values] of Object.entries(actMap)) {
       const elem = b.querySelectorAll(key);
       elem.forEach((el) => {
@@ -73,6 +72,7 @@ export default class ActionBinder {
           case el.nodeName === 'INPUT':
             el.addEventListener('input', (e) => {
               this.query = e.target.value.trim();
+              if (!this.query) this.updateWidget();
               clearTimeout(debounceTimer);
               if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
                 debounceTimer = setTimeout(async () => {
@@ -127,8 +127,19 @@ export default class ActionBinder {
   }
 
   closeDropdown() {
+    const input = this.block.querySelector('.input-class');
+    input.value = '';
+    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
+    surpriseBtn.classList.remove('hidden');
     const dropdown = this.block.querySelector('.dropdown');
+    const dynamicElem = dropdown.querySelectorAll('.dynamic');
+    dynamicElem.forEach((el) => el.remove());
     dropdown.classList.add('hidden');
+  }
+
+  updateWidget() {
+    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
+    surpriseBtn.classList.add('hidden');
   }
 
   displaySuggestions(suggestions) {
