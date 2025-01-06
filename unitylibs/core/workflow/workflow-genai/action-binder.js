@@ -59,9 +59,15 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     let debounceTimer;
+  
     for (const [key, values] of Object.entries(actMap)) {
       const elem = b.querySelectorAll(key);
       elem.forEach((el) => {
+        // Check if event is already bound
+        if (el.hasAttribute('data-event-bound')) {
+          return; // Skip if already bound
+        }
+        // Add event listeners based on the element's node type
         switch (true) {
           case el.nodeName === 'A':
             el.addEventListener('click', async (e) => {
@@ -72,7 +78,7 @@ export default class ActionBinder {
           case el.nodeName === 'INPUT':
             el.addEventListener('input', (e) => {
               this.query = e.target.value.trim();
-              this.updateWidget(e.target.value.trim());
+              this.updateWidget(this.query);
               clearTimeout(debounceTimer);
               if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
                 debounceTimer = setTimeout(async () => {
@@ -86,7 +92,7 @@ export default class ActionBinder {
               await this.expressActionMaps(values, el);
             });
             break;
-            case el.nodeName === 'BUTTON':
+          case el.nodeName === 'BUTTON':
             el.addEventListener('click', async () => {
               await this.expressActionMaps(values, el);
             });
@@ -94,6 +100,8 @@ export default class ActionBinder {
           default:
             break;
         }
+        // Mark the element as having an event bound
+        el.setAttribute('data-event-bound', 'true');
       });
     }
     this.addAccessibilityFeatures();
