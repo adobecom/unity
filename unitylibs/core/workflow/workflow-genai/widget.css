@@ -186,6 +186,7 @@
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item.dynamic:before {
+    content: "";
     background-image: url(../../../img/icons/search.svg);
   }
   
