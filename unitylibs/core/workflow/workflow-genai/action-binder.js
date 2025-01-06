@@ -112,8 +112,8 @@ export default class ActionBinder {
   createSuggestionHeader() {
     const header = createTag('li', { class: '.dropdown-title dynamic' });
     const textSpan = createTag('span', { class: '.dropdown-title' }, 'Suggestions (English only)');
-    const refreshBtn = createTag('button', { class: '.refresh-btn dynamic', ariaLabel:'Refresh suggestions' });
-    const closeBtn = createTag('button', { class: '.refresh-btn dynamic', ariaLabel:'Close suggestions' });
+    const refreshBtn = createTag('button', { class: 'refresh-btn dynamic', ariaLabel:'Refresh suggestions' });
+    const closeBtn = createTag('button', { class: 'close-btn dynamic', ariaLabel:'Close suggestions' });
     header.appendChild(textSpan);
     header.appendChild(refreshBtn);
     header.appendChild(closeBtn);
@@ -127,7 +127,7 @@ export default class ActionBinder {
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
     // Add new dynamic suggestions
-    const sugTitle = this.createSuggestionHeader();
+    const sugHeader = this.createSuggestionHeader();
     suggestions.forEach((suggestion, index) => {
       const item = createTag('li', {
         id: `dynamic-item-${index}`,
@@ -135,7 +135,7 @@ export default class ActionBinder {
         role: 'option',
       }, suggestion);
       dropdown.prepend(item);
-      dropdown.prepend(sugTitle);
+      dropdown.prepend(sugHeader);
     });
     this.initActionListeners();
   }

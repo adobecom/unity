@@ -110,6 +110,20 @@
     padding: 0 16px;
   }
 
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .refresh-btn:before {
+    content: url(../../../img/icons/refresh-btn.svg);
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .close-btn:before {
+    content: url(../../../img/icons/close.svg);
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+  }
+
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.hidden {
     display: none;
   }
