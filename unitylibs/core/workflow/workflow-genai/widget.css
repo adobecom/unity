@@ -187,7 +187,12 @@
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item.dynamic:before {
     content: "";
+    display: inline-block;
+    width: 18px;
+    height: 18px;
     background-image: url(../../../img/icons/search.svg);
+    background-repeat: no-repeat;
+    margin-right: 8px;
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:hover {
