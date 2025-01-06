@@ -71,7 +71,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn-class.hidden {
-  display: hidden;
+  display: none;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class {
