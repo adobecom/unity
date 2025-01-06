@@ -2,6 +2,7 @@
   .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
     max-width: 720px;
     margin: 0 auto;
+    min-height: 1000px;
   }
 }
 

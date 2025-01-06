@@ -142,6 +142,8 @@ export default class ActionBinder {
     const dynamicElem = dropdown.querySelectorAll('.dynamic');
     dynamicElem.forEach((el) => el.remove());
     dropdown.classList.add('hidden');
+    const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
+    defaultItems.forEach((item) => item.classList.remove('hidden'));
   }
 
   updateWidget(txtVal) {
