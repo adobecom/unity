@@ -110,6 +110,16 @@
     padding: 0 16px;
   }
 
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic {
+    display:flex;
+    align-items: center;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .title-text {
+    color: #909090;
+    font-weight: 900;
+  }
+
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .refresh-btn:before {
     content: url(../../../img/icons/refresh-btn.svg);
     display: inline-block;
@@ -118,7 +128,7 @@
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .close-btn:before {
-    content: url(../../../img/icons/close.svg);
+    content: url(../../../img/icons/close-btn.svg);
     display: inline-block;
     width: 18px;
     height: 18px;
