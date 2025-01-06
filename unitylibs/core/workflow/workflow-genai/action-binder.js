@@ -107,10 +107,8 @@ export default class ActionBinder {
         this.expressApiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(data) },
       );
+      console.log('suggestions', suggestions);
       if (!suggestions) return;
-      if (suggestions.completions.length === 0) {
-        suggestions.completions = ['spring', 'spring flower', 'spring break'];
-      }
       this.displaySuggestions(suggestions.completions); // to be implemented
     } catch (e) {
       console.log('Error fetching autocomplete suggestions:', e);
