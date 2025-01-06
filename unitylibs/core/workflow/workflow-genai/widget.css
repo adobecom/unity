@@ -7,6 +7,7 @@
 
 .unity-enabled .interactive-area .express-unity-widget {
   width: 100%;
+  position: relative;
 }
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
     display: flex;
@@ -93,13 +94,13 @@
   .unity-enabled .interactive-area .express-unity-widget .dropdown {
     background-color: #fff;
     border: 1px solid #ccc;
-    border-radius: 8px;
     list-style: none;
-    width: inherit;
+    width: 100%;
     border-radius: 16px;
     padding: 8px 0;
     text-align: left;
     margin: 8px 0 0 0;
+    position: relative;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown.hidden {
