@@ -175,10 +175,6 @@
     outline: 1px solid #005FCC;
   }
 
-  .unity-enabled .interactive-area .express-unity-widget .dropdown-item.dynamic:before {
-    background-image: url(../../../img/icons/search.svg);
-  }
-
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:before {
     content: "";
     display: inline-block;
@@ -187,6 +183,10 @@
     background-image: url(../../../img/icons/prompt.svg);
     background-repeat: no-repeat;
     margin-right: 8px;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .dropdown-item.dynamic:before {
+    background-image: url(../../../img/icons/search.svg);
   }
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown-item:hover {
