@@ -59,7 +59,6 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     let debounceTimer;
-  
     for (const [key, values] of Object.entries(actMap)) {
       const elem = b.querySelectorAll(key);
       elem.forEach((el) => {
@@ -207,7 +206,7 @@ export default class ActionBinder {
     const dropdownItems = Array.from(this.block.querySelectorAll('.dropdown-item'));
     let activeIndex = -1;
     const input = document.querySelector('.input-class');
-  // Handle keyboard navigation
+    // Handle keyboard navigation
     input.addEventListener('keydown', (e) => {
       if (dropdownItems.length === 0) return;
 
