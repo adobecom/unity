@@ -72,7 +72,7 @@ export default class ActionBinder {
           case el.nodeName === 'INPUT':
             el.addEventListener('input', (e) => {
               this.query = e.target.value.trim();
-              if (!this.query) this.updateWidget();
+              this.updateWidget(e.target.value.trim());
               clearTimeout(debounceTimer);
               if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
                 debounceTimer = setTimeout(async () => {
@@ -137,9 +137,13 @@ export default class ActionBinder {
     dropdown.classList.add('hidden');
   }
 
-  updateWidget() {
+  updateWidget(txtVal) {
     const surpriseBtn = this.block.querySelector('.surprise-btn-class');
-    surpriseBtn.classList.add('hidden');
+    if (txtVal.length > 0) {
+      surpriseBtn.classList.add('hidden');
+    } else {
+      surpriseBtn.classList.remove('hidden');
+    }
   }
 
   displaySuggestions(suggestions) {
