@@ -48,6 +48,9 @@ export default class ActionBinder {
         case value.actionType === 'getPromptValue':
           this.getPromptValue(el);
           break;
+        case value.actionType === 'closeDropdown':
+          this.closeDropdown(el);
+          break;
         default:
           break;
       }
@@ -79,6 +82,11 @@ export default class ActionBinder {
             });
             break;
           case el.nodeName === 'LI':
+            el.addEventListener('click', async () => {
+              await this.expressActionMaps(values, el);
+            });
+            break;
+            case el.nodeName === 'BUTTON':
             el.addEventListener('click', async () => {
               await this.expressActionMaps(values, el);
             });
@@ -118,6 +126,11 @@ export default class ActionBinder {
     header.appendChild(refreshBtn);
     header.appendChild(closeBtn);
     return header;
+  }
+
+  closeDropdown() {
+    const dropdown = this.block.querySelector('.dropdown');
+    dropdown.classList.add('hidden');
   }
 
   displaySuggestions(suggestions) {

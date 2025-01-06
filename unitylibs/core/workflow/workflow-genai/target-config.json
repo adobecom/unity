@@ -26,6 +26,16 @@
         {
           "actionType": "getPromptValue"
         }
+      ],
+      ".refresh-btn": [
+        {
+          "actionType": "autocomplete"
+        }
+      ],
+      ".close-btn": [
+        {
+          "actionType": "closeDropdown"
+        }
       ]
     }
   }
