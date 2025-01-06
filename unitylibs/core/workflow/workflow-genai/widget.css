@@ -131,6 +131,7 @@
     display: inline-block;
     width: 20px;
     height: 20px;
+    vertical-align: middle;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .close-btn {
@@ -144,6 +145,7 @@
     display: inline-block;
     width: 20px;
     height: 20px;
+    vertical-align: middle;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.hidden {
