@@ -110,8 +110,8 @@ export default class ActionBinder {
   }
 
   createSuggestionHeader() {
-    const header = createTag('li', { class: '.dropdown-title dynamic' });
-    const textSpan = createTag('span', { class: '.dropdown-title' }, 'Suggestions (English only)');
+    const header = createTag('li', { class: 'dropdown-title dynamic' });
+    const textSpan = createTag('span', { class: 'title-text' }, 'Suggestions (English only)');
     const refreshBtn = createTag('button', { class: 'refresh-btn dynamic', ariaLabel:'Refresh suggestions' });
     const closeBtn = createTag('button', { class: 'close-btn dynamic', ariaLabel:'Close suggestions' });
     header.appendChild(textSpan);
