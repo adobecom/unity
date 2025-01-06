@@ -245,7 +245,7 @@ export default class ActionBinder {
     });
     await this.batchUpload(
       uploadPromises,
-      this.limits.batchSize ? this.limits.batchSize : uploadPromises.length,
+      this.limits?.batchSize || uploadPromises.length,
     );
   }
 
