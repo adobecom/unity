@@ -243,10 +243,9 @@ export default class ActionBinder {
       const url = assetData.uploadUrls[i];
       return this.uploadFileToUnity(url.href, chunk, filetype);
     });
-    this.promiseStack.push(...uploadPromises);
     await this.batchUpload(
-      this.promiseStack,
-      this.limits.batchSize ? this.limits.batchSize : this.promiseStack.length,
+      uploadPromises,
+      this.limits.batchSize ? this.limits.batchSize : uploadPromises.length,
     );
   }
 
