@@ -226,6 +226,13 @@ export default class ActionBinder {
     return response;
   }
 
+  async batchUpload(tasks, batchSize) {
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      const batch = tasks.slice(i, i + batchSize);
+      await Promise.all(batch);
+    }
+  }
+
   async chunkPdf(assetData, blobData, filetype) {
     const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
     if (assetData.uploadUrls.length !== totalChunks) return;
@@ -237,7 +244,10 @@ export default class ActionBinder {
       return this.uploadFileToUnity(url.href, chunk, filetype);
     });
     this.promiseStack.push(...uploadPromises);
-    await Promise.all(this.promiseStack);
+    await this.batchUpload(
+      this.promiseStack,
+      this.limits.batchSize ? this.limits.batchSize : this.promiseStack.length,
+    );
   }
 
   checkCookie = () => {
