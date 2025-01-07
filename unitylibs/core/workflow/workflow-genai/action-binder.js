@@ -149,11 +149,14 @@ export default class ActionBinder {
   }
 
   updateWidget(txtVal) {
+    const dropdown = this.block.querySelector('.dropdown');
     const surpriseBtn = this.block.querySelector('.surprise-btn-class');
     if (txtVal.length > 0) {
       surpriseBtn.classList.add('hidden');
     } else {
       surpriseBtn.classList.remove('hidden');
+      const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
+      defaultItems.forEach((item) => item.classList.remove('hidden'));
     }
   }
 
