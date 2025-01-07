@@ -144,6 +144,8 @@ export default class ActionBinder {
     dropdown.classList.add('hidden');
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.remove('hidden'));
+    const emptyCon = dropdown.querySelector('.dropdown-empty-message');
+    if (emptyCon) emptyCon.remove();
   }
 
   updateWidget(txtVal) {
