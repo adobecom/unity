@@ -23,7 +23,7 @@ export default class ActionBinder {
 
   getExpressApiConfig() {
     unityConfig.expressEndpoint = {
-      autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete`
+      autoComplete: 'https://adobesearch-atc-stage-ue1.adobe.io/uss/v3/autocomplete', // `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete`
     };
     return unityConfig;
   }
@@ -111,9 +111,20 @@ export default class ActionBinder {
     let suggestions = null;
     try {
       const data = { query: this.query, targetProduct: this.workflowCfg.productName };
+      const autoComplete = {
+        experienceId: 'default-templates-autocomplete-v1',
+        locale: 'en-US',
+        textQuery: data.query,
+        queries: [
+          {
+            limit: 3,
+            scope: { entities: ['Photo'] }
+          },
+        ],
+      };
       suggestions = await this.serviceHandler.postCallToService(
         this.expressApiConfig.expressEndpoint.autoComplete,
-        { body: JSON.stringify(data) },
+        { body: JSON.stringify(autoComplete) },
       );
       console.log('suggestions', suggestions);
       if (!suggestions) return;
