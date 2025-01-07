@@ -186,7 +186,7 @@ export default class ActionBinder {
     // Add new dynamic suggestions
     const sugHeader = this.createSuggestionHeader();
     const queryResults = suggestions.queryResults[0].items;
-    if (queryResults.length === 0) {
+    if (!queryResults) {
       // Show "No suggestion Available" message
       const emptyCon = dropdown.querySelector('.dropdown-empty-message');
       if (emptyCon) return;
