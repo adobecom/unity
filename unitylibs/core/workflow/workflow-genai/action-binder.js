@@ -175,7 +175,7 @@ export default class ActionBinder {
       dropdown.prepend(sugHeader);
     } else {
       const emptyCon = dropdown.querySelector('.dropdown-empty-message');
-      if (emptyCon) emptyCon.remove();
+      if (emptyCon) return;
       suggestions.forEach((suggestion, index) => {
         const item = createTag('li', {
           id: `dynamic-item-${index}`,
