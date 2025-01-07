@@ -76,6 +76,7 @@ export default class ActionBinder {
             break;
           case el.nodeName === 'INPUT':
             el.addEventListener('input', (e) => {
+              console.log('Hello testing name');
               this.query = e.target.value.trim();
               this.updateWidget(this.query);
               clearTimeout(debounceTimer);
