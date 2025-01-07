@@ -167,6 +167,8 @@ export default class ActionBinder {
     const sugHeader = this.createSuggestionHeader();
     if (suggestions.length === 0) {
       // Show "No suggestion Available" message
+      const emptyCon = dropdown.querySelector('.dropdown-empty-message');
+      if (emptyCon) return;
       const emptyMessage = createTag('li', {
         class: 'dropdown-empty-message',
         role: 'presentation',
@@ -175,7 +177,7 @@ export default class ActionBinder {
       dropdown.prepend(sugHeader);
     } else {
       const emptyCon = dropdown.querySelector('.dropdown-empty-message');
-      if (emptyCon) return;
+      if (emptyCon) emptyCon.remove();
       suggestions.forEach((suggestion, index) => {
         const item = createTag('li', {
           id: `dynamic-item-${index}`,
