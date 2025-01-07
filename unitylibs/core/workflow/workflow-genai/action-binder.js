@@ -156,13 +156,23 @@ export default class ActionBinder {
   }
 
   displaySuggestions(suggestions) {
-    if (!suggestions.length) return;
+    // if (!suggestions.length) return;
     const dropdown = this.block.querySelector('.dropdown');
     // Hide existing default suggestions
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
     // Add new dynamic suggestions
     const sugHeader = this.createSuggestionHeader();
+    if (!suggestions || suggestions.length === 0) {
+      // Show "No suggestion Available" message
+      const emptyMessage = createTag('li', {
+        class: 'dropdown-empty-message',
+        role: 'presentation',
+      }, 'No suggestion Available');
+      dropdown.prepend(emptyMessage);
+      dropdown.prepend(sugHeader);
+      return;
+    }
     suggestions.forEach((suggestion, index) => {
       const item = createTag('li', {
         id: `dynamic-item-${index}`,
