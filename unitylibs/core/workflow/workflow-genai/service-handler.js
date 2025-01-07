@@ -51,7 +51,7 @@ export default class ServiceHandler {
     return {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: token,
+        // Authorization: token,
         'x-api-key': unityConfig.apiKey,
       },
     };
@@ -59,7 +59,7 @@ export default class ServiceHandler {
 
   async fetchFromService(url, options) {
     try {
-      const response = await fetch(url, options);
+      const response = await fetch('https://adobesearch-atc-stage-ue1.adobe.io/uss/v3/autocomplete', options);
       const error = new Error();
       if (response.status !== 200) {
         error.status = response.status;
