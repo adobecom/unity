@@ -634,9 +634,8 @@ export default class ActionBinder {
     };
     await this.getRedirectUrl(cOpts);
     setTimeout(() => {
-      this.updateProgressBar(this.splashScreenEl, 100);
       if (!this.redirectUrl) return;
       window.location.href = this.redirectUrl;
-    }, 5000);
+    }, 2500);
   }
 }
