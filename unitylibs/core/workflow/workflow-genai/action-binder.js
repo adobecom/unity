@@ -163,7 +163,7 @@ export default class ActionBinder {
     defaultItems.forEach((item) => item.classList.add('hidden'));
     // Add new dynamic suggestions
     const sugHeader = this.createSuggestionHeader();
-    if (!suggestions || suggestions.length === 0) {
+    if (suggestions.length === 0) {
       // Show "No suggestion Available" message
       const emptyMessage = createTag('li', {
         class: 'dropdown-empty-message',
@@ -171,17 +171,19 @@ export default class ActionBinder {
       }, 'No suggestion Available');
       dropdown.prepend(emptyMessage);
       dropdown.prepend(sugHeader);
-      return;
+    } else {
+      const emptyCon = dropdown.querySelector('.dropdown-empty-message');
+      if (emptyCon) emptyCon.remove();
+      suggestions.forEach((suggestion, index) => {
+        const item = createTag('li', {
+          id: `dynamic-item-${index}`,
+          class: 'dropdown-item dynamic',
+          role: 'option',
+        }, suggestion);
+        dropdown.prepend(item);
+        dropdown.prepend(sugHeader);
+      });
     }
-    suggestions.forEach((suggestion, index) => {
-      const item = createTag('li', {
-        id: `dynamic-item-${index}`,
-        class: 'dropdown-item dynamic',
-        role: 'option',
-      }, suggestion);
-      dropdown.prepend(item);
-      dropdown.prepend(sugHeader);
-    });
     this.initActionListeners();
   }
 
