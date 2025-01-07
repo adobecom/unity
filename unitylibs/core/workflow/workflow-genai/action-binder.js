@@ -177,6 +177,7 @@ export default class ActionBinder {
   }
 
   displaySuggestions(suggestions) {
+    console.log('suggestions', suggestions);
     // if (!suggestions.length) return;
     const dropdown = this.block.querySelector('.dropdown');
     // Hide existing default suggestions
