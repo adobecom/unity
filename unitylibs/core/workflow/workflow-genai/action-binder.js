@@ -185,7 +185,8 @@ export default class ActionBinder {
     defaultItems.forEach((item) => item.classList.add('hidden'));
     // Add new dynamic suggestions
     const sugHeader = this.createSuggestionHeader();
-    if (suggestions.length === 0) {
+    const queryResults = suggestions.queryResults[0].items;
+    if (queryResults.length === 0) {
       // Show "No suggestion Available" message
       const emptyCon = dropdown.querySelector('.dropdown-empty-message');
       if (emptyCon) return;
@@ -198,15 +199,25 @@ export default class ActionBinder {
     } else {
       const emptyCon = dropdown.querySelector('.dropdown-empty-message');
       if (emptyCon) emptyCon.remove();
-      suggestions.forEach((suggestion, index) => {
+      // suggestions.forEach((suggestion, index) => {
+      //   const item = createTag('li', {
+      //     id: `dynamic-item-${index}`,
+      //     class: 'dropdown-item dynamic',
+      //     role: 'option',
+      //   }, suggestion);
+      //   dropdown.prepend(item);
+      //   dropdown.prepend(sugHeader);
+      // });
+
+      queryResults.forEach((suggestion, index) => {
         const item = createTag('li', {
           id: `dynamic-item-${index}`,
           class: 'dropdown-item dynamic',
           role: 'option',
-        }, suggestion);
+        }, suggestion.query);
         dropdown.prepend(item);
-        dropdown.prepend(sugHeader);
       });
+      dropdown.prepend(sugHeader);
     }
     this.initActionListeners();
   }
