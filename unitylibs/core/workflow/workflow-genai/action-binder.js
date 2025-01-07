@@ -128,7 +128,7 @@ export default class ActionBinder {
       );
       console.log('suggestions', suggestions);
       if (!suggestions) return;
-      this.displaySuggestions(suggestions.completions); // to be implemented
+      this.displaySuggestions(suggestions); // to be implemented
     } catch (e) {
       console.log('Error fetching autocomplete suggestions:', e);
     }
