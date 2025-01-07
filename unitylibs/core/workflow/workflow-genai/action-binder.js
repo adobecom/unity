@@ -79,7 +79,7 @@ export default class ActionBinder {
               this.query = e.target.value.trim();
               this.updateWidget(this.query);
               clearTimeout(debounceTimer);
-              if (this.query.length >= 3 || e.inputType === 'insertText' || e.data === ' ') {
+              if (this.query.length >= 3 && (e.inputType === 'insertText' || e.data === ' ')) {
                 debounceTimer = setTimeout(async () => {
                   await this.expressActionMaps(values);
                 }, 1000);
