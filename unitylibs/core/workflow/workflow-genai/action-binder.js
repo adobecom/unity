@@ -159,6 +159,8 @@ export default class ActionBinder {
       dynamicElem.forEach((el) => el.remove());
       const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
       defaultItems.forEach((item) => item.classList.remove('hidden'));
+      const emptyCon = dropdown.querySelector('.dropdown-empty-message');
+      if (emptyCon) emptyCon.remove();
     }
   }
 
