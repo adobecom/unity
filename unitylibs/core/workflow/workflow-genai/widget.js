@@ -56,7 +56,7 @@ export default class UnityWidget {
     });
   }
 
-  addStickeyBehaviour() {
+  addStickyBehaviour() {
     this.widget.classList.add('sticky');
   }
 
