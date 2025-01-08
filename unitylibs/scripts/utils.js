@@ -217,7 +217,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
           callback(cfg); // Trigger callback for "not visible"
           lastState = false; // Update state
         }
-      } else if (cfg.stickyBehavior) {
+      } else if (entry.isIntersecting && cfg.stickyBehavior) {
         // Element is in view and stickyBehavior is enabled
         if (lastState !== true) {
           cfg.isIntersecting = true;
