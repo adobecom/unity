@@ -58,6 +58,7 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
+    console.log('addStickyBehaviour');
     if (cfg.isIntersecting) {
       this.widget.classList.remove('sticky');
     } else {
