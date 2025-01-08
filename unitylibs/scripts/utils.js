@@ -209,6 +209,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) {
+        cfg.isIntersecting = false;
         callback(cfg);
       } else if (cfg?.stickyBehavior) {
         cfg.isIntersecting = true;
