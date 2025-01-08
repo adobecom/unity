@@ -58,8 +58,11 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
-    console.log(cfg.isIntersecting);
-    this.widget.classList.add('sticky');
+    if (cfg.isIntersecting) {
+      this.widget.classList.add('sticky');
+    } else {
+      this.widget.classList.remove('sticky');
+    }
   }
 
   createDropdown() {
