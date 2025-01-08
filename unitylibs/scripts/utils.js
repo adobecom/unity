@@ -217,15 +217,24 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 //   return io;
 // }
 
+function debounce(func, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
+  const debouncedCallback = debounce(callback, 100);
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) {
         cfg.isIntersecting = false;
-        callback(cfg);
+        debouncedCallback(cfg);
       } else if (entry.isIntersecting && cfg?.stickyBehavior) {
         cfg.isIntersecting = true;
-        callback(cfg);
+        debouncedCallback(cfg);
       }
     });
   }, { ...options, threshold: 0.01 });
