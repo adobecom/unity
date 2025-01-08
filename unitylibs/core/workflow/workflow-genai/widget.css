@@ -11,15 +11,15 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget.sticky {
-  position: fixed; /* Fix the element relative to the viewport */
-  bottom: 100px; /* 100px from the bottom of the screen */
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Center alignment adjustment */
-  width: auto; /* Adjust as per your widget’s content */
-  background-color: #fff; /* Optional: Background color */
-  padding: 10px 20px; /* Optional: Padding for better appearance */
-  border: 1px solid #ccc; /* Optional: Border for visual clarity */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add some shadow */
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  background-color: #fff;
+  padding: 10px 20px;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
 }
 
@@ -114,7 +114,16 @@
     padding: 8px 0;
     text-align: left;
     margin: 8px 0 0 0;
-    position: relative;
+    position: absolute;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget.stickey .dropdown.open-upward {
+    position: absolute;
+    bottom: 100%;
+    margin-bottom: 10px;
+    transform-origin: bottom;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    transform: scaleY(1);
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown.hidden {

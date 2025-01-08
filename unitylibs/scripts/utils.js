@@ -221,17 +221,14 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) {
-        console.log('entry', entry.isVisible);
         cfg.isIntersecting = false;
         callback(cfg);
       } else if (entry.isIntersecting && cfg?.stickyBehavior) {
-        console.log('entry1', entry.isVisible);
         cfg.isIntersecting = true;
         callback(cfg);
       }
     });
   }, { ...options, threshold: 0.01 });
-
   io.observe(el);
   return io;
 }
