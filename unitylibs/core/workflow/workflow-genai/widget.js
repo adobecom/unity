@@ -1,4 +1,4 @@
-import { createTag, createIntersectionObserver} from '../../../scripts/utils.js';
+import { createTag } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg) {
@@ -44,16 +44,7 @@ export default class UnityWidget {
     const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
     const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
     interactiveArea.insertBefore(this.widget, Paragraphs[1]);
-    setTimeout(() => {
-      createIntersectionObserver(
-        { el: this.widget, callback: () => this.addStickeyBehaviour(), cfg: this.workflowCfg },
-      );
-    }, 5000);
     return this.workflowCfg.targetCfg.actionMap;
-  }
-
-  addStickeyBehaviour() {
-    this.widget.classList.add('sticky');
   }
 
   createDropdown() {

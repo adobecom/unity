@@ -6,6 +6,7 @@ import {
   unityConfig,
   getUnityLibs,
   createTag,
+  createIntersectionObserver,
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
@@ -22,10 +23,15 @@ export default class ActionBinder {
   }
 
   getExpressApiConfig() {
-    unityConfig.expressEndpoint = {
-      autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete`
-    };
+    createIntersectionObserver(
+      { el: this.block, callback: () => this.addStickeyBehaviour(), cfg: this.workflowCfg },
+    );
+    unityConfig.expressEndpoint = { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` };
     return unityConfig;
+  }
+
+  addStickeyBehaviour() {
+    this.block.classList.add('sticky');
   }
 
   async expressActionMaps(values, el = null) {
