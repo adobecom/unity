@@ -226,7 +226,7 @@ function debounce(func, delay) {
 }
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  const debouncedCallback = debounce(callback, 1000);
+  const debouncedCallback = debounce(callback, 500);
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) {
@@ -237,7 +237,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
         debouncedCallback(cfg);
       }
     });
-  }, { ...options, threshold: 0.01 });
+  }, { ...options, threshold: 0 });
   io.observe(el);
   return io;
 }
