@@ -210,6 +210,9 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
     entries.forEach((entry) => {
       if (!entry.isIntersecting) {
         callback(cfg);
+      } else if (cfg?.stickyBehavior) {
+        cfg.isIntersecting = true;
+        callback(cfg);
       }
     });
   }, options);

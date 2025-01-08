@@ -49,14 +49,16 @@ export default class UnityWidget {
   }
 
   initIntersectionObserver() {
+    this.workflowCfg.stickyBehavior = true;
     createIntersectionObserver({
       el: this.widget,
-      callback: () => this.addStickyBehaviour(),
+      callback: (cfg) => this.addStickyBehaviour(cfg),
       cfg: this.workflowCfg,
     });
   }
 
-  addStickyBehaviour() {
+  addStickyBehaviour(cfg) {
+    console.log(cfg.isIntersecting);
     this.widget.classList.add('sticky');
   }
 
