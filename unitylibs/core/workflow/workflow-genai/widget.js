@@ -1,4 +1,4 @@
-import { createTag } from '../../../scripts/utils.js';
+import { createTag,  createIntersectionObserver} from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg) {
@@ -44,7 +44,14 @@ export default class UnityWidget {
     const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
     const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
     interactiveArea.insertBefore(this.widget, Paragraphs[1]);
+    createIntersectionObserver({ el: this.widget, callback: this.resetAppConnector, cfg: this.workflowCfg})
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  resetAppConnector(cfg) {
+    // const connectBtn = cfg.unityWidget.querySelector('.continue-in-app');
+    // connectBtn?.classList.remove('show');
+    console.log('CFG', cfg);
   }
 
   createDropdown() {
