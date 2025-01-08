@@ -230,7 +230,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
         callback(cfg);
       }
     });
-  }, { ...options, threshold: 0.1 });
+  }, { ...options, threshold: 0.01 });
 
   io.observe(el);
   return io;
