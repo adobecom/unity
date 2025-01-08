@@ -45,7 +45,7 @@ export default class UnityWidget {
     const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
     interactiveArea.insertBefore(this.widget, Paragraphs[1]);
     createIntersectionObserver(
-      { el: this.widget, callback: this.addStickeyBehaviour, cfg: this.workflowCfg },
+      { el: this.widget, callback: () => this.addStickeyBehaviour(), cfg: this.workflowCfg },
     );
     return this.workflowCfg.targetCfg.actionMap;
   }
