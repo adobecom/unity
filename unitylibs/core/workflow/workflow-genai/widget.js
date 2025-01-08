@@ -59,7 +59,7 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
-    const dropdown = this.widget.querySelector('dropdiwn');
+    const dropdown = this.widget.querySelector('.dropdiwn');
     if (cfg.isIntersecting) {
       this.widget.classList.remove('sticky');
       dropdown.classList.remove('open-upward');
