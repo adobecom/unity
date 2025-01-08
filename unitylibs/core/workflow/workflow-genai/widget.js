@@ -50,8 +50,9 @@ export default class UnityWidget {
 
   initIntersectionObserver() {
     this.workflowCfg.stickyBehavior = true;
+    const obEl = this.target.querySelector('.free-ai-image-generator');
     createIntersectionObserver({
-      el: this.target,
+      el: obEl,
       callback: (cfg) => this.addStickyBehaviour(cfg),
       cfg: this.workflowCfg,
     });
