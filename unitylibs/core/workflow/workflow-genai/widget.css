@@ -8,6 +8,7 @@
 .unity-enabled .interactive-area .express-unity-widget {
   width: 100%;
   position: relative;
+  background-color: #fff;
 }
 
 .unity-enabled .interactive-area .express-unity-widget.sticky {
@@ -15,12 +16,8 @@
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
-  width: auto;
-  background-color: #fff;
-  padding: 10px 20px;
-  border: 1px solid #ccc;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  max-width: 720px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
@@ -118,12 +115,8 @@
   }
 
   .unity-enabled .interactive-area .express-unity-widget.sticky .dropdown.open-upward {
-    position: absolute;
     bottom: 100%;
     margin-bottom: 10px;
-    transform-origin: bottom;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-    transform: scaleY(1);
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown.hidden {
