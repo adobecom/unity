@@ -206,26 +206,13 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 }
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  let lastState = null; // Track the last state of visibility
-
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      const isVisible = entry.isIntersecting;
-
-      if (!isVisible && lastState !== false) {
-        // Element is out of view, and the state has changed
-        lastState = false; // Update state
-        cfg.isIntersecting = false; // Update cfg property
-        callback(cfg); // Trigger the "out of view" callback
-      } else if (isVisible && cfg.stickyBehavior && lastState !== true) {
-        // Element is in view, stickyBehavior is enabled, and the state has changed
-        lastState = true; // Update state
-        cfg.isIntersecting = true; // Update cfg property
-        callback(cfg); // Trigger the "in view" callback
+      if (!entry.isIntersecting) {
+        callback(cfg);
       }
     });
   }, options);
-
   io.observe(el);
   return io;
 }
