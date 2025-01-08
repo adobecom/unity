@@ -117,7 +117,7 @@
     position: absolute;
   }
 
-  .unity-enabled .interactive-area .express-unity-widget.stickey .dropdown.open-upward {
+  .unity-enabled .interactive-area .express-unity-widget.sticky .dropdown.open-upward {
     position: absolute;
     bottom: 100%;
     margin-bottom: 10px;
