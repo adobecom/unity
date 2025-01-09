@@ -38,7 +38,7 @@ export default class UnityWidget {
     );
     const placeholder = Object.fromEntries(
       [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
-        element.classList[1] || '',
+        element.classList[1]?.replace('icon-', '') || '',
         element.closest('li')?.innerText || '',
       ]).filter(([key]) => key),
     );
