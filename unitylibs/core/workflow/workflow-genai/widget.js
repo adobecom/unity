@@ -36,10 +36,13 @@ export default class UnityWidget {
       this.el.querySelector('.icon-generate')?.closest('li'),
       'generate-btn-class'
     );
-    const elements = this.el.querySelectorAll('[class*="placeholder"]');
-    elements.forEach((element) => {
-      console.log(element);
-    });
+    const placeholder = Object.fromEntries(
+      [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
+        element.classList[1] || '',
+        element.closest('li')?.innerText || '',
+      ]).filter(([key]) => key),
+    );
+    this.workflowCfg.placeholder = placeholder;
     const dropCon = this.createDropdown();
     actionCon.append(surBtn, genBtn);
     inputCon.append(inpText, actionCon);

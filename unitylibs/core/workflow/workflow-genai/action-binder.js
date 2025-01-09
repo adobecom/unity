@@ -112,7 +112,6 @@ export default class ActionBinder {
         this.expressApiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(data) },
       );
-      console.log('suggestions', suggestions);
       if (!suggestions) return;
       this.displaySuggestions(suggestions.completions); // to be implemented
     } catch (e) {
@@ -122,9 +121,9 @@ export default class ActionBinder {
 
   createSuggestionHeader() {
     const header = createTag('li', { class: 'dropdown-title dynamic' });
-    const textSpan = createTag('span', { class: 'title-text' }, 'Suggestions (English only)');
-    const refreshBtn = createTag('button', { class: 'refresh-btn dynamic', ariaLabel:'Refresh suggestions' });
-    const closeBtn = createTag('button', { class: 'close-btn dynamic', ariaLabel:'Close suggestions' });
+    const textSpan = createTag('span', { class: 'title-text' }, `${this.workflowCfg.placeholder['suggestions']} (English ${this.workflowCfg.placeholder['only']})`);
+    const refreshBtn = createTag('button', { class: 'refresh-btn dynamic', 'aria-abel': 'Refresh suggestions' });
+    const closeBtn = createTag('button', { class: 'close-btn dynamic', 'aria-label': 'Close suggestions' });
     header.appendChild(textSpan);
     header.appendChild(refreshBtn);
     header.appendChild(closeBtn);
