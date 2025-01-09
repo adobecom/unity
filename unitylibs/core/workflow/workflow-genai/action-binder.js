@@ -121,7 +121,7 @@ export default class ActionBinder {
 
   createSuggestionHeader() {
     const header = createTag('li', { class: 'dropdown-title dynamic' });
-    const textSpan = createTag('span', { class: 'title-text' }, `${this.workflowCfg.placeholder['suggestions']} (English ${this.workflowCfg.placeholder['only']})`);
+    const textSpan = createTag('span', { class: 'title-text' }, `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`);
     const refreshBtn = createTag('button', { class: 'refresh-btn dynamic', 'aria-abel': 'Refresh suggestions' });
     const closeBtn = createTag('button', { class: 'close-btn dynamic', 'aria-label': 'Close suggestions' });
     header.appendChild(textSpan);
