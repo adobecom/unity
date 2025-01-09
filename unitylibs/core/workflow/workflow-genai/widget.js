@@ -18,13 +18,20 @@ export default class UnityWidget {
       'aria-owns': 'dropdown',
       'aria-haspopup': 'listbox',
     });
+    const placeholder = Object.fromEntries(
+      [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
+        element.classList[1]?.replace('icon-', '') || '',
+        element.closest('li')?.innerText || '',
+      ]).filter(([key]) => key),
+    );
+    this.workflowCfg.placeholder = placeholder;
     const inputCon = createTag('div', { class: 'input-wrapper' });
     const actionCon = createTag('div', { class: 'action-wrapper' });
     const inpText = createTag('input', {
       id: 'promptInput',
       class: 'input-class',
       type: 'text',
-      placeholder: 'Describe your image...',
+      placeholder: placeholder['placeholder-input'],
       'aria-autocomplete': 'list',
       'aria-controls': 'dropdown',
     });
@@ -36,14 +43,7 @@ export default class UnityWidget {
       this.el.querySelector('.icon-generate')?.closest('li'),
       'generate-btn-class'
     );
-    const placeholder = Object.fromEntries(
-      [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
-        element.classList[1]?.replace('icon-', '') || '',
-        element.closest('li')?.innerText || '',
-      ]).filter(([key]) => key),
-    );
-    this.workflowCfg.placeholder = placeholder;
-    const dropCon = this.createDropdown();
+    const dropCon = this.createDropdown(placeholder);
     actionCon.append(surBtn, genBtn);
     inputCon.append(inpText, actionCon);
     con.append(inputCon, dropCon);
@@ -76,13 +76,13 @@ export default class UnityWidget {
     }
   }
 
-  createDropdown() {
+  createDropdown(placeholder) {
     const dropCon = createTag('ul', {
       class: 'dropdown hidden',
       role: 'listbox',
       'aria-label': 'promptInput',
     });
-    const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, 'Prompt Suggestions');
+    const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, `${placeholder['placeholder-input']} ${placeholder['placeholder-suggestions']}`);
     dropCon.append(promptTitle);
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el, i) => {
@@ -95,7 +95,7 @@ export default class UnityWidget {
     const footer = createTag('li', { class: 'dropdown-footer' });
     const tipEl = this.el.querySelector('.icon-tip').closest('li');
     const tipCon = createTag('div', { class: 'tip-con' }, tipEl.innerText);
-    const tipText = createTag('span', { class: 'tip-text' }, 'Tip: ');
+    const tipText = createTag('span', { class: 'tip-text' }, `${placeholder['placeholder-input']}: `);
     const legalEl = this.el.querySelector('.icon-legal').closest('li');
     const legalCon = createTag('div', { class: 'legal-con' });
     const legalText = createTag('a', { href: legalEl.querySelector('a').href, class: 'legal-text' }, legalEl.querySelector('a').innerText);
