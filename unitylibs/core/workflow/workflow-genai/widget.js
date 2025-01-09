@@ -79,7 +79,7 @@ export default class UnityWidget {
     dropCon.append(promptTitle);
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el, i) => {
-      const prompt = createTag('li', { id: `item-${i}`, class: 'dropdown-item', role: 'option', 'daa-ll': el.closest('li').innerText }, el.closest('li').innerText);
+      const prompt = createTag('li', { id: `item-${i}`, class: 'dropdown-item', role: 'option' }, el.closest('li').innerText);
       dropCon.append(prompt);
     });
     const separator = createTag('li', { class: 'dropdown-separator', role: 'separator' });
