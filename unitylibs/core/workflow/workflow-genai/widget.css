@@ -1,3 +1,6 @@
+.aside.text2image.unity-enabled {
+  overflow: unset;
+}
 @media screen and (min-width: 1200px) {
   .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
     max-width: 720px;
@@ -115,6 +118,7 @@
     text-align: left;
     margin: 8px 0 0 0;
     position: absolute;
+    z-index: 1;
   }
 
   .unity-enabled .interactive-area .express-unity-widget.sticky .dropdown.open-upward {
