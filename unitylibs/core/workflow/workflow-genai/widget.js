@@ -82,7 +82,7 @@ export default class UnityWidget {
       role: 'listbox',
       'aria-label': 'promptInput',
     });
-    const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, `${placeholder['placeholder-input']} ${placeholder['placeholder-suggestions']}`);
+    const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`);
     dropCon.append(promptTitle);
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el, i) => {
