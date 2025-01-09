@@ -253,7 +253,7 @@ export default class ActionBinder {
           break;
 
         case 'Escape': // Close the dropdown
-          // dropdown.classList.add('hidden');
+          dropdown.classList.add('hidden');
           input.setAttribute('aria-expanded', 'false');
           activeIndex = -1; // Reset active index
           break;
@@ -272,7 +272,7 @@ export default class ActionBinder {
 
     input.addEventListener('blur', () => {
       setTimeout(() => {
-        // dropdown.classList.add('hidden');
+        dropdown.classList.add('hidden');
         input.setAttribute('aria-expanded', 'false');
         activeIndex = -1; // Reset active index on blur
       }, 200); // Delay to allow click events on dropdown items
