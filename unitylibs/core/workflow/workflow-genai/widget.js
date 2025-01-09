@@ -16,7 +16,7 @@ export default class UnityWidget {
     // }
 
     // const localeData = await response.json();
-    console.log('localeData', localeData);
+    // console.log('localeData', localeData);
     this.widget = createTag('div', { class: 'express-unity-widget' });
     const con = createTag('div', {
       class: 'autocomplete',
