@@ -10,7 +10,7 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    const response = await fetch('https://main--unity--adobecom.hlx.page/placeholders.json');
+    const response = await fetch('https://main--cc--adobecom.hlx.page/drafts/hnv/express-text-to-image.json');
     if (!response.ok) {
       throw new Error(`Server Error: ${response.status}`);
     }
