@@ -10,6 +10,8 @@ export default class UnityWidget {
   }
 
   async initWidget() {
+    const response = await fetch('https://main--unity--adobecom.hlx.page/placeholders.json');
+    console.log('response', response);
     this.widget = createTag('div', { class: 'express-unity-widget' });
     const con = createTag('div', {
       class: 'autocomplete',
