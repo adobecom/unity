@@ -10,12 +10,12 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    const response = await fetch('https://main--cc--adobecom.hlx.page/drafts/hnv/express-text-to-image.json');
-    if (!response.ok) {
-      throw new Error(`Server Error: ${response.status}`);
-    }
+    // const response = await fetch('https://main--cc--adobecom.hlx.page/drafts/hnv/express-text-to-image.json');
+    // if (!response.ok) {
+    //   throw new Error(`Server Error: ${response.status}`);
+    // }
 
-    const localeData = await response.json();
+    // const localeData = await response.json();
     console.log('localeData', localeData);
     this.widget = createTag('div', { class: 'express-unity-widget' });
     const con = createTag('div', {
