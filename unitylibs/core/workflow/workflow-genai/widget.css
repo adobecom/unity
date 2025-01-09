@@ -56,7 +56,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn:focus {
-  outline: 1px solid #005FCC;
+  outline: 2px solid #005FCC;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn .btn-icon img {
