@@ -192,6 +192,9 @@ export default class ActionBinder {
         dropdown.prepend(sugHeader);
       });
     }
+    if (dropdown.classList.contains('hidden')) {
+      dropdown.classList.remove('hidden');
+    }
     this.initActionListeners();
   }
 
@@ -272,7 +275,7 @@ export default class ActionBinder {
 
     input.addEventListener('blur', () => {
       setTimeout(() => {
-        dropdown.classList.add('hidden');
+        // ddropdown.classList.add('hidden');
         input.setAttribute('aria-expanded', 'false');
         activeIndex = -1; // Reset active index on blur
       }, 200); // Delay to allow click events on dropdown items
