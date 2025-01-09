@@ -220,10 +220,12 @@ export default class ActionBinder {
   }
 
   getPromptValue(el) {
+    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
     const input = this.block.querySelector('.input-class');
     const promptText = el.textContent.trim();
     input.value = promptText;
     input.focus();
+    if (!surpriseBtn.classList.contains('hidden')) surpriseBtn.classList.add('hidden');
   }
 
   addAccessibilityFeatures() {
