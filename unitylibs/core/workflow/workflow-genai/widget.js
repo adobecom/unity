@@ -10,13 +10,6 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    // const response = await fetch('https://main--cc--adobecom.hlx.page/drafts/hnv/express-text-to-image.json');
-    // if (!response.ok) {
-    //   throw new Error(`Server Error: ${response.status}`);
-    // }
-
-    // const localeData = await response.json();
-    // console.log('localeData', localeData);
     this.widget = createTag('div', { class: 'express-unity-widget' });
     const con = createTag('div', {
       class: 'autocomplete',
@@ -43,6 +36,10 @@ export default class UnityWidget {
       this.el.querySelector('.icon-generate')?.closest('li'),
       'generate-btn-class'
     );
+    const elements = this.el.querySelectorAll('[class*="placeholder"]');
+    elements.forEach((element) => {
+      console.log(element);
+    });
     const dropCon = this.createDropdown();
     actionCon.append(surBtn, genBtn);
     inputCon.append(inpText, actionCon);
@@ -80,7 +77,7 @@ export default class UnityWidget {
     const dropCon = createTag('ul', {
       class: 'dropdown hidden',
       role: 'listbox',
-      ariaLabelledby: 'promptInput',
+      'aria-label': 'promptInput',
     });
     const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, 'Prompt Suggestions');
     dropCon.append(promptTitle);
