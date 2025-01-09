@@ -132,6 +132,15 @@ body > .splash-loader {
   margin-block: var(--spacing-s);
 }
 
+.splash-loader .text h1:first-of-type,
+.splash-loader .text h2:first-of-type,
+.splash-loader .text h3:first-of-type,
+.splash-loader .text h4:first-of-type,
+.splash-loader .text h5:first-of-type {
+  font-size: var(--type-heading-m-size);
+  line-height: var(--type-heading-m-lh);
+}
+
 @media screen and (min-width: 600px) {
   .splash-loader h1,
   .splash-loader h2,
