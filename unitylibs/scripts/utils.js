@@ -227,17 +227,27 @@ function debounce(func, delay) {
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
   const debouncedCallback = debounce(callback, 500);
+  // Track the last known state to prevent redundant calls
+  let lastState = null;
+
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      if (!entry.isIntersecting) {
-        cfg.isIntersecting = false;
-        debouncedCallback(cfg);
-      } else if (entry.isIntersecting && cfg?.stickyBehavior) {
-        cfg.isIntersecting = true;
-        debouncedCallback(cfg);
+      const currentState = entry.isIntersecting;
+
+      if (currentState !== lastState) {
+        lastState = currentState;
+
+        if (!entry.isIntersecting) {
+          cfg.isIntersecting = false;
+          debouncedCallback(cfg);
+        } else if (entry.isIntersecting && cfg?.stickyBehavior) {
+          cfg.isIntersecting = true;
+          debouncedCallback(cfg);
+        }
       }
     });
   }, { ...options, threshold: 0 });
+
   io.observe(el);
   return io;
 }
