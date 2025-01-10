@@ -533,6 +533,7 @@ export default class ActionBinder {
       ),
     );
     let assetData = null;
+    const startTime = new Date();
     try {
       await this.showSplashScreen(true);
       const blobData = await this.getBlobData(file);
@@ -611,6 +612,9 @@ export default class ActionBinder {
     if (!verified) return;
     const validated = await this.handleValidations(assetData);
     if (!validated) return;
+    const endTime = new Date();
+    const uploadTime = (endTime - startTime) / 1000;  
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploadTime', data: { uploadTime } } }));
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 
@@ -618,7 +622,7 @@ export default class ActionBinder {
     this.block.dispatchEvent(
       new CustomEvent(
         unityConfig.trackAnalyticsEvent,
-        { detail: { event: eventName } },
+        { detail: { event: eventName, data: {count: fileCount}} },
       ),
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileCount } }));
@@ -636,6 +640,7 @@ export default class ActionBinder {
     setTimeout(() => {
       this.updateProgressBar(this.splashScreenEl, 95);
       if (!this.redirectUrl) return;
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
       window.location.href = this.redirectUrl;
     }, 2500);
   }
