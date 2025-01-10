@@ -217,18 +217,21 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 //   return io;
 // }
 
-function debounce(func, delay) {
-  let timer;
+function throttle(func, delay) {
+  let lastCall = 0;
   return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func.apply(this, args), delay);
+    const now = Date.now();
+    if (now - lastCall >= delay) {
+      lastCall = now;
+      func.apply(this, args);
+    }
   };
 }
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  const debouncedCallback = debounce(callback, 500);
-  // Track the last known state to prevent redundant calls
-  let lastState = null;
+  const throttledCallback = throttle(callback, 500);
+
+  let lastState = null; // Track the last state to prevent redundant calls
 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -239,10 +242,10 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
 
         if (!entry.isIntersecting) {
           cfg.isIntersecting = false;
-          debouncedCallback(cfg);
+          throttledCallback(cfg);
         } else if (entry.isIntersecting && cfg?.stickyBehavior) {
           cfg.isIntersecting = true;
-          debouncedCallback(cfg);
+          throttledCallback(cfg);
         }
       }
     });
