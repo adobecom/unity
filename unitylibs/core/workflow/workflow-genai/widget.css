@@ -42,6 +42,8 @@
   transform: translateX(-50%);
   z-index: 1000;
   max-width: 720px;
+  fill: linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
+  filter: blur(25px);
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
