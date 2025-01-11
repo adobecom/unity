@@ -243,7 +243,9 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
         if (!entry.isIntersecting) {
           cfg.isIntersecting = false;
           throttledCallback(cfg);
+          console.log('isIntersecting');
         } else if (entry.isIntersecting && cfg?.stickyBehavior) {
+          console.log('!isIntersecting');
           cfg.isIntersecting = true;
           throttledCallback(cfg);
         }
