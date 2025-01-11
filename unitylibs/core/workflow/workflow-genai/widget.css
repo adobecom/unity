@@ -26,8 +26,8 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget {
-  padding: 0 0 24px;
-  max-width: 720px;
+  padding: 0 40px 24px;
+  position: relative;
 }
 
 .unity-enabled .interactive-area .express-unity-widget.sticky {
