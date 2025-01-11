@@ -96,7 +96,7 @@ export default class UnityWidget {
     const tipEl = this.el.querySelector('.icon-tip').closest('li');
     const tipCon = createTag('div', { class: 'tip-con' });
     const tipText = createTag('span', { class: 'tip-text' }, `${placeholder['placeholder-tip']}: `);
-    const tipDesc = createTag('span', { class: 'tip-Desc' }, tipEl.innerText);
+    const tipDesc = createTag('span', { class: 'tip-Desc' }, ` ${tipEl.innerText}`);
     const legalEl = this.el.querySelector('.icon-legal').closest('li');
     const legalCon = createTag('div', { class: 'legal-con' });
     const legalText = createTag('a', { href: legalEl.querySelector('a').href, class: 'legal-text' }, legalEl.querySelector('a').innerText);
