@@ -7,6 +7,30 @@
   justify-content: center;
 }
 
+@media screen and (min-width: 600px) {
+  .aside.text2image.unity-enabled .foreground.container {
+    width: 100%;
+    padding: 0 24px;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget {
+    padding: 0;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
+    flex-direction: column;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .input-wrapper .input-class {
+    width: 100%;
+  }
+
+  .unity-enabled .interactive-area .express-unity-widget .action-wrapper {
+    justify-content: flex-end;
+    width: 100%;
+  }
+}
+
 .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
   max-width: 800px;
   margin: 56px 0 32px;
