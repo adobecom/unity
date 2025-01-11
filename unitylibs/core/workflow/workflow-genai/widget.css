@@ -105,6 +105,8 @@
     font-style: normal;
     font-weight: 700;
     line-height: normal;
+    display: flex;
+    align-items: center;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn-class.hidden {
@@ -113,7 +115,7 @@
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     border-radius: 16px;
     background: #292929;
     border: 2px solid #292929;
