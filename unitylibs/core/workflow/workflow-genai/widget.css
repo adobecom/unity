@@ -255,7 +255,7 @@
     line-height: 24px;
   }
 
-  .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer:before {
+  .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con:before {
     content: "";
     display: inline-block;
     width: 20px;
@@ -271,6 +271,8 @@
   
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .legal-con {
     margin-left: auto;
+    display: flex;
+    align-items: center;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .legal-con:before {
