@@ -257,7 +257,6 @@
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con {
     display: flex;
-    align-items: center;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con:before {
@@ -268,6 +267,7 @@
     background-image: url(../../../img/icons/info.svg);
     background-repeat: no-repeat;
     padding-right: 8px;
+    margin-top: 3px;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con .tip-text {
