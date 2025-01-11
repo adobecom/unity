@@ -10,7 +10,7 @@
 @media screen and (min-width: 1200px) {
   .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
     max-width: 800px;
-    margin: 56px 0;
+    margin: 56px 0 32px;
   }
 }
 
