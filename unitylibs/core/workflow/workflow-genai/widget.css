@@ -19,6 +19,12 @@
   font-weight: 700;
 }
 
+.aside.text2image.unity-enabled .foreground.container .interactive-area .text .body-m {
+  color: #222;
+  font-style: normal;
+  font-weight: 400;
+}
+
 .unity-enabled .interactive-area .express-unity-widget {
   width: 100%;
   position: relative;
