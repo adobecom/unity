@@ -26,7 +26,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget {
-  padding: 0 40px;
+  padding: 0 40px 24px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget.sticky {
