@@ -5,6 +5,9 @@
 .aside.text2image.unity-enabled .foreground.container .interactive-area {
   display: inherit;
   justify-content: center;
+  background: none !important;
+  background-size: initial !important;
+  background-position: initial !important;
 }
 
 .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
