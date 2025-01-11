@@ -219,11 +219,22 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 
 function throttle(func, delay) {
   let lastCall = 0;
+  let pending = false;
+
   return (...args) => {
     const now = Date.now();
+
     if (now - lastCall >= delay) {
       lastCall = now;
-      func.apply(this, args);
+      func(...args);
+      pending = false; // Reset pending state after execution
+    } else if (!pending) {
+      pending = true; // Set pending flag to avoid overlapping calls
+      setTimeout(() => {
+        lastCall = Date.now();
+        func(...args);
+        pending = false;
+      }, delay - (now - lastCall));
     }
   };
 }
@@ -237,17 +248,20 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
     entries.forEach((entry) => {
       const currentState = entry.isIntersecting;
 
+      // Log current and last state for debugging
+      console.log(`Current: ${currentState}, Last: ${lastState}`);
+
       if (currentState !== lastState) {
         lastState = currentState;
 
         if (!entry.isIntersecting) {
           cfg.isIntersecting = false;
           throttledCallback(cfg);
-          console.log('isIntersecting');
+          console.log("!isIntersecting triggered");
         } else if (entry.isIntersecting && cfg?.stickyBehavior) {
-          console.log('!isIntersecting');
           cfg.isIntersecting = true;
           throttledCallback(cfg);
+          console.log("isIntersecting triggered");
         }
       }
     });
