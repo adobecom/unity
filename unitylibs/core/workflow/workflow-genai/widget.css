@@ -310,4 +310,12 @@
       justify-content: flex-end;
       width: 100%;
     }
+
+    .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-separator {
+      display: none;
+    }
+    
+    .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer {
+      display: none;
+    }
   }
