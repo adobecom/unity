@@ -255,6 +255,11 @@
     line-height: 24px;
   }
 
+  .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con {
+    display: flex;
+    align-items: center;
+  }
+
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con:before {
     content: "";
     display: inline-block;
@@ -262,7 +267,7 @@
     height: 20px;
     background-image: url(../../../img/icons/info.svg);
     background-repeat: no-repeat;
-    margin-right: 8px;
+    padding-right: 8px;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown .dropdown-footer .tip-con .tip-text {
