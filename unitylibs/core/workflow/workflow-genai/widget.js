@@ -9,8 +9,8 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    this.widget = this.createWidget();
     this.populatePlaceholders();
+    this.widget = this.createWidget();
     this.insertWidget();
     this.initObserver();
     return this.workflowCfg.targetCfg.actionMap;
