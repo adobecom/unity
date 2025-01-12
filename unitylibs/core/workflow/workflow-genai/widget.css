@@ -41,7 +41,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  max-width: 720px;
+  max-width: 100%;
 }
 
 /* Input and Action Styles */
