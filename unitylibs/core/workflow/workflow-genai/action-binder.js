@@ -1,4 +1,4 @@
-import { unityConfig, getUnityLibs, createTag } from '../../../scripts/utils.js';
+import { unityConfig, createTag, getUnityLibs } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
@@ -11,65 +11,63 @@ export default class ActionBinder {
     this.operations = [];
     this.serviceHandler = null;
     this.apiConfig = this.initializeApiConfig();
+    this.inputField = this.block.querySelector('.input-field');
+    this.dropdown = this.block.querySelector('.dropdown');
+    this.surpriseBtn = this.block.querySelector('.surprise-btn');
   }
 
   initializeApiConfig() {
-    return {
-      autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete`,
-    };
+    return { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` };
   }
 
   async initActionListeners(block = this.block, actions = this.actionMap) {
     let debounceTimer;
-
     for (const [selector, actionsList] of Object.entries(actions)) {
       const elements = block.querySelectorAll(selector);
       elements.forEach((el) => {
         if (el.hasAttribute('data-event-bound')) return;
-
-        switch (el.nodeName) {
-          case 'A':
-          case 'BUTTON':
-          case 'LI':
-            el.addEventListener('click', async (event) => {
-              event.preventDefault();
-              await this.handleAction(actionsList, el);
-            });
-            break;
-
-          case 'INPUT':
-            el.addEventListener('input', (event) => {
-              clearTimeout(debounceTimer);
-              this.query = event.target.value.trim();
-              this.updateWidgetState(this.query);
-
-              if (this.query.length >= 3) {
-                debounceTimer = setTimeout(async () => {
-                  await this.handleAction(actionsList);
-                }, 1000);
-              }
-            });
-
-            el.addEventListener('focus', () => {
-              const dropdown = this.block.querySelector('.dropdown');
-              dropdown.classList.remove('hidden');
-            });
-
-            el.addEventListener('blur', () => {
-              const dropdown = this.block.querySelector('.dropdown');
-              dropdown.classList.add('hidden');
-            });
-            break;
-
-          default:
-            break;
-        }
-
+        this.addEventListeners(el, actionsList, debounceTimer);
         el.setAttribute('data-event-bound', 'true');
       });
     }
-
     this.addAccessibilityFeatures();
+  }
+
+  addEventListeners(el, actionsList, debounceTimer) {
+    switch (el.nodeName) {
+      case 'A':
+      case 'BUTTON':
+      case 'LI':
+        el.addEventListener('click', async (event) => {
+          event.preventDefault();
+          await this.handleAction(actionsList, el);
+        });
+        break;
+      case 'INPUT':
+        this.addInputEventListeners(el, actionsList, debounceTimer);
+        break;
+      default:
+        break;
+    }
+  }
+
+  addInputEventListeners(el, actionsList, debounceTimer) {
+    el.addEventListener('input', (event) => {
+      clearTimeout(debounceTimer);
+      this.query = event.target.value.trim();
+      this.updateWidgetState(this.query);
+      if (this.query.length >= 3) {
+        debounceTimer = setTimeout(async () => {
+          await this.handleAction(actionsList);
+        }, 1000);
+      }
+    });
+    el.addEventListener('focus', () => {
+      this.dropdown.classList.remove('hidden');
+    });
+    el.addEventListener('blur', () => {
+      this.dropdown.classList.add('hidden');
+    });
   }
 
   async handleAction(actionsList, el = null) {
@@ -80,27 +78,30 @@ export default class ActionBinder {
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
     );
-
     for (const action of actionsList) {
-      switch (action.actionType) {
-        case 'autocomplete':
-          await this.fetchAutocompleteSuggestions();
-          break;
-        case 'surprise':
-          await this.triggerSurpriseMe();
-          break;
-        case 'generate':
-          await this.generateContent();
-          break;
-        case 'getPromptValue':
-          this.updatePromptValue(el);
-          break;
-        case 'closeDropdown':
-          this.resetDropdown();
-          break;
-        default:
-          break;
-      }
+      await this.executeAction(action, el);
+    }
+  }
+
+  async executeAction(action, el) {
+    switch (action.actionType) {
+      case 'autocomplete':
+        await this.fetchAutocompleteSuggestions();
+        break;
+      case 'surprise':
+        await this.triggerSurpriseMe();
+        break;
+      case 'generate':
+        await this.generateContent();
+        break;
+      case 'getPromptValue':
+        this.updatePromptValue(el);
+        break;
+      case 'closeDropdown':
+        this.resetDropdown();
+        break;
+      default:
+        break;
     }
   }
 
@@ -111,12 +112,10 @@ export default class ActionBinder {
         targetProduct: this.workflowCfg.productName,
         maxResults: 5,
       };
-
       const suggestions = await this.serviceHandler.postCallToService(
         this.apiConfig.autoComplete,
         { body: JSON.stringify(data) },
       );
-
       if (suggestions?.completions) {
         this.displaySuggestions(suggestions.completions);
       }
@@ -126,38 +125,54 @@ export default class ActionBinder {
   }
 
   displaySuggestions(suggestions) {
-    const dropdown = this.block.querySelector('.dropdown');
-    const dynamicItems = dropdown.querySelectorAll('.dropdown-item.dynamic');
-    dynamicItems.forEach((el) => el.remove());
-    const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title:not(.dynamic)');
-    defaultItems.forEach((item) => item.classList.add('hidden'));
-    let dynamicHeader = dropdown.querySelector('.dropdown-title.dynamic');
+    this.clearDynamicItems();
+    this.hideDefaultItems();
+    let dynamicHeader = this.dropdown.querySelector('.dropdown-title.dynamic');
     if (!dynamicHeader) {
       dynamicHeader = this.createSuggestionHeader();
-      dropdown.insertBefore(dynamicHeader, dropdown.firstChild);
+      this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
     }
     if (suggestions.length === 0) {
-      const emptyMessage = dropdown.querySelector('.dropdown-empty-message');
-      if (!emptyMessage) {
-        const noSuggestions = createTag('li', {
-          class: 'dropdown-empty-message',
-          role: 'presentation',
-        }, 'No suggestions available');
-        dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
-      }
+      this.displayNoSuggestionsMessage(dynamicHeader);
     } else {
-      suggestions.forEach((suggestion, index) => {
-        const item = createTag('li', {
-          id: `dynamic-item-${index}`,
-          class: 'dropdown-item dynamic',
-          role: 'option',
-        }, suggestion);
-        const referenceNode = dynamicHeader.nextSibling;
-        dropdown.insertBefore(item, referenceNode);
-      });
+      this.addSuggestionItems(suggestions, dynamicHeader);
     }
-    dropdown.classList.remove('hidden');
+    this.dropdown.classList.remove('hidden');
     this.initActionListeners();
+  }
+
+  clearDynamicItems() {
+    const dynamicItems = this.dropdown.querySelectorAll('.dropdown-item.dynamic');
+    dynamicItems.forEach((el) => el.remove());
+  }
+
+  hideDefaultItems() {
+    const defaultItems = this.dropdown.querySelectorAll('.dropdown-item, .dropdown-title:not(.dynamic)');
+    defaultItems.forEach((item) => item.classList.add('hidden'));
+  }
+
+  displayNoSuggestionsMessage(dynamicHeader) {
+    const emptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
+    if (!emptyMessage) {
+      const noSuggestions = createTag('li', {
+        class: 'dropdown-empty-message',
+        role: 'presentation',
+      }, 'No suggestions available');
+      this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
+    }
+  }
+
+  addSuggestionItems(suggestions, dynamicHeader) {
+    suggestions.forEach((suggestion, index) => {
+      const item = createTag('li', {
+        id: `dynamic-item-${index}`,
+        class: 'dropdown-item dynamic',
+        'daa-ll': suggestion,
+        role: 'option',
+      }, suggestion);
+      const referenceNode = dynamicHeader.nextSibling;
+      this.dropdown.insertBefore(item, referenceNode);
+    });
   }
 
   createSuggestionHeader() {
@@ -180,22 +195,29 @@ export default class ActionBinder {
   }
 
   resetDropdown() {
-    const dropdown = this.block.querySelector('.dropdown');
-    const input = this.block.querySelector('.input-field');
-    input.value = '';
-    const surpriseBtn = this.block.querySelector('.surprise-btn');
-    surpriseBtn.classList.remove('hidden');
+    this.inputField.value = '';
+    this.surpriseBtn.classList.remove('hidden');
 
-    dropdown.querySelectorAll('.dynamic').forEach((el) => el.remove());
-    dropdown.querySelectorAll('.dropdown-item, .dropdown-title').forEach((item) => item.classList.remove('hidden'));
-    dropdown.querySelector('.dropdown-empty-message')?.remove();
-    dropdown.classList.add('hidden');
+    this.clearDynamicItems();
+    this.showDefaultItems();
+    this.removeEmptyMessage();
+    this.dropdown.classList.add('hidden');
+  }
+
+  showDefaultItems() {
+    const defaultItems = this.dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
+    defaultItems.forEach((item) => item.classList.remove('hidden'));
+  }
+
+  removeEmptyMessage() {
+    const emptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
+    if (emptyMessage) {
+      emptyMessage.remove();
+    }
   }
 
   updateWidgetState(query) {
-    const surpriseBtn = this.block.querySelector('.surprise-btn');
-
-    surpriseBtn.classList.toggle('hidden', query.length > 0);
+    this.surpriseBtn.classList.toggle('hidden', query.length > 0);
 
     if (query.length === 0) {
       this.resetDropdown();
@@ -203,44 +225,38 @@ export default class ActionBinder {
   }
 
   updatePromptValue(el) {
-    const input = this.block.querySelector('.input-field');
     const promptText = el.textContent.trim();
-    input.value = promptText;
-    input.focus();
-    const surpriseBtn = this.block.querySelector('.surprise-btn');
-    surpriseBtn.classList.add('hidden');
+    this.inputField.value = promptText;
+    this.inputField.focus();
+    this.surpriseBtn.classList.add('hidden');
   }
 
   addAccessibilityFeatures() {
-    const input = this.block.querySelector('.input-field');
-    const dropdown = this.block.querySelector('.dropdown');
-    let dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item.dynamic'));
+    let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
     if (!dropdownItems.length) {
-      dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+      dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
     let activeIndex = -1;
-
-    input.addEventListener('keydown', (event) => {
+    this.inputField.addEventListener('keydown', (event) => {
       if (!dropdownItems.length) return;
-
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault();
           activeIndex = (activeIndex + 1) % dropdownItems.length;
-          this.setActiveItem(dropdownItems, activeIndex, input);
+          this.setActiveItem(dropdownItems, activeIndex, this.inputField);
           break;
         case 'ArrowUp':
           event.preventDefault();
           activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-          this.setActiveItem(dropdownItems, activeIndex, input);
+          this.setActiveItem(dropdownItems, activeIndex, this.inputField);
           break;
         case 'Enter':
           event.preventDefault();
           dropdownItems[activeIndex]?.click();
           break;
         case 'Escape':
-          dropdown.classList.add('hidden');
-          input.setAttribute('aria-expanded', 'false');
+          this.dropdown.classList.add('hidden');
+          this.inputField.setAttribute('aria-expanded', 'false');
           activeIndex = -1;
           break;
         default:
