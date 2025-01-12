@@ -83,7 +83,7 @@
 }
 
 /* Button Styles */
-.unity-enabled .interactive-area .express-unity-widget .surprise-btn-class {
+.unity-enabled .interactive-area .express-unity-widget .surprise-btn {
   display: flex;
   align-items: center;
   border-radius: 16px;
@@ -93,7 +93,7 @@
   font-weight: 700;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .generate-btn-class {
+.unity-enabled .interactive-area .express-unity-widget .generate-btn {
   display: flex;
   align-items: center;
   border-radius: 16px;
@@ -101,7 +101,7 @@
   border: 2px solid #292929;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .generate-btn-class .btn-text {
+.unity-enabled .interactive-area .express-unity-widget .generate-btn .btn-text {
   color: #fff;
 }
 
