@@ -136,16 +136,15 @@ export default class ActionBinder {
       }
     } else {
       const header = this.createSuggestionHeader();
-      dropdown.append(header);
-
       suggestions.forEach((suggestion, index) => {
         const item = createTag('li', {
           id: `dynamic-item-${index}`,
           class: 'dropdown-item dynamic',
           role: 'option',
         }, suggestion);
-        dropdown.append(item);
+        dropdown.prepend(item);
       });
+      dropdown.prepend(header);
     }
 
     dropdown.classList.remove('hidden');
@@ -190,7 +189,7 @@ export default class ActionBinder {
     const promptText = el.textContent.trim();
     input.value = promptText;
     input.focus();
-    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
+    const surpriseBtn = this.block.querySelector('.surprise-btn');
     surpriseBtn.classList.add('hidden');
   }
 
