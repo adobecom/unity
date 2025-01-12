@@ -125,6 +125,8 @@ export default class ActionBinder {
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
 
+    const header = this.createSuggestionHeader();
+
     if (suggestions.length === 0) {
       const emptyMessage = dropdown.querySelector('.dropdown-empty-message');
       if (!emptyMessage) {
@@ -135,30 +137,48 @@ export default class ActionBinder {
         dropdown.append(noSuggestions);
       }
     } else {
-      const header = this.createSuggestionHeader();
       suggestions.forEach((suggestion, index) => {
         const item = createTag('li', {
           id: `dynamic-item-${index}`,
           class: 'dropdown-item dynamic',
           role: 'option',
         }, suggestion);
-        dropdown.prepend(item);
+        dropdown.prepend(item); // Prepend dynamic items to keep order
       });
-      dropdown.prepend(header);
     }
 
+    dropdown.prepend(header);
     dropdown.classList.remove('hidden');
     this.initActionListeners();
   }
 
   createSuggestionHeader() {
     const header = createTag('li', { class: 'dropdown-title dynamic' });
+
     const titleText = createTag(
       'span',
       { class: 'title-text' },
       `${this.workflowCfg.placeholder['placeholder-suggestions']} (${this.workflowCfg.placeholder['placeholder-only']})`
     );
-    header.append(titleText);
+
+    const refreshBtn = createTag('button', {
+      class: 'refresh-btn dynamic',
+      'aria-label': 'Refresh suggestions',
+    });
+    refreshBtn.addEventListener('click', async () => {
+      this.resetDropdown();
+      await this.fetchAutocompleteSuggestions();
+    });
+
+    const closeBtn = createTag('button', {
+      class: 'close-btn dynamic',
+      'aria-label': 'Close dropdown',
+    });
+    closeBtn.addEventListener('click', () => {
+      this.resetDropdown();
+    });
+
+    header.append(titleText, refreshBtn, closeBtn);
     return header;
   }
 
@@ -168,6 +188,7 @@ export default class ActionBinder {
     input.value = '';
     const surpriseBtn = this.block.querySelector('.surprise-btn');
     surpriseBtn.classList.remove('hidden');
+
     dropdown.querySelectorAll('.dynamic').forEach((el) => el.remove());
     dropdown.querySelectorAll('.dropdown-item, .dropdown-title').forEach((item) => item.classList.remove('hidden'));
     dropdown.querySelector('.dropdown-empty-message')?.remove();
