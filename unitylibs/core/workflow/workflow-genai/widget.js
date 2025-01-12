@@ -171,6 +171,7 @@ export default class UnityWidget {
   }
 
   toggleSticky(cfg) {
+    console.log('Checking');
     const dropdown = this.widget.querySelector('.dropdown');
     // this.widget.classList.toggle('sticky', !cfg.isIntersecting);
     dropdown.classList.toggle('open-upward', !cfg.isIntersecting);
