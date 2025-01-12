@@ -145,8 +145,8 @@ export default class ActionBinder {
         }, suggestion);
         dropdown.prepend(item);
       });
-      dropdown.prepend(header);
     }
+    dropdown.prepend(header);
     dropdown.classList.remove('hidden');
     this.initActionListeners();
   }
