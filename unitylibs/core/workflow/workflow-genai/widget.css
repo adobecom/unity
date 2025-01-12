@@ -42,8 +42,6 @@
   transform: translateX(-50%);
   z-index: 1000;
   max-width: 720px;
-  fill: linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
-  filter: blur(25px);
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
@@ -58,7 +56,7 @@
     gap: 24px;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .input-wrapper .input-class {
+.unity-enabled .interactive-area .express-unity-widget .input-wrapper .input-field {
     padding: 9px 5px 10px;
     align-items: flex-start;
     flex: 1 0 0;
@@ -102,7 +100,7 @@
     align-items: flex-start;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn-class {
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn {
     border-radius: 16px;
     border: 2px solid #292929;
     color: #292929;
@@ -114,11 +112,11 @@
     align-items: center;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn-class.hidden {
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .surprise-btn.hidden {
   display: none;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class {
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn {
     display: flex;
     align-items: center;
     border-radius: 16px;
@@ -126,7 +124,7 @@
     border: 2px solid #292929;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn-class .btn-text {
+.unity-enabled .interactive-area .express-unity-widget .action-wrapper .generate-btn .btn-text {
     color: #FFF;
     font-size: 14px;
     font-style: normal;
@@ -333,4 +331,3 @@
       display: none;
     }
   }
-  
