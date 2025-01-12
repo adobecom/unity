@@ -1,8 +1,4 @@
-import {
-  unityConfig,
-  getUnityLibs,
-  createTag,
-} from '../../../scripts/utils.js';
+import { unityConfig } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
@@ -28,9 +24,6 @@ export default class ActionBinder {
 
     for (const [selector, actionsList] of Object.entries(actions)) {
       const elements = block.querySelectorAll(selector);
-      console.log('selector', selector);
-      console.log('actionsList', actionsList);
-      console.log('actions', actions);
       elements.forEach((el) => {
         if (el.hasAttribute('data-event-bound')) return;
 
@@ -55,6 +48,16 @@ export default class ActionBinder {
                   await this.handleAction(actionsList);
                 }, 1000);
               }
+            });
+
+            el.addEventListener('focus', () => {
+              const dropdown = this.block.querySelector('.dropdown');
+              dropdown.classList.remove('hidden');
+            });
+
+            el.addEventListener('blur', () => {
+              const dropdown = this.block.querySelector('.dropdown');
+              dropdown.classList.add('hidden');
             });
             break;
 
@@ -159,23 +162,19 @@ export default class ActionBinder {
 
   createSuggestionHeader() {
     const header = createTag('li', { class: 'dropdown-title dynamic' });
-
     const titleText = createTag(
       'span',
       { class: 'title-text' },
       `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`
     );
-
     const refreshBtn = createTag('button', {
       class: 'refresh-btn dynamic',
       'aria-label': 'Refresh suggestions',
     });
-
     const closeBtn = createTag('button', {
       class: 'close-btn dynamic',
       'aria-label': 'Close dropdown',
     });
-
     header.append(titleText, refreshBtn, closeBtn);
     return header;
   }
@@ -215,7 +214,10 @@ export default class ActionBinder {
   addAccessibilityFeatures() {
     const input = this.block.querySelector('.input-field');
     const dropdown = this.block.querySelector('.dropdown');
-    const dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+    let dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item.dynamic'));
+    if (!dropdownItems.length) {
+      dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+    }
     let activeIndex = -1;
 
     input.addEventListener('keydown', (event) => {
