@@ -2,127 +2,177 @@ import { createTag, createIntersectionObserver } from '../../../scripts/utils.js
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg) {
-    this.el = el;
     this.target = target;
+    this.el = el;
     this.workflowCfg = workflowCfg;
     this.widget = null;
-    this.actionMap = {};
   }
 
   async initWidget() {
-    this.widget = createTag('div', { class: 'express-unity-widget' });
-    const con = createTag('div', {
+    this.widget = this.createWidget();
+    this.populatePlaceholders();
+    this.insertWidget();
+    this.initObserver();
+    return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  createWidget() {
+    const widgetContainer = createTag('div', { class: 'unity-widget' });
+    const combobox = this.createCombobox();
+    widgetContainer.append(combobox);
+    return widgetContainer;
+  }
+
+  createCombobox() {
+    const combobox = createTag('div', {
       class: 'autocomplete',
       role: 'combobox',
       'aria-expanded': 'false',
       'aria-owns': 'dropdown',
       'aria-haspopup': 'listbox',
     });
-    const placeholder = Object.fromEntries(
-      [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
-        element.classList[1]?.replace('icon-', '') || '',
-        element.closest('li')?.innerText || '',
-      ]).filter(([key]) => key),
+
+    const inputWrapper = createTag('div', { class: 'input-wrapper' });
+    const actionWrapper = createTag('div', { class: 'action-wrapper' });
+    const inputField = this.createInputField();
+    const dropdown = this.createDropdown();
+
+    actionWrapper.append(
+      this.createActionBtn(this.el.querySelector('.icon-surpriseMe')?.closest('li'), 'surprise-btn'),
+      this.createActionBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'generate-btn')
     );
-    this.workflowCfg.placeholder = placeholder;
-    const inputCon = createTag('div', { class: 'input-wrapper' });
-    const actionCon = createTag('div', { class: 'action-wrapper' });
-    const inpText = createTag('input', {
+
+    inputWrapper.append(inputField, actionWrapper);
+    combobox.append(inputWrapper, dropdown);
+
+    return combobox;
+  }
+
+  createInputField() {
+    const placeholder = this.workflowCfg.placeholder['placeholder-input'];
+    return createTag('input', {
       id: 'promptInput',
-      class: 'input-class',
+      class: 'input-field',
       type: 'text',
-      placeholder: placeholder['placeholder-input'],
+      placeholder,
       'aria-autocomplete': 'list',
       'aria-controls': 'dropdown',
     });
-    const surBtn = this.createActionBtn(
-      this.el.querySelector('.icon-surpriseMe')?.closest('li'),
-      'surprise-btn-class'
-    );
-    const genBtn = this.createActionBtn(
-      this.el.querySelector('.icon-generate')?.closest('li'),
-      'generate-btn-class'
-    );
-    const dropCon = this.createDropdown(placeholder);
-    actionCon.append(surBtn, genBtn);
-    inputCon.append(inpText, actionCon);
-    con.append(inputCon, dropCon);
-    this.widget.append(con);
-    const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
-    const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
-    interactiveArea.insertBefore(this.widget, Paragraphs[1]);
-    this.initIntersectionObserver();
-    return this.workflowCfg.targetCfg.actionMap;
   }
 
-  initIntersectionObserver() {
-    this.workflowCfg.stickyBehavior = true;
-    const obEl = this.target.querySelector('#free-ai-image-generator');
-    createIntersectionObserver({
-      el: obEl,
-      callback: (cfg) => this.addStickyBehaviour(cfg),
-      cfg: this.workflowCfg,
-    });
-  }
-
-  addStickyBehaviour(cfg) {
-    const dropdown = this.widget.querySelector('.dropdown');
-    if (cfg.isIntersecting) {
-      this.widget.classList.remove('sticky');
-      dropdown.classList.remove('open-upward');
-    } else {
-      this.widget.classList.add('sticky');
-      dropdown.classList.add('open-upward');
-    }
-  }
-
-  createDropdown(placeholder) {
-    const dropCon = createTag('ul', {
+  createDropdown() {
+    const dropdown = createTag('ul', {
       class: 'dropdown hidden',
       role: 'listbox',
       'aria-label': 'promptInput',
     });
-    const promptTitle = createTag('li', { class: 'dropdown-title', role: 'presentation' }, `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`);
-    dropCon.append(promptTitle);
-    const prompts = this.el.querySelectorAll('.icon-prompt');
-    prompts.forEach((el, i) => {
-      const prompt = createTag('li', { id: `item-${i}`, class: 'dropdown-item', role: 'option', 'daa-ll': `prompt ${el.closest('li').innerText}` }, el.closest('li').innerText);
-      dropCon.append(prompt);
-    });
-    const separator = createTag('li', { class: 'dropdown-separator', role: 'separator' });
-    dropCon.append(separator);
 
-    const footer = createTag('li', { class: 'dropdown-footer' });
-    const tipEl = this.el.querySelector('.icon-tip').closest('li');
-    const tipCon = createTag('div', { class: 'tip-con' });
-    const tipText = createTag('span', { class: 'tip-text' }, `${placeholder['placeholder-tip']}: `);
-    const tipDesc = createTag('span', { class: 'tip-Desc' }, ` ${tipEl.innerText}`);
-    const legalEl = this.el.querySelector('.icon-legal').closest('li');
-    const legalCon = createTag('div', { class: 'legal-con' });
-    const legalText = createTag('a', { href: legalEl.querySelector('a').href, class: 'legal-text' }, legalEl.querySelector('a').innerText);
-    tipCon.prepend(tipDesc);
-    tipCon.prepend(tipText);
-    footer.append(tipCon);
-    legalCon.append(legalText);
-    footer.append(legalCon);
-    dropCon.append(footer);
-    return dropCon;
+    dropdown.append(this.createDropdownHeader());
+    this.appendDropdownItems(dropdown);
+    dropdown.append(this.createDropdownFooter());
+
+    return dropdown;
   }
 
-  createActionBtn(btnCfg, btnClass) {
-    if (!btnCfg) return null;
-    const txt = btnCfg.innerText?.trim();
-    const img = btnCfg.querySelector('img[src*=".svg"]');
-    const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
-    let swapOrder = false;
-    if (img) {
-      actionBtn.append(createTag('div', { class: 'btn-icon' }, img));
-      if (img.nextSibling?.nodeName === '#text') swapOrder = true;
-    }
-    if (txt) {
-      const btnTxt = createTag('div', { class: 'btn-text' }, txt.split('\n')[0]);
-      swapOrder ? actionBtn.prepend(btnTxt) : actionBtn.append(btnTxt);
-    }
-    return actionBtn;
+  createDropdownHeader() {
+    const placeholder = this.workflowCfg.placeholder;
+    return createTag('li', {
+      class: 'dropdown-title',
+      role: 'presentation',
+    }, `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`);
+  }
+
+  appendDropdownItems(dropdown) {
+    const prompts = this.el.querySelectorAll('.icon-prompt');
+    prompts.forEach((el, idx) => {
+      const text = el.closest('li').innerText;
+      const item = createTag('li', {
+        id: `item-${idx}`,
+        class: 'dropdown-item',
+        role: 'option',
+        'daa-ll': `prompt ${text}`,
+      }, text);
+      dropdown.append(item);
+    });
+    dropdown.append(createTag('li', { class: 'dropdown-separator', role: 'separator' }));
+  }
+
+  createDropdownFooter() {
+    const footer = createTag('li', { class: 'dropdown-footer' });
+    const tipContent = this.createTipContent();
+    const legalContent = this.createLegalContent();
+
+    footer.append(tipContent, legalContent);
+    return footer;
+  }
+
+  createTipContent() {
+    const placeholder = this.workflowCfg.placeholder;
+    const tipText = `${placeholder['placeholder-tip']}: Tip:`;
+    const tipDescription = this.el.querySelector('.icon-tip')?.closest('li').innerText;
+
+    const tipContainer = createTag('div', { class: 'tip-container' });
+    tipContainer.append(
+      createTag('span', { class: 'tip-text' }, tipText),
+      createTag('span', { class: 'tip-description' }, tipDescription),
+    );
+
+    return tipContainer;
+  }
+
+  createLegalContent() {
+    const legalEl = this.el.querySelector('.icon-legal')?.closest('li');
+    const legalLink = legalEl.querySelector('a');
+
+    const legalContainer = createTag('div', { class: 'legal-container' });
+    legalContainer.append(
+      createTag('a', { href: legalLink.href, class: 'legal-link' }, legalLink.innerText),
+    );
+
+    return legalContainer;
+  }
+
+  createActionBtn(btnEl, btnClass) {
+    if (!btnEl) return null;
+
+    const text = btnEl.innerText?.trim();
+    const icon = btnEl.querySelector('img[src*=".svg"]');
+    const button = createTag('a', { href: '#', class: `action-btn ${btnClass}` });
+
+    if (icon) button.append(createTag('div', { class: 'btn-icon' }, icon));
+    if (text) button.append(createTag('div', { class: 'btn-text' }, text.split('\n')[0]));
+
+    return button;
+  }
+
+  populatePlaceholders() {
+    const placeholders = Object.fromEntries(
+      [...this.el.querySelectorAll('[class*="placeholder"]')].map((el) => [
+        el.classList[1]?.replace('icon-', '') || '',
+        el.closest('li')?.innerText || '',
+      ]).filter(([key]) => key)
+    );
+    this.workflowCfg.placeholder = placeholders;
+  }
+
+  insertWidget() {
+    const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
+    const paragraphs = interactiveArea.querySelectorAll('p.body-m');
+    interactiveArea.insertBefore(this.widget, paragraphs[1]);
+  }
+
+  initObserver() {
+    const targetEl = this.target.querySelector('#free-ai-image-generator');
+    createIntersectionObserver({
+      el: targetEl,
+      callback: (cfg) => this.toggleSticky(cfg),
+      cfg: this.workflowCfg,
+    });
+  }
+
+  toggleSticky(cfg) {
+    const dropdown = this.widget.querySelector('.dropdown');
+    this.widget.classList.toggle('sticky', !cfg.isIntersecting);
+    dropdown.classList.toggle('open-upward', !cfg.isIntersecting);
   }
 }
