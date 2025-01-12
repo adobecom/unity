@@ -191,7 +191,7 @@ export default class ActionBinder {
 
   updateWidgetState(inputValue) {
     const dropdown = this.block.querySelector('.dropdown');
-    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
+    const surpriseBtn = this.block.querySelector('.surprise-btn');
     surpriseBtn.classList.toggle('hidden', inputValue.length > 0);
 
     if (inputValue.length === 0) {
@@ -200,16 +200,16 @@ export default class ActionBinder {
   }
 
   updatePromptValue(el) {
-    const input = this.block.querySelector('.input-class');
+    const input = this.block.querySelector('.input-field');
     const promptText = el.textContent.trim();
     input.value = promptText;
     input.focus();
-    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
+    const surpriseBtn = this.block.querySelector('.surprise-btn');
     surpriseBtn.classList.add('hidden');
   }
 
   setupAccessibility() {
-    const input = this.block.querySelector('.input-class');
+    const input = this.block.querySelector('.input-field');
     const dropdown = this.block.querySelector('.dropdown');
     const dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item'));
     let activeIndex = -1;
