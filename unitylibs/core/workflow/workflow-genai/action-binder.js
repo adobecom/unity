@@ -28,7 +28,9 @@ export default class ActionBinder {
 
     for (const [selector, actionsList] of Object.entries(actions)) {
       const elements = block.querySelectorAll(selector);
-
+      console.log('selector', selector);
+      console.log('actionsList', actionsList);
+      console.log('actions', actions);
       elements.forEach((el) => {
         if (el.hasAttribute('data-event-bound')) return;
 
