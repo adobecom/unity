@@ -137,7 +137,7 @@ export default class UnityWidget {
 
     const text = btnEl.innerText?.trim();
     const icon = btnEl.querySelector('img[src*=".svg"]');
-    const button = createTag('a', { href: '#', class: `action-btn ${btnClass}` });
+    const button = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
 
     if (icon) button.append(createTag('div', { class: 'btn-icon' }, icon));
     if (text) button.append(createTag('div', { class: 'btn-text' }, text.split('\n')[0]));
