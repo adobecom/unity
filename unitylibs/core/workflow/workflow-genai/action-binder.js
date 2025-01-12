@@ -26,7 +26,6 @@ export default class ActionBinder {
 
     for (const [selector, actionsList] of Object.entries(actions)) {
       const elements = block.querySelectorAll(selector);
-
       elements.forEach((el) => {
         if (el.hasAttribute('data-event-bound')) return;
 
@@ -143,8 +142,6 @@ export default class ActionBinder {
 
   addDynamicSuggestions(suggestions, dropdown) {
     const header = this.createSuggestionHeader();
-    dropdown.prepend(header);
-
     if (suggestions.length === 0) {
       const noSuggestions = dropdown.querySelector('.dropdown-empty-message');
       if (!noSuggestions) {
@@ -161,8 +158,9 @@ export default class ActionBinder {
           class: 'dropdown-item dynamic',
           role: 'option',
         }, suggestion);
-        dropdown.append(item);
+        dropdown.prepend(item);
       });
+      dropdown.prepend(header);
     }
   }
 
