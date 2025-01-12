@@ -72,7 +72,9 @@ export default class UnityWidget {
   }
 
   insertWidget() {
-    this.el.append(this.widget);
+    const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
+    const Paragraphs = interactiveArea.querySelectorAll('p.body-m');
+    interactiveArea.insertBefore(this.widget, Paragraphs[1]);
   }
 
   initObserver() {
