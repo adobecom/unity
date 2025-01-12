@@ -17,7 +17,7 @@ export default class UnityWidget {
   }
 
   createWidget() {
-    const widgetContainer = createTag('div', { class: 'unity-widget' });
+    const widgetContainer = createTag('div', { class: 'express-unity-widget' });
     const combobox = this.createCombobox();
     widgetContainer.append(combobox);
     return widgetContainer;
