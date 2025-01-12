@@ -10,7 +10,7 @@ export default class UnityWidget {
 
   async initWidget() {
     this.populatePlaceholders();
-    this.widget = this.createWidget();
+    this.createWidget();
     this.insertWidget();
     this.initObserver();
     return this.workflowCfg.targetCfg.actionMap;
@@ -30,7 +30,7 @@ export default class UnityWidget {
     const widgetContainer = this.createWidgetContainer();
     const combobox = this.createCombobox();
     widgetContainer.append(combobox);
-    return widgetContainer;
+    this.widget = widgetContainer;
   }
 
   createWidgetContainer() {
@@ -81,8 +81,19 @@ export default class UnityWidget {
     const targetEl = this.target.querySelector('#free-ai-image-generator');
     createIntersectionObserver({
       el: targetEl,
-      callback: (cfg) => this.toggleSticky(cfg),
+      callback: (cfg) => this.addStickyBehaviour(cfg),
       cfg: this.workflowCfg,
     });
+  }
+
+  addStickyBehaviour(cfg) {
+    const dropdown = this.widget.querySelector('.dropdown');
+    if (cfg.isIntersecting) {
+      this.widget.classList.remove('sticky');
+      dropdown.classList.remove('open-upward');
+    } else {
+      this.widget.classList.add('sticky');
+      dropdown.classList.add('open-upward');
+    }
   }
 }
