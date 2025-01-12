@@ -121,8 +121,8 @@ export default class ActionBinder {
   }
 
   displaySuggestions(suggestions) {
-    const dropdown = this.block.querySelector('.dropdown.dynamic');
-    const dynamicElem = dropdown.querySelectorAll('.dynamic');
+    const dropdown = this.block.querySelector('.dropdown');
+    const dynamicElem = dropdown.querySelectorAll('.dropdown-item.dynamic');
     dynamicElem.forEach((el) => el.remove());
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
