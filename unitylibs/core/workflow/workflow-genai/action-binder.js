@@ -164,17 +164,10 @@ export default class ActionBinder {
       class: 'refresh-btn dynamic',
       'aria-label': 'Refresh suggestions',
     });
-    refreshBtn.addEventListener('click', async () => {
-      this.resetDropdown();
-      await this.fetchAutocompleteSuggestions();
-    });
 
     const closeBtn = createTag('button', {
       class: 'close-btn dynamic',
       'aria-label': 'Close dropdown',
-    });
-    closeBtn.addEventListener('click', () => {
-      this.resetDropdown();
     });
 
     header.append(titleText, refreshBtn, closeBtn);
