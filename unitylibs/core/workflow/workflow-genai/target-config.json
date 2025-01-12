@@ -7,17 +7,17 @@
     "source": ".text .body-m",
     "target": ".text .body-m",
     "actionMap": {
-      ".input-class": [
+      ".input-field": [
         {
           "actionType": "autocomplete"
         }
       ],
-      ".surprise-btn-class": [
+      ".surprise-btn": [
         {
           "actionType": "surprise"
         }
       ],
-      ".generate-btn-class": [
+      ".generate-btn": [
         {
           "actionType": "generate"
         }
