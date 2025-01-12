@@ -126,9 +126,7 @@ export default class ActionBinder {
     dynamicElem.forEach((el) => el.remove());
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
-
-    const header = this.createSuggestionHeader();
-
+    const dynamicheader = dropdown.querySelector('.dropdown-title.dynamic');
     if (suggestions.length === 0) {
       const emptyMessage = dropdown.querySelector('.dropdown-empty-message');
       if (!emptyMessage) {
@@ -148,7 +146,10 @@ export default class ActionBinder {
         dropdown.prepend(item);
       });
     }
-    dropdown.prepend(header);
+    if (!dynamicheader) {
+      const header = this.createSuggestionHeader();
+      dropdown.prepend(header);
+    }
     dropdown.classList.remove('hidden');
     this.initActionListeners();
   }
