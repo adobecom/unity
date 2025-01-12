@@ -43,9 +43,6 @@
   transform: translateX(-50%);
   z-index: 1000;
   max-width: 720px;
-  /* background: linear-gradient(0deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)),
-    linear-gradient(180deg, rgba(178, 223, 255, 0), #b2dfff 100%);
-  filter: blur(25px); */
 }
 
 /* Input and Action Styles */
