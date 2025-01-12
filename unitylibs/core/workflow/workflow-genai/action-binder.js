@@ -122,11 +122,15 @@ export default class ActionBinder {
 
   displaySuggestions(suggestions) {
     const dropdown = this.block.querySelector('.dropdown');
-    const dynamicElem = dropdown.querySelectorAll('.dropdown-item.dynamic');
-    dynamicElem.forEach((el) => el.remove());
+    const dynamicItems = dropdown.querySelectorAll('.dropdown-item.dynamic');
+    dynamicItems.forEach((el) => el.remove());
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title:not(.dynamic)');
     defaultItems.forEach((item) => item.classList.add('hidden'));
-    const dynamicheader = dropdown.querySelector('.dropdown-title.dynamic');
+    let dynamicHeader = dropdown.querySelector('.dropdown-title.dynamic');
+    if (!dynamicHeader) {
+      dynamicHeader = this.createSuggestionHeader();
+      dropdown.insertBefore(dynamicHeader, dropdown.firstChild);
+    }
     if (suggestions.length === 0) {
       const emptyMessage = dropdown.querySelector('.dropdown-empty-message');
       if (!emptyMessage) {
@@ -134,7 +138,7 @@ export default class ActionBinder {
           class: 'dropdown-empty-message',
           role: 'presentation',
         }, 'No suggestions available');
-        dropdown.prepend(noSuggestions);
+        dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
       }
     } else {
       suggestions.forEach((suggestion, index) => {
@@ -143,12 +147,9 @@ export default class ActionBinder {
           class: 'dropdown-item dynamic',
           role: 'option',
         }, suggestion);
-        dropdown.prepend(item);
+        const referenceNode = dynamicHeader.nextSibling;
+        dropdown.insertBefore(item, referenceNode);
       });
-    }
-    if (!dynamicheader) {
-      const header = this.createSuggestionHeader();
-      dropdown.prepend(header);
     }
     dropdown.classList.remove('hidden');
     this.initActionListeners();
