@@ -134,7 +134,7 @@ export default class ActionBinder {
           class: 'dropdown-empty-message',
           role: 'presentation',
         }, 'No suggestions available');
-        dropdown.append(noSuggestions);
+        dropdown.prepend(noSuggestions);
       }
     } else {
       suggestions.forEach((suggestion, index) => {
@@ -143,11 +143,10 @@ export default class ActionBinder {
           class: 'dropdown-item dynamic',
           role: 'option',
         }, suggestion);
-        dropdown.prepend(item); // Prepend dynamic items to keep order
+        dropdown.prepend(item);
       });
+      dropdown.prepend(header);
     }
-
-    dropdown.prepend(header);
     dropdown.classList.remove('hidden');
     this.initActionListeners();
   }
@@ -158,7 +157,7 @@ export default class ActionBinder {
     const titleText = createTag(
       'span',
       { class: 'title-text' },
-      `${this.workflowCfg.placeholder['placeholder-suggestions']} (${this.workflowCfg.placeholder['placeholder-only']})`
+      `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`
     );
 
     const refreshBtn = createTag('button', {
