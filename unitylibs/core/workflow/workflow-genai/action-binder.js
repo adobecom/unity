@@ -18,7 +18,9 @@ export default class ActionBinder {
   }
 
   initializeApiConfig() {
-    return { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` };
+    return {
+      autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete`,
+    };
   }
 
   async initActionListeners(block = this.block, actions = this.actionMap) {
@@ -26,6 +28,7 @@ export default class ActionBinder {
 
     for (const [selector, actionsList] of Object.entries(actions)) {
       const elements = block.querySelectorAll(selector);
+
       elements.forEach((el) => {
         if (el.hasAttribute('data-event-bound')) return;
 
@@ -41,7 +44,15 @@ export default class ActionBinder {
 
           case 'INPUT':
             el.addEventListener('input', (event) => {
-              this.handleInputChange(event, actionsList, debounceTimer);
+              clearTimeout(debounceTimer);
+              this.query = event.target.value.trim();
+              this.updateWidgetState(this.query);
+
+              if (this.query.length >= 3) {
+                debounceTimer = setTimeout(async () => {
+                  await this.handleAction(actionsList);
+                }, 1000);
+              }
             });
             break;
 
@@ -53,7 +64,7 @@ export default class ActionBinder {
       });
     }
 
-    this.setupAccessibility();
+    this.addAccessibilityFeatures();
   }
 
   async handleAction(actionsList, el = null) {
@@ -88,26 +99,9 @@ export default class ActionBinder {
     }
   }
 
-  handleInputChange(event, actionsList, debounceTimer) {
-    let dTime = debounceTimer;
-    this.query = event.target.value.trim();
-    this.updateWidgetState(this.query);
-
-    clearTimeout(dTime);
-
-    if (
-      this.query.length >= 3
-      && ['insertText', 'insertFromPaste'].includes(event.inputType)
-    ) {
-      dTime = setTimeout(() => {
-        this.handleAction(actionsList);
-      }, 1000);
-    }
-  }
-
   async fetchAutocompleteSuggestions() {
     try {
-      const requestBody = {
+      const data = {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
         maxResults: 5,
@@ -115,7 +109,7 @@ export default class ActionBinder {
 
       const suggestions = await this.serviceHandler.postCallToService(
         this.apiConfig.autoComplete,
-        { body: JSON.stringify(requestBody) },
+        { body: JSON.stringify(data) },
       );
 
       if (suggestions?.completions) {
@@ -131,37 +125,31 @@ export default class ActionBinder {
     const defaultItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
     defaultItems.forEach((item) => item.classList.add('hidden'));
 
-    this.addDynamicSuggestions(suggestions, dropdown);
-
-    if (dropdown.classList.contains('hidden')) {
-      dropdown.classList.remove('hidden');
-    }
-
-    this.initActionListeners();
-  }
-
-  addDynamicSuggestions(suggestions, dropdown) {
-    const header = this.createSuggestionHeader();
     if (suggestions.length === 0) {
-      const noSuggestions = dropdown.querySelector('.dropdown-empty-message');
-      if (!noSuggestions) {
-        const emptyMessage = createTag('li', {
+      const emptyMessage = dropdown.querySelector('.dropdown-empty-message');
+      if (!emptyMessage) {
+        const noSuggestions = createTag('li', {
           class: 'dropdown-empty-message',
           role: 'presentation',
         }, 'No suggestions available');
-        dropdown.prepend(emptyMessage);
+        dropdown.append(noSuggestions);
       }
     } else {
+      const header = this.createSuggestionHeader();
+      dropdown.append(header);
+
       suggestions.forEach((suggestion, index) => {
         const item = createTag('li', {
           id: `dynamic-item-${index}`,
           class: 'dropdown-item dynamic',
           role: 'option',
         }, suggestion);
-        dropdown.prepend(item);
+        dropdown.append(item);
       });
-      dropdown.prepend(header);
     }
+
+    dropdown.classList.remove('hidden');
+    this.initActionListeners();
   }
 
   createSuggestionHeader() {
@@ -177,9 +165,9 @@ export default class ActionBinder {
 
   resetDropdown() {
     const dropdown = this.block.querySelector('.dropdown');
-    const input = this.block.querySelector('.input-class');
+    const input = this.block.querySelector('.input-field');
     input.value = '';
-    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
+    const surpriseBtn = this.block.querySelector('.surprise-btn');
     surpriseBtn.classList.remove('hidden');
     dropdown.querySelectorAll('.dynamic').forEach((el) => el.remove());
     dropdown.querySelectorAll('.dropdown-item, .dropdown-title').forEach((item) => item.classList.remove('hidden'));
@@ -187,12 +175,12 @@ export default class ActionBinder {
     dropdown.classList.add('hidden');
   }
 
-  updateWidgetState(inputValue) {
-    const dropdown = this.block.querySelector('.dropdown');
+  updateWidgetState(query) {
     const surpriseBtn = this.block.querySelector('.surprise-btn');
-    surpriseBtn.classList.toggle('hidden', inputValue.length > 0);
 
-    if (inputValue.length === 0) {
+    surpriseBtn.classList.toggle('hidden', query.length > 0);
+
+    if (query.length === 0) {
       this.resetDropdown();
     }
   }
@@ -202,11 +190,11 @@ export default class ActionBinder {
     const promptText = el.textContent.trim();
     input.value = promptText;
     input.focus();
-    const surpriseBtn = this.block.querySelector('.surprise-btn');
+    const surpriseBtn = this.block.querySelector('.surprise-btn-class');
     surpriseBtn.classList.add('hidden');
   }
 
-  setupAccessibility() {
+  addAccessibilityFeatures() {
     const input = this.block.querySelector('.input-field');
     const dropdown = this.block.querySelector('.dropdown');
     const dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-item'));
@@ -263,7 +251,7 @@ export default class ActionBinder {
     try {
       const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
       const response = await this.serviceHandler.postCallToService(
-        this.apiConfig.connectorApiEndPoint,
+        this.apiConfig.autoComplete,
         { body: JSON.stringify(payload) },
       );
       window.location.href = response.url;
