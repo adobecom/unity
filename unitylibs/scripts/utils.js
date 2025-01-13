@@ -226,7 +226,6 @@ function debounce(func, delay) {
 }
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  console.log('Change has been done');
   const debouncedCallback = debounce(callback, 100); // Debounce to smooth out rapid calls
   let lastState = null; // Track the last visibility state
   let lastExecutionTime = 0; // Timestamp of the last callback execution
@@ -242,7 +241,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
       const currentState = entry.isIntersecting;
       const now = Date.now();
 
-      // Only process state changes if enough time has passed
+      // Only process state changes if enough time has passed and the state has changed
       if (currentState !== lastState && now - lastExecutionTime >= MIN_INTERVAL) {
         lastState = currentState;
         lastExecutionTime = now; // Update the last execution time
