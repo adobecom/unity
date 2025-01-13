@@ -149,6 +149,10 @@ export default class ActionBinder {
   clearDynamicItems() {
     const dynamicItems = this.dropdown.querySelectorAll('.dropdown-item.dynamic');
     dynamicItems.forEach((el) => el.remove());
+    const dynamicHeader = this.dropdown.querySelector('.dropdown-title.dynamic');
+    if (dynamicHeader) {
+      dynamicHeader.remove();
+    }
   }
 
   hideDefaultItems() {
