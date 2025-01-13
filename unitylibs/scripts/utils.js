@@ -227,9 +227,9 @@ function throttle(func, delay) {
     if (now - lastCall >= delay) {
       lastCall = now;
       func(...args);
-      pending = false; // Reset pending state after execution
+      pending = false;
     } else if (!pending) {
-      pending = true; // Set pending flag to avoid overlapping calls
+      pending = true;
       setTimeout(() => {
         lastCall = Date.now();
         func(...args);
@@ -241,28 +241,25 @@ function throttle(func, delay) {
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
   const throttledCallback = throttle(callback, 500);
-
-  let lastState = null; // Track the last state to prevent redundant calls
+  let lastState = null;
+  let edgeStateTimeout = null;
 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const currentState = entry.isIntersecting;
-
-      // Log current and last state for debugging
-      console.log(`Current: ${currentState}, Last: ${lastState}`);
-
       if (currentState !== lastState) {
-        lastState = currentState;
+        clearTimeout(edgeStateTimeout);
+        edgeStateTimeout = setTimeout(() => {
+          lastState = currentState;
 
-        if (!entry.isIntersecting) {
-          cfg.isIntersecting = false;
-          throttledCallback(cfg);
-          console.log("!isIntersecting triggered");
-        } else if (entry.isIntersecting && cfg?.stickyBehavior) {
-          cfg.isIntersecting = true;
-          throttledCallback(cfg);
-          console.log("isIntersecting triggered");
-        }
+          if (!entry.isIntersecting) {
+            cfg.isIntersecting = false;
+            throttledCallback(cfg);
+          } else if (entry.isIntersecting && cfg?.stickyBehavior) {
+            cfg.isIntersecting = true;
+            throttledCallback(cfg);
+          }
+        }, 150);
       }
     });
   }, { ...options, threshold: 0 });
@@ -270,6 +267,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   io.observe(el);
   return io;
 }
+
 
 export const unityConfig = (() => {
   const { host } = window.location;
