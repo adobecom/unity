@@ -47,7 +47,7 @@ export default class UnityWidget {
     const actionWrapper = createTag('div', { class: 'action-wrapper' });
     const inputField = createTag('input', {
       id: 'promptInput',
-      class: 'input-class',
+      class: 'input-field',
       type: 'text',
       placeholder: placeholders['placeholder-input'],
       'aria-autocomplete': 'list',
@@ -56,11 +56,11 @@ export default class UnityWidget {
 
     const surpriseButton = this.createActionBtn(
       this.el.querySelector('.icon-surpriseMe')?.closest('li'),
-      'surprise-btn-class'
+      'surprise-btn'
     );
     const generateButton = this.createActionBtn(
       this.el.querySelector('.icon-generate')?.closest('li'),
-      'generate-btn-class'
+      'generate-btn'
     );
 
     actionWrapper.append(surpriseButton, generateButton);
