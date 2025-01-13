@@ -37,7 +37,15 @@ export default class ActionBinder {
     switch (el.nodeName) {
       case 'A':
       case 'BUTTON':
+        el.addEventListener('click', async (event) => {
+          event.preventDefault();
+          await this.handleAction(actionsList, el);
+        });
+        break;
       case 'LI':
+        el.addEventListener('mousedown', (event) => {
+          event.preventDefault();
+        });
         el.addEventListener('click', async (event) => {
           event.preventDefault();
           await this.handleAction(actionsList, el);
