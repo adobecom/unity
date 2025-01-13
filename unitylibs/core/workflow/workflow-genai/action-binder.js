@@ -306,7 +306,7 @@ export default class ActionBinder {
     try {
       const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
       const response = await this.serviceHandler.postCallToService(
-        this.apiConfig.autoComplete,
+        this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
       window.location.href = response.url;

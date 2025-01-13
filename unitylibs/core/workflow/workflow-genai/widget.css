@@ -40,7 +40,7 @@
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 102;
   max-width: 720px;
 }
 
