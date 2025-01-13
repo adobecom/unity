@@ -154,7 +154,7 @@ export default class UnityWidget {
       options: {
         root: null,
         rootMargin: '10px',
-        threshold: 0.01,
+        threshold: 0.1,
       },
     });
   }

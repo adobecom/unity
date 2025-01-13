@@ -217,47 +217,27 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 //   return io;
 // }
 
-function debounce(func, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func(...args), delay);
-  };
-}
-
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  const debouncedCallback = debounce(callback, 200);
-  let lastState = null; // Persistent state to track the last visibility state
-  let entryBuffer = null; // Buffer to smooth transitions
+  const debouncedCallback = debounce(callback, 200); // Debounce callback
+  let lastState = null; // Track the last visibility state
 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const currentState = entry.isIntersecting;
 
-      // Only trigger if state has genuinely changed
+      // Trigger only if state changes
       if (currentState !== lastState) {
         lastState = currentState;
 
-        // Use a small buffer to smooth out edge toggling
-        if (entryBuffer) clearTimeout(entryBuffer);
-
-        entryBuffer = setTimeout(() => {
-          if (currentState) {
-            cfg.isIntersecting = true;
-            debouncedCallback(cfg);
-          } else {
-            cfg.isIntersecting = false;
-            debouncedCallback(cfg);
-          }
-        }, 200); // 200ms buffer delay for stability
+        cfg.isIntersecting = currentState; // Update state
+        debouncedCallback(cfg); // Trigger callback with debounce
       }
     });
-  }, options); // Use a small threshold for sensitive detection
+  }, options);
 
   io.observe(el);
-  return io; // Return observer instance
+  return io;
 }
-
 
 export const unityConfig = (() => {
   const { host } = window.location;
