@@ -174,7 +174,7 @@ export default class ActionBinder {
   addSuggestionItems(suggestions, dynamicHeader) {
     suggestions.forEach((suggestion, index) => {
       const item = createTag('li', {
-        id: `dynamic-item-${index}`,
+        id: `item-${index}`,
         class: 'dropdown-item dynamic',
         'daa-ll': suggestion,
         role: 'option',
