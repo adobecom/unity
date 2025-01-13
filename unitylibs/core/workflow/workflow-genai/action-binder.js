@@ -126,7 +126,7 @@ export default class ActionBinder {
         maxResults: 5,
       };
       const suggestions = await this.serviceHandler.postCallToService(
-        this.apiConfig.autoComplete,
+        unityConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(data) },
       );
       if (suggestions?.completions) {
