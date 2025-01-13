@@ -153,6 +153,7 @@ export default class ActionBinder {
     if (dynamicHeader) {
       dynamicHeader.remove();
     }
+    this.addAccessibilityFeatures();
   }
 
   hideDefaultItems() {
