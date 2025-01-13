@@ -42,6 +42,8 @@
   transform: translateX(-50%);
   z-index: 102;
   max-width: 720px;
+  background-image: url('../../../img/icons/sticky-prompt-gradiant.svg');
+  background-repeat: no-repeat;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
