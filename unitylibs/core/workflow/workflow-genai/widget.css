@@ -182,12 +182,14 @@
     width: 20px;
     height: 20px;
     vertical-align: middle;
+    cursor: pointer;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .close-btn {
     margin-left: auto;
     background: transparent;
     border: 0;
+    cursor: pointer;
   }
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .close-btn:before {
