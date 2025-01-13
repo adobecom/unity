@@ -622,7 +622,7 @@ export default class ActionBinder {
     this.block.dispatchEvent(
       new CustomEvent(
         unityConfig.trackAnalyticsEvent,
-        { detail: { event: eventName, data: { count: fileCount } } },
+        { detail: { event: eventName } },
       ),
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileCount } }));
