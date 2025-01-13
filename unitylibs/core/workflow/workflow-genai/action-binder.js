@@ -17,7 +17,8 @@ export default class ActionBinder {
   }
 
   initializeApiConfig() {
-    return { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` };
+    unityConfig.expressEndpoint = { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` };
+    return unityConfig;
   }
 
   async initActionListeners(block = this.block, actions = this.actionMap) {
