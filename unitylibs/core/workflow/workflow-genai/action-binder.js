@@ -261,6 +261,7 @@ export default class ActionBinder {
           break;
         case 'Enter':
           event.preventDefault();
+          console.log('dropdownItems', dropdownItems);
           dropdownItems[activeIndex]?.click();
           break;
         case 'Escape':
