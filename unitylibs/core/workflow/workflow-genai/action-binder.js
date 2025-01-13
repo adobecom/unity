@@ -68,6 +68,7 @@ export default class ActionBinder {
     el.addEventListener('blur', (event) => {
       const { relatedTarget } = event;
       if (relatedTarget && this.dropdown.contains(relatedTarget)) {
+        this.inputField.focus();
         return;
       }
       this.dropdown.classList.add('hidden');
