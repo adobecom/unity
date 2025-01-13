@@ -151,6 +151,11 @@ export default class UnityWidget {
       el: observerElement,
       callback: (cfg) => this.addStickyBehaviour(cfg),
       cfg: this.workflowCfg,
+      options: {
+        root: null,
+        rootMargin: '10px',
+        threshold: [0.1, 0.9], // Adjusted threshold to trigger at 10% and 90% visibility
+      },
     });
   }
 

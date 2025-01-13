@@ -232,7 +232,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   const MIN_INTERVAL = 50; // Minimum interval (in ms) between valid state changes
 
   const observerOptions = {
-    threshold: [0, 0.1, 0.9, 1], // Trigger at 0%, 10%, 90%, and 100% visibility
+    threshold: [0.1, 0.9], // Trigger at 10% and 90% visibility
     ...options,
   };
 
