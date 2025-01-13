@@ -217,6 +217,14 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 //   return io;
 // }
 
+function debounce(func, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
+  };
+}
+
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
   const debouncedCallback = debounce(callback, 200); // Debounce callback
   let lastState = null; // Track the last visibility state
