@@ -217,30 +217,16 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
 //   return io;
 // }
 
-function throttle(func, delay) {
-  let lastCall = 0;
-  let pending = false;
-
+function debounce(func, delay) {
+  let timer;
   return (...args) => {
-    const now = Date.now();
-
-    if (now - lastCall >= delay) {
-      lastCall = now;
-      func(...args);
-      pending = false;
-    } else if (!pending) {
-      pending = true;
-      setTimeout(() => {
-        lastCall = Date.now();
-        func(...args);
-        pending = false;
-      }, delay - (now - lastCall));
-    }
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
   };
 }
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  const throttledCallback = throttle(callback, 500); // Throttle callback execution
+  const debouncedCallback = debounce(callback, 200);
   let lastState = null; // Persistent state to track the last visibility state
   let entryBuffer = null; // Buffer to smooth transitions
 
@@ -258,10 +244,10 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
         entryBuffer = setTimeout(() => {
           if (currentState) {
             cfg.isIntersecting = true;
-            throttledCallback(cfg);
+            debouncedCallback(cfg);
           } else {
             cfg.isIntersecting = false;
-            throttledCallback(cfg);
+            debouncedCallback(cfg);
           }
         }, 200); // 200ms buffer delay for stability
       }
