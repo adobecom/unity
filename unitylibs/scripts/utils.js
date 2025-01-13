@@ -229,7 +229,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   const debouncedCallback = debounce(callback, 200); // Debounce to smooth out rapid calls
   let lastState = null; // Track the last visibility state
   let lastExecutionTime = 0; // Timestamp of the last callback execution
-  const MIN_INTERVAL = 500; // Minimum interval (in ms) between valid state changes
+  const MIN_INTERVAL = 200; // Minimum interval (in ms) between valid state changes
 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
