@@ -266,7 +266,7 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
         }, 200); // 200ms buffer delay for stability
       }
     });
-  }, { ...options, threshold: 0.01 }); // Use a small threshold for sensitive detection
+  }, options); // Use a small threshold for sensitive detection
 
   io.observe(el);
   return io; // Return observer instance

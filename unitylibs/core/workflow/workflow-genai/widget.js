@@ -151,6 +151,11 @@ export default class UnityWidget {
       el: observerElement,
       callback: (cfg) => this.addStickyBehaviour(cfg),
       cfg: this.workflowCfg,
+      options: {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.01,
+      },
     });
   }
 
