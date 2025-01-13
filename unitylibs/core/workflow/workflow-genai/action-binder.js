@@ -245,6 +245,7 @@ export default class ActionBinder {
     if (!dropdownItems.length) {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
+    console.log('dropdownItems', dropdownItems);
     let activeIndex = -1;
     this.inputField.addEventListener('keydown', (event) => {
       if (!dropdownItems.length) return;
@@ -261,7 +262,6 @@ export default class ActionBinder {
           break;
         case 'Enter':
           event.preventDefault();
-          console.log('dropdownItems', dropdownItems);
           dropdownItems[activeIndex]?.click();
           break;
         case 'Escape':
