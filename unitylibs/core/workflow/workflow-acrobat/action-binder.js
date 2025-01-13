@@ -278,6 +278,7 @@ export default class ActionBinder {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
         await new Promise(r => setTimeout(r, 500));
       }
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectComplete', data: this.redirectUrl } }));
       window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
@@ -640,7 +641,7 @@ export default class ActionBinder {
     setTimeout(() => {
       this.updateProgressBar(this.splashScreenEl, 95);
       if (!this.redirectUrl) return;
-      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectComplete', data: this.redirectUrl } }));
       window.location.href = this.redirectUrl;
     }, 2500);
   }
