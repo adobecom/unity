@@ -153,7 +153,7 @@ export default class UnityWidget {
       cfg: this.workflowCfg,
       options: {
         root: null,
-        rootMargin: '0px',
+        rootMargin: '10px',
         threshold: 0.1,
       },
     });
