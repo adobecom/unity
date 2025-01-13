@@ -240,32 +240,36 @@ function throttle(func, delay) {
 }
 
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  const throttledCallback = throttle(callback, 500);
-  let lastState = null;
-  let edgeStateTimeout = null;
+  const throttledCallback = throttle(callback, 500); // Throttle callback execution
+  let lastState = null; // Persistent state to track the last visibility state
+  let entryBuffer = null; // Buffer to smooth transitions
 
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const currentState = entry.isIntersecting;
-      if (currentState !== lastState) {
-        clearTimeout(edgeStateTimeout);
-        edgeStateTimeout = setTimeout(() => {
-          lastState = currentState;
 
-          if (!entry.isIntersecting) {
-            cfg.isIntersecting = false;
-            throttledCallback(cfg);
-          } else if (entry.isIntersecting && cfg?.stickyBehavior) {
+      // Only trigger if state has genuinely changed
+      if (currentState !== lastState) {
+        lastState = currentState;
+
+        // Use a small buffer to smooth out edge toggling
+        if (entryBuffer) clearTimeout(entryBuffer);
+
+        entryBuffer = setTimeout(() => {
+          if (currentState) {
             cfg.isIntersecting = true;
             throttledCallback(cfg);
+          } else {
+            cfg.isIntersecting = false;
+            throttledCallback(cfg);
           }
-        }, 150);
+        }, 200); // 200ms buffer delay for stability
       }
     });
-  }, { ...options, threshold: 0 });
+  }, { ...options, threshold: 0.01 }); // Use a small threshold for sensitive detection
 
   io.observe(el);
-  return io;
+  return io; // Return observer instance
 }
 
 
