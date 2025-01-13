@@ -5,9 +5,9 @@
 .aside.text2image.unity-enabled .foreground.container .interactive-area {
   display: inherit;
   justify-content: center;
-  background: none !important;
-  background-size: initial !important;
-  background-position: initial !important;
+  background: none;
+  background-size: initial;
+  background-position: initial;
 }
 
 .aside.text2image.unity-enabled .foreground.container .interactive-area .text {
@@ -45,39 +45,38 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
-    display: flex;
-    padding: 12px 16px;
-    align-items: center;
-    align-self: stretch;
-    border-radius: 16px;
-    border: 1px solid #FFF;
-    background: linear-gradient(89deg, rgba(255, 255, 255, 0.80) 1.01%, rgba(255, 255, 255, 0.20) 111.14%);
-    box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.16);
-    gap: 24px;
+  display: flex;
+  padding: 12px 16px;
+  align-items: center;
+  border-radius: 16px;
+  border: 1px solid #FFF;
+  background: linear-gradient(89deg, rgba(255, 255, 255, 0.80) 1.01%, rgba(255, 255, 255, 0.20) 111.14%);
+  box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.16);
+  gap: 24px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper .input-field {
-    padding: 9px 5px 10px;
-    align-items: flex-start;
-    flex: 1 0 0;
-    color: #222;
-    font-size: 16px;
-    font-style: italic;
-    font-weight: 400;
-    line-height: 130%;
-    border: none;
+  padding: 9px 5px 10px;
+  align-items: flex-start;
+  flex: 1;
+  color: #222;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 130%;
+  border: none;
+  width: 100%;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    text-decoration: none;
+  display: flex;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .action-wrapper .unity-action-btn:focus {
@@ -180,7 +179,6 @@
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .refresh-btn:before {
     content: url(../../../img/icons/refresh-btn.svg);
-    display: inline-block;
     width: 20px;
     height: 20px;
     vertical-align: middle;
@@ -194,7 +192,6 @@
 
   .unity-enabled .interactive-area .express-unity-widget .dropdown-title.dynamic .close-btn:before {
     content: url(../../../img/icons/close-btn.svg);
-    display: inline-block;
     width: 20px;
     height: 20px;
     vertical-align: middle;

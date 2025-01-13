@@ -104,7 +104,6 @@ export default class UnityWidget {
 
   createDropdownFooter(placeholders) {
     const footer = createTag('li', { class: 'dropdown-footer' });
-
     const tipElement = this.el.querySelector('.icon-tip').closest('li');
     const tipContainer = createTag('div', { class: 'tip-con' });
     const tipText = createTag('span', { class: 'tip-text' }, `${placeholders['placeholder-tip']}: `);
