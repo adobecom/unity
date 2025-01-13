@@ -246,6 +246,7 @@ export default class ActionBinder {
   updatePromptValue(el) {
     const promptText = el.textContent.trim();
     this.inputField.value = promptText;
+    this.query = promptText;
     this.inputField.focus();
     this.surpriseBtn.classList.add('hidden');
   }
