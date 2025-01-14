@@ -142,12 +142,6 @@ body > .splash-loader {
 }
 
 @media screen and (min-width: 600px) {
-  .splash-loader .text .icon-area img,
-  .splash-loader .text video {
-    width: 286px;
-    height: 230px;
-  }
-
   .splash-loader h1,
   .splash-loader h2,
   .splash-loader h3,
@@ -167,17 +161,8 @@ body > .splash-loader {
     line-height: var(--type-heading-l-lh);
   }
 
-  .splash-loader .text-block [class^="heading"]:first-of-type {
-    margin: 0 0 var(--spacing-l) 0;
-  }
-  
-  .splash-loader .text-block p.icon-area {
-    margin-block: var(--spacing-s);
-  }
-}
-
 @media screen and (min-width: 1000px) {
-	.splash-loader .text .icon-area img,
+  .splash-loader .text .icon-area img,
   .splash-loader .text video {
     width: 286px;
     height: 230px;
