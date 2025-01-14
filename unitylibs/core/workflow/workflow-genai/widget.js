@@ -53,6 +53,7 @@ export default class UnityWidget {
       placeholder: placeholders['placeholder-input'],
       'aria-autocomplete': 'list',
       'aria-controls': 'dropdown',
+      'aria-expanded': 'false',
     });
 
     const surpriseButton = this.createActionBtn(
