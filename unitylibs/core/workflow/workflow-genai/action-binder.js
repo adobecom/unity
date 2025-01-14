@@ -192,7 +192,7 @@ export default class ActionBinder {
       const item = createTag('li', {
         id: `item-${index}`,
         class: 'dropdown-item dynamic',
-        'daa-ll': suggestion,
+        'daa-ll': `prompt-API-powered|${suggestion}`,
         role: 'option',
       }, suggestion);
       const referenceNode = dynamicHeader.nextSibling;

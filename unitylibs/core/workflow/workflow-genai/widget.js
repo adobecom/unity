@@ -90,7 +90,7 @@ export default class UnityWidget {
         id: `item-${i}`,
         class: 'dropdown-item',
         role: 'option',
-        'daa-ll': `prompt-bar-curated-prompt-${i},${el.closest('li').innerText}`,
+        'daa-ll': `prompt-bar-curated-prompt-${i}|${el.closest('li').innerText}`,
       }, el.closest('li').innerText);
       dropdown.append(prompt);
     });
@@ -167,9 +167,11 @@ export default class UnityWidget {
     if (cfg.isIntersecting) {
       this.widgetParent.classList.remove('sticky');
       dropdown.classList.remove('open-upward');
+      dropdown.setAttribute('daa-lh', 'Marquee');
     } else {
       this.widgetParent.classList.add('sticky');
       dropdown.classList.add('open-upward');
+      dropdown.setAttribute('daa-lh', 'Floating');
     }
   }
 }
