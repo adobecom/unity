@@ -329,6 +329,7 @@
   
     .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
       padding: 0;
+      width: 90%;
     }
   
     .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper {
