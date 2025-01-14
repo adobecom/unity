@@ -270,7 +270,6 @@ export default class ActionBinder {
           event.preventDefault();
           activeIndex = (activeIndex + 1) % dropdownItems.length;
           this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-          this.inputField.setAttribute('aria-expanded', 'true');
           break;
         case 'ArrowUp':
           event.preventDefault();
@@ -280,7 +279,6 @@ export default class ActionBinder {
         case 'Enter':
           event.preventDefault();
           dropdownItems[activeIndex]?.click();
-          this.inputField.setAttribute('aria-expanded', 'false');
           break;
         case 'Escape':
           this.dropdown.classList.add('hidden');

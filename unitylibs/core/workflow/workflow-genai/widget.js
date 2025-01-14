@@ -37,9 +37,6 @@ export default class UnityWidget {
     return createTag('div', {
       class: 'autocomplete',
       role: 'combobox',
-      'aria-expanded': 'false',
-      'aria-owns': 'dropdown',
-      'aria-haspopup': 'listbox',
     });
   }
 
@@ -52,8 +49,9 @@ export default class UnityWidget {
       type: 'text',
       placeholder: placeholders['placeholder-input'],
       'aria-autocomplete': 'list',
-      'aria-controls': 'dropdown',
+      'aria-controls': 'prompt-dropdown',
       'aria-expanded': 'false',
+      'aria-owns': 'prompt-dropdown',
     });
 
     const surpriseButton = this.createActionBtn(
@@ -73,9 +71,11 @@ export default class UnityWidget {
 
   createDropdown(placeholders) {
     const dropdown = createTag('ul', {
+      id: 'prompt-dropdown',
       class: 'dropdown hidden',
       role: 'listbox',
-      'aria-label': 'promptInput',
+      'aria-labelledby': 'promptInput',
+      'aria-hidden': 'true',
     });
 
     const promptTitle = createTag('li', {
