@@ -28,6 +28,7 @@
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
   position: relative;
+  transition: opacity 0.6s ease-out, height 0.6s ease-out, background 0.6s, padding-bottom 0.6s;
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky {
@@ -38,7 +39,19 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  transition: bottom 0.6s ease-out, opacity 0.6s ease-out, height 0.6s ease-out, background 0.6s, padding-bottom 0.6s;
+  animation: slideInFromBottom 0.6s ease-out;
+}
+
+/* Slide-in animation from the bottom */
+@keyframes slideInFromBottom {
+  0% {
+    transform: translateY(100%); /* Start below the viewport */
+    opacity: 0; /* Invisible */
+  }
+  100% {
+    transform: translateY(0); /* Move to its final position */
+    opacity: 1; /* Fully visible */
+  }
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky::before {
@@ -56,7 +69,6 @@
   filter: blur(25px);
   border-radius: inherit;
   width: 100%;
-  transition: filter 0.6s ease-out, background 0.6s ease-out;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
