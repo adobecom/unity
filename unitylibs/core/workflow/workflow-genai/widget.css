@@ -46,11 +46,9 @@
 
 .unity-enabled .interactive-area .express-unity-widget.sticky.background-style-1 {
   background: 
-    linear-gradient(180deg, rgba(216, 216, 216, 0.00) 0%, rgba(216, 216, 216, 0.80) 58.62%, #D8D8D8 100%), 
-    rgba(255, 255, 255, 0.14); /* Multiple backgrounds */
-  backdrop-filter: blur(15px); /* Apply blur effect */
-  -webkit-backdrop-filter: blur(15px); /* For Safari support */
-  background-blend-mode: overlay; /* Blend the layers */
+  linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.35) 100%), linear-gradient(180deg, rgba(176, 172, 254, 0.00) 0%, #B0ACFE 100%),
+  linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
+  backdrop-filter: blur(25px);
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
