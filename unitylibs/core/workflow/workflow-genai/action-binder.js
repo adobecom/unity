@@ -8,6 +8,7 @@ export default class ActionBinder {
     this.canvasArea = canvasArea;
     this.actionMap = actionMap;
     this.query = '';
+    this.maxResults = 3;
     this.operations = [];
     this.serviceHandler = null;
     this.apiConfig = this.initializeApiConfig();
@@ -123,7 +124,7 @@ export default class ActionBinder {
       const data = {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
-        maxResults: 5,
+        this.maxResults: this.maxResults + 3,
       };
       const suggestions = await this.serviceHandler.postCallToService(
         unityConfig.expressEndpoint.autoComplete,
@@ -146,10 +147,11 @@ export default class ActionBinder {
       dynamicHeader = this.createSuggestionHeader();
       this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
     }
-    if (suggestions.length === 0) {
+    const latestSuggestions = suggestions.slice(-3);
+    if (latestSuggestions.length === 0) {
       this.displayNoSuggestionsMessage(dynamicHeader);
     } else {
-      this.addSuggestionItems(suggestions, dynamicHeader);
+      this.addSuggestionItems(latestSuggestions, dynamicHeader);
     }
     this.dropdown.classList.remove('hidden');
     this.initActionListeners();
