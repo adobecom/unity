@@ -220,7 +220,7 @@ export default class ActionBinder {
   resetDropdown() {
     this.inputField.value = '';
     this.surpriseBtn.classList.remove('hidden');
-
+    this.query = '';
     this.clearDynamicItems();
     this.showDefaultItems();
     this.removeEmptyMessage();
