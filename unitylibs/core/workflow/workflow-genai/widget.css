@@ -38,6 +38,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky::before {
@@ -52,6 +53,7 @@
   filter: blur(25px);
   border-radius: inherit;
   width: 100%;
+  transition: 0.6s ease-out, opacity 0.6s ease-out, height 0.6s ease-out, background 0.6s, padding-bottom 0.6s;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
