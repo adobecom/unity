@@ -124,7 +124,7 @@ export default class ActionBinder {
       const data = {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
-        maxResults: (this.maxResults + 3),
+        maxResults: (this.maxResults += 3),
       };
       const suggestions = await this.serviceHandler.postCallToService(
         unityConfig.expressEndpoint.autoComplete,
