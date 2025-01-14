@@ -162,6 +162,10 @@ export default class ActionBinder {
     if (dynamicHeader) {
       dynamicHeader.remove();
     }
+    const dropdownEmptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
+    if (dropdownEmptyMessage) {
+      dropdownEmptyMessage.remove();
+    }
     this.addAccessibilityFeatures();
   }
 
