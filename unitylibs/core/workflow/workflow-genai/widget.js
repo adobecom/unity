@@ -90,7 +90,7 @@ export default class UnityWidget {
         id: `item-${i}`,
         class: 'dropdown-item',
         role: 'option',
-        'daa-ll': `prompt ${el.closest('li').innerText}`,
+        'daa-ll': `prompt-bar-curated-prompt-${i},${el.closest('li').innerText}`,
       }, el.closest('li').innerText);
       dropdown.append(prompt);
     });
