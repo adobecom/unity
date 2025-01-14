@@ -38,7 +38,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  
+  transition: bottom 0.6s ease-out, opacity 0.6s ease-out, height 0.6s ease-out, background 0.6s, padding-bottom 0.6s;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky::before {
@@ -49,11 +49,14 @@
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.35) 100%), linear-gradient(180deg, rgba(176, 172, 254, 0.00) 0%, #B0ACFE 100%), linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.35) 100%), 
+              linear-gradient(180deg, rgba(176, 172, 254, 0.00) 0%, #B0ACFE 100%), 
+              linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), 
+              linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
   filter: blur(25px);
   border-radius: inherit;
   width: 100%;
-  transition: 0.6s ease-out, opacity 0.6s ease-out, height 0.6s ease-out, background 0.6s, padding-bottom 0.6s;
+  transition: filter 0.6s ease-out, background 0.6s ease-out;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
