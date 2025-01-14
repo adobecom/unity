@@ -267,6 +267,10 @@
     background-color: #e6e6e6;
   }
 
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item.active:hover {
+    background-color: none;
+  }
+
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item:hover {
     background-color: #e6e6e6;
   }
