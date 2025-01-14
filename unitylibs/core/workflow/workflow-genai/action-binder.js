@@ -262,7 +262,6 @@ export default class ActionBinder {
     if (!dropdownItems.length) {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
-    console.log('dropdownItems', dropdownItems);
     let activeIndex = -1;
     this.inputField.addEventListener('keydown', (event) => {
       if (!dropdownItems.length) return;
@@ -271,6 +270,7 @@ export default class ActionBinder {
           event.preventDefault();
           activeIndex = (activeIndex + 1) % dropdownItems.length;
           this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+          this.inputField.setAttribute('aria-expanded', 'true');
           break;
         case 'ArrowUp':
           event.preventDefault();
@@ -280,6 +280,7 @@ export default class ActionBinder {
         case 'Enter':
           event.preventDefault();
           dropdownItems[activeIndex]?.click();
+          this.inputField.setAttribute('aria-expanded', 'false');
           break;
         case 'Escape':
           this.dropdown.classList.add('hidden');
