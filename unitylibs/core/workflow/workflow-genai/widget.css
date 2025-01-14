@@ -45,12 +45,12 @@
 }
 
 .unity-enabled .interactive-area .express-unity-widget.sticky.background-style-1 {
-  background-image:
-  url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="1145" height="161" viewBox="0 0 1145 161" fill="none"><g filter="url(%23filter0_f_3014_18678)"><path d="M50.6963 50.9353L1033.38 112.473L1145 171H50.6963V50.9353Z" fill="url(%23paint0_linear_3014_18678)"/><path d="M50.6963 50.9353L1033.38 112.473L1145 171H50.6963V50.9353Z" fill="white" fill-opacity="0.35"/></g><defs><filter id="filter0_f_3014_18678" x="0.696289" y="0.935303" width="1194.3" height="220.065" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="25" result="effect1_foregroundBlur_3014_18678"/></filter><linearGradient id="paint0_linear_3014_18678" x1="597.848" y1="50.9353" x2="597.848" y2="171" gradientUnits="userSpaceOnUse"><stop stop-color="%23B0ACFE" stop-opacity="0"/><stop offset="1" stop-color="%23B0ACFE"/></linearGradient></defs></svg>'),
-  url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="1145" height="161" viewBox="0 0 1145 161" fill="none"><g filter="url(%23filter0_f_3014_18679)"><path d="M98.3356 95.8027L1094.41 50.9353V171H0L98.3356 95.8027Z" fill="url(%23paint0_linear_3014_18679)"/><path d="M98.3356 95.8027L1094.41 50.9353V171H0L98.3356 95.8027Z" fill="white" fill-opacity="0.5"/></g><defs><filter id="filter0_f_3014_18679" x="-50" y="0.935303" width="1194.41" height="220.065" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="25" result="effect1_foregroundBlur_3014_18679"/></filter><linearGradient id="paint0_linear_3014_18679" x1="547.204" y1="29.3599" x2="547.204" y2="171" gradientUnits="userSpaceOnUse"><stop stop-color="%23B2DFFF" stop-opacity="0"/><stop offset="1" stop-color="%23B2DFFF"/></linearGradient></defs></svg>');
-  background-size: cover, cover; /* Adjust as needed */
-  background-position: top, bottom; /* Adjust positions for layering */
-  background-repeat: no-repeat, no-repeat;
+  background: 
+    linear-gradient(180deg, rgba(216, 216, 216, 0.00) 0%, rgba(216, 216, 216, 0.80) 58.62%, #D8D8D8 100%), 
+    rgba(255, 255, 255, 0.14); /* Multiple backgrounds */
+  backdrop-filter: blur(15px); /* Apply blur effect */
+  -webkit-backdrop-filter: blur(15px); /* For Safari support */
+  background-blend-mode: overlay; /* Blend the layers */
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {

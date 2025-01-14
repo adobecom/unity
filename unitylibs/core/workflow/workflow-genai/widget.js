@@ -10,6 +10,8 @@ export default class UnityWidget {
   }
 
   async initWidget() {
+    this.widgetParent = createTag('div', { class: 'express-unity-wrapper' });
+    const imgTag = createTag('img', { class: 'sample', src: '../../../img/icons/sticky-prompt-gradiant' });
     this.widget = createTag('div', { class: 'express-unity-widget' });
     const comboboxContainer = this.createComboboxContainer();
     const placeholders = this.populatePlaceholders();
