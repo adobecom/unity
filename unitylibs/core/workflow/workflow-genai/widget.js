@@ -11,7 +11,6 @@ export default class UnityWidget {
 
   async initWidget() {
     this.widgetParent = createTag('div', { class: 'express-unity-wrapper' });
-    const imgTag = createTag('img', { class: 'sample', src: '../../../img/icons/sticky-prompt-gradiant' });
     this.widget = createTag('div', { class: 'express-unity-widget' });
     const comboboxContainer = this.createComboboxContainer();
     const placeholders = this.populatePlaceholders();
@@ -143,7 +142,8 @@ export default class UnityWidget {
   insertWidget() {
     const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
     const paragraphs = interactiveArea.querySelectorAll('p.body-m');
-    interactiveArea.insertBefore(this.widget, paragraphs[1]);
+    this.widgetParent.append(this.widget);
+    interactiveArea.insertBefore(this.widgetParent, paragraphs[1]);
   }
 
   initIntersectionObserver() {
@@ -164,10 +164,10 @@ export default class UnityWidget {
   addStickyBehaviour(cfg) {
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
-      this.widget.classList.remove('sticky');
+      this.widgetParent.classList.remove('sticky');
       dropdown.classList.remove('open-upward');
     } else {
-      this.widget.classList.add('sticky');
+      this.widgetParent.classList.add('sticky');
       dropdown.classList.add('open-upward');
     }
   }

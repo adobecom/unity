@@ -26,16 +26,12 @@
   font-weight: 400;
 }
 
-.unity-enabled .interactive-area .express-unity-widget {
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
   padding: 0 40px 24px;
   position: relative;
 }
 
-.unity-enabled .interactive-area .express-unity-widget .autocomplete {
-  position: relative;
-}
-
-.unity-enabled .interactive-area .express-unity-widget.sticky {
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky {
   position: fixed;
   bottom: 100px;
   left: 50%;
@@ -44,23 +40,23 @@
   max-width: 720px;
 }
 
-.unity-enabled .interactive-area .express-unity-widget.sticky.background-style-1::before {
+.unity-enabled .interactive-area .express-unity-wrapper.sticky::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: -1; /* Place the background behind the content */
-  background: 
-    linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.35) 100%), 
-    linear-gradient(180deg, rgba(176, 172, 254, 0.00) 0%, #B0ACFE 100%),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), 
-    linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
-  backdrop-filter: blur(25px); /* Apply blur effect to the background */
-  -webkit-backdrop-filter: blur(25px); /* Safari compatibility */
-  pointer-events: none; /* Ensure it doesn't interfere with interactions */
-  border-radius: inherit; /* Match border-radius if applied to the main div */
+  z-index: -1;
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.35) 100%), linear-gradient(180deg, rgba(176, 172, 254, 0.00) 0%, #B0ACFE 100%), linear-gradient(0deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.50) 100%), linear-gradient(180deg, rgba(178, 223, 255, 0.00) -17.97%, #B2DFFF 100%);
+  filter: blur(25px);
+  pointer-events: none;
+  border-radius: inherit;
+  width: 100%;
+}
+
+.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .autocomplete {
+  position: relative;
 }
 
 .unity-enabled .interactive-area .express-unity-widget .input-wrapper {
