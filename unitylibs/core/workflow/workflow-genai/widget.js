@@ -73,6 +73,7 @@ export default class UnityWidget {
     const dropdown = createTag('ul', {
       id: 'prompt-dropdown',
       class: 'dropdown hidden',
+      'daa-lh': 'Marquee',
       role: 'listbox',
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
