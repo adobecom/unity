@@ -8,7 +8,7 @@ export default class ActionBinder {
     this.canvasArea = canvasArea;
     this.actionMap = actionMap;
     this.query = '';
-    this.maxResults = 3;
+    this.maxResults = 0;
     this.operations = [];
     this.serviceHandler = null;
     this.apiConfig = this.initializeApiConfig();
@@ -124,7 +124,7 @@ export default class ActionBinder {
       const data = {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
-        this.maxResults: this.maxResults + 3,
+        maxResults: this.maxResults + 3,
       };
       const suggestions = await this.serviceHandler.postCallToService(
         unityConfig.expressEndpoint.autoComplete,
