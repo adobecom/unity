@@ -31,7 +31,7 @@ export default class ActionBinder {
         el.setAttribute('data-event-bound', 'true');
       });
     });
-    this.addAccessibilityFeatures();
+    // this.addAccessibilityFeatures();
   }
 
   addEventListeners(el, actionsList) {
@@ -85,6 +85,9 @@ export default class ActionBinder {
         return;
       }
       this.dropdown.classList.add('hidden');
+    });
+    el.addEventListener('keydown', (event) => {
+      this.addAccessibility(event);
     });
   }
 
@@ -166,7 +169,7 @@ export default class ActionBinder {
   clearDropdown() {
     this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
     this.dropdown.classList.add('hidden');
-    this.addAccessibilityFeatures();
+    // this.addAccessibility();
   }
 
   toggleDefaultItems(show = true) {
@@ -236,38 +239,36 @@ export default class ActionBinder {
     this.toggleSurpriseButton();
   }
 
-  addAccessibilityFeatures() {
+  addAccessibility(event) {
     let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
     if (!dropdownItems.length) {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
     let activeIndex = -1;
-    this.inputField.addEventListener('keydown', (event) => {
-      if (!dropdownItems.length) return;
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault();
-          activeIndex = (activeIndex + 1) % dropdownItems.length;
-          this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-          this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-          break;
-        case 'Enter':
-          event.preventDefault();
-          dropdownItems[activeIndex]?.click();
-          break;
-        case 'Escape':
-          this.dropdown.classList.add('hidden');
-          this.inputField.setAttribute('aria-expanded', 'false');
-          activeIndex = -1;
-          break;
-        default:
-          break;
-      }
-    });
+    if (!dropdownItems.length) return;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        activeIndex = (activeIndex + 1) % dropdownItems.length;
+        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        dropdownItems[activeIndex]?.click();
+        break;
+      case 'Escape':
+        this.dropdown.classList.add('hidden');
+        this.inputField.setAttribute('aria-expanded', 'false');
+        activeIndex = -1;
+        break;
+      default:
+        break;
+    }
   }
 
   setActiveItem(items, index, input) {
