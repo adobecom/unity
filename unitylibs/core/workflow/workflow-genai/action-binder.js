@@ -188,7 +188,7 @@ export default class ActionBinder {
       const noSuggestions = createTag('li', {
         class: 'dropdown-empty-message',
         role: 'presentation',
-      }, 'No suggestions available');
+      }, this.workflowCfg.placeholder['placeholder-no-suggestions']);
       this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
     }
   }
