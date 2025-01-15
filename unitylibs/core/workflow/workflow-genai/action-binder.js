@@ -16,6 +16,7 @@ export default class ActionBinder {
     this.dropdown = this.block.querySelector('.dropdown');
     this.surpriseBtn = this.block.querySelector('.surprise-btn');
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.activeIndex = -1;
   }
 
   initializeApiConfig() {
@@ -32,7 +33,7 @@ export default class ActionBinder {
         el.setAttribute('data-event-bound', 'true');
       });
     });
-    this.addAccessibilityFeatures();
+    this.addAccessibility();
   }
 
   addEventListeners(el, actionsList) {
@@ -167,7 +168,7 @@ export default class ActionBinder {
   clearDropdown() {
     this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
     this.dropdown.classList.add('hidden');
-    this.addAccessibilityFeatures();
+    this.addAccessibility();
   }
 
   toggleDefaultItems(show = true) {
@@ -238,7 +239,7 @@ export default class ActionBinder {
   }
 
   addKeyDownListener() {
-    this.removeKeyDownListener();
+    this.removeKeyDownListener(); // Remove existing listener to avoid duplicates
     this.inputField.addEventListener('keydown', this.handleKeyDown);
   }
 
@@ -246,7 +247,7 @@ export default class ActionBinder {
     this.inputField.removeEventListener('keydown', this.handleKeyDown);
   }
 
-  addAccessibilityFeatures() {
+  addAccessibility() {
     this.addKeyDownListener();
   }
 
@@ -255,32 +256,44 @@ export default class ActionBinder {
     if (!dropdownItems.length) {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
-    let activeIndex = -1;
     if (!dropdownItems.length) return;
+
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        activeIndex = (activeIndex + 1) % dropdownItems.length;
-        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+        this.activeIndex = (this.activeIndex + 1) % dropdownItems.length; // Update activeIndex
+        this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+        this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length; // Update activeIndex
+        this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
         break;
       case 'Enter':
         event.preventDefault();
-        dropdownItems[activeIndex]?.click();
+        dropdownItems[this.activeIndex]?.click(); // Trigger click on the active item
         break;
       case 'Escape':
         this.dropdown.classList.add('hidden');
         this.inputField.setAttribute('aria-expanded', 'false');
-        activeIndex = -1;
+        this.activeIndex = -1; // Reset activeIndex
         break;
       default:
         break;
     }
   }
+
+  setActiveItem(items, index, input) {
+    items.forEach((item, i) => {
+      if (i === index) {
+        item.classList.add('active');
+        input.setAttribute('aria-activedescendant', item.id);
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+}
 
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
