@@ -236,39 +236,49 @@ export default class ActionBinder {
     this.toggleSurpriseButton();
   }
 
+  addKeyDownListener() {
+    this.removeKeyDownListener();
+    this.inputField.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  removeKeyDownListener() {
+    this.inputField.removeEventListener('keydown', this.handleKeyDown);
+  }
+
   addAccessibilityFeatures() {
+    this.addKeyDownListener();
+  }
+
+  handleKeyDown(event) {
     let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
     if (!dropdownItems.length) {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
     let activeIndex = -1;
-    this.inputField.removeEventListener('keydown', () => {});
-    this.inputField.addEventListener('keydown', (event) => {
-      if (!dropdownItems.length) return;
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault();
-          activeIndex = (activeIndex + 1) % dropdownItems.length;
-          this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-          this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-          break;
-        case 'Enter':
-          event.preventDefault();
-          dropdownItems[activeIndex]?.click();
-          break;
-        case 'Escape':
-          this.dropdown.classList.add('hidden');
-          this.inputField.setAttribute('aria-expanded', 'false');
-          activeIndex = -1;
-          break;
-        default:
-          break;
-      }
-    });
+    if (!dropdownItems.length) return;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        activeIndex = (activeIndex + 1) % dropdownItems.length;
+        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        dropdownItems[activeIndex]?.click();
+        break;
+      case 'Escape':
+        this.dropdown.classList.add('hidden');
+        this.inputField.setAttribute('aria-expanded', 'false');
+        activeIndex = -1;
+        break;
+      default:
+        break;
+    }
   }
 
   setActiveItem(items, index, input) {
