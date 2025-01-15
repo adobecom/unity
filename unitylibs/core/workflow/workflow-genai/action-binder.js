@@ -76,6 +76,8 @@ export default class ActionBinder {
     });
     el.addEventListener('focus', () => {
       this.dropdown.classList.remove('hidden');
+      this.dropdown.setAttribute('aria-hidden', 'false');
+      el.setAttribute('aria-expanded', 'true');
       if (this.sendAnalyticsOnFocus) {
         sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
@@ -86,6 +88,8 @@ export default class ActionBinder {
       if (relatedTarget && this.dropdown.contains(relatedTarget)) {
         return;
       }
+      this.dropdown.setAttribute('aria-hidden', 'true');
+      el.setAttribute('aria-expanded', 'false');
       this.dropdown.classList.add('hidden');
     });
   }
