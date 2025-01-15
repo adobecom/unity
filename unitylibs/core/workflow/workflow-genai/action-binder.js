@@ -125,7 +125,7 @@ export default class ActionBinder {
       case 'closeDropdown':
         this.resetDropdown();
         break;
-      case 'refreshSuggestions':
+      case 'refreshSuggestion':
         await this.refreshSuggestions();
         break;
       default:
