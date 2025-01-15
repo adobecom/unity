@@ -10,6 +10,7 @@ export default class ActionBinder {
     this.query = '';
     this.maxResults = 0;
     this.serviceHandler = null;
+    this.sendAnalyticsOnFocus = false;
     this.apiConfig = this.initializeApiConfig();
     this.inputField = this.block.querySelector('.input-field');
     this.dropdown = this.block.querySelector('.dropdown');
@@ -71,10 +72,11 @@ export default class ActionBinder {
         }, 1000);
       }
     });
-    el.addEventListener('focus', (event) => {
+    el.addEventListener('focus', () => {
       this.dropdown.classList.remove('hidden');
-      if (event.sendAnalytics) {
+      if (this.sendAnalyticsOnFocus) {
         sendAnalyticsEvent(new Event('promptOpen'));
+        this.sendAnalyticsOnFocus = false;
       }
     });
     el.addEventListener('blur', (event) => {
@@ -139,7 +141,7 @@ export default class ActionBinder {
       );
       if (response?.completions) {
         this.displaySuggestions(response.completions);
-        this.setInputFocus(false);
+        this.inputField.focus();
       }
     } catch (error) {
       console.error('Error fetching autocomplete suggestions:', error);
@@ -230,14 +232,8 @@ export default class ActionBinder {
     const promptText = el.textContent.trim();
     this.inputField.value = promptText;
     this.query = promptText;
-    this.setInputFocus(false);
+    this.inputField.focus();
     this.toggleSurpriseButton();
-  }
-
-  setInputFocus(sendAnalytics = true) {
-    const focusEvent = new Event('focus', { bubbles: true, cancelable: true });
-    focusEvent.sendAnalytics = sendAnalytics;
-    this.inputField.dispatchEvent(focusEvent);
   }
 
   addAccessibilityFeatures() {
