@@ -132,7 +132,7 @@ export default class ActionBinder {
       }
       const data = {
         query: this.query,
-        targetProduct: this.workflowConfig.productName,
+        targetProduct: this.apiConfig.productName,
         maxResults: (this.maxResults += 3),
       };
       const response = await this.serviceHandler.postCallToService(
@@ -292,7 +292,7 @@ export default class ActionBinder {
     try {
       const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
       const response = await this.serviceHandler.postCallToService(
-        this.apiConfig.connectorApiEndPoint,
+        unityConfig.expressEndpoint.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
       if (!response.url) return;
