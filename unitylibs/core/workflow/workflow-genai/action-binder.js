@@ -261,22 +261,26 @@ export default class ActionBinder {
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        this.activeIndex = (this.activeIndex + 1) % dropdownItems.length; // Update activeIndex
+        this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
         this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length; // Update activeIndex
+        this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
         this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
         break;
       case 'Enter':
         event.preventDefault();
-        dropdownItems[this.activeIndex]?.click(); // Trigger click on the active item
+        if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
+          dropdownItems[this.activeIndex].click();
+          dropdownItems[this.activeIndex].classList.remove('active');
+        }
+        this.activeIndex = -1;
         break;
       case 'Escape':
         this.dropdown.classList.add('hidden');
         this.inputField.setAttribute('aria-expanded', 'false');
-        this.activeIndex = -1; // Reset activeIndex
+        this.activeIndex = -1;
         break;
       default:
         break;
