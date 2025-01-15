@@ -284,6 +284,7 @@ export default class ActionBinder {
       case 'Escape':
         this.dropdown.classList.add('hidden');
         this.inputField.setAttribute('aria-expanded', 'false');
+        this.dropdown.setAttribute('aria-hidden', 'true');
         this.activeIndex = -1;
         break;
       default:
