@@ -6,10 +6,9 @@ export default class ActionBinder {
     this.workflowCfg = workflowCfg;
     this.block = block;
     this.canvasArea = canvasArea;
-    this.actionMap = actionMap;
+    this.actions = actionMap;
     this.query = '';
     this.maxResults = 0;
-    this.operations = [];
     this.serviceHandler = null;
     this.apiConfig = this.initializeApiConfig();
     this.inputField = this.block.querySelector('.input-field');
@@ -22,26 +21,25 @@ export default class ActionBinder {
     return unityConfig;
   }
 
-  async initActionListeners(block = this.block, actions = this.actionMap) {
-    let debounceTimer;
-    for (const [selector, actionsList] of Object.entries(actions)) {
-      const elements = block.querySelectorAll(selector);
+  async initActionListeners() {
+    Object.entries(this.actions).forEach(([selector, actionsList]) => {
+      const elements = this.block.querySelectorAll(selector);
       elements.forEach((el) => {
         if (el.hasAttribute('data-event-bound')) return;
-        this.addEventListeners(el, actionsList, debounceTimer);
+        this.addEventListeners(el, actionsList);
         el.setAttribute('data-event-bound', 'true');
       });
-    }
+    });
     this.addAccessibilityFeatures();
   }
 
-  addEventListeners(el, actionsList, debounceTimer) {
+  addEventListeners(el, actionsList) {
     switch (el.nodeName) {
       case 'A':
       case 'BUTTON':
         el.addEventListener('click', async (event) => {
           event.preventDefault();
-          await this.handleAction(actionsList, el);
+          await this.executeActions(actionsList, el);
         });
         break;
       case 'LI':
@@ -50,25 +48,26 @@ export default class ActionBinder {
         });
         el.addEventListener('click', async (event) => {
           event.preventDefault();
-          await this.handleAction(actionsList, el);
+          await this.executeActions(actionsList, el);
         });
         break;
       case 'INPUT':
-        this.addInputEventListeners(el, actionsList, debounceTimer);
+        this.addInputEventListeners(el, actionsList);
         break;
       default:
         break;
     }
   }
 
-  addInputEventListeners(el, actionsList, debounceTimer) {
+  addInputEventListeners(el, actionsList) {
+    let debounceTimer;
     el.addEventListener('input', (event) => {
       clearTimeout(debounceTimer);
       this.query = event.target.value.trim();
-      this.updateWidgetState(this.query);
+      this.toggleSurpriseButton();
       if (this.query.length >= 3) {
         debounceTimer = setTimeout(async () => {
-          await this.handleAction(actionsList);
+          await this.executeActions(actionsList);
         }, 1000);
       }
     });
@@ -87,7 +86,7 @@ export default class ActionBinder {
     });
   }
 
-  async handleAction(actionsList, el = null) {
+  async executeActions(actionsList, el = null) {
     const { default: ServiceHandler } = await import(
       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
     );
@@ -96,11 +95,11 @@ export default class ActionBinder {
       this.canvasArea,
     );
     for (const action of actionsList) {
-      await this.executeAction(action, el);
+      await this.handleAction(action, el);
     }
   }
 
-  async executeAction(action, el) {
+  async handleAction(action, el) {
     switch (action.actionType) {
       case 'autocomplete':
         await this.fetchAutocompleteSuggestions();
@@ -111,8 +110,8 @@ export default class ActionBinder {
       case 'generate':
         await this.generateContent();
         break;
-      case 'getPromptValue':
-        this.updatePromptValue(el);
+      case 'setPromptValue':
+        this.setPromptValue(el);
         break;
       case 'closeDropdown':
         this.resetDropdown();
@@ -127,19 +126,19 @@ export default class ActionBinder {
       if (this.query) {
         const promptEvent = new Event('promptValue');
         promptEvent.data = { query: this.query };
-        sendAnalyticsEvent(new Event('promptValue'));
+        sendAnalyticsEvent(promptEvent);
       }
       const data = {
         query: this.query,
-        targetProduct: this.workflowCfg.productName,
+        targetProduct: this.workflowConfig.productName,
         maxResults: (this.maxResults += 3),
       };
-      const suggestions = await this.serviceHandler.postCallToService(
-        unityConfig.expressEndpoint.autoComplete,
+      const response = await this.serviceHandler.postCallToService(
+        this.apiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(data) },
       );
-      if (suggestions?.completions) {
-        this.displaySuggestions(suggestions.completions);
+      if (response?.completions) {
+        this.displaySuggestions(response.completions);
         this.inputField.focus();
       }
     } catch (error) {
@@ -148,13 +147,10 @@ export default class ActionBinder {
   }
 
   displaySuggestions(suggestions) {
-    this.clearDynamicItems();
-    this.hideDefaultItems();
-    let dynamicHeader = this.dropdown.querySelector('.dropdown-title.dynamic');
-    if (!dynamicHeader) {
-      dynamicHeader = this.createSuggestionHeader();
-      this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
-    }
+    this.clearDropdown();
+    this.toggleDefaultItems(false);
+    const dynamicHeader = this.createDynamicHeader();
+    this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
     const latestSuggestions = suggestions.slice(-3);
     if (latestSuggestions.length === 0) {
       this.displayNoSuggestionsMessage(dynamicHeader);
@@ -165,23 +161,17 @@ export default class ActionBinder {
     this.initActionListeners();
   }
 
-  clearDynamicItems() {
-    const dynamicItems = this.dropdown.querySelectorAll('.dropdown-item.dynamic');
-    dynamicItems.forEach((el) => el.remove());
-    const dynamicHeader = this.dropdown.querySelector('.dropdown-title.dynamic');
-    if (dynamicHeader) {
-      dynamicHeader.remove();
-    }
-    const dropdownEmptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
-    if (dropdownEmptyMessage) {
-      dropdownEmptyMessage.remove();
-    }
+  clearDropdown() {
+    this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
+    this.dropdown.classList.add('hidden');
     this.addAccessibilityFeatures();
   }
 
-  hideDefaultItems() {
-    const defaultItems = this.dropdown.querySelectorAll('.dropdown-item, .dropdown-title:not(.dynamic)');
-    defaultItems.forEach((item) => item.classList.add('hidden'));
+  toggleDefaultItems(show = true) {
+    const defaultItems = this.dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
+    defaultItems.forEach((item) => {
+      item.classList.toggle('hidden', !show);
+    });
   }
 
   displayNoSuggestionsMessage(dynamicHeader) {
@@ -208,24 +198,17 @@ export default class ActionBinder {
     });
   }
 
-  createSuggestionHeader() {
+  createDynamicHeader() {
+    const elements = [
+      { tag: 'span', attributes: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
+      { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
+      { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
+    ];
     const header = createTag('li', { class: 'dropdown-title dynamic' });
-    const titleText = createTag(
-      'span',
-      { class: 'title-text' },
-      `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`
-    );
-    const refreshBtn = createTag('button', {
-      class: 'refresh-btn dynamic',
-      'daa-ll': 'prompt-dropdown-refresh',
-      'aria-label': 'Refresh suggestions',
+    elements.forEach(({ tag, attributes, content = '' }) => {
+      const element = createTag(tag, attributes, content);
+      header.appendChild(element);
     });
-    const closeBtn = createTag('button', {
-      class: 'close-btn dynamic',
-      'daa-ll': 'prompt-dropdown-close',
-      'aria-label': 'Close dropdown',
-    });
-    header.append(titleText, refreshBtn, closeBtn);
     return header;
   }
 
@@ -233,38 +216,22 @@ export default class ActionBinder {
     this.inputField.value = '';
     this.surpriseBtn.classList.remove('hidden');
     this.query = '';
-    this.clearDynamicItems();
-    this.showDefaultItems();
-    this.removeEmptyMessage();
+    this.clearDropdown();
+    this.toggleDefaultItems();
     this.dropdown.classList.add('hidden');
   }
 
-  showDefaultItems() {
-    const defaultItems = this.dropdown.querySelectorAll('.dropdown-item, .dropdown-title');
-    defaultItems.forEach((item) => item.classList.remove('hidden'));
+  toggleSurpriseButton() {
+    this.surpriseButton.classList.toggle('hidden', this.query.length > 0);
+    if (!this.query) this.resetDropdown();
   }
 
-  removeEmptyMessage() {
-    const emptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
-    if (emptyMessage) {
-      emptyMessage.remove();
-    }
-  }
-
-  updateWidgetState(query) {
-    this.surpriseBtn.classList.toggle('hidden', query.length > 0);
-
-    if (query.length === 0) {
-      this.resetDropdown();
-    }
-  }
-
-  updatePromptValue(el) {
+  setPromptValue(el) {
     const promptText = el.textContent.trim();
     this.inputField.value = promptText;
     this.query = promptText;
     this.inputField.focus();
-    this.surpriseBtn.classList.add('hidden');
+    this.toggleSurpriseButton();
   }
 
   addAccessibilityFeatures() {
@@ -313,8 +280,8 @@ export default class ActionBinder {
   }
 
   async triggerSurpriseMe() {
-    const prompts = this.workflowCfg.supportedTexts.prompt;
-    if (!prompts) return;
+    const { prompt: prompts = [] } = this.workflowCfg.supportedTexts || {};
+    if (prompts.length === 0) return;
     this.query = prompts[Math.floor(Math.random() * prompts.length)];
     await this.generateContent();
   }
@@ -326,6 +293,7 @@ export default class ActionBinder {
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
+      if (!response.url) return;
       window.location.href = response.url;
     } catch (error) {
       console.error('Error generating content:', error);

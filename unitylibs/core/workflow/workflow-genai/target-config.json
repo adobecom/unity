@@ -24,7 +24,7 @@
       ],
       ".dropdown-item": [
         {
-          "actionType": "getPromptValue"
+          "actionType": "setPromptValue"
         }
       ],
       ".refresh-btn": [
