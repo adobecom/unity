@@ -29,7 +29,7 @@
       ],
       ".refresh-btn": [
         {
-          "actionType": "autocomplete"
+          "actionType": "refreshSuggestion"
         }
       ],
       ".close-btn": [

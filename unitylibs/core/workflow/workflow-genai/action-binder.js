@@ -17,6 +17,7 @@ export default class ActionBinder {
     this.surpriseBtn = this.block.querySelector('.surprise-btn');
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.activeIndex = -1;
+    this.suggestion = [];
   }
 
   initializeApiConfig() {
@@ -124,29 +125,46 @@ export default class ActionBinder {
       case 'closeDropdown':
         this.resetDropdown();
         break;
+      case 'refreshSuggestions':
+        await this.refreshSuggestions();
+        break;
       default:
         break;
     }
   }
 
-  async fetchAutocompleteSuggestions() {
+  async refreshSuggestions() {
+    if (this.suggestion.length > 0) {
+      this.displaySuggestions();
+    } else {
+      await this.fetchAutocompleteSuggestions('refresh');
+    }
+  }
+
+  async fetchAutocompleteSuggestions(fetchType = 'default') {
     try {
-      if (this.query) {
-        const promptEvent = new Event('promptValue');
-        promptEvent.data = { query: this.query };
-        sendAnalyticsEvent(promptEvent);
+      if (fetchType === 'refresh') {
+        this.maxResults *= 2;
+      } else {
+        if (this.query) {
+          const promptEvent = new Event('promptValue');
+          promptEvent.data = { query: this.query };
+          sendAnalyticsEvent(promptEvent);
+        }
+        this.maxResults = 12;
       }
       const data = {
         query: this.query,
         targetProduct: this.apiConfig.productName,
-        maxResults: (this.maxResults += 3),
+        maxResults: this.maxResults,
       };
       const response = await this.serviceHandler.postCallToService(
         this.apiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(data) },
       );
       if (response?.completions) {
-        this.displaySuggestions(response.completions);
+        this.suggestion = response.completions;
+        this.displaySuggestions();
         this.inputField.focus();
       }
     } catch (error) {
@@ -154,12 +172,12 @@ export default class ActionBinder {
     }
   }
 
-  displaySuggestions(suggestions) {
+  displaySuggestions() {
     this.clearDropdown();
     this.toggleDefaultItems(false);
     const dynamicHeader = this.createDynamicHeader();
     this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
-    const latestSuggestions = suggestions.slice(-3);
+    const latestSuggestions = this.suggestion.splice(0, 3);
     if (latestSuggestions.length === 0) {
       this.displayNoSuggestionsMessage(dynamicHeader);
     } else {
