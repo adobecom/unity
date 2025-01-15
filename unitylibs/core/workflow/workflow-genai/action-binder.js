@@ -15,6 +15,7 @@ export default class ActionBinder {
     this.inputField = this.block.querySelector('.input-field');
     this.dropdown = this.block.querySelector('.dropdown');
     this.surpriseBtn = this.block.querySelector('.surprise-btn');
+    this.addAccessibilityFeatures(); // Initialize accessibility features
   }
 
   initializeApiConfig() {
@@ -31,7 +32,6 @@ export default class ActionBinder {
         el.setAttribute('data-event-bound', 'true');
       });
     });
-    // this.addAccessibilityFeatures();
   }
 
   addEventListeners(el, actionsList) {
@@ -44,9 +44,7 @@ export default class ActionBinder {
         });
         break;
       case 'LI':
-        el.addEventListener('mousedown', (event) => {
-          event.preventDefault();
-        });
+        el.addEventListener('mousedown', (event) => event.preventDefault());
         el.addEventListener('click', async (event) => {
           event.preventDefault();
           await this.executeActions(actionsList, el);
@@ -72,6 +70,7 @@ export default class ActionBinder {
         }, 1000);
       }
     });
+
     el.addEventListener('focus', () => {
       this.dropdown.classList.remove('hidden');
       if (this.sendAnalyticsOnFocus) {
@@ -79,15 +78,13 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
+
     el.addEventListener('blur', (event) => {
       const { relatedTarget } = event;
       if (relatedTarget && this.dropdown.contains(relatedTarget)) {
         return;
       }
       this.dropdown.classList.add('hidden');
-    });
-    el.addEventListener('keydown', (event) => {
-      this.addAccessibility(event);
     });
   }
 
@@ -97,7 +94,7 @@ export default class ActionBinder {
     );
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
+      this.canvasArea
     );
     for (const action of actionsList) {
       await this.handleAction(action, el);
@@ -140,7 +137,7 @@ export default class ActionBinder {
       };
       const response = await this.serviceHandler.postCallToService(
         this.apiConfig.expressEndpoint.autoComplete,
-        { body: JSON.stringify(data) },
+        { body: JSON.stringify(data) }
       );
       if (response?.completions) {
         this.displaySuggestions(response.completions);
@@ -161,15 +158,14 @@ export default class ActionBinder {
       this.displayNoSuggestionsMessage(dynamicHeader);
     } else {
       this.addSuggestionItems(latestSuggestions, dynamicHeader);
+      this.addAccessibilityFeatures();
     }
     this.dropdown.classList.remove('hidden');
-    this.initActionListeners();
   }
 
   clearDropdown() {
     this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
     this.dropdown.classList.add('hidden');
-    // this.addAccessibility();
   }
 
   toggleDefaultItems(show = true) {
@@ -180,14 +176,11 @@ export default class ActionBinder {
   }
 
   displayNoSuggestionsMessage(dynamicHeader) {
-    const emptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
-    if (!emptyMessage) {
-      const noSuggestions = createTag('li', {
-        class: 'dropdown-empty-message',
-        role: 'presentation',
-      }, 'No suggestions available');
-      this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
-    }
+    const noSuggestions = createTag('li', {
+      class: 'dropdown-empty-message',
+      role: 'presentation',
+    }, 'No suggestions available');
+    this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
   }
 
   addSuggestionItems(suggestions, dynamicHeader) {
@@ -198,21 +191,19 @@ export default class ActionBinder {
         'daa-ll': `prompt-API-powered|${suggestion}`,
         role: 'option',
       }, suggestion);
-      const referenceNode = dynamicHeader.nextSibling;
-      this.dropdown.insertBefore(item, referenceNode);
+      this.dropdown.insertBefore(item, dynamicHeader.nextSibling);
     });
   }
 
   createDynamicHeader() {
+    const header = createTag('li', { class: 'dropdown-title dynamic' });
     const elements = [
       { tag: 'span', attributes: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
       { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
       { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
     ];
-    const header = createTag('li', { class: 'dropdown-title dynamic' });
     elements.forEach(({ tag, attributes, content = '' }) => {
-      const element = createTag(tag, attributes, content);
-      header.appendChild(element);
+      header.appendChild(createTag(tag, attributes, content));
     });
     return header;
   }
@@ -239,43 +230,53 @@ export default class ActionBinder {
     this.toggleSurpriseButton();
   }
 
-  addAccessibility(event) {
-    let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
-    if (!dropdownItems.length) {
-      dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
-    }
+  addAccessibilityFeatures() {
     let activeIndex = -1;
-    if (!dropdownItems.length) return;
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        activeIndex = (activeIndex + 1) % dropdownItems.length;
-        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-        this.setActiveItem(dropdownItems, activeIndex, this.inputField);
-        break;
-      case 'Enter':
-        event.preventDefault();
-        dropdownItems[activeIndex]?.click();
-        break;
-      case 'Escape':
+
+    this.dropdown.addEventListener('keydown', (event) => {
+      const dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item:not(.hidden)'));
+      if (!dropdownItems.length) return;
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          activeIndex = (activeIndex + 1) % dropdownItems.length;
+          this.setActiveItem(dropdownItems, activeIndex);
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          activeIndex = (activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+          this.setActiveItem(dropdownItems, activeIndex);
+          break;
+        case 'Enter':
+          event.preventDefault();
+          if (activeIndex >= 0 && dropdownItems[activeIndex]) {
+            dropdownItems[activeIndex].click();
+          }
+          break;
+        case 'Escape':
+          this.dropdown.classList.add('hidden');
+          this.inputField.setAttribute('aria-expanded', 'false');
+          activeIndex = -1;
+          break;
+        default:
+          break;
+      }
+    });
+
+    this.dropdown.addEventListener('focusout', (event) => {
+      if (!this.dropdown.contains(event.relatedTarget)) {
         this.dropdown.classList.add('hidden');
-        this.inputField.setAttribute('aria-expanded', 'false');
         activeIndex = -1;
-        break;
-      default:
-        break;
-    }
+      }
+    });
   }
 
-  setActiveItem(items, index, input) {
+  setActiveItem(items, index) {
     items.forEach((item, i) => {
       if (i === index) {
         item.classList.add('active');
-        input.setAttribute('aria-activedescendant', item.id);
+        this.inputField.setAttribute('aria-activedescendant', item.id);
       } else {
         item.classList.remove('active');
       }
@@ -293,8 +294,8 @@ export default class ActionBinder {
     try {
       const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
       const response = await this.serviceHandler.postCallToService(
-        unityConfig.expressEndpoint.apiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(payload) },
+        this.apiConfig.expressEndpoint.apiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(payload) }
       );
       if (!response.url) return;
       window.location.href = response.url;
