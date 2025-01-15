@@ -211,10 +211,12 @@ export default class ActionBinder {
     );
     const refreshBtn = createTag('button', {
       class: 'refresh-btn dynamic',
+      'daa-ll': 'prompt-dropdown-refresh',
       'aria-label': 'Refresh suggestions',
     });
     const closeBtn = createTag('button', {
       class: 'close-btn dynamic',
+      'daa-ll': 'prompt-dropdown-close',
       'aria-label': 'Close dropdown',
     });
     header.append(titleText, refreshBtn, closeBtn);
