@@ -15,6 +15,7 @@ export default class ActionBinder {
     this.inputField = this.block.querySelector('.input-field');
     this.dropdown = this.block.querySelector('.dropdown');
     this.surpriseBtn = this.block.querySelector('.surprise-btn');
+    this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
   initializeApiConfig() {
