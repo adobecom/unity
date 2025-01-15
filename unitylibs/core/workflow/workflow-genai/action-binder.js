@@ -72,10 +72,11 @@ export default class ActionBinder {
         }, 1000);
       }
     });
-    el.addEventListener('focus', () => {
+    el.addEventListener('focus', (event) => {
+      const { relatedTarget } = event;
+      console.log('relatedTarget:', relatedTarget);
       this.dropdown.classList.remove('hidden');
-      const promptOpenEvent = new Event('promptOpen');
-      sendAnalyticsEvent(promptOpenEvent);
+      sendAnalyticsEvent(new Event('promptOpen'));
     });
     el.addEventListener('blur', (event) => {
       const { relatedTarget } = event;
@@ -123,6 +124,11 @@ export default class ActionBinder {
 
   async fetchAutocompleteSuggestions() {
     try {
+      if (this.query) {
+        const promptEvent = new Event('promptValue');
+        promptEvent.data = { query: this.query };
+        sendAnalyticsEvent(new Event('promptValue'));
+      }
       const data = {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
