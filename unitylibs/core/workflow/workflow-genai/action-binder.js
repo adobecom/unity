@@ -72,10 +72,10 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('focus', (event) => {
-      const { relatedTarget } = event;
-      console.log('relatedTarget:', relatedTarget);
       this.dropdown.classList.remove('hidden');
-      sendAnalyticsEvent(new Event('promptOpen'));
+      if (event.sendAnalytics) {
+        sendAnalyticsEvent(new Event('promptOpen'));
+      }
     });
     el.addEventListener('blur', (event) => {
       const { relatedTarget } = event;
@@ -139,7 +139,7 @@ export default class ActionBinder {
       );
       if (response?.completions) {
         this.displaySuggestions(response.completions);
-        this.inputField.focus();
+        this.setInputFocus(false);
       }
     } catch (error) {
       console.error('Error fetching autocomplete suggestions:', error);
@@ -230,8 +230,14 @@ export default class ActionBinder {
     const promptText = el.textContent.trim();
     this.inputField.value = promptText;
     this.query = promptText;
-    this.inputField.focus();
+    this.setInputFocus(false);
     this.toggleSurpriseButton();
+  }
+
+  setInputFocus(sendAnalytics = true) {
+    const focusEvent = new Event('focus', { bubbles: true, cancelable: true });
+    focusEvent.sendAnalytics = sendAnalytics;
+    this.inputField.dispatchEvent(focusEvent);
   }
 
   addAccessibilityFeatures() {
