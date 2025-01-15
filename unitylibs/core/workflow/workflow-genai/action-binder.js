@@ -309,7 +309,7 @@ export default class ActionBinder {
     try {
       const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
       const response = await this.serviceHandler.postCallToService(
-        unityConfig.expressEndpoint.apiConfig.connectorApiEndPoint,
+        this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
       if (!response.url) return;
