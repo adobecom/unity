@@ -10,7 +10,7 @@ export default class ActionBinder {
     this.query = '';
     this.maxResults = 0;
     this.serviceHandler = null;
-    this.sendAnalyticsOnFocus = false;
+    this.sendAnalyticsOnFocus = true;
     this.apiConfig = this.initializeApiConfig();
     this.inputField = this.block.querySelector('.input-field');
     this.dropdown = this.block.querySelector('.dropdown');
