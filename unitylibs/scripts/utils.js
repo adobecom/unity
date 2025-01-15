@@ -287,3 +287,12 @@ export const unityConfig = (() => {
   }
   return cfg.prod;
 })();
+
+export function sendAnalyticsEvent(event) {
+  const data = {
+    xdm: {},
+    data: { web: { webInteraction: { name: event?.type } } },
+  };
+  if (event?.data) data.data._adobe_corpnew = { digitalData: event.data };
+  window._satellite?.track('event', data);
+}

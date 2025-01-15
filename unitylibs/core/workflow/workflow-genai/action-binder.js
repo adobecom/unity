@@ -1,4 +1,4 @@
-import { unityConfig, createTag, getUnityLibs } from '../../../scripts/utils.js';
+import { unityConfig, createTag, getUnityLibs, sendAnalyticsEvent } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
@@ -74,6 +74,8 @@ export default class ActionBinder {
     });
     el.addEventListener('focus', () => {
       this.dropdown.classList.remove('hidden');
+      const promptOpenEvent = new Event('promptOpen');
+      sendAnalyticsEvent(promptOpenEvent);
     });
     el.addEventListener('blur', (event) => {
       const { relatedTarget } = event;
