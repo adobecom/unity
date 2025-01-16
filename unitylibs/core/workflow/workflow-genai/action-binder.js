@@ -28,6 +28,7 @@ export default class ActionBinder {
   async initActionListeners() {
     Object.entries(this.actions).forEach(([selector, actionsList]) => {
       const elements = this.block.querySelectorAll(selector);
+      console.log('Hello from initActionListeners');
       elements.forEach((el) => {
         if (!el.hasAttribute('data-event-bound')) {
           this.addEventListeners(el, actionsList);
@@ -39,6 +40,7 @@ export default class ActionBinder {
   }
 
   addEventListeners(el, actionsList) {
+    console.log('Hello from initActionListeners', el);
     const handleClick = async (event) => {
       event.preventDefault();
       await this.executeActions(actionsList, el);
@@ -61,13 +63,14 @@ export default class ActionBinder {
   }
 
   addInputEventListeners(el, actionsList) {
+    console.log('addInputEventListeners', el);
     let debounceTimer;
     el.addEventListener('input', (event) => {
       clearTimeout(debounceTimer);
       this.query = event.target.value.trim();
       this.toggleSurpriseButton();
       if (this.query.length >= 3) {
-        debounceTimer = setTimeout(() => this.executeActions(actionsList), 1000);
+        debounceTimer = setTimeout(async () => this.executeActions(actionsList), 1000);
       }
     });
     el.addEventListener('focus', () => {
