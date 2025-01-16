@@ -163,7 +163,9 @@ export default class ActionBinder {
         { body: JSON.stringify(data) },
       );
       if (response?.completions) {
-        this.suggestion = response.completions;
+        this.suggestion = fetchType === 'refresh'
+          ? response.completions.slice(this.maxResults / 2)
+          : response.completions;
         this.displaySuggestions();
         this.inputField.focus();
       }
