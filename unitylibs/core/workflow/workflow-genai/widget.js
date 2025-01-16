@@ -19,14 +19,14 @@ export default class UnityWidget {
   }
 
   setupWidgetStructure() {
-    this.widgetParent = this.createElement('div', 'express-unity-wrapper');
+    this.widgetWrapper = this.createElement('div', 'express-unity-wrapper');
     this.widget = this.createElement('div', 'express-unity-widget');
     const comboboxContainer = this.createElement('div', 'autocomplete', { role: 'combobox' });
     const inputWrapper = this.createInputWrapper(this.workflowCfg.placeholder);
     const dropdown = this.createDropdown(this.workflowCfg.placeholder);
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
-    this.widgetParent.append(this.widget);
+    this.widgetWrapper.append(this.widget);
   }
 
   extractPlaceholders() {
