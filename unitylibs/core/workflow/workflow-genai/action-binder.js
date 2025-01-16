@@ -158,6 +158,7 @@ export default class ActionBinder {
       this.displaySuggestions();
     } else {
       await this.fetchAutocompleteSuggestions('refresh');
+      this.inputField.focus();
     }
   }
 
