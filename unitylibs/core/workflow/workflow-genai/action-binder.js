@@ -163,7 +163,7 @@ export default class ActionBinder {
 
   displaySuggestions() {
     this.clearDropdown();
-    // this.toggleDefaultItems(false);
+    this.toggleDefaultItems(false);
     const dynamicHeader = this.createDynamicHeader();
     this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
     const latestSuggestions = this.suggestion.splice(0, 3);
