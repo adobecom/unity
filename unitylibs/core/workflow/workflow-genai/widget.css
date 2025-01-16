@@ -57,12 +57,7 @@
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: 
-    linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.35) 100%), /* Existing overlay */
-    linear-gradient(180deg, rgba(176, 172, 254, 0) 0%, rgba(176, 172, 254, 0.75) 43%, #B0ACFE 100%), /* bg2 */
-    linear-gradient(180deg, rgba(178, 223, 255, 0) 0%, rgba(178, 223, 255, 0.7) 48%, #B2DFFF 100%), /* bg1 */
-    linear-gradient(0deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.5) 100%); /* Existing overlay */
-  filter: blur(25px);
+  background: linear-gradient(45deg, #b2dfff00, #b2dfffb3 48%, #b2dfff, #b0acfe00, #b0acfebf 43%, #b0acfe);
   border-radius: inherit;
   width: 100%;
 }
