@@ -6,36 +6,38 @@ export default class UnityWidget {
     this.target = target;
     this.workflowCfg = workflowCfg;
     this.widget = null;
-    this.widgetWrapper = null;
     this.actionMap = {};
   }
 
   async initWidget() {
-    this.workflowCfg.placeholder = this.extractPlaceholders();
-    this.setupWidgetStructure();
+    this.widgetParent = createTag('div', { class: 'express-unity-wrapper' });
+    this.widget = createTag('div', { class: 'express-unity-widget' });
+    const comboboxContainer = this.createComboboxContainer();
+    const placeholders = this.populatePlaceholders();
+    this.workflowCfg.placeholder = placeholders;
+    const inputWrapper = this.createInputWrapper(placeholders);
+    const dropdown = this.createDropdown(placeholders);
+    comboboxContainer.append(inputWrapper, dropdown);
+    this.widget.append(comboboxContainer);
     this.insertWidget();
     this.initIntersectionObserver();
     return this.workflowCfg.targetCfg.actionMap;
   }
 
-  setupWidgetStructure() {
-    this.widgetWrapper = this.createElement('div', 'express-unity-wrapper');
-    this.widget = this.createElement('div', 'express-unity-widget');
-    const comboboxContainer = this.createElement('div', 'autocomplete', { role: 'combobox' });
-    const inputWrapper = this.createInputWrapper(this.workflowCfg.placeholder);
-    const dropdown = this.createDropdown(this.workflowCfg.placeholder);
-    comboboxContainer.append(inputWrapper, dropdown);
-    this.widget.append(comboboxContainer);
-    this.widgetWrapper.append(this.widget);
-  }
-
-  extractPlaceholders() {
+  populatePlaceholders() {
     return Object.fromEntries(
       [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
         element.classList[1]?.replace('icon-', '') || '',
         element.closest('li')?.innerText || '',
       ]).filter(([key]) => key),
     );
+  }
+
+  createComboboxContainer() {
+    return createTag('div', {
+      class: 'autocomplete',
+      role: 'combobox',
+    });
   }
 
   createInputWrapper(placeholders) {
@@ -60,8 +62,10 @@ export default class UnityWidget {
       this.el.querySelector('.icon-generate')?.closest('li'),
       'generate-btn',
     );
+
     actionWrapper.append(surpriseButton, generateButton);
     inputWrapper.append(inputField, actionWrapper);
+
     return inputWrapper;
   }
 
@@ -74,11 +78,13 @@ export default class UnityWidget {
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
     });
+
     const promptTitle = createTag('li', {
       class: 'dropdown-title',
       role: 'presentation',
     }, `${placeholders['placeholder-prompt']} ${placeholders['placeholder-suggestions']}`);
     dropdown.append(promptTitle);
+
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el, i) => {
       const prompt = createTag('li', {
@@ -89,10 +95,13 @@ export default class UnityWidget {
       }, el.closest('li').innerText);
       dropdown.append(prompt);
     });
+
     const separator = createTag('li', { class: 'dropdown-separator', role: 'separator' });
     dropdown.append(separator);
+
     const footer = this.createDropdownFooter(placeholders);
     dropdown.append(footer);
+
     return dropdown;
   }
 
@@ -100,9 +109,10 @@ export default class UnityWidget {
     const footer = createTag('li', { class: 'dropdown-footer' });
     const tipElement = this.el.querySelector('.icon-tip').closest('li');
     const tipContainer = createTag('div', { class: 'tip-con' });
-    const tipText = createTag('span', { class: 'tip-text' }, `${placeholders['placeholder-tip']}: `);
-    const tipDescription = createTag('span', { class: 'tip-Desc' }, ` ${tipElement.innerText}`);
+    const tipText = createTag('span', { class: 'tip-text' }, `${placeholders['placeholder-tip']}:`);
+    const tipDescription = createTag('span', { class: 'tip-Desc' }, `${tipElement.innerText}`);
     tipContainer.append(tipText, tipDescription);
+
     const legalElement = this.el.querySelector('.icon-legal').closest('li');
     const legalContainer = createTag('div', { class: 'legal-con' });
     const legalText = createTag('a', {
@@ -110,7 +120,9 @@ export default class UnityWidget {
       class: 'legal-text',
     }, legalElement.querySelector('a').innerText);
     legalContainer.append(legalText);
+
     footer.append(tipContainer, legalContainer);
+
     return footer;
   }
 
@@ -132,8 +144,8 @@ export default class UnityWidget {
   insertWidget() {
     const interactiveArea = this.target.querySelector('div[data-valign="middle"].text');
     const paragraphs = interactiveArea.querySelectorAll('p.body-m');
-    this.widgetWrapper.append(this.widget);
-    interactiveArea.insertBefore(this.widgetWrapper, paragraphs[1]);
+    this.widgetParent.append(this.widget);
+    interactiveArea.insertBefore(this.widgetParent, paragraphs[1]);
   }
 
   initIntersectionObserver() {
@@ -154,11 +166,11 @@ export default class UnityWidget {
   addStickyBehaviour(cfg) {
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
-      this.widgetWrapper.classList.remove('sticky');
+      this.widgetParent.classList.remove('sticky');
       dropdown.classList.remove('open-upward');
       dropdown.setAttribute('daa-lh', 'Marquee');
     } else {
-      this.widgetWrapper.classList.add('sticky');
+      this.widgetParent.classList.add('sticky');
       dropdown.classList.add('open-upward');
       dropdown.setAttribute('daa-lh', 'Floating');
     }
