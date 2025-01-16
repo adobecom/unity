@@ -329,13 +329,13 @@ export default class ActionBinder {
 
   toggleSurpriseButton() {
     this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
-    // if (!this.query) this.resetDropdown();
+    if (!this.query) this.resetDropdown();
   }
 
   resetDropdown() {
     this.inputField.value = '';
     this.query = '';
-    this.toggleSurpriseButton();
+    this.surpriseBtn.classList.remove('hidden');
     this.clearDropdown();
     this.toggleDefaultItems();
     this.hideDropdown();
