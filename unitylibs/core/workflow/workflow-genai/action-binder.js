@@ -28,7 +28,6 @@ export default class ActionBinder {
   async initActionListeners() {
     Object.entries(this.actions).forEach(([selector, actionsList]) => {
       const elements = this.block.querySelectorAll(selector);
-      console.log('Hello from initActionListeners');
       elements.forEach((el) => {
         if (!el.hasAttribute('data-event-bound')) {
           this.addEventListeners(el, actionsList);
@@ -40,7 +39,6 @@ export default class ActionBinder {
   }
 
   addEventListeners(el, actionsList) {
-    console.log('Hello from initActionListeners', el);
     const handleClick = async (event) => {
       event.preventDefault();
       await this.executeActions(actionsList, el);
@@ -63,7 +61,6 @@ export default class ActionBinder {
   }
 
   addInputEventListeners(el, actionsList) {
-    console.log('addInputEventListeners', el);
     let debounceTimer;
     el.addEventListener('input', (event) => {
       clearTimeout(debounceTimer);
@@ -246,11 +243,6 @@ export default class ActionBinder {
     return header;
   }
 
-  toggleSurpriseButton() {
-    this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
-    if (!this.query) this.resetDropdown();
-  }
-
   setPromptValue(el) {
     const promptText = el.textContent.trim();
     this.inputField.value = promptText;
@@ -333,6 +325,11 @@ export default class ActionBinder {
     this.dropdown.classList.add('hidden');
     this.dropdown.setAttribute('aria-hidden', 'true');
     this.inputField.setAttribute('aria-expanded', 'false');
+  }
+
+  toggleSurpriseButton() {
+    this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
+    // if (!this.query) this.resetDropdown();
   }
 
   resetDropdown() {
