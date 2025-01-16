@@ -29,31 +29,28 @@ export default class ActionBinder {
     Object.entries(this.actions).forEach(([selector, actionsList]) => {
       const elements = this.block.querySelectorAll(selector);
       elements.forEach((el) => {
-        if (el.hasAttribute('data-event-bound')) return;
-        this.addEventListeners(el, actionsList);
-        el.setAttribute('data-event-bound', 'true');
+        if (!el.hasAttribute('data-event-bound')) {
+          this.addEventListeners(el, actionsList);
+          el.setAttribute('data-event-bound', 'true');
+        }
       });
     });
     this.addAccessibility();
   }
 
   addEventListeners(el, actionsList) {
+    const handleClick = async (event) => {
+      event.preventDefault();
+      await this.executeActions(actionsList, el);
+    };
     switch (el.nodeName) {
       case 'A':
       case 'BUTTON':
-        el.addEventListener('click', async (event) => {
-          event.preventDefault();
-          await this.executeActions(actionsList, el);
-        });
+        el.addEventListener('click', handleClick);
         break;
       case 'LI':
-        el.addEventListener('mousedown', (event) => {
-          event.preventDefault();
-        });
-        el.addEventListener('click', async (event) => {
-          event.preventDefault();
-          await this.executeActions(actionsList, el);
-        });
+        el.addEventListener('mousedown', (event) => event.preventDefault());
+        el.addEventListener('click', handleClick);
         break;
       case 'INPUT':
         this.addInputEventListeners(el, actionsList);
@@ -70,28 +67,18 @@ export default class ActionBinder {
       this.query = event.target.value.trim();
       this.toggleSurpriseButton();
       if (this.query.length >= 3) {
-        debounceTimer = setTimeout(async () => {
-          await this.executeActions(actionsList);
-        }, 1000);
+        debounceTimer = setTimeout(() => this.executeActions(actionsList), 1000);
       }
     });
     el.addEventListener('focus', () => {
-      this.dropdown.classList.remove('hidden');
-      this.dropdown.setAttribute('aria-hidden', 'false');
-      el.setAttribute('aria-expanded', 'true');
+      this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
         sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
       }
     });
     el.addEventListener('blur', (event) => {
-      const { relatedTarget } = event;
-      if (relatedTarget && this.dropdown.contains(relatedTarget)) {
-        return;
-      }
-      this.dropdown.setAttribute('aria-hidden', 'true');
-      el.setAttribute('aria-expanded', 'false');
-      this.dropdown.classList.add('hidden');
+      if (!this.dropdown.contains(event.relatedTarget)) this.hideDropdown();
     });
   }
 
@@ -113,6 +100,9 @@ export default class ActionBinder {
       case 'autocomplete':
         await this.fetchAutocompleteSuggestions();
         break;
+      case 'refreshSuggestion':
+        await this.refreshSuggestions();
+        break;
       case 'surprise':
         await this.triggerSurpriseMe();
         break;
@@ -125,19 +115,8 @@ export default class ActionBinder {
       case 'closeDropdown':
         this.resetDropdown();
         break;
-      case 'refreshSuggestion':
-        await this.refreshSuggestions();
-        break;
       default:
         break;
-    }
-  }
-
-  async refreshSuggestions() {
-    if (this.suggestion.length > 0) {
-      this.displaySuggestions();
-    } else {
-      await this.fetchAutocompleteSuggestions('refresh');
     }
   }
 
@@ -174,9 +153,17 @@ export default class ActionBinder {
     }
   }
 
+  async refreshSuggestions() {
+    if (this.suggestion.length > 0) {
+      this.displaySuggestions();
+    } else {
+      await this.fetchAutocompleteSuggestions('refresh');
+    }
+  }
+
   displaySuggestions() {
     this.clearDropdown();
-    this.toggleDefaultItems(false);
+    // this.toggleDefaultItems(false);
     const dynamicHeader = this.createDynamicHeader();
     this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
     const latestSuggestions = this.suggestion.splice(0, 3);
@@ -189,10 +176,25 @@ export default class ActionBinder {
     this.initActionListeners();
   }
 
-  clearDropdown() {
-    this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
-    this.dropdown.classList.add('hidden');
-    this.addAccessibility();
+  async triggerSurpriseMe() {
+    const { prompt: prompts = [] } = this.workflowCfg.supportedTexts || {};
+    if (prompts.length === 0) return;
+    this.query = prompts[Math.floor(Math.random() * prompts.length)];
+    await this.generateContent();
+  }
+
+  async generateContent() {
+    try {
+      const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
+      const response = await this.serviceHandler.postCallToService(
+        this.apiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(payload) },
+      );
+      if (!response.url) return;
+      window.location.href = response.url;
+    } catch (error) {
+      console.error('Error generating content:', error);
+    }
   }
 
   toggleDefaultItems(show = true) {
@@ -238,15 +240,6 @@ export default class ActionBinder {
       header.appendChild(element);
     });
     return header;
-  }
-
-  resetDropdown() {
-    this.inputField.value = '';
-    this.surpriseBtn.classList.remove('hidden');
-    this.query = '';
-    this.clearDropdown();
-    this.toggleDefaultItems();
-    this.dropdown.classList.add('hidden');
   }
 
   toggleSurpriseButton() {
@@ -302,10 +295,7 @@ export default class ActionBinder {
         this.activeIndex = -1;
         break;
       case 'Escape':
-        this.dropdown.classList.add('hidden');
-        this.inputField.setAttribute('aria-expanded', 'false');
-        this.dropdown.setAttribute('aria-hidden', 'true');
-        this.activeIndex = -1;
+        this.hideDropdown();
         break;
       default:
         break;
@@ -323,24 +313,30 @@ export default class ActionBinder {
     });
   }
 
-  async triggerSurpriseMe() {
-    const { prompt: prompts = [] } = this.workflowCfg.supportedTexts || {};
-    if (prompts.length === 0) return;
-    this.query = prompts[Math.floor(Math.random() * prompts.length)];
-    await this.generateContent();
+  clearDropdown() {
+    this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
+    this.dropdown.classList.add('hidden');
+    this.addAccessibility();
   }
 
-  async generateContent() {
-    try {
-      const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
-      const response = await this.serviceHandler.postCallToService(
-        this.apiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(payload) },
-      );
-      if (!response.url) return;
-      window.location.href = response.url;
-    } catch (error) {
-      console.error('Error generating content:', error);
-    }
+  showDropdown() {
+    this.dropdown.classList.remove('hidden');
+    this.dropdown.setAttribute('aria-hidden', 'false');
+    this.inputField.setAttribute('aria-expanded', 'true');
+  }
+
+  hideDropdown() {
+    this.dropdown.classList.add('hidden');
+    this.dropdown.setAttribute('aria-hidden', 'true');
+    this.inputField.setAttribute('aria-expanded', 'false');
+  }
+
+  resetDropdown() {
+    this.inputField.value = '';
+    this.query = '';
+    this.toggleSurpriseButton();
+    this.clearDropdown();
+    this.toggleDefaultItems();
+    this.hideDropdown();
   }
 }
