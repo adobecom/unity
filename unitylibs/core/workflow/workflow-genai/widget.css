@@ -58,6 +58,7 @@
   bottom: 0;
   z-index: -1;
   background: linear-gradient(45deg, #b2dfff00, #b2dfffb3 48%, #b2dfff, #b0acfe00, #b0acfebf 43%, #b0acfe);
+  filter: blur(30px);
   border-radius: inherit;
   width: 100%;
 }
