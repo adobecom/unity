@@ -66,8 +66,7 @@
   bottom: 0;
   z-index: -1;
   /* background: linear-gradient(90deg, #b2dfff00, #b2dfffb3 0, #b2dfff 40%, #b0acfe00 40%, #b0acfebf 39%, #b0acfe); */
-  background-image: 
-  linear-gradient(0deg, #b2dfff, rgba(178, 223, 255, 0.7) 52%, rgba(178, 223, 255, 0),#b0acfe, rgba(176, 172, 254, 0.75) 57%, rgba(176, 172, 254, 0));
+  background-image: linear-gradient(0deg, #b2dfff, rgba(178, 223, 255, 0.7) 52%, rgba(178, 223, 255, 0), #b0acfe, rgba(176, 172, 254, 0.75) 57%, rgba(176, 172, 254, 0));
   filter: blur(40px);
   border-radius: inherit;
   width: 100%;
