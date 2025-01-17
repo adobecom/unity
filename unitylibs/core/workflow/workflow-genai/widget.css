@@ -65,7 +65,6 @@
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
   padding: 0 40px 24px;
-  border-radius: 16px;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
@@ -80,10 +79,15 @@
   display: flex;
   padding: 12px 16px;
   align-items: center;
+  border-radius: 16px;
   border: 1px solid #FFF;
   background: linear-gradient(89deg, rgba(255, 255, 255, 0.80) 1.01%, rgba(255, 255, 255, 0.20) 111.14%);
   box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.16);
   gap: 24px;
+}
+
+.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget .input-wrapper {
+  background: #FFF;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper .input-field {
