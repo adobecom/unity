@@ -57,8 +57,8 @@
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: linear-gradient(90deg, #b2dfff00, #b2dfffb3 0, #b2dfff 40%, #b0acfe00 40%, #b0acfebf 40%, #b0acfe);
-  filter: blur(30px);
+  background: linear-gradient(90deg, #b2dfff00, #b2dfffb3 0, #b2dfff 40%, #b0acfe00 40%, #b0acfebf 39%, #b0acfe);
+  filter: blur(40px);
   border-radius: inherit;
   width: 100%;
 }
