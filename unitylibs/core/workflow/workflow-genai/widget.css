@@ -39,6 +39,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  animation: none;
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
