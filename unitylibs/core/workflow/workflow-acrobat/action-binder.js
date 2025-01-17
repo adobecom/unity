@@ -226,10 +226,20 @@ export default class ActionBinder {
   }
 
   async batchUpload(tasks, batchSize) {
-    for (let i = 0; i < tasks.length; i += batchSize) {
-      const batch = tasks.slice(i, i + batchSize);
-      await Promise.all(batch);
+    let activeRequests = [];
+    for (let i = 0; i < tasks.length; i++) {
+      if (activeRequests.length >= batchSize) {
+        await Promise.race(activeRequests);
+        activeRequests = activeRequests.filter((p) => p !== undefined);
+      }
+      const task = tasks[i];
+      const request = task();
+      activeRequests.push(request);
+      request.finally(() => {
+        activeRequests.splice(activeRequests.indexOf(request), 1);
+      });
     }
+    await Promise.all(activeRequests);
   }
 
   async chunkPdf(assetData, blobData, filetype) {
@@ -240,13 +250,36 @@ export default class ActionBinder {
       const end = Math.min(start + assetData.blocksize, blobData.size);
       const chunk = blobData.slice(start, end);
       const url = assetData.uploadUrls[i];
-      return this.uploadFileToUnity(url.href, chunk, filetype);
+      return () => this.uploadFileToUnity(url.href, chunk, filetype);
     });
     await this.batchUpload(
       uploadPromises,
       this.limits?.batchSize || uploadPromises.length,
     );
   }
+
+  // async batchUpload(tasks, batchSize) {
+  //   for (let i = 0; i < tasks.length; i += batchSize) {
+  //     const batch = tasks.slice(i, i + batchSize);
+  //     await Promise.all(batch);
+  //   }
+  // }
+
+  // async chunkPdf(assetData, blobData, filetype) {
+  //   const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
+  //   if (assetData.uploadUrls.length !== totalChunks) return;
+  //   const uploadPromises = Array.from({ length: totalChunks }, (_, i) => {
+  //     const start = i * assetData.blocksize;
+  //     const end = Math.min(start + assetData.blocksize, blobData.size);
+  //     const chunk = blobData.slice(start, end);
+  //     const url = assetData.uploadUrls[i];
+  //     return this.uploadFileToUnity(url.href, chunk, filetype);
+  //   });
+  //   await this.batchUpload(
+  //     uploadPromises,
+  //     this.limits?.batchSize || uploadPromises.length,
+  //   );
+  // }
 
   checkCookie = () => {
     const cookies = document.cookie.split(';').map((item) => item.trim());
