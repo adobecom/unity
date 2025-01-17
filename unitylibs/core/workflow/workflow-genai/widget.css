@@ -102,6 +102,7 @@
   border: none;
   width: 100%;
   border-radius: 3px;
+  font-family: inherit;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper .input-field::placeholder {
