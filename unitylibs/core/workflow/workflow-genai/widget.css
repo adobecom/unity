@@ -63,7 +63,7 @@
   width: 100%;
 }
 
-.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
+.unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
   padding: 0 40px 24px;
 }
 
