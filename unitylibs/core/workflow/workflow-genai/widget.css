@@ -28,8 +28,7 @@
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
-  animation: none;
-  animation: slideInFromBottom 0.3s ease-out;
+  animation: slideInFromSlow 0.3s ease-out;
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky {
@@ -40,11 +39,13 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  animation: none;
-  animation: slideInFromBottom 0.5s ease-out;
 }
 
-@keyframes slideInFromBottom {
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
+  animation: slideInFromFast 0.5s ease-out;
+}
+
+@keyframes slideInFromFast {
   0% {
     transform: translateY(100%);
     opacity: 0;
