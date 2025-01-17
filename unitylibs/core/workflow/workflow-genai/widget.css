@@ -69,6 +69,7 @@
   filter: blur(40px);
   border-radius: inherit;
   width: 100%;
+  animation: slideIn 0.5s ease-out;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
