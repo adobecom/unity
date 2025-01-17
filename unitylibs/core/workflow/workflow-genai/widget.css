@@ -65,8 +65,10 @@
   right: 0;
   bottom: 0;
   z-index: -1;
-  background-image: linear-gradient(0deg, #b2dfff, hsla(204.93506493506493, 100.00%, 84.90%, 0.70) 52%, hsla(204.93506493506493, 100.00%, 84.90%, 0.00)),
-  linear-gradient(0deg, #b0acfe, hsla(242.9268292682927, 97.62%, 83.53%, 0.75) 57%, hsla(242.9268292682927, 97.62%, 83.53%, 0.00));
+  /* background: linear-gradient(90deg, #b2dfff00, #b2dfffb3 0, #b2dfff 40%, #b0acfe00 40%, #b0acfebf 39%, #b0acfe); */
+  background-image: 
+  linear-gradient(0deg, #b2dfff, rgba(178, 223, 255, 0.7) 52%, rgba(178, 223, 255, 0)),
+  linear-gradient(0deg, #b0acfe, rgba(176, 172, 254, 0.75) 57%, rgba(176, 172, 254, 0));
   filter: blur(40px);
   border-radius: inherit;
   width: 100%;
