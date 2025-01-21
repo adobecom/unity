@@ -20,7 +20,7 @@ export default class UnityWidget {
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
     this.insertWidget();
-    // this.initIntersectionObserver();
+    this.initIntersectionObserver();
     return this.workflowCfg.targetCfg.actionMap;
   }
 
