@@ -63,9 +63,8 @@
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 30px;
   z-index: -1;
-  background-image: linear-gradient(90deg, #b2dfff00 0%, #b2dfffb3 0%, #b2dfff 40%, #b0acfe00 40%, #b0acfebf 39%, #b0acfe 100%, #0000 0%, #000 95%);
   background-image: linear-gradient(90deg, #b2dfff00 0%, #b2dfffb3 0%, #b2dfff 40%, #b0acfe00 40%, #b0acfebf 39%, #b0acfe 100%);
   filter: blur(40px);
   border-radius: inherit;
