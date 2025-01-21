@@ -40,6 +40,7 @@
   display: flex;
   justify-content: center;
   animation: none;
+  backdrop-filter: blur(30px);
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
@@ -70,6 +71,13 @@
   border-radius: inherit;
   width: 100%;
   animation: slideIn 0.2s linear;
+}
+
+.unity-enabled .interactive-area .express-unity-wrapper.sticky::after {
+  content: '';
+  position: absolute;
+  -webkit-mask: linear-gradient(#0000 0%, #000 95%);
+  mask: linear-gradient(#0000 0%, #000 95%); 
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
