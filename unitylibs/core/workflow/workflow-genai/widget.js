@@ -79,11 +79,15 @@ export default class UnityWidget {
       'aria-hidden': 'true',
     });
 
-    const promptTitle = createTag('li', {
-      class: 'dropdown-title',
+    const promptTitleCon = createTag('li', {
+      class: 'dropdown-title-con',
       role: 'presentation',
-    }, `${placeholders['placeholder-prompt']} ${placeholders['placeholder-suggestions']}`);
-    dropdown.append(promptTitle);
+    });
+    const promptTitle = createTag('span', { class: 'dropdown-title' }, `${placeholders['placeholder-prompt']} ${placeholders['placeholder-suggestions']}`);
+    const promptClose = createTag('button', { class: 'close-btn', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' });
+    promptTitleCon.append(promptTitle);
+    promptTitleCon.append(promptClose);
+    dropdown.append(promptTitleCon);
 
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el, i) => {

@@ -35,7 +35,7 @@
   position: fixed;
   bottom: 30px;
   left: 0;
-  z-index: 102;
+  z-index: 101;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -202,13 +202,34 @@
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown.hidden {
     display: none;
   }
+
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+  }
   
-  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title {
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con .dropdown-title {
     font-weight: 700;
     font-size: 16px;
     color: #292929;
     line-height: 20.8px;
     padding: 0 16px;
+  }
+
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con .close-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con .close-btn:before {
+    content: url(../../../img/icons/close-btn.svg);
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title.dynamic {
