@@ -27,6 +27,11 @@
   font-weight: 400;
 }
 
+.aside.text2image.unity-enabled p:last-of-type {
+  font-size: var(--type-body-xs-size);
+  line-height: var(--type-body-xs-lh);
+}
+
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
   animation: slideIn 0.3s ease-out;
 }
@@ -73,7 +78,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
-  padding: 0 40px 24px;
+  padding: 0 var(--spacing-l) var(--spacing-s);
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
@@ -86,26 +91,24 @@
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper {
   display: flex;
-  padding: 12px 16px;
+  padding: 12px var(--spacing-xs);
   align-items: center;
-  border-radius: 16px;
-  border: 1px solid #FFF;
+  border-radius: var(--spacing-xs);
+  border: 1px solid var(--color-white);
   background: linear-gradient(89deg, rgba(255, 255, 255, 0.80) 1.01%, rgba(255, 255, 255, 0.20) 111.14%);
   box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.16);
-  gap: 24px;
+  gap: var(--spacing-s);
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget .input-wrapper {
-  background: #FFF;
+  background: var(--color-white);
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper .input-field {
   padding: 9px 5px 10px;
-  align-items: flex-start;
   flex: 1;
   color: #222;
   font-size: 16px;
-  font-style: normal;
   font-weight: 400;
   line-height: 130%;
   border: none;
@@ -154,7 +157,6 @@
     border: 2px solid #292929;
     color: #292929;
     font-size: 14px;
-    font-style: normal;
     font-weight: 700;
     line-height: normal;
     display: flex;
@@ -174,7 +176,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .action-wrapper .generate-btn .btn-text {
-    color: #FFF;
+    color: var(--color-white);
     font-size: 14px;
     font-style: normal;
     font-weight: 700;
@@ -188,7 +190,6 @@
     width: 100%;
     border-radius: 16px;
     padding: 8px 0;
-    text-align: left;
     margin: 8px 0 0 0;
     position: absolute;
     z-index: 1;
@@ -219,7 +220,6 @@
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con .close-btn {
-    margin-left: auto;
     background: transparent;
     border: 0;
     cursor: pointer;
@@ -229,16 +229,12 @@
     content: url(../../../img/icons/close-btn.svg);
     width: 20px;
     height: 20px;
-    vertical-align: middle;
-  }
-
-  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.dynamic {
-    display:flex;
-    align-items: center;
+    display: block;
+    padding-top: 5px;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.dynamic .title-text {
-    color: #909090;
+    color: var(--color-gray-500);
     font-weight: 900;
   }
 
@@ -252,22 +248,8 @@
     content: url(../../../img/icons/refresh-btn.svg);
     width: 20px;
     height: 20px;
-    vertical-align: middle;
+    display: block;
     cursor: pointer;
-  }
-
-  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.dynamic .close-btn {
-    margin-left: auto;
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-  }
-
-  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.dynamic .close-btn:before {
-    content: url(../../../img/icons/close-btn.svg);
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.hidden {
@@ -296,10 +278,7 @@
     display: none;
   }
 
-  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item.active {
-    background-color: #e6e6e6;
-  }
-
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item.active,
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item:hover {
     background-color: #e6e6e6;
   }
@@ -420,7 +399,4 @@
       display: none;
     }
   }
-  .aside.text2image.unity-enabled p:last-of-type {
-    font-size: var(--type-body-xs-size);
-    line-height: var(--type-body-xs-lh);
-  }
+  
