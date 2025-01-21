@@ -29,16 +29,9 @@
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
   animation: slideIn 0.3s ease-out;
-  position: sticky; /* Use sticky positioning */
-  bottom: 30px; /* Stick to 30px from the bottom */
-  left: 0;
-  z-index: 101;
-  width: 100%;
-  display: flex;
-  justify-content: center;
 }
 
-/* .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky {
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky {
   position: fixed;
   bottom: 30px;
   left: 0;
@@ -47,7 +40,7 @@
   display: flex;
   justify-content: center;
   animation: none;
-} */
+}
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
   animation: slideIn 0.5s ease-out;
