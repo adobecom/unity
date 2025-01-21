@@ -235,7 +235,7 @@ export default class ActionBinder {
       { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
       { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
     ];
-    const header = createTag('li', { class: 'dropdown-title dynamic' });
+    const header = createTag('li', { class: 'dropdown-title-con dynamic' });
     elements.forEach(({ tag, attributes, content = '' }) => {
       const element = createTag(tag, attributes, content);
       header.appendChild(element);
@@ -310,7 +310,7 @@ export default class ActionBinder {
   }
 
   clearDropdown() {
-    this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
+    this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title-con.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
     this.dropdown.classList.add('hidden');
     this.addAccessibility();
   }
