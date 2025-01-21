@@ -225,6 +225,10 @@
     cursor: pointer;
   }
 
+  .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.dynamic .close-btn {
+    margin-left: auto;
+  }
+
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con .close-btn:before {
     content: url(../../../img/icons/close-btn.svg);
     width: 20px;
