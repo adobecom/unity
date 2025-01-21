@@ -40,7 +40,6 @@
   display: flex;
   justify-content: center;
   animation: none;
-  backdrop-filter: blur(30px);
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
