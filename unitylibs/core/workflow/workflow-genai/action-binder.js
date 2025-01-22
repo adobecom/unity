@@ -270,6 +270,15 @@ export default class ActionBinder {
     this.addKeyDownListener();
   }
 
+  addKeyDownListener() {
+    this.removeKeyDownListener();
+    this.block.addEventListener('keydown', this.boundHandleKeyDown);
+  }
+
+  removeKeyDownListener() {
+    this.block.removeEventListener('keydown', this.boundHandleKeyDown);
+  }
+
   handleKeyDown(event) {
     const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'];
     if (!validKeys.includes(event.key)) return;
