@@ -338,7 +338,7 @@ export default class ActionBinder {
   clearDropdown() {
     this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title-con.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
     this.dropdown.classList.add('hidden');
-    this.addAccessibility();
+    // this.addAccessibility();
   }
 
   showDropdown() {
