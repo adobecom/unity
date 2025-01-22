@@ -35,7 +35,6 @@ export default class ActionBinder {
         }
       });
     });
-    this.addAccessibility();
   }
 
   addEventListeners(el, actionsList) {
@@ -176,6 +175,7 @@ export default class ActionBinder {
     this.dropdown.classList.remove('hidden');
     console.log('displaySuggestions');
     this.initActionListeners();
+    this.addAccessibility();
   }
 
   async triggerSurpriseMe() {
