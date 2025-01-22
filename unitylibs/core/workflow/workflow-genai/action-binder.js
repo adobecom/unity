@@ -308,6 +308,24 @@ export default class ActionBinder {
     }
   }
 
+  getDropdownItems() {
+    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
+    return dynamicItems.length > 0
+      ? dynamicItems
+      : Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
+  }
+
+  getFocusableElements(isDynamic) {
+    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
+    if (this.viewport !== 'MOBILE') {
+      closeBtnSelector = `${closeBtnSelector}, .legal-text`;
+    }
+    const selector = isDynamic
+      ? `.input-field, .refresh-btn, ${closeBtnSelector}`
+      : `.input-field, ${closeBtnSelector}`;
+    return Array.from(this.block.querySelectorAll(selector));
+  }
+
   isDropdownVisible() {
     return !this.dropdown.classList.contains('hidden');
   }
