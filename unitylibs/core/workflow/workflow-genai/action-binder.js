@@ -267,12 +267,14 @@ export default class ActionBinder {
   handleKeyDown(event) {
     let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
     let focusableElements = [];
-    if (dropdownItems.length) {
+
+    if (dropdownItems.length > 0) {
       focusableElements = Array.from(this.block.querySelectorAll('.input-field, .refresh-btn, .close-btn.dynamic, .legal-text'));
     } else {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
       focusableElements = Array.from(this.block.querySelectorAll('.input-field, .close-btn, .legal-text'));
     }
+    console.log('focusableElements', focusableElements);
     if (!dropdownItems.length) return;
     const isDropdownVisible = !this.dropdown.classList.contains('hidden');
     if (!focusableElements.length) return;
