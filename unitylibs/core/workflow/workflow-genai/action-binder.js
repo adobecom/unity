@@ -280,12 +280,11 @@ export default class ActionBinder {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
       focusableElements = Array.from(this.block.querySelectorAll(`.input-field, ${closeBtnSelector}, .legal-text`));
     }
-    console.log('focusableElements', focusableElements);
     if (!dropdownItems.length) return;
     const isDropdownVisible = !this.dropdown.classList.contains('hidden');
     if (!focusableElements.length) return;
-    let currentIndex = 0;
-    let prevIndex = 0;
+    let currentIndex = -1;
+    let prevIndex = -1;
     switch (event.key) {
       case 'Tab':
         if (!isDropdownVisible) return;
@@ -315,8 +314,10 @@ export default class ActionBinder {
         if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
           dropdownItems[this.activeIndex].click();
           dropdownItems[this.activeIndex].classList.remove('active');
+          this.activeIndex = -1;
         }
-        this.activeIndex = -1;
+        currentIndex = focusableElements.indexOf(document.activeElement);
+        if (currentIndex !== -1) focusableElements[currentIndex].click();
         break;
       case 'Escape':
         this.hideDropdown();
