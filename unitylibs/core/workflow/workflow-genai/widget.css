@@ -82,7 +82,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
-  width: 720px;
+  max-width: 720px;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .autocomplete {
