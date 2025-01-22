@@ -278,7 +278,7 @@ export default class ActionBinder {
       focusableElements = Array.from(this.block.querySelectorAll(`.input-field, .refresh-btn, ${closeBtnSelector}, .legal-text`));
     } else {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
-      focusableElements = Array.from(this.block.querySelectorAll(`.input-field, ${closeBtnSelector}, .legal-text'`));
+      focusableElements = Array.from(this.block.querySelectorAll(`.input-field, ${closeBtnSelector}, .legal-text`));
     }
     console.log('focusableElements', focusableElements);
     if (!dropdownItems.length) return;
