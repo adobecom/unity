@@ -259,6 +259,7 @@
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.hidden {
     display: none;
+    visibility: hidden;
   }
   
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item {
