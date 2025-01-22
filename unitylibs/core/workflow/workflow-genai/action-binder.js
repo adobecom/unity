@@ -254,11 +254,11 @@ export default class ActionBinder {
 
   addKeyDownListener() {
     this.removeKeyDownListener();
-    this.block.addEventListener('keydown', this.handleKeyDown.bind(this));
+    this.block.addEventListener('keydown', this.boundHandleKeyDown);
   }
 
   removeKeyDownListener() {
-    this.block.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    this.block.removeEventListener('keydown', this.boundHandleKeyDown);
   }
 
   addAccessibility() {
