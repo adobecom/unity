@@ -286,9 +286,10 @@ export default class ActionBinder {
     const dropdownItems = this.getDropdownItems();
     const focusableElements = this.getFocusableElements(dropdownItems.length > 0);
     const currentIndex = focusableElements.indexOf(document.activeElement);
-
+    const isDropdownVisible = this.isDropdownVisible();
     switch (event.key) {
       case 'Tab':
+        if (!isDropdownVisible) return;
         this.handleTab(event, focusableElements, currentIndex);
         break;
       case 'ArrowDown':
