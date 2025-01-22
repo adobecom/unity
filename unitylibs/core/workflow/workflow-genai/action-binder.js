@@ -270,7 +270,21 @@ export default class ActionBinder {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
     if (!dropdownItems.length) return;
+    const isDropdownVisible = !this.dropdown.classList.contains('hidden');
+    const focusableElements = Array.from(this.dropdown.querySelectorAll('.input-field, .close-btn, .legal-link'));
+    if (!focusableElements.length) return;
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
     switch (event.key) {
+      case 'Tab':
+        if (!isDropdownVisible) return;
+        event.preventDefault();
+        if (event.shiftKey && document.activeElement === firstElement) {
+          lastElement.focus();
+        } else if (document.activeElement === lastElement) {
+          firstElement.focus();
+        }
+        break;
       case 'ArrowDown':
         event.preventDefault();
         this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
