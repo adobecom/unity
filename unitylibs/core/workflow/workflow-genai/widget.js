@@ -152,7 +152,34 @@ export default class UnityWidget {
     interactiveArea.insertBefore(this.widgetParent, paragraphs[1]);
   }
 
+  // initIntersectionObserver() {
+  //   this.workflowCfg.stickyBehavior = true;
+  //   const observerElement = this.target.querySelector('#free-ai-image-generator');
+  //   createIntersectionObserver({
+  //     el: observerElement,
+  //     callback: (cfg) => this.addStickyBehaviour(cfg),
+  //     cfg: this.workflowCfg,
+  //     options: {
+  //       root: null,
+  //       rootMargin: '10px',
+  //       threshold: [0.1, 0.9],
+  //     },
+  //   });
+  // }
+
   initIntersectionObserver() {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      console.log('readyState', document.readyState);
+      this.setupIntersectionObserver();
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOMContentLoaded', 'document.readyState');
+        this.setupIntersectionObserver();
+      });
+    }
+  }
+
+  setupIntersectionObserver() {
     this.workflowCfg.stickyBehavior = true;
     const observerElement = this.target.querySelector('#free-ai-image-generator');
     createIntersectionObserver({
