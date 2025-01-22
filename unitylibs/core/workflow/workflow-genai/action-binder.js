@@ -285,7 +285,7 @@ export default class ActionBinder {
     if (!dropdownItems.length) return;
   
     const isDropdownVisible = !this.dropdown.classList.contains('hidden');
-    const focusableElements = Array.from(this.block.querySelectorAll('.input-field, .close-btn, .legal-link'));
+    const focusableElements = Array.from(this.block.querySelectorAll('.input-field, .close-btn, .legal-text'));
     if (!focusableElements.length) return;
   
     const firstElement = focusableElements[0]; // Close button
