@@ -30,6 +30,7 @@
 .aside.text2image.unity-enabled p:last-of-type {
   font-size: var(--type-body-xs-size);
   line-height: var(--type-body-xs-lh);
+  padding-top: var(--spacing-s);
 }
 
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
@@ -78,7 +79,7 @@
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
-  padding: 0 var(--spacing-l) var(--spacing-s);
+  padding: 0 var(--spacing-l);
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
