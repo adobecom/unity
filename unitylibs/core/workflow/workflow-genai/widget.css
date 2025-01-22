@@ -269,6 +269,8 @@
     padding: 8px 16px;
     display: flex;
     align-items: center;
+    gap: 8px;
+    text-align: left;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-empty-message {
@@ -290,11 +292,12 @@
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item:before {
     content: "";
     display: inline-block;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     background-image: url(../../../img/icons/prompt.svg);
     background-repeat: no-repeat;
-    margin-right: 8px;
+    background-size: contain;
+    flex-shrink: 0;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown .dropdown-item.dynamic:before {
@@ -379,6 +382,10 @@
   
     .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
       padding: 0;
+    }
+
+    .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget.sticky {
+      width: 90%;
     }
   
     .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper {
