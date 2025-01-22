@@ -271,18 +271,24 @@ export default class ActionBinder {
     }
     if (!dropdownItems.length) return;
     const isDropdownVisible = !this.dropdown.classList.contains('hidden');
-    const focusableElements = Array.from(this.dropdown.querySelectorAll('.input-field, .close-btn, .legal-link'));
+    const focusableElements = Array.from(this.dropdown.querySelectorAll('.close-btn, .legal-link'));
     if (!focusableElements.length) return;
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+    const firstElement = focusableElements[0]; // Close button
+    const lastElement = focusableElements[focusableElements.length - 1]; // Legal link
     switch (event.key) {
       case 'Tab':
         if (!isDropdownVisible) return;
         event.preventDefault();
-        if (event.shiftKey && document.activeElement === firstElement) {
-          lastElement.focus();
-        } else if (document.activeElement === lastElement) {
-          firstElement.focus();
+        if (event.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === this.inputField) {
+            firstElement.focus();
+          } else if (document.activeElement === lastElement) {
+            firstElement.focus();
+          }
         }
         break;
       case 'ArrowDown':
