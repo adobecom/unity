@@ -251,30 +251,46 @@ export default class ActionBinder {
     this.toggleSurpriseButton();
   }
 
+  // addKeyDownListener() {
+  //   this.removeKeyDownListener(); // Remove existing listener to avoid duplicates
+  //   this.inputField.addEventListener('keydown', this.handleKeyDown);
+  // }
+
+  // removeKeyDownListener() {
+  //   this.inputField.removeEventListener('keydown', this.handleKeyDown);
+  // }
+
+  // addAccessibility() {
+  //   this.addKeyDownListener();
+  // }
+
   addKeyDownListener() {
     this.removeKeyDownListener(); // Remove existing listener to avoid duplicates
-    this.inputField.addEventListener('keydown', this.handleKeyDown);
+    this.block.addEventListener('keydown', this.handleKeyDown.bind(this)); // Bind `this` to the instance
   }
-
+  
   removeKeyDownListener() {
-    this.inputField.removeEventListener('keydown', this.handleKeyDown);
+    this.block.removeEventListener('keydown', this.handleKeyDown.bind(this)); // Ensure same reference for removal
   }
-
+  
   addAccessibility() {
     this.addKeyDownListener();
   }
-
+  
   handleKeyDown(event) {
     let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
     if (!dropdownItems.length) {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
     if (!dropdownItems.length) return;
+  
     const isDropdownVisible = !this.dropdown.classList.contains('hidden');
-    const focusableElements = Array.from(this.dropdown.querySelectorAll('.close-btn, .legal-link'));
+    const focusableElements = Array.from(this.block.querySelectorAll('.input-field, .close-btn, .legal-link'));
     if (!focusableElements.length) return;
+  
     const firstElement = focusableElements[0]; // Close button
     const lastElement = focusableElements[focusableElements.length - 1]; // Legal link
+  
     switch (event.key) {
       case 'Tab':
         if (!isDropdownVisible) return;
@@ -284,23 +300,24 @@ export default class ActionBinder {
             lastElement.focus();
           }
         } else {
-          if (document.activeElement === this.inputField) {
-            firstElement.focus();
-          } else if (document.activeElement === lastElement) {
+          if (document.activeElement === lastElement) {
             firstElement.focus();
           }
         }
         break;
+  
       case 'ArrowDown':
         event.preventDefault();
         this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
         this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
         break;
+  
       case 'ArrowUp':
         event.preventDefault();
         this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
         this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
         break;
+  
       case 'Enter':
         event.preventDefault();
         if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
@@ -309,14 +326,16 @@ export default class ActionBinder {
         }
         this.activeIndex = -1;
         break;
+  
       case 'Escape':
         this.hideDropdown();
         break;
+  
       default:
         break;
     }
   }
-
+  
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
       if (i === index) {
@@ -327,6 +346,71 @@ export default class ActionBinder {
       }
     });
   }
+  
+
+  // handleKeyDown(event) {
+  //   let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
+  //   if (!dropdownItems.length) {
+  //     dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
+  //   }
+  //   if (!dropdownItems.length) return;
+  //   const isDropdownVisible = !this.dropdown.classList.contains('hidden');
+  //   const focusableElements = Array.from(this.dropdown.querySelectorAll('.close-btn, .legal-link'));
+  //   if (!focusableElements.length) return;
+  //   const firstElement = focusableElements[0]; // Close button
+  //   const lastElement = focusableElements[focusableElements.length - 1]; // Legal link
+  //   switch (event.key) {
+  //     case 'Tab':
+  //       if (!isDropdownVisible) return;
+  //       event.preventDefault();
+  //       if (event.shiftKey) {
+  //         if (document.activeElement === firstElement) {
+  //           lastElement.focus();
+  //         }
+  //       } else {
+  //         if (document.activeElement === this.inputField) {
+  //           firstElement.focus();
+  //         } else if (document.activeElement === lastElement) {
+  //           firstElement.focus();
+  //         }
+  //       }
+  //       break;
+  //     case 'ArrowDown':
+  //       event.preventDefault();
+  //       this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
+  //       this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+  //       break;
+  //     case 'ArrowUp':
+  //       event.preventDefault();
+  //       this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+  //       this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+  //       break;
+  //     case 'Enter':
+  //       event.preventDefault();
+  //       if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
+  //         dropdownItems[this.activeIndex].click();
+  //         dropdownItems[this.activeIndex].classList.remove('active');
+  //       }
+  //       this.activeIndex = -1;
+  //       break;
+  //     case 'Escape':
+  //       this.hideDropdown();
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  // }
+
+  // setActiveItem(items, index, input) {
+  //   items.forEach((item, i) => {
+  //     if (i === index) {
+  //       item.classList.add('active');
+  //       input.setAttribute('aria-activedescendant', item.id);
+  //     } else {
+  //       item.classList.remove('active');
+  //     }
+  //   });
+  // }
 
   clearDropdown() {
     this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title-con.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
