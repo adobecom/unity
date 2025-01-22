@@ -380,6 +380,14 @@
       padding: 0 24px;
     }
   
+    .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
+      padding: 0;
+    }
+
+    .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget.sticky {
+      width: 90%;
+    }
+  
     .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper {
       flex-direction: column;
     }
