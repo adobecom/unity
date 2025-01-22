@@ -295,14 +295,16 @@ export default class ActionBinder {
       case 'Tab':
         if (!isDropdownVisible) return;
         event.preventDefault();
+        const currentIndex = focusableElements.indexOf(document.activeElement);
+
         if (event.shiftKey) {
-          if (document.activeElement === firstElement) {
-            lastElement.focus();
-          }
+          // Shift + Tab: Move focus backward
+          const prevIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
+          focusableElements[prevIndex].focus();
         } else {
-          if (document.activeElement === lastElement) {
-            firstElement.focus();
-          }
+          // Tab: Move focus forward
+          const nextIndex = (currentIndex + 1) % focusableElements.length;
+          focusableElements[nextIndex].focus();
         }
         break;
   
