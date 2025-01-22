@@ -330,8 +330,8 @@ export default class ActionBinder {
     return !this.dropdown.classList.contains('hidden');
   }
 
-  handleTab(event, isDropdownVisible, focusableElements, currentIndex) {
-    if (!isDropdownVisible) return;
+  handleTab(event, focusableElements, currentIndex) {
+    if (!focusableElements.length) return;
     event.preventDefault();
     const nextIndex = event.shiftKey
       ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
