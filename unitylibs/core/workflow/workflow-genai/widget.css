@@ -77,9 +77,9 @@
   animation: slideIn 0.2s linear;
 }
 
-/* .unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
+.unity-enabled .interactive-area .express-unity-wrapper:not(.sticky) .express-unity-widget {
   padding: 0 var(--spacing-l) var(--spacing-s);
-} */
+}
 
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget {
   max-width: 720px;
@@ -378,6 +378,10 @@
     .aside.text2image.unity-enabled .foreground.container {
       width: 100%;
       padding: 0 24px;
+    }
+  
+    .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
+      padding: 0;
     }
   
     .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper {
