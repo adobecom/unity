@@ -174,6 +174,7 @@ export default class ActionBinder {
       this.addSuggestionItems(latestSuggestions, dynamicHeader);
     }
     this.dropdown.classList.remove('hidden');
+    console.log('displaySuggestions');
     this.initActionListeners();
   }
 
