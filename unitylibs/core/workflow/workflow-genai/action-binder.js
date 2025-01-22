@@ -1,4 +1,10 @@
-import { unityConfig, createTag, getUnityLibs, sendAnalyticsEvent, defineDeviceByScreenSize } from '../../../scripts/utils.js';
+import {
+  unityConfig,
+  createTag,
+  getUnityLibs,
+  sendAnalyticsEvent,
+  defineDeviceByScreenSize,
+} from '../../../scripts/utils.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
@@ -12,9 +18,9 @@ export default class ActionBinder {
     this.serviceHandler = null;
     this.sendAnalyticsOnFocus = true;
     this.apiConfig = this.initializeApiConfig();
-    this.inputField = this.block.querySelector('.input-field');
-    this.dropdown = this.block.querySelector('.dropdown');
-    this.surpriseBtn = this.block.querySelector('.surprise-btn');
+    this.inputField = this.getElement('.input-field');
+    this.dropdown = this.getElement('.dropdown');
+    this.surpriseBtn = this.getElement('.surprise-btn');
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.activeIndex = -1;
     this.suggestion = [];
@@ -27,8 +33,16 @@ export default class ActionBinder {
   }
 
   initializeApiConfig() {
-    unityConfig.expressEndpoint = { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` };
-    return unityConfig;
+    return {
+      ...unityConfig,
+      expressEndpoint: { autoComplete: `${unityConfig.apiEndPoint}/api/v1/providers/AutoComplete` },
+    };
+  }
+
+  getElement(selector) {
+    const element = this.block.querySelector(selector);
+    if (!element) console.warn(`Element with selector "${selector}" not found.`);
+    return element;
   }
 
   async initActionListeners() {
@@ -48,6 +62,7 @@ export default class ActionBinder {
       event.preventDefault();
       await this.executeActions(actionsList, el);
     };
+
     switch (el.nodeName) {
       case 'A':
       case 'BUTTON':
@@ -72,9 +87,10 @@ export default class ActionBinder {
       this.query = event.target.value.trim();
       this.toggleSurpriseButton();
       if (this.query.length >= 3) {
-        debounceTimer = setTimeout(async () => this.executeActions(actionsList), 1000);
+        debounceTimer = setTimeout(() => this.executeActions(actionsList), 1000);
       }
     });
+
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
@@ -82,47 +98,40 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
+
     el.addEventListener('blur', (event) => {
       if (!this.dropdown.contains(event.relatedTarget)) this.hideDropdown();
     });
   }
 
   async executeActions(actionsList, el = null) {
-    const { default: ServiceHandler } = await import(
-      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-    );
-    this.serviceHandler = new ServiceHandler(
-      this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
-    );
+    if (!this.serviceHandler) {
+      const { default: ServiceHandler } = await import(
+        `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
+      );
+      this.serviceHandler = new ServiceHandler(
+        this.workflowCfg.targetCfg.renderWidget,
+        this.canvasArea
+      );
+    }
+
     for (const action of actionsList) {
       await this.handleAction(action, el);
     }
   }
 
   async handleAction(action, el) {
-    switch (action.actionType) {
-      case 'autocomplete':
-        await this.fetchAutocompleteSuggestions();
-        break;
-      case 'refreshSuggestion':
-        await this.refreshSuggestions();
-        break;
-      case 'surprise':
-        await this.triggerSurpriseMe();
-        break;
-      case 'generate':
-        await this.generateContent();
-        break;
-      case 'setPromptValue':
-        this.setPromptValue(el);
-        break;
-      case 'closeDropdown':
-        this.resetDropdown();
-        break;
-      default:
-        break;
-    }
+    const actionMap = {
+      autocomplete: () => this.fetchAutocompleteSuggestions(),
+      refreshSuggestion: () => this.refreshSuggestions(),
+      surprise: () => this.triggerSurpriseMe(),
+      generate: () => this.generateContent(),
+      setPromptValue: () => this.setPromptValue(el),
+      closeDropdown: () => this.resetDropdown(),
+    };
+
+    const execute = actionMap[action.actionType];
+    if (execute) await execute();
   }
 
   async fetchAutocompleteSuggestions(fetchType = 'default') {
@@ -179,7 +188,6 @@ export default class ActionBinder {
       this.addSuggestionItems(latestSuggestions, dynamicHeader);
     }
     this.dropdown.classList.remove('hidden');
-    console.log('displaySuggestions');
     this.initActionListeners();
     this.addAccessibility();
   }
@@ -258,15 +266,6 @@ export default class ActionBinder {
     this.toggleSurpriseButton();
   }
 
-  addKeyDownListener() {
-    this.removeKeyDownListener();
-    this.block.addEventListener('keydown', this.boundHandleKeyDown);
-  }
-
-  removeKeyDownListener() {
-    this.block.removeEventListener('keydown', this.boundHandleKeyDown);
-  }
-
   addAccessibility() {
     this.addKeyDownListener();
   }
@@ -274,15 +273,14 @@ export default class ActionBinder {
   handleKeyDown(event) {
     const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'];
     if (!validKeys.includes(event.key)) return;
+
     const dropdownItems = this.getDropdownItems();
-    if (!dropdownItems.length) return;
     const focusableElements = this.getFocusableElements(dropdownItems.length > 0);
-    if (!focusableElements.length) return;
-    const isDropdownVisible = this.isDropdownVisible();
     const currentIndex = focusableElements.indexOf(document.activeElement);
+
     switch (event.key) {
       case 'Tab':
-        this.handleTab(event, isDropdownVisible, focusableElements, currentIndex);
+        this.handleTab(event, focusableElements, currentIndex);
         break;
       case 'ArrowDown':
         this.handleArrowDown(event, dropdownItems);
@@ -299,24 +297,6 @@ export default class ActionBinder {
       default:
         break;
     }
-  }
-
-  getDropdownItems() {
-    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
-    return dynamicItems.length > 0
-      ? dynamicItems
-      : Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
-  }
-
-  getFocusableElements(isDynamic) {
-    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
-    if (this.viewport !== 'MOBILE') {
-      closeBtnSelector = `${closeBtnSelector}, .legal-text`;
-    }
-    const selector = isDynamic
-      ? `.input-field, .refresh-btn, ${closeBtnSelector}`
-      : `.input-field, ${closeBtnSelector}`;
-    return Array.from(this.block.querySelectorAll(selector));
   }
 
   isDropdownVisible() {
