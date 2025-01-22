@@ -265,6 +265,8 @@ export default class ActionBinder {
   }
 
   handleKeyDown(event) {
+    const validKey = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key);
+    if (!validKey) return;
     console.log('handleKeyDown', event.key);
     let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
     let focusableElements = [];
