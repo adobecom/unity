@@ -273,10 +273,10 @@ export default class ActionBinder {
     let focusableElements = [];
 
     if (dropdownItems.length > 0) {
-      focusableElements = Array.from(this.block.querySelectorAll('.input-field, .refresh-btn, .close-btn, .legal-text'));
+      focusableElements = Array.from(this.block.querySelectorAll('.input-field, .refresh-btn, .close-btn:nth-of-type(1), .legal-text'));
     } else {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
-      focusableElements = Array.from(this.block.querySelectorAll('.input-field, .close-btn, .legal-text'));
+      focusableElements = Array.from(this.block.querySelectorAll('.input-field, .close-btn:nth-of-type(1), .legal-text'));
     }
     console.log('focusableElements', focusableElements);
     if (!dropdownItems.length) return;
