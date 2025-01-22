@@ -270,8 +270,28 @@ export default class ActionBinder {
       dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
     }
     if (!dropdownItems.length) return;
-
+    const closeButton = this.dropdown.querySelector('.close-btn');
+    const firstFocusable = closeButton || dropdownItems[0];
+    const lastFocusable = dropdownItems[dropdownItems.length - 1];
     switch (event.key) {
+      case 'TAB':
+        if (this.isDropdownVisible()) {
+          event.preventDefault();
+          if (event.shiftKey) {
+            if (document.activeElement === this.inputField) {
+              lastFocusable?.focus();
+            } else if (document.activeElement === firstFocusable) {
+              this.inputField.focus();
+            }
+          } else {
+            if (document.activeElement === this.inputField) {
+              firstFocusable?.focus();
+            } else if (document.activeElement === lastFocusable) {
+              this.inputField.focus();
+            }
+          }
+        }
+        break;
       case 'ArrowDown':
         event.preventDefault();
         this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
@@ -296,6 +316,10 @@ export default class ActionBinder {
       default:
         break;
     }
+  }
+
+  isDropdownVisible() {
+    return !this.dropdown.classList.contains('hidden');
   }
 
   setActiveItem(items, index, input) {
