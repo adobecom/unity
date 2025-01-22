@@ -19,6 +19,11 @@ export default class ActionBinder {
     this.activeIndex = -1;
     this.suggestion = [];
     this.viewport = defineDeviceByScreenSize();
+    this.init();
+  }
+
+  init() {
+    this.addAccessibility();
   }
 
   initializeApiConfig() {
