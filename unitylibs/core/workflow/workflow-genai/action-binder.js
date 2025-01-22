@@ -333,6 +333,7 @@ export default class ActionBinder {
   }
 
   resetDropdown() {
+    this.inputField.focus();
     this.inputField.value = '';
     this.query = '';
     this.surpriseBtn.classList.remove('hidden');
