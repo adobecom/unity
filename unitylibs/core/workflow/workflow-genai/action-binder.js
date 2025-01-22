@@ -357,6 +357,7 @@ export default class ActionBinder {
       dropdownItems[this.activeIndex].click();
       dropdownItems[this.activeIndex].classList.remove('active');
       this.activeIndex = -1;
+      return;
     }
     if (currentIndex !== -1) {
       focusableElements[currentIndex].click();
