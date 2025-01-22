@@ -274,7 +274,7 @@ export default class ActionBinder {
     const firstFocusable = closeButton || dropdownItems[0];
     const lastFocusable = dropdownItems[dropdownItems.length - 1];
     switch (event.key) {
-      case 'TAB':
+      case 'Tab':
         if (this.isDropdownVisible()) {
           event.preventDefault();
           if (event.shiftKey) {
