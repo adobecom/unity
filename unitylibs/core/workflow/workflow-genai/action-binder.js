@@ -1,4 +1,4 @@
-import { unityConfig, createTag, getUnityLibs, sendAnalyticsEvent } from '../../../scripts/utils.js';
+import { unityConfig, createTag, getUnityLibs, sendAnalyticsEvent, defineDeviceByScreenSize } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
@@ -18,6 +18,7 @@ export default class ActionBinder {
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.activeIndex = -1;
     this.suggestion = [];
+    this.viewport = defineDeviceByScreenSize();
   }
 
   initializeApiConfig() {
@@ -266,64 +267,87 @@ export default class ActionBinder {
   }
 
   handleKeyDown(event) {
-    const validKey = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key);
-    if (!validKey) return;
-    let dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
-    let focusableElements = [];
-    let closeBtnSelector = '.close-btn';
-    if (this.block.querySelector('.close-btn.dynamic')) {
-      closeBtnSelector = '.close-btn.dynamic';
-    }
-    if (dropdownItems.length > 0) {
-      focusableElements = Array.from(this.block.querySelectorAll(`.input-field, .refresh-btn, ${closeBtnSelector}, .legal-text`));
-    } else {
-      dropdownItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
-      focusableElements = Array.from(this.block.querySelectorAll(`.input-field, ${closeBtnSelector}, .legal-text`));
-    }
+    const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'];
+    if (!validKeys.includes(event.key)) return;
+    const dropdownItems = this.getDropdownItems();
     if (!dropdownItems.length) return;
-    const isDropdownVisible = !this.dropdown.classList.contains('hidden');
+    const focusableElements = this.getFocusableElements(dropdownItems.length > 0);
     if (!focusableElements.length) return;
-    let currentIndex = -1;
-    let prevIndex = -1;
+    const isDropdownVisible = this.isDropdownVisible();
+    const currentIndex = focusableElements.indexOf(document.activeElement);
     switch (event.key) {
       case 'Tab':
-        if (!isDropdownVisible) return;
-        event.preventDefault();
-        currentIndex = focusableElements.indexOf(document.activeElement);
-
-        if (event.shiftKey) {
-          prevIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
-          focusableElements[prevIndex].focus();
-        } else {
-          const nextIndex = (currentIndex + 1) % focusableElements.length;
-          focusableElements[nextIndex].focus();
-        }
+        this.handleTab(event, isDropdownVisible, focusableElements, currentIndex);
         break;
       case 'ArrowDown':
-        event.preventDefault();
-        this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
-        this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+        this.handleArrowDown(event, dropdownItems);
         break;
       case 'ArrowUp':
-        event.preventDefault();
-        this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-        this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+        this.handleArrowUp(event, dropdownItems);
         break;
       case 'Enter':
-        event.preventDefault();
-        if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
-          dropdownItems[this.activeIndex].click();
-          dropdownItems[this.activeIndex].classList.remove('active');
-          this.activeIndex = -1;
-        }
-        currentIndex = focusableElements.indexOf(document.activeElement);
-        if (currentIndex !== -1) focusableElements[currentIndex].click();
+        this.handleEnter(event, dropdownItems, focusableElements, currentIndex);
         break;
       case 'Escape':
         this.hideDropdown();
         break;
       default:
         break;
+    }
+  }
+
+  getDropdownItems() {
+    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
+    return dynamicItems.length > 0
+      ? dynamicItems
+      : Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
+  }
+
+  getFocusableElements(isDynamic) {
+    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
+    if (this.viewport === 'MOBILE') {
+      closeBtnSelector = `${closeBtnSelector}, .legal-text`;
+    }
+    const selector = isDynamic
+      ? `.input-field, .refresh-btn, ${closeBtnSelector}`
+      : `.input-field, ${closeBtnSelector}`;
+    return Array.from(this.block.querySelectorAll(selector));
+  }
+
+  isDropdownVisible() {
+    return !this.dropdown.classList.contains('hidden');
+  }
+
+  handleTab(event, isDropdownVisible, focusableElements, currentIndex) {
+    if (!isDropdownVisible) return;
+    event.preventDefault();
+    const nextIndex = event.shiftKey
+      ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
+      : (currentIndex + 1) % focusableElements.length;
+    focusableElements[nextIndex].focus();
+  }
+
+  handleArrowDown(event, dropdownItems) {
+    event.preventDefault();
+    this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
+    this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+  }
+
+  handleArrowUp(event, dropdownItems) {
+    event.preventDefault();
+    this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+    this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+  }
+
+  handleEnter(event, dropdownItems, focusableElements, currentIndex) {
+    event.preventDefault();
+    if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
+      dropdownItems[this.activeIndex].click();
+      dropdownItems[this.activeIndex].classList.remove('active');
+      this.activeIndex = -1;
+    }
+    if (currentIndex !== -1) {
+      focusableElements[currentIndex].click();
     }
   }
 
