@@ -361,6 +361,13 @@
     line-height: 12px;
   }
 
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget {
+      padding: 0 10px;
+    }
+  }
+
+
   @media screen and (max-width: 600px) {
     .aside.text2image.unity-enabled h1,
     .aside.text2image.unity-enabled h2,
