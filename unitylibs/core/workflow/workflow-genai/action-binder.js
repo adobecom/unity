@@ -111,7 +111,7 @@ export default class ActionBinder {
       );
       this.serviceHandler = new ServiceHandler(
         this.workflowCfg.targetCfg.renderWidget,
-        this.canvasArea
+        this.canvasArea,
       );
     }
 
