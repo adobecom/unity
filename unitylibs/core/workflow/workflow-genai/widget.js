@@ -152,31 +152,13 @@ export default class UnityWidget {
     interactiveArea.insertBefore(this.widgetParent, paragraphs[1]);
   }
 
-  // initIntersectionObserver() {
-  //   const observerElement = this.target.querySelector('#free-ai-image-generator');
-  //   if (!observerElement) return;
-  //   const rect = observerElement.getBoundingClientRect();
-  //   if (rect.top < window.innerHeight && rect.bottom > 0) {
-  //     console.log('Element is in view');
-  //     this.addStickyBehaviour({ isIntersecting: false });
-  //   }
-  //   console.log('Element is Not in view');
-  //   this.setupIntersectionObserver();
-  // }
-
   initIntersectionObserver() {
     const observerElement = this.target.querySelector('#free-ai-image-generator');
-    if (!observerElement) {
-      console.warn('Observer element not found');
-      return;
-    }
+    if (!observerElement) return;
     const checkVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
       if (rect.top < window.innerHeight && rect.bottom > 0) {
-        console.log('Element is in view on initial load');
         this.addStickyBehaviour({ isIntersecting: false });
-      } else {
-        console.log('Element is not in view on initial load');
       }
       this.setupIntersectionObserver(observerElement);
     };
@@ -199,7 +181,6 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
-    console.log('Intersection Observer Callback', cfg);
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
       this.widgetParent.classList.remove('sticky');
