@@ -205,51 +205,14 @@ export async function retryRequestUntilProductRedirect(cfg, requestFunction, del
   return cfg.scanResponseAfterRetries;
 }
 
-// export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-//   const io = new IntersectionObserver((entries) => {
-//     entries.forEach((entry) => {
-//       if (!entry.isIntersecting) {
-//         callback(cfg);
-//       }
-//     });
-//   }, options);
-//   io.observe(el);
-//   return io;
-// }
-
-function debounce(func, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func(...args), delay);
-  };
-}
-
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
-  const debouncedCallback = debounce(callback, 100);
-  let lastState = null;
-  let lastExecutionTime = 0;
-  const MIN_INTERVAL = 200;
-
-  const observerOptions = {
-    threshold: [0.1, 0.9],
-    ...options,
-  };
-
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      const currentState = entry.isIntersecting;
-      const now = Date.now();
-      if (currentState !== lastState && now - lastExecutionTime >= MIN_INTERVAL) {
-        lastState = currentState;
-        lastExecutionTime = now;
-
-        cfg.isIntersecting = currentState;
-        debouncedCallback(cfg);
+      if (!entry.isIntersecting) {
+        callback(cfg);
       }
     });
-  }, observerOptions);
-
+  }, options);
   io.observe(el);
   return io;
 }
