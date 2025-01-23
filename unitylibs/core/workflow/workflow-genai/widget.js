@@ -180,6 +180,7 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
+    console.log('Intersection Observer Callback', cfg);
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
       this.widgetParent.classList.remove('sticky');
