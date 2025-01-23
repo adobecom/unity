@@ -196,7 +196,10 @@
     margin: 8px 0 0 0;
     position: absolute;
     z-index: 1;
-    animation: slideIn 0.3s ease-out;
+    opacity: 1; /* Fully visible */
+    visibility: visible; /* Interactive */
+    transform: translateY(0); /* Final position */
+    transition: opacity 300ms ease-out, transform 300ms ease-out;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget .dropdown.open-upward {
@@ -205,7 +208,10 @@
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown.hidden {
-    display: none;
+    opacity: 0; /* Fully transparent */
+    visibility: hidden; /* Prevent interaction */
+    transform: translateY(-10px); /* Slightly above the final position */
+    transition: opacity 300ms ease-out, transform 300ms ease-out, visibility 0ms 300ms; /* Visibility delay matches animation duration */
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con {
