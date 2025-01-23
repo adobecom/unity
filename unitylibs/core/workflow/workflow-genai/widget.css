@@ -144,13 +144,12 @@
   max-height: 20px;
   min-width: 20px;
   max-width: 20px;
-  padding: 6px 6px 6px 14px;
+  padding: 4px 6px 4px 14px;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .action-wrapper .unity-action-btn .btn-text {
   display: flex;
-  padding: 6px 16px 8px 0px;
-  align-items: flex-start;
+  padding: 4px 16px 6px 0px;
 }
 
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .action-wrapper .surprise-btn {
@@ -181,7 +180,7 @@
     font-size: 14px;
     font-style: normal;
     font-weight: 700;
-    line-height: 130%;
+    line-height: normal;
 }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown {
