@@ -4,7 +4,7 @@ export const [setLibs, getLibs] = (() => {
     (prodLibs, location) => {
       libs = (() => {
         const { hostname, search } = location || window.location;
-        if (!(hostname.includes('.hlx.') || hostname.includes('local'))) return prodLibs;
+        if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
         return branch.includes('--') ? `https://${branch}.hlx.live/libs` : `https://${branch}--milo--adobecom.hlx.live/libs`;
@@ -25,7 +25,7 @@ export const [setUnityLibs, getUnityLibs] = (() => {
   ];
 })();
 
-export function decorateArea(area = document) {}
+export function decorateArea(area = document) { }
 
 const miloLibs = setLibs('/libs');
 
@@ -136,10 +136,10 @@ export async function priorityLoad(parr) {
     } else if (p.endsWith('.css')) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
       promiseArr.push(pr);
-    }else if (p.endsWith('.json')) {
-      const pr = new Promise((res) => { loadLink(p, { as: 'fetch', crossorigin: 'anonymous', rel: 'preload', callback: res  }); });
+    } else if (p.endsWith('.json')) {
+      const pr = new Promise((res) => { loadLink(p, { as: 'fetch', crossorigin: 'anonymous', rel: 'preload', callback: res }); });
       promiseArr.push(pr);
-      
+
     } else {
       promiseArr.push(fetch(p));
     }
@@ -217,25 +217,25 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   return io;
 }
 
-export function delay(durationMs=1000) {
+export function delay(durationMs = 1000) {
   return new Promise((resolve) => {
-      setTimeout(() => {
-          resolve('Resolved after 1 second');
-      }, durationMs);
+    setTimeout(() => {
+      resolve('Resolved after 1 second');
+    }, durationMs);
   });
 }
 
-export function updateQueryParameter(url, paramName='format', oldValue='webply', newValue='jpeg') {
+export function updateQueryParameter(url, paramName = 'format', oldValue = 'webply', newValue = 'jpeg') {
   try {
-      const urlObj = new URL(url);
-      const params = urlObj.searchParams;
-      if (params.get(paramName) === oldValue) {
-          params.set(paramName, newValue);
-      }
+    const urlObj = new URL(url);
+    const params = urlObj.searchParams;
+    if (params.get(paramName) === oldValue) {
+      params.set(paramName, newValue);
+    }
 
-      return urlObj.toString();
+    return urlObj.toString();
   } catch (error) {
-      return null;
+    return null;
   }
 }
 
