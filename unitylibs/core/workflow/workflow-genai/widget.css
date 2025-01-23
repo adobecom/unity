@@ -101,10 +101,6 @@
   gap: var(--spacing-s);
 }
 
-.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget .input-wrapper {
-  background: var(--color-white);
-}
-
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper .input-field {
   padding: 9px 5px 10px;
   flex: 1;
