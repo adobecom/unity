@@ -157,8 +157,10 @@ export default class UnityWidget {
     if (!observerElement) return;
     const rect = observerElement.getBoundingClientRect();
     if (rect.top < window.innerHeight && rect.bottom > 0) {
+      console.log('Element is in view');
       this.addStickyBehaviour({ isIntersecting: false });
     }
+    console.log('Element is Not in view');
     this.setupIntersectionObserver();
   }
 
