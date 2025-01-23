@@ -1,9 +1,10 @@
+/* General Reset */
 .aside.text2image.unity-enabled {
   overflow: unset;
 }
 
-.aside.text2image.unity-enabled [class^="heading-"]:only-of-type,
-.aside.text2image.unity-enabled [class^="heading-"]:last-of-type {
+.aside.text2image.unity-enabled [class^="heading-":only-of-type],
+.aside.text2image.unity-enabled [class^="heading-":last-of-type] {
   margin-bottom: var(--spacing-xxs);
   color: #222;
 }
@@ -14,6 +15,7 @@
   padding-top: var(--spacing-s);
 }
 
+/* Foreground Area */
 .aside.text2image.unity-enabled .foreground.container {
   width: 100%;
 }
@@ -33,6 +35,7 @@
   margin-bottom: var(--spacing-xxs);
 }
 
+/* Wrapper Animations */
 .express-unity-wrapper {
   animation: slideIn 0.3s ease-out;
 }
@@ -72,6 +75,7 @@
   height: 100%;
 }
 
+/* Keyframes */
 @keyframes slideIn {
   0% {
     transform: translateY(100%);
@@ -83,6 +87,7 @@
   }
 }
 
+/* Unity Widget */
 .express-unity-widget {
   padding: 0 var(--spacing-l);
 }
@@ -91,6 +96,7 @@
   width: 720px;
 }
 
+/* Input Field */
 .input-wrapper {
   display: flex;
   padding: 12px var(--spacing-xs);
@@ -162,6 +168,7 @@
   font-weight: 700;
 }
 
+/* Dropdown */
 .dropdown {
   background: linear-gradient(
       0deg,
