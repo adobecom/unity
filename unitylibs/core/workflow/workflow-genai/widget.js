@@ -168,15 +168,9 @@ export default class UnityWidget {
   // }
 
   initIntersectionObserver() {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      console.log('readyState', document.readyState);
+    setTimeout(() => {
       this.setupIntersectionObserver();
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOMContentLoaded', 'document.readyState');
-        this.setupIntersectionObserver();
-      });
-    }
+    }, 2000);
   }
 
   setupIntersectionObserver() {
