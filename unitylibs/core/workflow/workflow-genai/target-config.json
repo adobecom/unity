@@ -1,0 +1,42 @@
+{
+  "aside.text2image": {
+    "type": "text",
+    "selector": ".text",
+    "handler": "render",
+    "renderWidget": true,
+    "source": ".text .body-m",
+    "target": ".text .body-m",
+    "actionMap": {
+      ".input-field": [
+        {
+          "actionType": "autocomplete"
+        }
+      ],
+      ".surprise-btn": [
+        {
+          "actionType": "surprise"
+        }
+      ],
+      ".generate-btn": [
+        {
+          "actionType": "generate"
+        }
+      ],
+      ".dropdown-item": [
+        {
+          "actionType": "setPromptValue"
+        }
+      ],
+      ".refresh-btn": [
+        {
+          "actionType": "refreshSuggestion"
+        }
+      ],
+      ".close-btn": [
+        {
+          "actionType": "closeDropdown"
+        }
+      ]
+    }
+  }
+}

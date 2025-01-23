@@ -256,8 +256,8 @@ export const unityConfig = (() => {
       ...commoncfg,
     },
     stage: {
-      apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
-      connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
+      apiEndPoint: 'https://unity-dev.adobe.io/api/v1',
+      connectorApiEndPoint: 'https://unity-dev.adobe.io/api/v1/asset/connector',
       ...commoncfg,
     },
   };
@@ -270,3 +270,49 @@ export const unityConfig = (() => {
   }
   return cfg.prod;
 })();
+
+function debounce(func, del) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), del);
+  };
+}
+
+export function createCustomIntersectionObserver({ el, callback, cfg, options = {} }) {
+  const debouncedCallback = debounce(callback, 100);
+  let lastState = null;
+  let lastExecutionTime = 0;
+  const MIN_INTERVAL = 200;
+
+  const observerOptions = {
+    threshold: [0.1, 0.9],
+    ...options,
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const currentState = entry.isIntersecting;
+      const now = Date.now();
+      if (currentState !== lastState && now - lastExecutionTime >= MIN_INTERVAL) {
+        lastState = currentState;
+        lastExecutionTime = now;
+
+        cfg.isIntersecting = currentState;
+        debouncedCallback(cfg);
+      }
+    });
+  }, observerOptions);
+
+  io.observe(el);
+  return io;
+}
+
+export function sendAnalyticsEvent(event) {
+  const data = {
+    xdm: {},
+    data: { web: { webInteraction: { name: event?.type } } },
+  };
+  if (event?.data) data.data._adobe_corpnew = { digitalData: event.data };
+  window._satellite?.track('event', data);
+}
