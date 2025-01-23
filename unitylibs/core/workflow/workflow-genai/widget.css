@@ -101,6 +101,10 @@
   gap: var(--spacing-s);
 }
 
+.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget .input-wrapper {
+  background-image: linear-gradient(#fff9, #fff9), linear-gradient(135deg, #fffc, #ffffff3d);
+}
+
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper .input-field {
   padding: 9px 5px 10px;
   flex: 1;
