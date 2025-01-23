@@ -181,7 +181,7 @@ export default class UnityWidget {
 
   setupIntersectionObserver() {
     this.workflowCfg.stickyBehavior = true;
-    const observerElement = this.target.querySelector('.express-unity-wrapper');
+    const observerElement = this.target.querySelector('#free-ai-image-generator');
     createIntersectionObserver({
       el: observerElement,
       callback: (cfg) => this.addStickyBehaviour(cfg),
