@@ -232,10 +232,10 @@
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con .close-btn:before {
     content: url(../../../img/icons/close-btn.svg);
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
     display: block;
-    padding-top: 5px;
+    padding: 3px;
   }
 
   .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .dropdown-title-con.dynamic .title-text {
