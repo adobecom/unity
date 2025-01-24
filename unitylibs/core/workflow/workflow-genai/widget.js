@@ -187,6 +187,7 @@ export default class UnityWidget {
       console.warn('Observer element not found');
       return;
     }
+    console.log('Observer element found', footerElement);
     const checkVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
       if (rect.top < window.innerHeight && rect.bottom > 0) {
