@@ -307,6 +307,7 @@ export default class UnityWidget {
       dropdown.classList.remove('open-upward');
       dropdown.setAttribute('daa-lh', 'Marquee');
     } else {
+      console.log('else part', cfg);
       this.widgetParent.classList.add('sticky');
       dropdown.classList.add('open-upward');
       dropdown.setAttribute('daa-lh', 'Floating');
