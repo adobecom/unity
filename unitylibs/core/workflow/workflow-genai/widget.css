@@ -29,8 +29,8 @@
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
   animation: slideIn 0.3s ease-out;
 }
-.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.hidden {
-  display: none !important;
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky.hidden {
+  display: none;
 }
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky {
   position: fixed;
