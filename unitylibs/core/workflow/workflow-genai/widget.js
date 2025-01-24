@@ -269,7 +269,7 @@ export default class UnityWidget {
       const rect = observerElement.getBoundingClientRect();
       if (rect.top < window.innerHeight && rect.bottom > 0) {
         console.log('initial visibility');
-        this.addStickyBehaviour({ isIntersecting: false });
+        this.addStickyBehaviour({ isIntersecting: true });
       }
     };
     requestAnimationFrame(() => requestAnimationFrame(checkInitialVisibility));
