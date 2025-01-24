@@ -162,15 +162,19 @@ export default class UnityWidget {
       const footerElement = document.querySelector('.global-footer');
       if (footerElement) {
         this.setupIntersectionObserver(observerElement, footerElement);
-        footerObserver.disconnect();
+        if (footerObserver) {
+          console.log('disconnecting footer observer');
+          footerObserver.disconnect();
+        }
       }
     };
-    if (document.querySelector('.global-footer')) {
+    const footerElement = document.querySelector('.global-footer');
+    if (footerElement) {
       waitForFooterAndInit();
-      return;
+    } else {
+      footerObserver = new MutationObserver(waitForFooterAndInit);
+      footerObserver.observe(document.body, { childList: true, subtree: true });
     }
-    footerObserver = new MutationObserver(waitForFooterAndInit);
-    footerObserver.observe(document.body, { childList: true, subtree: true });
     const checkInitialVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
       if (rect.top >= window.innerHeight || rect.bottom <= 0) {
