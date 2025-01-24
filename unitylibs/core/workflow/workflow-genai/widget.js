@@ -180,22 +180,98 @@ export default class UnityWidget {
   //   });
   // }
 
+  // initIntersectionObserver() {
+  //   const observerElement = this.target.querySelector('#free-ai-image-generator');
+  //   const footerElement = document.querySelector('.global-footer');
+  //   if (!observerElement) {
+  //     console.warn('Observer element not found');
+  //     return;
+  //   }
+  //   console.log('Observer element found', footerElement);
+  //   const checkVisibility = () => {
+  //     const rect = observerElement.getBoundingClientRect();
+  //     if (rect.top < window.innerHeight && rect.bottom > 0) {
+  //       this.addStickyBehaviour({ isIntersecting: false });
+  //     }
+  //     this.setupIntersectionObserver(observerElement, footerElement);
+  //   };
+  //   requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
+  // }
+
+  // setupIntersectionObserver(observerElement, footerElement) {
+  //   createCustomIntersectionObserver({
+  //     el: observerElement,
+  //     callback: (cfg) => this.addStickyBehaviour(cfg),
+  //     cfg: this.workflowCfg,
+  //     options: {
+  //       root: null,
+  //       rootMargin: '10px',
+  //       threshold: [0.1, 0.9],
+  //     },
+  //   });
+  //   createCustomIntersectionObserver({
+  //     el: footerElement,
+  //     callback: (cfg) => this.toggleWrapperVisibility(cfg),
+  //     cfg: {},
+  //     options: {
+  //       root: null,
+  //       rootMargin: '0px',
+  //       threshold: [0.1],
+  //     },
+  //   });
+  // }
+
+  // addStickyBehaviour(cfg) {
+  //   const dropdown = this.widget.querySelector('.dropdown');
+  //   if (cfg.isIntersecting) {
+  //     this.widgetParent.classList.remove('sticky');
+  //     dropdown.classList.remove('open-upward');
+  //     dropdown.setAttribute('daa-lh', 'Marquee');
+  //   } else {
+  //     this.widgetParent.classList.add('sticky');
+  //     dropdown.classList.add('open-upward');
+  //     dropdown.setAttribute('daa-lh', 'Floating');
+  //   }
+  // }
+
+  // toggleWrapperVisibility(cfg) {
+  //   const wrapper = this.target.querySelector('.express-unity-wrapper');
+  //   if (!wrapper) {
+  //     return;
+  //   }
+  //   if (cfg.isIntersecting) {
+  //     wrapper.classList.add('hidden');
+  //   } else {
+  //     wrapper.classList.remove('hidden');
+  //   }
+  // }
+
   initIntersectionObserver() {
     const observerElement = this.target.querySelector('#free-ai-image-generator');
-    const footerElement = document.querySelector('.global-footer');
     if (!observerElement) {
-      console.warn('Observer element not found');
       return;
     }
-    console.log('Observer element found', footerElement);
-    const checkVisibility = () => {
+    let footerObserver;
+    const waitForFooterAndInit = () => {
+      const footerElement = document.querySelector('.global-footer');
+      if (footerElement) {
+        this.setupIntersectionObserver(observerElement, footerElement);
+        footerObserver.disconnect();
+      }
+    };
+    if (document.querySelector('.global-footer')) {
+      waitForFooterAndInit();
+      return;
+    }
+    footerObserver = new MutationObserver(waitForFooterAndInit);
+    footerObserver.observe(document.body, { childList: true, subtree: true });
+    const checkInitialVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
       if (rect.top < window.innerHeight && rect.bottom > 0) {
         this.addStickyBehaviour({ isIntersecting: false });
       }
-      this.setupIntersectionObserver(observerElement, footerElement);
     };
-    requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
+    requestAnimationFrame(() => requestAnimationFrame(checkInitialVisibility));
   }
 
   setupIntersectionObserver(observerElement, footerElement) {
@@ -209,6 +285,7 @@ export default class UnityWidget {
         threshold: [0.1, 0.9],
       },
     });
+
     createCustomIntersectionObserver({
       el: footerElement,
       callback: (cfg) => this.toggleWrapperVisibility(cfg),
