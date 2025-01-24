@@ -300,7 +300,7 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
-    console.log('check sticky behaviour');
+    console.log('check sticky behaviour', cfg);
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
       this.widgetParent.classList.remove('sticky');
