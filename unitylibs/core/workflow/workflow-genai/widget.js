@@ -268,6 +268,7 @@ export default class UnityWidget {
     const checkInitialVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
       if (rect.top < window.innerHeight && rect.bottom > 0) {
+        console.log('initial visibility');
         this.addStickyBehaviour({ isIntersecting: false });
       }
     };
@@ -299,6 +300,7 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
+    console.log('check sticky behaviour');
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
       this.widgetParent.classList.remove('sticky');
