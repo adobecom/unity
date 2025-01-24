@@ -154,21 +154,19 @@ export default class UnityWidget {
 
   initIntersectionObserver() {
     const observerElement = this.target.querySelector('#free-ai-image-generator');
-    if (!observerElement) {
-      return;
-    }
+    if (!observerElement) return;
+    const getFooterElement = () => document.querySelector('.global-footer');
     let footerObserver;
     const waitForFooterAndInit = () => {
-      const footerElement = document.querySelector('.global-footer');
+      const footerElement = getFooterElement();
       if (footerElement) {
         this.setupIntersectionObserver(observerElement, footerElement);
         if (footerObserver) {
-          console.log('disconnecting footer observer');
           footerObserver.disconnect();
         }
       }
     };
-    const footerElement = document.querySelector('.global-footer');
+    const footerElement = getFooterElement();
     if (footerElement) {
       waitForFooterAndInit();
     } else {
@@ -177,11 +175,8 @@ export default class UnityWidget {
     }
     const checkInitialVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
-      if (rect.top >= window.innerHeight || rect.bottom <= 0) {
-        this.addStickyBehaviour({ isIntersecting: false });
-      } else {
-        this.addStickyBehaviour({ isIntersecting: true });
-      }
+      const isInViewport = !(rect.top >= window.innerHeight || rect.bottom <= 0);
+      this.addStickyBehaviour({ isIntersecting: isInViewport });
     };
     requestAnimationFrame(() => requestAnimationFrame(checkInitialVisibility));
   }
@@ -197,7 +192,6 @@ export default class UnityWidget {
         threshold: [0.1, 0.9],
       },
     });
-
     createCustomIntersectionObserver({
       el: footerElement,
       callback: (cfg) => this.toggleWrapperVisibility(cfg),
@@ -211,14 +205,12 @@ export default class UnityWidget {
   }
 
   addStickyBehaviour(cfg) {
-    console.log('check sticky behaviour', cfg);
     const dropdown = this.widget.querySelector('.dropdown');
     if (cfg.isIntersecting) {
       this.widgetParent.classList.remove('sticky');
       dropdown.classList.remove('open-upward');
       dropdown.setAttribute('daa-lh', 'Marquee');
     } else {
-      console.log('else part', cfg);
       this.widgetParent.classList.add('sticky');
       dropdown.classList.add('open-upward');
       dropdown.setAttribute('daa-lh', 'Floating');
