@@ -267,8 +267,9 @@ export default class UnityWidget {
     footerObserver.observe(document.body, { childList: true, subtree: true });
     const checkInitialVisibility = () => {
       const rect = observerElement.getBoundingClientRect();
-      if (rect.top < window.innerHeight && rect.bottom > 0) {
-        console.log('initial visibility');
+      if (rect.top >= window.innerHeight || rect.bottom <= 0) {
+        this.addStickyBehaviour({ isIntersecting: false });
+      } else {
         this.addStickyBehaviour({ isIntersecting: true });
       }
     };
