@@ -90,7 +90,7 @@
   gap: var(--spacing-s);
 }
 .unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget .input-wrapper {
-  background: linear-gradient(0deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.80) 100%), linear-gradient(89deg, rgba(255, 255, 255, 0.80) 1.01%, rgba(255, 255, 255, 0.20) 111.14%);
+  background: linear-gradient(#fff9, #fff9), linear-gradient(135deg, #fffc, #ffffff3d);;
 }
 .unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget .input-wrapper .input-field {
   padding: 9px 5px 10px;
