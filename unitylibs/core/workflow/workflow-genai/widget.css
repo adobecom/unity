@@ -41,6 +41,7 @@
 }
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget-bg {
   display: flex;
+  transition: opacity 0.15s ease;
 }
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg.blur {
   -webkit-mask: linear-gradient(#0000 0%, #000 95%);
