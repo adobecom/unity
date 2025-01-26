@@ -12,7 +12,7 @@ export default class UnityWidget {
   async initWidget() {
     this.widgetParent = createTag('div', { class: 'express-unity-wrapper' });
     this.widget = createTag('div', { class: 'express-unity-widget' });
-    this.widgetBg = createWidgetBg();
+    this.widgetBg = this.createWidgetBg();
     const comboboxContainer = this.createComboboxContainer();
     const placeholders = this.populatePlaceholders();
     this.workflowCfg.placeholder = placeholders;
