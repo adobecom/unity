@@ -29,6 +29,35 @@
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper {
   animation: slideIn 0.3s ease-out;
 }
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg {
+  opacity: 1;
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  height: 10rem;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  filter: blur(40px);
+}
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg.blur {
+  -webkit-mask: linear-gradient(#0000 0%, #000 95%);
+  mask: linear-gradient(#0000 0%, #000 95%);
+}
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg .bg-one {
+  background-image: linear-gradient(#b2dfff00, #b2dfffb3 48%, #b2dfff);
+  flex: 0 auto;
+  width: 60%;
+  height: 100%;
+}
+.aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg .bg-two {
+  background-image: linear-gradient(#b0acfe00, #b0acfebf 43%, #b0acfe);
+  flex: 0 auto;
+  width: 60%;
+  height: 100%;
+  position: absolute;
+  right: 0;
+}
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky.hidden {
   display: none;
 }

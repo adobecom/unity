@@ -12,6 +12,7 @@ export default class UnityWidget {
   async initWidget() {
     this.widgetParent = createTag('div', { class: 'express-unity-wrapper' });
     this.widget = createTag('div', { class: 'express-unity-widget' });
+    this.widgetBg = createWidgetBg();
     const comboboxContainer = this.createComboboxContainer();
     const placeholders = this.populatePlaceholders();
     this.workflowCfg.placeholder = placeholders;
@@ -143,6 +144,14 @@ export default class UnityWidget {
       actionBtn.append(btnText);
     }
     return actionBtn;
+  }
+
+  createWidgetBg() {
+    const widgetBgCon = createTag('div', { class: 'express-unity-widget-bg blur' });
+    const widgetBgOne = createTag('div', { class: 'bg-one' });
+    const widgetBgTwo = createTag('div', { class: 'bg-two' });
+    widgetBgCon.append(widgetBgOne, widgetBgTwo);
+    this.widgetParent.append(widgetBgCon);
   }
 
   insertWidget() {
