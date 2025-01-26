@@ -31,18 +31,18 @@
 }
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg {
   opacity: 0;
+  visibility: hidden; /* Use visibility instead of display */
   -webkit-backdrop-filter: blur(30px);
   backdrop-filter: blur(30px);
   height: 10rem;
   position: fixed;
   bottom: 0;
   width: 100%;
-  display: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease; /* Add transition for visibility */
 }
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper.sticky .express-unity-widget-bg {
-  display: flex;
   opacity: 1;
-  transition: opacity 0.15s ease;
+  visibility: visible; /* Change visibility instead of display */
 }
 .aside.text2image.unity-enabled .interactive-area .express-unity-wrapper .express-unity-widget-bg.blur {
   -webkit-mask: linear-gradient(#0000 0%, #000 95%);
