@@ -203,6 +203,11 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn:focus {
   outline: 2px solid #005FCC;
 }
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico {
+  display: flex;
+  align-content: center;
+  padding: 4px 6px 4px 14px;
+}
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
   width: 20px;
   height: 20px;
@@ -210,7 +215,6 @@
   max-height: 20px;
   min-width: 20px;
   max-width: 20px;
-  padding: 4px 6px 4px 14px;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
   display: flex;
