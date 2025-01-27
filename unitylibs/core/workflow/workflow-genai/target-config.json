@@ -7,7 +7,7 @@
     "source": ".text .body-m",
     "target": ".text .body-m",
     "actionMap": {
-      ".input-field": [
+      ".inp-field": [
         {
           "actionType": "autocomplete"
         }
@@ -17,12 +17,12 @@
           "actionType": "surprise"
         }
       ],
-      ".generate-btn": [
+      ".gen-btn": [
         {
           "actionType": "generate"
         }
       ],
-      ".dropdown-item": [
+      ".drop-item": [
         {
           "actionType": "setPromptValue"
         }
