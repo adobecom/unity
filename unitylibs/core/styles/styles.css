@@ -192,24 +192,25 @@
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content {
   display: flex;
   flex-direction: row;
+  align-items: center;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-icon {
   display: flex;
   width: auto;
-  align-items: flex-start;
+  align-items: center;
   align-self: stretch;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-icon svg {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   height: 20px;
   min-height: 20px;
   max-height: 20px;
-  width: auto;
-  min-width: auto;
-  max-width: auto;
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
   padding: 18px 0 18px 16px;
   bottom: 18px;
 }
