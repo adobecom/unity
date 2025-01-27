@@ -130,6 +130,7 @@ class WfInitiator {
       priorityList.push(
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.css`,
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`,
+        `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       );
     }
     await priorityLoad(priorityList);

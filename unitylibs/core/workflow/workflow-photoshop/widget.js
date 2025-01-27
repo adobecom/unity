@@ -1,9 +1,10 @@
+/* eslint-disable class-methods-use-this */
 import {
   createTag,
   getLibs,
-  loadSvgs,
   priorityLoad,
   defineDeviceByScreenSize,
+  getUnityLibs,
 } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
@@ -15,12 +16,18 @@ export default class UnityWidget {
     this.actionMap = {};
   }
 
+  async loadSprite(spriteDOM) {
+    const response = await fetch(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/sprite.svg`);
+    spriteDOM.innerHTML = await response.text();
+  }
+
   async initWidget() {
-    const [iWidget, unityaa, unityoa] = ['unity-widget', 'unity-action-area', 'unity-option-area']
+    const [iWidget, unityaa, unityoa, unitySprite] = ['unity-widget', 'unity-action-area', 'unity-option-area', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
-    iWidget.append(unityoa, unityaa);
+    iWidget.append(unitySprite, unityoa, unityaa);
+    await this.loadSprite(unitySprite);
     const refreshCfg = this.el.querySelector('.icon-product-icon');
-    if (refreshCfg) this.addRestartOption(refreshCfg.closest('li'), unityaa);
+    if (refreshCfg) this.addRestartOption(unityaa);
     this.workflowCfg.enabledFeatures.forEach((f, idx) => {
       const addClasses = idx === 0 ? 'ps-action-btn show' : 'ps-action-btn';
       this.addFeatureButtons(
@@ -38,30 +45,18 @@ export default class UnityWidget {
     const continueInApp = this.el.querySelector('.icon-app-connector');
     if (continueInApp) this.addFeatureButtons('continue-in-app', continueInApp.closest('li'), unityaa, unityoa, '');
     this.widget = iWidget;
-    const svgs = iWidget.querySelectorAll('.show img[src*=".svg"');
-    await loadSvgs(svgs);
     this.target.append(iWidget);
     const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
     decorateDefaultLinkAnalytics(iWidget);
     return this.actionMap;
   }
 
-  createActionBtn(btnCfg, btnClass) {
-    const txt = btnCfg.innerText;
-    const img = btnCfg.querySelector('img[src*=".svg"]');
-    const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` });
-    let swapOrder = false;
-    if (img) {
-      actionBtn.append(createTag('div', { class: 'btn-icon' }, img));
-      if (img.nextSibling?.nodeName == '#text') swapOrder = true;
-    }
-    if (txt) {
-      const btnTxt = createTag('div', { class: 'btn-text' }, txt.split('\n')[0].trim());
-      const viewport = defineDeviceByScreenSize();
-      if (viewport === 'MOBILE') btnTxt.innerText = btnTxt.innerText.split(' ').toSpliced(1, 0, '\n').join(' ');
-      if (swapOrder) actionBtn.prepend(btnTxt);
-      else actionBtn.append(btnTxt);
-    }
+  createActionBtn(btnCfg, btnClass, imgId, swapOrder = false) {
+    const btnIcon = createTag('div', { class: 'btn-icon' }, `<svg><use xlink:href="#unity-${imgId}-icon"></use></svg>`);
+    const btnText = createTag('div', { class: 'btn-text' }, btnCfg.innerText.split('\n')[0].trim());
+    const actionBtn = createTag('a', { href: '#', class: `unity-action-btn ${btnClass}` }, btnText);
+    if (swapOrder) actionBtn.append(btnIcon);
+    else actionBtn.prepend(btnIcon);
     return actionBtn;
   }
 
@@ -88,10 +83,9 @@ export default class UnityWidget {
     mrh.classList.remove('show');
   }
 
-  addRestartOption(refreshCfg, unityaa) {
-    const [prodIcon, refreshIcon] = refreshCfg.querySelectorAll('img[src*=".svg"]');
-    const iconHolder = createTag('div', { class: 'widget-product-icon show' }, prodIcon);
-    const refreshHolder = createTag('a', { href: '#', class: 'widget-refresh-button' }, refreshIcon);
+  addRestartOption(unityaa) {
+    const iconHolder = createTag('div', { class: 'widget-product-icon show' }, `<svg><use xlink:href="#unity-${this.workflowCfg.productName.toLowerCase()}-icon"></use></svg>`);
+    const refreshHolder = createTag('a', { href: '#', class: 'widget-refresh-button' }, '<svg><use xlink:href="#unity-refresh-icon"></use></svg>');
     refreshHolder.append(createTag('div', { class: 'widget-refresh-text' }, 'Restart'));
     unityaa.append(iconHolder);
     const mobileRefreshHolder = refreshHolder.cloneNode(true);
@@ -123,14 +117,17 @@ export default class UnityWidget {
     currFeatureIdx,
     totalFeatures,
   ) {
-    const btn = this.createActionBtn(authCfg, `${featName}-button ${addClasses}`);
-    actionArea.append(btn);
+    let btn = null;
     switch (featName) {
       case 'removebg':
+        btn = this.createActionBtn(authCfg, `${featName}-button ${addClasses}`, featName);
+        actionArea.append(btn);
         this.initRemoveBgActions(featName, btn, authCfg);
         break;
       case 'upload':
         {
+          btn = this.createActionBtn(authCfg, `${featName}-button ${addClasses}`, featName);
+          actionArea.append(btn);
           const inpel = createTag('input', {
             class: 'file-upload',
             type: 'file',
@@ -145,9 +142,17 @@ export default class UnityWidget {
         }
         break;
       case 'continue-in-app':
+        btn = this.createActionBtn(
+          authCfg,
+          `${featName}-button ${addClasses}`,
+          this.workflowCfg.productName.toLowerCase()
+        );
+        actionArea.append(btn);
         this.initContinueInAppActions(featName);
         break;
       default:
+        btn = this.createActionBtn(authCfg, `${featName}-button ${addClasses}`, featName);
+        actionArea.append(btn);
         this.addFeatureTray(
           featName,
           authCfg,
@@ -176,16 +181,27 @@ export default class UnityWidget {
       {
         actionType: 'show',
         targets: ['.progress-circle'],
-      }, {
+      },
+      {
         itemType: 'button',
         actionType: featName,
         source: this.target.querySelector('img'),
         target: this.target.querySelector('img'),
-        cachedOutputUrl: authCfg.querySelector('ul li img') ? this.updateQueryParameter(authCfg.querySelector('ul li img').src) : null,
-      }, {
+        cachedOutputUrl: authCfg.querySelector(':scope ul li img')
+          ? this.updateQueryParameter(
+            authCfg.querySelector(':scope ul li img').src,
+          )
+          : null,
+      },
+      {
         actionType: 'show',
-        targets: ['.ps-action-btn.show + .ps-action-btn', '.changebg-options-tray', '.continue-in-app-button'],
-      }, {
+        targets: [
+          '.ps-action-btn.show + .ps-action-btn',
+          '.changebg-options-tray',
+          '.continue-in-app-button',
+        ],
+      },
+      {
         actionType: 'hide',
         targets: [btn, '.progress-circle'],
       },
@@ -197,17 +213,24 @@ export default class UnityWidget {
       {
         actionType: 'show',
         targets: ['.progress-circle'],
-      }, {
+      },
+      {
         itemType: 'button',
         actionType: 'changebg',
         backgroundSrc: bgImg.src,
         source: this.target.querySelector('img'),
         target: this.target.querySelector('img'),
-        cachedOutputUrl: authCfg.querySelector('ul li img') ? this.updateQueryParameter(authCfg.querySelector('ul li img').src) : null,
-      }, {
+        cachedOutputUrl: authCfg.querySelector(':scope ul li img')
+          ? this.updateQueryParameter(
+            authCfg.querySelector(':scope ul li img').src
+          )
+          : null,
+      },
+      {
         actionType: 'show',
         targets: ['.continue-in-app-button'],
-      }, {
+      },
+      {
         actionType: 'hide',
         targets: ['.progress-circle'],
       },
