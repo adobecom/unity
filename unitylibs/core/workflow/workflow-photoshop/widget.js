@@ -3,7 +3,6 @@ import {
   createTag,
   getLibs,
   priorityLoad,
-  defineDeviceByScreenSize,
   getUnityLibs,
 } from '../../../scripts/utils.js';
 
@@ -26,6 +25,8 @@ export default class UnityWidget {
       .map((c) => createTag('div', { class: c }));
     iWidget.append(unitySprite, unityoa, unityaa);
     await this.loadSprite(unitySprite);
+    this.widget = iWidget;
+    this.target.append(iWidget);
     const refreshCfg = this.el.querySelector('.icon-product-icon');
     if (refreshCfg) this.addRestartOption(unityaa);
     this.workflowCfg.enabledFeatures.forEach((f, idx) => {
@@ -44,8 +45,6 @@ export default class UnityWidget {
     if (uploadCfg) this.addFeatureButtons('upload', uploadCfg.closest('li'), unityaa, unityoa, 'show');
     const continueInApp = this.el.querySelector('.icon-app-connector');
     if (continueInApp) this.addFeatureButtons('continue-in-app', continueInApp.closest('li'), unityaa, unityoa, '');
-    this.widget = iWidget;
-    this.target.append(iWidget);
     const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
     decorateDefaultLinkAnalytics(iWidget);
     return this.actionMap;
@@ -338,7 +337,9 @@ export default class UnityWidget {
       this.initChangeBgActions(`.changebg-option.option-${num}`, btn, bgImg, bgSelectorTray, o, currFeatureIdx, totalFeatures);
       a.addEventListener('click', (e) => { e.preventDefault(); });
     });
-    priorityLoad(thumbnailSrc);
+    this.widget.addEventListener('click', () => {
+      priorityLoad(thumbnailSrc);
+    });
     optionArea.append(bgSelectorTray);
     return bgSelectorTray;
   }
