@@ -211,11 +211,7 @@ export default class ActionBinder {
       {},
       false,
     );
-    if (res.status === 403) {
-      this.unityEl.dispatchEvent(new CustomEvent('unity:refreshrequested'));
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-acmp' });
-      throw Error('Operation failed');
-    } else if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+    if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
       setTimeout(() => { this.scanImgForSafety(); }, 1000);
     }
   }
@@ -234,7 +230,7 @@ export default class ActionBinder {
     const fileType = this.getFileType();
     const assetId = await this.uploadImgToUnity(href, id, blobData, fileType);
     const { origin } = new URL(imgUrl);
-    if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) await this.scanImgForSafety(assetId);
+    if ((imgUrl.startsWith('blob:')) || (origin != window.location.origin)) this.scanImgForSafety(assetId);
     return assetId;
   }
 
