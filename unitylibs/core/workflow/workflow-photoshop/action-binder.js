@@ -265,6 +265,10 @@ export default class ActionBinder {
       };
     });
     if (!loadSuccessful) return;
+    if (params.target.naturalWidth > 8000 || params.target.naturalHeight > 8000) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
+      return;
+    }
     this.operations.push(operationItem);
     const callbackObj = [{
       itemType: 'button',
