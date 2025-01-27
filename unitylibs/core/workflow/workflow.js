@@ -121,12 +121,12 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  async priorityLibFetch(renderWidget, workflowName) {
+  async priorityLibFetch(workflowName) {
     const priorityList = [
       `${getUnityLibs()}/core/workflow/${workflowName}/action-binder.js`,
       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/target-config.json`,
     ];
-    if (renderWidget) {
+    if (['workflow-photoshop'].includes(workflowName)) {
       priorityList.push(
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.css`,
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`,
@@ -134,7 +134,7 @@ class WfInitiator {
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       );
     }
-    await priorityLoad(priorityList);
+    return await priorityLoad(priorityList);
   }
 
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
@@ -146,8 +146,10 @@ class WfInitiator {
     this.workflowCfg = this.getWorkFlowInformation();
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget();
-    await this.priorityLibFetch(this.targetConfig.renderWidget, this.workflowCfg.name);
+    const results = await this.priorityLibFetch(
+      this.workflowCfg.name,
+    );
+    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(results[1]);
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
@@ -187,9 +189,8 @@ class WfInitiator {
     });
   }
 
-  async getTarget() {
-    const res = await fetch(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/target-config.json`);
-    const targetConfig = await res.json();
+  async getTarget(rawTargetConfig) {
+    const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
     const supportedBlocks = Object.keys(targetConfig);
     let targetCfg = null;

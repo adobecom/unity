@@ -136,14 +136,11 @@ export async function priorityLoad(parr) {
     } else if (p.endsWith('.css')) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
       promiseArr.push(pr);
-    } else if (p.endsWith('.json')) {
-      const pr = new Promise((res) => { loadLink(p, { as: 'fetch', crossorigin: 'anonymous', rel: 'preload', callback: res  }); });
-      promiseArr.push(pr);
     } else {
       promiseArr.push(fetch(p));
     }
   });
-  await Promise.all(promiseArr);
+  return await Promise.all(promiseArr);
 }
 
 async function createErrorToast() {
