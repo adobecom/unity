@@ -102,30 +102,6 @@ export default class ActionBinder {
     });
   }
 
-  // addInputEventListeners(el, actionsList) {
-  //   let debounceTimer;
-  //   el.addEventListener('input', (event) => {
-  //     clearTimeout(debounceTimer);
-  //     this.query = event.target.value.trim();
-  //     this.toggleSurpriseButton();
-  //     if (this.query.length >= 3) {
-  //       debounceTimer = setTimeout(() => this.executeActions(actionsList), 1000);
-  //     }
-  //   });
-
-  //   el.addEventListener('focus', () => {
-  //     this.showDropdown();
-  //     if (this.sendAnalyticsOnFocus) {
-  //       sendAnalyticsEvent(new Event('promptOpen'));
-  //       this.sendAnalyticsOnFocus = false;
-  //     }
-  //   });
-
-  //   el.addEventListener('blur', (event) => {
-  //     if (!this.dropdown.contains(event.relatedTarget)) this.hideDropdown();
-  //   });
-  // }
-
   async execActions(actions, el = null) {
     if (!this.serviceHandler) {
       const { default: ServiceHandler } = await import(
@@ -146,22 +122,6 @@ export default class ActionBinder {
       }),
     );
   }
-
-  // async executeActions(actionsList, el = null) {
-  //   if (!this.serviceHandler) {
-  //     const { default: ServiceHandler } = await import(
-  //       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-  //     );
-  //     this.serviceHandler = new ServiceHandler(
-  //       this.workflowCfg.targetCfg.renderWidget,
-  //       this.canvasArea,
-  //     );
-  //   }
-
-  //   for (const action of actionsList) {
-  //     await this.handleAction(action, el);
-  //   }
-  // }
 
   async handleAction(action, el) {
     const actionMap = {
@@ -206,39 +166,6 @@ export default class ActionBinder {
     }
   }
 
-  // async fetchAutocompleteSuggestions(fetchType = 'default') {
-  //   try {
-  //     if (fetchType === 'refresh') {
-  //       this.maxResults *= 2;
-  //     } else {
-  //       if (this.query) {
-  //         const promptEvent = new Event('promptValue');
-  //         promptEvent.data = { query: this.query };
-  //         sendAnalyticsEvent(promptEvent);
-  //       }
-  //       this.maxResults = 12;
-  //     }
-  //     const data = {
-  //       query: this.query,
-  //       targetProduct: this.apiConfig.productName,
-  //       maxResults: this.maxResults,
-  //     };
-  //     const response = await this.serviceHandler.postCallToService(
-  //       this.apiConfig.expressEndpoint.autoComplete,
-  //       { body: JSON.stringify(data) },
-  //     );
-  //     if (response?.completions) {
-  //       this.suggestion = fetchType === 'refresh'
-  //         ? response.completions.slice(this.maxResults / 2)
-  //         : response.completions;
-  //       this.displaySuggestions();
-  //       this.inputField.focus();
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching autocomplete suggestions:', error);
-  //   }
-  // }
-
   async refreshSuggestions() {
     if (this.suggestion.length) {
       this.displaySuggestions();
@@ -247,15 +174,6 @@ export default class ActionBinder {
     }
     await this.fetchAutoComplete('refresh');
   }
-
-  // async refreshSuggestions() {
-  //   if (this.suggestion.length > 0) {
-  //     this.displaySuggestions();
-  //     this.inputField.focus();
-  //   } else {
-  //     await this.fetchAutoComplete('refresh');
-  //   }
-  // }
 
   displaySuggestions() {
     this.clearDropdown();
@@ -271,21 +189,6 @@ export default class ActionBinder {
     this.initActionListeners();
     this.addAccessibility();
   }
-  // displaySuggestions() {
-  //   this.clearDropdown();
-  //   this.toggleDefaultItems(false);
-  //   const dynamicHeader = this.createDynamicHeader();
-  //   this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
-  //   const latestSuggestions = this.suggestion.splice(0, 3);
-  //   if (latestSuggestions.length === 0) {
-  //     this.displayNoSuggestionsMessage(dynamicHeader);
-  //   } else {
-  //     this.addSuggestionItems(latestSuggestions, dynamicHeader);
-  //   }
-  //   this.dropdown.classList.remove('hidden');
-  //   this.initActionListeners();
-  //   this.addAccessibility();
-  // }
 
   async triggerSurprise() {
     const prompts = this.workflowCfg?.supportedTexts?.prompt || [];
@@ -293,13 +196,6 @@ export default class ActionBinder {
     this.query = prompts[Math.floor(Math.random() * prompts.length)];
     await this.generateContent();
   }
-
-  // async triggerSurpriseMe() {
-  //   const { prompt: prompts = [] } = this.workflowCfg.supportedTexts || {};
-  //   if (prompts.length === 0) return;
-  //   this.query = prompts[Math.floor(Math.random() * prompts.length)];
-  //   await this.generateContent();
-  // }
 
   async generateContent() {
     try {
@@ -317,31 +213,11 @@ export default class ActionBinder {
     }
   }
 
-  // async generateContent() {
-  //   try {
-  //     const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
-  //     const response = await this.serviceHandler.postCallToService(
-  //       this.apiConfig.connectorApiEndPoint,
-  //       { body: JSON.stringify(payload) },
-  //     );
-  //     if (!response.url) return;
-  //     window.location.href = response.url;
-  //   } catch (error) {
-  //     console.error('Error generating content:', error);
-  //   }
-  // }
-
   toggleDefaultItems(show = true) {
     this.dropdown
       .querySelectorAll('.drop-item, .drop-title-con')
       .forEach((item) => item.classList.toggle('hidden', !show));
   }
-  // toggleDefaultItems(show = true) {
-  //   const defaultItems = this.dropdown.querySelectorAll('.drop-item, .drop-title-con');
-  //   defaultItems.forEach((item) => {
-  //     item.classList.toggle('hidden', !show);
-  //   });
-  // }
 
   showEmptyState(header) {
     if (!this.dropdown.querySelector('.drop-empty-msg')) {
@@ -352,17 +228,6 @@ export default class ActionBinder {
       header.after(emptyMessage);
     }
   }
-
-  // showEmptyState(dynamicHeader) {
-  //   const emptyMessage = this.dropdown.querySelector('.drop-empty-msg');
-  //   if (!emptyMessage) {
-  //     const noSuggestions = createTag('li', {
-  //       class: 'drop-empty-msg',
-  //       role: 'presentation',
-  //     }, this.workflowCfg.placeholder['placeholder-no-suggestions']);
-  //     this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
-  //   }
-  // }
 
   addSuggestionItems(suggestions, header) {
     suggestions.forEach((suggestion, idx) => {
@@ -376,18 +241,6 @@ export default class ActionBinder {
       this.dropdown.insertBefore(item, referenceNode);
     });
   }
-  // addSuggestionItems(suggestions, dynamicHeader) {
-  //   suggestions.forEach((suggestion, index) => {
-  //     const item = createTag('li', {
-  //       id: `item-${index}`,
-  //       class: 'drop-item dynamic',
-  //       'daa-ll': `prompt-API-powered|${suggestion}`,
-  //       role: 'option',
-  //     }, suggestion);
-  //     const referenceNode = dynamicHeader.nextSibling;
-  //     this.dropdown.insertBefore(item, referenceNode);
-  //   });
-  // }
 
   createDynamicHeader() {
     const elements = [
@@ -403,20 +256,6 @@ export default class ActionBinder {
     return header;
   }
 
-  // createDynamicHeader() {
-  //   const elements = [
-  //     { tag: 'span', attributes: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
-  //     { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
-  //     { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
-  //   ];
-  //   const header = createTag('li', { class: 'drop-title-con dynamic' });
-  //   elements.forEach(({ tag, attributes, content = '' }) => {
-  //     const element = createTag(tag, attributes, content);
-  //     header.appendChild(element);
-  //   });
-  //   return header;
-  // }
-
   setPrompt(el) {
     const prompt = el.textContent.trim();
     this.inputField.value = prompt;
@@ -424,14 +263,6 @@ export default class ActionBinder {
     this.inputField.focus();
     this.toggleSurpriseBtn();
   }
-
-  // setPromptValue(el) {
-  //   const promptText = el.textContent.trim();
-  //   this.inputField.value = promptText;
-  //   this.query = promptText;
-  //   this.inputField.focus();
-  //   this.toggleSurpriseButton();
-  // }
 
   addAccessibility() {
     this.addKeyDown();
