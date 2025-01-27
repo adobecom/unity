@@ -120,6 +120,7 @@ export default class UnityWidget {
   }
 
   initIO() {
+    console.log('initIO', this.target.querySelector('.ex-unity-wrap'));
     const observerEl = this.target.querySelector('#free-ai-image-generator');
     if (!observerEl) return;
     const getFooterEl = () => document.querySelector('.global-footer');
