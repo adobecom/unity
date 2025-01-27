@@ -169,6 +169,10 @@
   z-index: 2;
 }
 
+.unity-enabled .interactive-area .alert-holder.show {
+  display: flex;
+}
+
 .unity-enabled .interactive-area .alert-holder .alert-toast {
   background: var(--alert-red);
   border-radius: 10px;

@@ -136,10 +136,9 @@ export async function priorityLoad(parr) {
     } else if (p.endsWith('.css')) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
       promiseArr.push(pr);
-    }else if (p.endsWith('.json')) {
+    } else if (p.endsWith('.json')) {
       const pr = new Promise((res) => { loadLink(p, { as: 'fetch', crossorigin: 'anonymous', rel: 'preload', callback: res  }); });
       promiseArr.push(pr);
-      
     } else {
       promiseArr.push(fetch(p));
     }
@@ -217,11 +216,11 @@ export function createIntersectionObserver({ el, callback, cfg, options = {} }) 
   return io;
 }
 
-export function delay(durationMs=1000) {
+export function delay(durationMs = 1000) {
   return new Promise((resolve) => {
-      setTimeout(() => {
-          resolve('Resolved after 1 second');
-      }, durationMs);
+    setTimeout(() => {
+      resolve('Resolved after 1 second');
+    }, durationMs);
   });
 }
 

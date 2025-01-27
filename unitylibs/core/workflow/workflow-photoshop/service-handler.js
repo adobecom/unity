@@ -4,18 +4,15 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getUnityLibs,
-  createTag,
   getGuestAccessToken,
-  decorateDefaultLinkAnalytics,
   unityConfig,
 } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null) {
     this.renderWidget = renderWidget;
-    this.errorToastEl = null;
     this.canvasArea = canvasArea;
+    this.unityEl = unityEl;
   }
 
   getHeaders() {
@@ -28,48 +25,38 @@ export default class ServiceHandler {
     };
   }
 
-  async postCallToService(api, options) {
+  async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
       ...this.getHeaders(),
       ...options,
     };
     try {
+      let terminateOperation = false;
+      if (this.renderWidget) {
+        this.unityEl.addEventListener('unity:refreshrequested', () => {
+          terminateOperation = true;
+        });
+      }
       const response = await fetch(api, postOpts);
+      if (failOnError && response.status != 200) throw Error('Operation failed');
+      if ((!failOnError) || terminateOperation) return response;
       const resJson = await response.json();
       return resJson;
     } catch (err) {
-      if (this.renderWidget) await this.errorToast(err);
+      if (this.renderWidget) {
+        this.showErrorToast(errorCallbackOptions);
+        this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
+        throw Error('Operation failed');
+      }
     }
     return {};
   }
 
-  async errorToast(e) {
-    console.log(e);
-    if (!this.errorToastEl) {
-      this.errorToastEl = await this.createErrorToast();
-      this.canvasArea.append(this.errorToastEl);
-    }
-  }
-
-  async createErrorToast() {
-    const [alertImg, closeImg] = await Promise.all([
-      fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
-      fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
-    ]);
-    const alertContent = createTag('div', { class: 'alert-content' });
-    const errholder = createTag('div', { class: 'alert-holder' }, createTag('div', { class: 'alert-toast' }, alertContent));
-    const alertIcon = createTag('div', { class: 'alert-icon' }, alertImg);
-    const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
-    alertIcon.append(alertText);
-    const alertClose = createTag('a', { class: 'alert-close', href: '#' }, closeImg);
-    alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
-    alertContent.append(alertIcon, alertClose);
-    alertClose.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.target.closest('.alert-holder').classList.remove('show');
-    });
-    decorateDefaultLinkAnalytics(errholder);
-    return errholder;
+  showErrorToast(errorCallbackOptions) {
+    if (!errorCallbackOptions.errorToastEl) return;
+    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    errorCallbackOptions.errorToastEl.querySelector('.alert-text p').innerText = msg;
+    errorCallbackOptions.errorToastEl.classList.add('show');
   }
 }
