@@ -1,67 +1,6 @@
 .aside.text2image.unity-enabled {
   overflow: unset;
 }
-.aside {
-  position: relative;
-  overflow: hidden; /* Ensures no overflow from pseudo-elements */
-}
-
-/* Layer 1: Blue Background (Simulating .blue-bg-2) */
-.aside::before {
-  content: '';
-  position: absolute;
-  z-index: -1; /* Place behind content */
-  opacity: 0.45;
-  filter: blur(120px);
-  background-image: radial-gradient(circle at 100% 0, #31a8ff, #31a8ff00);
-  width: 60%;
-  height: 35vh;
-  inset: -13% -14% auto auto;
-  border-radius: 100rem;
-}
-
-/* Layer 2: Purple Background (Simulating .purple-bg-2) */
-.aside::after {
-  content: '';
-  position: absolute;
-  z-index: -2; /* Place behind Layer 1 */
-  opacity: 0.35;
-  filter: blur(100px);
-  background-image: radial-gradient(circle at 0 0, #e055e2, #e055e200);
-  width: 60%;
-  height: 40vh;
-  inset: -8% auto auto -2%;
-  border-radius: 100rem;
-}
-
-/* Layer 3: Middle Background (Simulating .middle-bg) */
-.aside.text2image::before {
-  content: '';
-  position: absolute;
-  z-index: -3; /* Place behind Layer 2 */
-  opacity: 0.41;
-  filter: blur(100px);
-  background-color: #99f;
-  width: 60%;
-  height: 40vh;
-  inset: -12% 0 auto auto;
-  border-radius: 100rem;
-}
-
-/* Layer 4: Left Background (Simulating .left-bg) */
-.aside.text2image::after {
-  content: '';
-  position: absolute;
-  z-index: -4; /* Place behind Layer 3 */
-  opacity: 0.35;
-  filter: blur(100px);
-  background-color: #31a8ff;
-  width: 30%;
-  height: 20vh;
-  inset: auto auto 17% -10%;
-  border-radius: 100rem;
-}
-
 .aside.text2image.unity-enabled .foreground.container .interactive-area {
   display: inherit;
   justify-content: center;
