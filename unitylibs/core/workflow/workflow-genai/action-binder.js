@@ -18,8 +18,8 @@ export default class ActionBinder {
     this.serviceHandler = null;
     this.sendAnalyticsOnFocus = true;
     this.apiConfig = this.initializeApiConfig();
-    this.inputField = this.getElement('.input-field');
-    this.dropdown = this.getElement('.dropdown');
+    this.inputField = this.getElement('.inp-field');
+    this.dropdown = this.getElement('.drop');
     this.surpriseBtn = this.getElement('.surprise-btn');
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.activeIndex = -1;
@@ -221,10 +221,10 @@ export default class ActionBinder {
   }
 
   displayNoSuggestionsMessage(dynamicHeader) {
-    const emptyMessage = this.dropdown.querySelector('.dropdown-empty-message');
+    const emptyMessage = this.dropdown.querySelector('.drop-empty-msg');
     if (!emptyMessage) {
       const noSuggestions = createTag('li', {
-        class: 'dropdown-empty-message',
+        class: 'drop-empty-msg',
         role: 'presentation',
       }, this.workflowCfg.placeholder['placeholder-no-suggestions']);
       this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
@@ -235,7 +235,7 @@ export default class ActionBinder {
     suggestions.forEach((suggestion, index) => {
       const item = createTag('li', {
         id: `item-${index}`,
-        class: 'dropdown-item dynamic',
+        class: 'drop-item dynamic',
         'daa-ll': `prompt-API-powered|${suggestion}`,
         role: 'option',
       }, suggestion);
@@ -250,7 +250,7 @@ export default class ActionBinder {
       { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
       { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
     ];
-    const header = createTag('li', { class: 'dropdown-title-con dynamic' });
+    const header = createTag('li', { class: 'drop-title-con dynamic' });
     elements.forEach(({ tag, attributes, content = '' }) => {
       const element = createTag(tag, attributes, content);
       header.appendChild(element);
@@ -310,10 +310,10 @@ export default class ActionBinder {
   }
 
   getDropdownItems() {
-    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.dropdown-item.dynamic'));
+    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
     return dynamicItems.length > 0
       ? dynamicItems
-      : Array.from(this.dropdown.querySelectorAll('.dropdown-item'));
+      : Array.from(this.dropdown.querySelectorAll('.drop-item'));
   }
 
   getFocusableElements(isDynamic) {
@@ -322,8 +322,8 @@ export default class ActionBinder {
       closeBtnSelector = `${closeBtnSelector}, .legal-text`;
     }
     const selector = isDynamic
-      ? `.input-field, .refresh-btn, ${closeBtnSelector}`
-      : `.input-field, ${closeBtnSelector}`;
+      ? `.inp-field, .refresh-btn, ${closeBtnSelector}`
+      : `.inp-field, ${closeBtnSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
   }
 
@@ -377,7 +377,7 @@ export default class ActionBinder {
   }
 
   clearDropdown() {
-    this.dropdown.querySelectorAll('.dropdown-item.dynamic, .dropdown-title-con.dynamic, .dropdown-empty-message').forEach((el) => el.remove());
+    this.dropdown.querySelectorAll('.drop-item.dynamic, .drop-title-con.dynamic, .drop-empty-msg').forEach((el) => el.remove());
     this.dropdown.classList.add('hidden');
     this.addAccessibility();
   }
