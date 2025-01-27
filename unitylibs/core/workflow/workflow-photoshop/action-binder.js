@@ -8,12 +8,18 @@ import {
   getUnityLibs,
   loadImg,
   createTag,
-  loadSvgs,
   getLocale,
   delay,
   getLibs,
 } from '../../../scripts/utils.js';
 
+const CONTAIN_OBJECT = 'contain-object';
+const MOBILE_GRAY_BG = 'mobile-gray-bg';
+const GRAY_BG = 'gray-bg';
+const FULL_HEIGHT = 'full-height';
+export const IMG_LANDSCAPE = 'img-landscape';
+export const IMG_PORTRAIT = 'img-portrait';
+export const IMG_REMOVE_BG = 'img-removebg';
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
@@ -126,8 +132,6 @@ export default class ActionBinder {
       this.unityEl,
     );
     if (this.workflowCfg.targetCfg.renderWidget) {
-      const svgs = this.canvasArea.querySelectorAll('.unity-widget img[src*=".svg"');
-      await loadSvgs(svgs);
       if (!this.errorToastEl) await this.createErrorToast();
     }
     await this.executeAction(values, e);
@@ -234,6 +238,15 @@ export default class ActionBinder {
     return assetId;
   }
 
+  resetClasses(img, targetEl) {
+    if (img.classList.contains(CONTAIN_OBJECT)) img.classList.remove(CONTAIN_OBJECT);
+    if (img.classList.contains(IMG_LANDSCAPE)) img.classList.remove(IMG_LANDSCAPE);
+    if (img.classList.contains(IMG_PORTRAIT)) img.classList.remove(IMG_PORTRAIT);
+    if (img.classList.contains(IMG_REMOVE_BG)) img.classList.remove(IMG_REMOVE_BG);
+    if (img.classList.contains(MOBILE_GRAY_BG)) img.classList.remove(MOBILE_GRAY_BG);
+    if (targetEl.classList.contains(GRAY_BG)) targetEl.classList.remove(GRAY_BG);
+  }
+
   async userImgUpload(params, e) {
     this.canvasArea.querySelector('img').style.filter = '';
     this.operations = [];
@@ -268,6 +281,24 @@ export default class ActionBinder {
     if (params.target.naturalWidth > 8000 || params.target.naturalHeight > 8000) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
       return;
+    }
+
+    const { offsetWidth, offsetHeight } = params.target;
+    params.target.classList.add(CONTAIN_OBJECT);
+    params.target.classList.add(MOBILE_GRAY_BG);
+    this.canvasArea.classList.add(GRAY_BG);
+    if (this.canvasArea.naturalWidth > offsetWidth) {
+      params.target.classList.add(IMG_LANDSCAPE);
+      params.target.classList.add(FULL_HEIGHT);
+    } else {
+      params.target.classList.add(IMG_PORTRAIT);
+      params.target.classList.add(FULL_HEIGHT);
+    }
+    if (
+      this.canvasArea.naturalWidth == offsetWidth
+      && this.canvasArea.naturalHeight == offsetHeight
+    ) {
+      this.resetClasses(params.target, this.canvasArea);
     }
     this.operations.push(operationItem);
     const callbackObj = [{
