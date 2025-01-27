@@ -26,14 +26,14 @@ export default class UnityWidget {
     return this.workflowCfg.targetCfg.actionMap;
   }
 
-  // populatePlaceholders() {
-  //   return Object.fromEntries(
-  //     [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
-  //       element.classList[1]?.replace('icon-', '') || '',
-  //       element.closest('li')?.innerText || '',
-  //     ]).filter(([key]) => key),
-  //   );
-  // }
+  popPlaceholders() {
+    return Object.fromEntries(
+      [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
+        element.classList[1]?.replace('icon-', '') || '',
+        element.closest('li')?.innerText || '',
+      ]).filter(([key]) => key),
+    );
+  }
 
   // createComboboxContainer() {
   //   return createTag('div', {
@@ -42,14 +42,14 @@ export default class UnityWidget {
   //   });
   // }
 
-  popPlaceholders() {
-    return Object.fromEntries(
-      Array.from(this.el.querySelectorAll('.placeholder')).map((el) => [
-        el.classList[1]?.replace('icon-', ''),
-        el.closest('li')?.innerText || '',
-      ]).filter(([key]) => key),
-    );
-  }
+  // popPlaceholders() {
+  //   return Object.fromEntries(
+  //     Array.from(this.el.querySelectorAll('.placeholder')).map((el) => [
+  //       el.classList[1]?.replace('icon-', ''),
+  //       el.closest('li')?.innerText || '',
+  //     ]).filter(([key]) => key),
+  //   );
+  // }
 
   // createInputWrapper(ph) {
   //   const inputWrapper = createTag('div', { class: 'input-wrapper' });
