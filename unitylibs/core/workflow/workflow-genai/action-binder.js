@@ -277,27 +277,26 @@ export default class ActionBinder {
     this.block.removeEventListener('keydown', this.boundHandleKeyDown);
   }
 
-  handleKeyDown(event) {
+  handleKeyDown(ev) {
     const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'];
-    if (!validKeys.includes(event.key)) return;
-
-    const dropdownItems = this.getDropdownItems();
-    const focusableElements = this.getFocusElems(dropdownItems.length > 0);
-    const currentIndex = focusableElements.indexOf(document.activeElement);
-    const isDropdownVisible = this.isDropdownVisible();
-    switch (event.key) {
+    if (!validKeys.includes(ev.key)) return;
+    const dropItems = this.getDropdownItems();
+    const focusElems = this.getFocusElems(dropItems.length > 0);
+    const currIdx = focusElems.indexOf(document.activeElement);
+    const isDropVisi = this.isDropdownVisible();
+    switch (ev.key) {
       case 'Tab':
-        if (!isDropdownVisible) return;
-        this.handleTab(event, focusableElements, currentIndex);
+        if (!isDropVisi) return;
+        this.handleTab(ev, focusElems, currIdx);
         break;
       case 'ArrowDown':
-        this.handleArrowDown(event, dropdownItems);
+        this.handleArrowDown(ev, dropItems);
         break;
       case 'ArrowUp':
-        this.handleArrowUp(event, dropdownItems);
+        this.handleArrowUp(ev, dropItems);
         break;
       case 'Enter':
-        this.handleEnter(event, dropdownItems, focusableElements, currentIndex);
+        this.handleEnter(ev, dropItems, focusElems, currIdx);
         break;
       case 'Escape':
         this.hideDropdown();
@@ -350,16 +349,17 @@ export default class ActionBinder {
     this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
   }
 
-  handleEnter(event, dropdownItems, focusableElements, currentIndex) {
-    event.preventDefault();
-    if (this.activeIndex >= 0 && dropdownItems[this.activeIndex]) {
-      dropdownItems[this.activeIndex].click();
-      dropdownItems[this.activeIndex].classList.remove('active');
+  handleEnter(ev, dropItems, focusElems, currIdx) {
+    ev.preventDefault();
+    if (this.activeIndex >= 0 && dropItems[this.activeIndex]) {
+      dropItems[this.activeIndex].click();
+      dropItems[this.activeIndex].classList.remove('active');
       this.activeIndex = -1;
       return;
     }
-    if (currentIndex !== -1) {
-      focusableElements[currentIndex].click();
+    const targetElement = focusElems[currIdx] || ev.target;
+    if (targetElement && (currIdx !== -1 || targetElement.classList.contains('unity-act-btn'))) {
+      targetElement.click();
     }
   }
 
