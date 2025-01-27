@@ -81,7 +81,7 @@
   animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
-  /* animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); */
+  animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 @keyframes slideIn {
   0% {
