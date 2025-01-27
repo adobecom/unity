@@ -120,15 +120,15 @@ export default class UnityWidget {
   }
 
   initIO() {
-    console.log('initIO', this.target.querySelector('.ex-unity-wrap'));
-    const observerEl = this.target.querySelector('#free-ai-image-generator');
-    if (!observerEl) return;
+    const unityWrap = this.target.querySelector('.ex-unity-wrap');
+    const obsEl = unityWrap?.closest('[class^="heading-"]') || null;
+    if (!obsEl) return;
     const getFooterEl = () => document.querySelector('.global-footer');
     let footerObs;
     const waitForFooter = () => {
       const footerEl = getFooterEl();
       if (footerEl) {
-        this.setupIO(observerEl, footerEl);
+        this.setupIO(obsEl, footerEl);
         footerObs?.disconnect();
       }
     };
@@ -139,7 +139,7 @@ export default class UnityWidget {
       footerObs.observe(document.body, { childList: true, subtree: true });
     }
     const checkVisibility = () => {
-      const { top, bottom } = observerEl.getBoundingClientRect();
+      const { top, bottom } = obsEl.getBoundingClientRect();
       this.addSticky({ isIntersecting: !(top >= window.innerHeight || bottom <= 0) });
     };
     requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
