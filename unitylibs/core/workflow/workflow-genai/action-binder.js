@@ -169,7 +169,7 @@ export default class ActionBinder {
       refreshSuggestion: () => this.refreshSuggestions(),
       surprise: () => this.triggerSurpriseMe(),
       generate: () => this.generateContent(),
-      setPromptValue: () => this.setPromptValue(el),
+      setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
 
