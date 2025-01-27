@@ -17,18 +17,18 @@ export default class ActionBinder {
     this.maxResults = 0;
     this.serviceHandler = null;
     this.sendAnalyticsOnFocus = true;
+    this.activeIndex = -1;
+    this.suggestion = [];
+    this.init();
+  }
+
+  init() {
     this.apiConfig = this.initializeApiConfig();
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
     this.surpriseBtn = this.getElement('.surprise-btn');
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
-    this.activeIndex = -1;
-    this.suggestion = [];
     this.viewport = defineDeviceByScreenSize();
-    this.init();
-  }
-
-  init() {
     this.addAccessibility();
   }
 
@@ -73,24 +73,23 @@ export default class ActionBinder {
         el.addEventListener('click', handleClick);
         break;
       case 'INPUT':
-        this.addInputEventListeners(el, actionsList);
+        this.addInputEvents(el, actionsList);
         break;
       default:
         break;
     }
   }
 
-  addInputEventListeners(el, actionsList) {
-    let debounceTimer;
-    el.addEventListener('input', (event) => {
-      clearTimeout(debounceTimer);
-      this.query = event.target.value.trim();
-      this.toggleSurpriseButton();
+  addInputEvents(el, actions) {
+    let debounce;
+    el.addEventListener('input', ({ target }) => {
+      clearTimeout(debounce);
+      this.query = target.value.trim();
+      this.toggleSurpriseBtn();
       if (this.query.length >= 3) {
-        debounceTimer = setTimeout(() => this.executeActions(actionsList), 1000);
+        debounce = setTimeout(() => this.execActions(actions), 1000);
       }
     });
-
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
@@ -98,13 +97,36 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
-
-    el.addEventListener('blur', (event) => {
-      if (!this.dropdown.contains(event.relatedTarget)) this.hideDropdown();
+    el.addEventListener('blur', ({ relatedTarget }) => {
+      if (!this.dropdown.contains(relatedTarget)) this.hideDropdown();
     });
   }
 
-  async executeActions(actionsList, el = null) {
+  // addInputEventListeners(el, actionsList) {
+  //   let debounceTimer;
+  //   el.addEventListener('input', (event) => {
+  //     clearTimeout(debounceTimer);
+  //     this.query = event.target.value.trim();
+  //     this.toggleSurpriseButton();
+  //     if (this.query.length >= 3) {
+  //       debounceTimer = setTimeout(() => this.executeActions(actionsList), 1000);
+  //     }
+  //   });
+
+  //   el.addEventListener('focus', () => {
+  //     this.showDropdown();
+  //     if (this.sendAnalyticsOnFocus) {
+  //       sendAnalyticsEvent(new Event('promptOpen'));
+  //       this.sendAnalyticsOnFocus = false;
+  //     }
+  //   });
+
+  //   el.addEventListener('blur', (event) => {
+  //     if (!this.dropdown.contains(event.relatedTarget)) this.hideDropdown();
+  //   });
+  // }
+
+  async execActions(actions, el = null) {
     if (!this.serviceHandler) {
       const { default: ServiceHandler } = await import(
         `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
@@ -114,46 +136,86 @@ export default class ActionBinder {
         this.canvasArea,
       );
     }
-
-    for (const action of actionsList) {
-      await this.handleAction(action, el);
-    }
+    await Promise.all(
+      actions.map(async (act) => {
+        try {
+          await this.handleAction(act, el);
+        } catch (err) {
+          console.error(`Error handling action ${act}:`, err);
+        }
+      }),
+    );
   }
+
+  // async executeActions(actionsList, el = null) {
+  //   if (!this.serviceHandler) {
+  //     const { default: ServiceHandler } = await import(
+  //       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
+  //     );
+  //     this.serviceHandler = new ServiceHandler(
+  //       this.workflowCfg.targetCfg.renderWidget,
+  //       this.canvasArea,
+  //     );
+  //   }
+
+  //   for (const action of actionsList) {
+  //     await this.handleAction(action, el);
+  //   }
+  // }
 
   async handleAction(action, el) {
-    const actionMap = {
-      autocomplete: () => this.fetchAutocompleteSuggestions(),
-      refreshSuggestion: () => this.refreshSuggestions(),
-      surprise: () => this.triggerSurpriseMe(),
-      generate: () => this.generateContent(),
-      setPromptValue: () => this.setPromptValue(el),
-      closeDropdown: () => this.resetDropdown(),
-    };
-
-    const execute = actionMap[action.actionType];
-    if (execute) await execute();
-  }
-
-  async fetchAutocompleteSuggestions(fetchType = 'default') {
     try {
-      if (fetchType === 'refresh') {
-        this.maxResults *= 2;
-      } else {
-        if (this.query) {
-          const promptEvent = new Event('promptValue');
-          promptEvent.data = { query: this.query };
-          sendAnalyticsEvent(promptEvent);
-        }
-        this.maxResults = 12;
+      if (!action?.actionType) {
+        return;
       }
-      const data = {
+      const actionMap = {
+        autocomplete: this.fetchAutocompleteSuggestions.bind(this),
+        refreshSuggestion: this.refreshSuggestions.bind(this),
+        surprise: this.triggerSurpriseMe.bind(this),
+        generate: this.generateContent.bind(this),
+        setPromptValue: () => this.setPromptValue(el),
+        closeDropdown: this.resetDropdown.bind(this),
+      };
+      const execute = actionMap[action.actionType];
+      if (execute) {
+        await execute();
+      } else {
+        console.warn(`Action type "${action.actionType}" not found.`);
+      }
+    } catch (err) {
+      console.error(`Error executing action "${action?.actionType}":`, err);
+    }
+  }
+  // async handleAction(action, el) {
+  //   const actionMap = {
+  //     autocomplete: () => this.fetchAutocompleteSuggestions(),
+  //     refreshSuggestion: () => this.refreshSuggestions(),
+  //     surprise: () => this.triggerSurpriseMe(),
+  //     generate: () => this.generateContent(),
+  //     setPromptValue: () => this.setPromptValue(el),
+  //     closeDropdown: () => this.resetDropdown(),
+  //   };
+
+  //   const execute = actionMap[action.actionType];
+  //   if (execute) await execute();
+  // }
+
+  async fetchAutoComplete(fetchType = 'default') {
+    try {
+      this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
+      if (fetchType !== 'refresh' && this.query) {
+        sendAnalyticsEvent(
+          new CustomEvent('promptValue', { detail: { query: this.query } }),
+        );
+      }
+      const payload = {
         query: this.query,
         targetProduct: this.apiConfig.productName,
         maxResults: this.maxResults,
       };
       const response = await this.serviceHandler.postCallToService(
         this.apiConfig.expressEndpoint.autoComplete,
-        { body: JSON.stringify(data) },
+        { body: JSON.stringify(payload) },
       );
       if (response?.completions) {
         this.suggestion = fetchType === 'refresh'
@@ -162,120 +224,248 @@ export default class ActionBinder {
         this.displaySuggestions();
         this.inputField.focus();
       }
-    } catch (error) {
-      console.error('Error fetching autocomplete suggestions:', error);
+    } catch (err) {
+      console.error('Error fetching autocomplete suggestions:', err);
     }
   }
 
+  // async fetchAutocompleteSuggestions(fetchType = 'default') {
+  //   try {
+  //     if (fetchType === 'refresh') {
+  //       this.maxResults *= 2;
+  //     } else {
+  //       if (this.query) {
+  //         const promptEvent = new Event('promptValue');
+  //         promptEvent.data = { query: this.query };
+  //         sendAnalyticsEvent(promptEvent);
+  //       }
+  //       this.maxResults = 12;
+  //     }
+  //     const data = {
+  //       query: this.query,
+  //       targetProduct: this.apiConfig.productName,
+  //       maxResults: this.maxResults,
+  //     };
+  //     const response = await this.serviceHandler.postCallToService(
+  //       this.apiConfig.expressEndpoint.autoComplete,
+  //       { body: JSON.stringify(data) },
+  //     );
+  //     if (response?.completions) {
+  //       this.suggestion = fetchType === 'refresh'
+  //         ? response.completions.slice(this.maxResults / 2)
+  //         : response.completions;
+  //       this.displaySuggestions();
+  //       this.inputField.focus();
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching autocomplete suggestions:', error);
+  //   }
+  // }
+
   async refreshSuggestions() {
-    if (this.suggestion.length > 0) {
+    if (this.suggestion.length) {
       this.displaySuggestions();
       this.inputField.focus();
-    } else {
-      await this.fetchAutocompleteSuggestions('refresh');
+      return;
     }
+    await this.fetchAutoComplete('refresh');
   }
+
+  // async refreshSuggestions() {
+  //   if (this.suggestion.length > 0) {
+  //     this.displaySuggestions();
+  //     this.inputField.focus();
+  //   } else {
+  //     await this.fetchAutoComplete('refresh');
+  //   }
+  // }
 
   displaySuggestions() {
     this.clearDropdown();
     this.toggleDefaultItems(false);
     const dynamicHeader = this.createDynamicHeader();
-    this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
-    const latestSuggestions = this.suggestion.splice(0, 3);
-    if (latestSuggestions.length === 0) {
-      this.displayNoSuggestionsMessage(dynamicHeader);
+    this.dropdown.prepend(dynamicHeader);
+    if (this.suggestion.length === 0) {
+      this.showEmptyState(dynamicHeader);
     } else {
-      this.addSuggestionItems(latestSuggestions, dynamicHeader);
+      this.addSuggestionItems(this.suggestion.splice(0, 3), dynamicHeader);
     }
     this.dropdown.classList.remove('hidden');
     this.initActionListeners();
     this.addAccessibility();
   }
+  // displaySuggestions() {
+  //   this.clearDropdown();
+  //   this.toggleDefaultItems(false);
+  //   const dynamicHeader = this.createDynamicHeader();
+  //   this.dropdown.insertBefore(dynamicHeader, this.dropdown.firstChild);
+  //   const latestSuggestions = this.suggestion.splice(0, 3);
+  //   if (latestSuggestions.length === 0) {
+  //     this.displayNoSuggestionsMessage(dynamicHeader);
+  //   } else {
+  //     this.addSuggestionItems(latestSuggestions, dynamicHeader);
+  //   }
+  //   this.dropdown.classList.remove('hidden');
+  //   this.initActionListeners();
+  //   this.addAccessibility();
+  // }
 
-  async triggerSurpriseMe() {
-    const { prompt: prompts = [] } = this.workflowCfg.supportedTexts || {};
-    if (prompts.length === 0) return;
+  async triggerSurprise() {
+    const prompts = this.workflowCfg?.supportedTexts?.prompt || [];
+    if (!prompts.length) return;
     this.query = prompts[Math.floor(Math.random() * prompts.length)];
     await this.generateContent();
   }
 
+  // async triggerSurpriseMe() {
+  //   const { prompt: prompts = [] } = this.workflowCfg.supportedTexts || {};
+  //   if (prompts.length === 0) return;
+  //   this.query = prompts[Math.floor(Math.random() * prompts.length)];
+  //   await this.generateContent();
+  // }
+
   async generateContent() {
     try {
-      const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
-      const response = await this.serviceHandler.postCallToService(
+      const payload = {
+        query: this.query,
+        targetProduct: this.workflowCfg.productName,
+      };
+      const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
-      if (!response.url) return;
-      window.location.href = response.url;
-    } catch (error) {
-      console.error('Error generating content:', error);
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error('Content generation failed:', err);
     }
   }
 
-  toggleDefaultItems(show = true) {
-    const defaultItems = this.dropdown.querySelectorAll('.drop-item, .drop-title-con');
-    defaultItems.forEach((item) => {
-      item.classList.toggle('hidden', !show);
-    });
-  }
+  // async generateContent() {
+  //   try {
+  //     const payload = { query: this.query, targetProduct: this.workflowCfg.productName };
+  //     const response = await this.serviceHandler.postCallToService(
+  //       this.apiConfig.connectorApiEndPoint,
+  //       { body: JSON.stringify(payload) },
+  //     );
+  //     if (!response.url) return;
+  //     window.location.href = response.url;
+  //   } catch (error) {
+  //     console.error('Error generating content:', error);
+  //   }
+  // }
 
-  displayNoSuggestionsMessage(dynamicHeader) {
-    const emptyMessage = this.dropdown.querySelector('.drop-empty-msg');
-    if (!emptyMessage) {
-      const noSuggestions = createTag('li', {
+  toggleDefaultItems(show = true) {
+    this.dropdown
+      .querySelectorAll('.drop-item, .drop-title-con')
+      .forEach((item) => item.classList.toggle('hidden', !show));
+  }
+  // toggleDefaultItems(show = true) {
+  //   const defaultItems = this.dropdown.querySelectorAll('.drop-item, .drop-title-con');
+  //   defaultItems.forEach((item) => {
+  //     item.classList.toggle('hidden', !show);
+  //   });
+  // }
+
+  showEmptyState(header) {
+    if (!this.dropdown.querySelector('.drop-empty-msg')) {
+      const emptyMessage = createTag('li', {
         class: 'drop-empty-msg',
         role: 'presentation',
       }, this.workflowCfg.placeholder['placeholder-no-suggestions']);
-      this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
+      header.after(emptyMessage);
     }
   }
 
-  addSuggestionItems(suggestions, dynamicHeader) {
-    suggestions.forEach((suggestion, index) => {
+  // showEmptyState(dynamicHeader) {
+  //   const emptyMessage = this.dropdown.querySelector('.drop-empty-msg');
+  //   if (!emptyMessage) {
+  //     const noSuggestions = createTag('li', {
+  //       class: 'drop-empty-msg',
+  //       role: 'presentation',
+  //     }, this.workflowCfg.placeholder['placeholder-no-suggestions']);
+  //     this.dropdown.insertBefore(noSuggestions, dynamicHeader.nextSibling);
+  //   }
+  // }
+
+  addSuggestionItems(suggestions, header) {
+    suggestions.forEach((suggestion, idx) => {
       const item = createTag('li', {
-        id: `item-${index}`,
+        id: `item-${idx}`,
         class: 'drop-item dynamic',
         'daa-ll': `prompt-API-powered|${suggestion}`,
         role: 'option',
       }, suggestion);
-      const referenceNode = dynamicHeader.nextSibling;
+      const referenceNode = header.nextSibling;
       this.dropdown.insertBefore(item, referenceNode);
     });
   }
+  // addSuggestionItems(suggestions, dynamicHeader) {
+  //   suggestions.forEach((suggestion, index) => {
+  //     const item = createTag('li', {
+  //       id: `item-${index}`,
+  //       class: 'drop-item dynamic',
+  //       'daa-ll': `prompt-API-powered|${suggestion}`,
+  //       role: 'option',
+  //     }, suggestion);
+  //     const referenceNode = dynamicHeader.nextSibling;
+  //     this.dropdown.insertBefore(item, referenceNode);
+  //   });
+  // }
 
   createDynamicHeader() {
     const elements = [
-      { tag: 'span', attributes: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
-      { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
-      { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
+      { tag: 'span', attrs: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
+      { tag: 'button', attrs: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
+      { tag: 'button', attrs: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
     ];
     const header = createTag('li', { class: 'drop-title-con dynamic' });
-    elements.forEach(({ tag, attributes, content = '' }) => {
-      const element = createTag(tag, attributes, content);
+    elements.forEach(({ tag, attrs, content = '' }) => {
+      const element = createTag(tag, attrs, content);
       header.appendChild(element);
     });
     return header;
   }
 
-  setPromptValue(el) {
-    const promptText = el.textContent.trim();
-    this.inputField.value = promptText;
-    this.query = promptText;
+  // createDynamicHeader() {
+  //   const elements = [
+  //     { tag: 'span', attributes: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
+  //     { tag: 'button', attributes: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
+  //     { tag: 'button', attributes: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
+  //   ];
+  //   const header = createTag('li', { class: 'drop-title-con dynamic' });
+  //   elements.forEach(({ tag, attributes, content = '' }) => {
+  //     const element = createTag(tag, attributes, content);
+  //     header.appendChild(element);
+  //   });
+  //   return header;
+  // }
+
+  setPrompt(el) {
+    const prompt = el.textContent.trim();
+    this.inputField.value = prompt;
+    this.query = prompt;
     this.inputField.focus();
-    this.toggleSurpriseButton();
+    this.toggleSurpriseBtn();
   }
+
+  // setPromptValue(el) {
+  //   const promptText = el.textContent.trim();
+  //   this.inputField.value = promptText;
+  //   this.query = promptText;
+  //   this.inputField.focus();
+  //   this.toggleSurpriseButton();
+  // }
 
   addAccessibility() {
-    this.addKeyDownListener();
+    this.addKeyDown();
   }
 
-  addKeyDownListener() {
-    this.removeKeyDownListener();
+  addKeyDown() {
+    this.rmvKeyDown();
     this.block.addEventListener('keydown', this.boundHandleKeyDown);
   }
 
-  removeKeyDownListener() {
+  rmvKeyDown() {
     this.block.removeEventListener('keydown', this.boundHandleKeyDown);
   }
 
@@ -284,7 +474,7 @@ export default class ActionBinder {
     if (!validKeys.includes(event.key)) return;
 
     const dropdownItems = this.getDropdownItems();
-    const focusableElements = this.getFocusableElements(dropdownItems.length > 0);
+    const focusableElements = this.getFocusElems(dropdownItems.length > 0);
     const currentIndex = focusableElements.indexOf(document.activeElement);
     const isDropdownVisible = this.isDropdownVisible();
     switch (event.key) {
@@ -316,7 +506,7 @@ export default class ActionBinder {
       : Array.from(this.dropdown.querySelectorAll('.drop-item'));
   }
 
-  getFocusableElements(isDynamic) {
+  getFocusElems(isDynamic) {
     let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
     if (this.viewport !== 'MOBILE') {
       closeBtnSelector = `${closeBtnSelector}, .legal-text`;
@@ -394,7 +584,7 @@ export default class ActionBinder {
     this.inputField.setAttribute('aria-expanded', 'false');
   }
 
-  toggleSurpriseButton() {
+  toggleSurpriseBtn() {
     this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
     if (!this.query) this.resetDropdown();
   }
