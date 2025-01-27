@@ -164,41 +164,18 @@ export default class ActionBinder {
   // }
 
   async handleAction(action, el) {
-    try {
-      if (!action?.actionType) {
-        return;
-      }
-      const actionMap = {
-        autocomplete: this.fetchAutocompleteSuggestions.bind(this),
-        refreshSuggestion: this.refreshSuggestions.bind(this),
-        surprise: this.triggerSurpriseMe.bind(this),
-        generate: this.generateContent.bind(this),
-        setPromptValue: () => this.setPromptValue(el),
-        closeDropdown: this.resetDropdown.bind(this),
-      };
-      const execute = actionMap[action.actionType];
-      if (execute) {
-        await execute();
-      } else {
-        console.warn(`Action type "${action.actionType}" not found.`);
-      }
-    } catch (err) {
-      console.error(`Error executing action "${action?.actionType}":`, err);
-    }
-  }
-  // async handleAction(action, el) {
-  //   const actionMap = {
-  //     autocomplete: () => this.fetchAutocompleteSuggestions(),
-  //     refreshSuggestion: () => this.refreshSuggestions(),
-  //     surprise: () => this.triggerSurpriseMe(),
-  //     generate: () => this.generateContent(),
-  //     setPromptValue: () => this.setPromptValue(el),
-  //     closeDropdown: () => this.resetDropdown(),
-  //   };
+    const actionMap = {
+      autocomplete: () => this.fetchAutoComplete(),
+      refreshSuggestion: () => this.refreshSuggestions(),
+      surprise: () => this.triggerSurpriseMe(),
+      generate: () => this.generateContent(),
+      setPromptValue: () => this.setPromptValue(el),
+      closeDropdown: () => this.resetDropdown(),
+    };
 
-  //   const execute = actionMap[action.actionType];
-  //   if (execute) await execute();
-  // }
+    const execute = actionMap[action.actionType];
+    if (execute) await execute();
+  }
 
   async fetchAutoComplete(fetchType = 'default') {
     try {
