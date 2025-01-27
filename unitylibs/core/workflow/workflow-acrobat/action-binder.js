@@ -13,6 +13,18 @@ import {
 } from '../../../scripts/utils.js';
 
 export default class ActionBinder {
+  static SINGLE_FILE_ERROR_MESSAGES = {
+    UNSUPPORTED_TYPE: 'verb_upload_error_unsupported_type',
+    EMPTY_FILE: 'verb_upload_error_empty_file',
+    FILE_TOO_LARGE: 'verb_upload_error_file_too_large',
+  };
+
+  static MULTI_FILE_ERROR_MESSAGES = {
+    UNSUPPORTED_TYPE: 'verb_upload_error_unsupported_type_multi',
+    EMPTY_FILE: 'verb_upload_error_empty_file_multi',
+    FILE_TOO_LARGE: 'verb_upload_error_file_too_large_multi',
+  };
+
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -134,7 +146,7 @@ export default class ActionBinder {
       return;
     }
     if (files.length === 1) await this.singleFileUpload(files[0], eventName);
-    else await this.multiFileUpload(files.length, eventName);
+    else await this.multiFileUpload(files, eventName);
   }
 
   checkCookie = () => {
@@ -353,6 +365,41 @@ export default class ActionBinder {
     return files.some((file) => file.type !== 'application/pdf');
   }
 
+  async validateFiles(files) {
+    const errorMessages = files.length === 1
+      ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
+      : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
+    if (files.some((file) => !this.limits.allowedFileTypes.includes(file.type))) {
+      await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
+      return false;
+    }
+    if (files.some((file) => !file.size)) {
+      await this.dispatchErrorToast(errorMessages.EMPTY_FILE);
+      return false;
+    }
+    if (files.some((file) => file.size > this.limits.maxFileSize)) {
+      await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE);
+      return false;
+    }
+    return true;
+  }
+
+  async createAsset(file) {
+    let assetData = null;
+    const data = {
+      surfaceId: unityConfig.surfaceId,
+      targetProduct: this.workflowCfg.productName,
+      name: file.name,
+      size: file.size,
+      format: file.type,
+    };
+    assetData = await this.serviceHandler.postCallToService(
+      this.acrobatApiConfig.acrobatEndpoint.createAsset,
+      { body: JSON.stringify(data) },
+    );
+    return assetData;
+  }
+
   async getBlobData(file) {
     const objUrl = URL.createObjectURL(file);
     const response = await fetch(objUrl);
@@ -512,18 +559,7 @@ export default class ActionBinder {
     const accountType = this.getAccountType();
     let cOpts = {};
     const isNonPdf = this.isNonPdf([file]);
-    if (!this.limits.allowedFileTypes.includes(file.type)) {
-      await this.dispatchErrorToast('verb_upload_error_unsupported_type');
-      return;
-    }
-    if (!file.size) {
-      await this.dispatchErrorToast('verb_upload_error_empty_file');
-      return;
-    }
-    if (file.size > this.limits.maxFileSize) {
-      await this.dispatchErrorToast('verb_upload_error_file_too_large');
-      return;
-    }
+    if (!this.validateFiles([file])) return;
     const fileData = {
       type: file.type,
       size: file.size,
@@ -535,21 +571,12 @@ export default class ActionBinder {
         { detail: { event: eventName, data: fileData } },
       ),
     );
-    let assetData = null;
     try {
       await this.showSplashScreen(true);
-      const blobData = await this.getBlobData(file);
-      const data = {
-        surfaceId: unityConfig.surfaceId,
-        targetProduct: this.workflowCfg.productName,
-        name: file.name,
-        size: file.size,
-        format: file.type,
-      };
-      assetData = await this.serviceHandler.postCallToService(
-        this.acrobatApiConfig.acrobatEndpoint.createAsset,
-        { body: JSON.stringify(data) },
-      );
+      const [blobData, assetData] = await Promise.all([
+        this.getBlobData(file),
+        this.createAsset(file),
+      ]);
       if (accountType === 'guest' && isNonPdf) {
         cOpts = {
           targetProduct: this.workflowCfg.productName,
@@ -617,15 +644,42 @@ export default class ActionBinder {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 
-  async multiFileUpload(fileCount, eventName) {
+  async multiFileUpload(files, eventName) {
     this.block.dispatchEvent(
       new CustomEvent(
         unityConfig.trackAnalyticsEvent,
         { detail: { event: eventName } },
       ),
     );
-    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: fileCount } }));
-    await this.showSplashScreen(true);
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: files.length } }));
+    if (!this.validateFiles(files)) return;
+    // TODO: Generate workflowId
+    try {
+      await this.showSplashScreen(true);
+      const [blobDataArray, assetDataArray] = await Promise.all([
+        Promise.all(files.map((file) => this.getBlobData(file))),
+        Promise.all(files.map((file) => this.createAsset(file))),
+      ]);
+      // TODO: Implement dynamic concurrent file limit
+      const chunkPdfPromises = files.map((file, index) => {
+        const blobData = blobDataArray[index];
+        const assetData = assetDataArray[index];
+        const filetype = file.type;
+        return this.chunkPdf(assetData, blobData, filetype);
+      });
+      await Promise.all(chunkPdfPromises);
+      let allVerified = false;
+      const verifiedResults = await Promise.all(
+        assetDataArray.map((assetData) => this.verifyContent(assetData)),
+      );
+      if (verifiedResults.every((result) => result)) allVerified = true;
+      // TODO: Send flag to product that some files could not be uploaded successfully
+    } catch (e) {
+      await this.showSplashScreen();
+      this.operations = [];
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when uploading multiple files.', e.showError);
+      return;
+    }
     const cOpts = {
       targetProduct: this.workflowCfg.productName,
       payload: {
