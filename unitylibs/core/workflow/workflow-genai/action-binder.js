@@ -167,7 +167,7 @@ export default class ActionBinder {
     const actionMap = {
       autocomplete: () => this.fetchAutoComplete(),
       refreshSuggestion: () => this.refreshSuggestions(),
-      surprise: () => this.triggerSurpriseMe(),
+      surprise: () => this.triggerSurprise(),
       generate: () => this.generateContent(),
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
