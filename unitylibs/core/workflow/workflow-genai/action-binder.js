@@ -214,7 +214,7 @@ export default class ActionBinder {
   }
 
   toggleDefaultItems(show = true) {
-    const defaultItems = this.dropdown.querySelectorAll('.dropdown-item, .dropdown-title-con');
+    const defaultItems = this.dropdown.querySelectorAll('.drop-item, .drop-title-con');
     defaultItems.forEach((item) => {
       item.classList.toggle('hidden', !show);
     });
