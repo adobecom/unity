@@ -137,7 +137,7 @@ class WfInitiator {
     await priorityLoad(priorityList);
   }
 
-  async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion, langCode) {
+  async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
     setUnityLibs(unityLibs, project);
     this.el = el;
     this.unityLibs = unityLibs;
