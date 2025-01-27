@@ -121,7 +121,20 @@ export default class UnityWidget {
 
   initIO() {
     const unityWrap = this.target.querySelector('.ex-unity-wrap');
-    const obsEl = unityWrap?.closest('[class^="heading-"]') || null;
+    let obsEl = null;
+    if (unityWrap) {
+      let sibling = unityWrap.previousElementSibling;
+      while (sibling) {
+        if (sibling.classList && [...sibling.classList].some((cls) => cls.startsWith('heading-'))) {
+          obsEl = sibling;
+          break;
+        }
+        if (sibling.classList && sibling.classList.contains('text2image')) {
+          break;
+        }
+        sibling = sibling.previousElementSibling;
+      }
+    }
     if (!obsEl) return;
     const getFooterEl = () => document.querySelector('.global-footer');
     let footerObs;
