@@ -60,7 +60,7 @@ export default class ActionBinder {
   addEventListeners(el, actionsList) {
     const handleClick = async (event) => {
       event.preventDefault();
-      await this.executeActions(actionsList, el);
+      await this.execActions(actionsList, el);
     };
 
     switch (el.nodeName) {
