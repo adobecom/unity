@@ -1,6 +1,6 @@
 .aside.text2image.unity-enabled {
   overflow: unset;
-  background-image: url('../../../img/hero-section-desktop.webp');
+  /* background-image: url('../../../img/hero-section-desktop.webp'); */
 }
 .aside.text2image.unity-enabled .foreground.container .interactive-area {
   display: inherit;
@@ -12,7 +12,7 @@
   margin: var(--spacing-xxl) 0 var(--spacing-m);
 }
 
-/* .aside.text2image.unity-enabled .foreground.container .interactive-area .text .bg-element {
+.aside.text2image.unity-enabled .foreground.container .interactive-area .text .bg-element {
   z-index: -1;
   filter: blur(100px);
   align-self: center;
@@ -48,7 +48,7 @@
   height: 40vh;
   inset: -8% auto auto -2%;
   opacity: 0.24;
-} */
+}
 
 .aside.text2image.unity-enabled .foreground.container .icon-area {
   margin-bottom: var(--spacing-xxs);
