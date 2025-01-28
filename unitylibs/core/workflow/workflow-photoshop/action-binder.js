@@ -1,11 +1,12 @@
+/* eslint-disable max-classes-per-file */
 /* eslint-disable eqeqeq */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
 import {
+  getGuestAccessToken,
   unityConfig,
-  getUnityLibs,
   loadImg,
   createTag,
   getLocale,
@@ -20,6 +21,52 @@ const FULL_HEIGHT = 'full-height';
 export const IMG_LANDSCAPE = 'img-landscape';
 export const IMG_PORTRAIT = 'img-portrait';
 export const IMG_REMOVE_BG = 'img-removebg';
+
+class ServiceHandler {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null) {
+    this.renderWidget = renderWidget;
+    this.canvasArea = canvasArea;
+    this.unityEl = unityEl;
+  }
+
+  getHeaders() {
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: getGuestAccessToken(),
+        'x-api-key': unityConfig.apiKey,
+      },
+    };
+  }
+
+  async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
+    const postOpts = {
+      method: 'POST',
+      ...this.getHeaders(),
+      ...options,
+    };
+    try {
+      const response = await fetch(api, postOpts);
+      if (failOnError && response.status != 200) throw Error('Operation failed');
+      const resJson = await response.json();
+      return resJson;
+    } catch (err) {
+      if (this.renderWidget) {
+        this.showErrorToast(errorCallbackOptions);
+        this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
+        throw Error('Operation failed');
+      }
+    }
+    return {};
+  }
+
+  showErrorToast(errorCallbackOptions) {
+    if (!errorCallbackOptions.errorToastEl) return;
+    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    errorCallbackOptions.errorToastEl.querySelector('.alert-text p').innerText = msg;
+    errorCallbackOptions.errorToastEl.classList.add('show');
+  }
+}
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
@@ -125,23 +172,21 @@ export default class ActionBinder {
   }
 
   async psActionMaps(values, e) {
-    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
+    await this.executeAction(values, e);
+    if (this.workflowCfg.targetCfg.renderWidget) {
+      if (this.operations.length) {
+        this.canvasArea.querySelector('.widget-product-icon')?.classList.remove('show');
+        [...this.canvasArea.querySelectorAll('.widget-refresh-button')].forEach((w) => w.classList.add('show'));
+      }
+    }
+  }
+
+  async initActionListeners() {
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
       this.unityEl,
     );
-    if (this.workflowCfg.targetCfg.renderWidget) {
-      if (!this.errorToastEl) await this.createErrorToast();
-    }
-    await this.executeAction(values, e);
-    if (this.workflowCfg.targetCfg.renderWidget && this.operations.length) {
-      this.canvasArea.querySelector('.widget-product-icon')?.classList.remove('show');
-      [...this.canvasArea.querySelectorAll('.widget-refresh-button')].forEach((w) => w.classList.add('show'));
-    }
-  }
-
-  initActionListeners() {
     for (const [key, values] of Object.entries(this.actionMap)) {
       const el = this.block.querySelector(key);
       if (!el) return;
