@@ -52,13 +52,11 @@ class ServiceHandler {
       const resJson = await response.json();
       return resJson;
     } catch (err) {
-      if (this.renderWidget) {
-        this.showErrorToast(errorCallbackOptions);
-        this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
-        throw Error('Operation failed');
-      }
+      if (!this.renderWidget) return {};
+      this.showErrorToast(errorCallbackOptions);
+      this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
+      throw Error('Operation failed');
     }
-    return {};
   }
 
   showErrorToast(errorCallbackOptions) {
