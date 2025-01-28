@@ -15,7 +15,6 @@ const pdom = `<div class="spectrum-ProgressCircle-track"></div>
   </div>`;
 
 function createProgressCircle() {
-  loadStyle(`${getUnityLibs()}/core/features/progress-circle/progress-circle.css`);
   const prgc = createTag('div', { class: 'spectrum-ProgressCircle spectrum-ProgressCircle--indeterminate' }, pdom);
   const layer = createTag('div', { class: 'progress-holder' }, prgc);
   return layer;
