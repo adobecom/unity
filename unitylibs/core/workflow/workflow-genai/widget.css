@@ -70,7 +70,7 @@
   position: absolute;
   right: 0;
 }
-/* .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
+.aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
   visibility: hidden;
   animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -112,51 +112,7 @@
     transform: translateY(0);
     opacity: 0;
   }
-} */
-.aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
-  visibility: hidden;
-  animation: slideOut 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  animation-fill-mode: forwards; /* Ensure the final state persists */
 }
-
-.aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky {
-  position: fixed;
-  bottom: 30px;
-  left: 0;
-  z-index: 101;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  visibility: visible;
-  animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
-  animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes slideIn {
-  0% {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideOut {
-  0% {
-    transform: translateY(0); /* Start from its visible position */
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100%); /* Slide out of view */
-    opacity: 0;
-  }
-}
-
 .unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
   padding: 0 var(--spacing-l);
 }
