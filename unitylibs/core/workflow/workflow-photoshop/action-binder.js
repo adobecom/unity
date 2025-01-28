@@ -59,11 +59,11 @@ class ServiceHandler {
   }
 
   showErrorToast(errorCallbackOptions) {
+    this.canvasArea?.querySelector('.progress-circle')?.classList.remove('show');
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
     errorCallbackOptions.errorToastEl.querySelector('.alert-text p').innerText = msg;
     errorCallbackOptions.errorToastEl.classList.add('show');
-    this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
   }
 }
 
@@ -79,9 +79,6 @@ export default class ActionBinder {
     this.psApiConfig = this.getPsApiConfig();
     this.serviceHandler = null;
     this.renderCachedExperience = true;
-    this.progressCircleEl = this.workflowCfg.targetCfg.renderWidget
-      ? this.createSpectrumProgress()
-      : null;
   }
 
   getPsApiConfig() {
@@ -173,7 +170,8 @@ export default class ActionBinder {
 
   async psActionMaps(values, e) {
     if (this.workflowCfg.targetCfg.renderWidget) {
-      if (!this.errorToastEl) await this.createErrorToast();
+      if (!this.progressCircleEl) this.progressCircleEl = this.createSpectrumProgress();
+      if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     }
     await this.executeAction(values, e);
     if (this.workflowCfg.targetCfg.renderWidget) {
@@ -580,6 +578,6 @@ export default class ActionBinder {
     const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
     decorateDefaultLinkAnalytics(errholder);
     this.canvasArea.append(errholder);
-    this.errorToastEl = errholder;
+    return errholder;
   }
 }
