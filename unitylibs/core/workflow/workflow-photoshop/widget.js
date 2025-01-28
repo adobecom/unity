@@ -3,7 +3,6 @@ import {
   createTag,
   getLibs,
   priorityLoad,
-  getUnityLibs,
 } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
