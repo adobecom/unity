@@ -54,7 +54,6 @@ class ServiceHandler {
     } catch (err) {
       if (!this.renderWidget) return {};
       this.showErrorToast(errorCallbackOptions);
-      this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
       throw Error('Operation failed');
     }
   }
@@ -64,6 +63,7 @@ class ServiceHandler {
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
     errorCallbackOptions.errorToastEl.querySelector('.alert-text p').innerText = msg;
     errorCallbackOptions.errorToastEl.classList.add('show');
+    this.canvasArea?.querySelector('.progress-circle').classList.remove('show');
   }
 }
 
