@@ -1,4 +1,4 @@
-import { createTag, loadStyle, getUnityLibs } from '../../../scripts/utils.js';
+import { createTag } from '../../../scripts/utils.js';
 
 const pdom = `<div class="spectrum-ProgressCircle-track"></div>
   <div class="spectrum-ProgressCircle-fills">
