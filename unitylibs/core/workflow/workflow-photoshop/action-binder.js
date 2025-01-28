@@ -18,9 +18,9 @@ const CONTAIN_OBJECT = 'contain-object';
 const MOBILE_GRAY_BG = 'mobile-gray-bg';
 const GRAY_BG = 'gray-bg';
 const FULL_HEIGHT = 'full-height';
-export const IMG_LANDSCAPE = 'img-landscape';
-export const IMG_PORTRAIT = 'img-portrait';
-export const IMG_REMOVE_BG = 'img-removebg';
+const IMG_LANDSCAPE = 'img-landscape';
+const IMG_PORTRAIT = 'img-portrait';
+const IMG_REMOVE_BG = 'img-removebg';
 
 class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null, unityEl = null) {
