@@ -216,7 +216,7 @@
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  transition: opacity 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: opacity 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275),visibility 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .drop.open-upward {
   bottom: 100%;
@@ -228,7 +228,7 @@
   transform: translateY(-10px);
   transition: opacity 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), 
             transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-            visibility 0ms 300ms;
+            visibility 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con {
   display: flex;
