@@ -48,6 +48,7 @@ class ServiceHandler {
     try {
       const response = await fetch(api, postOpts);
       if (failOnError && response.status != 200) throw Error('Operation failed');
+      if (!failOnError) return response;
       const resJson = await response.json();
       return resJson;
     } catch (err) {
@@ -67,6 +68,7 @@ class ServiceHandler {
     errorCallbackOptions.errorToastEl.classList.add('show');
   }
 }
+
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
