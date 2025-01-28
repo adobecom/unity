@@ -128,9 +128,9 @@ class WfInitiator {
     ];
     if (['workflow-photoshop'].includes(workflowName)) {
       priorityList.push(
+        `${getUnityLibs()}/core/workflow/${workflowName}/sprite.svg`,
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.css`,
         `${getUnityLibs()}/core/workflow/${workflowName}/widget.js`,
-        `${getUnityLibs()}/core/workflow/${workflowName}/sprite.svg`,
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       );
     }
@@ -155,10 +155,12 @@ class WfInitiator {
     this.workflowCfg.targetCfg = this.targetConfig;
     if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
+      const spriteContent = await results[2].text();
       this.actionMap = await new UnityWidget(
         this.interactiveArea,
         this.el,
         this.workflowCfg,
+        spriteContent,
       ).initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;

@@ -7,24 +7,20 @@ import {
 } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
-  constructor(target, el, workflowCfg) {
+  constructor(target, el, workflowCfg, spriteContent) {
     this.el = el;
     this.target = target;
     this.workflowCfg = workflowCfg;
     this.widget = null;
     this.actionMap = {};
-  }
-
-  async loadSprite(spriteDOM) {
-    const response = await fetch(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/sprite.svg`);
-    spriteDOM.innerHTML = await response.text();
+    this.spriteContent = spriteContent;
   }
 
   async initWidget() {
     const [iWidget, unityaa, unityoa, unitySprite] = ['unity-widget', 'unity-action-area', 'unity-option-area', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     iWidget.append(unitySprite, unityoa, unityaa);
-    await this.loadSprite(unitySprite);
+    unitySprite.innerHTML = this.spriteContent;
     this.widget = iWidget;
     this.target.append(iWidget);
     const refreshCfg = this.el.querySelector('.icon-product-icon');
