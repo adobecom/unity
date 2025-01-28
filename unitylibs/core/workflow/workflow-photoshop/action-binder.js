@@ -172,6 +172,9 @@ export default class ActionBinder {
   }
 
   async psActionMaps(values, e) {
+    if (this.workflowCfg.targetCfg.renderWidget) {
+      if (!this.errorToastEl) await this.createErrorToast();
+    }
     await this.executeAction(values, e);
     if (this.workflowCfg.targetCfg.renderWidget) {
       if (this.operations.length) {
