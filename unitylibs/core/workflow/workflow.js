@@ -146,16 +146,14 @@ class WfInitiator {
     this.workflowCfg = this.getWorkFlowInformation();
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
-    const results = await this.priorityLibFetch(
-      this.workflowCfg.name,
-    );
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(results[0]);
+    const pfr = await this.priorityLibFetch(this.workflowCfg.name);
+    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(pfr[0]);
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
-      const spriteContent = await results[2].text();
+      const spriteContent = await pfr[2].text();
       this.actionMap = await new UnityWidget(
         this.interactiveArea,
         this.el,
