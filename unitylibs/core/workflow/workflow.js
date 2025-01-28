@@ -123,8 +123,8 @@ class WfInitiator {
 
   async priorityLibFetch(workflowName) {
     const priorityList = [
-      `${getUnityLibs()}/core/workflow/${workflowName}/action-binder.js`,
       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/target-config.json`,
+      `${getUnityLibs()}/core/workflow/${workflowName}/action-binder.js`,
     ];
     if (['workflow-photoshop'].includes(workflowName)) {
       priorityList.push(
@@ -149,7 +149,7 @@ class WfInitiator {
     const results = await this.priorityLibFetch(
       this.workflowCfg.name,
     );
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(results[1]);
+    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(results[0]);
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
