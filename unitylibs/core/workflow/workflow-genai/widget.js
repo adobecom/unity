@@ -207,7 +207,7 @@ export default class UnityWidget {
     ];
     const container = this.target.querySelector('.text');
     divClasses.reverse().forEach((clsName) => {
-      const div = createTag('div', { class: clsName });
+      const div = createTag('div', { class: `${clsName} bg-element` });
       container.insertBefore(div, container.firstChild);
     });
   }

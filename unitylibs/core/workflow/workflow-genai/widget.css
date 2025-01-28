@@ -10,58 +10,45 @@
   max-width: 800px;
   margin: var(--spacing-xxl) 0 var(--spacing-m);
 }
-/* Dynamic Background Styles */
-.aside.text2image.unity-enabled .foreground.container .interactive-area .text .blue-bg {
+
+.aside.text2image.unity-enabled .foreground.container .interactive-area .text .bg-element {
   z-index: -1;
+  filter: blur(100px);
+  align-self: center;
+  position: absolute;
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.3;
+}
+.blue-bg {
   filter: blur(120px);
   background-image: radial-gradient(circle at 100% 0, #31a8ff, #31a8ff00);
-  align-self: center;
-  width: 60%;
   height: 35vh;
-  position: absolute;
   inset: -13% -14% auto auto;
-  opacity: .38;
+  opacity: 0.38;
 }
-.aside.text2image.unity-enabled .foreground.container .interactive-area .text .middle-bg {
-  z-index: -1;
-  filter: blur(100px);
+.middle-bg {
   background-color: #99f;
   border-radius: 100rem;
-  align-self: center;
-  width: 60%;
   height: 40vh;
-  margin-left: auto;
-  margin-right: auto;
-  position: absolute;
-  inset: -12% 0% auto;
-  opacity: .21;
+  inset: -12% 0 auto auto;
+  opacity: 0.21;
 }
-.aside.text2image.unity-enabled .foreground.container .interactive-area .text .left-bg {
-  z-index: -1;
-  filter: blur(100px);
+.left-bg {
   background-color: #31a8ff;
-  align-self: center;
   width: 30%;
   height: 20vh;
-  margin-left: auto;
-  margin-right: auto;
-  position: absolute;
   inset: auto auto 17% -10%;
-  opacity: .26;
+  opacity: 0.26;
 }
-.aside.text2image.unity-enabled .foreground.container .interactive-area .text .purple-bg {
-  z-index: -1;
-  filter: blur(100px);
+.purple-bg {
   background-image: radial-gradient(circle at 0 0, #e055e2, #e055e200);
-  align-self: center;
-  width: 60%;
   height: 40vh;
-  margin-left: auto;
-  margin-right: auto;
-  position: absolute;
   inset: -8% auto auto -2%;
-  opacity: .24;
+  opacity: 0.24;
 }
+
 .aside.text2image.unity-enabled .foreground.container .icon-area {
   margin-bottom: var(--spacing-xxs);
 }
