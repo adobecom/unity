@@ -46,6 +46,12 @@
   visibility: visible;
   transition: opacity 200ms cubic-bezier(0, 0, 1, 1), visibility 200ms cubic-bezier(0, 0, 1, 1);
 }
+.aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .widget-bg {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 100ms cubic-bezier(0, 0, 1, 1), visibility 100ms cubic-bezier(0, 0, 1, 1);
+}
+
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap .widget-bg.blur {
   -webkit-mask: linear-gradient(#0000 0%, #000 95%);
   mask: linear-gradient(#0000 0%, #000 95%);
