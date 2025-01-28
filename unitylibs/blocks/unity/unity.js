@@ -6,13 +6,15 @@ function getUnityLibs(prodLibs, project = 'unity') {
   if (project === 'unity') { libs = `${origin}/unitylibs`; return libs; }
   if (!hostname.includes('hlx.page')
     && !hostname.includes('hlx.live')
+    && !hostname.includes('aem.page')
+    && !hostname.includes('aem.live')
     && !hostname.includes('localhost')) {
     libs = prodLibs;
     return libs;
   }
   const branch = new URLSearchParams(window.location.search).get('unitylibs') || 'main';
-  if (branch.indexOf('--') > -1) { libs = `https://${branch}.hlx.live/unitylibs`; return libs; }
-  libs = `https://${branch}--unity--adobecom.hlx.live/unitylibs`;
+  if (branch.indexOf('--') > -1) { libs = `https://${branch}.aem.live/unitylibs`; return libs; }
+  libs = `https://${branch}--unity--adobecom.aem.live/unitylibs`;
   return libs;
 }
 
