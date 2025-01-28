@@ -133,7 +133,7 @@
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .ex-unity-widget {
   animation: slideOut 500s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-@keyframes slideIn {
+@-webkit-keyframes slideIn {
   0% {
     transform: translateY(100%);
     opacity: 0;
@@ -143,7 +143,7 @@
     opacity: 1;
   }
 }
-@keyframes slideOut {
+@-webkit-keyframes slideOut {
   0% {
     transform: translateY(0);
     opacity: 1;
