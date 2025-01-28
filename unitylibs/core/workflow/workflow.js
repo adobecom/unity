@@ -134,7 +134,8 @@ class WfInitiator {
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       );
     }
-    return await priorityLoad(priorityList);
+    const pfr = await priorityLoad(priorityList);
+    return pfr;
   }
 
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
