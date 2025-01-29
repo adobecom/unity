@@ -21,7 +21,6 @@ export default class UnityWidget {
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
     this.addWidget();
-    this.addgradientBg();
     this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
   }
@@ -204,19 +203,5 @@ export default class UnityWidget {
     } else {
       wrapper.classList.remove('hidden');
     }
-  }
-
-  addgradientBg() {
-    const divClasses = [
-      'blue-bg',
-      'middle-bg',
-      'left-bg',
-      'purple-bg',
-    ];
-    const container = this.target.querySelector('.text');
-    divClasses.reverse().forEach((clsName) => {
-      const div = createTag('div', { class: `${clsName} bg-element` });
-      container.insertBefore(div, container.firstChild);
-    });
   }
 }

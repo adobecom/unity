@@ -11,45 +11,6 @@
   max-width: 800px;
   margin: var(--spacing-xxl) 0 var(--spacing-m);
 }
-
-.aside.text2image.unity-enabled .foreground.container .interactive-area .text .bg-element {
-  z-index: -1;
-  filter: blur(100px);
-  align-self: center;
-  position: absolute;
-  width: 60%;
-  margin-left: auto;
-  margin-right: auto;
-  opacity: 0.3;
-}
-.blue-bg {
-  filter: blur(120px);
-  background-image: radial-gradient(circle at 100% 0, #31a8ff, #31a8ff00);
-  height: 35vh;
-  inset: -13% -14% auto auto;
-  opacity: 0.38;
-}
-.middle-bg {
-  background-color: #99f;
-  border-radius: 100rem;
-  height: 40vh;
-  inset: -12% 0 auto auto;
-  opacity: 0.21;
-}
-.left-bg {
-  background-color: #31a8ff;
-  width: 30%;
-  height: 20vh;
-  inset: auto auto 17% -10%;
-  opacity: 0.26;
-}
-.purple-bg {
-  background-image: radial-gradient(circle at 0 0, #e055e2, #e055e200);
-  height: 40vh;
-  inset: -8% auto auto -2%;
-  opacity: 0.24;
-}
-
 .aside.text2image.unity-enabled .foreground.container .icon-area {
   margin-bottom: var(--spacing-xxs);
 }
