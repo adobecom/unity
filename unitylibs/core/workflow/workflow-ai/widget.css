@@ -95,7 +95,7 @@
 }
 @keyframes shuttle {
   0% { transform: translateY(5px); }  /* Moves slightly down */
-  50% { transform: translateY(-3px); } /* Moves slightly up */
+  50% { transform: translateY(-10px); } /* Moves slightly up */
   100% { transform: translateY(0); } /* Settles at 0 */
 }
 .unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
