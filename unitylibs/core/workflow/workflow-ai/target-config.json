@@ -6,7 +6,7 @@
     "renderWidget": true,
     "source": ".text .body-m",
     "target": "p:last-of-type",
-    "insert": "after",
+    "insert": "before",
     "actionMap": {
       ".inp-field": [
         {
