@@ -101,7 +101,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
   padding: 0 var(--spacing-l);
   transform: translateY(0); /* Always at 0 */
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: shuttle 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
   width: 720px;
