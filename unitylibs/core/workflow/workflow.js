@@ -252,7 +252,7 @@ class WfInitiator {
         productName: 'acrobat',
         sfList: new Set(['fillsign', 'compress-pdf']),
       },
-      'workflow-genai': {
+      'workflow-ai': {
         productName: 'Express',
         sfList: new Set(['text2image']),
         stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
