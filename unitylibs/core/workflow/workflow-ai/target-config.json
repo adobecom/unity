@@ -7,7 +7,7 @@
     "source": ".text .body-m",
     "target": "p:last-of-type",
     "insert": "before",
-    "floatPrompt": false,
+    "floatPrompt": true,
     "actionMap": {
       ".inp-field": [
         {
