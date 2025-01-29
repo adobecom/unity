@@ -135,7 +135,10 @@ class WfInitiator {
       );
     }
     const pfr = await priorityLoad(priorityList);
-    return pfr;
+    return {
+      targetConfigCallRes: pfr[0],
+      spriteCallRes: pfr[2],
+    };
   }
 
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
@@ -147,14 +150,15 @@ class WfInitiator {
     this.workflowCfg = this.getWorkFlowInformation();
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
-    const pfr = await this.priorityLibFetch(this.workflowCfg.name);
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(pfr[0]);
+    // eslint-disable-next-line max-len
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await this.priorityLibFetch(this.workflowCfg.name);
+    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
-      const spriteContent = await pfr[2].text();
+      const spriteContent = await spriteSvg.text();
       this.actionMap = await new UnityWidget(
         this.interactiveArea,
         this.el,
