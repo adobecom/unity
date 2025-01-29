@@ -106,7 +106,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
   width: 720px;
   transform: translateY(0); /* Stays at 0 but shuttles */
-  animation: shuttle 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: shuttle 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
   position: relative;
