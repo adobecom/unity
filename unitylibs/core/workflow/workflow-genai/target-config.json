@@ -5,7 +5,8 @@
     "handler": "render",
     "renderWidget": true,
     "source": ".text .body-m",
-    "target": ".text .body-m",
+    "target": "p:last-of-type",
+    "insert": "before",
     "actionMap": {
       ".inp-field": [
         {

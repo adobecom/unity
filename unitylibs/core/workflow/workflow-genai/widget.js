@@ -115,9 +115,17 @@ export default class UnityWidget {
 
   addWidget() {
     const interactArea = this.target.querySelector('.text');
-    const paras = interactArea.querySelectorAll('p.body-m');
+    const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
-    interactArea.insertBefore(this.widgetWrap, paras[1]);
+    if (para) {
+      if (this.workflowCfg.targetCfg.insert === 'before') {
+        para.before(this.widgetWrap);
+      } else {
+        para.after(this.widgetWrap);
+      }
+    } else {
+      interactArea.appendChild(this.widgetWrap);
+    }
   }
 
   initIO() {
