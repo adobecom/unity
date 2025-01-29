@@ -36,18 +36,18 @@
   bottom: 0;
   width: 100%;
   display: flex;
-  transition: opacity 100ms cubic-bezier(0, 0, 1, 1), visibility 100ms cubic-bezier(0, 0, 1, 1);
+  transition: opacity 0.1s cubic-bezier(0, 0, 1, 1), visibility 0.1s cubic-bezier(0, 0, 1, 1);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky .widget-bg {
   opacity: 1;
   visibility: visible;
-  transition: opacity 200ms cubic-bezier(0, 0, 1, 1), visibility 200ms cubic-bezier(0, 0, 1, 1);
+  transition: opacity 0.2s cubic-bezier(0, 0, 1, 1), visibility 0.2s cubic-bezier(0, 0, 1, 1);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .widget-bg {
   visibility: hidden;
   opacity: 0;
   transform: translateY(-5px);
-  transition: opacity 200ms cubic-bezier(0, 0, 1, 1), visibility 200ms cubic-bezier(0, 0, 1, 1), translate 200ms cubic-bezier(0, 0, 1, 1);
+  transition: opacity 0.2s cubic-bezier(0, 0, 1, 1), visibility 0.2s cubic-bezier(0, 0, 1, 1), translate 0.2s cubic-bezier(0, 0, 1, 1);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap .widget-bg.blur {
   -webkit-mask: linear-gradient(#0000 0%, #000 95%);
@@ -72,7 +72,7 @@
   visibility: hidden;
   opacity: 0;
   transform: translateY(-5px);
-  transition: opacity 500ms cubic-bezier(0, 0, 1, 1), visibility 500ms cubic-bezier(0, 0, 1, 1), translate 300ms cubic-bezier(0, 0, 1, 1);
+  transition: opacity 0.5s cubic-bezier(0, 0, 1, 1), visibility 0.5s cubic-bezier(0, 0, 1, 1), translate 0.3s cubic-bezier(0, 0, 1, 1);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky {
   position: fixed;
@@ -205,7 +205,7 @@
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  transition: opacity 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275),visibility 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: opacity 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),visibility 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .drop.open-upward {
   bottom: 100%;
@@ -215,9 +215,7 @@
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: opacity 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-            transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-            visibility 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: opacity 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con {
   display: flex;
