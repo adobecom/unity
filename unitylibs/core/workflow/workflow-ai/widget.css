@@ -88,9 +88,8 @@
   padding: 0 var(--spacing-l);
   animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
-  width: 720px;
-  animation: slideOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .ex-unity-widget {
+  animation: none;
 }
 @keyframes slideIn {
   0% {
