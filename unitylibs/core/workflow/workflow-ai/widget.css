@@ -86,22 +86,27 @@
   display: flex;
   justify-content: center;
   visibility: visible;
-  padding: 10px 0;
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
-  transform: translateY(-10px);
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .ex-unity-widget {
   
 }
+@keyframes shuttle {
+  0% { transform: translateY(5px); }  /* Moves slightly down */
+  50% { transform: translateY(-3px); } /* Moves slightly up */
+  100% { transform: translateY(0); } /* Settles at 0 */
+}
 .unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
   padding: 0 var(--spacing-l);
-  transform: translateY(0);
+  transform: translateY(0); /* Always at 0 */
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
   width: 720px;
+  transform: translateY(0); /* Stays at 0 but shuttles */
+  animation: shuttle 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
   position: relative;
