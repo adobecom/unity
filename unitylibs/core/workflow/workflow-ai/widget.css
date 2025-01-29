@@ -44,9 +44,10 @@
   transition: opacity 200ms cubic-bezier(0, 0, 1, 1), visibility 200ms cubic-bezier(0, 0, 1, 1);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .widget-bg {
-  opacity: 0;
   visibility: hidden;
-  transition: opacity 200ms cubic-bezier(0, 0, 1, 1), visibility 200ms cubic-bezier(0, 0, 1, 1);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 200ms cubic-bezier(0, 0, 1, 1), visibility 200ms cubic-bezier(0, 0, 1, 1), translate 200ms cubic-bezier(0, 0, 1, 1);
 }
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap .widget-bg.blur {
   -webkit-mask: linear-gradient(#0000 0%, #000 95%);
@@ -89,7 +90,7 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
   width: 720px;
-  animation: slideOut 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: slideOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes slideIn {
   0% {
