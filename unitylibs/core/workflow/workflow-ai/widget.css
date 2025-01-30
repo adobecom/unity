@@ -26,6 +26,17 @@
   line-height: var(--type-body-xs-lh);
   padding-top: var(--spacing-s);
 }
+/* Screen reader Announcement Dynamic content Updation */
+.aside.text2image.unity-enabled .interactive-area .ex-unity-wrap .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .aside.text2image.unity-enabled .interactive-area .ex-unity-wrap .widget-bg {
   opacity: 0;
   visibility: hidden;

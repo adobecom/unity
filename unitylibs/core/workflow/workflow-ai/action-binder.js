@@ -31,6 +31,9 @@ export default class ActionBinder {
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.viewport = defineDeviceByScreenSize();
     this.addAccessibility();
+    this.widgetWrap = this.getElement('.ex-unity-wrap');
+    this.scrRead = createTag('li', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic':'true'  });
+    this.widgetWrap.append(this.scrRead);
   }
 
   initializeApiConfig() {
@@ -127,7 +130,7 @@ export default class ActionBinder {
   async handleAction(action, el) {
     const actionMap = {
       autocomplete: () => this.fetchAutoComplete(),
-      refreshSuggestion: () => this.refreshSuggestions(el),
+      refreshSuggestion: () => this.refreshSuggestions(),
       surprise: () => this.triggerSurprise(),
       generate: () => this.generateContent(),
       setPromptValue: () => this.setPrompt(el),
@@ -160,17 +163,17 @@ export default class ActionBinder {
           ? response.completions.slice(this.maxResults / 2)
           : response.completions;
         this.displaySuggestions();
-        // this.inputField.focus();
+        this.inputField.focus();
       }
     } catch (err) {
       console.error('Error fetching autocomplete suggestions:', err);
     }
   }
 
-  async refreshSuggestions(el) {
+  async refreshSuggestions() {
     if (this.suggestion.length) {
       this.displaySuggestions();
-      el.focus();
+      this.inputField.focus();
       return;
     }
     await this.fetchAutoComplete('refresh');
@@ -183,8 +186,11 @@ export default class ActionBinder {
     this.dropdown.prepend(dynamicHeader);
     if (this.suggestion.length === 0) {
       this.showEmptyState(dynamicHeader);
+      this.scrRead.textContent = this.workflowCfg.placeholder['placeholder-no-suggestions'];
     } else {
-      this.addSuggestionItems(this.suggestion.splice(0, 3), dynamicHeader);
+      const suggestionsToAdd = this.suggestion.splice(0, 3);
+      this.addSuggestionItems(suggestionsToAdd, dynamicHeader);
+      this.scrRead.textContent = `${suggestionsToAdd.length} suggestions available. Use up and down arrows to navigate`;
     }
     this.dropdown.classList.remove('hidden');
     this.initActionListeners();
@@ -231,7 +237,7 @@ export default class ActionBinder {
   }
 
   addSuggestionItems(suggestions, header) {
-    suggestions.forEach((suggestion, idx) => {
+    suggestions.reverse().forEach((suggestion, idx) => {
       const item = createTag('li', {
         id: `item-${idx}`,
         class: 'drop-item dynamic',
