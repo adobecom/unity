@@ -324,7 +324,7 @@ export default class ActionBinder {
   }
 
   getFocusElems(isDynamic) {
-    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
+    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,drop-item.dynamic' : '.close-btn,.drop-item';
     if (this.viewport !== 'MOBILE') {
       closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
     }
