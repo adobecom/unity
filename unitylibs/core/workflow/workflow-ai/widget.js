@@ -149,7 +149,7 @@ export default class UnityWidget {
           obsEl = sibling;
           break;
         }
-        if (sibling.classList && sibling.classList.contains('text2image')) {
+        if (sibling.classList && sibling.classList.contains('unity-enabled')) {
           break;
         }
         sibling = sibling.previousElementSibling;

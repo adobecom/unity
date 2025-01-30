@@ -254,7 +254,7 @@ class WfInitiator {
       },
       'workflow-ai': {
         productName: 'Express',
-        sfList: new Set(['text2image']),
+        sfList: new Set(['text-to-image']),
         stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
       },
     };
