@@ -324,13 +324,13 @@ export default class ActionBinder {
   }
 
   getFocusElems(isDynamic) {
-    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,drop-item.dynamic' : '.close-btn,.drop-item';
+    let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
     if (this.viewport !== 'MOBILE') {
-      closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
+      elmSelector = `${elmSelector}, .legal-text, .tip-con`;
     }
     const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
     const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
-    const baseSelector = `.inp-field, .gen-btn, ${closeBtnSelector}`;
+    const baseSelector = `.inp-field, .gen-btn, ${elmSelector}`;
     const selector = isDynamic
       ? `${baseSelector}, .refresh-btn, ${surpriseBtnSelector}`.trim().replace(/,+$/, '')
       : `${baseSelector}, ${surpriseBtnSelector}`.trim().replace(/,+$/, '');
