@@ -99,7 +99,7 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('blur', ({ relatedTarget }) => {
-      if (!this.widget.contains(relatedTarget)) this.hideDropdown();
+      if (!this.this.widget.contains(relatedTarget)) this.hideDropdown();
     });
   }
 
@@ -316,14 +316,38 @@ export default class ActionBinder {
       : [...Array.from(this.dropdown.querySelectorAll('.drop-item'))];
   }
 
+  // getFocusElems(isDynamic) {
+  //   let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
+  //   if (this.viewport !== 'MOBILE') {
+  //     closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
+  //   }
+  //   const selector = isDynamic
+  //     ? `.inp-field, .surprise-btn, .gen-btn, .refresh-btn, ${closeBtnSelector}`
+  //     : `.inp-field, .surprise-btn, .gen-btn, ${closeBtnSelector}`;
+  //   return Array.from(this.block.querySelectorAll(selector));
+  // }
   getFocusElems(isDynamic) {
-    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
+    // Determine close button selector
+    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') 
+      ? '.close-btn.dynamic' 
+      : '.close-btn';
+  
+    // Add additional selectors for non-mobile viewports
     if (this.viewport !== 'MOBILE') {
       closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
     }
+  
+    // Dynamically include or exclude '.surprise-btn' based on its visibility
+    const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
+    const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
+  
+    // Construct the final selector string
+    const baseSelector = `.inp-field, .gen-btn, ${closeBtnSelector}`;
     const selector = isDynamic
-      ? `.inp-field, .surprise-btn, .gen-btn, .refresh-btn, ${closeBtnSelector}`
-      : `.inp-field, .surprise-btn, .gen-btn, ${closeBtnSelector}`;
+      ? `${baseSelector}, .refresh-btn, ${surpriseBtnSelector}`.trim().replace(/,+$/, '')
+      : `${baseSelector}, ${surpriseBtnSelector}`.trim().replace(/,+$/, '');
+  
+    // Return the focusable elements
     return Array.from(this.block.querySelectorAll(selector));
   }
 
@@ -333,26 +357,12 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, currentIndex) {
     if (!focusableElements.length) return;
-  
-    // Correct condition to check if surprise button is NOT visible
-    const isSurBtnVis = this.surpriseBtn.classList.contains('hidden');
-  
-    // Filter surprise button only when it's NOT visible
-    const newFocusableElements = isSurBtnVis
-      ? focusableElements.filter((element) => element !== this.surpriseBtn)
-      : [...focusableElements];
-  
     event.preventDefault();
-  
-    // Calculate the next focus index
     const nextIndex = event.shiftKey
-      ? (currentIndex - 1 + newFocusableElements.length) % newFocusableElements.length
-      : (currentIndex + 1) % newFocusableElements.length;
-  
-    // Focus the next element
-    newFocusableElements[nextIndex].focus();
+      ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
+      : (currentIndex + 1) % focusableElements.length;
+    focusableElements[nextIndex].focus();
   }
-  
 
   handleArrowDown(event, dropdownItems) {
     event.preventDefault();
