@@ -369,16 +369,15 @@ export default class ActionBinder {
   }
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
+    console.log('handleEnter', this.activeIndex);
     ev.preventDefault();
     if (
       this.activeIndex >= 0 && dropItems[this.activeIndex]
       && dropItems[this.activeIndex] === document.activeElement
     ) {
       dropItems[this.activeIndex].click();
-      setTimeout(() => {
-        this.hideDropdown();
-        this.activeIndex = -1;
-      }, 0);
+      this.hideDropdown();
+      this.activeIndex = -1;
       return;
     }
     const targetElement = focusElems[currIdx] || ev.target;
