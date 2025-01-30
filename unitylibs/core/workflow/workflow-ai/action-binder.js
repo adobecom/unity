@@ -343,6 +343,7 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, currentIndex) {
     if (!focusableElements.length) return;
+    this.activeIndex = -1;
     event.preventDefault();
     const nextIndex = event.shiftKey
       ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
