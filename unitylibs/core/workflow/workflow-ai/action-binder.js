@@ -127,7 +127,7 @@ export default class ActionBinder {
   async handleAction(action, el) {
     const actionMap = {
       autocomplete: () => this.fetchAutoComplete(),
-      refreshSuggestion: () => this.refreshSuggestions(),
+      refreshSuggestion: () => this.refreshSuggestions(el),
       surprise: () => this.triggerSurprise(),
       generate: () => this.generateContent(),
       setPromptValue: () => this.setPrompt(el),
@@ -167,10 +167,10 @@ export default class ActionBinder {
     }
   }
 
-  async refreshSuggestions() {
+  async refreshSuggestions(el) {
     if (this.suggestion.length) {
       this.displaySuggestions();
-      // this.inputField.focus();
+      el.focus();
       return;
     }
     await this.fetchAutoComplete('refresh');
