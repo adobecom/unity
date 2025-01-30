@@ -654,7 +654,7 @@ export default class ActionBinder {
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: files.length } }));
     if (!this.validateFiles(files)) return;
-    // TODO: Generate workflowId
+    const workflowId = crypto.randomUUID();
     try {
       await this.showSplashScreen(true);
       const [blobDataArray, assetDataArray] = await Promise.all([
