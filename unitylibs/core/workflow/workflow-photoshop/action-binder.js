@@ -175,12 +175,6 @@ export default class ActionBinder {
       if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     }
     await this.executeAction(values, e);
-    if (this.workflowCfg.targetCfg.renderWidget) {
-      if (this.operations.length) {
-        this.canvasArea.querySelector('.widget-product-icon')?.classList.remove('show');
-        [...this.canvasArea.querySelectorAll('.widget-refresh-button')].forEach((w) => w.classList.add('show'));
-      }
-    }
   }
 
   async initActionListeners() {

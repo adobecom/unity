@@ -173,8 +173,12 @@ export default class UnityWidget {
   initRemoveBgActions(featName, btn, authCfg) {
     this.actionMap[`.${featName}-button`] = [
       {
+        actionType: 'hide',
+        targets: ['.unity-action-area .widget-product-icon'],
+      },
+      {
         actionType: 'show',
-        targets: ['.progress-circle'],
+        targets: ['.interactive-area > .widget-refresh-button', '.unity-widget .widget-refresh-button', '.progress-circle'],
       },
       {
         itemType: 'button',
