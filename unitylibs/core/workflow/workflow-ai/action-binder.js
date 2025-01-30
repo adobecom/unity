@@ -106,27 +106,6 @@ export default class ActionBinder {
     });
   }
 
-  // async execActions(actions, el = null) {
-  //   if (!this.serviceHandler) {
-  //     const { default: ServiceHandler } = await import(
-  //       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-  //     );
-  //     this.serviceHandler = new ServiceHandler(
-  //       this.workflowCfg.targetCfg.renderWidget,
-  //       this.canvasArea,
-  //     );
-  //   }
-  //   await Promise.all(
-  //     actions.map(async (act) => {
-  //       try {
-  //         await this.handleAction(act, el);
-  //       } catch (err) {
-  //         console.error(`Error handling action ${act}:`, err);
-  //       }
-  //     }),
-  //   );
-  // }
-
   async execActions(actions, el = null) {
     if (!this.serviceHandler) {
       const { default: ServiceHandler } = await import(
@@ -134,19 +113,19 @@ export default class ActionBinder {
       );
       this.serviceHandler = new ServiceHandler(
         this.workflowCfg.targetCfg.renderWidget,
-        this.canvasArea
+        this.canvasArea,
       );
     }
-  
-    // Execute each action sequentially without Promise.all
-    for (const act of actions) {
-      try {
-        await this.handleAction(act, el);  // Handle each action sequentially
-      } catch (err) {
-        console.error(`Error handling action ${act}:`, err);
-      }
-    }
-  }  
+    await Promise.all(
+      actions.map(async (act) => {
+        try {
+          await this.handleAction(act, el);
+        } catch (err) {
+          console.error(`Error handling action ${act}:`, err);
+        }
+      }),
+    );
+  }
 
   async handleAction(action, el) {
     const actionMap = {
@@ -423,12 +402,14 @@ export default class ActionBinder {
 
   showDropdown() {
     this.dropdown.classList.remove('hidden');
+    this.dropdown.removeAttribute('inert');
     this.dropdown.setAttribute('aria-hidden', 'false');
     this.inputField.setAttribute('aria-expanded', 'true');
   }
 
   hideDropdown() {
     this.dropdown.classList.add('hidden');
+    this.dropdown.setAttribute('inert', '');
     this.dropdown.setAttribute('aria-hidden', 'true');
     this.inputField.setAttribute('aria-expanded', 'false');
   }
