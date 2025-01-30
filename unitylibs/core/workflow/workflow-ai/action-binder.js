@@ -375,7 +375,6 @@ export default class ActionBinder {
     items.forEach((item, i) => {
       if (i === index) {
         item.classList.add('active');
-        item.focus();
         input.setAttribute('aria-activedescendant', item.id);
       } else {
         item.classList.remove('active');
