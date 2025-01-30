@@ -333,7 +333,7 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, currentIndex) {
     if (!focusableElements.length) return;
-    const isSurBtnVis = this.surpriseBtn.classList.contains('hidden');
+    const isSurBtnVis = !this.surpriseBtn.classList.contains('hidden');
     const newFocusableElements = isSurBtnVis
       ? focusableElements.filter((element) => element !== this.surpriseBtn)
       : [...focusableElements];
