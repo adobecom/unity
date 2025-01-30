@@ -236,6 +236,8 @@ export default class ActionBinder {
         class: 'drop-item dynamic',
         'daa-ll': `prompt-API-powered|${suggestion}`,
         role: 'option',
+        'aria-label': suggestion,
+        'aria-description': `${this.workflowCfg.placeholder['placeholder-prompt']} ${this.workflowCfg.placeholder['placeholder-suggestions']}`,
       }, suggestion);
       const referenceNode = header.nextSibling;
       this.dropdown.insertBefore(item, referenceNode);
@@ -354,6 +356,7 @@ export default class ActionBinder {
     if (this.activeIndex >= 0 && dropItems[this.activeIndex]) {
       dropItems[this.activeIndex].click();
       dropItems[this.activeIndex].classList.remove('active');
+      this.hideDropdown();
       this.activeIndex = -1;
       return;
     }
