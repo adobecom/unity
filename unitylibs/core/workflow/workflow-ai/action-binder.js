@@ -297,7 +297,7 @@ export default class ActionBinder {
     switch (ev.key) {
       case 'Tab':
         if (!isDropVisi) return;
-        this.handleTab(ev, focusElems, currIdx);
+        this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
       case 'ArrowDown':
         this.handleArrowDown(ev, dropItems);
@@ -341,13 +341,19 @@ export default class ActionBinder {
     return !this.dropdown.classList.contains('hidden');
   }
 
-  handleTab(event, focusableElements, currentIndex) {
+  handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
     event.preventDefault();
     const nextIndex = event.shiftKey
       ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
       : (currentIndex + 1) % focusableElements.length;
     focusableElements[nextIndex].focus();
+    const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
+    if (newActiveIndex !== -1) {
+      this.activeIndex = newActiveIndex;
+    } else {
+      this.activeIndex = -1;
+    }
   }
 
   handleArrowDown(event, dropdownItems) {
