@@ -135,6 +135,7 @@ class WfInitiator {
       );
     }
     const pfr = await priorityLoad(priorityList);
+    debugger
     return {
       targetConfigCallRes: pfr[0],
       spriteCallRes: pfr[2],
