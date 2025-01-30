@@ -364,7 +364,10 @@ export default class ActionBinder {
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
-    if (this.activeIndex >= 0 && dropItems[this.activeIndex]) {
+    if (
+      this.activeIndex >= 0 && dropItems[this.activeIndex]
+      && dropItems[this.activeIndex] === document.activeElement
+    ) {
       dropItems[this.activeIndex].click();
       this.hideDropdown();
       this.activeIndex = -1;
@@ -381,8 +384,6 @@ export default class ActionBinder {
       if (i === index) {
         input.setAttribute('aria-activedescendant', item.id);
         item.focus();
-      } else {
-        item.classList.remove('active');
       }
     });
   }
