@@ -343,7 +343,6 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, currentIndex) {
     if (!focusableElements.length) return;
-    this.activeIndex = -1;
     event.preventDefault();
     const nextIndex = event.shiftKey
       ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
@@ -367,7 +366,6 @@ export default class ActionBinder {
     ev.preventDefault();
     if (this.activeIndex >= 0 && dropItems[this.activeIndex]) {
       dropItems[this.activeIndex].click();
-      dropItems[this.activeIndex].classList.remove('active');
       this.hideDropdown();
       this.activeIndex = -1;
       return;
