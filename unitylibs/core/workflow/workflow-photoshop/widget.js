@@ -173,12 +173,8 @@ export default class UnityWidget {
   initRemoveBgActions(featName, btn, authCfg) {
     this.actionMap[`.${featName}-button`] = [
       {
-        actionType: 'hide',
-        targets: ['.unity-action-area .widget-product-icon'],
-      },
-      {
         actionType: 'show',
-        targets: ['.interactive-area > .widget-refresh-button', '.unity-widget .widget-refresh-button', '.progress-circle'],
+        targets: ['.progress-circle'],
       },
       {
         itemType: 'button',
@@ -194,6 +190,8 @@ export default class UnityWidget {
       {
         actionType: 'show',
         targets: [
+          '.interactive-area > .widget-refresh-button',
+          '.unity-widget .widget-refresh-button',
           '.ps-action-btn.show + .ps-action-btn',
           '.changebg-options-tray',
           '.continue-in-app-button',
@@ -201,7 +199,7 @@ export default class UnityWidget {
       },
       {
         actionType: 'hide',
-        targets: [btn, '.progress-circle'],
+        targets: [btn, '.progress-circle', '.unity-action-area .widget-product-icon'],
       },
     ];
   }
