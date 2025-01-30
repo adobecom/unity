@@ -300,13 +300,13 @@ export default class ActionBinder {
         this.handleTab(ev, focusElems, currIdx);
         break;
       case 'ArrowDown':
-        this.handleArrowDown(ev, focusElems);
+        this.handleArrowDown(ev, dropItems);
         break;
       case 'ArrowUp':
-        this.handleArrowUp(ev, focusElems);
+        this.handleArrowUp(ev, dropItems);
         break;
       case 'Enter':
-        this.handleEnter(ev, focusElems, focusElems, currIdx);
+        this.handleEnter(ev, dropItems, focusElems, currIdx);
         break;
       case 'Escape':
         this.hideDropdown();
@@ -382,6 +382,7 @@ export default class ActionBinder {
       if (i === index) {
         item.classList.add('active');
         input.setAttribute('aria-activedescendant', item.id);
+        item.focus();
       } else {
         item.classList.remove('active');
       }
