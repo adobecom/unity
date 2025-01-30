@@ -244,11 +244,11 @@ export default class ActionBinder {
 
   createDynamicHeader() {
     const elements = [
-      { tag: 'span', attrs: { class: 'title-text' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
+      { tag: 'span', attrs: { class: 'title-text', id: 'prompt-suggestions' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
       { tag: 'button', attrs: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
       { tag: 'button', attrs: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
     ];
-    const header = createTag('li', { class: 'drop-title-con dynamic' });
+    const header = createTag('li', { class: 'drop-title-con dynamic', 'aria-labelledby': 'prompt-suggestions' });
     elements.forEach(({ tag, attrs, content = '' }) => {
       const element = createTag(tag, attrs, content);
       header.appendChild(element);

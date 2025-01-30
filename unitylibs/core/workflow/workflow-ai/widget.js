@@ -65,8 +65,8 @@ export default class UnityWidget {
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
     });
-    const titleCon = createTag('li', { class: 'drop-title-con', role: 'presentation' });
-    const title = createTag('span', { class: 'drop-title' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
+    const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
+    const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': 'drop-close', 'aria-label': 'Close dropdown' });
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
@@ -81,11 +81,11 @@ export default class UnityWidget {
   }
 
   createFooter(ph) {
-    const footer = createTag('li', { class: 'drop-footer' });
+    const footer = createTag('li', { class: 'drop-footer', 'aria-labelledby': 'tip-text tip-desc'});
     const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
     const tipCon = createTag('div', { class: 'tip-con' });
-    const tipText = createTag('span', { class: 'tip-text' }, `${ph['placeholder-tip']}:`);
-    const tipDesc = createTag('span', { class: 'tip-desc' }, tipEl?.innerText || '');
+    const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
+    const tipDesc = createTag('span', { class: 'tip-desc', id: 'tip-desc' }, tipEl?.innerText || '');
     tipCon.append(tipText, tipDesc);
     const legalEl = this.el.querySelector('.icon-legal')?.closest('li');
     const legalCon = createTag('div', { class: 'legal-con' });
