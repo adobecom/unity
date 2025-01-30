@@ -160,7 +160,7 @@ export default class ActionBinder {
           ? response.completions.slice(this.maxResults / 2)
           : response.completions;
         this.displaySuggestions();
-        this.inputField.focus();
+        // this.inputField.focus();
       }
     } catch (err) {
       console.error('Error fetching autocomplete suggestions:', err);
