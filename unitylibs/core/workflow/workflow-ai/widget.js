@@ -72,7 +72,14 @@ export default class UnityWidget {
     dd.append(titleCon);
     const prompts = this.el.querySelectorAll('.icon-prompt');
     prompts.forEach((el, i) => {
-      const item = createTag('li', { id: `item-${i}`, class: 'drop-item', role: 'option', 'daa-ll': `drop-cur-prompt-${i}|${el.closest('li').innerText}` }, el.closest('li').innerText);
+      const item = createTag('li', {
+        id: `item-${i}`,
+        class: 'drop-item',
+        role: 'option',
+        'aria-label': el.closest('li').innerText,
+        'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
+        'daa-ll': `drop-cur-prompt-${i}|${el.closest('li').innerText}`,
+      }, el.closest('li').innerText);
       dd.append(item);
     });
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
