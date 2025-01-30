@@ -380,7 +380,6 @@ export default class ActionBinder {
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
       if (i === index) {
-        item.classList.add('active');
         input.setAttribute('aria-activedescendant', item.id);
         item.focus();
       } else {

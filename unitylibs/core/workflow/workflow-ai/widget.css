@@ -301,7 +301,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.hidden {
   display: none;
 }
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.active,
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
   background-color: #e6e6e6;
 }
