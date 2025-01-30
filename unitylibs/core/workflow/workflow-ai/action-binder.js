@@ -378,7 +378,7 @@ export default class ActionBinder {
       setTimeout(() => {
         this.hideDropdown();
         this.activeIndex = -1;
-      }, 100);
+      }, 500);
       return;
     }
     const targetElement = focusElems[currIdx] || ev.target;
