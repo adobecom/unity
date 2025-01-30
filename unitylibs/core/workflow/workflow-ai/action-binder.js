@@ -106,6 +106,27 @@ export default class ActionBinder {
     });
   }
 
+  // async execActions(actions, el = null) {
+  //   if (!this.serviceHandler) {
+  //     const { default: ServiceHandler } = await import(
+  //       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
+  //     );
+  //     this.serviceHandler = new ServiceHandler(
+  //       this.workflowCfg.targetCfg.renderWidget,
+  //       this.canvasArea,
+  //     );
+  //   }
+  //   await Promise.all(
+  //     actions.map(async (act) => {
+  //       try {
+  //         await this.handleAction(act, el);
+  //       } catch (err) {
+  //         console.error(`Error handling action ${act}:`, err);
+  //       }
+  //     }),
+  //   );
+  // }
+
   async execActions(actions, el = null) {
     if (!this.serviceHandler) {
       const { default: ServiceHandler } = await import(
@@ -113,19 +134,19 @@ export default class ActionBinder {
       );
       this.serviceHandler = new ServiceHandler(
         this.workflowCfg.targetCfg.renderWidget,
-        this.canvasArea,
+        this.canvasArea
       );
     }
-    await Promise.all(
-      actions.map(async (act) => {
-        try {
-          await this.handleAction(act, el);
-        } catch (err) {
-          console.error(`Error handling action ${act}:`, err);
-        }
-      }),
-    );
-  }
+  
+    // Execute each action sequentially without Promise.all
+    for (const act of actions) {
+      try {
+        await this.handleAction(act, el);  // Handle each action sequentially
+      } catch (err) {
+        console.error(`Error handling action ${act}:`, err);
+      }
+    }
+  }  
 
   async handleAction(action, el) {
     const actionMap = {
@@ -267,7 +288,6 @@ export default class ActionBinder {
   }
 
   setPrompt(el) {
-    console.log('setPrompt', this.activeIndex);
     const prompt = el.textContent.trim();
     this.inputField.value = prompt;
     this.query = prompt;
@@ -370,7 +390,6 @@ export default class ActionBinder {
   }
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
-    console.log('handleEnter', this.activeIndex);
     ev.preventDefault();
     if (
       this.activeIndex >= 0 && dropItems[this.activeIndex]
@@ -409,7 +428,6 @@ export default class ActionBinder {
   }
 
   hideDropdown() {
-    console.log('hideDropdown', this.activeIndex);
     this.dropdown.classList.add('hidden');
     this.dropdown.setAttribute('aria-hidden', 'true');
     this.inputField.setAttribute('aria-expanded', 'false');
@@ -421,7 +439,6 @@ export default class ActionBinder {
   }
 
   resetDropdown() {
-    console.log('resetDropdown', this.activeIndex);
     this.inputField.focus();
     this.inputField.value = '';
     this.query = '';
