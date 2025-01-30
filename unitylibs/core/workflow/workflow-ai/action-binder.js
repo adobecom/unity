@@ -190,7 +190,7 @@ export default class ActionBinder {
     } else {
       const suggestionsToAdd = this.suggestion.splice(0, 3);
       this.addSuggestionItems(suggestionsToAdd, dynamicHeader);
-      this.scrRead.textContent = `${suggestionsToAdd.length} suggestions ${suggestionsToAdd.toString()} available. Use up and down arrows to navigate`;
+      this.scrRead.textContent = `${suggestionsToAdd.length} suggestions ${suggestionsToAdd.reverse().toString()} available. Use up and down arrows to navigate`;
     }
     this.dropdown.classList.remove('hidden');
     this.initActionListeners();
