@@ -71,15 +71,15 @@ export default class UnityWidget {
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
     const prompts = this.el.querySelectorAll('.icon-prompt');
-    prompts.forEach((el, i) => {
+    prompts.forEach((el, idx) => {
       const item = createTag('li', {
-        id: `item-${i}`,
+        id: `item-${idx}`,
         class: 'drop-item',
         role: 'option',
-        'tabindex': '0',
+        tabindex: idx,
         'aria-label': el.closest('li').innerText,
         'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
-        'daa-ll': `drop-cur-prompt-${i}|${el.closest('li').innerText}`,
+        'daa-ll': `drop-cur-prompt-${idx}|${el.closest('li').innerText}`,
       }, el.closest('li').innerText);
       dd.append(item);
     });
@@ -91,7 +91,7 @@ export default class UnityWidget {
   createFooter(ph) {
     const footer = createTag('li', { class: 'drop-footer' });
     const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
-    const tipCon = createTag('div', { class: 'tip-con', 'tabindex': '0', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` });
+    const tipCon = createTag('div', { class: 'tip-con', tabindex: '0', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` });
     const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
     const tipDesc = createTag('span', { class: 'tip-desc', id: 'tip-desc' }, tipEl?.innerText || '');
     tipCon.append(tipText, tipDesc);
