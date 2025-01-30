@@ -333,11 +333,16 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, currentIndex) {
     if (!focusableElements.length) return;
+    const isSurBtnVis = !this.surpriseBtn.classList.contains('hidden');
+    const newFocusableElements = isSurBtnVis
+      ? focusableElements.filter((element) => element !== this.surpriseBtn)
+      : [...focusableElements];
+
     event.preventDefault();
     const nextIndex = event.shiftKey
-      ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
-      : (currentIndex + 1) % focusableElements.length;
-    focusableElements[nextIndex].focus();
+      ? (currentIndex - 1 + newFocusableElements.length) % newFocusableElements.length
+      : (currentIndex + 1) % newFocusableElements.length;
+    newFocusableElements[nextIndex].focus();
   }
 
   handleArrowDown(event, dropdownItems) {
