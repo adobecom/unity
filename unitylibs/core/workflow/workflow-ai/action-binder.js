@@ -333,17 +333,26 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, currentIndex) {
     if (!focusableElements.length) return;
-    const isSurBtnVis = !this.surpriseBtn.classList.contains('hidden');
+  
+    // Correct condition to check if surprise button is NOT visible
+    const isSurBtnVis = this.surpriseBtn.classList.contains('hidden');
+  
+    // Filter surprise button only when it's NOT visible
     const newFocusableElements = isSurBtnVis
       ? focusableElements.filter((element) => element !== this.surpriseBtn)
       : [...focusableElements];
-
+  
     event.preventDefault();
+  
+    // Calculate the next focus index
     const nextIndex = event.shiftKey
       ? (currentIndex - 1 + newFocusableElements.length) % newFocusableElements.length
       : (currentIndex + 1) % newFocusableElements.length;
+  
+    // Focus the next element
     newFocusableElements[nextIndex].focus();
   }
+  
 
   handleArrowDown(event, dropdownItems) {
     event.preventDefault();
