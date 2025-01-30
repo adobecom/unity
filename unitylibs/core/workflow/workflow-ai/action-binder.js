@@ -27,6 +27,7 @@ export default class ActionBinder {
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
     this.surpriseBtn = this.getElement('.surprise-btn');
+    this.widget = this.getElement('.ex-unity-widget');
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.viewport = defineDeviceByScreenSize();
     this.addAccessibility();
@@ -98,7 +99,7 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('blur', ({ relatedTarget }) => {
-      if (!this.target.contains(relatedTarget)) this.hideDropdown();
+      if (!this.widget.contains(relatedTarget)) this.hideDropdown();
     });
   }
 
