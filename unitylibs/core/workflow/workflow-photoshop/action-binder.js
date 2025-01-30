@@ -161,6 +161,7 @@ export default class ActionBinder {
           this.renderCachedExperience = true;
           value.target.src = value.sourceSrc;
           this.operations = [];
+          this.resetClasses(value.target, this.canvasArea);
           break;
         default:
           break;
@@ -285,12 +286,16 @@ export default class ActionBinder {
   }
 
   resetClasses(img, targetEl) {
-    if (img.classList.contains(CONTAIN_OBJECT)) img.classList.remove(CONTAIN_OBJECT);
-    if (img.classList.contains(IMG_LANDSCAPE)) img.classList.remove(IMG_LANDSCAPE);
-    if (img.classList.contains(IMG_PORTRAIT)) img.classList.remove(IMG_PORTRAIT);
-    if (img.classList.contains(IMG_REMOVE_BG)) img.classList.remove(IMG_REMOVE_BG);
-    if (img.classList.contains(MOBILE_GRAY_BG)) img.classList.remove(MOBILE_GRAY_BG);
-    if (targetEl.classList.contains(GRAY_BG)) targetEl.classList.remove(GRAY_BG);
+    [
+      CONTAIN_OBJECT,
+      IMG_LANDSCAPE,
+      IMG_PORTRAIT,
+      IMG_REMOVE_BG,
+      MOBILE_GRAY_BG,
+    ].forEach((c) => {
+      img.classList.remove(c);
+    });
+    targetEl.classList.remove(GRAY_BG);
   }
 
   async userImgUpload(params, e) {
