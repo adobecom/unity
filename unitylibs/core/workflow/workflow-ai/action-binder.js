@@ -98,7 +98,7 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('blur', ({ relatedTarget }) => {
-      if (!this.dropdown.contains(relatedTarget)) this.hideDropdown();
+      if (!this.target.contains(relatedTarget)) this.hideDropdown();
     });
   }
 
@@ -318,11 +318,11 @@ export default class ActionBinder {
   getFocusElems(isDynamic) {
     let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
     if (this.viewport !== 'MOBILE') {
-      closeBtnSelector = `${closeBtnSelector}, .tip-con, .legal-text`;
+      closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
     }
     const selector = isDynamic
-      ? `.inp-field, .refresh-btn, ${closeBtnSelector}`
-      : `.inp-field, ${closeBtnSelector}`;
+      ? `.inp-field, .surprise-btn, .gen-btn, .refresh-btn, ${closeBtnSelector}`
+      : `.inp-field, .surprise-btn, .gen-btn, ${closeBtnSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
   }
 
