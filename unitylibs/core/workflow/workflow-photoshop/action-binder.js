@@ -292,6 +292,7 @@ export default class ActionBinder {
       IMG_PORTRAIT,
       IMG_REMOVE_BG,
       MOBILE_GRAY_BG,
+      FULL_HEIGHT,
     ].forEach((c) => {
       img.classList.remove(c);
     });
