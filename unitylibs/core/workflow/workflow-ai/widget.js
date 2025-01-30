@@ -76,7 +76,7 @@ export default class UnityWidget {
         id: `item-${idx}`,
         class: 'drop-item',
         role: 'option',
-        tabindex: idx,
+        tabindex: '0',
         'aria-label': el.closest('li').innerText,
         'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt-${idx}|${el.closest('li').innerText}`,

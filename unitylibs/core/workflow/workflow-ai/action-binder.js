@@ -170,7 +170,7 @@ export default class ActionBinder {
   async refreshSuggestions() {
     if (this.suggestion.length) {
       this.displaySuggestions();
-      this.inputField.focus();
+      // this.inputField.focus();
       return;
     }
     await this.fetchAutoComplete('refresh');
