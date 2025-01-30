@@ -88,9 +88,9 @@ export default class UnityWidget {
   }
 
   createFooter(ph) {
-    const footer = createTag('li', { class: 'drop-footer', 'aria-labelledby': 'tip-text tip-desc'});
+    const footer = createTag('li', { class: 'drop-footer', 'aria-labelledby': 'tip-text tip-desc', role: 'presentation' });
     const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
-    const tipCon = createTag('div', { class: 'tip-con' });
+    const tipCon = createTag('div', { class: 'tip-con', role: 'presentation', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` });
     const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
     const tipDesc = createTag('span', { class: 'tip-desc', id: 'tip-desc' }, tipEl?.innerText || '');
     tipCon.append(tipText, tipDesc);
