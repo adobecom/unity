@@ -300,13 +300,13 @@ export default class ActionBinder {
         this.handleTab(ev, focusElems, currIdx);
         break;
       case 'ArrowDown':
-        this.handleArrowDown(ev, dropItems);
+        this.handleArrowDown(ev, focusElems);
         break;
       case 'ArrowUp':
-        this.handleArrowUp(ev, dropItems);
+        this.handleArrowUp(ev, focusElems);
         break;
       case 'Enter':
-        this.handleEnter(ev, dropItems, focusElems, currIdx);
+        this.handleEnter(ev, focusElems, focusElems, currIdx);
         break;
       case 'Escape':
         this.hideDropdown();
