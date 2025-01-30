@@ -236,9 +236,10 @@ export default class ActionBinder {
         id: `item-${idx}`,
         class: 'drop-item dynamic',
         'daa-ll': `prompt-API-powered|${suggestion}`,
+        tabindex: '0',
         role: 'option',
         'aria-label': suggestion,
-        'aria-description': `${this.workflowCfg.placeholder['placeholder-prompt']} ${this.workflowCfg.placeholder['placeholder-suggestions']}`,
+        'aria-description': `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`,
       }, suggestion);
       const referenceNode = header.nextSibling;
       this.dropdown.insertBefore(item, referenceNode);
