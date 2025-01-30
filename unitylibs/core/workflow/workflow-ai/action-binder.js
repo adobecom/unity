@@ -309,10 +309,11 @@ export default class ActionBinder {
   }
 
   getDropdownItems() {
+    const dropTipTxt = this.dropdown.querySelector('.tip-con');
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
     return dynamicItems.length > 0
-      ? dynamicItems
-      : Array.from(this.dropdown.querySelectorAll('.drop-item'));
+      ? [dropTipTxt, ...dynamicItems]
+      : [dropTipTxt, ...Array.from(this.dropdown.querySelectorAll('.drop-item'))];
   }
 
   getFocusElems(isDynamic) {
