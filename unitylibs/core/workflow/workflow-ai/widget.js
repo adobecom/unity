@@ -64,6 +64,7 @@ export default class UnityWidget {
       role: 'listbox',
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
+      inert: '',
     });
     const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
