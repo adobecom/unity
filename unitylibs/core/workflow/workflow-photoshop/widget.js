@@ -251,8 +251,15 @@ export default class UnityWidget {
     ];
     this.actionMap[`.${featName}-button .file-upload`] = [
       {
+        actionType: 'hide',
+        targets: ['.unity-action-area .widget-product-icon'],
+      },
+      {
         actionType: 'show',
-        targets: ['.progress-circle'],
+        targets: [
+          '.progress-circle',
+          '.interactive-area > .widget-refresh-button',
+          '.unity-widget .widget-refresh-button'],
       }, {
         itemType: 'button',
         actionType: 'upload',
