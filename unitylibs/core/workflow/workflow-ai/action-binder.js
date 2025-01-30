@@ -99,7 +99,7 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('blur', ({ relatedTarget }) => {
-      if (!this.this.widget.contains(relatedTarget)) this.hideDropdown();
+      if (!this.widget.contains(relatedTarget)) this.hideDropdown();
     });
   }
 
@@ -316,38 +316,17 @@ export default class ActionBinder {
       : [...Array.from(this.dropdown.querySelectorAll('.drop-item'))];
   }
 
-  // getFocusElems(isDynamic) {
-  //   let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
-  //   if (this.viewport !== 'MOBILE') {
-  //     closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
-  //   }
-  //   const selector = isDynamic
-  //     ? `.inp-field, .surprise-btn, .gen-btn, .refresh-btn, ${closeBtnSelector}`
-  //     : `.inp-field, .surprise-btn, .gen-btn, ${closeBtnSelector}`;
-  //   return Array.from(this.block.querySelectorAll(selector));
-  // }
   getFocusElems(isDynamic) {
-    // Determine close button selector
-    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') 
-      ? '.close-btn.dynamic' 
-      : '.close-btn';
-  
-    // Add additional selectors for non-mobile viewports
+    let closeBtnSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic' : '.close-btn';
     if (this.viewport !== 'MOBILE') {
       closeBtnSelector = `${closeBtnSelector}, .legal-text, .tip-con`;
     }
-  
-    // Dynamically include or exclude '.surprise-btn' based on its visibility
     const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
     const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
-  
-    // Construct the final selector string
     const baseSelector = `.inp-field, .gen-btn, ${closeBtnSelector}`;
     const selector = isDynamic
       ? `${baseSelector}, .refresh-btn, ${surpriseBtnSelector}`.trim().replace(/,+$/, '')
       : `${baseSelector}, ${surpriseBtnSelector}`.trim().replace(/,+$/, '');
-  
-    // Return the focusable elements
     return Array.from(this.block.querySelectorAll(selector));
   }
 
