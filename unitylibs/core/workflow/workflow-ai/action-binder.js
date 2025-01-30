@@ -32,7 +32,7 @@ export default class ActionBinder {
     this.viewport = defineDeviceByScreenSize();
     this.addAccessibility();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
-    this.scrRead = createTag('li', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic':'true'  });
+    this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
   }
 
