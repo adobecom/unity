@@ -4,13 +4,15 @@
 .aside.unity-enabled:before {
   content: '';
   position: absolute;
-  bottom: 0;
+  bottom: -5px;
   left: 0;
   right: 0;
-  height: 1px; /* Control the area where the blur is applied */
-  background: inherit; /* Inherit the same background from the parent */
-  filter: blur(1px);
+  height: 25px;
   pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
+  filter: blur(5px);
+  backdrop-filter: blur(1px);
+  opacity: 0.8;
 }
 .aside.unity-enabled .foreground.container .interactive-area {
   display: inherit;
