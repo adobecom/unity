@@ -374,11 +374,9 @@ export default class ActionBinder {
       this.activeIndex >= 0 && dropItems[this.activeIndex]
       && dropItems[this.activeIndex] === document.activeElement
     ) {
-      dropItems[this.activeIndex].click();
-      setTimeout(() => {
-        this.hideDropdown();
-        this.activeIndex = -1;
-      }, 300);
+      this.setPrompt(dropItems[this.activeIndex]);
+      this.hideDropdown();
+      this.activeIndex = -1;
       return;
     }
     const targetElement = focusElems[currIdx] || ev.target;
@@ -405,8 +403,8 @@ export default class ActionBinder {
   showDropdown() {
     this.dropdown.classList.remove('hidden');
     this.dropdown.removeAttribute('inert');
-    this.dropdown.setAttribute('aria-hidden', 'false');
     this.inputField.setAttribute('aria-expanded', 'true');
+    this.dropdown.removeAttribute('aria-hidden');
   }
 
   hideDropdown() {
