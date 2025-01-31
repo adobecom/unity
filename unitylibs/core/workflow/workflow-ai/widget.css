@@ -395,11 +395,6 @@
     font-size: var(--type-body-s-size);
     line-height: var(--type-body-s-lh);
   }   
-  
-  .aside.unity-enabled .foreground.container {
-    width: 100%;
-    padding: 0 var(--spacing-s);
-  }
 
   .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
     padding: 0;

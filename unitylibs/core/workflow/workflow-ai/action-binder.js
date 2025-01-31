@@ -271,7 +271,7 @@ export default class ActionBinder {
     this.inputField.value = prompt;
     this.query = prompt;
     this.inputField.focus();
-    // this.toggleSurpriseBtn();
+    this.toggleSurpriseBtn();
   }
 
   addAccessibility() {
