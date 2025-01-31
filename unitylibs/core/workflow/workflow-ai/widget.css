@@ -1,7 +1,7 @@
 .aside.unity-enabled {
   overflow: unset;
 }
-.aside.unity-enabled::before {
+.aside.unity-enabled:before {
   content: '';
   position: absolute;
   bottom: 0;
