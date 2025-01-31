@@ -414,6 +414,13 @@
     padding: 11px var(--spacing-xs);
   }
 
+  .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    padding: 0;
+  }
+  .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
+    width: 95%;
+  }
+
   .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
     width: 100%;
     padding: 2px 0;
