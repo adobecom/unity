@@ -313,6 +313,8 @@ export function sendAnalyticsEvent(event) {
     xdm: {},
     data: { web: { webInteraction: { name: event?.type } } },
   };
-  if (event?.data) data.data._adobe_corpnew = { digitalData: event.data };
+  if (event?.detail) {
+    data.data._adobe_corpnew = { digitalData: event.detail };
+  }
   window._satellite?.track('event', data);
 }
