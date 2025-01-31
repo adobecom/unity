@@ -375,7 +375,7 @@ export default class ActionBinder {
       && dropItems[this.activeIndex] === document.activeElement
     ) {
       dropItems[this.activeIndex].click();
-      this.hideDropdown();
+      // this.hideDropdown();
       this.activeIndex = -1;
       // setTimeout(() => {
       //   this.hideDropdown();
