@@ -374,13 +374,9 @@ export default class ActionBinder {
       this.activeIndex >= 0 && dropItems[this.activeIndex]
       && dropItems[this.activeIndex] === document.activeElement
     ) {
-      dropItems[this.activeIndex].click();
-      // this.hideDropdown();
+      this.setPrompt(dropItems[this.activeIndex]);
+      this.hideDropdown();
       this.activeIndex = -1;
-      // setTimeout(() => {
-      //   this.hideDropdown();
-      //   this.activeIndex = -1;
-      // }, 300);
       return;
     }
     const targetElement = focusElems[currIdx] || ev.target;
@@ -407,14 +403,12 @@ export default class ActionBinder {
   showDropdown() {
     this.dropdown.classList.remove('hidden');
     this.dropdown.removeAttribute('inert');
-    this.dropdown.setAttribute('aria-hidden', 'false');
     this.inputField.setAttribute('aria-expanded', 'true');
   }
 
   hideDropdown() {
     this.dropdown.classList.add('hidden');
     this.dropdown.setAttribute('inert', '');
-    this.dropdown.setAttribute('aria-hidden', 'true');
     this.inputField.setAttribute('aria-expanded', 'false');
   }
 
