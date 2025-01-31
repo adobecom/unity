@@ -1,6 +1,19 @@
 .aside.unity-enabled {
   overflow: unset;
 }
+.aside.unity-enabled:before {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
+  filter: blur(5px);
+  backdrop-filter: blur(1px);
+  opacity: 0.8;
+}
 .aside.unity-enabled .foreground.container .interactive-area {
   display: inherit;
   justify-content: center;
@@ -375,14 +388,28 @@
 }
 @media (min-width: 768px) and (max-width: 1024px) {
   .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
-    padding: 0 10px;
+    padding: 0;
+    max-width: 720px;
+    margin: 0 auto;
   }
   .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky {
     bottom: 16px;
   }
 }
 
-@media screen and (max-width: 600px) {
+@media (min-width: 600px) and (max-width: 767px) {
+  .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    padding: 0;
+  }
+  .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+    bottom: 16px;
+  }
+  .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
+    width: 95%;
+  }
+}
+
+@media screen and (max-width: 599px) {
   .aside.unity-enabled h1,
   .aside.unity-enabled h2,
   .aside.unity-enabled h3,
@@ -395,26 +422,21 @@
     font-size: var(--type-body-s-size);
     line-height: var(--type-body-s-lh);
   }   
-  
-  .aside.unity-enabled .foreground.container {
-    width: 100%;
-    padding: 0 var(--spacing-s);
-  }
-
-  .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
-    padding: 0;
-  }
 
   .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky {
     bottom: 16px;
-  }
-  .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
-    width: 95%;
   }
 
   .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
     flex-direction: column;
     padding: 11px var(--spacing-xs);
+  }
+
+  .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    padding: 0;
+  }
+  .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
+    width: 95%;
   }
 
   .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
