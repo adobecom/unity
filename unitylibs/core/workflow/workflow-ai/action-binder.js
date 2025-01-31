@@ -146,7 +146,7 @@ export default class ActionBinder {
       this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
       if (fetchType !== 'refresh' && this.query) {
         sendAnalyticsEvent(
-          new CustomEvent('promptValue', { detail: { query: this.query } }),
+          new CustomEvent('promptInput', { detail: { query: this.query } }),
         );
       }
       const payload = {
