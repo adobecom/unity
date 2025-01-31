@@ -272,6 +272,7 @@ export default class ActionBinder {
     this.query = prompt;
     this.inputField.focus();
     this.toggleSurpriseBtn();
+    this.hideDropdown();
   }
 
   addAccessibility() {
@@ -375,7 +376,6 @@ export default class ActionBinder {
       && dropItems[this.activeIndex] === document.activeElement
     ) {
       this.setPrompt(dropItems[this.activeIndex]);
-      this.hideDropdown();
       this.activeIndex = -1;
       return;
     }
