@@ -1,5 +1,5 @@
 {
-  "aside.unity-enabled": {
+  "aside.text2image": {
     "type": "text",
     "selector": ".text",
     "handler": "render",
