@@ -45,9 +45,11 @@ export default class UnityWidget {
       type: 'text',
       placeholder: ph['placeholder-input'],
       'aria-autocomplete': 'list',
+      'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
       'aria-expanded': 'false',
       'aria-owns': 'prompt-dropdown',
+      'aria-activedescendant': '',
     });
     const surpriseBtn = this.createActBtn(this.el.querySelector('.icon-surpriseMe')?.closest('li'), 'surprise-btn');
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
@@ -63,6 +65,7 @@ export default class UnityWidget {
       'daa-lh': 'Marquee',
       role: 'listbox',
       'aria-labelledby': 'promptInput',
+      'aria-hidden': 'true',
     });
     const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);

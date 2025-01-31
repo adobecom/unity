@@ -404,10 +404,12 @@ export default class ActionBinder {
     this.dropdown.classList.remove('hidden');
     this.dropdown.removeAttribute('inert');
     this.inputField.setAttribute('aria-expanded', 'true');
+    this.dropdown.removeAttribute('aria-hidden');
   }
 
   hideDropdown() {
     this.dropdown.classList.add('hidden');
+    this.dropdown.setAttribute('aria-hidden', 'true');
     this.dropdown.setAttribute('inert', '');
     this.inputField.setAttribute('aria-expanded', 'false');
   }
