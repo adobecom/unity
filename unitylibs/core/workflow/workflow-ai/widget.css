@@ -1,6 +1,17 @@
 .aside.unity-enabled {
   overflow: unset;
 }
+.aside.unity-enabled {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px; /* Control the area where the blur is applied */
+  background: inherit; /* Inherit the same background from the parent */
+  filter: blur(1px);
+  pointer-events: none;
+}
 .aside.unity-enabled .foreground.container .interactive-area {
   display: inherit;
   justify-content: center;
