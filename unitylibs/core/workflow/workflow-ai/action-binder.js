@@ -358,13 +358,17 @@ export default class ActionBinder {
   }
 
   moveFocusWithArrow(dropItems, direction) {
-    if (!dropItems.includes(document.activeElement)) {
+    // Initialize focus if there is no activeIndex or invalid focus
+    if (this.activeIndex === -1 || !document.activeElement.closest('.drop-item, .tip-con')) {
       this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
     } else {
-      this.activeIndex = direction === 'down'
-        ? (this.activeIndex + 1) % dropItems.length
-        : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
+      // Update the activeIndex based on the direction
+      this.activeIndex =
+        direction === 'down'
+          ? (this.activeIndex + 1) % dropItems.length
+          : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
     }
+    // Set the active item
     this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
