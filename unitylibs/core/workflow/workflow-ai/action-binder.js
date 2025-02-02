@@ -300,7 +300,7 @@ export default class ActionBinder {
         break;
       case 'ArrowDown':
         ev.preventDefault();
-        this.moveFocusWithArrow(dropItems, 'up');
+        this.moveFocusWithArrow(dropItems, 'down');
         break;
       case 'ArrowUp':
         ev.preventDefault();
@@ -318,10 +318,10 @@ export default class ActionBinder {
   }
 
   getDropdownItems() {
-    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
+    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic, .tip-con'));
     return dynamicItems.length > 0
       ? [...dynamicItems]
-      : [...Array.from(this.dropdown.querySelectorAll('.drop-item'))];
+      : [...Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'))];
   }
 
   getFocusElems(isDynamic) {
@@ -387,7 +387,7 @@ export default class ActionBinder {
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
       if (i === index) {
-        input.setAttribute('aria-activedescendant', item.id);
+        input.setAttribute('aria-activedescendant', item.id || 'tip-content');
         item.focus();
       }
     });
