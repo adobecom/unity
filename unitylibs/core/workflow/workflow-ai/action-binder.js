@@ -331,7 +331,7 @@ export default class ActionBinder {
   getFocusElems(isDynamic) {
     let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
     if (this.viewport !== 'MOBILE') {
-      elmSelector = `${elmSelector}, .legal-text, .tip-con`;
+      elmSelector = `${elmSelector}, .legal-text`;
     }
     const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
     const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
@@ -399,7 +399,11 @@ export default class ActionBinder {
     items.forEach((item, i) => {
       if (i === index) {
         input.setAttribute('aria-activedescendant', item.id || 'tip-content');
-        item.focus();
+        if (item.hasAttribute('tabindex') || item.focus) {
+          item.focus();
+        } else {
+          console.warn('Item is not focusable:', item);
+        }
       }
     });
   }
