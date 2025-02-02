@@ -299,11 +299,12 @@ export default class ActionBinder {
         this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
       case 'ArrowDown':
+        ev.preventDefault();
+        this.moveFocusWithArrow(dropItems, 'up');
+        break;
       case 'ArrowUp':
-        if (dropItems.includes(document.activeElement)) {
-          ev.preventDefault();
-          this.handleArrowNavigation(ev.key, dropItems);
-        }
+        ev.preventDefault();
+        this.moveFocusWithArrow(dropItems, 'up');
         break;
       case 'Enter':
         this.handleEnter(ev, dropItems, focusElems, currIdx);
@@ -356,12 +357,15 @@ export default class ActionBinder {
     }
   }
 
-  handleArrowNavigation(key, dropdownItems) {
-    if (!dropdownItems.length) return;
-    this.activeIndex = key === 'ArrowDown'
-      ? (this.activeIndex + 1) % dropdownItems.length
-      : (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-    this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+  moveFocusWithArrow(dropItems, direction) {
+    if (!dropItems.includes(document.activeElement)) {
+      this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
+    } else {
+      this.activeIndex = direction === 'down'
+        ? (this.activeIndex + 1) % dropItems.length
+        : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
+    }
+    this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
