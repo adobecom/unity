@@ -318,6 +318,8 @@ export default class ActionBinder {
   }
 
   getDropdownItems() {
+    console.log('Dynamic items:', Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic, .tip-con')));
+    console.log('Fallback items:', Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con')));
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic, .tip-con'));
     return dynamicItems.length > 0
       ? [...dynamicItems]
