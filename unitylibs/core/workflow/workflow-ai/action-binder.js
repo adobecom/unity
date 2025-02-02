@@ -134,6 +134,7 @@ export default class ActionBinder {
 
     // Add a click event listener on the block to detect clicks outside
     this.block.addEventListener('click', (event) => {
+      console.log('click event firing');
       if (!this.widget.contains(event.target)) {
         this.hideDropdown();
       }
