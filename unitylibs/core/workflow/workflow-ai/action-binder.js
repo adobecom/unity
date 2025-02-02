@@ -318,14 +318,31 @@ export default class ActionBinder {
     }
   }
 
+  // getDropdownItems() {
+  //   if (!this.dropdown) return [];
+  //   const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
+  //   if (dynamicItems.length > 0) {
+  //     const tipCon = this.dropdown.querySelector('.tip-con');
+  //     if (tipCon) dynamicItems.push(tipCon);
+  //     return dynamicItems;
+  //   }
+  //   return Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
+  // }
+
   getDropdownItems() {
     if (!this.dropdown) return [];
+
+    // First, select dynamic items without including .tip-con initially
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
+
+    // If dynamic items are found, include .tip-con
     if (dynamicItems.length > 0) {
-      const tipCon = this.dropdown.querySelector('.tip-con');
-      if (tipCon) dynamicItems.push(tipCon);
-      return dynamicItems;
+        const tipCon = this.dropdown.querySelector('.tip-con');
+        if (tipCon) dynamicItems.push(tipCon);
+        return dynamicItems;
     }
+
+    // If no dynamic items, return all drop items and .tip-con
     return Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
   }
 
@@ -362,16 +379,29 @@ export default class ActionBinder {
     }
   }
 
+  // moveFocusWithArrow(dropItems, direction) {
+  //   if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
+  //     this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
+  //   } else {
+  //     this.activeIndex = direction === 'down'
+  //       ? (this.activeIndex + 1) % dropItems.length
+  //       : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
+  //   }
+  //   this.setActiveItem(dropItems, this.activeIndex, this.inputField);
+  // }
+
   moveFocusWithArrow(dropItems, direction) {
-    // Initialize focus if there is no activeIndex or invalid focus
+    // Initialize focus if no activeIndex is set or invalid focus is present
     if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
-      this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
+        this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
     } else {
-      // Update the activeIndex based on the direction
-      this.activeIndex = direction === 'down'
-        ? (this.activeIndex + 1) % dropItems.length
-        : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
+        // Update activeIndex based on direction
+        this.activeIndex =
+            direction === 'down'
+                ? (this.activeIndex + 1) % dropItems.length
+                : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
     }
+
     // Set the active item
     this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
@@ -380,32 +410,75 @@ export default class ActionBinder {
     return dropItems.some(item => item === document.activeElement);
   }
 
+  // handleEnter(ev, dropItems, focusElems, currIdx) {
+  //   ev.preventDefault();
+  //   const nonInteractiveRoles = ['note', 'presentation'];
+  //   if (nonInteractiveRoles.includes(document.activeElement.getAttribute('role'))) {
+  //     return;
+  //   }
+  //   if (
+  //     this.activeIndex >= 0 && dropItems[this.activeIndex]
+  //     && dropItems[this.activeIndex] === document.activeElement
+  //   ) {
+  //     this.setPrompt(dropItems[this.activeIndex]);
+  //     this.activeIndex = -1;
+  //     return;
+  //   }
+  //   const targetElement = focusElems[currIdx] || ev.target;
+  //   if (targetElement && (currIdx !== -1 || targetElement.classList.contains('unity-act-btn'))) {
+  //     targetElement.click();
+  //   }
+  // }
+
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
+
+    // Define non-interactive roles
+    const nonInteractiveRoles = ['note', 'presentation'];
+
+    // Check if the currently focused element is non-interactive
+    const role = document.activeElement.getAttribute('role');
+    if (role && nonInteractiveRoles.includes(role)) {
+        console.log('Skipping action on non-interactive element with role:', role);
+        return;
+    }
+
+    // Handle Enter when focus is on an active dropdown item
     if (
-      this.activeIndex >= 0 && dropItems[this.activeIndex]
-      && dropItems[this.activeIndex] === document.activeElement
+      this.activeIndex >= 0 &&
+      dropItems[this.activeIndex] &&
+      dropItems[this.activeIndex] === document.activeElement
     ) {
       this.setPrompt(dropItems[this.activeIndex]);
       this.activeIndex = -1;
       return;
     }
+    // Handle Enter for any other interactive element
     const targetElement = focusElems[currIdx] || ev.target;
     if (targetElement && (currIdx !== -1 || targetElement.classList.contains('unity-act-btn'))) {
-      targetElement.click();
+        targetElement.click();
     }
-  }
+}
+
+  // setActiveItem(items, index, input) {
+  //   items.forEach((item, i) => {
+  //     if (i === index) {
+  //       input.setAttribute('aria-activedescendant', item.id || 'tip-content');
+  //       if (item.hasAttribute('tabindex') || item.focus) {
+  //         item.focus();
+  //       } else {
+  //         console.warn('Item is not focusable:', item);
+  //       }
+  //     }
+  //   });
+  // }
 
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
-      if (i === index) {
-        input.setAttribute('aria-activedescendant', item.id || 'tip-content');
-        if (item.hasAttribute('tabindex') || item.focus) {
-          item.focus();
-        } else {
-          console.warn('Item is not focusable:', item);
+        if (i === index) {
+            input.setAttribute('aria-activedescendant', item.id || 'tip-content');
+            item.focus();
         }
-      }
     });
   }
 
