@@ -83,8 +83,31 @@ export default class ActionBinder {
     }
   }
 
+  // addInputEvents(el, actions) {
+  //   let debounce;
+  //   el.addEventListener('input', ({ target }) => {
+  //     clearTimeout(debounce);
+  //     this.query = target.value.trim();
+  //     this.toggleSurpriseBtn();
+  //     if (this.query.length >= 3) {
+  //       debounce = setTimeout(() => this.execActions(actions), 1000);
+  //     }
+  //   });
+  //   el.addEventListener('focus', () => {
+  //     this.showDropdown();
+  //     if (this.sendAnalyticsOnFocus) {
+  //       sendAnalyticsEvent(new Event('promptOpen'));
+  //       this.sendAnalyticsOnFocus = false;
+  //     }
+  //   });
+  //   el.addEventListener('blur', ({ relatedTarget }) => {
+  //     if (!this.widget.contains(relatedTarget)) this.hideDropdown();
+  //   });
+  // }
+
   addInputEvents(el, actions) {
     let debounce;
+
     el.addEventListener('input', ({ target }) => {
       clearTimeout(debounce);
       this.query = target.value.trim();
@@ -93,6 +116,7 @@ export default class ActionBinder {
         debounce = setTimeout(() => this.execActions(actions), 1000);
       }
     });
+
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
@@ -100,10 +124,21 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
-    el.addEventListener('blur', ({ relatedTarget }) => {
-      if (!this.widget.contains(relatedTarget)) this.hideDropdown();
+
+    // Use focusout to detect when focus moves outside the widget
+    el.addEventListener('focusout', ({ relatedTarget }) => {
+      if (!this.widget.contains(relatedTarget)) {
+        this.hideDropdown();
+      }
     });
-  }
+
+    // Add a click event listener on the block to detect clicks outside
+    this.block.addEventListener('click', (event) => {
+      if (!this.widget.contains(event.target)) {
+        this.hideDropdown();
+      }
+    });
+}
 
   async execActions(actions, el = null) {
     if (!this.serviceHandler) {
@@ -318,17 +353,6 @@ export default class ActionBinder {
     }
   }
 
-  // getDropdownItems() {
-  //   if (!this.dropdown) return [];
-  //   const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
-  //   if (dynamicItems.length > 0) {
-  //     const tipCon = this.dropdown.querySelector('.tip-con');
-  //     if (tipCon) dynamicItems.push(tipCon);
-  //     return dynamicItems;
-  //   }
-  //   return Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
-  // }
-
   getDropdownItems() {
     if (!this.dropdown) return [];
 
@@ -364,21 +388,6 @@ export default class ActionBinder {
     return !this.dropdown.classList.contains('hidden');
   }
 
-  // handleTab(event, focusableElements, dropItems, currentIndex) {
-  //   if (!focusableElements.length) return;
-  //   event.preventDefault();
-  //   const nextIndex = event.shiftKey
-  //     ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
-  //     : (currentIndex + 1) % focusableElements.length;
-  //   focusableElements[nextIndex].focus();
-  //   const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
-  //   if (newActiveIndex !== -1) {
-  //     this.activeIndex = newActiveIndex;
-  //   } else {
-  //     this.activeIndex = -1;
-  //   }
-  // }
-
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
 
@@ -412,17 +421,6 @@ export default class ActionBinder {
     this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
 }
 
-  // moveFocusWithArrow(dropItems, direction) {
-  //   if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
-  //     this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
-  //   } else {
-  //     this.activeIndex = direction === 'down'
-  //       ? (this.activeIndex + 1) % dropItems.length
-  //       : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
-  //   }
-  //   this.setActiveItem(dropItems, this.activeIndex, this.inputField);
-  // }
-
   moveFocusWithArrow(dropItems, direction) {
     // Initialize focus if no activeIndex is set or invalid focus is present
     if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
@@ -442,26 +440,6 @@ export default class ActionBinder {
   isDropdownItemFocused(dropItems) {
     return dropItems.some(item => item === document.activeElement);
   }
-
-  // handleEnter(ev, dropItems, focusElems, currIdx) {
-  //   ev.preventDefault();
-  //   const nonInteractiveRoles = ['note', 'presentation'];
-  //   if (nonInteractiveRoles.includes(document.activeElement.getAttribute('role'))) {
-  //     return;
-  //   }
-  //   if (
-  //     this.activeIndex >= 0 && dropItems[this.activeIndex]
-  //     && dropItems[this.activeIndex] === document.activeElement
-  //   ) {
-  //     this.setPrompt(dropItems[this.activeIndex]);
-  //     this.activeIndex = -1;
-  //     return;
-  //   }
-  //   const targetElement = focusElems[currIdx] || ev.target;
-  //   if (targetElement && (currIdx !== -1 || targetElement.classList.contains('unity-act-btn'))) {
-  //     targetElement.click();
-  //   }
-  // }
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
@@ -493,19 +471,6 @@ export default class ActionBinder {
     }
 }
 
-  // setActiveItem(items, index, input) {
-  //   items.forEach((item, i) => {
-  //     if (i === index) {
-  //       input.setAttribute('aria-activedescendant', item.id || 'tip-content');
-  //       if (item.hasAttribute('tabindex') || item.focus) {
-  //         item.focus();
-  //       } else {
-  //         console.warn('Item is not focusable:', item);
-  //       }
-  //     }
-  //   });
-  // }
-
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
         if (i === index) {
@@ -528,12 +493,21 @@ export default class ActionBinder {
     this.dropdown.removeAttribute('aria-hidden');
   }
 
+  // hideDropdown() {
+  //   this.dropdown.classList.add('hidden');
+  //   this.dropdown.setAttribute('inert', '');
+  //   this.dropdown.setAttribute('aria-hidden', 'true');
+  //   this.inputField.setAttribute('aria-expanded', 'false');
+  // }
+
   hideDropdown() {
-    this.dropdown.classList.add('hidden');
-    this.dropdown.setAttribute('inert', '');
-    this.dropdown.setAttribute('aria-hidden', 'true');
-    this.inputField.setAttribute('aria-expanded', 'false');
-  }
+    if (this.isDropdownVisible()) {
+      this.dropdown.classList.add('hidden');
+      this.dropdown.setAttribute('inert', '');
+      this.dropdown.setAttribute('aria-hidden', 'true');
+      this.inputField.setAttribute('aria-expanded', 'false');
+    }
+}
 
   toggleSurpriseBtn() {
     this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
