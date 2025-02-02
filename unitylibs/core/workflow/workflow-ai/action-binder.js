@@ -66,7 +66,6 @@ export default class ActionBinder {
       event.preventDefault();
       await this.execActions(actionsList, el);
     };
-
     switch (el.nodeName) {
       case 'A':
       case 'BUTTON':
@@ -136,7 +135,6 @@ export default class ActionBinder {
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
-
     const execute = actionMap[action.actionType];
     if (execute) await execute();
   }
@@ -146,7 +144,7 @@ export default class ActionBinder {
       this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
       if (fetchType !== 'refresh' && this.query) {
         sendAnalyticsEvent(
-          new CustomEvent('promptValue', { detail: { query: this.query } }),
+          new CustomEvent('promptInput', { detail: { query: this.query } }),
         );
       }
       const payload = {
@@ -272,6 +270,7 @@ export default class ActionBinder {
     this.query = prompt;
     this.inputField.focus();
     this.toggleSurpriseBtn();
+    this.hideDropdown();
   }
 
   addAccessibility() {
@@ -300,10 +299,11 @@ export default class ActionBinder {
         this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
       case 'ArrowDown':
-        this.handleArrowDown(ev, dropItems);
-        break;
       case 'ArrowUp':
-        this.handleArrowUp(ev, dropItems);
+        if (dropItems.includes(document.activeElement)) {
+          ev.preventDefault();
+          this.handleArrowNavigation(ev.key, dropItems);
+        }
         break;
       case 'Enter':
         this.handleEnter(ev, dropItems, focusElems, currIdx);
@@ -356,15 +356,11 @@ export default class ActionBinder {
     }
   }
 
-  handleArrowDown(event, dropdownItems) {
-    event.preventDefault();
-    this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
-    this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
-  }
-
-  handleArrowUp(event, dropdownItems) {
-    event.preventDefault();
-    this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
+  handleArrowNavigation(key, dropdownItems) {
+    if (!dropdownItems.length) return;
+    this.activeIndex = key === 'ArrowDown'
+      ? (this.activeIndex + 1) % dropdownItems.length
+      : (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
     this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
   }
 
@@ -375,7 +371,6 @@ export default class ActionBinder {
       && dropItems[this.activeIndex] === document.activeElement
     ) {
       this.setPrompt(dropItems[this.activeIndex]);
-      this.hideDropdown();
       this.activeIndex = -1;
       return;
     }
@@ -409,8 +404,8 @@ export default class ActionBinder {
 
   hideDropdown() {
     this.dropdown.classList.add('hidden');
-    this.dropdown.setAttribute('aria-hidden', 'true');
     this.dropdown.setAttribute('inert', '');
+    this.dropdown.setAttribute('aria-hidden', 'true');
     this.inputField.setAttribute('aria-expanded', 'false');
   }
 
