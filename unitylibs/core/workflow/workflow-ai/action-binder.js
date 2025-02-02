@@ -310,6 +310,7 @@ export default class ActionBinder {
         this.handleEnter(ev, dropItems, focusElems, currIdx);
         break;
       case 'Escape':
+        this.inputField.focus();
         this.hideDropdown();
         break;
       default:
