@@ -364,20 +364,53 @@ export default class ActionBinder {
     return !this.dropdown.classList.contains('hidden');
   }
 
+  // handleTab(event, focusableElements, dropItems, currentIndex) {
+  //   if (!focusableElements.length) return;
+  //   event.preventDefault();
+  //   const nextIndex = event.shiftKey
+  //     ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
+  //     : (currentIndex + 1) % focusableElements.length;
+  //   focusableElements[nextIndex].focus();
+  //   const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
+  //   if (newActiveIndex !== -1) {
+  //     this.activeIndex = newActiveIndex;
+  //   } else {
+  //     this.activeIndex = -1;
+  //   }
+  // }
+
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
+
+    // Prevent default Tab behavior
     event.preventDefault();
-    const nextIndex = event.shiftKey
-      ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
-      : (currentIndex + 1) % focusableElements.length;
-    focusableElements[nextIndex].focus();
-    const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
-    if (newActiveIndex !== -1) {
-      this.activeIndex = newActiveIndex;
-    } else {
-      this.activeIndex = -1;
+
+    const isShift = event.shiftKey;
+    const currentElement = document.activeElement;
+
+    // Custom logic when focus is on `.tip-con`
+    if (currentElement.classList.contains('tip-con')) {
+        if (!isShift) {
+            // Move focus to `.legal-text` when Tab is pressed on `.tip-con`
+            const legalText = this.block.querySelector('.legal-text');
+            if (legalText) {
+                legalText.focus();
+                return;
+            }
+        }
     }
-  }
+
+    // Default circular focus logic for other elements
+    const nextIndex = isShift
+        ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
+        : (currentIndex + 1) % focusableElements.length;
+
+    focusableElements[nextIndex].focus();
+
+    // Update activeIndex if next element is in dropdown items
+    const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
+    this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
+}
 
   // moveFocusWithArrow(dropItems, direction) {
   //   if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
