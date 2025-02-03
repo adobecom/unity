@@ -137,7 +137,7 @@ class WfInitiator {
     const pfr = await priorityLoad(priorityList);
     return {
       targetConfigCallRes: pfr[0],
-      spriteCallRes: pfr[2],
+      spriteCallRes: pfr.length > 2 ? pfr[2] : null,
     };
   }
 
