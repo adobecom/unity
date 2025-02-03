@@ -377,6 +377,14 @@ export default class ActionBinder {
     return files.some((file) => file.type !== 'application/pdf');
   }
 
+  isMixedFileTypes(files) {
+    const firstFileExtension = files[0].name.split('.').pop().toLowerCase();  
+    if (files.every(file => file.name.split('.').pop().toLowerCase() === firstFileExtension)) {
+      return firstFileExtension;
+    }  
+    return 'mixed';
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -680,10 +688,9 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 85;
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 60;
-    const isNonPdf = this.isNonPdf(files);
+    const fileType = this.isMixedFileTypes(files);
     const fileData = {
-      //Logic for mixed has to be fixed
-      type: isNonPdf ? 'mixed' : 'application/pdf',
+      type: fileType,
       size: totalFileSize,
       count: files.length,
     };
