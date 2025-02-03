@@ -1,5 +1,5 @@
 {
-  "aside.text2image": {
+  "aside": {
     "type": "text",
     "selector": ".text",
     "handler": "render",
