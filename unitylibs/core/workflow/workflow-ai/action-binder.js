@@ -131,14 +131,6 @@ export default class ActionBinder {
         this.hideDropdown();
       }
     });
-
-    // Add a click event listener on the block to detect clicks outside
-    this.block.addEventListener('click', (event) => {
-      console.log('click event firing');
-      if (!this.widget.contains(event.target)) {
-        this.hideDropdown();
-      }
-    });
 }
 
   async execActions(actions, el = null) {
@@ -492,6 +484,7 @@ export default class ActionBinder {
     this.dropdown.removeAttribute('inert');
     this.inputField.setAttribute('aria-expanded', 'true');
     this.dropdown.removeAttribute('aria-hidden');
+    document.addEventListener('click', this.handleOutsideClick.bind(this), true);
   }
 
   // hideDropdown() {
@@ -507,8 +500,15 @@ export default class ActionBinder {
       this.dropdown.setAttribute('inert', '');
       this.dropdown.setAttribute('aria-hidden', 'true');
       this.inputField.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', this.handleOutsideClick.bind(this), true);
     }
-}
+  }
+
+  handleOutsideClick(event) {
+    if (!this.widget.contains(event.target)) {
+      this.hideDropdown();
+    }
+  }
 
   toggleSurpriseBtn() {
     this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
