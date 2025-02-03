@@ -101,8 +101,10 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
-    el.addEventListener('blur', ({ relatedTarget }) => {
-      if (!this.widget.contains(relatedTarget)) this.hideDropdown();
+    el.addEventListener('focusout', ({ relatedTarget }) => {
+      if (!this.widget.contains(relatedTarget)) {
+        this.hideDropdown();
+      }
     });
   }
 
@@ -301,15 +303,18 @@ export default class ActionBinder {
         this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
       case 'ArrowDown':
-        this.handleArrowDown(ev, dropItems);
+        ev.preventDefault();
+        this.moveFocusWithArrow(dropItems, 'down');
         break;
       case 'ArrowUp':
-        this.handleArrowUp(ev, dropItems);
+        ev.preventDefault();
+        this.moveFocusWithArrow(dropItems, 'up');
         break;
       case 'Enter':
         this.handleEnter(ev, dropItems, focusElems, currIdx);
         break;
       case 'Escape':
+        this.inputField.focus();
         this.hideDropdown();
         break;
       default:
@@ -318,16 +323,20 @@ export default class ActionBinder {
   }
 
   getDropdownItems() {
+    if (!this.dropdown) return [];
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
-    return dynamicItems.length > 0
-      ? [...dynamicItems]
-      : [...Array.from(this.dropdown.querySelectorAll('.drop-item'))];
+    if (dynamicItems.length > 0) {
+      const tipCon = this.dropdown.querySelector('.tip-con');
+      if (tipCon) dynamicItems.push(tipCon);
+      return dynamicItems;
+    }
+    return Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
   }
 
   getFocusElems(isDynamic) {
     let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
     if (this.viewport !== 'MOBILE') {
-      elmSelector = `${elmSelector}, .legal-text, .tip-con`;
+      elmSelector = `${elmSelector}, .legal-text`;
     }
     const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
     const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
@@ -345,34 +354,46 @@ export default class ActionBinder {
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
     event.preventDefault();
-    const nextIndex = event.shiftKey
+    const isShift = event.shiftKey;
+    const currentElement = document.activeElement;
+    if (currentElement.classList.contains('tip-con')) {
+      if (!isShift) {
+        const legalText = this.block.querySelector('.legal-text');
+        if (legalText) {
+          legalText.focus();
+          return;
+        }
+      }
+    }
+    const nextIndex = isShift
       ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
       : (currentIndex + 1) % focusableElements.length;
     focusableElements[nextIndex].focus();
     const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
-    if (newActiveIndex !== -1) {
-      this.activeIndex = newActiveIndex;
+    this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
+  }
+
+  moveFocusWithArrow(dropItems, direction) {
+    if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
+      this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
     } else {
-      this.activeIndex = -1;
+      this.activeIndex = direction === 'down'
+        ? (this.activeIndex + 1) % dropItems.length
+        : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
     }
-  }
-
-  handleArrowDown(event, dropdownItems) {
-    event.preventDefault();
-    this.activeIndex = (this.activeIndex + 1) % dropdownItems.length;
-    this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
-  }
-
-  handleArrowUp(event, dropdownItems) {
-    event.preventDefault();
-    this.activeIndex = (this.activeIndex - 1 + dropdownItems.length) % dropdownItems.length;
-    this.setActiveItem(dropdownItems, this.activeIndex, this.inputField);
+    this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
+    const nonInteractiveRoles = ['note', 'presentation'];
+    const role = document.activeElement.getAttribute('role');
+    if (role && nonInteractiveRoles.includes(role)) {
+      return;
+    }
     if (
-      this.activeIndex >= 0 && dropItems[this.activeIndex]
+      this.activeIndex >= 0
+      && dropItems[this.activeIndex]
       && dropItems[this.activeIndex] === document.activeElement
     ) {
       this.setPrompt(dropItems[this.activeIndex]);
@@ -388,7 +409,7 @@ export default class ActionBinder {
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
       if (i === index) {
-        input.setAttribute('aria-activedescendant', item.id);
+        input.setAttribute('aria-activedescendant', item.id || 'tip-content');
         item.focus();
       }
     });
@@ -405,13 +426,23 @@ export default class ActionBinder {
     this.dropdown.removeAttribute('inert');
     this.inputField.setAttribute('aria-expanded', 'true');
     this.dropdown.removeAttribute('aria-hidden');
+    document.addEventListener('click', this.handleOutsideClick.bind(this), true);
   }
 
   hideDropdown() {
-    this.dropdown.classList.add('hidden');
-    this.dropdown.setAttribute('inert', '');
-    this.dropdown.setAttribute('aria-hidden', 'true');
-    this.inputField.setAttribute('aria-expanded', 'false');
+    if (this.isDropdownVisible()) {
+      this.dropdown.classList.add('hidden');
+      this.dropdown.setAttribute('inert', '');
+      this.dropdown.setAttribute('aria-hidden', 'true');
+      this.inputField.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', this.handleOutsideClick.bind(this), true);
+    }
+  }
+
+  handleOutsideClick(event) {
+    if (!this.widget.contains(event.target)) {
+      this.hideDropdown();
+    }
   }
 
   toggleSurpriseBtn() {
