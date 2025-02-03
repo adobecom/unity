@@ -25,6 +25,12 @@ export default class ActionBinder {
     FILE_TOO_LARGE: 'verb_upload_error_file_too_large_multi',
   };
 
+  static UPLOAD_LIMITS = {
+    HIGH_END: { files: 3, chunks: 10 },
+    MID_RANGE: { files: 3, chunks: 10 },
+    LOW_END: { files: 2, chunks: 6 },
+  };
+
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -385,7 +391,7 @@ export default class ActionBinder {
     return true;
   }
 
-  async createAsset(file) {
+  async createAsset(file, multifile = false, workflowId = null) {
     let assetData = null;
     const data = {
       surfaceId: unityConfig.surfaceId,
@@ -393,6 +399,8 @@ export default class ActionBinder {
       name: file.name,
       size: file.size,
       format: file.type,
+      ...(multifile && { multifile }),
+      ...(workflowId && { workflowId }),
     };
     assetData = await this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.createAsset,
@@ -422,6 +430,14 @@ export default class ActionBinder {
     };
     const response = await fetch(storageUrl, uploadOptions);
     return response;
+  }
+
+  getDeviceType() {
+    const numCores = navigator.hardwareConcurrency || null;
+    if (!numCores) return 'MID_RANGE';
+    if (numCores > 6) return 'HIGH_END';
+    if (numCores <= 3) return 'LOW_END';
+    return 'MID_RANGE';
   }
 
   async batchUpload(tasks, batchSize) {
@@ -645,6 +661,13 @@ export default class ActionBinder {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 
+  async processFilesInBatches(files, batchSize, processFn) {
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      await Promise.all(batch.map((file) => processFn(file)));
+    }
+  }
+
   async multiFileUpload(files, eventName) {
     this.block.dispatchEvent(
       new CustomEvent(
@@ -655,26 +678,33 @@ export default class ActionBinder {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: files.length } }));
     if (!this.validateFiles(files)) return;
     const workflowId = crypto.randomUUID();
+    const deviceType = this.getDeviceType();
+    const concurrentFileLimit = ActionBinder.UPLOAD_LIMITS[deviceType].files;
+    const concurrentChunkLimit = ActionBinder.UPLOAD_LIMITS[deviceType].chunks;
     try {
       await this.showSplashScreen(true);
-      const [blobDataArray, assetDataArray] = await Promise.all([
-        Promise.all(files.map((file) => this.getBlobData(file))),
-        Promise.all(files.map((file) => this.createAsset(file))),
-      ]);
-      // TODO: Implement dynamic concurrent file limit
-      const chunkPdfPromises = files.map((file, index) => {
-        const blobData = blobDataArray[index];
-        const assetData = assetDataArray[index];
-        const filetype = file.type;
-        return this.chunkPdf(assetData, blobData, filetype);
+      const blobDataArray = [];
+      const assetDataArray = [];
+
+      // concurrent /asset calls
+      await this.processFilesInBatches(files, concurrentFileLimit, async (file) => {
+        const [blobData, assetData] = await Promise.all([
+          this.getBlobData(file),
+          this.createAsset(file, true, workflowId),
+        ]);
+        blobDataArray.push(blobData);
+        assetDataArray.push(assetData);
       });
-      await Promise.all(chunkPdfPromises);
+
+      // TODO: send all files for chunking
+
+      // concurrent /finalize calls
       let allVerified = false;
-      const verifiedResults = await Promise.all(
-        assetDataArray.map((assetData) => this.verifyContent(assetData)),
-      );
-      if (verifiedResults.every((result) => result)) allVerified = true;
-      // TODO: Send flag to product that some files could not be uploaded successfully
+      await this.processFilesInBatches(assetDataArray, concurrentFileLimit, async (assetData) => {
+        const verified = await this.verifyContent(assetData);
+        if (!verified) allVerified = true;
+      });
+      if (!allVerified) return; // append feedback=uploaderror to redirectURL
     } catch (e) {
       await this.showSplashScreen();
       this.operations = [];
