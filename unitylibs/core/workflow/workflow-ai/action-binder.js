@@ -384,6 +384,10 @@ export default class ActionBinder {
     this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
+  isDropdownItemFocused(dropItems) {
+    return dropItems.some((item) => item === document.activeElement);
+  }
+
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
     const nonInteractiveRoles = ['note', 'presentation'];
