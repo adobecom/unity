@@ -83,31 +83,8 @@ export default class ActionBinder {
     }
   }
 
-  // addInputEvents(el, actions) {
-  //   let debounce;
-  //   el.addEventListener('input', ({ target }) => {
-  //     clearTimeout(debounce);
-  //     this.query = target.value.trim();
-  //     this.toggleSurpriseBtn();
-  //     if (this.query.length >= 3) {
-  //       debounce = setTimeout(() => this.execActions(actions), 1000);
-  //     }
-  //   });
-  //   el.addEventListener('focus', () => {
-  //     this.showDropdown();
-  //     if (this.sendAnalyticsOnFocus) {
-  //       sendAnalyticsEvent(new Event('promptOpen'));
-  //       this.sendAnalyticsOnFocus = false;
-  //     }
-  //   });
-  //   el.addEventListener('blur', ({ relatedTarget }) => {
-  //     if (!this.widget.contains(relatedTarget)) this.hideDropdown();
-  //   });
-  // }
-
   addInputEvents(el, actions) {
     let debounce;
-
     el.addEventListener('input', ({ target }) => {
       clearTimeout(debounce);
       this.query = target.value.trim();
@@ -125,13 +102,12 @@ export default class ActionBinder {
       }
     });
 
-    // Use focusout to detect when focus moves outside the widget
     el.addEventListener('focusout', ({ relatedTarget }) => {
       if (!this.widget.contains(relatedTarget)) {
         this.hideDropdown();
       }
     });
-}
+  }
 
   async execActions(actions, el = null) {
     if (!this.serviceHandler) {
@@ -348,18 +324,12 @@ export default class ActionBinder {
 
   getDropdownItems() {
     if (!this.dropdown) return [];
-
-    // First, select dynamic items without including .tip-con initially
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
-
-    // If dynamic items are found, include .tip-con
     if (dynamicItems.length > 0) {
-        const tipCon = this.dropdown.querySelector('.tip-con');
-        if (tipCon) dynamicItems.push(tipCon);
-        return dynamicItems;
+      const tipCon = this.dropdown.querySelector('.tip-con');
+      if (tipCon) dynamicItems.push(tipCon);
+      return dynamicItems;
     }
-
-    // If no dynamic items, return all drop items and .tip-con
     return Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
   }
 
@@ -383,93 +353,69 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
-
-    // Prevent default Tab behavior
     event.preventDefault();
-
     const isShift = event.shiftKey;
     const currentElement = document.activeElement;
-
-    // Custom logic when focus is on `.tip-con`
     if (currentElement.classList.contains('tip-con')) {
-        if (!isShift) {
-            // Move focus to `.legal-text` when Tab is pressed on `.tip-con`
-            const legalText = this.block.querySelector('.legal-text');
-            if (legalText) {
-                legalText.focus();
-                return;
-            }
+      if (!isShift) {
+        const legalText = this.block.querySelector('.legal-text');
+        if (legalText) {
+          legalText.focus();
+          return;
         }
+      }
     }
-
-    // Default circular focus logic for other elements
     const nextIndex = isShift
-        ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
-        : (currentIndex + 1) % focusableElements.length;
-
+      ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
+      : (currentIndex + 1) % focusableElements.length;
     focusableElements[nextIndex].focus();
-
-    // Update activeIndex if next element is in dropdown items
     const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
     this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
-}
+  }
 
   moveFocusWithArrow(dropItems, direction) {
-    // Initialize focus if no activeIndex is set or invalid focus is present
     if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
-        this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
+      this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
     } else {
-        // Update activeIndex based on direction
-        this.activeIndex =
-            direction === 'down'
-                ? (this.activeIndex + 1) % dropItems.length
-                : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
+      this.activeIndex = direction === 'down'
+        ? (this.activeIndex + 1) % dropItems.length
+        : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
     }
-
-    // Set the active item
     this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
   isDropdownItemFocused(dropItems) {
-    return dropItems.some(item => item === document.activeElement);
+    return dropItems.some((item) => item === document.activeElement);
   }
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
-
-    // Define non-interactive roles
     const nonInteractiveRoles = ['note', 'presentation'];
-
-    // Check if the currently focused element is non-interactive
     const role = document.activeElement.getAttribute('role');
     if (role && nonInteractiveRoles.includes(role)) {
-        console.log('Skipping action on non-interactive element with role:', role);
-        return;
+      return;
     }
-
-    // Handle Enter when focus is on an active dropdown item
     if (
-      this.activeIndex >= 0 &&
-      dropItems[this.activeIndex] &&
-      dropItems[this.activeIndex] === document.activeElement
+      this.activeIndex >= 0
+      && dropItems[this.activeIndex]
+      && dropItems[this.activeIndex] === document.activeElement
     ) {
       this.setPrompt(dropItems[this.activeIndex]);
       this.activeIndex = -1;
       return;
     }
-    // Handle Enter for any other interactive element
     const targetElement = focusElems[currIdx] || ev.target;
     if (targetElement && (currIdx !== -1 || targetElement.classList.contains('unity-act-btn'))) {
-        targetElement.click();
+      targetElement.click();
     }
-}
+  }
 
   setActiveItem(items, index, input) {
     items.forEach((item, i) => {
-        if (i === index) {
-            input.setAttribute('aria-activedescendant', item.id || 'tip-content');
-            item.focus();
-        }
+      if (i === index) {
+        input.setAttribute('aria-activedescendant', item.id || 'tip-content');
+        item.focus();
+      }
     });
   }
 
@@ -486,13 +432,6 @@ export default class ActionBinder {
     this.dropdown.removeAttribute('aria-hidden');
     document.addEventListener('click', this.handleOutsideClick.bind(this), true);
   }
-
-  // hideDropdown() {
-  //   this.dropdown.classList.add('hidden');
-  //   this.dropdown.setAttribute('inert', '');
-  //   this.dropdown.setAttribute('aria-hidden', 'true');
-  //   this.inputField.setAttribute('aria-expanded', 'false');
-  // }
 
   hideDropdown() {
     if (this.isDropdownVisible()) {
