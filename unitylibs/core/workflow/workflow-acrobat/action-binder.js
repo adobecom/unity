@@ -186,6 +186,8 @@ export default class ActionBinder {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
         await new Promise(r => setTimeout(r, 500));
       }
+      if (this.multiFileFailure && this.redirectUrl.includes('#folder'))
+        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
