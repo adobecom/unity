@@ -11,14 +11,6 @@ export default class ServiceHandler {
     this.canvasArea = canvasArea;
   }
 
-  getGuestAccessToken() {
-    try {
-      return window.adobeIMS.getAccessToken();
-    } catch (e) {
-      return '';
-    }
-  }
-
   async getRefreshToken() {
     try {
       const { tokenInfo } = await window.adobeIMS.refreshToken();
@@ -31,7 +23,7 @@ export default class ServiceHandler {
   async getHeaders() {
     let token = '';
     let refresh = false;
-    const guestAccessToken = this.getGuestAccessToken();
+    const guestAccessToken = window.adobeIMS?.getAccessToken();
     if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
       token = await this.getRefreshToken();
       refresh = true;
