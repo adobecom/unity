@@ -218,6 +218,7 @@ export default class ActionBinder {
       );
       if (url) window.location.href = url;
       this.query = '';
+      this.inputField.value = '';
     } catch (err) {
       console.error('Content generation failed:', err);
     }
