@@ -138,7 +138,6 @@ export default class UnityWidget {
     if (!unityWrap) return;
     const obsEl = unityWrap.closest('.unity-enabled')?.querySelector('[class*="heading-"], h1, h2, h3, h4, h5, h6');
     if (!obsEl) return;
-    this.observeElement(obsEl);
     const getFooterEl = () => document.querySelector('.global-footer');
     const waitForFooter = () => {
       const footerEl = getFooterEl();
@@ -149,12 +148,11 @@ export default class UnityWidget {
       this.setupIO(obsEl, footerEl);
     };
     waitForFooter();
-
     const checkVisibility = () => {
       const { top, bottom } = obsEl.getBoundingClientRect();
-      this.addSticky({ isIntersecting: !(top >= window.innerHeight || bottom <= 0) });
+      const isIntersecting = !(top >= window.innerHeight || bottom <= 0);
+      this.addSticky({ isIntersecting });
     };
-
     requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
   }
 
