@@ -216,9 +216,9 @@ export default class ActionBinder {
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
-      if (url) window.location.href = url;
       this.query = '';
       this.inputField.value = '';
+      if (url) window.location.href = url;
     } catch (err) {
       console.error('Content generation failed:', err);
     }
