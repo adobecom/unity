@@ -217,6 +217,7 @@ export default class ActionBinder {
         { body: JSON.stringify(payload) },
       );
       if (url) window.location.href = url;
+      this.query = '';
     } catch (err) {
       console.error('Content generation failed:', err);
     }
