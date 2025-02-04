@@ -379,10 +379,12 @@ export default class ActionBinder {
 
   isMixedFileTypes(files) {
     const firstFileType = files[0].type;
-    if (files.every((file) => file.type === firstFileType)) {
-      return firstFileType;
+    for (let i = 1; i < files.length; i += 1) {
+      if (files[i].type !== firstFileType) {
+        return 'mixed';
+      }
     }
-    return 'mixed';
+    return firstFileType;
   }
 
   async validateFiles(files) {
