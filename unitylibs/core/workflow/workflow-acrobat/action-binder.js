@@ -146,13 +146,13 @@ export default class ActionBinder {
     await this.singleFileUpload(file, eventName);
   }
 
-  async compress(files, eventName) {
+  async compress(files, totalFileSize, eventName) {
     if (!files) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
     if (files.length === 1) await this.singleFileUpload(files[0], eventName);
-    else await this.multiFileUpload(files, eventName);
+    else await this.multiFileUpload(files, totalFileSize, eventName);
   }
 
   checkCookie = () => {
@@ -186,7 +186,9 @@ export default class ActionBinder {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
         await new Promise(r => setTimeout(r, 500));
       }
-      window.location.href = this.redirectUrl;
+      if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
+        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
+      } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when redirecting to product.', e.showError);
@@ -204,7 +206,7 @@ export default class ActionBinder {
     this.promiseStack.unshift(cancelPromise);
   }
 
-  async acrobatActionMaps(values, files, eventName) {
+  async acrobatActionMaps(values, files, totalFileSize, eventName) {
     await this.handlePreloads();
     const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
@@ -219,7 +221,7 @@ export default class ActionBinder {
           break;
         case value.actionType === 'compress':
           this.promiseStack = [];
-          await this.compress(files, eventName);
+          await this.compress(files, totalFileSize, eventName);
           break;
         case value.actionType === 'continueInApp':
           await this.continueInApp();
@@ -235,19 +237,22 @@ export default class ActionBinder {
 
   extractFiles(e) {
     const files = [];
+    let totalFileSize = 0;
     if (e.dataTransfer?.items) {
       [...e.dataTransfer.items].forEach((item) => {
         if (item.kind === 'file') {
           const file = item.getAsFile();
           files.push(file);
+          totalFileSize += file.size;
         }
       });
     } else if (e.target?.files) {
       [...e.target.files].forEach((file) => {
         files.push(file);
+        totalFileSize += file.size;
       });
     }
-    return files;
+    return { files, totalFileSize };
   }
 
   async loadSplashFragment() {
@@ -317,14 +322,14 @@ export default class ActionBinder {
         case el.nodeName === 'DIV':
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
-            const files = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files, 'drop');
+            const { files, totalFileSize } = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files, totalFileSize, 'drop');
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
-            const files = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files, 'change');
+            const { files, totalFileSize } = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files, totalFileSize, 'change');
             e.target.value = '';
           });
           break;
@@ -370,6 +375,16 @@ export default class ActionBinder {
 
   isNonPdf(files) {
     return files.some((file) => file.type !== 'application/pdf');
+  }
+
+  isMixedFileTypes(files) {
+    const firstFileType = files[0].type;
+    for (let i = 1; i < files.length; i += 1) {
+      if (files[i].type !== firstFileType) {
+        return 'mixed';
+      }
+    }
+    return firstFileType;
   }
 
   async validateFiles(files) {
@@ -475,12 +490,14 @@ export default class ActionBinder {
         { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
+        this.multiFileFailure = 'uploaderror';
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${finalizeJson}`, e.showError);
         this.operations = [];
         return false;
       }
     } catch (e) {
+      this.multiFileFailure = 'uploaderror';
       await this.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', e.showError);
       this.operations = [];
@@ -567,6 +584,7 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
+        this.multiFileFailure = 'uploaderror';
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', e.showError);
       });
@@ -668,14 +686,26 @@ export default class ActionBinder {
     }
   }
 
-  async multiFileUpload(files, eventName) {
+  async multiFileUpload(files, totalFileSize, eventName) {
+    this.LOADER_LIMIT = 85;
+    this.LOADER_DELAY = 800;
+    this.LOADER_INCREMENT = 60;
+    const isMixedFileTypes = this.isMixedFileTypes(files);
+    const filesData = {
+      type: isMixedFileTypes,
+      size: totalFileSize,
+      count: files.length,
+    };
     this.block.dispatchEvent(
-      new CustomEvent(
-        unityConfig.trackAnalyticsEvent,
-        { detail: { event: eventName } },
-      ),
+      new CustomEvent(unityConfig.trackAnalyticsEvent, {
+        detail: { event: eventName, data: filesData },
+      })
     );
-    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: files.length } }));
+    this.block.dispatchEvent(
+      new CustomEvent(unityConfig.trackAnalyticsEvent, {
+        detail: { event: 'multifile', data: filesData },
+      })
+    );
     if (!this.validateFiles(files)) return;
     const workflowId = crypto.randomUUID();
     const deviceType = this.getDeviceType();
@@ -695,7 +725,29 @@ export default class ActionBinder {
         blobDataArray.push(blobData);
         assetDataArray.push(assetData);
       });
-
+      //Connector api call for redirect url
+      const cOpts = {
+        targetProduct: this.workflowCfg.productName,
+        payload: {
+          languageRegion: this.workflowCfg.langRegion,
+          languageCode: this.workflowCfg.langCode,
+          verb: this.workflowCfg.enabledFeatures[0],
+          feedback: 'multifile',
+          workflowId: workflowId,
+        },
+      };
+      await this.getRedirectUrl(cOpts);
+      if (!this.redirectUrl) return;
+      this.block.dispatchEvent(
+        new CustomEvent(unityConfig.trackAnalyticsEvent, {
+          detail: { event: 'redirectUrl', data: this.redirectUrl },
+        })
+      );
+      this.block.dispatchEvent(
+        new CustomEvent(unityConfig.trackAnalyticsEvent, {
+          detail: { event: 'uploading', data: filesData },
+        })
+      );
       // TODO: send all files for chunking
 
       // concurrent /finalize calls
@@ -706,25 +758,17 @@ export default class ActionBinder {
       });
       if (!allVerified) return; // append feedback=uploaderror to redirectURL
     } catch (e) {
+      this.multiFileFailure = 'uploaderror';
       await this.showSplashScreen();
       this.operations = [];
       await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when uploading multiple files.', e.showError);
       return;
     }
-    const cOpts = {
-      targetProduct: this.workflowCfg.productName,
-      payload: {
-        languageRegion: this.workflowCfg.langRegion,
-        languageCode: this.workflowCfg.langCode,
-        verb: this.workflowCfg.enabledFeatures[0],
-        feedback: 'multifile',
-      },
-    };
-    await this.getRedirectUrl(cOpts);
-    setTimeout(() => {
-      this.updateProgressBar(this.splashScreenEl, 95);
-      if (!this.redirectUrl) return;
-      window.location.href = this.redirectUrl;
-    }, 2500);
+    this.updateProgressBar(this.splashScreenEl, 95);
+    this.block.dispatchEvent(
+      new CustomEvent(unityConfig.trackAnalyticsEvent, {
+        detail: { event: 'uploaded', data: filesData },
+      })
+    );
   }
 }
