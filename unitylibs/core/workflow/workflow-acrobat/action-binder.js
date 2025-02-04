@@ -296,7 +296,8 @@ export default class ActionBinder {
         timeoutId = null;
       }
       if (eventListeners) {
-        eventListeners.forEach((event) => document.removeEventListener(event, handler),);
+        eventListeners.forEach((event) => document.removeEventListener(event, handler),
+        );
         eventListeners = null;
       }
     };
@@ -620,11 +621,7 @@ export default class ActionBinder {
         };
         await this.getRedirectUrl(cOpts);
         if (!this.redirectUrl) return;
-        this.block.dispatchEvent(
-          new CustomEvent(unityConfig.trackAnalyticsEvent, {
-            detail: { event: 'redirectUrl', data: this.redirectUrl },
-          })
-        );
+        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
         this.redirectWithoutUpload = true;
         return;
       }
@@ -647,16 +644,8 @@ export default class ActionBinder {
       };
       await this.getRedirectUrl(cOpts);
       if (!this.redirectUrl) return;
-      this.block.dispatchEvent(
-        new CustomEvent(unityConfig.trackAnalyticsEvent, {
-          detail: { event: 'redirectUrl', data: this.redirectUrl },
-        })
-      );
-      this.block.dispatchEvent(
-        new CustomEvent(unityConfig.trackAnalyticsEvent, {
-          detail: { event: 'uploading', data: assetData },
-        })
-      );
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: assetData } }));
       await this.chunkPdf(assetData, blobData, file.type);
       this.operations.push(assetData.id);
     } catch (e) {
