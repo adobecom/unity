@@ -3,20 +3,12 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig } from '../../../scripts/utils.js';
+import { unityConfig, getGuestAccessToken } from '../../../scripts/utils.js';
 
 export default class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
-  }
-
-  getGuestAccessToken() {
-    try {
-      return window.adobeIMS.getAccessToken();
-    } catch (e) {
-      return '';
-    }
   }
 
   async getRefreshToken() {
@@ -36,13 +28,13 @@ export default class ServiceHandler {
       token = await this.getRefreshToken();
       refresh = true;
     } else {
-      token = `Bearer ${guestAccessToken.token}`;
+      token = guestAccessToken;
     }
 
     if (!token) {
       const error = new Error();
       error.status = 401;
-      error.message = `Access Token is null. Refresh token call was executed: ${refresh}`;
+      error.message = `Unauthorized Access: ${refresh}`;
       throw error;
     }
 

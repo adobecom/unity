@@ -1,4 +1,4 @@
-import { createTag, createCustomIntersectionObserver } from '../../../scripts/utils.js';
+import { createTag } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg) {
@@ -12,7 +12,7 @@ export default class UnityWidget {
   async initWidget() {
     this.widgetWrap = createTag('div', { class: 'ex-unity-wrap' });
     this.widget = createTag('div', { class: 'ex-unity-widget' });
-    this.widgetBg = this.createBg();
+    this.createBg();
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
     const placeholders = this.popPlaceholders();
     this.workflowCfg.placeholder = placeholders;
@@ -21,9 +21,7 @@ export default class UnityWidget {
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
     this.addWidget();
-    if (this.workflowCfg.targetCfg.floatPrompt) {
-      this.initIO();
-    }
+    if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
   }
 
@@ -130,65 +128,45 @@ export default class UnityWidget {
     const interactArea = this.target.querySelector('.text');
     const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
-    if (para) {
-      if (this.workflowCfg.targetCfg.insert === 'before') {
-        para.before(this.widgetWrap);
-      } else {
-        para.after(this.widgetWrap);
-      }
-    } else {
-      interactArea.appendChild(this.widgetWrap);
-    }
+    if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);
+    else if (para) para.after(this.widgetWrap);
+    else interactArea.appendChild(this.widgetWrap);
   }
 
   initIO() {
     const unityWrap = this.target.querySelector('.ex-unity-wrap');
-    let obsEl = null;
-    if (unityWrap) {
-      let sibling = unityWrap.previousElementSibling;
-      while (sibling) {
-        if (sibling.classList && [...sibling.classList].some((cls) => cls.startsWith('heading-'))) {
-          obsEl = sibling;
-          break;
-        }
-        if (sibling.classList && sibling.classList.contains('unity-enabled')) {
-          break;
-        }
-        sibling = sibling.previousElementSibling;
-      }
-    }
+    if (!unityWrap) return;
+    const obsEl = unityWrap.closest('.unity-enabled')?.querySelector('[class*="heading-"], h1, h2, h3, h4, h5, h6');
     if (!obsEl) return;
+    this.observeElement(obsEl);
     const getFooterEl = () => document.querySelector('.global-footer');
-    let footerObs;
     const waitForFooter = () => {
       const footerEl = getFooterEl();
-      if (footerEl) {
-        this.setupIO(obsEl, footerEl);
-        footerObs?.disconnect();
+      if (!footerEl) {
+        setTimeout(waitForFooter, 500);
+        return;
       }
+      this.setupIO(obsEl, footerEl);
     };
-    if (getFooterEl()) {
-      waitForFooter();
-    } else {
-      footerObs = new MutationObserver(waitForFooter);
-      footerObs.observe(document.body, { childList: true, subtree: true });
-    }
+    waitForFooter();
+
     const checkVisibility = () => {
       const { top, bottom } = obsEl.getBoundingClientRect();
       this.addSticky({ isIntersecting: !(top >= window.innerHeight || bottom <= 0) });
     };
+
     requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
   }
 
   setupIO(observerEl, footerEl) {
-    createCustomIntersectionObserver({
+    this.createCustIntsecObs({
       el: observerEl,
       callback: (cfg) => this.addSticky(cfg),
       cfg: this.workflowCfg,
       options: { root: null, rootMargin: '10px', threshold: [0.1, 0.9] },
     });
 
-    createCustomIntersectionObserver({
+    this.createCustIntsecObs({
       el: footerEl,
       callback: (cfg) => this.toggleVisibility(cfg),
       cfg: {},
@@ -202,20 +180,49 @@ export default class UnityWidget {
       this.widgetWrap.classList.remove('sticky');
       dropdown.classList.remove('open-upward');
       dropdown.setAttribute('daa-lh', 'Marquee');
-    } else {
-      this.widgetWrap.classList.add('sticky');
-      dropdown.classList.add('open-upward');
-      dropdown.setAttribute('daa-lh', 'Floating');
+      return;
     }
+    this.widgetWrap.classList.add('sticky');
+    dropdown.classList.add('open-upward');
+    dropdown.setAttribute('daa-lh', 'Floating');
   }
 
   toggleVisibility(cfg) {
     const wrapper = this.target.querySelector('.ex-unity-wrap');
     if (!wrapper) return;
-    if (cfg.isIntersecting) {
-      wrapper.classList.add('hidden');
-    } else {
-      wrapper.classList.remove('hidden');
-    }
+    wrapper.classList[cfg.isIntersecting ? 'add' : 'remove']('hidden');
+  }
+
+  debounce(func, del) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => func(...args), del);
+    };
+  }
+
+  createCustIntsecObs({ el, callback, cfg, options = {} }) {
+    const debouncedCallback = this.debounce(callback, 100);
+    let lastState = null;
+    let lastExecutionTime = 0;
+    const MIN_INTERVAL = 200;
+    const observerOptions = {
+      threshold: [0.1, 0.9],
+      ...options,
+    };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const currentState = entry.isIntersecting;
+        const now = Date.now();
+        if (currentState !== lastState && now - lastExecutionTime >= MIN_INTERVAL) {
+          lastState = currentState;
+          lastExecutionTime = now;
+          cfg.isIntersecting = currentState;
+          debouncedCallback(cfg);
+        }
+      });
+    }, observerOptions);
+    io.observe(el);
+    return io;
   }
 }

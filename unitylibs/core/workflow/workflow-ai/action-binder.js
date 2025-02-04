@@ -123,7 +123,7 @@ export default class ActionBinder {
         try {
           await this.handleAction(act, el);
         } catch (err) {
-          console.error(`Error handling action ${act}:`, err);
+          // console.error(`Error handling action ${act}:`, err);
         }
       }),
     );
