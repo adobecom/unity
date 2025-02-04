@@ -149,8 +149,11 @@
   box-shadow: 0 0 11px #0000001c;
   gap: var(--spacing-s);
 }
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap {
-  background: linear-gradient(#fff9, #fff9), linear-gradient(135deg, #fffc, #ffffff3d);;
+  background: linear-gradient(#fff9, #fff9), linear-gradient(135deg, #fffc, #ffffff3d);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
   padding: 9px 5px 10px;
