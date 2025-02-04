@@ -24,7 +24,7 @@ export default class ServiceHandler {
     let token = '';
     let refresh = false;
     const guestAccessToken = getGuestAccessToken();
-    if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
+    if (!guestAccessToken || guestAccessToken?.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
       token = await this.getRefreshToken();
       refresh = true;
     } else {
