@@ -771,7 +771,7 @@ export default class ActionBinder {
           }
         }
       });
-       const cOpts = {
+      const cOpts = {
         assetId: assetDataArray[0].id,
         targetProduct: this.workflowCfg.productName,
         payload: {
