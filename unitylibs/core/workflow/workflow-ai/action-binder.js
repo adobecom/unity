@@ -454,11 +454,12 @@ export default class ActionBinder {
 
   resetDropdown() {
     this.inputField.focus();
-    this.inputField.value = '';
-    this.query = '';
-    this.surpriseBtn.classList.remove('hidden');
-    this.clearDropdown();
-    this.toggleDefaultItems();
+    if (!this.query) {
+      this.inputField.value = '';
+      this.surpriseBtn.classList.remove('hidden');
+      this.clearDropdown();
+      this.toggleDefaultItems();
+    }
     this.hideDropdown();
   }
 }
