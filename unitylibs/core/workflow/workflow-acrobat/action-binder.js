@@ -31,14 +31,7 @@ export default class ActionBinder {
     LOW_END: { files: 2, chunks: 6 },
   };
 
-  constructor(
-    unityEl,
-    workflowCfg,
-    wfblock,
-    canvasArea,
-    actionMap = {},
-    limits = {}
-  ) {
+  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
     this.block = wfblock;
@@ -67,15 +60,11 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    const parr = [
-      `${getUnityLibs()}/core/workflow/${
-        this.workflowCfg.name
-      }/service-handler.js`,
-    ];
+    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${this.splashFragmentLink}.plain.html`
+        `${this.splashFragmentLink}.plain.html`,
       );
     }
     await priorityLoad(parr);
@@ -91,28 +80,25 @@ export default class ActionBinder {
 
   async dispatchErrorToast(code, status, info = null, showError = true) {
     if (showError) {
-      const errorMessage =
-        code in this.workflowCfg.errors
-          ? this.workflowCfg.errors[code]
-          : await (async () => {
-              const getError = (await import('../../../scripts/errors.js'))
-                .default;
-              return getError(this.workflowCfg.enabledFeatures[0], code);
-            })();
-      const message = code.includes('cookie_not_set')
-        ? ''
-        : errorMessage || 'Unable to process the request';
-      this.block.dispatchEvent(
-        new CustomEvent(unityConfig.errorToastEvent, {
+      const errorMessage = code in this.workflowCfg.errors
+        ? this.workflowCfg.errors[code]
+        : await (async () => {
+          const getError = (await import('../../../scripts/errors.js')).default;
+          return getError(this.workflowCfg.enabledFeatures[0], code);
+        })();
+      const message = code.includes('cookie_not_set') ? '' : errorMessage || 'Unable to process the request';
+      this.block.dispatchEvent(new CustomEvent(
+        unityConfig.errorToastEvent,
+        {
           detail: {
             code,
             message: `${message}`,
             status,
             info,
             accountType: this.getAccountType(),
-          },
-        })
-      );
+          }
+        }
+      ));
     }
   }
 
@@ -141,13 +127,10 @@ export default class ActionBinder {
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (!initialize && progressBar?.getAttribute('value') >= this.LOADER_LIMIT)
-      return;
+    if (!initialize && progressBar?.getAttribute('value') >= this.LOADER_LIMIT) return;
     if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
-      const v = initialize
-        ? 0
-        : parseInt(progressBar.getAttribute('value'), 10);
+      const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       this.updateProgressBar(s, v + i);
       this.progressBarHandler(s, delay, i);
     }, delay);
@@ -193,47 +176,29 @@ export default class ActionBinder {
   };
 
   async continueInApp() {
-    if (
-      !this.redirectUrl ||
-      !(this.operations.length || this.redirectWithoutUpload)
-    )
-      return;
+    if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
     this.updateProgressBar(this.splashScreenEl, 100);
     try {
       await this.waitForCookie(2000);
       this.updateProgressBar(this.splashScreenEl, 100);
       if (!this.checkCookie()) {
-        await this.dispatchErrorToast(
-          'verb_cookie_not_set',
-          200,
-          'Not all cookies found, redirecting anyway',
-          true
-        );
-        await new Promise((r) => setTimeout(r, 500));
+        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
+        await new Promise(r => setTimeout(r, 500));
       }
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast(
-        'verb_upload_error_generic',
-        500,
-        'Exception thrown when redirecting to product.',
-        e.showError
-      );
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when redirecting to product.', e.showError);
     }
   }
 
   async cancelAcrobatOperation() {
     await this.showSplashScreen();
     this.redirectUrl = '';
-    this.block.dispatchEvent(
-      new CustomEvent(unityConfig.trackAnalyticsEvent, {
-        detail: { event: 'cancel' },
-      })
-    );
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'cancel' } }));
     const e = new Error();
     e.message = 'Operation termination requested.';
     e.showError = false;
@@ -243,14 +208,10 @@ export default class ActionBinder {
 
   async acrobatActionMaps(values, files, totalFileSize, eventName) {
     await this.handlePreloads();
-    const { default: ServiceHandler } = await import(
-      `${getUnityLibs()}/core/workflow/${
-        this.workflowCfg.name
-      }/service-handler.js`
-    );
+    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea
+      this.canvasArea,
     );
     for (const value of values) {
       switch (true) {
@@ -291,25 +252,20 @@ export default class ActionBinder {
         totalFileSize += file.size;
       });
     }
-    return {files, totalFileSize};
+    return { files, totalFileSize };
   }
 
   async loadSplashFragment() {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
-    this.splashFragmentLink = localizeLink(
-      `${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`
-    );
+    this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections = doc.querySelectorAll('body > div');
-    const f = createTag('div', {
-      class: 'fragment splash-loader decorate',
-      style: 'display: none',
-    });
+    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
     f.append(...sections);
     const splashDiv = document.querySelector(
-      this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent
+      this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
     );
     splashDiv.append(f);
     const img = f.querySelector('img');
@@ -340,15 +296,15 @@ export default class ActionBinder {
         timeoutId = null;
       }
       if (eventListeners) {
-        eventListeners.forEach((event) =>
-          document.removeEventListener(event, handler)
-        );
+        eventListeners.forEach((event) => document.removeEventListener(event, handler),);
         eventListeners = null;
       }
     };
-    eventListeners.forEach((event) =>
-      document.addEventListener(event, interactionHandler, { once: true })
-    );
+    eventListeners.forEach((event) => document.addEventListener(
+      event,
+      interactionHandler,
+      { once: true },
+    ));
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
@@ -365,19 +321,14 @@ export default class ActionBinder {
         case el.nodeName === 'DIV':
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
-            const {files, totalFileSize} = this.extractFiles(e);
+            const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(values, files, totalFileSize, 'drop');
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
-            const {files, totalFileSize} = this.extractFiles(e);
-            await this.acrobatActionMaps(
-              values,
-              files,
-              totalFileSize,
-              'change'
-            );
+            const { files, totalFileSize } = this.extractFiles(e);
+            await this.acrobatActionMaps(values, files, totalFileSize, 'change');
             e.target.value = '';
           });
           break;
@@ -391,48 +342,31 @@ export default class ActionBinder {
   async handleSplashProgressBar() {
     const pb = this.createProgressBar();
     this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
-    this.progressBarHandler(
-      this.splashScreenEl,
-      this.LOADER_DELAY,
-      this.LOADER_INCREMENT,
-      true
-    );
+    this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }
 
   handleOperationCancel() {
-    const actMap = {
-      'a.con-button[href*="#_cancel"]': [{ actionType: 'interrupt' }],
-    };
+    const actMap = { 'a.con-button[href*="#_cancel"]': [{ actionType: 'interrupt' }] };
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
   splashVisibilityController(displayOn) {
     if (!displayOn) {
       this.LOADER_LIMIT = 95;
-      this.splashScreenEl.parentElement?.classList.remove(
-        'hide-splash-overflow'
-      );
+      this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
       return;
     }
-    this.progressBarHandler(
-      this.splashScreenEl,
-      this.LOADER_DELAY,
-      this.LOADER_INCREMENT,
-      true
-    );
+    this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
   }
 
   async showSplashScreen(displayOn = false) {
-    if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen)
-      return;
+    if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
-      if (this.splashScreenEl.querySelector('.icon-progress-bar'))
-        await this.handleSplashProgressBar();
-      if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]'))
-        this.handleOperationCancel();
+      if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
+      if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.splashScreenEl.classList.remove('decorate');
     }
     this.splashVisibilityController(displayOn);
@@ -443,21 +377,18 @@ export default class ActionBinder {
   }
 
   isMixedFileTypes(files) {
-    const firstFileType= files[0].type;  
-    if (files.every(file => file.type === firstFileType)) {
+    const firstFileType = files[0].type;
+    if (files.every((file) => file.type === firstFileType)) {
       return firstFileType;
-    }  
+    }
     return 'mixed';
   }
 
   async validateFiles(files) {
-    const errorMessages =
-      files.length === 1
-        ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
-        : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
-    if (
-      files.some((file) => !this.limits.allowedFileTypes.includes(file.type))
-    ) {
+    const errorMessages = files.length === 1
+      ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
+      : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
+    if (files.some((file) => !this.limits.allowedFileTypes.includes(file.type))) {
       await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
       return false;
     }
@@ -485,7 +416,7 @@ export default class ActionBinder {
     };
     assetData = await this.serviceHandler.postCallToService(
       this.acrobatApiConfig.acrobatEndpoint.createAsset,
-      { body: JSON.stringify(data) }
+      { body: JSON.stringify(data) },
     );
     return assetData;
   }
@@ -540,7 +471,7 @@ export default class ActionBinder {
     });
     await this.batchUpload(
       uploadPromises,
-      this.limits?.batchSize || uploadPromises.length
+      this.limits?.batchSize || uploadPromises.length,
     );
   }
 
@@ -553,32 +484,19 @@ export default class ActionBinder {
       };
       const finalizeJson = await this.serviceHandler.postCallToService(
         this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        {
-          body: JSON.stringify(finalAssetData),
-          signal: AbortSignal.timeout?.(80000),
-        }
+        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         this.multiFileFailure = 'uploaderror';
         await this.showSplashScreen();
-        await this.dispatchErrorToast(
-          'verb_upload_error_generic',
-          500,
-          `Unexpected response from finalize call: ${finalizeJson}`,
-          e.showError
-        );
+        await this.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${finalizeJson}`, e.showError);
         this.operations = [];
         return false;
       }
     } catch (e) {
       this.multiFileFailure = 'uploaderror';
       await this.showSplashScreen();
-      await this.dispatchErrorToast(
-        'verb_upload_error_generic',
-        500,
-        'Exception thrown when verifying content.',
-        e.showError
-      );
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', e.showError);
       this.operations = [];
       return false;
     }
@@ -608,7 +526,7 @@ export default class ActionBinder {
           requestInProgress = true;
           metadata = await this.serviceHandler.getCallToService(
             this.acrobatApiConfig.acrobatEndpoint.getMetadata,
-            { id: assetData.id }
+            { id: assetData.id },
           );
           requestInProgress = false;
           if (metadata?.numPages !== undefined) {
@@ -626,12 +544,7 @@ export default class ActionBinder {
       });
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast(
-        'verb_upload_error_generic',
-        500,
-        'Exception thrown when verifying PDF page count.',
-        e.showError
-      );
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying PDF page count.', e.showError);
       this.operations = [];
       return false;
     }
@@ -642,9 +555,7 @@ export default class ActionBinder {
     for (const limit of Object.keys(this.limits)) {
       switch (limit) {
         case 'maxNumPages': {
-          const maxPageLimitExceeded = await this.isMaxPageLimitExceeded(
-            assetData
-          );
+          const maxPageLimitExceeded = await this.isMaxPageLimitExceeded(assetData);
           if (maxPageLimitExceeded) validated = false;
           break;
         }
@@ -660,8 +571,8 @@ export default class ActionBinder {
     this.promiseStack.push(
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(cOpts) }
-      )
+        { body: JSON.stringify(cOpts) },
+      ),
     );
     await Promise.all(this.promiseStack)
       .then(async (resArr) => {
@@ -672,12 +583,7 @@ export default class ActionBinder {
       .catch(async (e) => {
         this.multiFileFailure = 'uploaderror';
         await this.showSplashScreen();
-        await this.dispatchErrorToast(
-          'verb_upload_error_generic',
-          500,
-          'Exception thrown when retrieving redirect URL.',
-          e.showError
-        );
+        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', e.showError);
       });
   }
 
@@ -758,52 +664,18 @@ export default class ActionBinder {
       this.operations = [];
       switch (e.status) {
         case 409:
-          await this.dispatchErrorToast(
-            'verb_upload_error_duplicate_asset',
-            e.status,
-            null,
-            e.showError
-          );
+          await this.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, null, e.showError);
           break;
         case 401:
-          if (e.message === 'notentitled')
-            await this.dispatchErrorToast(
-              'verb_upload_error_no_storage_provision',
-              e.status,
-              null,
-              e.showError
-            );
-          else
-            await this.dispatchErrorToast(
-              'verb_upload_error_generic',
-              e.status,
-              e.message,
-              e.showError
-            );
+          if (e.message === 'notentitled') await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, null, e.showError);
+          else await this.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, e.showError);
           break;
         case 403:
-          if (e.message === 'quotaexceeded')
-            await this.dispatchErrorToast(
-              'verb_upload_error_max_quota_exceeded',
-              e.status,
-              null,
-              e.showError
-            );
-          else
-            await this.dispatchErrorToast(
-              'verb_upload_error_no_storage_provision',
-              e.status,
-              null,
-              e.showError
-            );
+          if (e.message === 'quotaexceeded') await this.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.status, null, e.showError);
+          else await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, null, e.showError);
           break;
         default:
-          await this.dispatchErrorToast(
-            'verb_upload_error_generic',
-            e.status,
-            null,
-            e.showError
-          );
+          await this.dispatchErrorToast('verb_upload_error_generic', e.status, null, e.showError);
           break;
       }
       return;
@@ -812,11 +684,7 @@ export default class ActionBinder {
     if (!verified) return;
     const validated = await this.handleValidations(assetData);
     if (!validated) return;
-    this.block.dispatchEvent(
-      new CustomEvent(unityConfig.trackAnalyticsEvent, {
-        detail: { event: 'uploaded' },
-      })
-    );
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 
   async processFilesInBatches(files, batchSize, processFn) {
@@ -832,7 +700,6 @@ export default class ActionBinder {
     this.LOADER_INCREMENT = 60;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     const filesData = {
-      //Logic for mixed has to be fixed
       type: isMixedFileTypes,
       size: totalFileSize,
       count: files.length,
@@ -858,18 +725,14 @@ export default class ActionBinder {
       const assetDataArray = [];
 
       // concurrent /asset calls
-      await this.processFilesInBatches(
-        files,
-        concurrentFileLimit,
-        async (file) => {
-          const [blobData, assetData] = await Promise.all([
-            this.getBlobData(file),
-            this.createAsset(file, true, workflowId),
-          ]);
-          blobDataArray.push(blobData);
-          assetDataArray.push(assetData);
-        }
-      );
+      await this.processFilesInBatches(files, concurrentFileLimit, async (file) => {
+        const [blobData, assetData] = await Promise.all([
+          this.getBlobData(file),
+          this.createAsset(file, true, workflowId),
+        ]);
+        blobDataArray.push(blobData);
+        assetDataArray.push(assetData);
+      });
       //Connector api call for redirect url
       const cOpts = {
         targetProduct: this.workflowCfg.productName,
@@ -897,25 +760,16 @@ export default class ActionBinder {
 
       // concurrent /finalize calls
       let allVerified = false;
-      await this.processFilesInBatches(
-        assetDataArray,
-        concurrentFileLimit,
-        async (assetData) => {
-          const verified = await this.verifyContent(assetData);
-          if (!verified) allVerified = true;
-        }
-      );
+      await this.processFilesInBatches(assetDataArray, concurrentFileLimit, async (assetData) => {
+        const verified = await this.verifyContent(assetData);
+        if (!verified) allVerified = true;
+      });
       if (!allVerified) return; // append feedback=uploaderror to redirectURL
     } catch (e) {
       this.multiFileFailure = 'uploaderror';
       await this.showSplashScreen();
       this.operations = [];
-      await this.dispatchErrorToast(
-        'verb_upload_error_generic',
-        500,
-        'Exception thrown when uploading multiple files.',
-        e.showError
-      );
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when uploading multiple files.', e.showError);
       return;
     }
     this.updateProgressBar(this.splashScreenEl, 95);
