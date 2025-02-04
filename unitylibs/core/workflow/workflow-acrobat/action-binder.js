@@ -599,9 +599,10 @@ export default class ActionBinder {
       count: 1,
     };
     this.block.dispatchEvent(
-      new CustomEvent(unityConfig.trackAnalyticsEvent, {
-        detail: { event: eventName, data: fileData },
-      })
+      new CustomEvent(
+        unityConfig.trackAnalyticsEvent,
+        { detail: { event: eventName, data: fileData } },
+      ),
     );
     try {
       await this.showSplashScreen(true);
