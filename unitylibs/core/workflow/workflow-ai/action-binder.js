@@ -270,10 +270,8 @@ export default class ActionBinder {
 
   setPrompt(el) {
     const prompt = el.textContent.trim();
-    this.inputField.value = prompt;
     this.query = prompt;
-    this.inputField.focus();
-    this.toggleSurpriseBtn();
+    this.generateContent();
     this.hideDropdown();
   }
 
