@@ -778,7 +778,7 @@ export default class ActionBinder {
           languageRegion: this.workflowCfg.langRegion,
           languageCode: this.workflowCfg.langCode,
           verb: this.workflowCfg.enabledFeatures[0],
-          "multifile": true,
+          multifile: true,
           workflowId: workflowId,
         },
       };
