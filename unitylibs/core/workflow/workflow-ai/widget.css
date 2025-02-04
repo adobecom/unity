@@ -150,7 +150,7 @@
   gap: var(--spacing-s);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap:hover {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255);
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap {
   background: linear-gradient(#fff9, #fff9), linear-gradient(135deg, #fffc, #ffffff3d);
