@@ -444,6 +444,7 @@ export default class ActionBinder {
       body: blobData,
     };
     const response = await fetch(storageUrl, uploadOptions);
+    if (!response.ok) throw new Error(`Failed to upload: ${response.status}`);
     return response;
   }
 
@@ -456,29 +457,62 @@ export default class ActionBinder {
   }
 
   async batchUpload(tasks, batchSize) {
-    for (let i = 0; i < tasks.length; i += batchSize) {
-      const batch = tasks.slice(i, i + batchSize);
-      await Promise.all(batch);
+    const executing = new Set();
+    for (const task of tasks) {
+      const p = task().then(() => executing.delete(p)).catch((e) => {
+        executing.delete(p);
+        console.error('Error executing task: ', e);
+      });
+      executing.add(p);
+      if (executing.size >= batchSize) {
+        await Promise.race(executing);
+      }
     }
+    await Promise.all(executing);
   }
 
-  async chunkPdf(assetData, blobData, filetype) {
-    const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-    if (assetData.uploadUrls.length !== totalChunks) return;
-    const uploadPromises = Array.from({ length: totalChunks }, (_, i) => {
-      const start = i * assetData.blocksize;
-      const end = Math.min(start + assetData.blocksize, blobData.size);
-      const chunk = blobData.slice(start, end);
-      const url = assetData.uploadUrls[i];
-      return this.uploadFileToUnity(url.href, chunk, filetype);
+  async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
+    const uploadTasks = [];
+    const fileChunkCounts = new Map();
+    const failedFiles = [];
+    assetDataArray.forEach((assetData, fileIndex) => {
+      const blobData = blobDataArray[fileIndex];
+      const fileType = filetypeArray[fileIndex];
+      console.log(`Preparing to upload file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.name}`);
+      const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
+      if (assetData.uploadUrls.length !== totalChunks) return;
+      const assetId = assetData.id;
+      fileChunkCounts.set(assetId, totalChunks);
+      let fileUploadFailed = false;
+      const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
+        const start = i * assetData.blocksize;
+        const end = Math.min(start + assetData.blocksize, blobData.size);
+        const chunk = blobData.slice(start, end);
+        const url = assetData.uploadUrls[i];
+        return () => {
+          if (fileUploadFailed) return Promise.resolve();
+          return this.uploadFileToUnity(url.href, chunk, fileType).then(() => {
+            fileChunkCounts.set(assetId, fileChunkCounts.get(assetId) - 1);
+            if (fileChunkCounts.get(assetId) === 0) console.log(`Finished uploading file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.name}`);
+          }).catch((e) => {
+            console.error(`Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.name}`);
+            failedFiles.push(fileIndex);
+            fileUploadFailed = true;
+          });
+        };
+      });
+      uploadTasks.push(...chunkTasks);
     });
-    await this.batchUpload(
-      uploadPromises,
-      this.limits?.batchSize || uploadPromises.length,
-    );
+    await this.batchUpload(uploadTasks, batchSize);
+    const successfulUploads = assetDataArray.length - failedFiles.length;
+    console.log(`Total files uploaded: ${successfulUploads}`);
+    return {
+      successfulUploads,
+      failedFiles,
+    };
   }
 
-  async verifyContent(assetData) {
+  async verifyContent(assetData, multifile = false) {
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
@@ -491,6 +525,7 @@ export default class ActionBinder {
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         this.multiFileFailure = 'uploaderror';
+        if (multifile) return false;
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${finalizeJson}`, e.showError);
         this.operations = [];
@@ -498,6 +533,7 @@ export default class ActionBinder {
       }
     } catch (e) {
       this.multiFileFailure = 'uploaderror';
+      if (multifile) return false;
       await this.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', e.showError);
       this.operations = [];
@@ -592,6 +628,8 @@ export default class ActionBinder {
 
   async singleFileUpload(file, eventName) {
     const accountType = this.getAccountType();
+    const deviceType = this.getDeviceType();
+    const concurrentChunkLimit = ActionBinder.UPLOAD_LIMITS[deviceType].chunks;
     let cOpts = {};
     const isNonPdf = this.isNonPdf([file]);
     if (!this.validateFiles([file])) return;
@@ -649,8 +687,13 @@ export default class ActionBinder {
       if (!this.redirectUrl) return;
       this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
       this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: assetData } }));
-      await this.chunkPdf(assetData, blobData, file.type);
+      await this.chunkPdf([assetData], [blobData], [file.type], concurrentChunkLimit);
       this.operations.push(assetData.id);
+      const verified = await this.verifyContent(assetData);
+      if (!verified) return;
+      const validated = await this.handleValidations(assetData);
+      if (!validated) return;
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
     } catch (e) {
       await this.showSplashScreen();
       this.operations = [];
@@ -670,15 +713,10 @@ export default class ActionBinder {
           await this.dispatchErrorToast('verb_upload_error_generic', e.status, null, e.showError);
           break;
       }
-      return;
     }
-    const verified = await this.verifyContent(assetData);
-    if (!verified) return;
-    const validated = await this.handleValidations(assetData);
-    if (!validated) return;
-    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded' } }));
   }
 
+  // TODO: maintain an active pool of files?
   async processFilesInBatches(files, batchSize, processFn) {
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
@@ -715,17 +753,24 @@ export default class ActionBinder {
       await this.showSplashScreen(true);
       const blobDataArray = [];
       const assetDataArray = [];
-
-      // concurrent /asset calls
+      const fileTypeArray = [];
       await this.processFilesInBatches(files, concurrentFileLimit, async (file) => {
-        const [blobData, assetData] = await Promise.all([
-          this.getBlobData(file),
-          this.createAsset(file, true, workflowId),
-        ]);
-        blobDataArray.push(blobData);
-        assetDataArray.push(assetData);
+        try {
+          const [blobData, assetData] = await Promise.all([
+            this.getBlobData(file),
+            this.createAsset(file, true, workflowId),
+          ]);
+          blobDataArray.push(blobData);
+          assetDataArray.push(assetData);
+          fileTypeArray.push(file.type);
+        } catch (e) {
+          if (e.status) {
+            await this.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, e.showError);
+          } else {
+            await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when processing assets', e.showError);
+          }
+        }
       });
-      //Connector api call for redirect url
       const cOpts = {
         targetProduct: this.workflowCfg.productName,
         payload: {
@@ -748,15 +793,25 @@ export default class ActionBinder {
           detail: { event: 'uploading', data: filesData },
         })
       );
-      // TODO: send all files for chunking
-
-      // concurrent /finalize calls
-      let allVerified = false;
-      await this.processFilesInBatches(assetDataArray, concurrentFileLimit, async (assetData) => {
-        const verified = await this.verifyContent(assetData);
-        if (!verified) allVerified = true;
+      const uploadResult = await this.chunkPdf(
+        assetDataArray,
+        blobDataArray,
+        fileTypeArray,
+        concurrentChunkLimit,
+      );
+      const uploadedAssets = assetDataArray.filter(
+        (_, index) => !uploadResult.failedFiles.includes(index),
+      );
+      this.operations.push(workflowId);
+      let allVerified = true;
+      await this.processFilesInBatches(uploadedAssets, concurrentFileLimit, async (assetData) => {
+        const verified = await this.verifyContent(assetData, true);
+        if (!verified) {
+          allVerified = false;
+          console.error(`Verification failed for file: ${assetData.name}`);
+        }
       });
-      if (!allVerified) return; // append feedback=uploaderror to redirectURL
+      if (!allVerified) return;
     } catch (e) {
       this.multiFileFailure = 'uploaderror';
       await this.showSplashScreen();
