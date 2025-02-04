@@ -142,7 +142,7 @@ export default class UnityWidget {
     const waitForFooter = () => {
       const footerEl = getFooterEl();
       if (!footerEl) {
-        setTimeout(waitForFooter, 500);
+        setTimeout(waitForFooter, 3000);
         return;
       }
       this.setupIO(obsEl, footerEl);
