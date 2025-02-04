@@ -268,7 +268,7 @@
   margin-left: auto;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .close-btn:before {
-  content: url(../../../img/icons/express-icon.svg#close-btn);
+  content: url(../../../img/icons/close-btn.svg);
   width: 14px;
   height: 14px;
   display: block;
@@ -284,7 +284,7 @@
   border: 0;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con.dynamic .refresh-btn:before {
-  content: url(../../../img/icons/express-icon.svg#refresh-btn);
+  content: url(../../../img/icons/refresh-btn.svg);
   width: 20px;
   height: 20px;
   display: block;
@@ -323,13 +323,13 @@
   display: inline-block;
   width: 20px;
   height: 20px;
-  background-image: url(../../../img/icons/express-icon.svg#prompt);
+  background-image: url(../../../img/icons/prompt.svg);
   background-repeat: no-repeat;
   background-size: contain;
   flex-shrink: 0;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.dynamic:before {
-  background-image: url(../../../img/icons/express-icon.svg#search);
+  background-image: url(../../../img/icons/search.svg);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-separator {
   border-top: 1px solid #E1E1E1;
@@ -356,7 +356,7 @@
   display: inline-block;
   width: 20px;
   height: 20px;
-  background-image: url(../../../img/icons/express-icon.svg#info);
+  background-image: url(../../../img/icons/express-icon.svg);
   background-repeat: no-repeat;
   padding-right: var(--spacing-xxs);
   margin-top: 3px;
