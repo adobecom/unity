@@ -61,7 +61,7 @@ export default class ActionBinder {
     });
   }
 
-  async loadSerHandler() {
+  async loadServiceHandler() {
     const { default: ServiceHandler } = await import(
       `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
     );
@@ -146,7 +146,7 @@ export default class ActionBinder {
 
   async fetchAutoComplete(fetchType = 'default') {
     try {
-      if (!this.serviceHandler) await this.loadSerHandler();
+      if (!this.serviceHandler) await this.loadServiceHandler();
       this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
       if (fetchType !== 'refresh' && this.query) {
         sendAnalyticsEvent(
@@ -209,7 +209,7 @@ export default class ActionBinder {
   }
 
   async generateContent() {
-    if (!this.serviceHandler) await this.loadSerHandler();
+    if (!this.serviceHandler) await this.loadServiceHandler();
     try {
       const payload = {
         query: this.query,
