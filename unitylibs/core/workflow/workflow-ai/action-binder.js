@@ -62,15 +62,13 @@ export default class ActionBinder {
   }
 
   async loadSerHandler() {
-    if (!this.serviceHandler) {
-      const { default: ServiceHandler } = await import(
-        `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-      );
-      this.serviceHandler = new ServiceHandler(
-        this.workflowCfg.targetCfg.renderWidget,
-        this.canvasArea,
-      );
-    }
+    const { default: ServiceHandler } = await import(
+      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
+    );
+    this.serviceHandler = new ServiceHandler(
+      this.workflowCfg.targetCfg.renderWidget,
+      this.canvasArea,
+    );
   }
 
   addEventListeners(el, actionsList) {
@@ -106,7 +104,7 @@ export default class ActionBinder {
         debounce = setTimeout(() => this.execActions(actions), 1000);
       }
     });
-    el.addEventListener('focus', async () => {
+    el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
         sendAnalyticsEvent(new Event('promptOpen'));
@@ -148,6 +146,7 @@ export default class ActionBinder {
 
   async fetchAutoComplete(fetchType = 'default') {
     try {
+      if (!this.serviceHandler) await this.loadSerHandler();
       this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
       if (fetchType !== 'refresh' && this.query) {
         sendAnalyticsEvent(
@@ -159,7 +158,6 @@ export default class ActionBinder {
         targetProduct: this.apiConfig.productName,
         maxResults: this.maxResults,
       };
-      if (!this.serviceHandler) await this.loadSerHandler();
       const response = await this.serviceHandler.postCallToService(
         this.apiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(payload) },
@@ -211,12 +209,12 @@ export default class ActionBinder {
   }
 
   async generateContent() {
+    if (!this.serviceHandler) await this.loadSerHandler();
     try {
       const payload = {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
       };
-      if (!this.serviceHandler) await this.loadSerHandler();
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
