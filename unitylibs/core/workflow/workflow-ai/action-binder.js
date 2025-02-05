@@ -34,6 +34,7 @@ export default class ActionBinder {
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
+    this.loadSerHandler();
   }
 
   initializeApiConfig() {
@@ -59,6 +60,18 @@ export default class ActionBinder {
         }
       });
     });
+  }
+
+  async loadSerHandler() {
+    if (!this.serviceHandler) {
+      const { default: ServiceHandler } = await import(
+        `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
+      );
+      this.serviceHandler = new ServiceHandler(
+        this.workflowCfg.targetCfg.renderWidget,
+        this.canvasArea,
+      );
+    }
   }
 
   addEventListeners(el, actionsList) {
@@ -100,7 +113,6 @@ export default class ActionBinder {
         sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
       }
-      if (!this.serviceHandler) await this.execActions(actions, el);
     });
     el.addEventListener('focusout', ({ relatedTarget }) => {
       if (!this.widget.contains(relatedTarget)) {
@@ -110,15 +122,6 @@ export default class ActionBinder {
   }
 
   async execActions(actions, el = null) {
-    if (!this.serviceHandler) {
-      const { default: ServiceHandler } = await import(
-        `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-      );
-      this.serviceHandler = new ServiceHandler(
-        this.workflowCfg.targetCfg.renderWidget,
-        this.canvasArea,
-      );
-    }
     await Promise.all(
       actions.map(async (act) => {
         try {
