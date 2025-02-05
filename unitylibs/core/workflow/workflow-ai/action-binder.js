@@ -100,7 +100,7 @@ export default class ActionBinder {
         sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
       }
-      if (!this.serviceHandler) await this.execActions(el, actions);
+      if (!this.serviceHandler) await this.execActions(actions, el);
     });
     el.addEventListener('focusout', ({ relatedTarget }) => {
       if (!this.widget.contains(relatedTarget)) {
