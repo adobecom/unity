@@ -94,12 +94,13 @@ export default class ActionBinder {
         debounce = setTimeout(() => this.execActions(actions), 1000);
       }
     });
-    el.addEventListener('focus', () => {
+    el.addEventListener('focus', async () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
         sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
       }
+      if (!this.serviceHandler) await this.execActions(el, actions);
     });
     el.addEventListener('focusout', ({ relatedTarget }) => {
       if (!this.widget.contains(relatedTarget)) {
