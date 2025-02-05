@@ -405,10 +405,7 @@ export default class ActionBinder {
       return;
     }
     const tarElem = focusElems[currIdx] || ev.target;
-    const actions = {
-      'inp-field': () => this.inpRedirect(),
-      'unity-act-btn': () => tarElem.click(),
-    };
+    const actions = { 'inp-field': () => this.inpRedirect() };
     if (tarElem) {
       const matchCls = Object.keys(actions).find((cls) => tarElem.classList.contains(cls));
       if (matchCls) {
