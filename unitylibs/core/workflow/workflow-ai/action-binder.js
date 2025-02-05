@@ -428,9 +428,9 @@ export default class ActionBinder {
     });
   }
 
-  inpRedirect() {
+  async inpRedirect() {
     if (!this.query) return;
-    this.fetchAutoComplete();
+    await this.generateContent();
   }
 
   clearDropdown() {
