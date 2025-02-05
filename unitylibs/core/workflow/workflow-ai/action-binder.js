@@ -404,9 +404,18 @@ export default class ActionBinder {
       this.activeIndex = -1;
       return;
     }
-    const targetElement = focusElems[currIdx] || ev.target;
-    if (targetElement && (currIdx !== -1 || targetElement.classList.contains('unity-act-btn'))) {
-      targetElement.click();
+    const tarElem = focusElems[currIdx] || ev.target;
+    const actions = {
+      'inp-field': () => this.inpRedirect(),
+      'unity-act-btn': () => tarElem.click(),
+    };
+    if (tarElem) {
+      const matchCls = Object.keys(actions).find((cls) => tarElem.classList.contains(cls));
+      if (matchCls) {
+        actions[matchCls]();
+      } else if (currIdx !== -1) {
+        tarElem.click();
+      }
     }
   }
 
@@ -417,6 +426,11 @@ export default class ActionBinder {
         item.focus();
       }
     });
+  }
+
+  inpRedirect() {
+    if (!this.query) return;
+    this.fetchAutoComplete();
   }
 
   clearDropdown() {
