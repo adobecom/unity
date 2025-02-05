@@ -34,7 +34,6 @@ export default class ActionBinder {
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
-    this.loadSerHandler();
   }
 
   initializeApiConfig() {
@@ -160,6 +159,7 @@ export default class ActionBinder {
         targetProduct: this.apiConfig.productName,
         maxResults: this.maxResults,
       };
+      if (!this.serviceHandler) await this.loadSerHandler();
       const response = await this.serviceHandler.postCallToService(
         this.apiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(payload) },
@@ -216,6 +216,7 @@ export default class ActionBinder {
         query: this.query,
         targetProduct: this.workflowCfg.productName,
       };
+      if (!this.serviceHandler) await this.loadSerHandler();
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
