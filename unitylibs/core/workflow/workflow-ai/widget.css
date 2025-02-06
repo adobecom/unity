@@ -270,7 +270,6 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: var(--spacing-xxs) var(--spacing-xs);
 }
