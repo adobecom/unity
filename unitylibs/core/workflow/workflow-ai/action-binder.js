@@ -103,7 +103,7 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('blur', () => {
-      const { activeElement } = document.activeElement;
+      const { activeElement } = document;
       if (!activeElement || !this.widget.contains(activeElement)) {
         this.hideDropdown();
       }
