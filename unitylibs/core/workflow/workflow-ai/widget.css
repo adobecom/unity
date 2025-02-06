@@ -154,10 +154,11 @@
   background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
   transition: background 0.2s ease-in-out;
 }
-.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap .inp-field:focus {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field:focus {
   background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9));
   transition: background 0.2s ease-in-out;
 }
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
   padding: 9px 5px 10px;
   flex: 1;
@@ -172,6 +173,7 @@
   outline: none;
   background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
 }
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
   font-style: italic;
 }
