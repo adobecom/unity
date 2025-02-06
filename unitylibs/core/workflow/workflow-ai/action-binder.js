@@ -29,6 +29,7 @@ export default class ActionBinder {
     this.surpriseBtn = this.getElement('.surprise-btn');
     this.widget = this.getElement('.ex-unity-widget');
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
+    this.boundOutsideClickHandler = this.handleOutsideClick.bind(this);
     this.viewport = defineDeviceByScreenSize();
     this.addAccessibility();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
@@ -430,7 +431,7 @@ export default class ActionBinder {
     this.dropdown.removeAttribute('inert');
     this.inputField.setAttribute('aria-expanded', 'true');
     this.dropdown.removeAttribute('aria-hidden');
-    document.addEventListener('click', this.handleOutsideClick.bind(this), true);
+    document.addEventListener('click', this.boundOutsideClickHandler, true);
   }
 
   hideDropdown() {
@@ -439,12 +440,11 @@ export default class ActionBinder {
       this.dropdown.setAttribute('inert', '');
       this.dropdown.setAttribute('aria-hidden', 'true');
       this.inputField.setAttribute('aria-expanded', 'false');
-      document.removeEventListener('click', this.handleOutsideClick.bind(this), true);
+      document.removeEventListener('click', this.boundOutsideClickHandler, true);
     }
   }
 
   handleOutsideClick(event) {
-    event.stopPropagation();
     if (!this.widget.contains(event.target)) {
       this.hideDropdown();
     }
