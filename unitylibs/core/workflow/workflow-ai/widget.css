@@ -154,7 +154,7 @@
   background: linear-gradient(89deg, rgba(255,255,255,1)1.01%, rgba(255,255,255,0.3)111.14%);
   transition: background 0.2s ease-in-out;
 }
-.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap:focus {
+.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap .inp-field:focus {
   background: linear-gradient(89deg, rgba(255,255,255,1)1.01%, rgba(255,255,255,0.6)111.14%);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
