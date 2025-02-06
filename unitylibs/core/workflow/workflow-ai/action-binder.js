@@ -102,8 +102,9 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
-    el.addEventListener('focusout', ({ relatedTarget }) => {
-      if (!this.widget.contains(relatedTarget)) {
+    el.addEventListener('blur', () => {
+      const { activeElement } = document.activeElement;
+      if (!activeElement || !this.widget.contains(activeElement)) {
         this.hideDropdown();
       }
     });
