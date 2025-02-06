@@ -288,7 +288,8 @@
   cursor: pointer;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con.dynamic .close-btn {
-  margin-left: auto;
+  position: absolute;
+  right: 0;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .close-btn:before {
   content: url(../../../img/icons/close-btn.svg);
