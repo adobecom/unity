@@ -170,7 +170,7 @@
   border-radius: 3px;
   font-family: inherit;
   outline: none;
-  /* background: #fff0; */
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
   font-style: italic;
