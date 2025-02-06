@@ -102,7 +102,7 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
-    el.addEventListener('blur', () => {
+    el.addEventListener('focusout', () => {
       const { activeElement } = document;
       if (!activeElement || !this.widget.contains(activeElement)) {
         this.hideDropdown();
