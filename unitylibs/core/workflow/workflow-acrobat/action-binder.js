@@ -162,19 +162,17 @@ export default class ActionBinder {
     return cookies.some((item) => target.test(item));
   };
 
-  waitForCookie = (timeout) => {
-    return new Promise((resolve) => {
-      const interval = 100;
-      let elapsed = 0;
-      const intervalId = setInterval(() => {
-        if (this.checkCookie() || elapsed >= timeout) {
-          clearInterval(intervalId);
-          resolve();
-        }
-        elapsed += interval;
-      }, interval);
-    });
-  };
+  waitForCookie = (timeout) => new Promise((resolve) => {
+    const interval = 100;
+    let elapsed = 0;
+    const intervalId = setInterval(() => {
+      if (this.checkCookie() || elapsed >= timeout) {
+        clearInterval(intervalId);
+        resolve();
+      }
+      elapsed += interval;
+    }, interval);
+  });
 
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
@@ -297,8 +295,7 @@ export default class ActionBinder {
         timeoutId = null;
       }
       if (eventListeners) {
-        eventListeners.forEach((event) => document.removeEventListener(event, handler),
-        );
+        eventListeners.forEach((event) => document.removeEventListener(event, handler));
         eventListeners = null;
       }
     };
@@ -397,18 +394,21 @@ export default class ActionBinder {
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
+        if (!this.multiFileFailure) this.multiFileFailure = 'uploaderror';
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
         else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
         fail = true;
         errorTypes.add('UNSUPPORTED_TYPE');
       }
       if (!file.size) {
+        if (!this.multiFileFailure) this.multiFileFailure = 'uploaderror';
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true);
         else await this.dispatchErrorToast(errorMessages.EMPTY_FILE);
         fail = true;
         errorTypes.add('EMPTY_FILE');
       }
       if (file.size > this.limits.maxFileSize) {
+        if (!this.multiFileFailure) this.multiFileFailure = 'uploaderror';
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true);
         else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE);
         fail = true;
@@ -541,7 +541,6 @@ export default class ActionBinder {
         { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
-        this.multiFileFailure = 'uploaderror';
         if (this.MULTI_FILE) return false;
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${finalizeJson}`);
@@ -549,7 +548,6 @@ export default class ActionBinder {
         return false;
       }
     } catch (e) {
-      this.multiFileFailure = 'uploaderror';
       if (this.MULTI_FILE) return false;
       await this.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', false, e.showError);
@@ -750,7 +748,7 @@ export default class ActionBinder {
 
   async multiFileUpload(files, totalFileSize, eventName) {
     this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 85;
+    this.LOADER_LIMIT = 50;
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 60;
     const isMixedFileTypes = this.isMixedFileTypes(files);
@@ -793,6 +791,7 @@ export default class ActionBinder {
           assetDataArray.push(assetData);
           fileTypeArray.push(file.type);
         } catch (e) {
+          if (!this.multiFileFailure) this.multiFileFailure = 'uploaderror';
           switch (e.status) {
             case 409:
               await this.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, `Duplicate asset: ${file.name}`, true, e.showError);
@@ -815,6 +814,8 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
+      if (files.length !== assetDataArray.length) this.multiFileFailure = 'uploaderror';
+      this.updateProgressBar(this.splashScreenEl, 75);
       const cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
@@ -851,15 +852,17 @@ export default class ActionBinder {
       let allNotVerified = true;
       await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
         const verified = await this.verifyContent(assetData);
-        if (!verified) await this.dispatchErrorToast('verb_upload_error_generic', 500, `Verification failed for file: ${assetData.id}`, true);
-        else allNotVerified = false;
+        if (!verified) {
+          await this.dispatchErrorToast('verb_upload_error_generic', 500, `Verification failed for file: ${assetData.id}`, true);
+          if (!this.multiFileFailure) this.multiFileFailure = 'uploaderror';
+        } else allNotVerified = false;
       });
       if (allNotVerified) {
         await this.dispatchGenericError();
         return;
       }
+      this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
-      this.multiFileFailure = 'uploaderror';
       await this.dispatchGenericError(null, e.showError);
       return;
     }
