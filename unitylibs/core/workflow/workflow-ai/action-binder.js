@@ -103,8 +103,11 @@ export default class ActionBinder {
       }
     });
     el.addEventListener('focusout', (e) => {
-      const { relatedTarget } = e;
-      if (!relatedTarget || !this.widget.contains(relatedTarget)) {
+      const { relatedTarget, currentTarget } = e;
+      if (!relatedTarget) {
+        if (this.widget.contains(currentTarget)) return;
+      }
+      if (!this.widget.contains(relatedTarget)) {
         this.hideDropdown();
       }
     });
