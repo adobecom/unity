@@ -160,7 +160,7 @@
   visibility: visible;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget.sticky .inp-wrap {
+.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap {
   background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
 }
 
