@@ -172,7 +172,8 @@ export default class ActionBinder {
     }
   }
 
-  async refreshSuggestions() {
+  async refreshSuggestions(e) {
+    e.stopPropagation();
     if (this.suggestion.length) {
       this.displaySuggestions();
       this.inputField.focus();
