@@ -139,13 +139,13 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
   position: relative;
   background: linear-gradient(89deg, rgba(255,255,255,0.80)1.01%, rgba(255,255,255,0.25)111.14%);
+  border: 1px solid var(--color-white);
   border-radius: var(--spacing-xs);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: flex;
   padding: 12px var(--spacing-xs);
   align-items: center;
-  border: 1px solid var(--color-white);
   background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
   box-shadow: 0 0 11px #0000001c;
   gap: var(--spacing-s);
@@ -154,7 +154,7 @@
   background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
   transition: background 0.2s ease-in-out;
 }
-.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap:focus {
+.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap .inp-field:focus {
   background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
   transition: background 0.2s ease-in-out;
 }
