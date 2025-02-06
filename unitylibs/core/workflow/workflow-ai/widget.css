@@ -285,6 +285,8 @@
   background: transparent;
   border: 0;
   cursor: pointer;
+  position: absolute;
+  right: 0;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con.dynamic .close-btn {
   position: absolute;
