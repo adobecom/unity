@@ -172,8 +172,7 @@ export default class ActionBinder {
     }
   }
 
-  async refreshSuggestions(e) {
-    e.stopPropagation();
+  async refreshSuggestions() {
     if (this.suggestion.length) {
       this.displaySuggestions();
       this.inputField.focus();
@@ -445,6 +444,7 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
+    event.stopPropogation();
     if (!this.widget.contains(event.target)) {
       this.hideDropdown();
     }
