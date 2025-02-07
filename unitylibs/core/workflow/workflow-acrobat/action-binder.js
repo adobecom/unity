@@ -180,7 +180,6 @@ export default class ActionBinder {
     this.updateProgressBar(this.splashScreenEl, 100);
     try {
       await this.waitForCookie(2000);
-      this.updateProgressBar(this.splashScreenEl, 100);
       if (!this.checkCookie()) {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
         await new Promise(r => setTimeout(r, 500));
