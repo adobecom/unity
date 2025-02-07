@@ -25,6 +25,9 @@
   margin: var(--spacing-xxl) 0 var(--spacing-m);
 }
 .aside.unity-enabled .foreground.container .icon-area {
+  height: 32px;
+  width: auto;
+  margin: 0 auto;
   margin-bottom: var(--spacing-xxs);
 }
 .aside.unity-enabled [class^="heading-"]:only-of-type, .aside [class^="heading-"]:last-of-type {
