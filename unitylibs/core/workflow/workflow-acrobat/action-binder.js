@@ -162,19 +162,17 @@ export default class ActionBinder {
     return cookies.some((item) => target.test(item));
   };
 
-  waitForCookie = (timeout) => {
-    return new Promise((resolve) => {
-      const interval = 100;
-      let elapsed = 0;
-      const intervalId = setInterval(() => {
-        if (this.checkCookie() || elapsed >= timeout) {
-          clearInterval(intervalId);
-          resolve();
-        }
-        elapsed += interval;
-      }, interval);
-    });
-  };
+  waitForCookie = (timeout) => new Promise((resolve) => {
+    const interval = 100;
+    let elapsed = 0;
+    const intervalId = setInterval(() => {
+      if (this.checkCookie() || elapsed >= timeout) {
+        clearInterval(intervalId);
+        resolve();
+      }
+      elapsed += interval;
+    }, interval);
+  });
 
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
@@ -297,8 +295,7 @@ export default class ActionBinder {
         timeoutId = null;
       }
       if (eventListeners) {
-        eventListeners.forEach((event) => document.removeEventListener(event, handler),
-        );
+        eventListeners.forEach((event) => document.removeEventListener(event, handler));
         eventListeners = null;
       }
     };
@@ -541,7 +538,6 @@ export default class ActionBinder {
         { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
-        this.multiFileFailure = 'uploaderror';
         if (this.MULTI_FILE) return false;
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${finalizeJson}`);
@@ -549,7 +545,6 @@ export default class ActionBinder {
         return false;
       }
     } catch (e) {
-      this.multiFileFailure = 'uploaderror';
       if (this.MULTI_FILE) return false;
       await this.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', false, e.showError);
@@ -637,7 +632,6 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        this.multiFileFailure = 'uploaderror';
         await this.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', false, e.showError);
       });
@@ -750,7 +744,7 @@ export default class ActionBinder {
 
   async multiFileUpload(files, totalFileSize, eventName) {
     this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 85;
+    this.LOADER_LIMIT = 50;
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 60;
     const isMixedFileTypes = this.isMixedFileTypes(files);
@@ -815,6 +809,7 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
+      this.updateProgressBar(this.splashScreenEl, 75);
       const cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
@@ -848,18 +843,20 @@ export default class ActionBinder {
         (_, index) => !uploadResult.includes(index),
       );
       this.operations.push(workflowId);
-      let allNotVerified = true;
+      let allVerified = 0;
       await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
         const verified = await this.verifyContent(assetData);
-        if (!verified) await this.dispatchErrorToast('verb_upload_error_generic', 500, `Verification failed for file: ${assetData.id}`, true);
-        else allNotVerified = false;
+        if (!verified) {
+          await this.dispatchErrorToast('verb_upload_error_generic', 500, `Verification failed for file: ${assetData.id}`, true);
+        } else allVerified += 1;
       });
-      if (allNotVerified) {
+      if (allVerified === 0) {
         await this.dispatchGenericError();
         return;
       }
+      if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
+      this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
-      this.multiFileFailure = 'uploaderror';
       await this.dispatchGenericError(null, e.showError);
       return;
     }
