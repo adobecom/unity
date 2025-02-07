@@ -637,19 +637,35 @@ export default class ActionBinder {
       });
   }
 
+  async handleRedirect(cOpts) {
+    await this.getRedirectUrl(cOpts);
+    if (!this.redirectUrl) return false;
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
+    return true;
+  }
+
   async dispatchGenericError(info = null, showError = true) {
     this.operations = [];
     await this.showSplashScreen();
     await this.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
   }
 
+  getConcurrentLimits() {
+    const deviceType = this.getDeviceType();
+    if (!this.MULTI_FILE) {
+      return { maxConcurrentChunks: ActionBinder.UPLOAD_LIMITS[deviceType].chunks };
+    }
+    return {
+      maxConcurrentFiles: ActionBinder.UPLOAD_LIMITS[deviceType].files,
+      maxConcurrentChunks: ActionBinder.UPLOAD_LIMITS[deviceType].chunks,
+    };
+  }
+
   async singleFileUpload(file, eventName) {
     const accountType = this.getAccountType();
-    const deviceType = this.getDeviceType();
-    const maxConcurrentChunks = ActionBinder.UPLOAD_LIMITS[deviceType].chunks;
+    const { maxConcurrentChunks } = this.getConcurrentLimits();
     let cOpts = {};
     const isNonPdf = this.isNonPdf([file]);
-    if (!this.validateFiles([file])) return;
     const fileData = {
       type: file.type,
       size: file.size,
@@ -661,6 +677,7 @@ export default class ActionBinder {
         { detail: { event: eventName, data: fileData } },
       ),
     );
+    if (!this.validateFiles([file])) return;
     try {
       await this.showSplashScreen(true);
       const [blobData, assetData] = await Promise.all([
@@ -677,9 +694,8 @@ export default class ActionBinder {
             feedback: 'nonpdf',
           },
         };
-        await this.getRedirectUrl(cOpts);
-        if (!this.redirectUrl) return;
-        this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
+        const redirectSuccess = await this.handleRedirect(cOpts);
+        if (!redirectSuccess) return;
         this.redirectWithoutUpload = true;
         return;
       }
@@ -700,9 +716,8 @@ export default class ActionBinder {
           ...(isNonPdf ? { feedback: 'nonpdf' } : {}),
         },
       };
-      await this.getRedirectUrl(cOpts);
-      if (!this.redirectUrl) return;
-      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
+      const redirectSuccess = await this.handleRedirect(cOpts);
+      if (!redirectSuccess) return;
       this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: assetData } }));
       const uploadResult = await this.chunkPdf(
         [assetData],
@@ -756,22 +771,13 @@ export default class ActionBinder {
     this.block.dispatchEvent(
       new CustomEvent(
         unityConfig.trackAnalyticsEvent,
-        {
-          detail: {
-            event: eventName,
-            data: filesData,
-          },
-        },
+        { detail: { event: eventName, data: filesData } },
       ),
     );
-    this.block.dispatchEvent(
-      new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: filesData } }),
-    );
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: filesData } }));
     if (!this.validateFiles(files)) return;
     const workflowId = crypto.randomUUID();
-    const deviceType = this.getDeviceType();
-    const maxConcurrentFiles = ActionBinder.UPLOAD_LIMITS[deviceType].files;
-    const maxConcurrentChunks = ActionBinder.UPLOAD_LIMITS[deviceType].chunks;
+    const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
     try {
       await this.showSplashScreen(true);
       const blobDataArray = [];
@@ -821,14 +827,9 @@ export default class ActionBinder {
           workflowId,
         },
       };
-      await this.getRedirectUrl(cOpts);
-      if (!this.redirectUrl) return;
-      this.block.dispatchEvent(
-        new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }),
-      );
-      this.block.dispatchEvent(
-        new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: filesData } }),
-      );
+      const redirectSuccess = await this.handleRedirect(cOpts);
+      if (!redirectSuccess) return;
+      this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploading', data: filesData } }));
       const uploadResult = await this.chunkPdf(
         assetDataArray,
         blobDataArray,
@@ -839,9 +840,7 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
-      const uploadedAssets = assetDataArray.filter(
-        (_, index) => !uploadResult.includes(index),
-      );
+      const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.includes(index));
       this.operations.push(workflowId);
       let allVerified = 0;
       await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
@@ -860,9 +859,6 @@ export default class ActionBinder {
       await this.dispatchGenericError(null, e.showError);
       return;
     }
-    this.updateProgressBar(this.splashScreenEl, 95);
-    this.block.dispatchEvent(
-      new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded', data: filesData } }),
-    );
+    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'uploaded', data: filesData } }));
   }
 }
