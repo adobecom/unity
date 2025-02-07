@@ -843,18 +843,18 @@ export default class ActionBinder {
         (_, index) => !uploadResult.includes(index),
       );
       this.operations.push(workflowId);
-      let allNotVerified = 0;
+      let allVerified = 0;
       await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
         const verified = await this.verifyContent(assetData);
         if (!verified) {
           await this.dispatchErrorToast('verb_upload_error_generic', 500, `Verification failed for file: ${assetData.id}`, true);
-        } else allNotVerified += 1;
+        } else allVerified += 1;
       });
-      if (allNotVerified === 0) {
+      if (allVerified === 0) {
         await this.dispatchGenericError();
         return;
       }
-      if (files.length !== allNotVerified) this.multiFileFailure = 'uploaderror';
+      if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
       this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
       await this.dispatchGenericError(null, e.showError);
