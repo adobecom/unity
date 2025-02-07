@@ -776,7 +776,6 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        this.LOADER_DELAY = 200;
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
@@ -791,7 +790,6 @@ export default class ActionBinder {
         this.redirectWithoutUpload = true;
         return;
       }
-      this.LOADER_LIMIT = 50;
       if (!this.validateFiles(files)) return;
       const workflowId = crypto.randomUUID();
       const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
@@ -830,7 +828,6 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
-      this.updateProgressBar(this.splashScreenEl, 75);
       cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
@@ -869,7 +866,6 @@ export default class ActionBinder {
         return;
       }
       if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
-      this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
       await this.dispatchGenericError(null, e.showError);
       return;
