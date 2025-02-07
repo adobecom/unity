@@ -759,6 +759,7 @@ export default class ActionBinder {
 
   async multiFileUpload(files, totalFileSize, eventName) {
     const accountType = this.getAccountType();
+    let cOpts = {};
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 50;
     this.LOADER_DELAY = 800;
@@ -832,7 +833,7 @@ export default class ActionBinder {
         return;
       }
       this.updateProgressBar(this.splashScreenEl, 75);
-      const cOpts = {
+      cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
         payload: {
