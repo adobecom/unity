@@ -1,3 +1,4 @@
+
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
@@ -665,7 +666,6 @@ export default class ActionBinder {
     const accountType = this.getAccountType();
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     let cOpts = {};
-    const isNonPdf = this.isNonPdf([file]);
     const fileData = {
       type: file.type,
       size: file.size,
@@ -680,10 +680,7 @@ export default class ActionBinder {
     if (!this.validateFiles([file])) return;
     try {
       await this.showSplashScreen(true);
-      const [blobData, assetData] = await Promise.all([
-        this.getBlobData(file),
-        this.createAsset(file),
-      ]);
+      const isNonPdf = this.isNonPdf([file]);
       if (accountType === 'guest' && isNonPdf) {
         cOpts = {
           targetProduct: this.workflowCfg.productName,
@@ -699,6 +696,10 @@ export default class ActionBinder {
         this.redirectWithoutUpload = true;
         return;
       }
+      const [blobData, assetData] = await Promise.all([
+        this.getBlobData(file),
+        this.createAsset(file),
+      ]);      
       cOpts = {
         assetId: assetData.id,
         targetProduct: this.workflowCfg.productName,
@@ -758,6 +759,7 @@ export default class ActionBinder {
   }
 
   async multiFileUpload(files, totalFileSize, eventName) {
+    const accountType = this.getAccountType();
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 50;
     this.LOADER_DELAY = 800;
@@ -775,11 +777,26 @@ export default class ActionBinder {
       ),
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: filesData } }));
-    if (!this.validateFiles(files)) return;
-    const workflowId = crypto.randomUUID();
-    const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
     try {
       await this.showSplashScreen(true);
+      if (accountType === 'guest') {
+        cOpts = {
+          targetProduct: this.workflowCfg.productName,
+          payload: {
+            languageRegion: this.workflowCfg.langRegion,
+            languageCode: this.workflowCfg.langCode,
+            verb: this.workflowCfg.enabledFeatures[0],
+            feedback: 'multifile',
+          },
+        };
+        const redirectSuccess = await this.handleRedirect(cOpts);
+        if (!redirectSuccess) return;
+        this.redirectWithoutUpload = true;
+        return;
+      }
+      if (!this.validateFiles(files)) return;
+      const workflowId = crypto.randomUUID();
+      const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
       const blobDataArray = [];
       const assetDataArray = [];
       const fileTypeArray = [];
