@@ -790,9 +790,6 @@ export default class ActionBinder {
         this.redirectWithoutUpload = true;
         return;
       }
-      this.LOADER_LIMIT = 50;
-      this.LOADER_DELAY = 800;
-      this.LOADER_INCREMENT = 60;
       if (!this.validateFiles(files)) return;
       const workflowId = crypto.randomUUID();
       const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
