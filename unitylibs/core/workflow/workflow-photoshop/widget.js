@@ -3,6 +3,7 @@ import {
   createTag,
   getLibs,
   priorityLoad,
+  defineDeviceByScreenSize,
 } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
@@ -330,11 +331,9 @@ export default class UnityWidget {
     [...bgOptions].forEach((o, num) => {
       let thumbnail = null;
       let bgImg = null;
-      bgImg = o.querySelector('img');
-      thumbnail = bgImg;
+      [thumbnail, bgImg] = o.querySelectorAll('img');
+      if (!bgImg) bgImg = thumbnail;
       thumbnail.dataset.backgroundImg = bgImg.src;
-      thumbnail.setAttribute('src', this.updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
-      thumbnailSrc.push(thumbnail.getAttribute('src'));
       const optionSelector = `changebg-option option-${num}`;
       const a = createTag('a', { href: '#', class: optionSelector }, thumbnail);
       bgSelectorTray.append(a);

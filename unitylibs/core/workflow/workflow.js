@@ -260,6 +260,11 @@ class WfInitiator {
         productName: 'acrobat',
         sfList: new Set(['fillsign', 'compress-pdf']),
       },
+      'workflow-ai': {
+        productName: 'Express',
+        sfList: new Set(['text-to-mage']),
+        stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
+      },
     };
     [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
     if (!wfName || !workflowCfg[wfName]) return [];
@@ -270,11 +275,12 @@ class WfInitiator {
       enabledFeatures: [],
       featureCfg: [],
       errors: {},
+      supportedTexts: workflowCfg[wfName]?.stList ?? {},
     };
   }
 
   getEnabledFeatures() {
-    const { supportedFeatures } = this.workflowCfg;
+    const { supportedFeatures, supportedTexts } = this.workflowCfg;
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
@@ -285,13 +291,17 @@ class WfInitiator {
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
+      } else if (supportedTexts.has(fn)) {
+        this.workflowCfg.supportedTexts[fn] = this.workflowCfg.supportedTexts[fn] || [];
+        this.workflowCfg.supportedTexts[fn].push(cf.closest('li').innerText);
       }
     });
   }
 }
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
-  const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
+  let uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
+  if (el.classList.contains('workflow-ai')) uv = 'v2'; //This line will be removed once CC moves to unity V2
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
