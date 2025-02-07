@@ -180,7 +180,6 @@ export default class ActionBinder {
     this.updateProgressBar(this.splashScreenEl, 100);
     try {
       await this.waitForCookie(2000);
-      this.updateProgressBar(this.splashScreenEl, 100);
       if (!this.checkCookie()) {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
         await new Promise(r => setTimeout(r, 500));
@@ -759,10 +758,8 @@ export default class ActionBinder {
 
   async multiFileUpload(files, totalFileSize, eventName) {
     const accountType = this.getAccountType();
+    let cOpts = {};
     this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 50;
-    this.LOADER_DELAY = 800;
-    this.LOADER_INCREMENT = 60;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     const filesData = {
       type: isMixedFileTypes,
@@ -793,6 +790,9 @@ export default class ActionBinder {
         this.redirectWithoutUpload = true;
         return;
       }
+      this.LOADER_LIMIT = 50;
+      this.LOADER_DELAY = 800;
+      this.LOADER_INCREMENT = 60;
       if (!this.validateFiles(files)) return;
       const workflowId = crypto.randomUUID();
       const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
@@ -832,7 +832,7 @@ export default class ActionBinder {
         return;
       }
       this.updateProgressBar(this.splashScreenEl, 75);
-      const cOpts = {
+      cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
         payload: {
