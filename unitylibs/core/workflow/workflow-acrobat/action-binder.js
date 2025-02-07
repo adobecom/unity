@@ -776,6 +776,7 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
+        this.LOADER_DELAY = 200;
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
@@ -790,6 +791,7 @@ export default class ActionBinder {
         this.redirectWithoutUpload = true;
         return;
       }
+      this.LOADER_LIMIT = 50;
       if (!this.validateFiles(files)) return;
       const workflowId = crypto.randomUUID();
       const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
