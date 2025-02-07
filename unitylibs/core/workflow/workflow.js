@@ -275,7 +275,7 @@ class WfInitiator {
       enabledFeatures: [],
       featureCfg: [],
       errors: {},
-      supportedTexts: workflowCfg[wfName]?.stList ?? {},
+      supportedTexts: workflowCfg[wfName]?.stList ?? null,
     };
   }
 
@@ -291,7 +291,7 @@ class WfInitiator {
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
-      } else if (supportedTexts.has(fn)) {
+      } else if (supportedTexts && supportedTexts.has(fn)) {
         this.workflowCfg.supportedTexts[fn] = this.workflowCfg.supportedTexts[fn] || [];
         this.workflowCfg.supportedTexts[fn].push(cf.closest('li').innerText);
       }
