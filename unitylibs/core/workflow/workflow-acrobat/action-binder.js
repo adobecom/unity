@@ -776,6 +776,7 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
+        await new Promise(r => setTimeout(r, 1000));
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
