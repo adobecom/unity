@@ -156,6 +156,10 @@ export default class ActionBinder {
     else await this.multiFileUpload(files, totalFileSize, eventName);
   }
 
+  delay(ms) {
+    return new Promise((res) => { setTimeout(() => { res(); }, ms); });
+  }
+
   checkCookie = () => {
     const cookies = document.cookie.split(';').map((item) => item.trim());
     const target = /^UTS_Uploaded=/;
@@ -182,7 +186,7 @@ export default class ActionBinder {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
-        await new Promise(r => setTimeout(r, 500));
+        await this.delay(500);
       }
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
@@ -675,11 +679,12 @@ export default class ActionBinder {
         { detail: { event: eventName, data: fileData } },
       ),
     );
-    if (!this.validateFiles([file])) return;
+    if (!await this.validateFiles([file])) return;
     try {
       await this.showSplashScreen(true);
       const isNonPdf = this.isNonPdf([file]);
       if (accountType === 'guest' && isNonPdf) {
+        await this.delay(500);
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
@@ -774,11 +779,11 @@ export default class ActionBinder {
       ),
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: filesData } }));
-    if (!this.validateFiles(files)) return;
+    if (!await this.validateFiles(files)) return;
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        await new Promise(r => setTimeout(r, 500));
+        await this.delay(500);
         this.updateProgressBar(this.splashScreenEl, 85); 
         cOpts = {
           targetProduct: this.workflowCfg.productName,
