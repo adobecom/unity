@@ -665,7 +665,7 @@ export default class ActionBinder {
   }
 
   getConnectorPayload(feedback) {
-    const cOpts = {
+    return {
       targetProduct: this.workflowCfg.productName,
       payload: {
         languageRegion: this.workflowCfg.langRegion,
@@ -674,7 +674,6 @@ export default class ActionBinder {
         feedback,
       },
     };
-    return cOpts;
   }
 
   async singleFileUpload(file, eventName) {
