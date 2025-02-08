@@ -760,6 +760,9 @@ export default class ActionBinder {
     const accountType = this.getAccountType();
     let cOpts = {};
     this.MULTI_FILE = true;
+    this.LOADER_LIMIT = 50;
+    this.LOADER_DELAY = 800;
+    this.LOADER_INCREMENT = 60;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     const filesData = {
       type: isMixedFileTypes,
@@ -776,7 +779,8 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 500));
+        this.updateProgressBar(this.splashScreenEl, 85);
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
@@ -829,6 +833,7 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
+      this.updateProgressBar(this.splashScreenEl, 75);
       cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
@@ -867,6 +872,7 @@ export default class ActionBinder {
         return;
       }
       if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
+      this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
       await this.dispatchGenericError(null, e.showError);
       return;
