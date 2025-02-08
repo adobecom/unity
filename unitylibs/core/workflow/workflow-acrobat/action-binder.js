@@ -761,8 +761,6 @@ export default class ActionBinder {
     let cOpts = {};
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 50;
-    this.LOADER_DELAY = 800;
-    this.LOADER_INCREMENT = 60;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     const filesData = {
       type: isMixedFileTypes,
@@ -779,7 +777,8 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        this.updateProgressBar(this.splashScreenEl, 85);
+        await new Promise(r => setTimeout(r, 500));
+        this.updateProgressBar(this.splashScreenEl, 85); 
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
