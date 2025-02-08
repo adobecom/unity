@@ -774,6 +774,7 @@ export default class ActionBinder {
       ),
     );
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'multifile', data: filesData } }));
+    if (!this.validateFiles(files)) return;
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
@@ -793,7 +794,6 @@ export default class ActionBinder {
         this.redirectWithoutUpload = true;
         return;
       }
-      if (!this.validateFiles(files)) return;
       const workflowId = crypto.randomUUID();
       const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
       const blobDataArray = [];
