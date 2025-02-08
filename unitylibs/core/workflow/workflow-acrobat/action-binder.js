@@ -779,8 +779,8 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        this.updateProgressBar(this.splashScreenEl, 85);
-        await new Promise(r => setTimeout(r, 500));      
+        await new Promise(r => setTimeout(r, 500)); 
+        this.updateProgressBar(this.splashScreenEl, 85);     
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
