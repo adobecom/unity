@@ -186,7 +186,7 @@ export default class ActionBinder {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
-        await delay(500);
+        await this.delay(500);
       }
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
@@ -684,7 +684,7 @@ export default class ActionBinder {
       await this.showSplashScreen(true);
       const isNonPdf = this.isNonPdf([file]);
       if (accountType === 'guest' && isNonPdf) {
-        await delay(500);
+        await this.delay(500);
         cOpts = {
           targetProduct: this.workflowCfg.productName,
           payload: {
@@ -783,7 +783,7 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        await delay(500);
+        await this.delay(500);
         this.updateProgressBar(this.splashScreenEl, 85); 
         cOpts = {
           targetProduct: this.workflowCfg.productName,
