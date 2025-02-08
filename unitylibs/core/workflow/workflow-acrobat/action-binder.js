@@ -679,7 +679,7 @@ export default class ActionBinder {
         { detail: { event: eventName, data: fileData } },
       ),
     );
-    if (!await this.validateFiles(file)) return;
+    if (!await this.validateFiles([file])) return;
     try {
       await this.showSplashScreen(true);
       const isNonPdf = this.isNonPdf([file]);
