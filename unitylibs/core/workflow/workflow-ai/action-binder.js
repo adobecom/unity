@@ -449,6 +449,7 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
+    console.log('handleOutsideClick');
     if (!this.widget.contains(event.target)) {
       this.hideDropdown();
     }
