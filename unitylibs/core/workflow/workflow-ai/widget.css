@@ -282,9 +282,6 @@
   margin-left: 5px;
   background: transparent;
   border: 0;
-}
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con.dynamic .refresh-btn:before {
-  content: url(../../../img/icons/refresh-btn.svg);
   width: 20px;
   height: 20px;
   display: block;
