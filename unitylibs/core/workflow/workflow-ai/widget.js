@@ -72,7 +72,8 @@ export default class UnityWidget {
     });
     const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
-    const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': 'drop-close', 'aria-label': 'Close dropdown' });
+    const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': 'drop-close', 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
+    const promptIcon = createTag('span', { class: 'prompt-icon' }, '<svg><use xlink:href="#unity-refresh-icon"></use></svg>');
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
     const prompts = this.el.querySelectorAll('.icon-prompt');
@@ -86,6 +87,7 @@ export default class UnityWidget {
         'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt-${idx}|${el.closest('li').innerText}`,
       }, el.closest('li').innerText);
+      item.append(promptIcon);
       dd.append(item);
     });
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
