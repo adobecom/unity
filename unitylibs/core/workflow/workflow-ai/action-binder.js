@@ -328,15 +328,11 @@ export default class ActionBinder {
   getDropdownItems() {
     if (!this.dropdown) return [];
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
-    if (dynamicItems.length > 0 && this.viewport !== 'MOBILE') {
-      const tipCon = this.dropdown.querySelector('.tip-con');
-      if (tipCon && !dynamicItems.includes(tipCon)) {
-        dynamicItems.push(tipCon);
-      }
-    }
-    return dynamicItems.length > 0
-      ? dynamicItems
-      : Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
+    let tipCon = null;
+    if (this.viewport !== 'MOBILE') tipCon = this.dropdown.querySelector('.tip-con');
+    if (dynamicItems.length > 0) return tipCon ? [...dynamicItems, tipCon] : dynamicItems;
+    const allItems = Array.from(this.dropdown.querySelectorAll('.drop-item'));
+    return tipCon ? [...allItems, tipCon] : allItems;
   }
 
   getFocusElems(isDynamic) {
