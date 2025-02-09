@@ -329,8 +329,10 @@ export default class ActionBinder {
     if (!this.dropdown) return [];
     const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
     if (dynamicItems.length > 0) {
-      const tipCon = this.dropdown.querySelector('.tip-con');
-      if (tipCon) dynamicItems.push(tipCon);
+      if (this.viewport !== 'MOBILE') {
+        const tipCon = this.dropdown.querySelector('.tip-con');
+        if (tipCon) dynamicItems.push(tipCon);
+      }
       return dynamicItems;
     }
     return Array.from(this.dropdown.querySelectorAll('.drop-item, .tip-con'));
