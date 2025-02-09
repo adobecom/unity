@@ -11,8 +11,12 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    this.widgetWrap = createTag('div', { class: 'ex-unity-wrap' });
-    this.widget = createTag('div', { class: 'ex-unity-widget' });
+    const [iWidgwidgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
+      .map((c) => createTag('div', { class: c }));
+    this.widgetWrap = iWidgwidgetWrap;
+    this.widget = widget;
+    unitySprite.innerHTML = this.spriteCon;
+    this.widgetWrap.append(unitySprite);
     this.createBg();
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
     const placeholders = this.popPlaceholders();
