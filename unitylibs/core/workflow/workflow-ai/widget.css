@@ -267,13 +267,21 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con.dynamic .close-btn {
   margin-left: auto;
 }
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .close-btn:before {
+/* .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .close-btn:before {
   content: url(../../../img/icons/close-btn.svg);
   width: 14px;
   height: 14px;
   display: block;
   padding: 3px;
+} */
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .close-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  padding: 3px;
 }
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con.dynamic .title-text {
   color: var(--color-gray-500);
   font-weight: 900;
