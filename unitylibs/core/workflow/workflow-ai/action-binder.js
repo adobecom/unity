@@ -253,7 +253,7 @@ export default class ActionBinder {
         role: 'option',
         'aria-label': suggestion,
         'aria-description': `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`,
-      }, suggestion);
+      }, `<svg><use xlink:href="#unity-search-icon"></use></svg> ${suggestion}`);
       const referenceNode = header.nextSibling;
       this.dropdown.insertBefore(item, referenceNode);
     });
@@ -262,8 +262,8 @@ export default class ActionBinder {
   createDynamicHeader() {
     const elements = [
       { tag: 'span', attrs: { class: 'title-text', id: 'prompt-suggestions' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
-      { tag: 'button', attrs: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' } },
-      { tag: 'button', attrs: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' } },
+      { tag: 'button', attrs: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' }, content: '<svg><use xlink:href="#unity-refresh-icon"></use></svg>' },
+      { tag: 'button', attrs: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' }, content: '<svg><use xlink:href="#unity-close-icon"></use></svg>' },
     ];
     const header = createTag('li', { class: 'drop-title-con dynamic', 'aria-labelledby': 'prompt-suggestions' });
     elements.forEach(({ tag, attrs, content = '' }) => {
