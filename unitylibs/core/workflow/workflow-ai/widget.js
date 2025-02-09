@@ -1,12 +1,13 @@
 import { createTag } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
-  constructor(target, el, workflowCfg) {
+  constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
     this.target = target;
     this.workflowCfg = workflowCfg;
     this.widget = null;
     this.actionMap = {};
+    this.spriteCon = spriteCon;
   }
 
   async initWidget() {
