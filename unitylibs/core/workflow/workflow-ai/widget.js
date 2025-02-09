@@ -11,9 +11,9 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    const [iWidgwidgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
+    const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
-    this.widgetWrap = iWidgwidgetWrap;
+    this.widgetWrap = widgetWrap;
     this.widget = widget;
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);

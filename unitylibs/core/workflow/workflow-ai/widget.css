@@ -24,7 +24,9 @@
   margin: var(--spacing-xxl) 0 var(--spacing-m);
 }
 .aside.unity-enabled .foreground.container .icon-area {
-  margin-bottom: var(--spacing-xxs);
+  height: 32px;
+  width: auto;
+  margin: 0 auto;
 }
 .aside.unity-enabled [class^="heading-"]:only-of-type, .aside [class^="heading-"]:last-of-type {
   margin-bottom: var(--spacing-xxs);
@@ -92,25 +94,11 @@
   position: absolute;
   right: 0;
 }
-.aside.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
-  visibility: hidden;
-  opacity: 0;
-  transform: translateY(-5px);
-  transition: opacity 0.5s cubic-bezier(0, 0, 1, 1), visibility 0.5s cubic-bezier(0, 0, 1, 1), translate 0.3s cubic-bezier(0, 0, 1, 1);
-}
-.aside.unity-enabled .interactive-area .ex-unity-wrap.sticky {
-  position: fixed;
-  bottom: 30px;
-  left: 0;
-  z-index: 101;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  visibility: visible;
-}
 .unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
   padding: 0 var(--spacing-l);
   animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 1;
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
   width: 720px;
@@ -138,6 +126,10 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
   position: relative;
+  background: linear-gradient(89deg, rgba(255,255,255,0.80)1.01%, rgba(255,255,255,0.25)111.14%);
+  border: 1px solid var(--color-white);
+  border-radius: var(--spacing-xs);
+  box-shadow: 0 0 11px #0000001c;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: flex;
@@ -148,9 +140,42 @@
   background-image: linear-gradient(135deg, #fffc, #ffffff3d);
   box-shadow: 0 0 11px #0000001c;
   gap: var(--spacing-s);
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap:hover {
+  background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
+  transition: background 0.2s ease-in-out;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap:focus-within {
+  background: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6));
+  transition: background 0.2s ease-in-out;
+}
+.aside.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.5s cubic-bezier(0, 0, 1, 1), visibility 0.5s cubic-bezier(0, 0, 1, 1), translate 0.3s cubic-bezier(0, 0, 1, 1);
+}
+.aside.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+  position: fixed;
+  bottom: 30px;
+  left: 0;
+  z-index: 101;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  visibility: visible;
 }
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap {
-  background: linear-gradient(#fff9, #fff9), linear-gradient(135deg, #fffc, #ffffff3d);;
+  background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
+}
+.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap:hover {
+  background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9));
+  transition: background 0.2s ease-in-out;
+}
+.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap:focus-within {
+  background: linear-gradient(rgba(255, 255, 255, 1), rgba(255, 255, 255, 1));
+  transition: background 0.2s ease-in-out;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
   padding: 9px 5px 10px;
@@ -164,10 +189,11 @@
   border-radius: 3px;
   font-family: inherit;
   outline: none;
-  background: #fff0;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
   font-style: italic;
+  color: #222;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
   display: flex;
@@ -351,6 +377,7 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-text {
   font-weight: 700;
+  margin-right: 5px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con {
