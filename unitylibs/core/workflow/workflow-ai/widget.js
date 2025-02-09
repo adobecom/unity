@@ -87,7 +87,7 @@ export default class UnityWidget {
         'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt-${idx}|${el.closest('li').innerText}`,
       }, el.closest('li').innerText);
-      item.append(promptIcon);
+      item.prepend(promptIcon);
       dd.append(item);
     });
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
