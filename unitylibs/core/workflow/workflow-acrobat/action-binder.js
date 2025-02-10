@@ -491,7 +491,7 @@ export default class ActionBinder {
         await Promise.race(executing);
       }
     }
-    await Promise.race(executing);
+    await Promise.all(executing);
   }
 
   async batchUpload(tasks, batchSize) {
