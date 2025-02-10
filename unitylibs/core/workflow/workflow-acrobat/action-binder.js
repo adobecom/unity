@@ -489,10 +489,10 @@ export default class ActionBinder {
       });
       executing.add(p);
       if (executing.size >= batchSize) {
-        await Promise.race(executing);
+        await Promise.all(executing);
       }
     }
-    await Promise.race(executing);
+    await Promise.all(executing);
   }
 
   async batchUpload(tasks, batchSize) {
