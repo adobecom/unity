@@ -664,6 +664,18 @@ export default class ActionBinder {
     };
   }
 
+  getGuestConnPayload(feedback) {
+    return {
+      targetProduct: this.workflowCfg.productName,
+      payload: {
+        languageRegion: this.workflowCfg.langRegion,
+        languageCode: this.workflowCfg.langCode,
+        verb: this.workflowCfg.enabledFeatures[0],
+        feedback,
+      },
+    };
+  }
+
   async singleFileUpload(file, eventName) {
     const accountType = this.getAccountType();
     const { maxConcurrentChunks } = this.getConcurrentLimits();
@@ -685,15 +697,7 @@ export default class ActionBinder {
       const isNonPdf = this.isNonPdf([file]);
       if (accountType === 'guest' && isNonPdf) {
         await this.delay(500);
-        cOpts = {
-          targetProduct: this.workflowCfg.productName,
-          payload: {
-            languageRegion: this.workflowCfg.langRegion,
-            languageCode: this.workflowCfg.langCode,
-            verb: this.workflowCfg.enabledFeatures[0],
-            feedback: 'nonpdf',
-          },
-        };
+        cOpts = this.getGuestConnPayload('nonpdf');
         const redirectSuccess = await this.handleRedirect(cOpts);
         if (!redirectSuccess) return;
         this.redirectWithoutUpload = true;
@@ -702,7 +706,7 @@ export default class ActionBinder {
       const [blobData, assetData] = await Promise.all([
         this.getBlobData(file),
         this.createAsset(file),
-      ]);      
+      ]);
       cOpts = {
         assetId: assetData.id,
         targetProduct: this.workflowCfg.productName,
@@ -784,16 +788,8 @@ export default class ActionBinder {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
         await this.delay(500);
-        this.updateProgressBar(this.splashScreenEl, 85); 
-        cOpts = {
-          targetProduct: this.workflowCfg.productName,
-          payload: {
-            languageRegion: this.workflowCfg.langRegion,
-            languageCode: this.workflowCfg.langCode,
-            verb: this.workflowCfg.enabledFeatures[0],
-            feedback: 'multifile',
-          },
-        };
+        this.updateProgressBar(this.splashScreenEl, 85);
+        cOpts = this.getGuestConnPayload('multifile');
         const redirectSuccess = await this.handleRedirect(cOpts);
         if (!redirectSuccess) return;
         this.redirectWithoutUpload = true;
