@@ -18,11 +18,10 @@ export default class UnityWidget {
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
     this.createBg();
+    this.workflowCfg.placeholder = this.popPlaceholders();
+    const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
+    const dropdown = this.genDropdown(this.workflowCfg.placeholder);
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
-    const placeholders = this.popPlaceholders();
-    this.workflowCfg.placeholder = placeholders;
-    const inputWrapper = this.createInpWrap(placeholders);
-    const dropdown = this.genDropdown(placeholders);
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
     this.addWidget();

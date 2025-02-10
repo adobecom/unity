@@ -150,11 +150,7 @@ export default class ActionBinder {
     try {
       if (!this.serviceHandler) await this.loadServiceHandler();
       this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
-      if (fetchType !== 'refresh' && this.query) {
-        sendAnalyticsEvent(
-          new CustomEvent('promptInput', { detail: { query: this.query } }),
-        );
-      }
+      if (fetchType !== 'refresh' && this.query) sendAnalyticsEvent(new CustomEvent('promptInput', { detail: { query: this.query } }));
       const payload = {
         query: this.query,
         targetProduct: this.apiConfig.productName,
@@ -378,13 +374,8 @@ export default class ActionBinder {
   }
 
   moveFocusWithArrow(dropItems, direction) {
-    if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) {
-      this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
-    } else {
-      this.activeIndex = direction === 'down'
-        ? (this.activeIndex + 1) % dropItems.length
-        : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
-    }
+    if (this.activeIndex === -1 || !this.isDropdownItemFocused(dropItems)) this.activeIndex = direction === 'down' ? 0 : dropItems.length - 1;
+    else this.activeIndex = direction === 'down' ? (this.activeIndex + 1) % dropItems.length : (this.activeIndex - 1 + dropItems.length) % dropItems.length;
     this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
@@ -396,9 +387,7 @@ export default class ActionBinder {
     ev.preventDefault();
     const nonInteractiveRoles = ['note', 'presentation'];
     const role = document.activeElement.getAttribute('role');
-    if (role && nonInteractiveRoles.includes(role)) {
-      return;
-    }
+    if (role && nonInteractiveRoles.includes(role)) return;
     if (
       this.activeIndex >= 0
       && dropItems[this.activeIndex]
@@ -458,9 +447,7 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
-    if (!this.widget.contains(event.target)) {
-      this.hideDropdown();
-    }
+    if (!this.widget.contains(event.target)) this.hideDropdown();
   }
 
   toggleSurpriseBtn() {
