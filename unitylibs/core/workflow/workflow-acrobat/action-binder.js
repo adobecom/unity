@@ -664,7 +664,7 @@ export default class ActionBinder {
     };
   }
 
-  getConnectorPayload(feedback) {
+  getGuestConnPayload(feedback) {
     return {
       targetProduct: this.workflowCfg.productName,
       payload: {
@@ -697,7 +697,7 @@ export default class ActionBinder {
       const isNonPdf = this.isNonPdf([file]);
       if (accountType === 'guest' && isNonPdf) {
         await this.delay(500);
-        cOpts = this.getConnectorPayload('nonpdf');
+        cOpts = this.getGuestConnPayload('nonpdf');
         const redirectSuccess = await this.handleRedirect(cOpts);
         if (!redirectSuccess) return;
         this.redirectWithoutUpload = true;
@@ -789,7 +789,7 @@ export default class ActionBinder {
       if (accountType === 'guest') {
         await this.delay(500);
         this.updateProgressBar(this.splashScreenEl, 85);
-        cOpts = this.getConnectorPayload('multifile');
+        cOpts = this.getGuestConnPayload('multifile');
         const redirectSuccess = await this.handleRedirect(cOpts);
         if (!redirectSuccess) return;
         this.redirectWithoutUpload = true;
