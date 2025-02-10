@@ -49,6 +49,7 @@ export default class ActionBinder {
     this.LOADER_INCREMENT = 30;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
+    this.UPLOAD_SUCCESS = false;
   }
 
   getAcrobatApiConfig() {
@@ -495,9 +496,12 @@ export default class ActionBinder {
   }
 
   async batchUpload(tasks, batchSize) {
+    let count = 0;
     await this.executeInBatches(tasks, batchSize, async (task) => {
       await task();
+      count += 1;
     });
+    if (count === tasks.length) this.UPLOAD_SUCCESS = true;
   }
 
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
@@ -738,6 +742,7 @@ export default class ActionBinder {
         return;
       }
       this.operations.push(assetData.id);
+      if (!this.UPLOAD_SUCCESS) return;
       const verified = await this.verifyContent(assetData);
       if (!verified) return;
       const validated = await this.handleValidations(assetData);
