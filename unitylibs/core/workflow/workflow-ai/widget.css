@@ -153,7 +153,8 @@
 .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
   visibility: hidden;
   opacity: 0;
-  transform: translateY(-5px);
+  transform: translateY(-3px);
+  transition: opacity 0.1s cubic-bezier(0, 0, 1, 1), visibility 0.5s cubic-bezier(0, 0, 1, 1), translate 0.1s cubic-bezier(0, 0, 1, 1);
 }
 .aside.unity-enabled .interactive-area .ex-unity-wrap.sticky {
   position: fixed;
