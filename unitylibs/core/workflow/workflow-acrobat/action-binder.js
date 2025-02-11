@@ -787,8 +787,8 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
+        await this.delay(3000);
         this.LOADER_LIMIT = 85;
-        await this.delay(1000);
         this.updateProgressBar(this.splashScreenEl, 85);
         cOpts = this.getGuestConnPayload('multifile');
         const redirectSuccess = await this.handleRedirect(cOpts);
@@ -834,6 +834,7 @@ export default class ActionBinder {
         return;
       }
       this.LOADER_LIMIT = 75;
+      this.updateProgressBar(this.splashScreenEl, 75);
       cOpts = {
         targetProduct: this.workflowCfg.productName,
         assetId: assetDataArray[0].id,
