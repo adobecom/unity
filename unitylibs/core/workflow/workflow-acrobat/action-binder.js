@@ -186,8 +186,8 @@ export default class ActionBinder {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
-        await this.delay(500);
       }
+      await this.delay(500);
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else window.location.href = this.redirectUrl;
