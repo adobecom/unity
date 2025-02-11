@@ -302,8 +302,14 @@ class WfInitiator {
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
   let uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
   if (el.classList.contains('workflow-ai')) uv = 'v2'; //This line will be removed once CC moves to unity V2
-  const { imsClientId } = getConfig();
-  if (imsClientId) unityConfig.apiKey = imsClientId;
+  // const { imsClientId } = getConfig();
+  // if (imsClientId) unityConfig.apiKey = imsClientId;
+  const config = getConfig();
+  const { imsClientId } = config;
+
+  if (imsClientId) {
+    unityConfig.apiKey = imsClientId;
+  }
   setUnityLibs(unityLibs, project);
   switch (uv) {
     case 'v1': {
