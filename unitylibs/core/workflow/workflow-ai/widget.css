@@ -41,6 +41,10 @@
   line-height: var(--type-body-xs-lh);
   padding-top: var(--spacing-s);
 }
+/* Sprite Container */
+.unity-enabled .interactive-area .ex-unity-wrap .unity-sprite-container {
+  display: none;
+}
 /* Screen reader Announcement Dynamic content Updation */
 .aside.unity-enabled .interactive-area .ex-unity-wrap .sr-only {
   position: absolute;
