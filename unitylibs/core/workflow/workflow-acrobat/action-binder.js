@@ -861,6 +861,8 @@ export default class ActionBinder {
       }
       const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.includes(index));
       this.operations.push(workflowId);
+      this.LOADER_LIMIT = 95;
+      this.updateProgressBar(this.splashScreenEl, 95);
       let allVerified = 0;
       await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
         const verified = await this.verifyContent(assetData);
@@ -873,8 +875,6 @@ export default class ActionBinder {
         return;
       }
       if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
-      this.LOADER_LIMIT = 95;
-      this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
       await this.dispatchGenericError(null, e.showError);
       return;
