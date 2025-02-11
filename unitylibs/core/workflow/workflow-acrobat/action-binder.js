@@ -696,7 +696,7 @@ export default class ActionBinder {
       await this.showSplashScreen(true);
       const isNonPdf = this.isNonPdf([file]);
       if (accountType === 'guest' && isNonPdf) {
-        await this.delay(500);
+        await this.delay(3000);
         cOpts = this.getGuestConnPayload('nonpdf');
         const redirectSuccess = await this.handleRedirect(cOpts);
         if (!redirectSuccess) return;
@@ -769,7 +769,7 @@ export default class ActionBinder {
     const accountType = this.getAccountType();
     let cOpts = {};
     this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 50;
+    this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     const filesData = {
       type: isMixedFileTypes,
@@ -787,7 +787,8 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        await this.delay(500);
+        await this.delay(3000);
+        this.LOADER_LIMIT = 85;
         this.updateProgressBar(this.splashScreenEl, 85);
         cOpts = this.getGuestConnPayload('multifile');
         const redirectSuccess = await this.handleRedirect(cOpts);
@@ -832,6 +833,7 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
+      this.LOADER_LIMIT = 75;
       this.updateProgressBar(this.splashScreenEl, 75);
       cOpts = {
         targetProduct: this.workflowCfg.productName,
@@ -871,6 +873,7 @@ export default class ActionBinder {
         return;
       }
       if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
+      this.LOADER_LIMIT = 95;
       this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
       await this.dispatchGenericError(null, e.showError);
