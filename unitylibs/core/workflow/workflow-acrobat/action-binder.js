@@ -677,7 +677,6 @@ export default class ActionBinder {
   }
 
   async singleFileUpload(file, eventName) {
-    this.LOADER_LIMIT = 95;
     const accountType = this.getAccountType();
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     let cOpts = {};
