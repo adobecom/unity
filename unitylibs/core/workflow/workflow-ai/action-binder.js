@@ -112,6 +112,9 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
+    el.addEventListener('pointerdown', () => {
+      el.focus();
+    });
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
       if (!relatedTarget) {
         if (this.widget.contains(currentTarget)) return;
