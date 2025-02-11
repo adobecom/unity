@@ -769,7 +769,7 @@ export default class ActionBinder {
     const accountType = this.getAccountType();
     let cOpts = {};
     this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 50;
+    this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     const filesData = {
       type: isMixedFileTypes,
