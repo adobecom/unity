@@ -788,7 +788,7 @@ export default class ActionBinder {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
         await this.delay(500);
-        this.LOADER_LIMIT = 95;
+        this.LOADER_LIMIT = 85;
         this.updateProgressBar(this.splashScreenEl, 85);
         cOpts = this.getGuestConnPayload('multifile');
         const redirectSuccess = await this.handleRedirect(cOpts);
@@ -833,7 +833,7 @@ export default class ActionBinder {
         await this.dispatchGenericError();
         return;
       }
-      this.LOADER_LIMIT = 95;
+      this.LOADER_LIMIT = 75;
       this.updateProgressBar(this.splashScreenEl, 75);
       cOpts = {
         targetProduct: this.workflowCfg.productName,
@@ -873,6 +873,7 @@ export default class ActionBinder {
         return;
       }
       if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
+      this.LOADER_LIMIT = 75;
       this.updateProgressBar(this.splashScreenEl, 95);
     } catch (e) {
       await this.dispatchGenericError(null, e.showError);
