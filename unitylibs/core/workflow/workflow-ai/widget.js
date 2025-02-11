@@ -165,7 +165,7 @@ export default class UnityWidget {
       el: observerEl,
       callback: (cfg) => this.addSticky(cfg),
       cfg: this.workflowCfg,
-      options: { root: null, rootMargin: '10px', threshold: [0.1, 0.9] },
+      options: { root: null, rootMargin: '100px', threshold: [0.1, 0.9] },
     });
 
     this.createCustIntsecObs({
