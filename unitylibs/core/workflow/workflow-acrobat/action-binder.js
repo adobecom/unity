@@ -787,7 +787,7 @@ export default class ActionBinder {
     try {
       await this.showSplashScreen(true);
       if (accountType === 'guest') {
-        await this.delay(500);
+        await this.delay(2000);
         this.LOADER_LIMIT = 85;
         this.updateProgressBar(this.splashScreenEl, 85);
         cOpts = this.getGuestConnPayload('multifile');
