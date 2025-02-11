@@ -789,7 +789,7 @@ export default class ActionBinder {
       if (accountType === 'guest') {
         this.LOADER_LIMIT = 85;
         await this.delay(2000);
-        this.updateProgressBar(this.splashScreenEl, 85);
+        //this.updateProgressBar(this.splashScreenEl, 85);
         cOpts = this.getGuestConnPayload('multifile');
         const redirectSuccess = await this.handleRedirect(cOpts);
         if (!redirectSuccess) return;
