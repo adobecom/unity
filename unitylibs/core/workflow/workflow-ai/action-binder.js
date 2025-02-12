@@ -36,8 +36,10 @@ export default class ActionBinder {
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
-    window.addEventListener('pageshow', () => {
-      document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true, once: true });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true, once: true });
+      }
     });
   }
 
