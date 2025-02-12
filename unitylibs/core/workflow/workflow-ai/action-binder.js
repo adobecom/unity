@@ -48,7 +48,7 @@ export default class ActionBinder {
   }
 
   triggerFakeTouch() {
-    console.log('Triggering fake touch event');
+    console.log('Triggering fake touch end event');
     const fakeTouchTarget = document.createElement('div');
     Object.assign(fakeTouchTarget.style, {
       position: 'absolute',
@@ -63,7 +63,7 @@ export default class ActionBinder {
     document.body.appendChild(fakeTouchTarget);
 
     try {
-      const touchEvent = new TouchEvent('touchstart', {
+      const touchEvent = new TouchEvent('touchend', {
         bubbles: true,
         cancelable: true,
         touches: [new Touch({ identifier: 1, target: fakeTouchTarget, clientX: 0, clientY: 0 })]
@@ -72,7 +72,7 @@ export default class ActionBinder {
     } catch (error) {
       console.warn('TouchEvent not supported, trying fallback.');
       const touchEvent = document.createEvent('TouchEvent');
-      touchEvent.initTouchEvent('touchstart', true, true);
+      touchEvent.initTouchEvent('touchend', true, true);
       fakeTouchTarget.dispatchEvent(touchEvent);
     }
 
