@@ -44,10 +44,9 @@ export default class ActionBinder {
     window.addEventListener('pageshow', (event) => {
       if (event.persisted && isIos) {
         if (document.visibilityState === 'visible') {
-          document.body.style.display = 'none';
-          setTimeout(() => {
-            document.body.style.display = 'block';
-          }, 50);
+          const focusEvent = new Event('focus', { bubbles: true });
+          this.inputField.dispatchEvent(focusEvent);
+          console.log('Fire focus event');
         }
       }
     });
