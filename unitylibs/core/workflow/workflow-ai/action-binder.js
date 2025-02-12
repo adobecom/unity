@@ -40,43 +40,11 @@ export default class ActionBinder {
   }
 
   initAction() {
-    const isIos = /Mac|iPad|iPhone|iPod/.test(navigator.platform) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+    const isIos = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent);
     window.addEventListener('pageshow', (event) => {
-      if (event.persisted && isIos) this.triggerFakeTouch(); // window.location.reload();
-      console.log('Page show event:', event);
+      if (event.persisted && isIos) this.initActionListeners(); // window.location.reload();
+      console.log('Page show initActionListeners:', event);
     });
-  }
-
-  triggerFakeTouch() {
-    console.log('Triggering fake touch end event');
-    const fakeTouchTarget = document.createElement('div');
-    Object.assign(fakeTouchTarget.style, {
-      position: 'absolute',
-      bottom: '0',
-      right: '0',
-      width: '1px',
-      height: '1px',
-      opacity: '0',
-      pointerEvents: 'none',
-    });
-
-    document.body.appendChild(fakeTouchTarget);
-
-    try {
-      const touchEvent = new TouchEvent('touchend', {
-        bubbles: true,
-        cancelable: true,
-        touches: [new Touch({ identifier: 1, target: fakeTouchTarget, clientX: 0, clientY: 0 })]
-      });
-      fakeTouchTarget.dispatchEvent(touchEvent);
-    } catch (error) {
-      console.warn('TouchEvent not supported, trying fallback.');
-      const touchEvent = document.createEvent('TouchEvent');
-      touchEvent.initTouchEvent('touchend', true, true);
-      fakeTouchTarget.dispatchEvent(touchEvent);
-    }
-
-    setTimeout(() => document.body.removeChild(fakeTouchTarget), 100);
   }
 
   // initAction() {
