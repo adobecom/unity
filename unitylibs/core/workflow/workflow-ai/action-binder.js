@@ -44,8 +44,9 @@ export default class ActionBinder {
     window.addEventListener('pageshow', (event) => {
       if (event.persisted && isIos) {
         if (document.visibilityState === 'visible') {
-          const focusEvent = new Event('focusout', { bubbles: true });
+          const focusEvent = new Event('focus', { bubbles: true });
           this.inputField.dispatchEvent(focusEvent);
+          this.resetDropdown();
           console.log('Fire focusout event');
         }
       }
