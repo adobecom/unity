@@ -36,13 +36,15 @@ export default class ActionBinder {
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
+    this.initAction();
+  }
+
+  initAction() {
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
     window.addEventListener('pageshow', (event) => {
-      if (event.persisted) {
-        console.log("Page restored from bfcache. Reinitializing scripts...");
-        window.location.reload();
-      }
+      if (event.persisted && isIos) window.location.reload();
+      console.log('Page show event:', event);
     });
-    // window.addEventListener('pageshow', this.rebindTouchStart.bind(this));
   }
 
   initializeApiConfig() {
@@ -50,18 +52,6 @@ export default class ActionBinder {
       ...unityConfig,
       expressEndpoint: { autoComplete: `${unityConfig.apiEndPoint}/providers/AutoComplete` },
     };
-  }
-
-  rebindTouchStart() {
-    this.hasInteracted = false; // Reset interaction flag on navigation back
-    document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true, once: true });
-  }
-
-  handleTouchStart() {
-    if (!this.hasInteracted) {
-      this.hasInteracted = true;
-      this.inputField.focus();
-    }
   }
 
   getElement(selector) {
@@ -117,7 +107,6 @@ export default class ActionBinder {
 
   addInputEvents(el, actions) {
     let debounce;
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
     el.addEventListener('input', ({ target }) => {
       clearTimeout(debounce);
       this.query = target.value.trim();
