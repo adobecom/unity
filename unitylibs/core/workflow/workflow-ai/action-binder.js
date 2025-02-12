@@ -42,8 +42,13 @@ export default class ActionBinder {
   initAction() {
     const isIos = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent);
     window.addEventListener('pageshow', (event) => {
-      if (event.persisted && isIos) this.initActionListeners(); // window.location.reload();
-      console.log('Page show initActionListeners:', event);
+      if (event.persisted && isIos) {
+        if (document.visibilityState === 'visible') {
+          console.log('Page show event:', event);
+          const newInput = this.inputField.cloneNode(true);
+          this.inputField.parentNode.replaceChild(newInput, this.inputField);
+        }
+      }
     });
   }
 
