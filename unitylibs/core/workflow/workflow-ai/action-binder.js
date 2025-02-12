@@ -47,6 +47,8 @@ export default class ActionBinder {
           document.addEventListener('click', (ev) => {
             if (ev.target === this.inputField) {
               this.inputField.focus();
+              this.initActionListeners();
+              this.showDropdown();
             }
           });
         }
