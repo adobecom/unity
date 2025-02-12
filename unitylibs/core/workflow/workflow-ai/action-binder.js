@@ -44,9 +44,14 @@ export default class ActionBinder {
     window.addEventListener('pageshow', (event) => {
       if (event.persisted && isIos) {
         if (document.visibilityState === 'visible') {
-          console.log('Page show event:', event);
-          const newInput = this.inputField.cloneNode(true);
-          this.inputField.parentNode.replaceChild(newInput, this.inputField);
+          setTimeout(() => {
+            const touchEvent = new TouchEvent('touchstart', {
+              bubbles: true,
+              cancelable: true,
+              touches: [new Touch({ identifier: 1, target: document.body, clientX: 0, clientY: 0 })],
+            });
+            document.body.dispatchEvent(touchEvent);
+          }, 100);
         }
       }
     });
