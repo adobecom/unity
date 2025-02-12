@@ -39,7 +39,8 @@ export default class ActionBinder {
   }
 
   initAction() {
-    const isIos = navigator.maxTouchPoints > 0 && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
     if (!isIos) return;
     window.addEventListener('pageshow', ({ persisted }) => {
       if (!persisted || document.visibilityState !== 'visible') return;
