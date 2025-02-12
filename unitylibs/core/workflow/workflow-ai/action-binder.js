@@ -114,7 +114,7 @@ export default class ActionBinder {
       }
     });
     if (isIos) {
-      el.addEventListener('touchstart', () => {
+      document.addEventListener('touchstart', () => {
         console.log('touchstart');
         el.focus();
       }, { passive: true, once: true });
