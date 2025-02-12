@@ -36,16 +36,77 @@ export default class ActionBinder {
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
-    this.initAction();
+    this.initAction.bind();
   }
 
   initAction() {
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isIos = /Mac|iPad|iPhone|iPod/.test(navigator.platform) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
     window.addEventListener('pageshow', (event) => {
-      if (event.persisted && isIos) this.initActionListeners(); // window.location.reload();
+      if (event.persisted && isIos) this.triggerFakeTouch(); // window.location.reload();
       console.log('Page show event:', event);
     });
   }
+
+  triggerFakeTouch() {
+    console.log('Triggering fake touch event');
+    const fakeTouchTarget = document.createElement('div');
+    Object.assign(fakeTouchTarget.style, {
+      position: 'absolute',
+      bottom: '0',
+      right: '0',
+      width: '1px',
+      height: '1px',
+      opacity: '0',
+      pointerEvents: 'none',
+    });
+
+    document.body.appendChild(fakeTouchTarget);
+
+    try {
+      const touchEvent = new TouchEvent('touchstart', {
+        bubbles: true,
+        cancelable: true,
+        touches: [new Touch({ identifier: 1, target: fakeTouchTarget, clientX: 0, clientY: 0 })]
+      });
+      fakeTouchTarget.dispatchEvent(touchEvent);
+    } catch (error) {
+      console.warn('TouchEvent not supported, trying fallback.');
+      const touchEvent = document.createEvent('TouchEvent');
+      touchEvent.initTouchEvent('touchstart', true, true);
+      fakeTouchTarget.dispatchEvent(touchEvent);
+    }
+
+    setTimeout(() => document.body.removeChild(fakeTouchTarget), 100);
+  }
+
+  // initAction() {
+  //   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  //   window.addEventListener('pageshow', (event) => {
+  //     if (event.persisted && isIos) this.triggerFakeTouch(); // window.location.reload();
+  //     console.log('Page show event:', event);
+  //   });
+  // }
+
+  // triggerFakeTouch() {
+  //   console.log('Triggering fake touch event');
+  //   const fakeTouchTarget = document.createElement('div');
+  //   fakeTouchTarget.style.position = 'absolute';
+  //   fakeTouchTarget.style.bottom = '0';
+  //   fakeTouchTarget.style.right = '0';
+  //   fakeTouchTarget.style.width = '1px';
+  //   fakeTouchTarget.style.height = '1px';
+  //   fakeTouchTarget.style.opacity = '0';
+  //   document.body.appendChild(fakeTouchTarget);
+
+  //   const touchEvent = new TouchEvent('touchstart', {
+  //     bubbles: true,
+  //     cancelable: true,
+  //     touches: [new Touch({ identifier: 1, target: fakeTouchTarget, clientX: 0, clientY: 0 })]
+  //   });
+  //   fakeTouchTarget.dispatchEvent(touchEvent);
+  //   // Clean up the element after the event
+  //   setTimeout(() => document.body.removeChild(fakeTouchTarget), 100);
+  // }
 
   initializeApiConfig() {
     return {
