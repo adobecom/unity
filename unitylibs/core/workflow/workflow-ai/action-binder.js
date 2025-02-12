@@ -44,9 +44,10 @@ export default class ActionBinder {
     window.addEventListener('pageshow', (event) => {
       if (event.persisted && isIos) {
         if (document.visibilityState === 'visible') {
-          document.addEventListener('click', () => {
-            this.initActionListeners();
-            this.showDropdown();
+          document.addEventListener('click', (ev) => {
+            if (ev.target === this.inputField) {
+              this.inputField.focus();
+            }
           });
         }
       }
