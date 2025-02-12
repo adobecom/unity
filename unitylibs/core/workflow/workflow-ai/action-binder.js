@@ -212,7 +212,8 @@ export default class ActionBinder {
       this.addSuggestionItems(suggestionsToAdd, dynamicHeader);
       this.scrRead.textContent = `${suggestionsToAdd.length} suggestions ${suggestionsToAdd.reverse().toString()} available. Use up and down arrows to navigate`;
     }
-    this.dropdown.classList.remove('hidden');
+    // this.dropdown.classList.remove('hidden');
+    this.showDropdown();
     this.initActionListeners();
     this.addAccessibility();
   }
