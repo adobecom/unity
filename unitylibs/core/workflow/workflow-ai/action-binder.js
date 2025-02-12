@@ -40,7 +40,7 @@ export default class ActionBinder {
   }
 
   initAction() {
-    const isIos = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
     window.addEventListener('pageshow', (event) => {
       if (event.persisted && isIos) {
         if (document.visibilityState === 'visible') {
@@ -55,35 +55,6 @@ export default class ActionBinder {
       }
     });
   }
-
-  // initAction() {
-  //   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  //   window.addEventListener('pageshow', (event) => {
-  //     if (event.persisted && isIos) this.triggerFakeTouch(); // window.location.reload();
-  //     console.log('Page show event:', event);
-  //   });
-  // }
-
-  // triggerFakeTouch() {
-  //   console.log('Triggering fake touch event');
-  //   const fakeTouchTarget = document.createElement('div');
-  //   fakeTouchTarget.style.position = 'absolute';
-  //   fakeTouchTarget.style.bottom = '0';
-  //   fakeTouchTarget.style.right = '0';
-  //   fakeTouchTarget.style.width = '1px';
-  //   fakeTouchTarget.style.height = '1px';
-  //   fakeTouchTarget.style.opacity = '0';
-  //   document.body.appendChild(fakeTouchTarget);
-
-  //   const touchEvent = new TouchEvent('touchstart', {
-  //     bubbles: true,
-  //     cancelable: true,
-  //     touches: [new Touch({ identifier: 1, target: fakeTouchTarget, clientX: 0, clientY: 0 })]
-  //   });
-  //   fakeTouchTarget.dispatchEvent(touchEvent);
-  //   // Clean up the element after the event
-  //   setTimeout(() => document.body.removeChild(fakeTouchTarget), 100);
-  // }
 
   initializeApiConfig() {
     return {
