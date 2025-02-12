@@ -50,7 +50,7 @@ export default class ActionBinder {
               this.initActionListeners();
               this.showDropdown();
             }
-          });
+          }, { once: true });
         }
       }
     });
