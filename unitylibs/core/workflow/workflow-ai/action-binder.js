@@ -36,11 +36,7 @@ export default class ActionBinder {
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true, once: true });
-      }
-    });
+    window.addEventListener('pageshow', this.rebindTouchStart.bind(this));
   }
 
   initializeApiConfig() {
@@ -50,10 +46,14 @@ export default class ActionBinder {
     };
   }
 
+  rebindTouchStart() {
+    this.hasInteracted = false; // Reset interaction flag on navigation back
+    document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true, once: true });
+  }
+
   handleTouchStart() {
     if (!this.hasInteracted) {
       this.hasInteracted = true;
-      document.removeEventListener('touchstart', this.handleTouchStart);
       this.inputField.focus();
     }
   }
