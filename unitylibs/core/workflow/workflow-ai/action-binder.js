@@ -42,7 +42,7 @@ export default class ActionBinder {
   initAction() {
     const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
     window.addEventListener('pageshow', (event) => {
-      if (event.persisted && isIos) window.location.reload();
+      if (event.persisted && isIos) this.inputField.focus();
       console.log('Page show event:', event);
     });
   }
