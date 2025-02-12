@@ -155,7 +155,7 @@ export default class UnityWidget {
     const checkVisibility = () => {
       const { top, bottom } = obsEl.getBoundingClientRect();
       const isIntersecting = (top === 0 && bottom === 0)
-        || !(top >= window.innerHeight || bottom <= 0);
+      || (bottom > 0 && top < window.innerHeight);
       this.addSticky({ isIntersecting });
     };
     requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
