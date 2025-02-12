@@ -97,6 +97,7 @@ export default class ActionBinder {
 
   addInputEvents(el, actions) {
     let debounce;
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
     el.addEventListener('input', ({ target }) => {
       clearTimeout(debounce);
       this.query = target.value.trim();
@@ -112,9 +113,12 @@ export default class ActionBinder {
         this.sendAnalyticsOnFocus = false;
       }
     });
-    el.addEventListener('pointerdown', () => {
-      el.focus();
-    });
+    if (isIos) {
+      el.addEventListener('touchstart', () => {
+        console.log('touchstart');
+        el.focus();
+      }, { passive: true, once: true });
+    }
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
       if (!relatedTarget) {
         if (this.widget.contains(currentTarget)) return;
