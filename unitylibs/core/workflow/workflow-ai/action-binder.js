@@ -19,7 +19,6 @@ export default class ActionBinder {
     this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
     this.suggestion = [];
-    this.hasInteracted = false;
     this.init();
   }
 
@@ -40,19 +39,18 @@ export default class ActionBinder {
   }
 
   initAction() {
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    window.addEventListener('pageshow', (event) => {
-      if (event.persisted && isIos) {
-        if (document.visibilityState === 'visible') {
-          document.addEventListener('click', (ev) => {
-            if (ev.target === this.inputField) {
-              this.inputField.focus();
-              this.initActionListeners();
-              this.showDropdown();
-            }
-          }, { once: true });
+    const isIos = navigator.maxTouchPoints > 0 && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIos) return;
+    window.addEventListener('pageshow', ({ persisted }) => {
+      if (!persisted || document.visibilityState !== 'visible') return;
+      const handleClick = ({ target }) => {
+        if (target === this.inputField) {
+          this.inputField.focus();
+          this.initActionListeners();
+          this.showDropdown();
         }
-      }
+      };
+      document.addEventListener('click', handleClick, { once: true });
     });
   }
 
