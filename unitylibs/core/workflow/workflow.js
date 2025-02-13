@@ -121,7 +121,7 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  async priorityLibFetch(workflowName)
+  async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const sharedWfRes = [
       `${baseWfPath}/sprite.svg`,
