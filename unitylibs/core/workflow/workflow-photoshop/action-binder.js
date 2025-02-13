@@ -426,7 +426,11 @@ export default class ActionBinder {
       await delay(500);
       operationItem.assetUrl = params.cachedOutputUrl;
     } else {
-      const fgId = this.operations[this.operations.length - 1].assetId;
+      let fgId = null;
+      this.operations.forEach((e) => {
+        if (fgId) return;
+        if (e.operationType === 'removeBackground') fgId = e.assetId;
+      });
       const bgId = await this.uploadAsset(imgsrc);
       const changeBgOptions = {
         body: `{
