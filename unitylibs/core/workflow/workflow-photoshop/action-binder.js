@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable eqeqeq */
 /* eslint-disable no-await-in-loop */
