@@ -293,6 +293,21 @@ export default class ActionBinder {
     targetEl.classList.remove(GRAY_BG);
   }
 
+  setDisplayBezels(t, optype = null) {
+    const { naturalWidth, naturalHeight } = t;
+    this.resetClasses(t, this.canvasArea);
+    t.classList.add(CONTAIN_OBJECT);
+    t.classList.add(MOBILE_GRAY_BG);
+    this.canvasArea.classList.add(GRAY_BG);
+    t.classList.add(FULL_HEIGHT);
+    if (naturalHeight > naturalWidth) {
+      t.classList.add(optype == 'removeBackground' ? IMG_REMOVE_BG : IMG_PORTRAIT);
+    } else {
+      t.classList.add(optype == 'removeBackground' ? IMG_REMOVE_BG : IMG_LANDSCAPE);
+      t.classList.add(FULL_HEIGHT);
+    }
+  }
+
   async userImgUpload(params, e) {
     this.canvasArea.querySelector('img').style.filter = '';
     this.operations = [];
@@ -328,22 +343,7 @@ export default class ActionBinder {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
       throw new Error('Unable to process the file type!');
     }
-    const { naturalWidth, naturalHeight } = params.target;
-    const { clientWidth, clientHeight } = params.target;
-    if (clientWidth == naturalWidth && clientHeight == naturalHeight) {
-      this.resetClasses(params.target, this.canvasArea);
-    } else {
-      params.target.classList.add(CONTAIN_OBJECT);
-      params.target.classList.add(MOBILE_GRAY_BG);
-      this.canvasArea.classList.add(GRAY_BG);
-    }
-    if (naturalHeight > naturalWidth) {
-      params.target.classList.add(IMG_PORTRAIT);
-      params.target.classList.add(FULL_HEIGHT);
-    } else {
-      params.target.classList.add(IMG_LANDSCAPE);
-      params.target.classList.add(FULL_HEIGHT);
-    }
+    this.setDisplayBezels(params.target);
     this.operations.push(operationItem);
     const callbackObj = [{
       itemType: 'button',
@@ -399,6 +399,7 @@ export default class ActionBinder {
     }
     target.src = operationItem.assetUrl;
     await loadImg(target);
+    this.setDisplayBezels(target, optype);
     this.operations.push(operationItem);
   }
 
@@ -455,6 +456,7 @@ export default class ActionBinder {
     }
     target.src = operationItem.assetUrl;
     await loadImg(target);
+    this.setDisplayBezels(target);
     this.operations.push(operationItem);
   }
 
