@@ -326,25 +326,23 @@ export default class ActionBinder {
     if (!loadSuccessful) return;
     if (params.target.naturalWidth > 8000 || params.target.naturalHeight > 8000) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
-      return;
+      throw new Error('Unable to process the file type!');
     }
-
-    const { offsetWidth, offsetHeight } = params.target;
-    params.target.classList.add(CONTAIN_OBJECT);
-    params.target.classList.add(MOBILE_GRAY_BG);
-    this.canvasArea.classList.add(GRAY_BG);
-    if (this.canvasArea.naturalWidth > offsetWidth) {
-      params.target.classList.add(IMG_LANDSCAPE);
-      params.target.classList.add(FULL_HEIGHT);
+    const { naturalWidth, naturalHeight } = params.target;
+    const { clientWidth, clientHeight } = params.target;
+    if (clientWidth == naturalWidth && clientHeight == naturalHeight) {
+      this.resetClasses(params.target, this.canvasArea);
     } else {
+      params.target.classList.add(CONTAIN_OBJECT);
+      params.target.classList.add(MOBILE_GRAY_BG);
+      this.canvasArea.classList.add(GRAY_BG);
+    }
+    if (naturalHeight > naturalWidth) {
       params.target.classList.add(IMG_PORTRAIT);
       params.target.classList.add(FULL_HEIGHT);
-    }
-    if (
-      this.canvasArea.naturalWidth == offsetWidth
-      && this.canvasArea.naturalHeight == offsetHeight
-    ) {
-      this.resetClasses(params.target, this.canvasArea);
+    } else {
+      params.target.classList.add(IMG_LANDSCAPE);
+      params.target.classList.add(FULL_HEIGHT);
     }
     this.operations.push(operationItem);
     const callbackObj = [{
