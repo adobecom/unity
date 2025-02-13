@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
@@ -12,6 +13,98 @@ import {
   loadImg,
 } from '../../../scripts/utils.js';
 
+class ServiceHandler {
+  getGuestAccessToken() {
+    try {
+      return window.adobeIMS.getAccessToken();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getRefreshToken() {
+    try {
+      const { tokenInfo } = await window.adobeIMS.refreshToken();
+      return `Bearer ${tokenInfo.token}`;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getHeaders() {
+    let token = '';
+    let refresh = false;
+    const guestAccessToken = this.getGuestAccessToken();
+    if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
+      token = await this.getRefreshToken();
+      refresh = true;
+    } else {
+      token = `Bearer ${guestAccessToken.token}`;
+    }
+
+    if (!token) {
+      const error = new Error();
+      error.status = 401;
+      error.message = `Access Token is null. Refresh token call was executed: ${refresh}`
+      throw error;
+    }
+
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token,
+        'x-api-key': unityConfig.apiKey,
+      },
+    };
+  }
+
+  async fetchFromService(url, options) {
+    try {
+      const response = await fetch(url, options);
+      const error = new Error();
+      const contentLength = response.headers.get('Content-Length');
+      if (response.status !== 200) {
+        if (contentLength !== '0') {
+          const resJson = await response.json();
+          ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
+            if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
+          });
+        }
+        error.status = response.status;
+        throw error;
+      }
+      if (contentLength === '0') return {};
+      return response.json();
+    } catch (error) {
+      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+        error.status = 504;
+      }
+      throw error;
+    }
+  }
+
+  async postCallToService(api, options) {
+    const headers = await this.getHeaders();
+    const postOpts = {
+      method: 'POST',
+      ...headers,
+      ...options,
+    };
+    return this.fetchFromService(api, postOpts);
+  }
+
+  async getCallToService(api, params) {
+    const headers = await this.getHeaders();
+    const getOpts = {
+      method: 'GET',
+      ...headers,
+    };
+    const queryString = new URLSearchParams(params).toString();
+    const url = `${api}?${queryString}`;
+    return this.fetchFromService(url, getOpts);
+  }
+}
+
 export default class ActionBinder {
   static SINGLE_FILE_ERROR_MESSAGES = {
     UNSUPPORTED_TYPE: 'verb_upload_error_unsupported_type',
@@ -25,12 +118,6 @@ export default class ActionBinder {
     FILE_TOO_LARGE: 'verb_upload_error_file_too_large_multi',
   };
 
-  static UPLOAD_LIMITS = {
-    HIGH_END: { files: 3, chunks: 10 },
-    MID_RANGE: { files: 3, chunks: 10 },
-    LOW_END: { files: 2, chunks: 6 },
-  };
-
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -40,7 +127,8 @@ export default class ActionBinder {
     this.canvasArea = canvasArea;
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
-    this.serviceHandler = null;
+    this.serviceHandler = new ServiceHandler();
+    this.uploadHandler = null;
     this.splashScreenEl = null;
     this.promiseStack = [];
     this.redirectUrl = '';
@@ -61,7 +149,7 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    const parr = [`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`];
+    const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
@@ -138,10 +226,6 @@ export default class ActionBinder {
     }, delay);
   }
 
-  isNonPdf(files) {
-    return files.some((file) => file.type !== 'application/pdf');
-  }
-
   isMixedFileTypes(files) {
     const fileTypes = new Set(files.map((file) => file.type));
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
@@ -189,13 +273,41 @@ export default class ActionBinder {
     return true;
   }
 
+  async getRedirectUrl(cOpts) {
+    this.promiseStack.push(
+      this.serviceHandler.postCallToService(
+        this.acrobatApiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(cOpts) },
+      ),
+    );
+    await Promise.all(this.promiseStack)
+      .then(async (resArr) => {
+        const response = resArr[resArr.length - 1];
+        if (!response?.url) throw new Error('Error connecting to App');
+        this.redirectUrl = response.url;
+      })
+      .catch(async (e) => {
+        await this.showSplashScreen();
+        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', false, e.showError);
+      });
+  }
+
+  async handleRedirect(cOpts) {
+    await this.getRedirectUrl(cOpts);
+    if (!this.redirectUrl) return false;
+    this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
+    return true;
+  }
+
   async handleSingleFileUpload(file, eventName) {
     const fileData = { type: file.type, size: file.size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
     if (!await this.validateFiles([file])) return;
     const isGuest = this.getAccountType() === 'guest';
-    if (isGuest) await this.singleFileGuestUpload(file);
-    else await this.singleFileUserUpload(file);
+    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+    if (isGuest) await this.uploadHandler.singleFileGuestUpload(file);
+    else await this.uploadHandler.singleFileUserUpload(file);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
@@ -207,8 +319,10 @@ export default class ActionBinder {
     this.dispatchAnalyticsEvent('multifile', filesData);
     if (!await this.validateFiles(files)) return;
     const isGuest = this.getAccountType() === 'guest';
-    if (isGuest) await this.multiFileGuestUpload();
-    else await this.multiFileUserUpload(files, filesData);
+    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+    if (isGuest) await this.uploadHandler.multiFileGuestUpload();
+    else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
   async fillsign(files, eventName) {
@@ -285,11 +399,6 @@ export default class ActionBinder {
 
   async acrobatActionMaps(values, files, totalFileSize, eventName) {
     await this.handlePreloads();
-    const { default: ServiceHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`);
-    this.serviceHandler = new ServiceHandler(
-      this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
-    );
     for (const value of values) {
       switch (true) {
         case value.actionType === 'fillsign':
@@ -447,434 +556,5 @@ export default class ActionBinder {
       this.splashScreenEl.classList.remove('decorate');
     }
     this.splashVisibilityController(displayOn);
-  }
-
-  async createAsset(file, multifile = false, workflowId = null) {
-    let assetData = null;
-    const data = {
-      surfaceId: unityConfig.surfaceId,
-      targetProduct: this.workflowCfg.productName,
-      name: file.name,
-      size: file.size,
-      format: file.type,
-      ...(multifile && { multifile }),
-      ...(workflowId && { workflowId }),
-    };
-    assetData = await this.serviceHandler.postCallToService(
-      this.acrobatApiConfig.acrobatEndpoint.createAsset,
-      { body: JSON.stringify(data) },
-    );
-    return assetData;
-  }
-
-  async getBlobData(file) {
-    const objUrl = URL.createObjectURL(file);
-    const response = await fetch(objUrl);
-    if (!response.ok) {
-      const error = new Error();
-      error.status = response.status;
-      throw error;
-    }
-    const blob = await response.blob();
-    URL.revokeObjectURL(objUrl);
-    return blob;
-  }
-
-  async uploadFileToUnity(storageUrl, blobData, fileType) {
-    const uploadOptions = {
-      method: 'PUT',
-      headers: { 'Content-Type': fileType },
-      body: blobData,
-    };
-    const response = await fetch(storageUrl, uploadOptions);
-    if (!response.ok) throw new Error(`Failed to upload: ${response.status}`);
-    return response;
-  }
-
-  getDeviceType() {
-    const numCores = navigator.hardwareConcurrency || null;
-    if (!numCores) return 'MID_RANGE';
-    if (numCores > 6) return 'HIGH_END';
-    if (numCores <= 3) return 'LOW_END';
-    return 'MID_RANGE';
-  }
-
-  async executeInBatches(items, batchSize, processFn) {
-    const executing = new Set();
-    for (const item of items) {
-      const p = processFn(item).then(() => executing.delete(p)).catch(() => {
-        executing.delete(p);
-      });
-      executing.add(p);
-      if (executing.size >= batchSize) await Promise.race(executing);
-    }
-    await Promise.all(executing);
-  }
-
-  async batchUpload(tasks, batchSize) {
-    await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
-  }
-
-  async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
-    const uploadTasks = [];
-    const failedFiles = [];
-    assetDataArray.forEach((assetData, fileIndex) => {
-      const blobData = blobDataArray[fileIndex];
-      const fileType = filetypeArray[fileIndex];
-      const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-      if (assetData.uploadUrls.length !== totalChunks) return;
-      let fileUploadFailed = false;
-      const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
-        const start = i * assetData.blocksize;
-        const end = Math.min(start + assetData.blocksize, blobData.size);
-        const chunk = blobData.slice(start, end);
-        const url = assetData.uploadUrls[i];
-        return () => {
-          if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnity(url.href, chunk, fileType).catch(async () => {
-            await this.dispatchErrorToast('verb_upload_error_generic', 500, `Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}`, true);
-            failedFiles.push(fileIndex);
-            fileUploadFailed = true;
-          });
-        };
-      });
-      uploadTasks.push(...chunkTasks);
-    });
-    await this.batchUpload(uploadTasks, batchSize);
-    return failedFiles;
-  }
-
-  async verifyContent(assetData) {
-    try {
-      const finalAssetData = {
-        surfaceId: unityConfig.surfaceId,
-        targetProduct: this.workflowCfg.productName,
-        assetId: assetData.id,
-      };
-      const finalizeJson = await this.serviceHandler.postCallToService(
-        this.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
-      );
-      if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
-        if (this.MULTI_FILE) return false;
-        await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${finalizeJson}`);
-        this.operations = [];
-        return false;
-      }
-    } catch (e) {
-      if (this.MULTI_FILE) return false;
-      await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', false, e.showError);
-      this.operations = [];
-      return false;
-    }
-    return true;
-  }
-
-  async isMaxPageLimitExceeded(assetData) {
-    try {
-      const intervalDuration = 500;
-      const totalDuration = 5000;
-      let metadata = {};
-      let intervalId;
-      let requestInProgress = false;
-      let metadataExists = false;
-      return new Promise((resolve) => {
-        const handleMetadata = async () => {
-          if (metadata.numPages > this.limits.maxNumPages) {
-            await this.showSplashScreen();
-            await this.dispatchErrorToast('verb_upload_error_max_page_count');
-            resolve(true);
-            return;
-          }
-          resolve(false);
-        };
-        intervalId = setInterval(async () => {
-          if (requestInProgress) return;
-          requestInProgress = true;
-          metadata = await this.serviceHandler.getCallToService(
-            this.acrobatApiConfig.acrobatEndpoint.getMetadata,
-            { id: assetData.id },
-          );
-          requestInProgress = false;
-          if (metadata?.numPages !== undefined) {
-            clearInterval(intervalId);
-            clearTimeout(timeoutId);
-            metadataExists = true;
-            await handleMetadata();
-          }
-        }, intervalDuration);
-        const timeoutId = setTimeout(async () => {
-          clearInterval(intervalId);
-          if (!metadataExists) resolve(false);
-          else await handleMetadata();
-        }, totalDuration);
-      });
-    } catch (e) {
-      await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying PDF page count.', false, e.showError);
-      this.operations = [];
-      return false;
-    }
-  }
-
-  async handleValidations(assetData) {
-    let validated = true;
-    for (const limit of Object.keys(this.limits)) {
-      switch (limit) {
-        case 'maxNumPages': {
-          const maxPageLimitExceeded = await this.isMaxPageLimitExceeded(assetData);
-          if (maxPageLimitExceeded) validated = false;
-          break;
-        }
-        default:
-          break;
-      }
-    }
-    if (!validated) this.operations = [];
-    return validated;
-  }
-
-  async getRedirectUrl(cOpts) {
-    this.promiseStack.push(
-      this.serviceHandler.postCallToService(
-        this.acrobatApiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(cOpts) },
-      ),
-    );
-    await Promise.all(this.promiseStack)
-      .then(async (resArr) => {
-        const response = resArr[resArr.length - 1];
-        if (!response?.url) throw new Error('Error connecting to App');
-        this.redirectUrl = response.url;
-      })
-      .catch(async (e) => {
-        await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', false, e.showError);
-      });
-  }
-
-  async handleRedirect(cOpts) {
-    await this.getRedirectUrl(cOpts);
-    if (!this.redirectUrl) return false;
-    this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail: { event: 'redirectUrl', data: this.redirectUrl } }));
-    return true;
-  }
-
-  async dispatchGenericError(info = null, showError = true) {
-    this.operations = [];
-    await this.showSplashScreen();
-    await this.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
-  }
-
-  getConcurrentLimits() {
-    const deviceType = this.getDeviceType();
-    if (!this.MULTI_FILE) {
-      return { maxConcurrentChunks: ActionBinder.UPLOAD_LIMITS[deviceType].chunks };
-    }
-    return {
-      maxConcurrentFiles: ActionBinder.UPLOAD_LIMITS[deviceType].files,
-      maxConcurrentChunks: ActionBinder.UPLOAD_LIMITS[deviceType].chunks,
-    };
-  }
-
-  getGuestConnPayload(feedback) {
-    return {
-      targetProduct: this.workflowCfg.productName,
-      payload: {
-        languageRegion: this.workflowCfg.langRegion,
-        languageCode: this.workflowCfg.langCode,
-        verb: this.workflowCfg.enabledFeatures[0],
-        feedback,
-      },
-    };
-  }
-
-  async handleUploadError(e) {
-    switch (e.status) {
-      case 409:
-        await this.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, null, false, e.showError);
-        break;
-      case 401:
-        if (e.message === 'notentitled') await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, null, false, e.showError);
-        else await this.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, false, e.showError);
-        break;
-      case 403:
-        if (e.message === 'quotaexceeded') await this.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.status, null, false, e.showError);
-        else await this.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, null, false, e.showError);
-        break;
-      default:
-        await this.dispatchErrorToast('verb_upload_error_generic', e.status, null, false, e.showError);
-        break;
-    }
-  }
-
-  async uploadSingleFile(file, isNonPdf = false) {
-    const { maxConcurrentChunks } = this.getConcurrentLimits();
-    let cOpts = {};
-    const [blobData, assetData] = await Promise.all([
-      this.getBlobData(file),
-      this.createAsset(file),
-    ]);
-    cOpts = {
-      assetId: assetData.id,
-      targetProduct: this.workflowCfg.productName,
-      payload: {
-        languageRegion: this.workflowCfg.langRegion,
-        languageCode: this.workflowCfg.langCode,
-        verb: this.workflowCfg.enabledFeatures[0],
-        assetMetadata: {
-          [assetData.id]: {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-          },
-        },
-        ...(isNonPdf ? { feedback: 'nonpdf' } : {}),
-      },
-    };
-    const redirectSuccess = await this.handleRedirect(cOpts);
-    if (!redirectSuccess) return;
-    this.dispatchAnalyticsEvent('uploading', assetData);
-    const uploadResult = await this.chunkPdf(
-      [assetData],
-      [blobData],
-      [file.type],
-      maxConcurrentChunks,
-    );
-    if (uploadResult.length === 1) {
-      await this.dispatchGenericError('Error uploading file chunks.');
-      return;
-    }
-    this.operations.push(assetData.id);
-    const verified = await this.verifyContent(assetData);
-    if (!verified) return;
-    const validated = await this.handleValidations(assetData);
-    if (!validated) return;
-    this.dispatchAnalyticsEvent('uploaded');
-  }
-
-  async singleFileGuestUpload(file) {
-    try {
-      await this.showSplashScreen(true);
-      if (this.isNonPdf([file])) {
-        await this.delay(3000);
-        const redirectSuccess = await this.handleRedirect(this.getGuestConnPayload('nonpdf'));
-        if (!redirectSuccess) return;
-        this.redirectWithoutUpload = true;
-        return;
-      }
-      await this.uploadSingleFile(file);
-    } catch (e) {
-      await this.showSplashScreen();
-      this.operations = [];
-      await this.handleUploadError(e);
-    }
-  }
-
-  async singleFileUserUpload(file) {
-    try {
-      await this.showSplashScreen(true);
-      await this.uploadSingleFile(file, this.isNonPdf([file]));
-    } catch (e) {
-      await this.showSplashScreen();
-      this.operations = [];
-      await this.handleUploadError(e);
-    }
-  }
-
-  async uploadMultiFile(files, filesData) {
-    const workflowId = crypto.randomUUID();
-    const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
-    const blobDataArray = [];
-    const assetDataArray = [];
-    const fileTypeArray = [];
-    let cOpts = {};
-    await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
-      try {
-        const [blobData, assetData] = await Promise.all([
-          this.getBlobData(file),
-          this.createAsset(file, true, workflowId),
-        ]);
-        blobDataArray.push(blobData);
-        assetDataArray.push(assetData);
-        fileTypeArray.push(file.type);
-      } catch (e) {
-        await this.handleUploadError(e);
-      }
-    });
-    if (assetDataArray.length === 0) {
-      await this.dispatchGenericError();
-      return;
-    }
-    this.LOADER_LIMIT = 75;
-    this.updateProgressBar(this.splashScreenEl, 75);
-    cOpts = {
-      targetProduct: this.workflowCfg.productName,
-      assetId: assetDataArray[0].id,
-      payload: {
-        languageRegion: this.workflowCfg.langRegion,
-        languageCode: this.workflowCfg.langCode,
-        verb: this.workflowCfg.enabledFeatures[0],
-        multifile: true,
-        workflowId,
-      },
-    };
-    const redirectSuccess = await this.handleRedirect(cOpts);
-    if (!redirectSuccess) return;
-    this.dispatchAnalyticsEvent('uploading', filesData);
-    const uploadResult = await this.chunkPdf(
-      assetDataArray,
-      blobDataArray,
-      fileTypeArray,
-      maxConcurrentChunks,
-    );
-    if (uploadResult.length === files.length) {
-      await this.dispatchGenericError();
-      return;
-    }
-    const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.includes(index));
-    this.operations.push(workflowId);
-    let allVerified = 0;
-    await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
-      const verified = await this.verifyContent(assetData);
-      if (!verified) {
-        await this.dispatchErrorToast('verb_upload_error_generic', 500, `Verification failed for file: ${assetData.id}`, true);
-      } else allVerified += 1;
-    });
-    if (allVerified === 0) {
-      await this.dispatchGenericError();
-      return;
-    }
-    if (files.length !== allVerified) this.multiFileFailure = 'uploaderror';
-    this.LOADER_LIMIT = 95;
-    this.updateProgressBar(this.splashScreenEl, 95);
-  }
-
-  async multiFileGuestUpload() {
-    try {
-      await this.showSplashScreen(true);
-      await this.delay(3000);
-      this.LOADER_LIMIT = 85;
-      this.updateProgressBar(this.splashScreenEl, 85);
-      const redirectSuccess = await this.handleRedirect(this.getGuestConnPayload('multifile'));
-      if (!redirectSuccess) return;
-      this.redirectWithoutUpload = true;
-      return;
-    } catch (e) {
-      await this.dispatchGenericError(null, e.showError);
-    }
-  }
-
-  async multiFileUserUpload(files, filesData) {
-    try {
-      await this.showSplashScreen(true);
-      await this.uploadMultiFile(files, filesData);
-    } catch (e) {
-      await this.dispatchGenericError(null, e.showError);
-      return;
-    }
-    this.dispatchAnalyticsEvent('uploaded', filesData);
   }
 }
