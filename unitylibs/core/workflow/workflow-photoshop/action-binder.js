@@ -420,6 +420,7 @@ export default class ActionBinder {
       assetUrl: null,
       fgId: null,
       bgId: null,
+      bgUrl: null,
     };
     if (params.cachedOutputUrl && this.renderCachedExperience) {
       await delay(500);
@@ -508,10 +509,10 @@ export default class ActionBinder {
       cOpts.payload.operations.push({ name: op.operationType });
       if (op.assetId) {
         cOpts.payload.finalAssetId = op.assetId;
-        if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].assetIds = [op.assetId];
+        if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].assetIds = [op.bgId];
       } else if (op.assetUrl) {
         cOpts.payload.finalAssetUrl = op.assetUrl;
-        if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].hrefs = [op.assetUrl];
+        if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].hrefs = [op.backgroundSrc];
       }
       if (op.operationType == 'imageAdjustment' && op.adjustmentType && op.filterValue) {
         cOpts.payload.operations[idx][op.adjustmentType] = parseInt(
