@@ -11,7 +11,7 @@ export default class UploadHandler {
   }
 
   static UPLOAD_LIMITS = {
-    HIGH_END: { files: 3, chunks: 10 },
+    HIGH_END: { files: 3, chunks: 50 },
     MID_RANGE: { files: 3, chunks: 10 },
     LOW_END: { files: 2, chunks: 6 },
   };
