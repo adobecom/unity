@@ -444,6 +444,10 @@
     bottom: 16px;
   }
 
+  .aside.unity-enabled .foreground.container {
+    width: 88%;
+  }
+
   .aside.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
     flex-direction: column;
     padding: 11px var(--spacing-xs);
