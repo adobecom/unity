@@ -334,7 +334,6 @@ export default class ActionBinder {
     };
     const objUrl = URL.createObjectURL(file);
     params.target.src = objUrl;
-    this.setDisplayBezels(params.target);
     let loadSuccessful = false;
     await new Promise((res) => {
       params.target.onload = () => {
@@ -347,6 +346,7 @@ export default class ActionBinder {
       };
     });
     if (!loadSuccessful) return;
+    this.setDisplayBezels(params.target);
     if (params.target.naturalWidth > 8000 || params.target.naturalHeight > 8000) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
       throw new Error('Unable to process the file type!');
