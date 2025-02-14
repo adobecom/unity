@@ -518,7 +518,7 @@ export default class ActionBinder {
         operations: [],
       },
     };
-    const continueOperations = ['removeBackground', 'changeBackground', 'imageAdjustment'];\
+    const continueOperations = ['removeBackground', 'changeBackground', 'imageAdjustment'];
     this.operations.forEach((op, i) => {
       if (!continueOperations.includes(op.operationType)) return;
       if (!cOpts.assetId && !cOpts.href) {
