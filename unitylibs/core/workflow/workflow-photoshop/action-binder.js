@@ -151,7 +151,7 @@ export default class ActionBinder {
           break;
         case value.actionType == 'upload':
           this.renderCachedExperience = false;
-          this.defaultAsset = true;
+          this.defaultAsset = false;
           await this.userImgUpload(value, e);
           break;
         case value.actionType == 'continueInApp':
@@ -303,7 +303,6 @@ export default class ActionBinder {
     if (this.defaultAsset) return;
     t.classList.add(CONTAIN_OBJECT);
     t.classList.add(MOBILE_GRAY_BG);
-    // this.canvasArea.classList.add(GRAY_BG);
     t.classList.add(FULL_HEIGHT);
     if (naturalHeight > naturalWidth) {
       if (optype == 'removeBackground') return t.classList.add(IMG_REMOVE_BG);
