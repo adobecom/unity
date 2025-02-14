@@ -178,14 +178,26 @@ class WfInitiator {
     }
     this.limits = this.targetConfig.limits;
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    await new ActionBinder(
-      this.el,
-      this.workflowCfg,
-      this.targetBlock,
-      this.interactiveArea,
-      this.actionMap,
-      this.limits,
-    ).initActionListeners();
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "attributes") {
+          console.log(mutation);
+          new ActionBinder(
+            this.el,
+            this.workflowCfg,
+            this.targetBlock,
+            this.interactiveArea,
+            this.actionMap,
+            this.limits,
+          ).initActionListeners();
+        }
+      });
+    });
+    observer.observe(this.el.closest('.section'), {
+      attributes: true,
+      childList: false,
+      subtree: false,
+    });
   }
 
   checkRenderStatus(block, selector, res, rej, etime, rtime) {

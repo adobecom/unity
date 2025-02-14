@@ -493,7 +493,7 @@ export default class ActionBinder {
     ));
   }
 
-  async initActionListeners(b = this.block, actMap = this.actionMap) {
+  initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, values] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;

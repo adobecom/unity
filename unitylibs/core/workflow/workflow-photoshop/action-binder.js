@@ -181,7 +181,7 @@ export default class ActionBinder {
     await this.executeAction(values, e);
   }
 
-  async initActionListeners() {
+  initActionListeners() {
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
