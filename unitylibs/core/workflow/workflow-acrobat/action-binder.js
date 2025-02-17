@@ -449,6 +449,22 @@ export default class ActionBinder {
           this.promiseStack = [];
           await this.compress(files, totalFileSize, eventName);
           break;
+        case value.actionType === 'addcomment':
+          this.promiseStack = [];
+          await this.addcomment(files, eventName);
+          break;
+        case value.actionType === 'numberpages':
+          this.promiseStack = [];
+          await this.numberpages(files, eventName);
+          break;
+        case value.actionType === 'splitpdf':
+          this.promiseStack = [];
+          await this.splitpdf(files, eventName);
+          break;
+        case value.actionType === 'croppages':
+          this.promiseStack = [];
+          await this.croppages(files, eventName);
+          break;
         case value.actionType === 'continueInApp':
           await this.continueInApp();
           break;
