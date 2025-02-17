@@ -106,7 +106,6 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "maxNumPages": 100,
       "allowedFileTypes": ["application/pdf"],
       "batchSize": 10
     },
@@ -144,7 +143,6 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "maxNumPages": 100,
       "allowedFileTypes": ["application/pdf"],
       "batchSize": 10
     },
@@ -181,8 +179,8 @@
     "target": ".verb-wrapper .verb-container",
     "limits": {
       "maxNumFiles": 1,
-      "maxFileSize": 104857600,
-      "maxNumPages": 100,
+      "maxFileSize": 1073741824,
+      "maxNumPages": 1500,
       "allowedFileTypes": ["application/pdf"],
       "batchSize": 10
     },
@@ -220,7 +218,6 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "maxNumPages": 100,
       "allowedFileTypes": ["application/pdf"],
       "batchSize": 10
     },
