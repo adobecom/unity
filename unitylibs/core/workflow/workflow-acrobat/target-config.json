@@ -96,6 +96,158 @@
       ]
     }
   },
+  "verb-widget.add-comment": {
+    "type": "pdf",
+    "selector": ".verb-wrapper",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "limits": {
+      "maxNumFiles": 1,
+      "maxFileSize": 104857600,
+      "maxNumPages": 100,
+      "allowedFileTypes": ["application/pdf"],
+      "batchSize": 10
+    },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": [
+        {
+          "actionType": "addcomment"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ],
+      "#file-upload": [
+        {
+          "actionType": "addcomment"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ]
+    }
+  },
+  "verb-widget.number-pages": {
+    "type": "pdf",
+    "selector": ".verb-wrapper",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "limits": {
+      "maxNumFiles": 1,
+      "maxFileSize": 104857600,
+      "maxNumPages": 100,
+      "allowedFileTypes": ["application/pdf"],
+      "batchSize": 10
+    },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": [
+        {
+          "actionType": "numberpages"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ],
+      "#file-upload": [
+        {
+          "actionType": "numberpages"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ]
+    }
+  },
+  "verb-widget.split-pdf": {
+    "type": "pdf",
+    "selector": ".verb-wrapper",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "limits": {
+      "maxNumFiles": 1,
+      "maxFileSize": 104857600,
+      "maxNumPages": 100,
+      "allowedFileTypes": ["application/pdf"],
+      "batchSize": 10
+    },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": [
+        {
+          "actionType": "splitpdf"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ],
+      "#file-upload": [
+        {
+          "actionType": "splitpdf"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ]
+    }
+  },
+  "verb-widget.crop-pages": {
+    "type": "pdf",
+    "selector": ".verb-wrapper",
+    "handler": "render",
+    "renderWidget": false,
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "limits": {
+      "maxNumFiles": 1,
+      "maxFileSize": 104857600,
+      "maxNumPages": 100,
+      "allowedFileTypes": ["application/pdf"],
+      "batchSize": 10
+    },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": [
+        {
+          "actionType": "croppages"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ],
+      "#file-upload": [
+        {
+          "actionType": "croppages"
+        },
+        {
+          "actionType": "continueInApp"
+        }
+      ]
+    }
+  },
   "marquee": {
     "type": "pdf",
     "selector": ".action-area",
