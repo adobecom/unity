@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
@@ -137,6 +138,22 @@ export default class ActionBinder {
     this.LOADER_INCREMENT = 30;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
+    this.applySignedInSettings();
+  }
+
+  acrobatSignedInSettings() {
+    if (this.limits.signedInallowedFileTypes) this.limits.allowedFileTypes.push(...this.limits.signedInallowedFileTypes);
+  }
+
+  async applySignedInSettings() {
+    if (this.block.classList.includes('signed-in')
+      && window.adobeIMS?.getAccountType() === 'type1') {
+      this.acrobatSignedInSettings();
+      return;
+    }
+    window.addEventListener('IMS:Ready', () => {
+      this.acrobatSignedInSettings();
+    });
   }
 
   getAcrobatApiConfig() {
