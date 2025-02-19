@@ -48,9 +48,9 @@ class HealthCheck {
         headers: getHeaders(unityConfig.apiKey),
       };
 
-      if (['POST', 'PUT'].includes(service.method) && service.body) {
-        options.body = JSON.stringify(service.body);
-      }
+      // if (['POST', 'PUT'].includes(service.method) && service.body) {
+      //   options.body = JSON.stringify(service.body);
+      // }
 
       const response = await fetch(service.url, options);
 
