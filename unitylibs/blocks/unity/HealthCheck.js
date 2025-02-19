@@ -11,8 +11,8 @@ class HealthCheck {
       {
         photoshop: [
           { name: 'assetUpload', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST' },
-          { name: 'removeBackground', url: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`, method: 'POST', body: `{"surfaceId":"Unity","assets":[{"id":"57132269-bdd2-4a10-8311-f245d58eac4f"}]}` },
-        ]
+          { name: 'removeBackground', url: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`, method: 'POST', body: { surfaceId: 'Unity', assets: [{ id: '57132269-bdd2-4a10-8311-f245d58eac4f' }] } },
+        ],
       },
     ];
   }
