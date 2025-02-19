@@ -28,6 +28,26 @@ class HealthCheck {
               ],
             },
           },
+          {
+            name: 'Connector',
+            url: `${unityConfig.apiEndPoint}/asset/connector`,
+            method: 'POST',
+            body: {
+              targetProduct: 'Photoshop',
+              payload: {
+                locale: 'in',
+                operations: [
+                  { name: 'removeBackground' },
+                  {
+                    name: 'changeBackground',
+                    assetIds: ['dba480fc-f3d6-49c4-9478-91014f9e8528'],
+                  },
+                ],
+                finalAssetId: '9c918be5-99bd-4fe3-b736-27dfb98d499b',
+              },
+              assetId: 'e15bcaf4-86da-4f0b-b5b1-3581e8cbe380',
+            },
+          },
         ],
       },
     ];
