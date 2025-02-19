@@ -10,8 +10,9 @@ class HealthCheck {
     return [
       {
         photoshop: [
-          { name: 'assetUpload', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST', body: {} },
-        ],
+          { name: 'assetUpload', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST' },
+          { name: 'removeBackground', url: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`, method: 'POST', body: `{'surfaceId': 'Unity', 'assets': [{'id': '57132269-bdd2-4a10-8311-f245d58eac4f'}]}` },
+        ]
       },
     ];
   }
@@ -48,9 +49,9 @@ class HealthCheck {
         headers: getHeaders(unityConfig.apiKey),
       };
 
-      // if (['POST', 'PUT'].includes(service.method) && service.body) {
-      //   options.body = JSON.stringify(service.body);
-      // }
+      if (service.body && ['POST', 'PUT'].includes(service.method)) {
+        options.body = JSON.stringify(service.body);
+      }
 
       const response = await fetch(service.url, options);
 
