@@ -1,4 +1,5 @@
 import { createTag } from '../../../scripts/utils.js';
+import HealthCheck from '../../../blocks/unity/HealthCheck.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -11,6 +12,7 @@ export default class UnityWidget {
   }
 
   async initWidget() {
+    new HealthCheck();
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
