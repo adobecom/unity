@@ -1,4 +1,5 @@
 import { loadStyle } from '../../scripts/utils.js';
+import HealthCheck from './HealthCheck.js';
 
 function getUnityLibs(prodLibs, project = 'unity') {
   let libs = '';
@@ -25,4 +26,6 @@ export default async function init(el) {
   await stylePromise;
   const { default: wfinit } = await import(`${unitylibs}/core/workflow/workflow.js`);
   await wfinit(el, projectName, unitylibs, 'v2');
+  const hCheck = new HealthCheck();
+  hCheck.init();
 }
