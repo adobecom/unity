@@ -78,7 +78,7 @@ export default class UploadHandler {
         executing.delete(p);
       });
       executing.add(p);
-      if (executing.size >= batchSize) await Promise.race(executing);
+      //if (executing.size >= batchSize) await Promise.race(executing);
     }
     await Promise.all(executing);
   }
