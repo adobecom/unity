@@ -49,7 +49,7 @@ class HealthCheck {
             },
           },
         ],
-        Express: [
+        express: [
           { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { targetProduct: 'Express', query: 'Soccer tournament finals poster' } },
         ],
       },
@@ -58,7 +58,8 @@ class HealthCheck {
 
   async init() {
     for (const category of this.services) {
-      const categoryName = Object.keys(category)[0];
+      
+      const categoryName = Object.keys(category);
       const apis = category[categoryName];
       const results = await this.checkCategory(categoryName, apis);
       this.printResults(categoryName, results);
