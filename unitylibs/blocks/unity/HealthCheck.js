@@ -58,11 +58,11 @@ class HealthCheck {
 
   async init() {
     for (const category of this.services) {
-      
-      const categoryName = Object.keys(category);
-      const apis = category[categoryName];
-      const results = await this.checkCategory(categoryName, apis);
-      this.printResults(categoryName, results);
+      for (const categoryName of Object.keys(category)) {
+        const apis = category[categoryName];
+        const results = await this.checkCategory(categoryName, apis);
+        this.printResults(categoryName, results);
+      }
     }
   }
 
