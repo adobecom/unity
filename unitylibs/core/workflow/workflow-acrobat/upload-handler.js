@@ -53,7 +53,11 @@ export default class UploadHandler {
       headers: { 'Content-Type': fileType },
       body: blobData,
     };
-    const response = await fetch(storageUrl, uploadOptions);
+    try {
+      const response = await fetch(storageUrl, uploadOptions);
+    } catch (e) {
+      console.log(`uploadFileToUnity ${e}`);
+    }
     console.log(response);
     if (!response.ok) throw new Error(`Failed to upload: ${response.status}`);
     return response;
