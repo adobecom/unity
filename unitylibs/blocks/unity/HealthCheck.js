@@ -51,6 +51,7 @@ class HealthCheck {
         ],
         express: [
           { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { targetProduct: 'Express', query: 'Soccer tournament finals poster' } },
+          { name: 'AutoComplete', url: `${unityConfig.apiEndPoint}/providers/AutoComplete`, method: 'POST', body: { query: 'hello', maxResults: 12 } },
         ],
       },
     ];
