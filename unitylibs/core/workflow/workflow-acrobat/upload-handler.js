@@ -260,10 +260,8 @@ export default class UploadHandler {
   async uploadSingleFile(file, isNonPdf = false) {
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     let cOpts = {};
-    const [blobData, assetData] = await Promise.all([
-      this.getBlobData(file),
-      this.createAsset(file),
-    ]);
+    const blobData = await this.getBlobData(file);
+    const assetData = await this.createAsset(file);
     cOpts = {
       assetId: assetData.id,
       targetProduct: this.actionBinder.workflowCfg.productName,
