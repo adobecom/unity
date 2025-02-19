@@ -11,6 +11,7 @@ class HealthCheck {
       {
         photoshop: [
           { name: 'assetUpload', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST' },
+          { name: 'acmpCheck', ur: `${unityConfig.apiEndPoint}/asset/finalize`, method: 'POST', body: { assetId: 'cd95ea21-daf3-4e3e-814a-b9490ea0626d', targetProduct: 'Photoshop' } },
           { name: 'removeBackground', url: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`, method: 'POST', body: { surfaceId: 'Unity', assets: [{ id: 'cd95ea21-daf3-4e3e-814a-b9490ea0626d' }] } },
         ],
       },
