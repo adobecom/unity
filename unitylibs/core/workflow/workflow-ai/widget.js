@@ -12,7 +12,7 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    new HealthCheck();
+    setTimeout(() => new HealthCheck(), 3000);
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
