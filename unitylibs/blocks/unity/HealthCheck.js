@@ -1,4 +1,4 @@
-import { unityConfig, getHeaders, getUnityLibs } from '../../scripts/utils.js';
+import { unityConfig, getHeaders, getUnityLibs, setUnityLibs } from '../../scripts/utils.js';
 
 class HealthCheck {
   constructor() {
@@ -107,6 +107,7 @@ class HealthCheck {
   }
 }
 
-export default async function init(el) {
+export default async function init(el, project = 'unity', unityLibs = '/unitylibs') {
+  setUnityLibs(unityLibs, project);
   await new HealthCheck().init(el);
 }
