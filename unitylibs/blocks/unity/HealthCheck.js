@@ -110,7 +110,9 @@ class HealthCheck {
   }
 }
 
-export default async function init(el, project = 'cc', unityLibs = 'https://t2i-v2-mig3--unity--adobecom.hlx.live/unitylibs') {
-  setUnityLibs(unityLibs, project);
-  await new HealthCheck().init(el);
-}
+export default HealthCheck;
+
+// export default async function init(el, project = 'cc', unityLibs = 'https://t2i-v2-mig3--unity--adobecom.hlx.live/unitylibs') {
+//   setUnityLibs(unityLibs, project);
+//   await new HealthCheck().init(el);
+// }
