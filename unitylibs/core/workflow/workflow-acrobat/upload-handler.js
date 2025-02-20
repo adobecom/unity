@@ -88,6 +88,13 @@ export default class UploadHandler {
     await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
   }
 
+  async batchUploadChunks(tasks, batchSize) {
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      const batch = tasks.slice(i, i + batchSize);
+      await Promise.all(batch);
+    }
+  }
+
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
     const uploadTasks = [];
     const failedFiles = new Set();
@@ -117,7 +124,7 @@ export default class UploadHandler {
       const chunkPromises = chunkTasks.map((task) => task());
       uploadTasks.push(...chunkPromises);
     });
-    await this.batchUpload(uploadTasks, batchSize);
+    await this.batchUploadChunks(uploadTasks, batchSize);
     return failedFiles;
   }
 
