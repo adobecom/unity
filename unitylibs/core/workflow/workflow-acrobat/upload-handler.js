@@ -53,8 +53,9 @@ export default class UploadHandler {
       headers: { 'Content-Type': fileType },
       body: blobData,
     };
+    let response;
     try {
-      const response = await fetch(storageUrl, uploadOptions);
+      response = await fetch(storageUrl, uploadOptions);
     } catch (e) {
       console.log(`uploadFileToUnity ${e}`);
     }
@@ -87,13 +88,6 @@ export default class UploadHandler {
     await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
   }
 
-  async batchUploadChunks(tasks, batchSize) {
-    for (let i = 0; i < tasks.length; i += batchSize) {
-      const batch = tasks.slice(i, i + batchSize);
-      await Promise.all(batch);
-    }
-  }
-
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
     const uploadTasks = [];
     const failedFiles = new Set();
@@ -120,7 +114,7 @@ export default class UploadHandler {
       });
       uploadTasks.push(...chunkTasks);
     });
-    await this.batchUploadChunks(uploadTasks, batchSize);
+    await this.batchUpload(uploadTasks, batchSize);
     return failedFiles;
   }
 
