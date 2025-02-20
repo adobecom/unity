@@ -107,7 +107,7 @@ class HealthCheck {
   }
 }
 
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs') {
+export default async function init(el, project = 'cc', unityLibs = '/unitylibs') {
   setUnityLibs(unityLibs, project);
   await new HealthCheck().init(el);
 }
