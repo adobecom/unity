@@ -91,9 +91,10 @@ class HealthCheck {
 
   async checkService(category, service) {
     try {
+      const apiKey = category === 'acrobat' ? 'acrobatmilo' : unityConfig.apiKey;
       const options = {
         method: service.method,
-        headers: getHeaders(unityConfig.apiKey),
+        headers: getHeaders(apiKey),
       };
 
       if (service.body && ['POST', 'PUT'].includes(service.method)) {
