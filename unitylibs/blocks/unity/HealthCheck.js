@@ -12,10 +12,11 @@ class HealthCheck {
       const response = await fetch(`${getUnityLibs()}/blocks/unity/service-config.json`);
       if (!response.ok) throw new Error('Failed to load services configuration');
 
-      let services = await response.json();
+      const services = await response.json();
 
       // Replace placeholders with actual values
-      return this.replacePlaceholders(services, unityConfig.apiEndPoint);
+      // return this.replacePlaceholders(services, unityConfig.apiEndPoint);
+      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint);
       this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
@@ -26,9 +27,9 @@ class HealthCheck {
     return JSON.parse(JSON.stringify(services).replace(/{{apiEndPoint}}/g, apiEndPoint));
   }
 
-  async init(el) {
+  async init(el = null) {
     this.el = el;
-    this.services = await this.loadServices();
+    // this.services = await this.loadServices();
     if (!this.services) return;
 
     for (const categoryName of Object.keys(this.services)) {
