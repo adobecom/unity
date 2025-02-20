@@ -103,7 +103,7 @@ export default class UploadHandler {
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
         return async () => {
-          if (fileUploadFailed) return;
+          if (fileUploadFailed) Promise.resolve();
           try {
             await this.uploadFileToUnity(url.href, chunk, fileType);
           } catch (e) {
