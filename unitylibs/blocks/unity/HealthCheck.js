@@ -15,7 +15,8 @@ class HealthCheck {
       let services = await response.json();
 
       // Replace placeholders with actual values
-      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint);
+      return this.replacePlaceholders(services, unityConfig.apiEndPoint);
+      this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
     }
@@ -27,6 +28,7 @@ class HealthCheck {
 
   async init(el) {
     this.el = el;
+    this.services = await this.loadServices();
     if (!this.services) return;
 
     for (const categoryName of Object.keys(this.services)) {
