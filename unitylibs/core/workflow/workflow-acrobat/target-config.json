@@ -9,7 +9,9 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "maxNumPages": 100,
+      "pageLimit": {
+        "maxNumPages": 100
+      },
       "allowedFileTypes": ["application/pdf"],
       "batchSize": 10
     },
@@ -143,7 +145,10 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 1073741824,
-      "maxNumPages": 1500,
+      "pageLimit": {
+        "minNumPages": 1,
+        "maxNumPages": 1500
+      },
       "allowedFileTypes": ["application/pdf"],
       "signedInallowedFileTypes": [
         "application/msword",
