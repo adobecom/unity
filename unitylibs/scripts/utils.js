@@ -7,7 +7,7 @@ export const [setLibs, getLibs] = (() => {
         if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
-        return branch.includes('--') ? `https://${branch}.hlx.live/libs` : `https://${branch}--milo--adobecom.hlx.live/libs`;
+        return branch.includes('--') ? `https://${branch}.aem.live/libs` : `https://${branch}--milo--adobecom.aem.live/libs`;
       })();
       return libs;
     }, () => libs,
@@ -258,6 +258,7 @@ export const unityConfig = (() => {
     },
   };
   if (host.includes('hlx.page')
+    || host.includes('aem.page')
     || host.includes('localhost')
     || host.includes('stage.adobe')
     || host.includes('corp.adobe')
