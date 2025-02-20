@@ -1,4 +1,4 @@
-import { unityConfig, getHeaders } from '../../scripts/utils.js';
+import { unityConfig, getHeaders, getUnityLibs } from '../../scripts/utils.js';
 
 class HealthCheck {
   constructor() {
@@ -8,7 +8,7 @@ class HealthCheck {
 
   async loadServices() {
     try {
-      const response = await fetch('./service-config.json');
+      const response = await fetch(`${getUnityLibs()}/service-config.json`);
       if (!response.ok) throw new Error('Failed to load services configuration');
       this.services = await response.json();
       this.init();
