@@ -102,17 +102,20 @@ export default class UploadHandler {
         const end = Math.min(start + assetData.blocksize, blobData.size);
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
-        return () => {
-          if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnity(url.href, chunk, fileType).catch(async (e) => {
-            console.log(e);
+        return async () => {
+          if (fileUploadFailed) return;
+          try {
+            await this.uploadFileToUnity(url.href, chunk, fileType);
+          } catch (e) {
+            console.error(`Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}`, e);
             await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}`, true);
             failedFiles.add(fileIndex);
             fileUploadFailed = true;
-          });
+          }
         };
       });
-      uploadTasks.push(...chunkTasks);
+      const chunkPromises = chunkTasks.map((task) => task());
+      uploadTasks.push(...chunkPromises);
     });
     await this.batchUpload(uploadTasks, batchSize);
     return failedFiles;
