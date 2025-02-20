@@ -107,7 +107,8 @@ class HealthCheck {
       });
     }
 
-    this.el.append(container);
+    this.el = document.querySelector('.ex-unity-wrap');
+    this.el.appendChild(container);
   }
 }
 
