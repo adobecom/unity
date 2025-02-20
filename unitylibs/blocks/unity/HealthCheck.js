@@ -15,7 +15,6 @@ class HealthCheck {
 
       // Replace placeholders with actual values
       this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint);
-      this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
     }
@@ -25,7 +24,8 @@ class HealthCheck {
     return JSON.parse(JSON.stringify(services).replace(/{{apiEndPoint}}/g, apiEndPoint));
   }
 
-  async init() {
+  async init(el) {
+    this.el = el;
     if (!this.services) return;
 
     for (const categoryName of Object.keys(this.services)) {
@@ -106,4 +106,6 @@ class HealthCheck {
   }
 }
 
-export default HealthCheck;
+export default async function init(el) {
+  await new HealthCheck().init(el);
+}
