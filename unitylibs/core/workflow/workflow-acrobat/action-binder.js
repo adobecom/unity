@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
@@ -137,6 +138,22 @@ export default class ActionBinder {
     this.LOADER_INCREMENT = 30;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
+    this.applySignedInSettings();
+  }
+
+  acrobatSignedInSettings() {
+    if (this.limits.signedInallowedFileTypes) this.limits.allowedFileTypes.push(...this.limits.signedInallowedFileTypes);
+  }
+
+  async applySignedInSettings() {
+    if (this.block.classList.contains('signed-in')
+      && window.adobeIMS?.getAccountType() === 'type1') {
+      this.acrobatSignedInSettings();
+      return;
+    }
+    window.addEventListener('IMS:Ready', () => {
+      this.acrobatSignedInSettings();
+    });
   }
 
   getAcrobatApiConfig() {
@@ -345,6 +362,46 @@ export default class ActionBinder {
     else await this.handleMultiFileUpload(files, totalFileSize, eventName);
   }
 
+  async addcomment(files, eventName) {
+    if (!files || files.length > this.limits.maxNumFiles) {
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      return;
+    }
+    const file = files[0];
+    if (!file) return;
+    await this.handleSingleFileUpload(file, eventName);
+  }
+
+  async numberpages(files, eventName) {
+    if (!files || files.length > this.limits.maxNumFiles) {
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      return;
+    }
+    const file = files[0];
+    if (!file) return;
+    await this.handleSingleFileUpload(file, eventName);
+  }
+
+  async splitpdf(files, eventName) {
+    if (!files || files.length > this.limits.maxNumFiles) {
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      return;
+    }
+    const file = files[0];
+    if (!file) return;
+    await this.handleSingleFileUpload(file, eventName);
+  }
+
+  async croppages(files, eventName) {
+    if (!files || files.length > this.limits.maxNumFiles) {
+      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
+      return;
+    }
+    const file = files[0];
+    if (!file) return;
+    await this.handleSingleFileUpload(file, eventName);
+  }
+
   delay(ms) {
     return new Promise((res) => { setTimeout(() => { res(); }, ms); });
   }
@@ -408,6 +465,22 @@ export default class ActionBinder {
         case value.actionType === 'compress':
           this.promiseStack = [];
           await this.compress(files, totalFileSize, eventName);
+          break;
+        case value.actionType === 'addcomment':
+          this.promiseStack = [];
+          await this.addcomment(files, eventName);
+          break;
+        case value.actionType === 'numberpages':
+          this.promiseStack = [];
+          await this.numberpages(files, eventName);
+          break;
+        case value.actionType === 'splitpdf':
+          this.promiseStack = [];
+          await this.splitpdf(files, eventName);
+          break;
+        case value.actionType === 'croppages':
+          this.promiseStack = [];
+          await this.croppages(files, eventName);
           break;
         case value.actionType === 'continueInApp':
           await this.continueInApp();
