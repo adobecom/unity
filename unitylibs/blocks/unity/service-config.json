@@ -1,20 +1,20 @@
 {
     "photoshop": [
       { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST" },
-      { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "e15bcaf4-86da-4f0b-b5b1-3581e8cbe380", "targetProduct": "Photoshop" } },
-      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "cd95ea21-daf3-4e3e-814a-b9490ea0626d" }] } },
+      { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "a272dae5-92bc-4838-9352-a8deffb352b0", "targetProduct": "Photoshop" } },
+      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "a272dae5-92bc-4838-9352-a8deffb352b0" }] } },
       {
         "name": "changeBackground",
         "url": "{{apiEndPoint}}/providers/PhotoshopChangeBackground",
         "method": "POST",
         "body": {
           "metadata": {
-            "foregroundImageId": "e64a3cec-31dc-49cd-bfa1-5173c055413c",
-            "backgroundImageId": "dba480fc-f3d6-49c4-9478-91014f9e8528"
+            "foregroundImageId": "a272dae5-92bc-4838-9352-a8deffb352b0",
+            "backgroundImageId": "a272dae5-92bc-4838-9352-a8deffb352b0"
           },
           "assets": [
-            { "id": "e64a3cec-31dc-49cd-bfa1-5173c055413c" },
-            { "id": "dba480fc-f3d6-49c4-9478-91014f9e8528" }
+            { "id": "a272dae5-92bc-4838-9352-a8deffb352b0" },
+            { "id": "a272dae5-92bc-4838-9352-a8deffb352b0" }
           ]
         }
       },
@@ -30,12 +30,12 @@
               { "name": "removeBackground" },
               {
                 "name": "changeBackground",
-                "assetIds": ["dba480fc-f3d6-49c4-9478-91014f9e8528"]
+                "assetIds": ["a272dae5-92bc-4838-9352-a8deffb352b0"]
               }
             ],
-            "finalAssetId": "9c918be5-99bd-4fe3-b736-27dfb98d499b"
+            "finalAssetId": "a272dae5-92bc-4838-9352-a8deffb352b0"
           },
-          "assetId": "e15bcaf4-86da-4f0b-b5b1-3581e8cbe380"
+          "assetId": "a272dae5-92bc-4838-9352-a8deffb352b0"
         }
       }
     ],
