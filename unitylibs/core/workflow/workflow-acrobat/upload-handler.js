@@ -78,13 +78,20 @@ export default class UploadHandler {
         executing.delete(p);
       });
       executing.add(p);
-      //if (executing.size >= batchSize) await Promise.race(executing);
+      if (executing.size >= batchSize) await Promise.race(executing);
     }
     await Promise.all(executing);
   }
 
   async batchUpload(tasks, batchSize) {
     await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
+  }
+
+  async batchUploadChunks(tasks, batchSize) {
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      const batch = tasks.slice(i, i + batchSize);
+      await Promise.all(batch);
+    }
   }
 
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
@@ -113,7 +120,7 @@ export default class UploadHandler {
       });
       uploadTasks.push(...chunkTasks);
     });
-    await this.batchUpload(uploadTasks, batchSize);
+    await this.batchUploadChunks(uploadTasks, batchSize);
     return failedFiles;
   }
 
