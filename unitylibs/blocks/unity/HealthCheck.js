@@ -1,8 +1,9 @@
 import { unityConfig, getHeaders, getUnityLibs, setUnityLibs } from '../../scripts/utils.js';
 
 class HealthCheck {
-  constructor() {
+  constructor(el) {
     this.services = null;
+    this.el = el;
     this.loadServices();
   }
 
@@ -106,7 +107,7 @@ class HealthCheck {
       });
     }
 
-    document.body.appendChild(container);
+    this.el.append(container);
   }
 }
 
