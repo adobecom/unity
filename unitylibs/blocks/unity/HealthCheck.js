@@ -2,90 +2,40 @@ import { unityConfig, getHeaders } from '../../scripts/utils.js';
 
 class HealthCheck {
   constructor() {
-    this.services = this.getServices();
-    this.init();
+    this.services = null;
+    this.loadServices();
   }
 
-  getServices() {
-    return [
-      {
-        photoshop: [
-          { name: 'assetUpload', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST' },
-          { name: 'acmpCheck', url: `${unityConfig.apiEndPoint}/asset/finalize`, method: 'POST', body: { assetId: 'e15bcaf4-86da-4f0b-b5b1-3581e8cbe380', targetProduct: 'Photoshop' } },
-          { name: 'removeBackground', url: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`, method: 'POST', body: { surfaceId: 'Unity', assets: [{ id: 'cd95ea21-daf3-4e3e-814a-b9490ea0626d' }] } },
-          {
-            name: 'changeBackground',
-            url: `${unityConfig.apiEndPoint}/providers/PhotoshopChangeBackground`,
-            method: 'POST',
-            body: {
-              metadata: {
-                foregroundImageId: 'e64a3cec-31dc-49cd-bfa1-5173c055413c',
-                backgroundImageId: 'dba480fc-f3d6-49c4-9478-91014f9e8528',
-              },
-              assets: [
-                { id: 'e64a3cec-31dc-49cd-bfa1-5173c055413c' },
-                { id: 'dba480fc-f3d6-49c4-9478-91014f9e8528' },
-              ],
-            },
-          },
-          {
-            name: 'Connector',
-            url: `${unityConfig.apiEndPoint}/asset/connector`,
-            method: 'POST',
-            body: {
-              targetProduct: 'Photoshop',
-              payload: {
-                locale: 'in',
-                operations: [
-                  { name: 'removeBackground' },
-                  {
-                    name: 'changeBackground',
-                    assetIds: ['dba480fc-f3d6-49c4-9478-91014f9e8528'],
-                  },
-                ],
-                finalAssetId: '9c918be5-99bd-4fe3-b736-27dfb98d499b',
-              },
-              assetId: 'e15bcaf4-86da-4f0b-b5b1-3581e8cbe380',
-            },
-          },
-        ],
-        acrobat: [
-          { name: 'Asset', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST', body: { targetProduct: 'acrobat', format: 'application/pdf', name: 'dummyfile.pdf', size: 13264, surfaceId: 'unity' } },
-          { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { assetId: 'urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85', targetProduct: 'acrobat', payload: { languageRegion: 'us', languageCode: 'en', verb: 'fillsign', assetMetadata: { 'urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85': { name: 'dummyfile.pdf', size: 13264, type: 'application/pdf' } } } } },
-          { name: 'Finalize', url: `${unityConfig.apiEndPoint}/asset/finalize`, method: 'POST', body: { assetId: 'urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85', surfaceId: 'unity', targetProduct: 'acrobat' } },
-          { name: 'Metadata', url: `${unityConfig.apiEndPoint}/asset/metadata?id=urn%3Aaaid%3Asc%3AAP%3A4f238dfa-c9ba-3a27-975f-f30cbcb4bb85`, method: 'GET' },
-        ],
-        express: [
-          { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { targetProduct: 'Express', query: 'Soccer tournament finals poster' } },
-          { name: 'AutoComplete', url: `${unityConfig.apiEndPoint}/providers/AutoComplete`, method: 'POST', body: { query: 'hello', maxResults: 12 } },
-        ],
-      },
-    ];
+  async loadServices() {
+    try {
+      const response = await fetch('./service-config.json');
+      if (!response.ok) throw new Error('Failed to load services configuration');
+      this.services = await response.json();
+      this.init();
+    } catch (error) {
+      console.error('Error loading services:', error.message);
+    }
   }
 
   async init() {
-    for (const category of this.services) {
-      for (const categoryName of Object.keys(category)) {
-        const apis = category[categoryName];
-        const results = await this.checkCategory(categoryName, apis);
-        this.printResults(categoryName, results);
-      }
+    if (!this.services) return;
+    for (const categoryName of Object.keys(this.services)) {
+      const apis = this.services[categoryName];
+      const results = await this.checkCategory(categoryName, apis);
+      this.printResults(categoryName, results);
     }
   }
 
   async checkCategory(category, apis) {
     let allSuccess = true;
     const results = [];
-
     for (const service of apis) {
       const result = await this.checkService(category, service);
       results.push(result);
-
       if (!result.success) {
         allSuccess = false;
       }
     }
-
     return { allSuccess, results };
   }
 
@@ -101,7 +51,7 @@ class HealthCheck {
         options.body = JSON.stringify(service.body);
       }
 
-      const response = await fetch(service.url, options);
+      const response = await fetch(`${unityConfig.apiEndPoint}${service.url}`, options);
 
       if (!response.ok) {
         throw new Error(`${service.name} failed with status ${response.status}`);
@@ -132,7 +82,7 @@ class HealthCheck {
     } else {
       container.style.backgroundColor = '#f8d7da'; // Red background
       container.innerHTML += `<p>❌ Some APIs in ${category} failed:</p>`;
-      results.forEach(result => {
+      results.forEach((result) => {
         const statusText = document.createElement('p');
         statusText.textContent = `🔹 ${result.name}: ${result.success ? '✅ UP' : `❌ DOWN - ${result.error}`}`;
         statusText.style.color = result.success ? 'green' : 'red';
