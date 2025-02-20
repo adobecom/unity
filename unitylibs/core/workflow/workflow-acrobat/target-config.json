@@ -146,7 +146,7 @@
       "maxNumFiles": 1,
       "maxFileSize": 1073741824,
       "pageLimit": {
-        "minNumPages": 1,
+        "minNumPages": 2,
         "maxNumPages": 1500
       },
       "allowedFileTypes": ["application/pdf"],
