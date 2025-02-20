@@ -51,9 +51,9 @@ class HealthCheck {
         ],
         acrobat: [
           { name: 'Asset', url: `${unityConfig.apiEndPoint}/asset`, method: 'POST', body: { targetProduct: 'acrobat', format: 'application/pdf', name: 'dummyfile.pdf', size: 13264, surfaceId: 'unity' } },
-          { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { assetId: 'urn:aaid:sc:AP:1db09926-a1c3-3222-9a8f-373be3db28b5', targetProduct: 'acrobat', payload: { languageRegion: 'us', languageCode: 'en', verb: 'fillsign', assetMetadata: { 'urn:aaid:sc:AP:1db09926-a1c3-3222-9a8f-373be3db28b5': { name: 'dummyfile.pdf', size: 13264, type: 'application/pdf' } } } } },
-          { name: 'Finalize', url: `${unityConfig.apiEndPoint}/asset/finalize`, method: 'POST', body: { assetId: 'urn:aaid:sc:AP:1db09926-a1c3-3222-9a8f-373be3db28b5', surfaceId: 'unity', targetProduct: 'acrobat' } },
-          { name: 'Metadata', url: `${unityConfig.apiEndPoint}/asset/metadata?id=urn%3Aaaid%3Asc%3AAP%3A1db09926-a1c3-3222-9a8f-373be3db28b5`, method: 'GET' },
+          { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { assetId: 'urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85', targetProduct: 'acrobat', payload: { languageRegion: 'us', languageCode: 'en', verb: 'fillsign', assetMetadata: { 'urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85': { name: 'dummyfile.pdf', size: 13264, type: 'application/pdf' } } } } },
+          { name: 'Finalize', url: `${unityConfig.apiEndPoint}/asset/finalize`, method: 'POST', body: { assetId: 'urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85', surfaceId: 'unity', targetProduct: 'acrobat' } },
+          { name: 'Metadata', url: `${unityConfig.apiEndPoint}/asset/metadata?id=urn%3Aaaid%3Asc%3AAP%3A4f238dfa-c9ba-3a27-975f-f30cbcb4bb85`, method: 'GET' },
         ],
         express: [
           { name: 'Connector', url: `${unityConfig.apiEndPoint}/asset/connector`, method: 'POST', body: { targetProduct: 'Express', query: 'Soccer tournament finals poster' } },
