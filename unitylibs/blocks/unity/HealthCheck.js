@@ -7,6 +7,7 @@ class HealthCheck {
   }
 
   async loadServices() {
+    console.log('Loading services configuration...', getUnityLibs());
     try {
       const response = await fetch(`${getUnityLibs()}/blocks/unity/service-config.json`);
       if (!response.ok) throw new Error('Failed to load services configuration');
