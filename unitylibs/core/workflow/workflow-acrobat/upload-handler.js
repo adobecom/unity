@@ -186,53 +186,6 @@ export default class UploadHandler {
     }
   }
 
-  async isAboveMinPageLimit(assetData) {
-    try {
-      const intervalDuration = 500;
-      const totalDuration = 5000;
-      let metadata = {};
-      let intervalId;
-      let requestInProgress = false;
-      let metadataExists = false;
-      return new Promise((resolve) => {
-        const handleMetadata = async () => {
-          if (metadata.numPages <= this.actionBinder.limits.minNumPages) {
-            await this.actionBinder.showSplashScreen();
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
-            resolve(true);
-            return;
-          }
-          resolve(false);
-        };
-        intervalId = setInterval(async () => {
-          if (requestInProgress) return;
-          requestInProgress = true;
-          metadata = await this.serviceHandler.getCallToService(
-            this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata,
-            { id: assetData.id },
-          );
-          requestInProgress = false;
-          if (metadata?.numPages !== undefined) {
-            clearInterval(intervalId);
-            clearTimeout(timeoutId);
-            metadataExists = true;
-            await handleMetadata();
-          }
-        }, intervalDuration);
-        const timeoutId = setTimeout(async () => {
-          clearInterval(intervalId);
-          if (!metadataExists) resolve(false);
-          else await handleMetadata();
-        }, totalDuration);
-      });
-    } catch (e) {
-      await this.actionBinder.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying PDF page count.', false, e.showError);
-      this.actionBinder.operations = [];
-      return false;
-    }
-  }
-
   async handleValidations(assetData) {
     let validated = true;
     for (const limit of Object.keys(this.actionBinder.limits)) {
@@ -240,11 +193,6 @@ export default class UploadHandler {
         case 'maxNumPages': {
           const maxPageLimitExceeded = await this.isMaxPageLimitExceeded(assetData);
           if (maxPageLimitExceeded) validated = false;
-          break;
-        }
-        case 'minNumPages': {
-          const minPageLimit = await this.isAboveMinPageLimit(assetData);
-          if (minPageLimit) validated = false;
           break;
         }
         default:
