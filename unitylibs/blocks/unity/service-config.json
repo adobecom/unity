@@ -1,21 +1,114 @@
 {
     "photoshop": [
-      { "name": "assetUpload", "url": "/asset", "method": "POST" },
-      { "name": "acmpCheck", "url": "/asset/finalize", "method": "POST", "body": { "assetId": "e15bcaf4-86da-4f0b-b5b1-3581e8cbe380", "targetProduct": "Photoshop" } },
-      { "name": "removeBackground", "url": "/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "cd95ea21-daf3-4e3e-814a-b9490ea0626d" }] } },
-      { "name": "changeBackground", "url": "/providers/PhotoshopChangeBackground", "method": "POST", "body": {
-          "metadata": { "foregroundImageId": "e64a3cec-31dc-49cd-bfa1-5173c055413c", "backgroundImageId": "dba480fc-f3d6-49c4-9478-91014f9e8528" },
-          "assets": [{ "id": "e64a3cec-31dc-49cd-bfa1-5173c055413c" }, { "id": "dba480fc-f3d6-49c4-9478-91014f9e8528" }]
+      { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST" },
+      { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "e15bcaf4-86da-4f0b-b5b1-3581e8cbe380", "targetProduct": "Photoshop" } },
+      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "cd95ea21-daf3-4e3e-814a-b9490ea0626d" }] } },
+      {
+        "name": "changeBackground",
+        "url": "{{apiEndPoint}}/providers/PhotoshopChangeBackground",
+        "method": "POST",
+        "body": {
+          "metadata": {
+            "foregroundImageId": "e64a3cec-31dc-49cd-bfa1-5173c055413c",
+            "backgroundImageId": "dba480fc-f3d6-49c4-9478-91014f9e8528"
+          },
+          "assets": [
+            { "id": "e64a3cec-31dc-49cd-bfa1-5173c055413c" },
+            { "id": "dba480fc-f3d6-49c4-9478-91014f9e8528" }
+          ]
+        }
+      },
+      {
+        "name": "Connector",
+        "url": "{{apiEndPoint}}/asset/connector",
+        "method": "POST",
+        "body": {
+          "targetProduct": "Photoshop",
+          "payload": {
+            "locale": "in",
+            "operations": [
+              { "name": "removeBackground" },
+              {
+                "name": "changeBackground",
+                "assetIds": ["dba480fc-f3d6-49c4-9478-91014f9e8528"]
+              }
+            ],
+            "finalAssetId": "9c918be5-99bd-4fe3-b736-27dfb98d499b"
+          },
+          "assetId": "e15bcaf4-86da-4f0b-b5b1-3581e8cbe380"
         }
       }
     ],
     "acrobat": [
-      { "name": "Asset", "url": "/asset", "method": "POST", "body": { "targetProduct": "acrobat", "format": "application/pdf", "name": "dummyfile.pdf", "size": 13264, "surfaceId": "unity" } },
-      { "name": "Connector", "url": "/asset/connector", "method": "POST", "body": { "assetId": "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85", "targetProduct": "acrobat", "payload": { "languageRegion": "us", "languageCode": "en", "verb": "fillsign", "assetMetadata": { "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85": { "name": "dummyfile.pdf", "size": 13264, "type": "application/pdf" } } } } }
+      {
+        "name": "Asset",
+        "url": "{{apiEndPoint}}/asset",
+        "method": "POST",
+        "body": {
+          "targetProduct": "acrobat",
+          "format": "application/pdf",
+          "name": "dummyfile.pdf",
+          "size": 13264,
+          "surfaceId": "unity"
+        }
+      },
+      {
+        "name": "Connector",
+        "url": "{{apiEndPoint}}/asset/connector",
+        "method": "POST",
+        "body": {
+          "assetId": "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85",
+          "targetProduct": "acrobat",
+          "payload": {
+            "languageRegion": "us",
+            "languageCode": "en",
+            "verb": "fillsign",
+            "assetMetadata": {
+              "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85": {
+                "name": "dummyfile.pdf",
+                "size": 13264,
+                "type": "application/pdf"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Finalize",
+        "url": "{{apiEndPoint}}/asset/finalize",
+        "method": "POST",
+        "body": {
+          "assetId": "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85",
+          "surfaceId": "unity",
+          "targetProduct": "acrobat"
+        }
+      },
+      {
+        "name": "Metadata",
+        "url": "{{apiEndPoint}}/asset/metadata?id=urn%3Aaaid%3Asc%3AAP%3A4f238dfa-c9ba-3a27-975f-f30cbcb4bb85",
+        "method": "GET"
+      }
     ],
     "express": [
-      { "name": "Connector", "url": "/asset/connector", "method": "POST", "body": { "targetProduct": "Express", "query": "Soccer tournament finals poster" } },
-      { "name": "AutoComplete", "url": "/providers/AutoComplete", "method": "POST", "body": { "query": "hello", "maxResults": 12 } }
+      {
+        "name": "Connector",
+        "url": "{{apiEndPoint}}/asset/connector",
+        "method": "POST",
+        "body": {
+          "targetProduct": "Express",
+          "query": "Soccer tournament finals poster"
+        }
+      },
+      {
+        "name": "AutoComplete",
+        "url": "{{apiEndPoint}}/providers/AutoComplete",
+        "method": "POST",
+        "body": {
+          "query": "hello",
+          "maxResults": 12
+        }
+      }
     ]
-  }
+}
+  
   
