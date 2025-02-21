@@ -63,7 +63,7 @@ class HealthCheck {
         if (xhr.status === 200) {
           const uploadOptions = {
             method: 'PUT',
-            headers: { 'Content-Type': 'image/jpeg', ...headers },
+            headers: { ...headers, 'Content-Type': 'image/jpeg' },
             body: xhr.response,
           };
           res(uploadOptions);
