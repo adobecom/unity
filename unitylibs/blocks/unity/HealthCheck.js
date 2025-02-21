@@ -17,15 +17,15 @@ class HealthCheck {
 
       // Replace placeholders with actual values
       // return this.replacePlaceholders(services, unityConfig.apiEndPoint);
-      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint);
+      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint, /{{apiEndPoint}}/g);
       this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
     }
   }
 
-  replacePlaceholders(services, apiEndPoint) {
-    return JSON.parse(JSON.stringify(services).replace(/{{apiEndPoint}}/g, apiEndPoint));
+  replacePlaceholders(services, apiEndPoint, replaceTxt) {
+    return JSON.parse(JSON.stringify(services).replace(replaceTxt, apiEndPoint));
   }
 
   async init(el = null) {
@@ -73,6 +73,8 @@ class HealthCheck {
       if (!response.ok) {
         throw new Error(`${service.name} failed with status ${response.status}`);
       }
+      const data = await response.json();
+      console.log(data);
 
       console.log(`[${category}] ${service.name}: ✅ UP`);
       return { name: service.name, status: 'UP', success: true };

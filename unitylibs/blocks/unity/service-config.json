@@ -1,8 +1,8 @@
 {
     "photoshop": [
       { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST" },
-      { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "a272dae5-92bc-4838-9352-a8deffb352b0", "targetProduct": "Photoshop" } },
-      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "a272dae5-92bc-4838-9352-a8deffb352b0" }] } },
+      { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
+      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] } },
       {
         "name": "changeBackground",
         "url": "{{apiEndPoint}}/providers/PhotoshopChangeBackground",
