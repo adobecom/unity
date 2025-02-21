@@ -1,7 +1,8 @@
 {
     "photoshop": [
-      { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": "id" },
+      { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
       { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
+      { "name": "Asset Upload", "url": "{{href}}", "method": "PUT", "body": "blobData", "headers": { "Content-Type": "fileType" }, "workFlow":"getBlogData"},
       { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] } },
       {
         "name": "changeBackground",

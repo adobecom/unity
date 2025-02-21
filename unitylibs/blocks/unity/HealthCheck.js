@@ -4,6 +4,7 @@ class HealthCheck {
   constructor(el) {
     this.services = null;
     this.el = el;
+    this.workflowFunctions = { getBlogData: this.getBlogData };
     this.loadServices();
   }
 
@@ -12,21 +13,13 @@ class HealthCheck {
     try {
       const response = await fetch(`${getUnityLibs()}/blocks/unity/service-config.json`);
       if (!response.ok) throw new Error('Failed to load services configuration');
-
       const services = await response.json();
-
-      // Replace placeholders with actual values
-      // return this.replacePlaceholders(services, unityConfig.apiEndPoint);
       this.services = this.replacePlaceholders(services, '{{apiEndPoint}}', unityConfig.apiEndPoint);
       this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
     }
   }
-
-  // replacePlaceholders(services, apiEndPoint, replaceTxt) {
-  //   return JSON.parse(JSON.stringify(services).replace(replaceTxt, apiEndPoint));
-  // }
 
   replacePlaceholders(services, placeholder, value) {
     const jsonString = JSON.stringify(services).replace(new RegExp(placeholder, 'g'), value);
@@ -35,7 +28,6 @@ class HealthCheck {
 
   async init(el = null) {
     this.el = el;
-    // this.services = await this.loadServices();
     if (!this.services) return;
 
     for (const categoryName of Object.keys(this.services)) {
@@ -52,7 +44,6 @@ class HealthCheck {
     for (const service of apis) {
       const result = await this.checkService(category, service, apis);
       results.push(result);
-
       if (!result.success) {
         allSuccess = false;
       }
@@ -61,14 +52,22 @@ class HealthCheck {
     return { allSuccess, results };
   }
 
+  async getBlogData(options) {
+    console.log('Getting blog data...');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return options;
+  }
+
   async checkService(category, service , apis) {
     try {
       const apiKey = category === 'acrobat' ? 'acrobatmilo' : unityConfig.apiKey;
-      const options = {
+      let options = {
         method: service.method,
         headers: getHeaders(apiKey),
       };
-
+      if (service.workFlow && this.workflowFunctions[service.workFlow]) {
+        options = await this.workflowFunctions[service.workFlow](options);
+      }
       if (service.body && ['POST', 'PUT'].includes(service.method)) {
         options.body = JSON.stringify(service.body);
       }
@@ -79,14 +78,18 @@ class HealthCheck {
         throw new Error(`${service.name} failed with status ${response.status}`);
       }
       const data = await response.json();
-      if (service.replaceKey && data[service.replaceKey]) {
-        const placeholder = `{{${service.replaceKey}}}`;
-        const value = data[service.replaceKey];
-        this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
-        for (let i = 0; i < apis.length; i++) {
+      if (service.replaceKey) {
+        data[service.replaceKey].forEach((item) => {
+          const placeholder = `{{${item}}}`;
+          const value = data[item];
+          this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
+        });
+        for (let i = 0; i < apis.length; i += 1) {
           apis[i] = this.services[category][i];
         }
       }
+
+      // const assetId = await uploadImgToUnity(cfg, href, id, blobData, fileType);
 
       console.log(`[${category}] ${service.name}: ✅ UP`);
       return { name: service.name, status: 'UP', success: true };
