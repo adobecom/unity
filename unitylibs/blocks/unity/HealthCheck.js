@@ -17,7 +17,7 @@ class HealthCheck {
 
       // Replace placeholders with actual values
       // return this.replacePlaceholders(services, unityConfig.apiEndPoint);
-      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint, 'apiEndPoint');
+      this.services = this.replacePlaceholders(services, '{{apiEndPoint}}', unityConfig.apiEndPoint);
       this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
