@@ -53,12 +53,27 @@ class HealthCheck {
   }
 
   async getBlogData(options) {
-    console.log('Getting blog data...');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return options;
+    const imgUrl = `${getUnityLibs()}/img/healthcheck.jpeg`;
+    const { headers } = options;
+    return new Promise((res, rej) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', imgUrl);
+      xhr.responseType = 'blob';
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const uploadOptions = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'image/jpeg', ...headers },
+            body: xhr.response,
+          };
+          res(uploadOptions);
+        } else rej(xhr.status);
+      };
+      xhr.send();
+    });
   }
 
-  async checkService(category, service , apis) {
+  async checkService(category, service, apis) {
     try {
       const apiKey = category === 'acrobat' ? 'acrobatmilo' : unityConfig.apiKey;
       let options = {
@@ -66,7 +81,7 @@ class HealthCheck {
         headers: getHeaders(apiKey),
       };
       if (service.workFlow && this.workflowFunctions[service.workFlow]) {
-        options = await this.workflowFunctions[service.workFlow](options);
+        options = await this.workflowFunctions[service.workFlow]();
       }
       if (service.body && ['POST', 'PUT'].includes(service.method)) {
         options.body = JSON.stringify(service.body);
@@ -79,7 +94,7 @@ class HealthCheck {
       }
       const data = await response.json();
       if (service.replaceKey) {
-        data[service.replaceKey].forEach((item) => {
+        service.replaceKey.forEach((item) => {
           const placeholder = `{{${item}}}`;
           const value = data[item];
           this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
