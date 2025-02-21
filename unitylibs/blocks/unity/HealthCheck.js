@@ -50,7 +50,7 @@ class HealthCheck {
     const results = [];
 
     for (const service of apis) {
-      const result = await this.checkService(category, service);
+      const result = await this.checkService(category, service, apis);
       results.push(result);
 
       if (!result.success) {
@@ -61,7 +61,7 @@ class HealthCheck {
     return { allSuccess, results };
   }
 
-  async checkService(category, service) {
+  async checkService(category, service , apis) {
     try {
       const apiKey = category === 'acrobat' ? 'acrobatmilo' : unityConfig.apiKey;
       const options = {
@@ -82,7 +82,10 @@ class HealthCheck {
       if (service.replaceKey && data[service.replaceKey]) {
         const placeholder = `{{${service.replaceKey}}}`;
         const value = data[service.replaceKey];
-        this.services = this.replacePlaceholders(this.services, placeholder, value);
+        this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
+        for (let i = 0; i < apis.length; i++) {
+          apis[i] = this.services[category][i];
+        }
       }
 
       console.log(`[${category}] ${service.name}: ✅ UP`);
