@@ -1,6 +1,6 @@
 {
     "photoshop": [
-      { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST" },
+      { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": "id" },
       { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
       { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] } },
       {

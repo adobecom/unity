@@ -17,15 +17,20 @@ class HealthCheck {
 
       // Replace placeholders with actual values
       // return this.replacePlaceholders(services, unityConfig.apiEndPoint);
-      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint, /{{apiEndPoint}}/g);
+      this.services = this.replacePlaceholders(services, unityConfig.apiEndPoint, 'apiEndPoint');
       this.init();
     } catch (error) {
       console.error('Error loading services:', error.message);
     }
   }
 
-  replacePlaceholders(services, apiEndPoint, replaceTxt) {
-    return JSON.parse(JSON.stringify(services).replace(replaceTxt, apiEndPoint));
+  // replacePlaceholders(services, apiEndPoint, replaceTxt) {
+  //   return JSON.parse(JSON.stringify(services).replace(replaceTxt, apiEndPoint));
+  // }
+
+  replacePlaceholders(services, placeholder, value) {
+    const jsonString = JSON.stringify(services).replace(new RegExp(placeholder, 'g'), value);
+    return JSON.parse(jsonString);
   }
 
   async init(el = null) {
@@ -74,7 +79,11 @@ class HealthCheck {
         throw new Error(`${service.name} failed with status ${response.status}`);
       }
       const data = await response.json();
-      console.log(data);
+      if (service.replaceKey && data[service.replaceKey]) {
+        const placeholder = `{{${service.replaceKey}}}`;
+        const value = data[service.replaceKey];
+        this.services = this.replacePlaceholders(this.services, placeholder, value);
+      }
 
       console.log(`[${category}] ${service.name}: ✅ UP`);
       return { name: service.name, status: 'UP', success: true };
