@@ -30,11 +30,11 @@ class ServiceHandler {
     this.unityEl = unityEl;
   }
 
-  getHeaders() {
+  async getHeaders() {
     return {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: getGuestAccessToken(),
+        Authorization: await getGuestAccessToken(),
         'x-api-key': unityConfig.apiKey,
       },
     };
@@ -43,7 +43,7 @@ class ServiceHandler {
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      ...this.getHeaders(),
+      ...await this.getHeaders(),
       ...options,
     };
     try {
