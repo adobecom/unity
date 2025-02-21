@@ -81,7 +81,7 @@ class HealthCheck {
         headers: getHeaders(apiKey),
       };
       if (service.workFlow && this.workflowFunctions[service.workFlow]) {
-        options = await this.workflowFunctions[service.workFlow]();
+        options = await this.workflowFunctions[service.workFlow](options);
       }
       if (service.body && ['POST', 'PUT'].includes(service.method)) {
         options.body = JSON.stringify(service.body);
