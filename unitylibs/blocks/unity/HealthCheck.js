@@ -52,9 +52,8 @@ class HealthCheck {
     return { allSuccess, results };
   }
 
-  async getBlogData(options) {
+  async getBlogData() {
     const imgUrl = `${getUnityLibs()}/img/healthcheck.jpeg`;
-    const { headers } = options;
     return new Promise((res, rej) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', imgUrl);
@@ -63,7 +62,7 @@ class HealthCheck {
         if (xhr.status === 200) {
           const uploadOptions = {
             method: 'PUT',
-            headers: { ...headers, 'Content-Type': 'image/jpeg' },
+            headers: { 'Content-Type': 'image/jpeg' },
             body: xhr.response,
           };
           res(uploadOptions);
