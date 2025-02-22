@@ -53,10 +53,20 @@ export default class UploadHandler {
       headers: { 'Content-Type': fileType },
       body: blobData,
     };
-    const response = await fetch(storageUrl, uploadOptions);
-    console.log(response);
-    if (!response.ok) throw new Error(`Failed to upload: ${response.status}`);
-    return response;
+    try {
+      const error = new Error();
+      const response = await fetch(storageUrl, uploadOptions);
+      if (!response.ok) {
+        error.status = response.status;
+        throw error;
+      }
+      return response;
+    } catch (e) {
+      if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+        e.status = 504;
+      }
+      throw e;
+    }
   }
 
   getDeviceType() {
@@ -100,8 +110,7 @@ export default class UploadHandler {
         return () => {
           if (fileUploadFailed) return Promise.resolve();
           return this.uploadFileToUnity(url.href, chunk, fileType).catch(async (e) => {
-            console.log(e);
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}`, true);
+            await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, `Error uploading chunk ${i + 1} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}, ${e.message}`, false, e.showError);
             failedFiles.add(fileIndex);
             fileUploadFailed = true;
           });
@@ -291,7 +300,7 @@ export default class UploadHandler {
       maxConcurrentChunks,
     );
     if (uploadResult.size === 1) {
-      await this.dispatchGenericError('Error uploading file chunks.');
+      await this.dispatchGenericError(`Error uploading file chunks for file: ${assetData.id}, ${file.size} bytes, ${file.type}`);
       return;
     }
     this.actionBinder.operations.push(assetData.id);
@@ -378,6 +387,7 @@ export default class UploadHandler {
       maxConcurrentChunks,
     );
     if (uploadResult.size === files.length) {
+      await this.dispatchGenericError(`Error uploading all ${files.length} files for workflow: ${workflowId}`);
       await this.dispatchGenericError();
       return;
     }
