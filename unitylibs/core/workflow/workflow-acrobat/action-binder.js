@@ -146,12 +146,10 @@ export default class ActionBinder {
   }
 
   async applySignedInSettings() {
-    this.accountType = await this.getAccountType();
-    if (this.block.classList.contains('signed-in')) {
-      if (this.accountType === 'type1') {
-        this.acrobatSignedInSettings();
-        return;
-      }
+    if (this.block.classList.contains('signed-in')
+      && this.getAccountType() === 'type1') {
+      this.acrobatSignedInSettings();
+      return;
     }
     window.addEventListener('IMS:Ready', () => {
       this.acrobatSignedInSettings();
