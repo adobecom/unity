@@ -3,19 +3,19 @@
       { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
       { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
       { "name": "Asset Upload", "url": "{{href}}", "method": "PUT", "workFlow":"getBlogData"},
-      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] } },
+      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] }, "replaceKey": ["assetId"]},
       {
         "name": "changeBackground",
         "url": "{{apiEndPoint}}/providers/PhotoshopChangeBackground",
         "method": "POST",
         "body": {
           "metadata": {
-            "foregroundImageId": "a272dae5-92bc-4838-9352-a8deffb352b0",
-            "backgroundImageId": "a272dae5-92bc-4838-9352-a8deffb352b0"
+            "foregroundImageId": "{{assetId}}",
+            "backgroundImageId": "{{id}}"
           },
           "assets": [
-            { "id": "a272dae5-92bc-4838-9352-a8deffb352b0" },
-            { "id": "a272dae5-92bc-4838-9352-a8deffb352b0" }
+            { "id": "{{assetId}}" },
+            { "id": "{{id}}" }
           ]
         }
       },
