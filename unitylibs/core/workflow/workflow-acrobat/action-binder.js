@@ -362,7 +362,7 @@ export default class ActionBinder {
     else await this.handleMultiFileUpload(files, totalFileSize, eventName);
   }
 
-  async addcomment(files, eventName) {
+  async addComment(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
@@ -372,7 +372,7 @@ export default class ActionBinder {
     await this.handleSingleFileUpload(file, eventName);
   }
 
-  async numberpages(files, eventName) {
+  async numberPages(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
@@ -382,7 +382,7 @@ export default class ActionBinder {
     await this.handleSingleFileUpload(file, eventName);
   }
 
-  async splitpdf(files, eventName) {
+  async splitPdf(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
@@ -392,7 +392,7 @@ export default class ActionBinder {
     await this.handleSingleFileUpload(file, eventName);
   }
 
-  async croppages(files, eventName) {
+  async cropPages(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
@@ -468,19 +468,19 @@ export default class ActionBinder {
           break;
         case value.actionType === 'addcomment':
           this.promiseStack = [];
-          await this.addcomment(files, eventName);
+          await this.addComment(files, eventName);
           break;
         case value.actionType === 'numberpages':
           this.promiseStack = [];
-          await this.numberpages(files, eventName);
+          await this.numberPages(files, eventName);
           break;
         case value.actionType === 'splitpdf':
           this.promiseStack = [];
-          await this.splitpdf(files, eventName);
+          await this.splitPdf(files, eventName);
           break;
         case value.actionType === 'croppages':
           this.promiseStack = [];
-          await this.croppages(files, eventName);
+          await this.cropPages(files, eventName);
           break;
         case value.actionType === 'continueInApp':
           await this.continueInApp();
