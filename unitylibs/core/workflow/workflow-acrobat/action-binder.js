@@ -342,7 +342,7 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
-  async fillsign(files, eventName) {
+  async processSingleFile(files, eventName) {
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
@@ -350,6 +350,26 @@ export default class ActionBinder {
     const file = files[0];
     if (!file) return;
     await this.handleSingleFileUpload(file, eventName);
+  }
+
+  async fillsign(files, eventName) {
+    await this.processSingleFile(files, eventName);
+  }
+
+  async addComment(files, eventName) {
+    await this.processSingleFile(files, eventName);
+  }
+
+  async numberPages(files, eventName) {
+    await this.processSingleFile(files, eventName);
+  }
+
+  async splitPdf(files, eventName) {
+    await this.processSingleFile(files, eventName);
+  }
+
+  async cropPages(files, eventName) {
+    await this.processSingleFile(files, eventName);
   }
 
   async compress(files, totalFileSize, eventName) {
@@ -360,46 +380,6 @@ export default class ActionBinder {
     const isSingleFile = files.length === 1;
     if (isSingleFile) await this.handleSingleFileUpload(files[0], eventName);
     else await this.handleMultiFileUpload(files, totalFileSize, eventName);
-  }
-
-  async addComment(files, eventName) {
-    if (!files || files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
-      return;
-    }
-    const file = files[0];
-    if (!file) return;
-    await this.handleSingleFileUpload(file, eventName);
-  }
-
-  async numberPages(files, eventName) {
-    if (!files || files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
-      return;
-    }
-    const file = files[0];
-    if (!file) return;
-    await this.handleSingleFileUpload(file, eventName);
-  }
-
-  async splitPdf(files, eventName) {
-    if (!files || files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
-      return;
-    }
-    const file = files[0];
-    if (!file) return;
-    await this.handleSingleFileUpload(file, eventName);
-  }
-
-  async cropPages(files, eventName) {
-    if (!files || files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
-      return;
-    }
-    const file = files[0];
-    if (!file) return;
-    await this.handleSingleFileUpload(file, eventName);
   }
 
   delay(ms) {
