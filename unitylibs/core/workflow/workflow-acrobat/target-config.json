@@ -12,8 +12,7 @@
       "pageLimit": {
         "maxNumPages": 100
       },
-      "allowedFileTypes": ["application/pdf"],
-      "batchSize": 10
+      "allowedFileTypes": ["application/pdf"]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
@@ -71,8 +70,7 @@
         "image/tiff",
         "message/rfc822",
         "text/plain"
-      ],
-      "batchSize": 10
+      ]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
