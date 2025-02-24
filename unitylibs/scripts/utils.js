@@ -7,8 +7,7 @@ export const [setLibs, getLibs] = (() => {
         if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
-        const env = hostname.includes('.hlx.') ? 'hlx' : 'aem';
-        return branch.includes('--') ? `https://${branch}.${env}.live/libs` : `https://${branch}--milo--adobecom.${env}.live/libs`;
+        return branch.includes('--') ? `https://${branch}.aem.live/libs` : `https://${branch}--milo--adobecom.aem.live/libs`;
       })();
       return libs;
     }, () => libs,
