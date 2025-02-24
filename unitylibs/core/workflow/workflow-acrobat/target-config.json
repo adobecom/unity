@@ -108,8 +108,7 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "allowedFileTypes": ["application/pdf"],
-      "batchSize": 10
+      "allowedFileTypes": ["application/pdf"]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
@@ -172,8 +171,7 @@
         "image/tiff",
         "message/rfc822",
         "text/plain"
-      ],
-      "batchSize": 10
+      ]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
@@ -209,8 +207,7 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "allowedFileTypes": ["application/pdf"],
-      "batchSize": 10
+      "allowedFileTypes": ["application/pdf"]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
@@ -246,8 +243,7 @@
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 104857600,
-      "allowedFileTypes": ["application/pdf"],
-      "batchSize": 10
+      "allowedFileTypes": ["application/pdf"]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
