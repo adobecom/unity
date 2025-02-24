@@ -91,8 +91,8 @@ class HealthCheck {
       if (!response.ok) {
         throw new Error(`${service.name} failed with status ${response.status}`);
       }
-      const data = await response.json();
       if (service.replaceKey) {
+        const data = await response.json();
         service.replaceKey.forEach((item) => {
           const placeholder = `{{${item}}}`;
           const value = data[item];
