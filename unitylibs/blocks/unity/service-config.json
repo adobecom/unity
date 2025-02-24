@@ -23,21 +23,17 @@
         "name": "Connector",
         "url": "{{apiEndPoint}}/asset/connector",
         "method": "POST",
-        "body": {
-          "targetProduct": "Photoshop",
-          "payload": {
-            "locale": "in",
-            "operations": [
-              { "name": "removeBackground" },
+        "body":
+          {
+            "targetProduct":"Photoshop",
+            "payload":
               {
-                "name": "changeBackground",
-                "assetIds": ["a272dae5-92bc-4838-9352-a8deffb352b0"]
+                "locale":"in",
+                "operations":[{"name":"removeBackground"}],
+                "finalAssetId":"{{assetId}}",
+                "assetId":"{{id}}"
               }
-            ],
-            "finalAssetId": "a272dae5-92bc-4838-9352-a8deffb352b0"
-          },
-          "assetId": "a272dae5-92bc-4838-9352-a8deffb352b0"
-        }
+          }
       }
     ],
     "acrobat": [
