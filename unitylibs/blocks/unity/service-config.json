@@ -26,13 +26,10 @@
         "body":
           {
             "targetProduct":"Photoshop",
-            "payload":
-              {
-                "locale":"in",
-                "operations":[{"name":"removeBackground"}],
-                "finalAssetId":"{{assetId}}",
-                "assetId":"{{id}}"
-              }
+            "locale":"in",
+            "operations":[{"name":"removeBackground"}],
+            "finalAssetId":"{{assetId}}",
+            "assetId":"{{id}}"
           }
       }
     ],
