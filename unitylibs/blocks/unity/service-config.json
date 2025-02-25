@@ -44,21 +44,22 @@
           "name": "dummyfile.pdf",
           "size": 13264,
           "surfaceId": "unity"
-        }
+        },
+        "replaceKey": ["id"]
       },
       {
         "name": "Connector",
         "url": "{{apiEndPoint}}/asset/connector",
         "method": "POST",
         "body": {
-          "assetId": "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85",
+          "assetId": "{{id}}",
           "targetProduct": "acrobat",
           "payload": {
             "languageRegion": "us",
             "languageCode": "en",
             "verb": "fillsign",
             "assetMetadata": {
-              "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85": {
+              "{{id}}": {
                 "name": "dummyfile.pdf",
                 "size": 13264,
                 "type": "application/pdf"
@@ -72,14 +73,14 @@
         "url": "{{apiEndPoint}}/asset/finalize",
         "method": "POST",
         "body": {
-          "assetId": "urn:aaid:sc:AP:4f238dfa-c9ba-3a27-975f-f30cbcb4bb85",
+          "assetId": "{{id}}",
           "surfaceId": "unity",
           "targetProduct": "acrobat"
         }
       },
       {
         "name": "Metadata",
-        "url": "{{apiEndPoint}}/asset/metadata?id=urn%3Aaaid%3Asc%3AAP%3A4f238dfa-c9ba-3a27-975f-f30cbcb4bb85",
+        "url": "{{apiEndPoint}}/asset/metadata?id={{id}}",
         "method": "GET"
       }
     ],
