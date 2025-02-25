@@ -71,16 +71,18 @@ class ServiceHandler {
             if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
           });
         }
+        if (!error.message) error.message = `Error fetching from service. URL: ${url}, Options: ${JSON.stringify(options)}`;
         error.status = response.status;
         throw error;
       }
       if (contentLength === '0') return {};
       return response.json();
-    } catch (error) {
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        error.status = 504;
+    } catch (e) {
+      if (['TimeoutError', 'AbortError'].includes(e.name)) {
+        e.status = 504;
+        e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
       }
-      throw error;
+      throw e;
     }
   }
 
@@ -177,7 +179,11 @@ export default class ActionBinder {
   }
 
   getAccountType() {
-    return window.adobeIMS?.getAccountType?.() || '';
+    try {
+      return window.adobeIMS.getAccountType();
+    } catch (e) {
+      return '';
+    }
   }
 
   async dispatchErrorToast(code, status, info = null, lanaOnly = false, showError = true) {
@@ -320,10 +326,14 @@ export default class ActionBinder {
     const fileData = { type: file.type, size: file.size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
     if (!await this.validateFiles([file])) return;
-    const isGuest = this.getAccountType() === 'guest';
+    const accountType = this.getAccountType();
+    if (!accountType) {
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Account type not found', false);
+      return;
+    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (isGuest) await this.uploadHandler.singleFileGuestUpload(file);
+    if (accountType === 'guest') await this.uploadHandler.singleFileGuestUpload(file);
     else await this.uploadHandler.singleFileUserUpload(file);
   }
 
@@ -335,10 +345,14 @@ export default class ActionBinder {
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
     if (!await this.validateFiles(files)) return;
-    const isGuest = this.getAccountType() === 'guest';
+    const accountType = this.getAccountType();
+    if (!accountType) {
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Account type not found', false);
+      return;
+    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (isGuest) await this.uploadHandler.multiFileGuestUpload();
+    if (accountType === 'guest') await this.uploadHandler.multiFileGuestUpload();
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
