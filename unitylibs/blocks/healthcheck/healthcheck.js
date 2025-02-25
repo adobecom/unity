@@ -38,20 +38,20 @@ class HealthCheck {
     }
   }
 
-  async checkCategory(category, apis) {
-    let allSuccess = true;
-    const results = [];
+//   async checkCategory(category, apis) {
+//     let allSuccess = true;
+//     const results = [];
 
-    for (const service of apis) {
-      const result = await this.checkService(category, service, apis);
-      results.push(result);
-      if (!result.success) {
-        allSuccess = false;
-      }
-    }
+//     for (const service of apis) {
+//       const result = await this.checkService(category, service, apis);
+//       results.push(result);
+//       if (!result.success) {
+//         allSuccess = false;
+//       }
+//     }
 
-    return { allSuccess, results };
-  }
+//     return { allSuccess, results };
+//   }
 
   async getBlogData() {
     const imgUrl = `${getUnityLibs()}/img/healthcheck.jpeg`;
@@ -75,44 +75,113 @@ class HealthCheck {
 
   async checkService(category, service, apis) {
     try {
-      const apiKey = category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc';
-      let options = {
-        method: service.method,
-        headers: getHeaders(apiKey),
-      };
-      if (service.workFlow && this.workflowFunctions[service.workFlow]) {
-        options = await this.workflowFunctions[service.workFlow](options);
-      }
-      if (service.body && ['POST', 'PUT'].includes(service.method)) {
-        options.body = JSON.stringify(service.body);
-      }
+        const apiKey = category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc';
+        let options = {
+            method: service.method,
+            headers: getHeaders(apiKey),
+        };
 
-      const response = await fetch(service.url, options);
-
-      if (!response.ok) {
-        throw new Error(`${service.name} failed with status ${response.status}`);
-      }
-      if (service.replaceKey) {
-        const data = await response.json();
-        service.replaceKey.forEach((item) => {
-          const placeholder = `{{${item}}}`;
-          const value = data[item];
-          this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
-        });
-        for (let i = 0; i < apis.length; i += 1) {
-          apis[i] = this.services[category][i];
+        if (service.workFlow && this.workflowFunctions[service.workFlow]) {
+            options = await this.workflowFunctions[service.workFlow](options);
         }
-      }
 
-      // const assetId = await uploadImgToUnity(cfg, href, id, blobData, fileType);
+        if (service.body && ['POST', 'PUT'].includes(service.method)) {
+            options.body = JSON.stringify(service.body);
+        }
 
-      console.log(`[${category}] ${service.name}: ✅ UP`);
-      return { name: service.name, status: 'UP', success: true };
+        const response = await fetch(service.url, options);
+        const statusCode = response.status;
+
+        if (!response.ok) {
+            throw new Error(`${service.name} failed with status ${statusCode}`);
+        }
+
+        if (service.replaceKey) {
+            const data = await response.json();
+            service.replaceKey.forEach((item) => {
+                const placeholder = `{{${item}}}`;
+                const value = data[item];
+                this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
+            });
+            for (let i = 0; i < apis.length; i += 1) {
+                apis[i] = this.services[category][i];
+            }
+        }
+
+        console.log(`[${category}] ${service.name}: ✅ UP`);
+        return { name: service.name, status: 'UP', success: true, statusCode };
+
     } catch (error) {
-      console.error(`[${category}] ${service.name}: ❌ DOWN - ${error.message}`);
-      return { name: service.name, status: 'DOWN', success: false, error: error.message };
+        console.error(`[${category}] ${service.name}: ❌ DOWN - ${error.message}`);
+        return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: 500 };
     }
-  }
+}
+
+
+//   async checkService(category, service, apis) {
+//     try {
+//       const apiKey = category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc';
+//       let options = {
+//         method: service.method,
+//         headers: getHeaders(apiKey),
+//       };
+//       if (service.workFlow && this.workflowFunctions[service.workFlow]) {
+//         options = await this.workflowFunctions[service.workFlow](options);
+//       }
+//       if (service.body && ['POST', 'PUT'].includes(service.method)) {
+//         options.body = JSON.stringify(service.body);
+//       }
+
+//       const response = await fetch(service.url, options);
+
+//       if (!response.ok) {
+//         throw new Error(`${service.name} failed with status ${response.status}`);
+//       }
+//       if (service.replaceKey) {
+//         const data = await response.json();
+//         service.replaceKey.forEach((item) => {
+//           const placeholder = `{{${item}}}`;
+//           const value = data[item];
+//           this.services[category] = this.replacePlaceholders(this.services[category], placeholder, value);
+//         });
+//         for (let i = 0; i < apis.length; i += 1) {
+//           apis[i] = this.services[category][i];
+//         }
+//       }
+
+//       // const assetId = await uploadImgToUnity(cfg, href, id, blobData, fileType);
+
+//       console.log(`[${category}] ${service.name}: ✅ UP`);
+//       return { name: service.name, status: 'UP', success: true };
+//     } catch (error) {
+//       console.error(`[${category}] ${service.name}: ❌ DOWN - ${error.message}`);
+//       return { name: service.name, status: 'DOWN', success: false, error: error.message };
+//     }
+//   }
+
+async checkCategory(category, apis) {
+    let allSuccess = true;
+    const results = [];
+    const categoryStatus = {}; // Store API response codes per category
+
+    for (const service of apis) {
+        const result = await this.checkService(category, service, apis);
+        results.push(result);
+
+        if (!result.success) {
+            allSuccess = false;
+        }
+
+        // Store response status for the category
+        categoryStatus[category] = result.statusCode || 'Failed';
+    }
+
+    // Print JSON-like API status after all services in category have been processed
+    console.log(JSON.stringify(categoryStatus, null, 2));
+
+    return { allSuccess, results };
+}
+
 
   printResults(category, { allSuccess, results }) {
     const container = document.createElement('div');
