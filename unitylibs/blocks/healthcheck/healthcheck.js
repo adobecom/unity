@@ -30,8 +30,7 @@ class HealthCheck {
   async init(el = null) {
     console.log('init');
     this.el = el;
-    if (!this.services) return;
-    this.services = await this.loadServices();
+    if (!this.services) this.services = await this.loadServices();
     for (const categoryName of Object.keys(this.services)) {
       const apis = this.services[categoryName];
       const results = await this.checkCategory(categoryName, apis);
