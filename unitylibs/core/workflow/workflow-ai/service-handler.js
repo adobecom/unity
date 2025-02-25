@@ -3,45 +3,18 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig } from '../../../scripts/utils.js';
-
+import { unityConfig, getGuestAccessToken } from '../../../scripts/utils.js';
 export default class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
   }
 
-  async getRefreshToken() {
-    try {
-      const { tokenInfo } = await window.adobeIMS.refreshToken();
-      return `Bearer ${tokenInfo.token}`;
-    } catch (e) {
-      return '';
-    }
-  }
-
   async getHeaders() {
-    let token = '';
-    let refresh = false;
-    const guestAccessToken = window.adobeIMS?.getAccessToken();
-    if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
-      token = await this.getRefreshToken();
-      refresh = true;
-    } else {
-      token = `Bearer ${guestAccessToken.token}`;
-    }
-
-    if (!token) {
-      const error = new Error();
-      error.status = 401;
-      error.message = `Unauthorized Access: ${refresh}`;
-      throw error;
-    }
-
     return {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: token,
+        Authorization: await getGuestAccessToken(),
         'x-api-key': unityConfig.apiKey,
       },
     };
