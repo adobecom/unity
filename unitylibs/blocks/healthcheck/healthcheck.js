@@ -75,7 +75,7 @@ class HealthCheck {
 
   async checkService(category, service, apis) {
     try {
-      const apiKey = category === 'acrobat' ? 'acrobatmilo' : unityConfig.apiKey;
+      const apiKey = category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc';
       let options = {
         method: service.method,
         headers: getHeaders(apiKey),
@@ -148,5 +148,8 @@ class HealthCheck {
 
 export default async function init(el, project = 'cc', unityLibs = '/unitylibs') {
   setUnityLibs(unityLibs, project);
-  await new HealthCheck().init(el);
+  setTimeout(async () => {
+    console.log('Executed after 3 seconds');
+    await new HealthCheck().init(el);
+  }, 3000);
 }
