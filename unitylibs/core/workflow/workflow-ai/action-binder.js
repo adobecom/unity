@@ -68,7 +68,7 @@ export default class ActionBinder {
     return element;
   }
 
-  async initActionListeners() {
+  initActionListeners() {
     Object.entries(this.actions).forEach(([selector, actionsList]) => {
       const elements = this.block.querySelectorAll(selector);
       elements.forEach((el) => {

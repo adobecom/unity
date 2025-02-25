@@ -514,7 +514,7 @@ export default class ActionBinder {
     return f;
   }
 
-  async delayedSplashLoader() {
+  delayedSplashLoader() {
     let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
     const interactionHandler = async () => {
       await this.loadSplashFragment();
@@ -546,7 +546,7 @@ export default class ActionBinder {
     ));
   }
 
-  async initActionListeners(b = this.block, actMap = this.actionMap) {
+  initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, values] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
@@ -575,7 +575,7 @@ export default class ActionBinder {
           break;
       }
     }
-    if (b === this.block) await this.delayedSplashLoader();
+    if (b === this.block) this.delayedSplashLoader();
   }
 
   async handleSplashProgressBar() {
