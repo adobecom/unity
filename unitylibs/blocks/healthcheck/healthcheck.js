@@ -177,10 +177,34 @@ async checkCategory(category, apis) {
     }
 
     // Print JSON-like API status after all services in category have been processed
-    console.log(JSON.stringify(categoryStatus, null, 2));
+    this.printApiResponse(categoryStatus);
 
     return { allSuccess, results };
 }
+
+printApiResponse(statusData) {
+    // Create container
+    const container = document.createElement('div');
+    container.style.padding = '10px';
+    container.style.border = '1px solid #ccc';
+    container.style.margin = '10px';
+    container.style.borderRadius = '5px';
+    container.style.backgroundColor = '#f1f1f1';
+    
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = 'API Status';
+    container.appendChild(title);
+
+    // Convert statusData (JSON) into a formatted string
+    const statusText = document.createElement('pre');
+    statusText.textContent = JSON.stringify(statusData, null, 2);
+    container.appendChild(statusText);
+
+    // Append to the main container (this.el should be a valid DOM element)
+    this.el.appendChild(container);
+}
+
 
 
   printResults(category, { allSuccess, results }) {
