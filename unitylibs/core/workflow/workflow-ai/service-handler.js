@@ -3,21 +3,11 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig, getGuestAccessToken } from '../../../scripts/utils.js';
+import { unityConfig, getHeaders} from '../../../scripts/utils.js';
 export default class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
-  }
-
-  async getHeaders() {
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: await getGuestAccessToken(),
-        'x-api-key': unityConfig.apiKey,
-      },
-    };
   }
 
   async fetchFromService(url, options) {
@@ -38,7 +28,7 @@ export default class ServiceHandler {
   }
 
   async postCallToService(api, options) {
-    const headers = await this.getHeaders();
+    const headers = await getHeaders(unityConfig.apiKey);
     const postOpts = {
       method: 'POST',
       ...headers,

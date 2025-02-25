@@ -12,20 +12,10 @@ import {
   priorityLoad,
   loadArea,
   loadImg,
-  getGuestAccessToken
+  getHeaders
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-
-  async getHeaders() {
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: await getGuestAccessToken(),
-        'x-api-key': unityConfig.apiKey,
-      },
-    };
-  }
 
   async fetchFromService(url, options) {
     try {
@@ -90,7 +80,7 @@ class ServiceHandler {
   }
 
   async postCallToService(api, options) {
-    const headers = await this.getHeaders();
+    const headers = await getHeaders(unityConfig.apiKey);
     const postOpts = {
       method: 'POST',
       ...headers,
@@ -110,7 +100,7 @@ class ServiceHandler {
   }
 
   async getCallToService(api, params) {
-    const headers = await this.getHeaders();
+    const headers = await getHeaders(unityConfig.apiKey);
     const getOpts = {
       method: 'GET',
       ...headers,
