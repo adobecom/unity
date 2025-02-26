@@ -6,13 +6,14 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getHeaders,
+  getGuestAccessToken,
   unityConfig,
   loadImg,
   createTag,
   getLocale,
   delay,
   getLibs,
+  getHeaders,
 } from '../../../scripts/utils.js';
 
 const CONTAIN_OBJECT = 'contain-object';
@@ -28,6 +29,16 @@ class ServiceHandler {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
+  }
+
+  getHeaders() {
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: getGuestAccessToken(),
+        'x-api-key': unityConfig.apiKey,
+      },
+    };
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
