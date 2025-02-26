@@ -170,7 +170,7 @@ class HealthCheck {
       container.innerHTML += `<p>✅ All ${category} APIs are working. Workflow completed successfully!</p>`;
       results.forEach((result) => {
         const statusText = document.createElement('p');
-        statusText.textContent = `🔹 ${result.name}: ${result.success} '✅ UP'`;
+        statusText.textContent = `🔹 ${result.name}: '✅ UP'`;
         statusText.style.color = 'green';
         container.appendChild(statusText);
       });
