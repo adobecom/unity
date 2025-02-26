@@ -100,7 +100,9 @@ class HealthCheck {
     container.innerHTML = `<h3>${category.toUpperCase()} Workflow</h3>
       <p>${allSuccess ? '\u2705 All APIs are working. Workflow completed successfully!' : '\u274C Some APIs failed:'}</p>`;
     results.forEach(({ name, success, error }) => {
-      container.innerHTML += `<p style="color:${success ? 'green' : 'red'}">\u1F539 ${name}: ${success ? '\u2705 UP' : `\u274C DOWN - ${error}`}</p>`;
+      container.innerHTML += `<p style="color:${success ? 'green' : 'red'}">
+        ${String.fromCodePoint(0x1F539)} ${name}: ${success ? `${String.fromCodePoint(0x2705)} UP` : `${String.fromCodePoint(0x274C)} DOWN - ${error}`}
+      </p>`;
     });
     this.el.appendChild(container);
   }
