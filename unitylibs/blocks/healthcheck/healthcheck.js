@@ -188,7 +188,7 @@ class HealthCheck {
   }
 }
 
-export default function init(el, project = 'cc', unityLibs = '/unitylibs') {
+export default function init(el, project = 'unity', unityLibs = '/unitylibs') {
   setUnityLibs(unityLibs, project);
   if (window.adobeIMS) {
     new HealthCheck().init(el);
