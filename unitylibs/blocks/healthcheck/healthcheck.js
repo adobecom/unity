@@ -70,8 +70,6 @@ class HealthCheck {
       0x0A, 0x0A, 0x78, 0x0A, 0x73, 0x74, 0x61, 0x72, 0x74,
     ]);
     const blobFile = new Blob([pdfData], { type: 'application/pdf' });
-
-    // Step 2: Convert Blob to an object URL
     const objUrl = URL.createObjectURL(blobFile);
     const response = await fetch(objUrl);
     if (!response.ok) throw new Error(`Failed to create Blob: ${response.status}`);
@@ -170,6 +168,12 @@ class HealthCheck {
     if (allSuccess) {
       container.style.backgroundColor = '#d4edda'; // Green background
       container.innerHTML += `<p>✅ All ${category} APIs are working. Workflow completed successfully!</p>`;
+      results.forEach((result) => {
+        const statusText = document.createElement('p');
+        statusText.textContent = `🔹 ${result.name}: ${result.success} '✅ UP'`;
+        statusText.style.color = 'green';
+        container.appendChild(statusText);
+      });
     } else {
       container.style.backgroundColor = '#f8d7da'; // Red background
       container.innerHTML += `<p>❌ Some APIs in ${category} failed:</p>`;
