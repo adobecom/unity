@@ -121,40 +121,6 @@ class ServiceHandler {
     }
   }
 
-  async fetchFromServiceWithRetry(url, options, timeLapsed=0, maxRetryDelay=120) {
-    try {
-      const response = await fetch(url, options);
-      const error = new Error();
-      const contentLength = response.headers.get('Content-Length');
-      if (response.status !== 200 && response.status !== 202) {
-        if (contentLength !== '0') {
-          const resJson = await response.json();
-          ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-            if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
-          });
-        }
-        if (!error.message) error.message = `Error fetching from service. URL: ${url}, Options: ${JSON.stringify(options)}`;
-        error.status = response.status;
-        throw error;
-      } else if (response.status === 202) {
-        if (timeLapsed < maxRetryDelay && response.headers.get("retry-after")) {
-          const retryDelay = parseInt(response.headers.get("retry-after"));
-          await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
-          timeLapsed += retryDelay;
-          return this.fetchFromServiceWithRetry(url, options, timeLapsed, maxRetryDelay);
-        }
-      }
-      if (contentLength === '0') return {};
-      return await response.json();
-    } catch (e) {
-      if (['TimeoutError', 'AbortError'].includes(e.name)) {
-        e.status = 504;
-        e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
-      }
-      throw e;
-    }
-  }
-
   async postCallToService(api, options) {
     const headers = await this.getHeaders();
     const postOpts = {
@@ -166,7 +132,7 @@ class ServiceHandler {
   }
 
   async postCallToServiceWithRetry(api, options) {
-    const headers = await getHeaders(unityConfig.apiKey);
+    const headers = await this.getHeaders(unityConfig.apiKey);
     const postOpts = {
       method: 'POST',
       ...headers,
@@ -262,9 +228,14 @@ export default class ActionBinder {
 
   async getAccountType() {
     try {
-      return window.adobeIMS.getAccountType();
+      const accountType = window.adobeIMS.getAccountType();
+      if (!accountType) {
+        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Account type is empty', false);
+        return '';
+      }
+      return accountType;
     } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception raised when getting account type: ${e.message}`, true);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `${e.message}; Account type not found`, false);
       return '';
     }
   }
@@ -285,7 +256,7 @@ export default class ActionBinder {
             code,
             message: `${message}`,
             status,
-            info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
+            info,
             accountType: this.accountType,
           },
         },
@@ -409,14 +380,11 @@ export default class ActionBinder {
     const fileData = { type: file.type, size: file.size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
     if (!await this.validateFiles([file])) return;
-    if (!this.accountType) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
-      return;
-    }
+    if (!this.accountType) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.accountType === 'guest') await this.uploadHandler.singleFileGuestUpload(file, fileData);
-    else await this.uploadHandler.singleFileUserUpload(file, fileData);
+    if (this.accountType === 'guest') await this.uploadHandler.singleFileGuestUpload(file);
+    else await this.uploadHandler.singleFileUserUpload(file);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
@@ -427,10 +395,7 @@ export default class ActionBinder {
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
     if (!await this.validateFiles(files)) return;
-    if (!this.accountType) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
-      return;
-    }
+    if (!this.accountType) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.accountType === 'guest') await this.uploadHandler.multiFileGuestUpload();
