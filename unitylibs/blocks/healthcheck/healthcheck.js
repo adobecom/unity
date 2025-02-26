@@ -9,13 +9,22 @@ class HealthCheck {
 
   async init() {
     this.services = this.services || await this.loadServices();
-    const apiStatuses = {};
-    for (const [categoryName, apis] of Object.entries(this.services)) {
-      const results = await this.checkCategory(categoryName, apis);
-      apiStatuses[categoryName] = results.results.reduce((max, res) => res.success ? max : Math.max(max, res.statusCode || 500), 200);
-      this.printResults(categoryName, results);
-    }
+
+    // ✅ Run all categories in parallel
+    const categoryResults = await Promise.all(
+      Object.entries(this.services).map(([categoryName, apis]) => this.checkCategory(categoryName, apis))
+    );
+
+    // ✅ Aggregate results and print them all at once
+    const apiStatuses = Object.fromEntries(
+      categoryResults.map(({ category, results }) => [
+        category,
+        results.reduce((max, res) => res.success ? max : Math.max(max, res.statusCode || 500), 200)
+      ])
+    );
+
     this.printApiResponse(apiStatuses);
+    categoryResults.forEach(({ category, results }) => this.printResults(category, results));
   }
 
   async loadServices() {
@@ -68,6 +77,7 @@ class HealthCheck {
 
       const response = await fetch(service.url, options);
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
+
       if (service.replaceKey) {
         const data = await response.json();
         service.replaceKey.forEach(key => {
@@ -75,6 +85,7 @@ class HealthCheck {
         });
         apis.forEach((_, i) => apis[i] = this.services[category][i]);
       }
+
       return { name: service.name, status: 'UP', success: true, statusCode: response.status };
     } catch (error) {
       return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: parseInt(error.message.match(/\d+/)?.[0]) || 500 };
@@ -82,9 +93,8 @@ class HealthCheck {
   }
 
   async checkCategory(category, apis) {
-    const results = [];
-    for (const service of apis) results.push(await this.checkService(category, service, apis));
-    return { allSuccess: results.every((res) => res.success), results };
+    const results = await Promise.all(apis.map(service => this.checkService(category, service, apis)));
+    return { category, results };
   }
 
   printApiResponse(statusData) {
@@ -94,16 +104,18 @@ class HealthCheck {
     this.el.insertBefore(container, this.el.firstChild);
   }
 
-  printResults(category, { allSuccess, results }) {
+  printResults(category, { results }) {
+    const allSuccess = results.every(res => res.success);
     const container = document.createElement('div');
     Object.assign(container.style, { padding: '10px', border: '1px solid #ccc', margin: '10px', borderRadius: '5px', backgroundColor: allSuccess ? '#d4edda' : '#f8d7da' });
+
     container.innerHTML = `<h3>${category.toUpperCase()} Workflow</h3>
-      <p>${allSuccess ? '\u2705 All APIs are working. Workflow completed successfully!' : '\u274C Some APIs failed:'}</p>`;
+      <p>${allSuccess ? '✅ All APIs are working. Workflow completed successfully!' : '❌ Some APIs failed:'}</p>`;
+
     results.forEach(({ name, success, error }) => {
-      container.innerHTML += `<p style="color:${success ? 'green' : 'red'}">
-        ${String.fromCodePoint(0x1F539)} ${name}: ${success ? `${String.fromCodePoint(0x2705)} UP` : `${String.fromCodePoint(0x274C)} DOWN - ${error}`}
-      </p>`;
+      container.innerHTML += `<p style="color:${success ? 'green' : 'red'}">🔹 ${name}: ${success ? '✅ UP' : `❌ DOWN - ${error}`}</p>`;
     });
+
     this.el.appendChild(container);
   }
 }
