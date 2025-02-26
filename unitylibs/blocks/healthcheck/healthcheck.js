@@ -60,7 +60,6 @@ class HealthCheck {
         headers: getHeaders(category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc'),
       };
 
-      // ✅ Ensure workFlow functions receive `options`
       if (service.workFlow && this.workflowFunctions[service.workFlow]) {
         options = await this.workflowFunctions[service.workFlow](options);
       } else if (service.body && ['POST', 'PUT'].includes(service.method)) {
@@ -69,8 +68,6 @@ class HealthCheck {
 
       const response = await fetch(service.url, options);
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
-
-      // ✅ Fix replaceKey updates
       if (service.replaceKey) {
         const data = await response.json();
         service.replaceKey.forEach(key => {
@@ -78,7 +75,6 @@ class HealthCheck {
         });
         apis.forEach((_, i) => apis[i] = this.services[category][i]);
       }
-
       return { name: service.name, status: 'UP', success: true, statusCode: response.status };
     } catch (error) {
       return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: parseInt(error.message.match(/\d+/)?.[0]) || 500 };
@@ -88,7 +84,7 @@ class HealthCheck {
   async checkCategory(category, apis) {
     const results = [];
     for (const service of apis) results.push(await this.checkService(category, service, apis));
-    return { allSuccess: results.every(res => res.success), results };
+    return { allSuccess: results.every((res) => res.success), results };
   }
 
   printApiResponse(statusData) {
