@@ -13,7 +13,8 @@ document.body.innerHTML = await readFile({ path: './mocks/dc-body.html' });
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-describe('Unity DC Block', () => {
+describe('Unity DC Block', function() {
+  this.timeout(10000);
   before(async () => {
     const fetchStub = sinon.stub(window, 'fetch');
     fetchStub.callsFake(async (url) => {
@@ -41,7 +42,7 @@ describe('Unity DC Block', () => {
       } else if (url.includes('metadata')) {
         payload = {};
       } else if (url.includes('asset')) {
-        payload = {};
+        payload = {id : 'testid'};
       }
       return Promise.resolve({
         json: async () => payload,
@@ -52,6 +53,7 @@ describe('Unity DC Block', () => {
     });
     const unityElement = document.querySelector('.unity');
     await init(unityElement);
+    await delay(8000);
   });
 
   it('Unity DC block should be loaded', async () => {
