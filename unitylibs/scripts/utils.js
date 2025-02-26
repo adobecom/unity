@@ -38,7 +38,7 @@ export {
 
 async function getRefreshToken() {
   try {
-    const { tokenInfo } = await window.adobeIMS.refreshToken();
+    const { tokenInfo } = await window.adobeIMS?.refreshToken();
     return `Bearer ${tokenInfo.token}`;
   } catch (e) {
     return '';
@@ -46,7 +46,7 @@ async function getRefreshToken() {
 }
 
 export async function getGuestAccessToken() {
-  let guestAccessToken = window.adobeIMS.getAccessToken();
+  let guestAccessToken = window.adobeIMS?.getAccessToken();
   if (guestAccessToken?.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
     return await getRefreshToken();
   } else {
