@@ -31,12 +31,27 @@ class HealthCheck {
     console.log('init');
     this.el = el;
     if (!this.services) this.services = await this.loadServices();
+
+    const apiStatuses = {}; // Store all category API statuses
+
     for (const categoryName of Object.keys(this.services)) {
-      const apis = this.services[categoryName];
-      const results = await this.checkCategory(categoryName, apis);
-      this.printResults(categoryName, results);
+        const apis = this.services[categoryName];
+        const results = await this.checkCategory(categoryName, apis);
+
+        // ✅ Get the worst (highest failure) status code in category
+        const worstStatus = results.results.reduce((max, result) => {
+            return result.success ? max : Math.max(max, result.statusCode || 500);
+        }, 200);
+
+        apiStatuses[categoryName] = worstStatus;
+
+        this.printResults(categoryName, results);
     }
-  }
+
+    // ✅ Print API Status First Before Workflow Results
+    this.printApiResponse(apiStatuses);
+}
+
 
 //   async checkCategory(category, apis) {
 //     let allSuccess = true;
@@ -112,10 +127,12 @@ class HealthCheck {
         return { name: service.name, status: 'UP', success: true, statusCode };
 
     } catch (error) {
+        const failureStatus = error.message.match(/\d+/) ? parseInt(error.message.match(/\d+/)[0]) : 500;
         console.error(`[${category}] ${service.name}: ❌ DOWN - ${error.message}`);
-        return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: 500 };
+        return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: failureStatus };
     }
 }
+
 
 
 //   async checkService(category, service, apis) {
@@ -183,27 +200,26 @@ async checkCategory(category, apis) {
 }
 
 printApiResponse(statusData) {
-    // Create container
-    const container = document.createElement('div');
-    container.style.padding = '10px';
-    container.style.border = '1px solid #ccc';
-    container.style.margin = '10px';
-    container.style.borderRadius = '5px';
-    container.style.backgroundColor = '#f1f1f1';
-    
-    // Title
+    const statusContainer = document.createElement('div');
+    statusContainer.style.padding = '10px';
+    statusContainer.style.border = '1px solid #ccc';
+    statusContainer.style.margin = '10px';
+    statusContainer.style.borderRadius = '5px';
+    statusContainer.style.backgroundColor = '#f1f1f1';
+
     const title = document.createElement('h3');
     title.textContent = 'API Status';
-    container.appendChild(title);
+    statusContainer.appendChild(title);
 
-    // Convert statusData (JSON) into a formatted string
+    // ✅ Print API Status JSON in <pre> tag
     const statusText = document.createElement('pre');
     statusText.textContent = JSON.stringify(statusData, null, 2);
-    container.appendChild(statusText);
+    statusContainer.appendChild(statusText);
 
-    // Append to the main container (this.el should be a valid DOM element)
-    this.el.appendChild(container);
+    // Append API Status FIRST before other results
+    this.el.insertBefore(statusContainer, this.el.firstChild);
 }
+
 
 
 
