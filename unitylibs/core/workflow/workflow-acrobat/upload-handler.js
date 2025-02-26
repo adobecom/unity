@@ -53,19 +53,10 @@ export default class UploadHandler {
       headers: { 'Content-Type': fileType },
       body: blobData,
     };
-    try {
-      const error = new Error();
-      const response = await fetch(storageUrl, uploadOptions);
-      if (!response.ok) {
-        error.status = response.status;
-        error.message = response.statusText;
-        throw error;
-      }
-      return response;
-    } catch (e) {
-      if (['TimeoutError', 'AbortError'].includes(e.name)) e.status = 504;
-      throw e;
-    }
+    const response = await fetch(storageUrl, uploadOptions);
+    console.log(response);
+    if (!response.ok) throw new Error(`Failed to upload: ${response.status}`);
+    return response;
   }
 
   getDeviceType() {
@@ -109,7 +100,8 @@ export default class UploadHandler {
         return () => {
           if (fileUploadFailed) return Promise.resolve();
           return this.uploadFileToUnity(url.href, chunk, fileType).catch(async (e) => {
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, `${e.message}, URL: ${url}; Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}`, true);
+            console.log(e);
+            await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Error uploading chunk ${i + 1}/${totalChunks} of file ${fileIndex + 1}/${assetDataArray.length}: ${assetData.id}`, true);
             failedFiles.add(fileIndex);
             fileUploadFailed = true;
           });
@@ -142,7 +134,7 @@ export default class UploadHandler {
     } catch (e) {
       if (this.actionBinder.MULTI_FILE) return false;
       await this.actionBinder.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, false, e.showError);
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when verifying content.', false, e.showError);
       this.actionBinder.operations = [];
       return false;
     }
@@ -255,7 +247,7 @@ export default class UploadHandler {
   async handleUploadError(e) {
     switch (e.status) {
       case 409:
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, e.message, false, e.showError);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, null, false, e.showError);
         break;
       case 401:
         if (e.message === 'notentitled') await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, null, false, e.showError);
@@ -263,10 +255,10 @@ export default class UploadHandler {
         break;
       case 403:
         if (e.message === 'quotaexceeded') await this.actionBinder.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.status, null, false, e.showError);
-        else await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, e.message, false, e.showError);
+        else await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, null, false, e.showError);
         break;
       default:
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, false, e.showError);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, null, false, e.showError);
         break;
     }
   }
@@ -309,7 +301,7 @@ export default class UploadHandler {
       maxConcurrentChunks,
     );
     if (uploadResult.size === 1) {
-      await this.dispatchGenericError(`Error uploading file chunks for file: ${assetData.id}, ${file.size} bytes, ${file.type}`);
+      await this.dispatchGenericError('Error uploading file chunks.');
       return;
     }
     this.actionBinder.operations.push(assetData.id);
@@ -398,8 +390,7 @@ export default class UploadHandler {
       maxConcurrentChunks,
     );
     if (uploadResult.size === files.length) {
-      await this.dispatchGenericError(`Error uploading all ${files.length} files with ${maxConcurrentChunks} max concurrent chunks. \
-        Workflow: ${workflowId}; Assets: ${assetDataArray.map((asset) => asset.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
+      await this.dispatchGenericError();
       return;
     }
     const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
