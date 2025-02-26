@@ -115,7 +115,6 @@ class HealthCheck {
       }
       categoryStatus[category] = result.statusCode || 'Failed';
     }
-    // this.printApiResponse(categoryStatus);
     return { allSuccess, results };
   }
 
