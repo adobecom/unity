@@ -5,47 +5,70 @@ import { readFile } from '@web/test-runner-commands';
 import { expect } from '@esm-bundle/chai';
 
 window.adobeIMS = {
-  getAccessToken: () => 'token',
+  getAccessToken: () => { return {"token": 'token', "expire": { valueOf: () => Date.now() + (5 * 60 * 1000)}}},
   adobeid: { locale: 'en' },
 };
 const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js');
-document.body.innerHTML = await readFile({ path: './mocks/ps-body.html' });
-describe('Unity PS Block', () => {
+document.body.innerHTML = await readFile({ path: './mocks/dc-body.html' });
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+describe('Unity DC Block', () => {
   before(async () => {
-    const unityElement = document.querySelector('.unity');
-    await init(unityElement);
-  });
-
-  it('Unity PS block should be loaded', async () => {
-    const unityWidget = document.querySelector('.unity-widget');
-    expect(unityWidget).to.exist;
-  });
-
-  it('Test actions', async () => {
     const fetchStub = sinon.stub(window, 'fetch');
     fetchStub.callsFake(async (url) => {
       let payload = {};
-      if (url.includes('PhotoshopRemoveBackground')) {
-        payload = { assetId: 'testid', outputUrl: 'http://localhost:2000/test/assets/media_.jpeg?width=2000&format=webply&optimize=medium' };
-      } else if (url.includes('asset')) {
-        payload = { id: 'testid', href: 'http://localhost:2000/test/assets/media_.jpeg?width=2000&format=webply&optimize=medium' };
-      } else if (url.includes('PhotoshopChangeBackground')) {
-        payload = { assetId: 'testid', outputUrl: 'http://localhost:2000/test/assets/media_.jpeg?width=2000&format=webply&optimize=medium' };
+      if (url.includes('splashscreen')) {
+        payload = '';
+      } else if (url.includes('target-config.json')) {
+        payload = {"verb-widget": {
+          "type": "pdf",
+          "selector": ".verb-wrapper",
+          "handler": "render",
+          "renderWidget": false,
+          "source": ".verb-wrapper .verb-container",
+          "target": ".verb-wrapper .verb-container",
+          "limits": { "maxNumFiles": 1, "maxFileSize": 104857600, "allowedFileTypes": ["application/pdf"]},
+          "showSplashScreen": true,
+          "splashScreenConfig": {"fragmentLink": "/test/core/workflow/mocks/splash", "splashScreenParent": "body"},
+          "actionMap": {
+            ".verb-wrapper": [{"actionType": "croppages"},{"actionType": "continueInApp"}],
+            "#file-upload": [{"actionType": "croppages"},{"actionType": "continueInApp"}]
+          }
+        }};
       } else if (url.includes('finalize')) {
+        payload = {};
+      } else if (url.includes('metadata')) {
+        payload = {};
+      } else if (url.includes('asset')) {
         payload = {};
       }
       return Promise.resolve({
         json: async () => payload,
+        text: async () => payload,
         status: 200,
         ok: true,
       });
     });
-    document.querySelector('.removebg-button').click();
-    setTimeout(() => {
-      document.querySelector('.changebg-option').click();
-    }, 500);
-    setTimeout(() => {
-      fetchStub.restore();
-    }, 2000);
+    const unityElement = document.querySelector('.unity');
+    await init(unityElement);
+  });
+
+  it('Unity DC block should be loaded', async () => {
+    const unityWidget = document.querySelector('.unity');
+    expect(unityWidget).to.exist;
+  });
+
+  it('Test verbs', async () => {
+    const fileInput = document.querySelector('#file-upload');
+    const base64PDF = '';
+    const imageBuffer = Uint8Array.from(atob(base64PDF), c => c.charCodeAt(0));
+    const imageBlob = new Blob([imageBuffer], { type: 'application/pdf' });
+    const file = new File([imageBlob], 'mock.pdf', { type: 'application/pdf' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+    const changeEvent = new Event('change');
+    fileInput.dispatchEvent(changeEvent);
   });
 });
