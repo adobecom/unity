@@ -33,7 +33,7 @@ class ServiceHandler {
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      ...await getHeaders(unityConfig.apiKey),
+      headers: await getHeaders(unityConfig.apiKey),
       ...options,
     };
     try {

@@ -80,10 +80,9 @@ class ServiceHandler {
   }
 
   async postCallToService(api, options) {
-    const headers = await getHeaders(unityConfig.apiKey);
     const postOpts = {
       method: 'POST',
-      ...headers,
+      headers: await getHeaders(unityConfig.apiKey),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
@@ -100,10 +99,9 @@ class ServiceHandler {
   }
 
   async getCallToService(api, params) {
-    const headers = await getHeaders(unityConfig.apiKey);
     const getOpts = {
       method: 'GET',
-      ...headers,
+      headers: await getHeaders(unityConfig.apiKey),
     };
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
