@@ -32,39 +32,45 @@ class HealthCheck {
     return JSON.parse(JSON.stringify(services).replace(new RegExp(placeholder, 'g'), value));
   }
 
-  async getBlogData() {
+  async getBlogData(options) {
     return new Promise((res, rej) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', `${getUnityLibs()}/img/healthcheck.jpeg`);
       xhr.responseType = 'blob';
       xhr.onload = () => xhr.status === 200
-        ? res({ method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: xhr.response })
+        ? res({ ...options, body: xhr.response, headers: { 'Content-Type': 'image/jpeg' } })
         : rej(xhr.status);
       xhr.send();
     });
   }
 
-  async uploadPdf() {
+  async uploadPdf(options) {
     const pdfData = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]);
     const objUrl = URL.createObjectURL(new Blob([pdfData], { type: 'application/pdf' }));
     const response = await fetch(objUrl);
     URL.revokeObjectURL(objUrl);
     if (!response.ok) throw new Error(`Failed to create Blob: ${response.status}`);
-    return { method: 'PUT', headers: { 'Content-Type': 'application/pdf' }, body: await response.blob() };
+    return { ...options, body: await response.blob(), headers: { 'Content-Type': 'application/pdf' } };
   }
 
   async checkService(category, service, apis) {
     try {
-      const options = {
+      let options = {
         method: service.method,
         headers: getHeaders(category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc'),
-        ...(service.body && ['POST', 'PUT'].includes(service.method) && { body: JSON.stringify(service.body) })
       };
 
-      if (service.workFlow) options = await this.workflowFunctions[service.workFlow]();
+      // ✅ Ensure workFlow functions receive `options`
+      if (service.workFlow && this.workflowFunctions[service.workFlow]) {
+        options = await this.workflowFunctions[service.workFlow](options);
+      } else if (service.body && ['POST', 'PUT'].includes(service.method)) {
+        options.body = JSON.stringify(service.body);
+      }
+
       const response = await fetch(service.url, options);
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
 
+      // ✅ Fix replaceKey updates
       if (service.replaceKey) {
         const data = await response.json();
         service.replaceKey.forEach(key => {
@@ -80,16 +86,16 @@ class HealthCheck {
   }
 
   async checkCategory(category, apis) {
-    const results = await Promise.all(apis.map(service => this.checkService(category, service, apis)));
+    const results = [];
+    for (const service of apis) results.push(await this.checkService(category, service, apis));
     return { allSuccess: results.every(res => res.success), results };
   }
 
   printApiResponse(statusData) {
-    const statusContainer = document.createElement('div');
-    Object.assign(statusContainer.style, { padding: '10px', border: '1px solid #ccc', margin: '10px', borderRadius: '5px', backgroundColor: '#f1f1f1' });
-
-    statusContainer.innerHTML = `<h3>API Status</h3><pre>${JSON.stringify(statusData, null, 2)}</pre>`;
-    this.el.insertBefore(statusContainer, this.el.firstChild);
+    const container = document.createElement('div');
+    Object.assign(container.style, { padding: '10px', border: '1px solid #ccc', margin: '10px', borderRadius: '5px', backgroundColor: '#f1f1f1' });
+    container.innerHTML = `<h3>API Status</h3><pre>${JSON.stringify(statusData, null, 2)}</pre>`;
+    this.el.insertBefore(container, this.el.firstChild);
   }
 
   printResults(category, { allSuccess, results }) {
