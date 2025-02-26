@@ -9,23 +9,22 @@ class HealthCheck {
 
   async init() {
     this.services = this.services || await this.loadServices();
-
-    // ✅ Run all categories in parallel
+  
     const categoryResults = await Promise.all(
       Object.entries(this.services).map(([categoryName, apis]) => this.checkCategory(categoryName, apis))
     );
-
-    // ✅ Aggregate results and print them all at once
+  
     const apiStatuses = Object.fromEntries(
       categoryResults.map(({ category, results }) => [
         category,
         results.reduce((max, res) => res.success ? max : Math.max(max, res.statusCode || 500), 200)
       ])
     );
-
+  
     this.printApiResponse(apiStatuses);
-    categoryResults.forEach(({ category, results }) => this.printResults(category, results));
+    categoryResults.forEach(({ category, results }) => this.printResults(category, { results })); // ✅ FIXED HERE
   }
+  
 
   async loadServices() {
     try {
