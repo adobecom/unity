@@ -141,7 +141,6 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
     this.applySignedInSettings();
-    this.redirectSignedUser();
   }
 
   static LIMITS_MAP = {
@@ -152,19 +151,6 @@ export default class ActionBinder {
     'split-pdf': ['single', 'split-pdf'],
     'crop-pages': ['single'],
   };
-
-  redirectSignedUser() {
-    document.addEventListener('DOMContentLoaded', async () => {
-      if (this.getAccountType() === 'guest') {
-        this.loadSplashFragment();
-        await this.showSplashScreen(true);
-        await this.delay(2000);
-        this.LOADER_LIMIT = 85;
-        this.updateProgressBar(this.splashScreenEl, 85);
-        window.location.href = 'https://www.acrobat.adobe.com';
-      }
-    });
-  }
 
   async loadVerbLimits(workflowName, keys) {
     try {
