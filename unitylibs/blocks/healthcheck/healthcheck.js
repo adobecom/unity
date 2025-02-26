@@ -39,7 +39,7 @@ class HealthCheck {
       apiStatuses[categoryName] = worstStatus;
       this.printResults(categoryName, results);
     }
-    // this.printApiResponse(apiStatuses);
+    this.printApiResponse(apiStatuses);
   }
 
   async getBlogData() {
@@ -115,7 +115,7 @@ class HealthCheck {
       }
       categoryStatus[category] = result.statusCode || 'Failed';
     }
-    this.printApiResponse(categoryStatus);
+    // this.printApiResponse(categoryStatus);
     return { allSuccess, results };
   }
 
