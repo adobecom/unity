@@ -57,9 +57,11 @@ export async function getGuestAccessToken() {
 
 export async function getHeaders(apiKey) {
   return {
-    'Content-Type': 'application/json',
-    Authorization: await getGuestAccessToken(),
-    'x-api-key': apiKey,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: await getGuestAccessToken(),
+      'x-api-key': apiKey,
+    }
   };
 }
 
