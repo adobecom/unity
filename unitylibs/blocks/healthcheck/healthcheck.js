@@ -4,7 +4,7 @@ class HealthCheck {
   constructor(el) {
     this.services = null;
     this.el = el;
-    this.workflowFunctions = { getBlogData: this.getBlogData };
+    this.workflowFunctions = { getBlogData: this.getBlogData, uploadPdf: this.uploadPdf };
     this.loadServices();
   }
 

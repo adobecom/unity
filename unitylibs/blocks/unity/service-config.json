@@ -46,7 +46,7 @@
           "surfaceId": "unity"
         },
         "workFlow":"uploadPdf",
-        "replaceKey": ["id, href"]
+        "replaceKey": ["id", "href"]
       },
       {
         "name": "Connector",
