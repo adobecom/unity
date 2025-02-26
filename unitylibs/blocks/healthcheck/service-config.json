@@ -1,11 +1,11 @@
 {
     "photoshop": [
-      { "name": "assetUpload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
+      { "name": "Asset Upload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
       { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
-      { "name": "Asset Upload", "url": "{{href}}", "method": "PUT", "workFlow":"getBlogData"},
-      { "name": "removeBackground", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] }, "replaceKey": ["assetId"]},
+      { "name": "S3 Asset Upload", "url": "{{href}}", "method": "PUT", "workFlow":"getBlogData"},
+      { "name": "Remove Background", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] }, "replaceKey": ["assetId"]},
       {
-        "name": "changeBackground",
+        "name": "Change Background",
         "url": "{{apiEndPoint}}/providers/PhotoshopChangeBackground",
         "method": "POST",
         "body": {
@@ -35,7 +35,7 @@
     ],
     "acrobat": [
       {
-        "name": "Asset",
+        "name": "Create Asset",
         "url": "{{apiEndPoint}}/asset",
         "method": "POST",
         "body": {
@@ -66,9 +66,9 @@
           }
         }
       },
-      { "name": "PDF Upload", "url": "{{href}}", "method": "PUT", "workFlow":"uploadPdf"},
+      { "name": "S3 PDF Upload", "url": "{{href}}", "method": "PUT", "workFlow":"uploadPdf"},
       {
-        "name": "Finalize",
+        "name": "Asset Finalize",
         "url": "{{apiEndPoint}}/asset/finalize",
         "method": "POST",
         "body": {
@@ -94,7 +94,7 @@
         }
       },
       {
-        "name": "AutoComplete",
+        "name": "Auto Complete",
         "url": "{{apiEndPoint}}/providers/AutoComplete",
         "method": "POST",
         "body": {
