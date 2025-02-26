@@ -45,7 +45,6 @@
           "size": 13264,
           "surfaceId": "unity"
         },
-        "workFlow":"uploadPdf",
         "replaceKey": ["id", "href"]
       },
       {
