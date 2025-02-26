@@ -190,7 +190,7 @@ class HealthCheck {
 
 export default async function init(el, project = 'cc', unityLibs = '/unitylibs') {
   setUnityLibs(unityLibs, project);
-  setTimeout(async () => {
-    await new HealthCheck().init(el);
-  }, 3000);
+  // setTimeout(async () => {
+  await new HealthCheck().init(el);
+  // }, 3000);
 }
