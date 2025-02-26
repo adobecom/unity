@@ -62,6 +62,29 @@ class HealthCheck {
     });
   }
 
+  async uploadPdf() {
+    const pdfData = new Uint8Array([
+      0x25, 0x50, 0x44, 0x46,
+      0x2D, 0x31, 0x2E, 0x34,
+      0x0A, 0x25, 0xE2, 0xE3, 0xCF, 0xD3,
+      0x0A, 0x0A, 0x78, 0x0A, 0x73, 0x74, 0x61, 0x72, 0x74,
+    ]);
+    const blobFile = new Blob([pdfData], { type: 'application/pdf' });
+
+    // Step 2: Convert Blob to an object URL
+    const objUrl = URL.createObjectURL(blobFile);
+    const response = await fetch(objUrl);
+    if (!response.ok) throw new Error(`Failed to create Blob: ${response.status}`);
+    const blobData = await response.blob();
+    URL.revokeObjectURL(objUrl);
+    const uploadOptions = {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/pdf' },
+      body: blobData,
+    };
+    return uploadOptions;
+  }
+
   async checkService(category, service, apis) {
     try {
       const apiKey = category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc';

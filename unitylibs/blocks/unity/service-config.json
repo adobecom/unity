@@ -45,7 +45,8 @@
           "size": 13264,
           "surfaceId": "unity"
         },
-        "replaceKey": ["id"]
+        "workFlow":"uploadPdf",
+        "replaceKey": ["id, href"]
       },
       {
         "name": "Connector",
@@ -54,20 +55,19 @@
         "body": {
           "assetId": "{{id}}",
           "targetProduct": "acrobat",
-          "payload": {
-            "languageRegion": "us",
-            "languageCode": "en",
-            "verb": "fillsign",
-            "assetMetadata": {
-              "{{id}}": {
-                "name": "dummyfile.pdf",
-                "size": 13264,
-                "type": "application/pdf"
-              }
+          "languageRegion": "us",
+          "languageCode": "en",
+          "verb": "fillsign",
+          "assetMetadata": {
+            "{{id}}": {
+              "name": "dummyfile.pdf",
+              "size": 13264,
+              "type": "application/pdf"
             }
           }
         }
       },
+      { "name": "PDF Upload", "url": "{{href}}", "method": "PUT", "workFlow":"uploadPdf"},
       {
         "name": "Finalize",
         "url": "{{apiEndPoint}}/asset/finalize",
