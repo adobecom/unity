@@ -193,6 +193,6 @@ export default function init(el, project = 'unity', unityLibs = '/unitylibs') {
   if (window.adobeIMS) {
     new HealthCheck().init(el);
   } else {
-    window.addEventListener('IMS:Ready', () => new HealthCheck().init(el), { once: true });
+    window.addEventListener('onImsLibInstance', () => new HealthCheck().init(el), { once: true });
   }
 }
