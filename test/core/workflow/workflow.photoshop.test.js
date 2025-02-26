@@ -10,6 +10,11 @@ window.adobeIMS = {
 };
 const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js');
 document.body.innerHTML = await readFile({ path: './mocks/ps-body.html' });
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 describe('Unity PS Block', () => {
   before(async () => {
     const unityElement = document.querySelector('.unity');
@@ -31,6 +36,8 @@ describe('Unity PS Block', () => {
         payload = { id: 'testid', href: 'http://localhost:2000/test/assets/media_.jpeg?width=2000&format=webply&optimize=medium' };
       } else if (url.includes('PhotoshopChangeBackground')) {
         payload = { assetId: 'testid', outputUrl: 'http://localhost:2000/test/assets/media_.jpeg?width=2000&format=webply&optimize=medium' };
+      } else if (url.includes('connector')) {
+        payload = { url: window.location.href };
       } else if (url.includes('finalize')) {
         payload = {};
       }
@@ -41,9 +48,21 @@ describe('Unity PS Block', () => {
       });
     });
     document.querySelector('.removebg-button').click();
-    setTimeout(() => {
-      document.querySelector('.changebg-option').click();
-    }, 500);
+    await delay(300);
+    document.querySelector('.changebg-option').click();
+    await delay(300);
+    const fileInput = document.querySelector('.file-upload');
+    const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/78fKfoAAAAASUVORK5CYII=';
+    const imageBuffer = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
+    const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
+    const file = new File([imageBlob], 'image.png', { type: 'image/png' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+    const changeEvent = new Event('change');
+    fileInput.dispatchEvent(changeEvent);
+    await delay(300);
+    document.querySelector('.continue-in-app-button').click();
     setTimeout(() => {
       fetchStub.restore();
     }, 2000);
