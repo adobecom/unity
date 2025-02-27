@@ -9,13 +9,18 @@ class HealthCheck {
 
   async init() {
     this.services = this.services || await this.loadServices();
-    const apiStatuses = {};
-    for (const [categoryName, apis] of Object.entries(this.services)) {
-      const results = await this.checkCategory(categoryName, apis);
-      apiStatuses[categoryName] = results.results.reduce((max, res) => res.success ? max : Math.max(max, res.statusCode || 500), 200);
-      this.printResults(categoryName, results);
-    }
+    const categoryResults = await Promise.all(
+      Object.entries(this.services).map(([categoryName, apis]) => this.checkCategory(categoryName, apis))
+    );
+
+    const apiStatuses = Object.fromEntries(
+      categoryResults.map(({ category, results }) => [
+        category, results.every(res => res.success) ? 200 : Math.max(...results.map(res => res.statusCode || 500))
+      ])
+    );
+
     this.printApiResponse(apiStatuses);
+    categoryResults.forEach(({ category, results }) => this.printResults(category, results));
   }
 
   async loadServices() {
@@ -29,7 +34,7 @@ class HealthCheck {
   }
 
   replacePlaceholders(services, placeholder, value) {
-    return JSON.parse(JSON.stringify(services).replace(new RegExp(placeholder, 'g'), value));
+    return JSON.parse(JSON.stringify(services).replaceAll(placeholder, value));
   }
 
   async getBlogData(options) {
@@ -45,10 +50,8 @@ class HealthCheck {
   }
 
   async uploadPdf(options) {
-    const pdfData = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]);
-    const objUrl = URL.createObjectURL(new Blob([pdfData], { type: 'application/pdf' }));
-    const response = await fetch(objUrl);
-    URL.revokeObjectURL(objUrl);
+    const pdfBlob = new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34])], { type: 'application/pdf' });
+    const response = await fetch(URL.createObjectURL(pdfBlob));
     if (!response.ok) throw new Error(`Failed to create Blob: ${response.status}`);
     return { ...options, body: await response.blob(), headers: { 'Content-Type': 'application/pdf' } };
   }
@@ -69,6 +72,7 @@ class HealthCheck {
 
       const response = await fetch(service.url, options);
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
+
       if (service.replaceKey) {
         const data = await response.json();
         service.replaceKey.forEach(key => {
@@ -76,16 +80,16 @@ class HealthCheck {
         });
         apis.forEach((_, i) => apis[i] = this.services[category][i]);
       }
-      return { name: service.name, status: 'UP', success: true, statusCode: response.status };
+
+      return { name: service.name, success: true, statusCode: response.status };
     } catch (error) {
-      return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: parseInt(error.message.match(/\d+/)?.[0]) || 500 };
+      return { name: service.name, success: false, error: error.message, statusCode: parseInt(error.message.match(/\d+/)?.[0]) || 500 };
     }
   }
 
   async checkCategory(category, apis) {
-    const results = [];
-    for (const service of apis) results.push(await this.checkService(category, service, apis));
-    return { allSuccess: results.every((res) => res.success), results };
+    const results = await Promise.all(apis.map(service => this.checkService(category, service, apis)));
+    return { category, results };
   }
 
   printApiResponse(statusData) {
@@ -95,14 +99,15 @@ class HealthCheck {
     this.el.insertBefore(container, this.el.firstChild);
   }
 
-  printResults(category, { allSuccess, results }) {
+  printResults(category, { results }) {
+    const allSuccess = results.every(res => res.success);
     const container = document.createElement('div');
     container.classList.add('healthcheck-container', allSuccess ? 'success' : 'error');
     container.innerHTML = `<h3>${category.toUpperCase()} Workflow</h3>
-      <p>${allSuccess ? '\u2705 All APIs are working. Workflow completed successfully!' : '\u274C Some APIs failed:'}</p>`;
+      <p>${allSuccess ? '✅ All APIs are working. Workflow completed successfully!' : '❌ Some APIs failed:'}</p>`;
     results.forEach(({ name, success, error }) => {
       container.innerHTML += `<p class="${success ? 'success' : 'error'}">
-        ${String.fromCodePoint(0x1F539)} ${name}: ${success ? `${String.fromCodePoint(0x2705)} UP` : `${String.fromCodePoint(0x274C)} DOWN - ${error}`}
+        🔹 ${name}: ${success ? '✅ UP' : `❌ DOWN - ${error}`}
       </p>`;
     });
     this.el.appendChild(container);
