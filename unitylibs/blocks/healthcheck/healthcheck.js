@@ -62,7 +62,8 @@ class HealthCheck {
 
       if (service.workFlow && this.workflowFunctions[service.workFlow]) {
         options = await this.workflowFunctions[service.workFlow](options);
-      } else if (service.body && ['POST', 'PUT'].includes(service.method)) {
+      }
+      if (service.body && ['POST', 'PUT'].includes(service.method)) {
         options.body = JSON.stringify(service.body);
       }
 
