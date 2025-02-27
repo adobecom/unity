@@ -3,7 +3,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig, getHeaders} from '../../../scripts/utils.js';
+import { unityConfig, getHeaders } from '../../../scripts/utils.js';
 export default class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
     this.renderWidget = renderWidget;
