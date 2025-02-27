@@ -1,11 +1,12 @@
 {
     "photoshop": [
-      { "name": "Asset Upload", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
-      { "name": "acmpCheck", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
-      { "name": "S3 Asset Upload", "url": "{{href}}", "method": "PUT", "workFlow":"getBlogData"},
-      { "name": "Remove Background", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] }, "replaceKey": ["assetId"]},
+      { "name": "Asset Upload", "apiKey": "adobedotcom-cc", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
+      { "name": "acmpCheck", "apiKey": "adobedotcom-cc", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
+      { "name": "S3 Asset Upload", "apiKey": "adobedotcom-cc", "url": "{{href}}", "method": "PUT", "workFlow":"getBlogData"},
+      { "name": "Remove Background", "apiKey": "adobedotcom-cc", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] }, "replaceKey": ["assetId"]},
       {
         "name": "Change Background",
+        "apiKey": "adobedotcom-cc",
         "url": "{{apiEndPoint}}/providers/PhotoshopChangeBackground",
         "method": "POST",
         "body": {
@@ -21,6 +22,7 @@
       },
       {
         "name": "Connector",
+        "apiKey": "adobedotcom-cc",
         "url": "{{apiEndPoint}}/asset/connector",
         "method": "POST",
         "body":
@@ -36,6 +38,7 @@
     "acrobat": [
       {
         "name": "Create Asset",
+        "apiKey": "acrobatmilo",
         "url": "{{apiEndPoint}}/asset",
         "method": "POST",
         "body": {
@@ -49,6 +52,7 @@
       },
       {
         "name": "Connector",
+        "apiKey": "acrobatmilo",
         "url": "{{apiEndPoint}}/asset/connector",
         "method": "POST",
         "body": {
@@ -66,9 +70,10 @@
           }
         }
       },
-      { "name": "S3 PDF Upload", "url": "{{href}}", "method": "PUT", "workFlow":"uploadPdf"},
+      { "name": "S3 PDF Upload", "apiKey": "acrobatmilo", "url": "{{href}}", "method": "PUT", "workFlow":"uploadPdf"},
       {
         "name": "Asset Finalize",
+        "apiKey": "acrobatmilo",
         "url": "{{apiEndPoint}}/asset/finalize",
         "method": "POST",
         "body": {
@@ -79,6 +84,7 @@
       },
       {
         "name": "Metadata",
+        "apiKey": "acrobatmilo",
         "url": "{{apiEndPoint}}/asset/metadata?id={{id}}",
         "method": "GET"
       }
@@ -86,6 +92,7 @@
     "express": [
       {
         "name": "Connector",
+        "apiKey": "adobedotcom-cc",
         "url": "{{apiEndPoint}}/asset/connector",
         "method": "POST",
         "body": {
@@ -95,6 +102,7 @@
       },
       {
         "name": "Auto Complete",
+        "apiKey": "adobedotcom-cc",
         "url": "{{apiEndPoint}}/providers/AutoComplete",
         "method": "POST",
         "body": {

@@ -57,7 +57,7 @@ class HealthCheck {
     try {
       let options = {
         method: service.method,
-        headers: getHeaders(category === 'acrobat' ? 'acrobatmilo' : 'adobedotcom-cc'),
+        headers: getHeaders(service.apiKey),
       };
 
       if (service.workFlow && this.workflowFunctions[service.workFlow]) {
