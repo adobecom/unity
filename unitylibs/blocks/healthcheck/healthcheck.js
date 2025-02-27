@@ -89,18 +89,18 @@ class HealthCheck {
 
   printApiResponse(statusData) {
     const container = document.createElement('div');
-    Object.assign(container.style, { padding: '10px', border: '1px solid #ccc', margin: '10px', borderRadius: '5px', backgroundColor: '#f1f1f1' });
+    container.classList.add('healthcheck-container');
     container.innerHTML = `<h3>API Status</h3><pre>${JSON.stringify(statusData, null, 2)}</pre>`;
     this.el.insertBefore(container, this.el.firstChild);
   }
 
   printResults(category, { allSuccess, results }) {
     const container = document.createElement('div');
-    Object.assign(container.style, { padding: '10px', border: '1px solid #ccc', margin: '10px', borderRadius: '5px', backgroundColor: allSuccess ? '#d4edda' : '#f8d7da' });
+    container.classList.add('healthcheck-container', allSuccess ? 'success' : 'error');
     container.innerHTML = `<h3>${category.toUpperCase()} Workflow</h3>
       <p>${allSuccess ? '\u2705 All APIs are working. Workflow completed successfully!' : '\u274C Some APIs failed:'}</p>`;
     results.forEach(({ name, success, error }) => {
-      container.innerHTML += `<p style="color:${success ? 'green' : 'red'}">
+      container.innerHTML += `<p class="${success ? 'success' : 'error'}">
         ${String.fromCodePoint(0x1F539)} ${name}: ${success ? `${String.fromCodePoint(0x2705)} UP` : `${String.fromCodePoint(0x274C)} DOWN - ${error}`}
       </p>`;
     });
