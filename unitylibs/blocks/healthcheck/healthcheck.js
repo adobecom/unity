@@ -59,14 +59,8 @@ class HealthCheck {
         method: service.method,
         headers: getHeaders(service.apiKey),
       };
-
-      if (service.workFlow && this.workflowFunctions[service.workFlow]) {
-        options = await this.workflowFunctions[service.workFlow](options);
-      }
-      if (service.body && ['POST', 'PUT'].includes(service.method)) {
-        options.body = JSON.stringify(service.body);
-      }
-
+      if (service.workFlow && this.workflowFunctions[service.workFlow]) options = await this.workflowFunctions[service.workFlow](options);
+      if (service.body && ['POST', 'PUT'].includes(service.method)) options.body = JSON.stringify(service.body);
       const response = await fetch(service.url, options);
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
       if (service.replaceKey) {
