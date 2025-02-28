@@ -325,7 +325,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
-    this.actionBinder.dispatchAnalyticsEvent('uploaded');
+    this.actionBinder.dispatchAnalyticsEvent('uploaded', fileData);
   }
 
   async singleFileGuestUpload(file, fileData) {
