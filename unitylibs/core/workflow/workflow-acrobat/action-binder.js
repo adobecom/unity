@@ -120,13 +120,22 @@ export default class ActionBinder {
     FILE_TOO_LARGE: 'verb_upload_error_file_too_large_multi',
   };
 
-  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}, limits = {}) {
+  static LIMITS_MAP = {
+    fillsign: ['single', 'fillsign'],
+    'compress-pdf': ['hybrid'],
+    'add-comment': ['single'],
+    'number-pages': ['single'],
+    'split-pdf': ['single', 'split-pdf'],
+    'crop-pages': ['single'],
+  };
+
+  constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
     this.block = wfblock;
-    this.actionMap = actionMap;
-    this.limits = limits;
     this.canvasArea = canvasArea;
+    this.actionMap = actionMap;
+    this.limits = {};
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
     this.serviceHandler = new ServiceHandler();
@@ -356,7 +365,26 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
+  async loadVerbLimits(workflowName, keys) {
+    try {
+      const response = await fetch(`${getUnityLibs()}/core/workflow/${workflowName}/limits.json`);
+      if (!response.ok) throw new Error('Error loading verb limits');
+      const limits = await response.json();
+      const combinedLimits = keys.reduce((acc, key) => {
+        if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
+        return acc;
+      }, {});
+      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false);
+      return combinedLimits;
+    } catch (e) {
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false);
+      return {};
+    }
+  }
+
   async processSingleFile(files, eventName) {
+    this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
+    if (!this.limits || Object.keys(this.limits).length === 0) return;
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
@@ -366,31 +394,13 @@ export default class ActionBinder {
     await this.handleSingleFileUpload(file, eventName);
   }
 
-  async fillsign(files, eventName) {
-    await this.processSingleFile(files, eventName);
-  }
-
-  async addComment(files, eventName) {
-    await this.processSingleFile(files, eventName);
-  }
-
-  async numberPages(files, eventName) {
-    await this.processSingleFile(files, eventName);
-  }
-
-  async splitPdf(files, eventName) {
-    await this.processSingleFile(files, eventName);
-  }
-
-  async cropPages(files, eventName) {
-    await this.processSingleFile(files, eventName);
-  }
-
-  async compress(files, totalFileSize, eventName) {
+  async processHybrid(files, totalFileSize, eventName) {
     if (!files) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
+    this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
+    if (!this.limits || Object.keys(this.limits).length === 0) return;
     const isSingleFile = files.length === 1;
     if (isSingleFile) await this.handleSingleFileUpload(files[0], eventName);
     else await this.handleMultiFileUpload(files, totalFileSize, eventName);
@@ -448,44 +458,22 @@ export default class ActionBinder {
     this.promiseStack.unshift(cancelPromise);
   }
 
-  async acrobatActionMaps(values, files, totalFileSize, eventName) {
+  async acrobatActionMaps(value, files, totalFileSize, eventName) {
     await this.handlePreloads();
-    for (const value of values) {
-      switch (true) {
-        case value.actionType === 'fillsign':
-          this.promiseStack = [];
-          await this.fillsign(files, eventName);
-          break;
-        case value.actionType === 'compress':
-          this.promiseStack = [];
-          await this.compress(files, totalFileSize, eventName);
-          break;
-        case value.actionType === 'addcomment':
-          this.promiseStack = [];
-          await this.addComment(files, eventName);
-          break;
-        case value.actionType === 'numberpages':
-          this.promiseStack = [];
-          await this.numberPages(files, eventName);
-          break;
-        case value.actionType === 'splitpdf':
-          this.promiseStack = [];
-          await this.splitPdf(files, eventName);
-          break;
-        case value.actionType === 'croppages':
-          this.promiseStack = [];
-          await this.cropPages(files, eventName);
-          break;
-        case value.actionType === 'continueInApp':
-          await this.continueInApp();
-          break;
-        case value.actionType === 'interrupt':
-          await this.cancelAcrobatOperation();
-          break;
-        default:
-          break;
-      }
+    const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
+    switch (value) {
+      case 'upload':
+        this.promiseStack = [];
+        if (uploadType === 'single') await this.processSingleFile(files, eventName);
+        else if (uploadType === 'hybrid') await this.processHybrid(files, totalFileSize, eventName);
+        break;
+      case 'interrupt':
+        await this.cancelAcrobatOperation();
+        break;
+      default:
+        break;
     }
+    await this.continueInApp();
   }
 
   extractFiles(e) {
@@ -561,27 +549,27 @@ export default class ActionBinder {
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
-    for (const [key, values] of Object.entries(actMap)) {
+    for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
       switch (true) {
         case el.nodeName === 'A':
           el.addEventListener('click', async (e) => {
             e.preventDefault();
-            await this.acrobatActionMaps(values);
+            await this.acrobatActionMaps(value);
           });
           break;
         case el.nodeName === 'DIV':
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files, totalFileSize, 'drop');
+            await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
-            await this.acrobatActionMaps(values, files, totalFileSize, 'change');
+            await this.acrobatActionMaps(value, files, totalFileSize, 'change');
             e.target.value = '';
           });
           break;
@@ -599,7 +587,7 @@ export default class ActionBinder {
   }
 
   handleOperationCancel() {
-    const actMap = { 'a.con-button[href*="#_cancel"]': [{ actionType: 'interrupt' }] };
+    const actMap = { 'a.con-button[href*="#_cancel"]': 'interrupt' };
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
