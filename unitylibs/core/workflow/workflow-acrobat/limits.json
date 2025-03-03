@@ -65,5 +65,16 @@
       "message/rfc822",
       "text/plain"
     ]
+  },
+  "page-limit-500": {
+    "pageLimit": {
+      "maxNumPages": 500
+    }
+  },
+  "sendforsignature": {
+    "maxFileSize": 5242880,
+    "pageLimit": {
+      "maxNumPages": 25
+    }
   }
 }
