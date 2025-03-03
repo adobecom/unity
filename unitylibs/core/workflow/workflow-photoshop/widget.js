@@ -53,9 +53,6 @@ export default class UnityWidget {
     this.widget.addEventListener('mouseover', () => {
       actionBtn?.classList.remove('animate-btn');
     }, { once: true });
-    actionBtn.addEventListener('click', () => {
-      actionBtn?.classList.remove('animate-btn');
-    }, { once: true });
   }
 
   createActionBtn(btnCfg, btnClass, imgId, swapOrder = false) {
