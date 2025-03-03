@@ -173,6 +173,11 @@ export default class ActionBinder {
     'number-pages': ['single'],
     'split-pdf': ['single', 'split-pdf'],
     'crop-pages': ['single'],
+    'delete-pages': ['single', 'page-limit-500'],
+    'insert-pdf': ['single', 'page-limit-500'],
+    'extract-pages': ['single', 'page-limit-500'],
+    'reorder-pages': ['single', 'page-limit-500'],
+    'sendforsignature': ['single', 'sendforsignature'],
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
