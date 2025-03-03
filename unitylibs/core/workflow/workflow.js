@@ -271,6 +271,11 @@ class WfInitiator {
           'number-pages',
           'split-pdf',
           'crop-pages',
+          'delete-pages',
+          'insert-pdf',
+          'extract-pages',
+          'reorder-pages',
+          'sendforsignature'
         ]),
       },
       'workflow-ai': {
