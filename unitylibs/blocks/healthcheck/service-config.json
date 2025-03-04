@@ -2,7 +2,7 @@
   "photoshop": [
     { "name": "Create Asset", "apiKey": "adobedotcom-cc", "url": "{{apiEndPoint}}/asset", "method": "POST", "replaceKey": ["id","href"] },
     { "name": "acmpCheck", "apiKey": "adobedotcom-cc", "url": "{{apiEndPoint}}/asset/finalize", "method": "POST", "body": { "assetId": "{{id}}", "targetProduct": "Photoshop" } },
-    { "name": "S3 Asset Upload", "apiKey": "adobedotcom-cc", "url": "{{href}}", "method": "PUT", "workFlow":"getBlogData"},
+    { "name": "S3 Asset Upload", "apiKey": "adobedotcom-cc", "url": "{{href}}", "method": "PUT", "workFlow":"getBlobData"},
     { "name": "Remove Background", "apiKey": "adobedotcom-cc", "url": "{{apiEndPoint}}/providers/PhotoshopRemoveBackground", "method": "POST", "body": { "surfaceId": "Unity", "assets": [{ "id": "{{id}}" }] }, "replaceKey": ["assetId"]},
     {
       "name": "Change Background",

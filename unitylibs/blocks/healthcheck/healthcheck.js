@@ -3,7 +3,7 @@ import { unityConfig, getHeaders, getUnityLibs, setUnityLibs } from '../../scrip
 class HealthCheck {
   constructor(el) {
     this.el = el;
-    this.workflowFunctions = { getBlogData: this.getBlogData, uploadPdf: this.uploadPdf };
+    this.workflowFunctions = { getBlobData: this.getBlobData, uploadPdf: this.uploadPdf };
     this.init();
   }
 
@@ -32,7 +32,7 @@ class HealthCheck {
     return JSON.parse(JSON.stringify(services).replace(new RegExp(placeholder, 'g'), value));
   }
 
-  async getBlogData(options) {
+  async getBlobData(options) {
     return new Promise((res, rej) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', `${getUnityLibs()}/img/healthcheck.jpeg`);
