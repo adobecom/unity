@@ -105,8 +105,8 @@ export default class ActionBinder {
   }
 
   styleElement(itemSelector, propertyName, propertyValue) {
-    const item = this.block.querySelector(itemSelector);
-    item.style[propertyName] = propertyValue;
+    const item = this.block.querySelectorAll(itemSelector);
+    [...item].forEach((i) => i.style[propertyName] = propertyValue);
   }
 
   dispatchClickEvent(params, e) {
@@ -307,7 +307,6 @@ export default class ActionBinder {
   }
 
   async userImgUpload(params, e) {
-    this.canvasArea.querySelector('img').style.filter = '';
     this.operations = [];
     const file = e.target.files[0];
     if (!file) return;

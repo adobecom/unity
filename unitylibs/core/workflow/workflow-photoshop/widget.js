@@ -64,27 +64,30 @@ export default class UnityWidget {
     return actionBtn;
   }
 
-  initRefreshActionMap(w) {
+  initRefreshActionMap(w, ih, rh, mrh) {
     this.actionMap[w] = [
       {
         actionType: 'hide',
-        targets: ['.ps-action-btn.show', '.unity-option-area .show', '.continue-in-app-button'],
+        targets: [rh, mrh, '.ps-action-btn.show', '.unity-option-area .show', '.continue-in-app-button'],
       }, {
         actionType: 'show',
-        targets: ['.ps-action-btn'],
+        targets: [ih, '.ps-action-btn'],
       }, {
         actionType: 'refresh',
         sourceSrc: this.el.querySelector('img').src,
         target: this.target.querySelector('img'),
-      },
+      }, {
+        actionType: 'setCssStyle',
+        targets: ['.adjustment-circle'],
+        propertyName: 'left',
+        propertyValue: '',
+      }, {
+        actionType: 'setCssStyle',
+        targets: ['.interactive-area > picture img'],
+        propertyName: 'filter',
+        propertyValue: '',
+      }
     ];
-  }
-
-  refreshHandler(ih, rh, mrh) {
-    this.target.querySelector('img').style.filter = '';
-    ih.classList.add('show');
-    rh.classList.remove('show');
-    mrh.classList.remove('show');
   }
 
   addRestartOption(unityaa) {
@@ -93,21 +96,8 @@ export default class UnityWidget {
     refreshHolder.append(createTag('div', { class: 'widget-refresh-text' }, 'Restart'));
     unityaa.append(iconHolder);
     const mobileRefreshHolder = refreshHolder.cloneNode(true);
-    [refreshHolder, mobileRefreshHolder].forEach((w) => {
-      w.addEventListener('click', () => {
-        this.refreshHandler(iconHolder, refreshHolder, mobileRefreshHolder);
-      });
-    });
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          this.refreshHandler(iconHolder, refreshHolder, mobileRefreshHolder);
-        }
-      });
-    });
-    observer.observe(this.target);
-    this.initRefreshActionMap('.unity-action-area .widget-refresh-button');
-    this.initRefreshActionMap('.interactive-area > .widget-refresh-button');
+    this.initRefreshActionMap('.unity-action-area .widget-refresh-button', iconHolder, refreshHolder, mobileRefreshHolder);
+    this.initRefreshActionMap('.interactive-area > .widget-refresh-button', iconHolder, refreshHolder, mobileRefreshHolder);
     unityaa.append(refreshHolder);
     this.target.append(mobileRefreshHolder);
   }
@@ -263,8 +253,17 @@ export default class UnityWidget {
       {
         actionType: 'hide',
         targets: ['.unity-action-area .widget-product-icon'],
-      },
-      {
+      }, {
+        actionType: 'setCssStyle',
+        targets: ['.adjustment-circle'],
+        propertyName: 'left',
+        propertyValue: '',
+      }, {
+        actionType: 'setCssStyle',
+        targets: ['.interactive-area > picture img'],
+        propertyName: 'filter',
+        propertyValue: '',
+      }, {
         actionType: 'show',
         targets: [
           '.progress-circle',
