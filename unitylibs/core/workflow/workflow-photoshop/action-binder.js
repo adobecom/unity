@@ -93,14 +93,15 @@ export default class ActionBinder {
     else item?.classList.add('show');
   }
 
-  toggleElement(item, b) {
-    if (typeof item === 'string') {
-      if (b?.querySelector(item)?.classList.contains('show')) b?.querySelector(item)?.classList.remove('show');
-      else b?.querySelector(item)?.classList.add('show');
+  toggleElement(item, actionValue, b) {
+    let tel = typeof item === 'string' ? b?.querySelector(item) : item;
+    if (tel?.classList.contains('show')) {
+      item?.classList.remove('show');
+      actionValue.controlClass.forEach((c) => actionValue.controlEl.classList.remove(c));
       return;
     }
-    if (item?.classList.contains('show')) item?.classList.remove('show');
-    else item?.classList.add('show');
+    tel?.classList.add('show');
+    actionValue.controlClass.forEach((c) => actionValue.controlEl.classList.add(c));
   }
 
   styleElement(itemSelector, propertyName, propertyValue) {
@@ -128,7 +129,7 @@ export default class ActionBinder {
           value.targets.forEach((t) => this.showElement(t, this.block));
           break;
         case value.actionType == 'toggle':
-          value.targets.forEach((t) => this.toggleElement(t, this.block));
+          value.targets.forEach((t) => this.toggleElement(t, value, this.block));
           break;
         case value.actionType == 'removebg':
           await this.removeBackground(value);

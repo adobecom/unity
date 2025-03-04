@@ -148,14 +148,14 @@ export default class UnityWidget {
       case 'continue-in-app':
         btn = this.createActionBtn(
           authCfg,
-          `${featName}-button ${addClasses}`,
+          `continue-in-app ${featName}-button ${addClasses}`,
           this.workflowCfg.productName.toLowerCase()
         );
         actionArea.append(btn);
         this.initContinueInAppActions(featName);
         break;
       default:
-        btn = this.createActionBtn(authCfg, `${featName}-button ${addClasses}`, featName);
+        btn = this.createActionBtn(authCfg, `${featName}-button ${addClasses} subnav-active focus`, featName);
         actionArea.append(btn);
         this.addFeatureTray(
           featName,
@@ -306,6 +306,8 @@ export default class UnityWidget {
           {
             actionType: 'toggle',
             targets: [tray],
+            controlEl: btn,
+            controlClass: ['subnav-active', 'focus'],
           },
         ];
         break;
@@ -316,6 +318,8 @@ export default class UnityWidget {
           {
             actionType: 'toggle',
             targets: [tray],
+            controlEl: btn,
+            controlClass: ['subnav-active', 'focus'],
           },
         ];
         break;
