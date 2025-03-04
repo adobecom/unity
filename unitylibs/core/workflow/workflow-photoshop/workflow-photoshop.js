@@ -9,7 +9,7 @@ import {
   priorityLoad,
   getLibs,
   delay,
-  updateQueryParameter
+  showErrorToast,
 } from '../../../scripts/utils.js';
 
 const miloLibs = getLibs('/libs');
@@ -83,7 +83,6 @@ async function addProductIcon(cfg) {
 async function handleEvent(cfg, eventHandler) {
   const { targetEl, unityEl } = cfg;
   const { default: showProgressCircle } = await import('../../features/progress-circle/progress-circle.js');
-  const { showErrorToast } = await import('../../../scripts/utils.js');
   showProgressCircle(targetEl);
   try {
     await eventHandler();
@@ -122,6 +121,36 @@ function checkImgModified(hostname) {
   return isModified;
 }
 
+function updateQueryParameter(url, paramName = 'format', oldValue = 'webply', newValue = 'jpeg') {
+  try {
+    const urlObj = new URL(url);
+    const params = urlObj.searchParams;
+    if (params.get(paramName) === oldValue) {
+      params.set(paramName, newValue);
+    }
+    return urlObj.toString();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function retryRequestUntilProductRedirect(cfg, requestFunction, delay = 1000) {
+  while (cfg.continueRetrying) {
+    try {
+      const scanResponse = await requestFunction();
+      if (scanResponse.status === 429 || (scanResponse.status >= 500 && scanResponse.status < 600)) {
+        await new Promise((res) => setTimeout(res, delay));
+      } else {
+        cfg.scanResponseAfterRetries = scanResponse;
+        return scanResponse;
+      }
+    } catch (e) {
+      await new Promise((res) => setTimeout(res, delay));
+    }
+  }
+  return cfg.scanResponseAfterRetries;
+}
+
 async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
   const {
     apiEndPoint,
@@ -131,7 +160,6 @@ async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
     targetEl,
     unityEl,
   } = cfg;
-  const { showErrorToast } = await import('../../../scripts/utils.js');
   const { endpoint } = cfg.wfDetail.removebg;
   const img = targetEl.querySelector('picture img');
   const hasExec = cfg.presentState.removeBgState.srcUrl;
@@ -150,8 +178,8 @@ async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
   }
   if(cfg.presentState.cache && cachedImg) {
     await delay(500);
-    cfg.presentState.removeBgState.assetUrl=cachedImg.src;
-    cfg.presentState.removeBgState.assetId = cachedId; 
+    cfg.presentState.removeBgState.assetUrl = cachedImg.src;
+    cfg.presentState.removeBgState.assetId = cachedId;
     cfg.preludeState.href = updateQueryParameter(img.src);
     cfg.preludeState.finalAssetUrl = updateQueryParameter(cachedImg.src);
   }
@@ -186,7 +214,7 @@ async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
     }
     if (scanResponse.status === 429
       || (scanResponse.status >= 500 && scanResponse.status < 600)) {
-      const { retryRequestUntilProductRedirect } = await import('../../../scripts/utils.js');
+      // const { retryRequestUntilProductRedirect } = await import('../../../scripts/utils.js');
       scanResponse = await retryRequestUntilProductRedirect(cfg, () => scanImgForSafety(cfg, id));
     }
   }
@@ -238,7 +266,6 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
     unityEl,
     interactiveSwitchEvent,
   } = cfg;
-  const { showErrorToast } = await import('../../../scripts/utils.js');
   const { endpoint } = cfg.wfDetail.changebg;
   const unityRetriggered = await removeBgHandler(cfg, false);
   const img = targetEl.querySelector('picture img');

@@ -2,7 +2,6 @@ import {
   unityConfig,
   createTag,
   getUnityLibs,
-  sendAnalyticsEvent,
   defineDeviceByScreenSize,
 } from '../../../scripts/utils.js';
 
@@ -126,7 +125,7 @@ export default class ActionBinder {
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
-        sendAnalyticsEvent(new Event('promptOpen'));
+        this.sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
       }
     });
@@ -168,7 +167,7 @@ export default class ActionBinder {
     try {
       if (!this.serviceHandler) await this.loadServiceHandler();
       this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
-      if (fetchType !== 'refresh' && this.query) sendAnalyticsEvent(new CustomEvent('promptInput', { detail: { query: this.query } }));
+      if (fetchType !== 'refresh' && this.query) this.sendAnalyticsEvent(new CustomEvent('promptInput', { detail: { query: this.query } }));
       const payload = {
         query: this.query,
         targetProduct: this.apiConfig.productName,
@@ -482,5 +481,16 @@ export default class ActionBinder {
       this.toggleDefaultItems();
     }
     this.hideDropdown();
+  }
+
+  sendAnalyticsEvent(event) {
+    const data = {
+      xdm: {},
+      data: { web: { webInteraction: { name: event?.type } } },
+    };
+    if (event?.detail) {
+      data.data._adobe_corpnew = { digitalData: event.detail };
+    }
+    window._satellite?.track('event', data);
   }
 }

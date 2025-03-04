@@ -12,7 +12,8 @@ import {
   priorityLoad,
   loadArea,
   loadImg,
-  getHeaders
+  getHeaders,
+  delay as delayFunc,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
@@ -354,10 +355,6 @@ export default class ActionBinder {
     else await this.handleMultiFileUpload(files, totalFileSize, eventName);
   }
 
-  delay(ms) {
-    return new Promise((res) => { setTimeout(() => { res(); }, ms); });
-  }
-
   checkCookie = () => {
     const cookies = document.cookie.split(';').map((item) => item.trim());
     const target = /^UTS_Uploaded=/;
@@ -385,7 +382,7 @@ export default class ActionBinder {
       if (!this.checkCookie()) {
         await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
       }
-      await this.delay(500);
+      await delayFunc(500);
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else window.location.href = this.redirectUrl;

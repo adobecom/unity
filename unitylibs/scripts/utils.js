@@ -88,22 +88,6 @@ export async function loadSvg(src) {
   }
 }
 
-export async function loadSvgs(svgs) {
-  const promiseArr = [];
-  [...svgs].forEach((svg) => {
-    promiseArr.push(
-      fetch(svg.src)
-        .then((res) => {
-          if (res.ok) return res.text();
-          else throw new Error('Could not fetch SVG');
-        })
-        .then((txt) => { svg.parentElement.innerHTML = txt; })
-        .catch((e) => { svg.remove(); }),
-    );
-  });
-  await Promise.all(promiseArr);
-}
-
 export function loadImg(img) {
   return new Promise((res) => {
     img.loading = 'eager';
@@ -194,23 +178,6 @@ export async function showErrorToast(targetEl, unityEl, className) {
   document.querySelector('.unity-enabled .interactive-area .alert-holder').style.display = 'flex';
 }
 
-export async function retryRequestUntilProductRedirect(cfg, requestFunction, delay = 1000) {
-  while (cfg.continueRetrying) {
-    try {
-      const scanResponse = await requestFunction();
-      if (scanResponse.status === 429 || (scanResponse.status >= 500 && scanResponse.status < 600)) {
-        await new Promise((res) => setTimeout(res, delay));
-      } else {
-        cfg.scanResponseAfterRetries = scanResponse;
-        return scanResponse;
-      }
-    } catch (e) {
-      await new Promise((res) => setTimeout(res, delay));
-    }
-  }
-  return cfg.scanResponseAfterRetries;
-}
-
 export function createIntersectionObserver({ el, callback, cfg, options = {} }) {
   const io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -229,20 +196,6 @@ export function delay(durationMs = 1000) {
       resolve('Resolved after 1 second');
     }, durationMs);
   });
-}
-
-export function updateQueryParameter(url, paramName='format', oldValue='webply', newValue='jpeg') {
-  try {
-      const urlObj = new URL(url);
-      const params = urlObj.searchParams;
-      if (params.get(paramName) === oldValue) {
-          params.set(paramName, newValue);
-      }
-
-      return urlObj.toString();
-  } catch (error) {
-      return null;
-  }
 }
 
 export const unityConfig = (() => {
@@ -277,14 +230,3 @@ export const unityConfig = (() => {
   }
   return cfg.prod;
 })();
-
-export function sendAnalyticsEvent(event) {
-  const data = {
-    xdm: {},
-    data: { web: { webInteraction: { name: event?.type } } },
-  };
-  if (event?.detail) {
-    data.data._adobe_corpnew = { digitalData: event.detail };
-  }
-  window._satellite?.track('event', data);
-}
