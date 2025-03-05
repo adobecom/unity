@@ -1,6 +1,6 @@
 import {
   createTag,
-} from '../../../scripts/utils.js';
+} from '../scripts/utils.js';
 
 export default class TransitionScreen {
   constructor(splashScreenEl, initActionListeners, loaderLimit) {

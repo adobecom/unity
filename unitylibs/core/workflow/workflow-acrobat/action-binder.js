@@ -187,12 +187,11 @@ export default class ActionBinder {
     this.serviceHandler = new ServiceHandler();
     this.uploadHandler = null;
     this.splashScreenEl = null;
+    this.transitionScreen = null;
     this.promiseStack = [];
     this.accountType = '';
     this.redirectUrl = '';
     this.redirectWithoutUpload = false;
-    // this.LOADER_DELAY = 800;
-    // this.LOADER_INCREMENT = 30;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
     this.applySignedInSettings();
@@ -273,40 +272,6 @@ export default class ActionBinder {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
-  // updateProgressBar(layer, percentage) {
-  //   const p = Math.min(percentage, this.LOADER_LIMIT);
-  //   const spb = layer.querySelector('.spectrum-ProgressBar');
-  //   spb?.setAttribute('value', p);
-  //   spb?.setAttribute('aria-valuenow', p);
-  //   layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
-  //   layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
-  // }
-
-  // createProgressBar() {
-  //   const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spectrum-ProgressBar--sideLabel" value="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-  //   <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
-  //   <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
-  //   <div class="spectrum-ProgressBar-track">
-  //     <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
-  //   </div>
-  //   </div>`;
-  //   return createTag('div', { class: 'progress-holder' }, pdom);
-  // }
-
-  // progressBarHandler(s, delay, i, initialize = false) {
-  //   if (!s) return;
-  //   delay = Math.min(delay + 100, 2000);
-  //   i = Math.max(i - 5, 5);
-  //   const progressBar = s.querySelector('.spectrum-ProgressBar');
-  //   if (!initialize && progressBar?.getAttribute('value') >= this.LOADER_LIMIT) return;
-  //   if (initialize) this.updateProgressBar(s, 0);
-  //   setTimeout(() => {
-  //     const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
-  //     this.updateProgressBar(s, v + i);
-  //     this.progressBarHandler(s, delay, i);
-  //   }, delay);
-  // }
-
   isMixedFileTypes(files) {
     const fileTypes = new Set(files.map((file) => file.type));
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
@@ -368,7 +333,7 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/core/workflow/workflow-common/transition-screen.js`);
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
         await this.transitionScreen.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
@@ -480,10 +445,9 @@ export default class ActionBinder {
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/core/workflow/workflow-common/transition-screen.js`);
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
     this.transitionScreen.updateProgressBar(this.splashScreenEl, 100);
-    // this.updateProgressBar(this.splashScreenEl, 100);
     try {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
@@ -494,15 +458,13 @@ export default class ActionBinder {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else window.location.href = this.redirectUrl;
     } catch (e) {
-      // const { default: TransitionScreen } = await import(`${getUnityLibs()}/core/workflow/workflow-common/transition-screen.js`);
-      // this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
     }
   }
 
   async cancelAcrobatOperation() {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/core/workflow/workflow-common/transition-screen.js`);
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
@@ -635,37 +597,4 @@ export default class ActionBinder {
     }
     if (b === this.block) await this.delayedSplashLoader();
   }
-
-  // async handleSplashProgressBar() {
-  //   const pb = this.createProgressBar();
-  //   this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
-  //   this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
-  // }
-
-  // handleOperationCancel() {
-  //   const actMap = { 'a.con-button[href*="#_cancel"]': 'interrupt' };
-  //   this.initActionListeners(this.splashScreenEl, actMap);
-  // }
-
-  // splashVisibilityController(displayOn) {
-  //   if (!displayOn) {
-  //     this.LOADER_LIMIT = 95;
-  //     this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
-  //     this.splashScreenEl.classList.remove('show');
-  //     return;
-  //   }
-  //   this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
-  //   this.splashScreenEl.classList.add('show');
-  //   this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
-  // }
-
-  // async showSplashScreen(displayOn = false) {
-  //   if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen) return;
-  //   if (this.splashScreenEl.classList.contains('decorate')) {
-  //     if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
-  //     if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
-  //     this.splashScreenEl.classList.remove('decorate');
-  //   }
-  //   this.splashVisibilityController(displayOn);
-  // }
 }
