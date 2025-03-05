@@ -12,52 +12,10 @@ import {
   priorityLoad,
   loadArea,
   loadImg,
+  getHeaders
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  getGuestAccessToken() {
-    try {
-      return window.adobeIMS.getAccessToken();
-    } catch (e) {
-      return '';
-    }
-  }
-
-  async getRefreshToken() {
-    try {
-      const { tokenInfo } = await window.adobeIMS.refreshToken();
-      return `Bearer ${tokenInfo.token}`;
-    } catch (e) {
-      return '';
-    }
-  }
-
-  async getHeaders() {
-    let token = '';
-    let refresh = false;
-    const guestAccessToken = this.getGuestAccessToken();
-    if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
-      token = await this.getRefreshToken();
-      refresh = true;
-    } else {
-      token = `Bearer ${guestAccessToken.token}`;
-    }
-
-    if (!token) {
-      const error = new Error();
-      error.status = 401;
-      error.message = `Access Token is null. Refresh token call was executed: ${refresh}`
-      throw error;
-    }
-
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: token,
-        'x-api-key': unityConfig.apiKey,
-      },
-    };
-  }
 
   async fetchFromService(url, options) {
     try {
@@ -71,34 +29,34 @@ class ServiceHandler {
             if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
           });
         }
+        if (!error.message) error.message = `Error fetching from service. URL: ${url}, Options: ${JSON.stringify(options)}`;
         error.status = response.status;
         throw error;
       }
       if (contentLength === '0') return {};
       return response.json();
-    } catch (error) {
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        error.status = 504;
+    } catch (e) {
+      if (['TimeoutError', 'AbortError'].includes(e.name)) {
+        e.status = 504;
+        e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
       }
-      throw error;
+      throw e;
     }
   }
 
   async postCallToService(api, options) {
-    const headers = await this.getHeaders();
     const postOpts = {
       method: 'POST',
-      ...headers,
+      headers: await getHeaders(unityConfig.apiKey),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
   }
 
   async getCallToService(api, params) {
-    const headers = await this.getHeaders();
     const getOpts = {
       method: 'GET',
-      ...headers,
+      headers: await getHeaders(unityConfig.apiKey),
     };
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
@@ -132,6 +90,7 @@ export default class ActionBinder {
     this.uploadHandler = null;
     this.splashScreenEl = null;
     this.promiseStack = [];
+    this.accountType = '';
     this.redirectUrl = '';
     this.redirectWithoutUpload = false;
     this.LOADER_DELAY = 800;
@@ -146,10 +105,12 @@ export default class ActionBinder {
   }
 
   async applySignedInSettings() {
-    if (this.block.classList.contains('signed-in')
-      && this.getAccountType() === 'type1') {
-      this.acrobatSignedInSettings();
-      return;
+    this.accountType = await this.getAccountType();
+    if (this.block.classList.contains('signed-in')) {
+      if (this.accountType === 'type1') {
+        this.acrobatSignedInSettings();
+        return;
+      }
     }
     window.addEventListener('IMS:Ready', () => {
       this.acrobatSignedInSettings();
@@ -176,8 +137,13 @@ export default class ActionBinder {
     await priorityLoad(parr);
   }
 
-  getAccountType() {
-    return window.adobeIMS?.getAccountType?.() || '';
+  async getAccountType() {
+    try {
+      return window.adobeIMS.getAccountType();
+    } catch (e) {
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception raised when getting account type: ${e.message}`, true);
+      return '';
+    }
   }
 
   async dispatchErrorToast(code, status, info = null, lanaOnly = false, showError = true) {
@@ -197,7 +163,7 @@ export default class ActionBinder {
             message: `${message}`,
             status,
             info,
-            accountType: this.getAccountType(),
+            accountType: this.accountType,
           },
         },
       ));
@@ -320,11 +286,14 @@ export default class ActionBinder {
     const fileData = { type: file.type, size: file.size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
     if (!await this.validateFiles([file])) return;
-    const isGuest = this.getAccountType() === 'guest';
+    if (!this.accountType) {
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
+      return;
+    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (isGuest) await this.uploadHandler.singleFileGuestUpload(file);
-    else await this.uploadHandler.singleFileUserUpload(file);
+    if (this.accountType === 'guest') await this.uploadHandler.singleFileGuestUpload(file, fileData);
+    else await this.uploadHandler.singleFileUserUpload(file, fileData);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
@@ -335,10 +304,13 @@ export default class ActionBinder {
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
     if (!await this.validateFiles(files)) return;
-    const isGuest = this.getAccountType() === 'guest';
+    if (!this.accountType) {
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
+      return;
+    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (isGuest) await this.uploadHandler.multiFileGuestUpload();
+    if (this.accountType === 'guest') await this.uploadHandler.multiFileGuestUpload();
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
