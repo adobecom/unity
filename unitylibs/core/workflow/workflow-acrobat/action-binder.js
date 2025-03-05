@@ -36,7 +36,10 @@ class ServiceHandler {
       if (contentLength === '0') return {};
       return response.json();
     } catch (e) {
-      if (['TimeoutError', 'AbortError'].includes(e.name)) {
+      if (e instanceof TypeError) {
+        e.status = 0;
+        e.message = `Network error. URL: ${url}, Options: ${JSON.stringify(options)}`;
+      } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
         e.status = 504;
         e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
       }
@@ -203,7 +206,7 @@ export default class ActionBinder {
             code,
             message: `${message}`,
             status,
-            info,
+            info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
             accountType: this.accountType,
           },
         },
@@ -289,7 +292,7 @@ export default class ActionBinder {
           const errorType = Array.from(errorTypes)[0];
           await this.dispatchErrorToast(errorMessages[errorType]);
         } else {
-          await this.dispatchErrorToast('verb_upload_error_generic');
+          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false);
         }
       }
       return false;
@@ -312,7 +315,7 @@ export default class ActionBinder {
       })
       .catch(async (e) => {
         await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', false, e.showError);
+        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
       });
   }
 
@@ -351,7 +354,7 @@ export default class ActionBinder {
     }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.accountType === 'guest') await this.uploadHandler.multiFileGuestUpload();
+    if (this.accountType === 'guest') await this.uploadHandler.multiFileGuestUpload(filesData);
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
@@ -432,7 +435,7 @@ export default class ActionBinder {
       } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when redirecting to product.', false, e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
     }
   }
 
