@@ -176,8 +176,4 @@
   .unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-label {
     font-weight: bold;
   }
-
-  [dir="rtl"] .removebg-button {
-    order: 1;
-  }
 }
