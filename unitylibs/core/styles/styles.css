@@ -369,6 +369,10 @@
     border-left: 1px solid var(--separator-gray);
   }
 
+  [dir="rtl"] .unity-enabled .interactive-area .unity-action-area .unity-action-btn.show ~ .unity-action-btn.show {
+    border-left: 1px solid var(--separator-gray);
+  }
+
   .unity-enabled .interactive-area.light .unity-action-area {
     background: var(--light-bg);
   }
