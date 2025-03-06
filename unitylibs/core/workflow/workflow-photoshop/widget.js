@@ -346,7 +346,7 @@ export default class UnityWidget {
       [thumbnail, bgImg] = o.querySelectorAll(':scope> picture > img');
       if (!bgImg) bgImg = thumbnail;
       thumbnail.dataset.backgroundImg = bgImg.src;
-      thumbnail.setAttribute('src', updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
+      thumbnail.setAttribute('src', this.updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
       const optionSelector = `changebg-option option-${num}`;
       const a = createTag('a', { href: '#', class: optionSelector }, thumbnail);
       bgSelectorTray.append(a);
