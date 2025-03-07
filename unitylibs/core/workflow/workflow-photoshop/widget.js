@@ -343,7 +343,7 @@ export default class UnityWidget {
     [...bgOptions].forEach((o, num) => {
       let thumbnail = null;
       let bgImg = null;
-      [thumbnail, bgImg] = o.querySelectorAll(':scope> picture > img');
+      [thumbnail, bgImg] = o.querySelectorAll(':scope > picture > img');
       if (!bgImg) bgImg = thumbnail;
       thumbnail.dataset.backgroundImg = bgImg.src;
       thumbnail.setAttribute('src', this.updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
