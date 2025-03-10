@@ -227,12 +227,24 @@ export default class ActionBinder {
   }
 
   async getAccountType() {
-    try {
-      return window.adobeIMS.getAccountType();
-    } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception raised when getting account type: ${e.message}`, true);
-      return '';
+    const navEntry = performance.getEntriesByType('navigation')[0];
+
+    if (navEntry && navEntry.serverTiming) {
+      const sisHeader = navEntry.serverTiming.find((item) => item.name === 'sis');
+      if (sisHeader) {
+        const userSignedIn = sisHeader.description === '1';
+        console.log(`User Signed In: ${userSignedIn}`);
+        return userSignedIn;
+      }
     }
+    console.log('User Signed In: Unknown (Header not found)');
+    return null;
+    // try {
+    //   return window.adobeIMS.getAccountType();
+    // } catch (e) {
+    //   await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception raised when getting account type: ${e.message}`, true);
+    //   return '';
+    // }
   }
 
   async dispatchErrorToast(code, status, info = null, lanaOnly = false, showError = true) {
