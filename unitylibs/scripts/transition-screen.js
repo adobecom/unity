@@ -1,12 +1,16 @@
 import {
   createTag,
+  localizeLink,
+  loadImg,
+  loadArea,
 } from '../scripts/utils.js';
 
 export default class TransitionScreen {
-  constructor(splashScreenEl, initActionListeners, loaderLimit) {
+  constructor(splashScreenEl, initActionListeners, loaderLimit, workflowCfg) {
     this.splashScreenEl = splashScreenEl;
     this.initActionListeners = initActionListeners;
     this.LOADER_LIMIT = loaderLimit;
+    this.workflowCfg = workflowCfg;
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
   }
@@ -51,9 +55,61 @@ export default class TransitionScreen {
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }
 
-  handleOperationCancel() {
+ handleOperationCancel() {
     const actMap = { 'a.con-button[href*="#_cancel"]': 'interrupt' };
     this.initActionListeners(this.splashScreenEl, actMap);
+  }
+
+  async loadSplashFragment() {
+    if (!this.workflowCfg.targetCfg.showSplashScreen) return;
+    this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
+    const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
+    const html = await resp.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const sections = doc.querySelectorAll('body > div');
+    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
+    f.append(...sections);
+    const splashDiv = document.querySelector(
+      this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
+    );
+    splashDiv.append(f);
+    const img = f.querySelector('img');
+    if (img) loadImg(img);
+    await loadArea(f);
+    this.splashScreenEl = f;
+    return f;
+  }
+
+  async delayedSplashLoader() {
+    let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
+    const interactionHandler = async () => {
+      await this.loadSplashFragment();
+      cleanup(interactionHandler);
+    };
+
+    const timeoutHandler = async () => {
+      await this.loadSplashFragment();
+      cleanup(interactionHandler);
+    };
+
+    // Timeout to load after 8 seconds
+    let timeoutId = setTimeout(timeoutHandler, 8000);
+
+    const cleanup = (handler) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (eventListeners) {
+        eventListeners.forEach((event) => document.removeEventListener(event, handler));
+        eventListeners = null;
+      }
+    };
+    eventListeners.forEach((event) => document.addEventListener(
+      event,
+      interactionHandler,
+      { once: true },
+    ));
   }
 
   splashVisibilityController(displayOn) {

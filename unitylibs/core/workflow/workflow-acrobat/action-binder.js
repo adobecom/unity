@@ -334,7 +334,7 @@ export default class ActionBinder {
       })
       .catch(async (e) => {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
         await this.transitionScreen.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
       });
@@ -446,8 +446,8 @@ export default class ActionBinder {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
-    this.transitionScreen.updateProgressBar(this.splashScreenEl, 100);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
@@ -465,7 +465,7 @@ export default class ActionBinder {
 
   async cancelAcrobatOperation() {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
     this.dispatchAnalyticsEvent('cancel');
@@ -514,58 +514,6 @@ export default class ActionBinder {
     return { files, totalFileSize };
   }
 
-  async loadSplashFragment() {
-    if (!this.workflowCfg.targetCfg.showSplashScreen) return;
-    this.splashFragmentLink = localizeLink(`${window.location.origin}${this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink}`);
-    const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
-    const html = await resp.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const sections = doc.querySelectorAll('body > div');
-    const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
-    f.append(...sections);
-    const splashDiv = document.querySelector(
-      this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
-    );
-    splashDiv.append(f);
-    const img = f.querySelector('img');
-    if (img) loadImg(img);
-    await loadArea(f);
-    this.splashScreenEl = f;
-    return f;
-  }
-
-  async delayedSplashLoader() {
-    let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
-    const interactionHandler = async () => {
-      await this.loadSplashFragment();
-      cleanup(interactionHandler);
-    };
-
-    const timeoutHandler = async () => {
-      await this.loadSplashFragment();
-      cleanup(interactionHandler);
-    };
-
-    // Timeout to load after 8 seconds
-    let timeoutId = setTimeout(timeoutHandler, 8000);
-
-    const cleanup = (handler) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (eventListeners) {
-        eventListeners.forEach((event) => document.removeEventListener(event, handler));
-        eventListeners = null;
-      }
-    };
-    eventListeners.forEach((event) => document.addEventListener(
-      event,
-      interactionHandler,
-      { once: true },
-    ));
-  }
-
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
@@ -595,6 +543,10 @@ export default class ActionBinder {
           break;
       }
     }
-    if (b === this.block) await this.delayedSplashLoader();
+    if (b === this.block) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      await this.transitionScreen.delayedSplashLoader();
+    }
   }
 }
