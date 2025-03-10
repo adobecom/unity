@@ -12,10 +12,52 @@ import {
   priorityLoad,
   loadArea,
   loadImg,
-  getHeaders
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
+  getGuestAccessToken() {
+    try {
+      return window.adobeIMS.getAccessToken();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getRefreshToken() {
+    try {
+      const { tokenInfo } = await window.adobeIMS.refreshToken();
+      return `Bearer ${tokenInfo.token}`;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getHeaders() {
+    let token = '';
+    let refresh = false;
+    const guestAccessToken = this.getGuestAccessToken();
+    if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
+      token = await this.getRefreshToken();
+      refresh = true;
+    } else {
+      token = `Bearer ${guestAccessToken.token}`;
+    }
+
+    if (!token) {
+      const error = new Error();
+      error.status = 401;
+      error.message = `Access Token is null. Refresh token call was executed: ${refresh}`
+      throw error;
+    }
+
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token,
+        'x-api-key': unityConfig.apiKey,
+      },
+    };
+  }
 
   async fetchFromService(url, options) {
     try {
@@ -36,6 +78,41 @@ class ServiceHandler {
       if (contentLength === '0') return {};
       return response.json();
     } catch (e) {
+      if (e instanceof TypeError) {
+        e.status = 0;
+        e.message = `Network error. URL: ${url}, Options: ${JSON.stringify(options)}`;
+      } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+        e.status = 504;
+        e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
+      }
+      throw e;
+    }
+  }
+
+  async fetchFromServiceWithRetry(url, options, timeLapsed = 0, maxRetryDelay = 120) {
+    try {
+      const response = await fetch(url, options);
+      const error = new Error();
+      const contentLength = response.headers.get('Content-Length');
+      if (response.status !== 200 && response.status !== 202) {
+        if (contentLength !== '0') {
+          const resJson = await response.json();
+          return resJson;
+        }
+        if (!error.message) error.message = `Error fetching from service. URL: ${url}, Options: ${JSON.stringify(options)}`;
+        error.status = response.status;
+        throw error;
+      } else if (response.status === 202) {
+        if (timeLapsed < maxRetryDelay && response.headers.get('retry-after')) {
+          const retryDelay = parseInt(response.headers.get('retry-after'));
+          await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+          timeLapsed += retryDelay;
+          return this.fetchFromServiceWithRetry(url, options, timeLapsed, maxRetryDelay);
+        }
+      }
+      if (contentLength === '0') return {};
+      return await response.json();
+    } catch (e) {
       if (['TimeoutError', 'AbortError'].includes(e.name)) {
         e.status = 504;
         e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
@@ -45,18 +122,30 @@ class ServiceHandler {
   }
 
   async postCallToService(api, options) {
+    const headers = await this.getHeaders();
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      ...headers,
       ...options,
     };
     return this.fetchFromService(api, postOpts);
   }
 
+  async postCallToServiceWithRetry(api, options) {
+    const headers = await this.getHeaders();
+    const postOpts = {
+      method: 'POST',
+      ...headers,
+      ...options,
+    };
+    return this.fetchFromServiceWithRetry(api, postOpts);
+  }
+
   async getCallToService(api, params) {
+    const headers = await this.getHeaders();
     const getOpts = {
       method: 'GET',
-      headers: await getHeaders(unityConfig.apiKey),
+      ...headers,
     };
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
@@ -175,7 +264,7 @@ export default class ActionBinder {
             code,
             message: `${message}`,
             status,
-            info,
+            info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
             accountType: this.accountType,
           },
         },
@@ -261,7 +350,7 @@ export default class ActionBinder {
           const errorType = Array.from(errorTypes)[0];
           await this.dispatchErrorToast(errorMessages[errorType]);
         } else {
-          await this.dispatchErrorToast('verb_upload_error_generic');
+          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false);
         }
       }
       return false;
@@ -284,7 +373,7 @@ export default class ActionBinder {
       })
       .catch(async (e) => {
         await this.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when retrieving redirect URL.', false, e.showError);
+        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
       });
   }
 
@@ -323,7 +412,7 @@ export default class ActionBinder {
     }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.accountType === 'guest') await this.uploadHandler.multiFileGuestUpload();
+    if (this.accountType === 'guest') await this.uploadHandler.multiFileGuestUpload(filesData);
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
@@ -405,7 +494,7 @@ export default class ActionBinder {
       } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, 'Exception thrown when redirecting to product.', false, e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
     }
   }
 
