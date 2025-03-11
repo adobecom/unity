@@ -91,6 +91,7 @@ export default class ActionBinder {
   }
 
   addEventListeners(el, actionsList) {
+    console.log('Adding input events');
     const handleClick = async (event) => {
       event.preventDefault();
       await this.execActions(actionsList, el);
@@ -178,6 +179,7 @@ export default class ActionBinder {
         this.apiConfig.expressEndpoint.autoComplete,
         { body: JSON.stringify(payload) },
       );
+      console.log('Response:', response);
       if (response?.completions) {
         this.suggestion = fetchType === 'refresh'
           ? response.completions.slice(this.maxResults / 2)

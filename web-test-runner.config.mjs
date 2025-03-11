@@ -56,5 +56,5 @@ export default {
     }),
   ],
   port: 2000,
-  browserLogs: false,
+  browserLogs: true,
 };
