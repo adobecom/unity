@@ -11,42 +11,6 @@ export default class ServiceHandler {
     this.canvasArea = canvasArea;
   }
 
-  async getRefreshToken() {
-    try {
-      const { tokenInfo } = await window.adobeIMS.refreshToken();
-      return `Bearer ${tokenInfo.token}`;
-    } catch (e) {
-      return '';
-    }
-  }
-
-  async getHeaders() {
-    let token = '';
-    let refresh = false;
-    const guestAccessToken = window.adobeIMS?.getAccessToken();
-    if (!guestAccessToken || guestAccessToken.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
-      token = await this.getRefreshToken();
-      refresh = true;
-    } else {
-      token = `Bearer ${guestAccessToken.token}`;
-    }
-
-    if (!token) {
-      const error = new Error();
-      error.status = 401;
-      error.message = `Unauthorized Access: ${refresh}`;
-      throw error;
-    }
-
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: token,
-        'x-api-key': unityConfig.apiKey,
-      },
-    };
-  }
-
   async fetchFromService(url, options) {
     try {
       const response = await fetch(url, options);
@@ -65,7 +29,7 @@ export default class ServiceHandler {
   }
 
   async postCallToService(api, options) {
-    const headers = await this.getHeaders();
+    const headers = await getHeaders(unityConfig.apiKey);
     const postOpts = {
       method: 'POST',
       ...headers,

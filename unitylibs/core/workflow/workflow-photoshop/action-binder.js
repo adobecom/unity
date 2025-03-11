@@ -6,7 +6,6 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getGuestAccessToken,
   unityConfig,
   loadImg,
   createTag,
@@ -31,20 +30,10 @@ class ServiceHandler {
     this.unityEl = unityEl;
   }
 
-  getHeaders() {
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: getGuestAccessToken(),
-        'x-api-key': unityConfig.apiKey,
-      },
-    };
-  }
-
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      ...this.getHeaders(),
+      headers: await getHeaders(unityConfig.apiKey),
       ...options,
     };
     try {
