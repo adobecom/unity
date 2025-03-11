@@ -89,9 +89,10 @@ class ServiceHandler {
   }
 
   async postCallToServiceWithRetry(api, options) {
+    const headers = await this.getHeaders();
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      ...headers,
       ...options,
     };
     return this.fetchFromServiceWithRetry(api, postOpts);
