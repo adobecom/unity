@@ -29,10 +29,9 @@ export default class ServiceHandler {
   }
 
   async postCallToService(api, options) {
-    const headers = await getHeaders(unityConfig.apiKey);
     const postOpts = {
       method: 'POST',
-      ...headers,
+      headers: await getHeaders(unityConfig.apiKey),
       ...options,
     };
     return this.fetchFromService(api, postOpts);

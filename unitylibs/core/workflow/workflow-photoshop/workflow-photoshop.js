@@ -267,7 +267,7 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
   }
   const changeBgOptions = {
     method: 'POST',
-    headers: getHeaders(apiKey),
+    headers: await getHeaders(apiKey),
     body: `{
             "assets": [{ "id": "${fgId}" },{ "id": "${bgId}" }],
             "metadata": {
