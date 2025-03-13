@@ -11,7 +11,7 @@ describe('ActionBinder Class Unit Tests', () => {
   let canvasArea;
   let actionMap;
   before(async () => {
-    document.body.innerHTML = await readFile({ path: '../mocks/exp-body.html' });
+    document.body.innerHTML = await readFile({ path: '../mocks/text2image-body.html' });
     unityElement = document.querySelector('.unity');
     block = document.querySelector('.unity-enabled');
     canvasArea = document.createElement('div');

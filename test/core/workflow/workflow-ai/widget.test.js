@@ -12,7 +12,7 @@ describe('UnityWidget Class Unit Tests', () => {
   let spriteCon;
 
   before(async () => {
-    document.body.innerHTML = await readFile({ path: '../mocks/exp-body.html' });
+    document.body.innerHTML = await readFile({ path: '../mocks/text2image-body.html' });
     target = document.querySelector('.unity-enabled');
     el = document.querySelector('.unity');
     workflowCfg = { targetCfg: { floatPrompt: true, actionMap: {} } };
