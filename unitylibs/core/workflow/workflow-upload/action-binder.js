@@ -238,7 +238,9 @@ export default class ActionBinder {
         cOpts.payload.operations[idx][op.adjustmentType] = parseInt(op.filterValue, 10);
       }
     });*/
-    
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
     const { url } = await this.serviceHandler.postCallToService(
       this.psApiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -285,6 +287,8 @@ export default class ActionBinder {
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     const assetId = await this.uploadAsset(objectUrl);
     const operationItem = {
       operationType: 'upload',
