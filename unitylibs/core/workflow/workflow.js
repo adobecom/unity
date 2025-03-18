@@ -247,7 +247,7 @@ class WfInitiator {
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
-    if (!targetCfg.renderWidget) return null;
+    if (!targetCfg.renderWidget && !block.classList.contains('upload')) return null;
     asset.insertAdjacentElement('beforebegin', iArea);
     iArea.append(asset);
     if (this.el.classList.contains('light')) iArea.classList.add('light');
