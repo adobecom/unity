@@ -315,6 +315,11 @@ export default class ActionBinder {
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
+    this.serviceHandler = new ServiceHandler(
+      this.workflowCfg.targetCfg.renderWidget,
+      this.canvasArea,
+      this.unityEl,
+    );
     for (const [key, value] of Object.entries(actMap)) {
       const elements = b.querySelectorAll(key);
       if (!elements || elements.length === 0) return;
