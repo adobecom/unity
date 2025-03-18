@@ -1,0 +1,24 @@
+{
+  "upload": {
+    "selector": ".drop-zone-container",
+    "renderWidget": false,
+    "source": ".drop-zone-container",
+    "target": ".drop-zone-container",
+    "limits": {
+      "maxNumFiles": 1,
+      "maxFileSize": 40000000,
+      "maxHeignt": 8000,
+      "maxWidth": 8000,
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"]
+    },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/drafts/ruchika/unity/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".drop-zone-container": "upload",
+      "#file-upload": "upload"
+    }
+  }
+}

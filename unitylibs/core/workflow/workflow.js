@@ -257,6 +257,14 @@ class WfInitiator {
 
   getWorkFlowInformation() {
     let wfName = '';
+    let product = '';
+    let feature = '';
+    [...this.el.classList].forEach((cn) => {
+      if (cn.match('workflow-')) wfName = cn;
+      if (cn.match('product-')) product = cn.replace('product-', '');
+      if (cn.match('feature-')) feature = cn.replace('feature-', '');
+    });
+
     const workflowCfg = {
       'workflow-photoshop': {
         productName: 'Photoshop',
@@ -275,7 +283,7 @@ class WfInitiator {
           'insert-pdf',
           'extract-pages',
           'reorder-pages',
-          'sendforsignature'
+          'sendforsignature',
         ]),
       },
       'workflow-ai': {
@@ -283,8 +291,11 @@ class WfInitiator {
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
       },
+      'workflow-upload': {
+        productName: product,
+        sfList: new Set([feature]),
+      },
     };
-    [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
       name: wfName,
