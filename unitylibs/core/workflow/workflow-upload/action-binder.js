@@ -72,6 +72,7 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.psApiConfig = this.getPsApiConfig();
     this.serviceHandler = null;
+    this.splashScreenEl = null;
   }
 
   getPsApiConfig() {
@@ -287,7 +288,6 @@ export default class ActionBinder {
     }
     await this.continueInApp();
   }
-
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
