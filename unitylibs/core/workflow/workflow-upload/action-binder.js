@@ -6,14 +6,13 @@
 /* eslint-disable no-restricted-syntax */
 
 import {
-  getGuestAccessToken,
   unityConfig,
   getUnityLibs,
   priorityLoad,
-  loadImg,
   createTag,
   getLocale,
   getLibs,
+  getHeaders,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
@@ -23,20 +22,10 @@ class ServiceHandler {
     this.unityEl = unityEl;
   }
 
-  getHeaders() {
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: getGuestAccessToken(),
-        'x-api-key': unityConfig.apiKey,
-      },
-    };
-  }
-
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      ...this.getHeaders(),
+      headers: await getHeaders(unityConfig.apiKey),
       ...options,
     };
     try {
@@ -241,15 +230,19 @@ export default class ActionBinder {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
-    const { url } = await this.serviceHandler.postCallToService(
-      this.psApiConfig.connectorApiEndPoint,
-      { body: JSON.stringify(cOpts) },
-      {
-        errorToastEl: this.errorToastEl,
-        errorType: '.icon-error-request',
-      },
-    );
-    window.location.href = url;
+    try {
+      const { url } = await this.serviceHandler.postCallToService(
+        this.psApiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(cOpts) },
+        {
+          errorToastEl: this.errorToastEl,
+          errorType: '.icon-error-request',
+        },
+      );
+      window.location.href = url;
+    } catch (e) {
+      await this.transitionScreen.showSplashScreen();
+    }
   }
 
   checkImageDimensions(objectUrl) {
