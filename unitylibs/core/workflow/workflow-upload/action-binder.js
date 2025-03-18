@@ -302,8 +302,8 @@ export default class ActionBinder {
     switch (value) {
       case 'upload':
         this.promiseStack = [];
-        if (this.workflowCfg.supportedFeatures.length === 0) await this.uploadImage(file);
-        else if (this.workflowCfg.supportedFeatures.length === 1) await this.uploadImage(file);
+        if (this.workflowCfg.supportedFeatures.size === 0) await this.uploadImage(file);
+        else if (this.workflowCfg.supportedFeatures.size === 1) await this.uploadImage(file);
         break;
       case 'interrupt':
         await this.cancelAcrobatOperation();
