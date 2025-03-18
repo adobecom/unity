@@ -50,7 +50,8 @@ export function getHeaders(apiKey) {
   return {
     'Content-Type': 'application/json',
     Authorization: getGuestAccessToken(),
-    'x-api-key': apiKey,
+    'x-api-key': 'leo',
+    //'x-api-key': apiKey,
   };
 }
 
@@ -64,7 +65,7 @@ export function defineDeviceByScreenSize() {
 }
 
 export function getLocale() {
-  const currLocale = getConfig().locale?.prefix.replace('/', '')
+  const currLocale = getConfig().locale?.prefix.replace('/', '');
   return currLocale ? currLocale : 'us';
 }
 
