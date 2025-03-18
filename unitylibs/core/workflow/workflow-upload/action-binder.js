@@ -120,7 +120,7 @@ export default class ActionBinder {
         files.push(file);
       });
     }
-    return files;
+    return files[0];
   }
 
   getImageBlobData(url) {
