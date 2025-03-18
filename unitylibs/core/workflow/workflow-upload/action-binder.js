@@ -269,7 +269,6 @@ export default class ActionBinder {
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
     const assetId = await this.uploadAsset(objectUrl);
-    await this.continueInApp();
   }
 
   async photoshopActionMaps(value, file) {
@@ -291,32 +290,34 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
-      const el = b.querySelector(key);
-      if (!el) return;
-      switch (true) {
-        case el.nodeName === 'A':
-          el.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await this.photoshopActionMaps(value);
-          });
-          break;
-        case el.nodeName === 'DIV':
-          el.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            const file = this.extractFiles(e);
-            await this.photoshopActionMaps(value, file);
-          });
-          break;
-        case el.nodeName === 'INPUT':
-          el.addEventListener('change', async (e) => {
-            const file = this.extractFiles(e);
-            await this.photoshopActionMaps(value, file);
-            e.target.value = '';
-          });
-          break;
-        default:
-          break;
-      }
+      const elements = b.querySelectorAll(key);
+      if (!elements || elements.length === 0) return;
+      elements.forEach((el) => {
+        switch (true) {
+          case el.nodeName === 'A':
+            el.addEventListener('click', async (e) => {
+              e.preventDefault();
+              await this.photoshopActionMaps(value);
+            });
+            break;
+          case el.nodeName === 'DIV':
+            el.addEventListener('drop', async (e) => {
+              e.preventDefault();
+              const file = this.extractFiles(e);
+              await this.photoshopActionMaps(value, file);
+            });
+            break;
+          case el.nodeName === 'INPUT':
+            el.addEventListener('change', async (e) => {
+              const file = this.extractFiles(e);
+              await this.photoshopActionMaps(value, file);
+              e.target.value = '';
+            });
+            break;
+          default:
+            break;
+        }
+      });
     }
     if (b === this.block) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);

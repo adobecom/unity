@@ -1,9 +1,9 @@
 {
   "upload": {
-    "selector": ".drop-zone-container",
+    "selector": ".drop-zone",
     "renderWidget": false,
-    "source": ".drop-zone-container",
-    "target": ".drop-zone-container",
+    "source": ".drop-zone",
+    "target": ".drop-zone",
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 40000000,
@@ -17,7 +17,7 @@
       "splashScreenParent": "body"
     },
     "actionMap": {
-      ".drop-zone-container": "upload",
+      ".drop-zone": "upload",
       "#file-upload": "upload"
     }
   }
