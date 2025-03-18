@@ -106,6 +106,23 @@ export default class ActionBinder {
     this.promiseStack.unshift(cancelPromise);
   }
 
+  extractFiles(e) {
+    const files = [];
+    if (e.dataTransfer?.items) {
+      [...e.dataTransfer.items].forEach((item) => {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          files.push(file);
+        }
+      });
+    } else if (e.target?.files) {
+      [...e.target.files].forEach((file) => {
+        files.push(file);
+      });
+    }
+    return files;
+  }
+
   getImageBlobData(url) {
     return new Promise((res, rej) => {
       const xhr = new XMLHttpRequest();
@@ -194,7 +211,7 @@ export default class ActionBinder {
       targetProduct: this.workflowCfg.productName,
       payload: {
         locale: getLocale(),
-        operations: [],
+        operations: this.operations,
       },
     };
     /*const continueOperations = ['removeBackground', 'changeBackground', 'imageAdjustment'];
@@ -269,6 +286,11 @@ export default class ActionBinder {
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
     const assetId = await this.uploadAsset(objectUrl);
+    const operationItem = {
+      operationType: 'upload',
+      fileType: file.type,
+    };
+    this.operations.push(operationItem);
   }
 
   async photoshopActionMaps(value, file) {
