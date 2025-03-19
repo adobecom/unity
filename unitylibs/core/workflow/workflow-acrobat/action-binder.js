@@ -290,6 +290,8 @@ export default class ActionBinder {
   }
 
   sanitizeFileName(rawFileName) {
+    const MAX_FILE_NAME_LENGTH = 255;
+    
     let fileName = rawFileName;
     let ext = this.getExtension(fileName);
 
