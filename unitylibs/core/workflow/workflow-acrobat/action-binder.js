@@ -303,14 +303,90 @@ export default class ActionBinder {
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
 
+  sanitizeFileName(rawFileName) {
+    let fileName = rawFileName;
+    let ext = getExtension(fileName);
+
+    // Don't allow unix special dir names.
+    // Empty names are not allowed.
+    if (fileName.length === 0 || fileName === '.' || fileName === '..') {
+      fileName = '---';
+    } else {
+      const nameWithoutExtension = withoutExtension(fileName);
+
+      if (ext.length > 1) {
+        ext = `.${ext}`;
+      }
+
+      // don't allow DOS special names with or without extension.
+      if (DOS_SPECIAL_NAMES.includes(nameWithoutExtension)) {
+        fileName = `---${ext}`;
+      }
+    }
+
+    // File and folder names may be be 1-255 unicode characters in length.
+    // Note that we dealt with 0 length names above already, so we'll just deal with long ones here.
+    const nameLength = fileName.length;
+    if (nameLength > MAX_FILE_NAME_LENGTH) {
+      const extLength = ext.length;
+      const trimToLen = MAX_FILE_NAME_LENGTH - extLength;
+
+      if (trimToLen > 0) {
+        // If we can just shorten the name and keep the extension, do that.
+        fileName = fileName.substring(0, trimToLen) + ext;
+      } else {
+        fileName = fileName.substring(0, MAX_FILE_NAME_LENGTH);
+      }
+    }
+
+    // Names ending with space or period.
+    fileName = fileName.replace(/ $/, '-');
+    fileName = fileName.replace(/\.$/, '-');
+
+    // Names beginning with space or period.
+    fileName = fileName.replace(/^ /, '-');
+    fileName = fileName.replace(/^\./, '-');
+
+    // None of these chars
+    //  Unicode U+0000     nul
+    //  Unicode U+0001 - U+001F     non-printing characters
+    //  <     less than
+    //  >     greater than
+    //  :     colon
+    //  "     quotation mark
+    //  /     forward slash
+    //  \     backward slash
+    //  |     vertical line
+    //  ?     question mark
+    //  *     asterisk
+    // eslint-disable-next-line no-control-regex
+    fileName = fileName.replace(/[\x00-\x1F]/g, '-');
+    fileName = fileName.replace(/[\\/:"*?<>|]/g, '-');
+
+    if (rawFileName !== fileName) {
+      logger.info('Filename had illegal characters, was renamed');
+    }
+
+    return fileName;
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
+
     let allFilesFailed = true;
     const errorTypes = new Set();
+
     for (const file of files) {
       let fail = false;
+      //let sanitizedFileName = this.sanitizeFileName(file.name);
+
+      // if (sanitizedFileName !== file.name) {
+      //   await this.dispatchErrorToast(errorMessages.ILLEGAL_FILENAME, null, `Filename renamed for safety: ${file.name} → ${sanitizedFileName}`, true);
+      //   fail = true;
+      //   errorTypes.add('ILLEGAL_FILENAME');
+      // }
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
         else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
@@ -374,6 +450,9 @@ export default class ActionBinder {
   async handleSingleFileUpload(file, eventName) {
     const fileData = { type: file.type, size: file.size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
+
+    file.name = this.sanitizeFileName(file.name); 
+
     if (!await this.validateFiles([file])) return;
     if (!this.accountType) {
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
