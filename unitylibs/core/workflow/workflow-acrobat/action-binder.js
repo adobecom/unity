@@ -340,7 +340,7 @@ export default class ActionBinder {
 
   sanitizeFileName(rawFileName) {
     const MAX_FILE_NAME_LENGTH = 255;
-    
+
     let fileName = rawFileName;
     let ext = this.getExtension(fileName);
 
@@ -488,7 +488,9 @@ export default class ActionBinder {
     const fileData = { type: file.type, size: file.size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
 
-    file.name = this.sanitizeFileName(file.name); 
+    const sanitizedFileName = this.sanitizeFileName(file.name); 
+
+    const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
 
     if (!await this.validateFiles([file])) return;
     if (!this.accountType) {
