@@ -492,15 +492,15 @@ export default class ActionBinder {
 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
 
-    if (!await this.validateFiles([file])) return;
+    if (!await this.validateFiles([newFile])) return;
     if (!this.accountType) {
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
       return;
     }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.accountType === 'guest') await this.uploadHandler.singleFileGuestUpload(file, fileData);
-    else await this.uploadHandler.singleFileUserUpload(file, fileData);
+    if (this.accountType === 'guest') await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
+    else await this.uploadHandler.singleFileUserUpload(newFile, fileData);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
