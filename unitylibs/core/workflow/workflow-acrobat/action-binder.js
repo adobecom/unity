@@ -352,7 +352,7 @@ export default class ActionBinder {
     fileName = fileName.replace(/[\\/:"*?<>|]/g, '-');
 
     if (rawFileName !== fileName) {
-      logger.info('Filename had illegal characters, was renamed');
+      console.log('Filename had illegal characters, was renamed');
     }
 
     return fileName;
