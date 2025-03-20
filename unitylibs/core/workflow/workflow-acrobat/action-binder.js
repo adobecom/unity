@@ -152,6 +152,7 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
     this.applySignedInSettings();
+    this.initActionListeners = this.initActionListeners.bind(this);
   }
 
   isSignedOut() {
