@@ -256,36 +256,6 @@ export default class ActionBinder {
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
 
-  // /**
-  //  * Returns the extension of a file name, if any.
-  //  * @param {string} name - Target file name.
-  //  * @returns {string} Extension or an empty string if none exists.
-  //  */
-  // getExtension(name) {
-  //   if (name) {
-  //     const segments = name.split('.');
-  //     if (segments.length > 1) {
-  //       return segments.pop(); // Get the last segment as the extension
-  //     }
-  //   }
-  //   return '';
-  // }
-
-  // /**
-  //  * Returns the file name without its extension.
-  //  * @param {string} name - Target file name.
-  //  * @returns {string} Name without extension.
-  //  */
-  // withoutExtension(name) {
-  //   if (name) {
-  //     const lastDot = name.lastIndexOf('.');
-  //     if (lastDot >= 0 && lastDot < name.length - 1) {
-  //       return name.substring(0, lastDot);
-  //     }
-  //   }
-  //   return name; // Return original name if no extension is found
-  // }
-
   sanitizeFileName(rawFileName) {
     const MAX_FILE_NAME_LENGTH = 255;
     const DOS_SPECIAL_NAMES = [
@@ -437,13 +407,13 @@ export default class ActionBinder {
     return true;
   }
 
-  async handleSingleFileUpload(file, eventName) {
-    const fileData = { type: file.type, size: file.size, count: 1 };
+  async handleSingleFileUpload(file, eventName) {  
     this.dispatchAnalyticsEvent(eventName, fileData);
 
     const sanitizedFileName = this.sanitizeFileName(file.name); 
 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+    const fileData = { type: newFile.type, size: newFile.size, count: 1 };
 
     if (!await this.validateFiles([newFile])) return;
     if (!this.accountType) {
