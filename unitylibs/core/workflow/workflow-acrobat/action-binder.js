@@ -416,10 +416,7 @@ export default class ActionBinder {
     this.dispatchAnalyticsEvent(eventName, fileData);
 
     if (!await this.validateFiles([newFile])) return;
-    if (!this.accountType) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
-      return;
-    }
+    
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
