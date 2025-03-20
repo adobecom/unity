@@ -15,10 +15,7 @@ import {
   getHeaders,
 } from '../../../scripts/utils.js';
 
-const DOS_SPECIAL_NAMES = [
-  'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
-  'COM7', 'COM8', 'COM9', 'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6',
-  'LPT7', 'LPT8', 'LPT9'];
+import {getExtension, withoutExtension} from '../../../utils/StringUtils.js'
 
 class ServiceHandler {
   async fetchFromService(url, options) {
@@ -259,48 +256,52 @@ export default class ActionBinder {
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
 
-  /**
-   * Returns the extension of a file name, if any.
-   * @param {string} name - Target file name.
-   * @returns {string} Extension or an empty string if none exists.
-   */
-  getExtension(name) {
-    if (name) {
-      const segments = name.split('.');
-      if (segments.length > 1) {
-        return segments.pop(); // Get the last segment as the extension
-      }
-    }
-    return '';
-  }
+  // /**
+  //  * Returns the extension of a file name, if any.
+  //  * @param {string} name - Target file name.
+  //  * @returns {string} Extension or an empty string if none exists.
+  //  */
+  // getExtension(name) {
+  //   if (name) {
+  //     const segments = name.split('.');
+  //     if (segments.length > 1) {
+  //       return segments.pop(); // Get the last segment as the extension
+  //     }
+  //   }
+  //   return '';
+  // }
 
-  /**
-   * Returns the file name without its extension.
-   * @param {string} name - Target file name.
-   * @returns {string} Name without extension.
-   */
-  withoutExtension(name) {
-    if (name) {
-      const lastDot = name.lastIndexOf('.');
-      if (lastDot >= 0 && lastDot < name.length - 1) {
-        return name.substring(0, lastDot);
-      }
-    }
-    return name; // Return original name if no extension is found
-  }
+  // /**
+  //  * Returns the file name without its extension.
+  //  * @param {string} name - Target file name.
+  //  * @returns {string} Name without extension.
+  //  */
+  // withoutExtension(name) {
+  //   if (name) {
+  //     const lastDot = name.lastIndexOf('.');
+  //     if (lastDot >= 0 && lastDot < name.length - 1) {
+  //       return name.substring(0, lastDot);
+  //     }
+  //   }
+  //   return name; // Return original name if no extension is found
+  // }
 
   sanitizeFileName(rawFileName) {
     const MAX_FILE_NAME_LENGTH = 255;
+    const DOS_SPECIAL_NAMES = [
+      'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
+      'COM7', 'COM8', 'COM9', 'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6',
+      'LPT7', 'LPT8', 'LPT9'];
 
     let fileName = rawFileName;
-    let ext = this.getExtension(fileName);
+    let ext = getExtension(fileName);
 
     // Don't allow unix special dir names.
     // Empty names are not allowed.
     if (fileName.length === 0 || fileName === '.' || fileName === '..') {
       fileName = '---';
     } else {
-      const nameWithoutExtension = this.withoutExtension(fileName);
+      const nameWithoutExtension = withoutExtension(fileName);
 
       if (ext.length > 1) {
         ext = `.${ext}`;
