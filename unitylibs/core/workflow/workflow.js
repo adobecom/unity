@@ -248,7 +248,11 @@ class WfInitiator {
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
     if (!targetCfg.renderWidget && block.classList.contains('upload')) {
-      return asset;
+      return block.querySelectorAll(selector);
+      /*return Array.from(elements).map((element) => ({
+        element,
+        parent: element.parentElement,
+      }));*/
     }
     if (!targetCfg.renderWidget) return null;
     asset.insertAdjacentElement('beforebegin', iArea);

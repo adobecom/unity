@@ -42,11 +42,19 @@ class ServiceHandler {
   }
 
   showErrorToast(errorCallbackOptions) {
-    this.canvasArea?.querySelector('.progress-circle')?.classList.remove('show');
+    //this.canvasArea?.querySelector('.progress-circle')?.classList.remove('show');
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
-    errorCallbackOptions.errorToastEl.querySelector('.alert-text p').innerText = msg;
-    errorCallbackOptions.errorToastEl.classList.add('show');
+    this.canvasArea.forEach((element) => {
+      // Temporarily disable click events on canvasArea
+      element.style.pointerEvents = 'none';
+      const errorToast = element.querySelector('.alert-holder');
+      if (!errorToast) return;
+      const alertText = errorToast.querySelector('.alert-text p');
+      if (!alertText) return;
+      alertText.innerText = msg;
+      errorToast.classList.add('show');
+    });
   }
 }
 
@@ -62,6 +70,10 @@ export default class ActionBinder {
     this.psApiConfig = this.getPsApiConfig();
     this.serviceHandler = null;
     this.splashScreenEl = null;
+    this.transitionScreen = null;
+    this.LOADER_LIMIT = 95;
+    // Bind the method to preserve this context
+    this.initActionListeners = this.initActionListeners.bind(this);
   }
 
   getPsApiConfig() {
@@ -109,7 +121,7 @@ export default class ActionBinder {
         files.push(file);
       });
     }
-    return files[0];
+    return files;
   }
 
   getImageBlobData(url) {
@@ -159,6 +171,7 @@ export default class ActionBinder {
         errorType: '.icon-error-request',
       },
     );
+
     const { id, href } = resJson;
     const blobData = await this.getImageBlobData(imgUrl);
     const fileType = this.getFileType();
@@ -169,30 +182,42 @@ export default class ActionBinder {
   }
 
   async createErrorToast() {
-    const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
-    const alertIcon = createTag(
-      'div',
-      { class: 'alert-icon' },
-      '<svg><use xlink:href="#unity-alert-icon"></use></svg>',
-    );
-    alertIcon.append(alertText);
-    const alertClose = createTag(
-      'a',
-      { class: 'alert-close', href: '#' },
-      '<svg><use xlink:href="#unity-close-icon"></use></svg>',
-    );
-    alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
-    const alertContent = createTag('div', { class: 'alert-content' });
-    alertContent.append(alertIcon, alertClose);
-    const errholder = createTag('div', { class: 'alert-holder' }, createTag('div', { class: 'alert-toast' }, alertContent));
-    alertClose.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.target.closest('.alert-holder').classList.remove('show');
-    });
+    const [alertImg, closeImg] = await Promise.all([
+      fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
+      fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
+    ]);
     const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
-    decorateDefaultLinkAnalytics(errholder);
-    this.canvasArea.append(errholder);
-    return errholder;
+    // Create and append error holder to each element
+    this.canvasArea.forEach((element) => {
+      // Create new alert content for each holder
+      const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
+      const alertIcon = createTag(
+        'div',
+        { class: 'alert-icon' },
+      );
+      alertIcon.innerHTML = alertImg;
+      alertIcon.append(alertText);
+      const alertClose = createTag(
+        'a',
+        { class: 'alert-close', href: '#' },
+      );
+      alertClose.innerHTML = closeImg;
+      alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
+      const alertContent = createTag('div', { class: 'alert-content' });
+      alertContent.append(alertIcon, alertClose);
+
+      const errholder = createTag('div', { class: 'alert-holder' }, createTag('div', { class: 'alert-toast' }, alertContent));
+      alertClose.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent event from bubbling to canvasArea
+        errholder.classList.remove('show');
+        element.style.pointerEvents = 'auto'; // Re-enable click events
+      }); // Remove listener after first use
+      decorateDefaultLinkAnalytics(errholder);
+      element.append(errholder);
+    });
+    // Return the first error holder for reference
+    return this.canvasArea[0]?.querySelector('.alert-holder');
   }
 
   async continueInApp() {
@@ -203,30 +228,6 @@ export default class ActionBinder {
         operations: this.operations,
       },
     };
-    /*const continueOperations = ['removeBackground', 'changeBackground', 'imageAdjustment'];
-    this.operations.forEach((op, i) => {
-      if (!continueOperations.includes(op.operationType)) return;
-      if (!cOpts.assetId && !cOpts.href) {
-        if (op.sourceAssetUrl) cOpts.href = op.sourceAssetUrl;
-        else if (op.sourceAssetId) cOpts.assetId = op.sourceAssetId;
-      }
-      let idx = cOpts.payload.operations.length;
-      if (idx > 0 && cOpts.payload.operations[idx - 1].name === op.operationType) {
-        idx -= 1;
-      } else {
-        cOpts.payload.operations.push({ name: op.operationType });
-      }
-      if (op.assetId) {
-        cOpts.payload.finalAssetId = op.assetId;
-        if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].assetIds = [op.bgId];
-      } else if (op.assetUrl) {
-        cOpts.payload.finalAssetUrl = op.assetUrl;
-        if (op.operationType == 'changeBackground') cOpts.payload.operations[idx].hrefs = [op.backgroundSrc];
-      }
-      if (op.operationType == 'imageAdjustment' && op.adjustmentType) {
-        cOpts.payload.operations[idx][op.adjustmentType] = parseInt(op.filterValue, 10);
-      }
-    });*/
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
@@ -268,35 +269,45 @@ export default class ActionBinder {
     });
   }
 
-  async uploadImage(file) {
-    if (!file) return;
-    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
+  async uploadImage(files) {
+    if (!files) return;
+    if (files.length > 1) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' });
+      throw new Error('Only one file allowed!!');
+    }
+    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(files[0].type) == -1) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
       throw new Error('File format not supported!!');
     }
-    if (file.size > 40000000) {
+    if (files[0].size > 40000000) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' });
       throw new Error('File too large!!');
     }
-    const objectUrl = URL.createObjectURL(file);
+    const objectUrl = URL.createObjectURL(files[0]);
     await this.checkImageDimensions(objectUrl);
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    const assetId = await this.uploadAsset(objectUrl);
-    const operationItem = {
-      operationType: 'upload',
-      fileType: file.type,
-    };
-    this.operations.push(operationItem);
+    await this.transitionScreen.showSplashScreen(true);
+    try {
+      const assetId = await this.uploadAsset(objectUrl);
+      const operationItem = {
+        operationType: 'upload',
+        fileType: files[0].type,
+      };
+      this.operations.push(operationItem);
+    } catch (e) {
+      await this.transitionScreen.showSplashScreen();
+    }
   }
 
-  async photoshopActionMaps(value, file) {
+  async photoshopActionMaps(value, files) {
     await this.handlePreloads();
+    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     switch (value) {
       case 'upload':
         this.promiseStack = [];
-        if (this.workflowCfg.supportedFeatures.size === 0) await this.uploadImage(file);
-        else if (this.workflowCfg.supportedFeatures.size === 1) await this.uploadImage(file);
+        if (this.workflowCfg.supportedFeatures.size === 0) await this.uploadImage(files);
+        else if (this.workflowCfg.supportedFeatures.size === 1) await this.uploadImage(files);
         break;
       case 'interrupt':
         await this.cancelAcrobatOperation();
@@ -327,14 +338,14 @@ export default class ActionBinder {
           case el.nodeName === 'DIV':
             el.addEventListener('drop', async (e) => {
               e.preventDefault();
-              const file = this.extractFiles(e);
-              await this.photoshopActionMaps(value, file);
+              const files = this.extractFiles(e);
+              await this.photoshopActionMaps(value, files);
             });
             break;
           case el.nodeName === 'INPUT':
             el.addEventListener('change', async (e) => {
-              const file = this.extractFiles(e);
-              await this.photoshopActionMaps(value, file);
+              const files = this.extractFiles(e);
+              await this.photoshopActionMaps(value, files);
               e.target.value = '';
             });
             break;
