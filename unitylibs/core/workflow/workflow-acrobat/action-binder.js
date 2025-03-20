@@ -339,13 +339,7 @@ export default class ActionBinder {
 
     for (const file of files) {
       let fail = false;
-      //let sanitizedFileName = this.sanitizeFileName(file.name);
-
-      // if (sanitizedFileName !== file.name) {
-      //   await this.dispatchErrorToast(errorMessages.ILLEGAL_FILENAME, null, `Filename renamed for safety: ${file.name} → ${sanitizedFileName}`, true);
-      //   fail = true;
-      //   errorTypes.add('ILLEGAL_FILENAME');
-      // }
+      
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
         else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
