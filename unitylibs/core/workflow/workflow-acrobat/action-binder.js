@@ -443,9 +443,9 @@ export default class ActionBinder {
 
     const sanitizedFileName = this.sanitizeFileName(file.name); 
 
-    //const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+    const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
 
-    if (!await this.validateFiles([file])) return;
+    if (!await this.validateFiles([newFile])) return;
     if (!this.accountType) {
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Account type is empty or invalid: ${this.accountType}`, false);
       return;
