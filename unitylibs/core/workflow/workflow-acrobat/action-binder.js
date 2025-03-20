@@ -408,12 +408,12 @@ export default class ActionBinder {
   }
 
   async handleSingleFileUpload(file, eventName) {  
-    this.dispatchAnalyticsEvent(eventName, fileData);
-
     const sanitizedFileName = this.sanitizeFileName(file.name); 
 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     const fileData = { type: newFile.type, size: newFile.size, count: 1 };
+
+    this.dispatchAnalyticsEvent(eventName, fileData);
 
     if (!await this.validateFiles([newFile])) return;
     if (!this.accountType) {
