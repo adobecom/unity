@@ -30,7 +30,7 @@ export default class UploadHandler {
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       { body: JSON.stringify(data) },
     );
-    const specificError = this.serviceHandler.handleSpecificErrors(response);
+    const specificError = this.serviceHandler.handleAssetSpecificErrors(response);
     if (specificError) throw specificError;
     return response;
   }
