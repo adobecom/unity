@@ -15,7 +15,16 @@ import {
   getHeaders,
 } from '../../../scripts/utils.js';
 
-import {getExtension, withoutExtension} from '../../../utils/StringUtils.js'
+const DOS_SPECIAL_NAMES = new Set([
+  'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
+  'COM7', 'COM8', 'COM9', 'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6',
+  'LPT7', 'LPT8', 'LPT9'
+]);
+
+// Pre-compile regular expressions to be used in sanitizeFileName
+const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
+const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;   // Handles multiple trailing spaces/periods
+const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/; // Handles multiple leading spaces/periods
 
 class ServiceHandler {
   async fetchFromService(url, options) {
@@ -256,77 +265,45 @@ export default class ActionBinder {
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
 
-  sanitizeFileName(rawFileName) {
-    const MAX_FILE_NAME_LENGTH = 255;
-    const DOS_SPECIAL_NAMES = [
-      'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
-      'COM7', 'COM8', 'COM9', 'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6',
-      'LPT7', 'LPT8', 'LPT9'];
+  async sanitizeFileName(rawFileName) {
+    try {
+      const { getExtension, withoutExtension } = await import('../../../utils/StringUtils.js');
 
-    let fileName = rawFileName;
-    let ext = getExtension(fileName);
+      const MAX_FILE_NAME_LENGTH = 255;
+      let fileName = rawFileName;
 
-    // Don't allow unix special dir names.
-    // Empty names are not allowed.
-    if (fileName.length === 0 || fileName === '.' || fileName === '..') {
-      fileName = '---';
-    } else {
+      if (!fileName || fileName === '.' || fileName === '..') {
+        return '---';
+      }
+      
+      let ext = getExtension(fileName);
       const nameWithoutExtension = withoutExtension(fileName);
 
-      if (ext.length > 1) {
-        ext = `.${ext}`;
+      ext = ext.length > 0 ? `.${ext}` : '';
+
+      fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase()) 
+        ? `---${ext}` 
+        : nameWithoutExtension + ext;
+
+      if (fileName.length > MAX_FILE_NAME_LENGTH) {
+        const trimToLen = MAX_FILE_NAME_LENGTH - ext.length;
+        fileName = trimToLen > 0 ? fileName.substring(0, trimToLen) + ext : fileName.substring(0, MAX_FILE_NAME_LENGTH);
       }
 
-      // don't allow DOS special names with or without extension.
-      if (DOS_SPECIAL_NAMES.includes(nameWithoutExtension)) {
-        fileName = `---${ext}`;
+      fileName = fileName
+        .replace(ENDING_SPACE_PERIOD_REGEX, '-')
+        .replace(STARTING_SPACE_PERIOD_REGEX, '-')
+        .replace(INVALID_CHARS_REGEX, '-');
+
+      if (rawFileName !== fileName) {
+        await this.dispatchErrorToast('verb_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
       }
+      return fileName;
+    } catch (error) {
+      console.error('Error sanitizing filename:', error);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Error renaming file: ${rawFileName}`, false);
+      return '---';
     }
-
-    // File and folder names may be be 1-255 unicode characters in length.
-    // Note that we dealt with 0 length names above already, so we'll just deal with long ones here.
-    const nameLength = fileName.length;
-    if (nameLength > MAX_FILE_NAME_LENGTH) {
-      const extLength = ext.length;
-      const trimToLen = MAX_FILE_NAME_LENGTH - extLength;
-
-      if (trimToLen > 0) {
-        // If we can just shorten the name and keep the extension, do that.
-        fileName = fileName.substring(0, trimToLen) + ext;
-      } else {
-        fileName = fileName.substring(0, MAX_FILE_NAME_LENGTH);
-      }
-    }
-
-    // Names ending with space or period.
-    fileName = fileName.replace(/ $/, '-');
-    fileName = fileName.replace(/\.$/, '-');
-
-    // Names beginning with space or period.
-    fileName = fileName.replace(/^ /, '-');
-    fileName = fileName.replace(/^\./, '-');
-
-    // None of these chars
-    //  Unicode U+0000     nul
-    //  Unicode U+0001 - U+001F     non-printing characters
-    //  <     less than
-    //  >     greater than
-    //  :     colon
-    //  "     quotation mark
-    //  /     forward slash
-    //  \     backward slash
-    //  |     vertical line
-    //  ?     question mark
-    //  *     asterisk
-    // eslint-disable-next-line no-control-regex
-    fileName = fileName.replace(/[\x00-\x1F]/g, '-');
-    fileName = fileName.replace(/[\\/:"*?<>|]/g, '-');
-
-    if (rawFileName !== fileName) {
-      console.log('Filename had illegal characters, was renamed');
-    }
-
-    return fileName;
   }
 
   async validateFiles(files) {
@@ -402,7 +379,7 @@ export default class ActionBinder {
   }
 
   async handleSingleFileUpload(file, eventName) {  
-    const sanitizedFileName = this.sanitizeFileName(file.name); 
+    const sanitizedFileName = await this.sanitizeFileName(file.name); 
 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     const fileData = { type: newFile.type, size: newFile.size, count: 1 };
@@ -424,11 +401,17 @@ export default class ActionBinder {
     const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
+
+    const sanitizedFiles = await Promise.all(files.map(async (file) => {
+      const sanitizedFileName = await this.sanitizeFileName(file.name);
+      return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+    }));
+
     if (!await this.validateFiles(files)) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, filesData);
   }
 
   async processSingleFile(files, eventName) {
