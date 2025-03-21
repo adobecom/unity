@@ -19,18 +19,15 @@ class ServiceHandler {
   async fetchFromService(url, options) {
     try {
       const response = await fetch(url, options);
-      const error = new Error();
       const contentLength = response.headers.get('Content-Length') || '0';
       if (response.status !== 200) {
-        try {
-          if (contentLength !== '0') {
-            const resJson = await response.json();
-            ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-              if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
-            });
+        const error = new Error();
+        if (contentLength !== '0') {
+          try {
+            error.responseJson = await response.json();
+          } catch {
+            error.message = `Failed to parse JSON response. URL: ${url}, Options: ${JSON.stringify(options)}`;
           }
-        } catch (jsonError) {
-          error.message = `Failed to parse JSON response. URL: ${url}, Options: ${JSON.stringify(options)}`;
         }
         if (!error.message) error.message = `Error fetching from service. URL: ${url}, Options: ${JSON.stringify(options)}`;
         error.status = response.status;
@@ -48,6 +45,14 @@ class ServiceHandler {
       }
       throw e;
     }
+  }
+
+  handleSpecificErrors(responseJson) {
+    const error = new Error();
+    ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
+      if (responseJson.reason?.includes(errorMessage)) error.message = errorMessage;
+    });
+    return error.message ? error : null;
   }
 
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {

@@ -17,7 +17,6 @@ export default class UploadHandler {
   };
 
   async createAsset(file, multifile = false, workflowId = null) {
-    let assetData = null;
     const data = {
       surfaceId: unityConfig.surfaceId,
       targetProduct: this.actionBinder.workflowCfg.productName,
@@ -27,12 +26,14 @@ export default class UploadHandler {
       ...(multifile && { multifile }),
       ...(workflowId && { workflowId }),
     };
-    assetData = await this.serviceHandler.postCallToService(
+    const response = await this.serviceHandler.postCallToService(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       { body: JSON.stringify(data) },
       { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
     );
-    return assetData;
+    const specificError = this.serviceHandler.handleSpecificErrors(response);
+    if (specificError) throw specificError;
+    return response;
   }
 
   async getBlobData(file) {
