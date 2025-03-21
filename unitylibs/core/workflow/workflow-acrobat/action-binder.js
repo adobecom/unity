@@ -47,7 +47,7 @@ class ServiceHandler {
     }
   }
 
-  handleSpecificErrors(responseJson) {
+  handleAssetSpecificErrors(responseJson) {
     const error = new Error();
     ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
       if (responseJson.reason?.includes(errorMessage)) error.message = errorMessage;

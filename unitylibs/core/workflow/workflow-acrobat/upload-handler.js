@@ -31,7 +31,7 @@ export default class UploadHandler {
       { body: JSON.stringify(data) },
       { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
     );
-    const specificError = this.serviceHandler.handleSpecificErrors(response);
+    const specificError = this.serviceHandler.handleAssetSpecificErrors(response);
     if (specificError) throw specificError;
     return response;
   }
