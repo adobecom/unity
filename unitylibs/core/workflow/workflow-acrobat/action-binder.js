@@ -15,6 +15,17 @@ import {
   getHeaders,
 } from '../../../scripts/utils.js';
 
+const DOS_SPECIAL_NAMES = new Set([
+  'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
+  'COM7', 'COM8', 'COM9', 'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6',
+  'LPT7', 'LPT8', 'LPT9'
+]);
+
+// Pre-compile regular expressions to be used in sanitizeFileName
+const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
+const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;   // Handles multiple trailing spaces/periods
+const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/; // Handles multiple leading spaces/periods
+
 class ServiceHandler {
   async fetchFromService(url, options) {
     try {
@@ -264,14 +275,58 @@ export default class ActionBinder {
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
 
+  async sanitizeFileName(rawFileName) {
+    try {
+      const { getExtension, withoutExtension } = await import('../../../utils/StringUtils.js');
+
+      const MAX_FILE_NAME_LENGTH = 255;
+      let fileName = rawFileName;
+
+      if (!fileName || fileName === '.' || fileName === '..') {
+        return '---';
+      }
+      
+      let ext = getExtension(fileName);
+      const nameWithoutExtension = withoutExtension(fileName);
+
+      ext = ext.length > 0 ? `.${ext}` : '';
+
+      fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase()) 
+        ? `---${ext}` 
+        : nameWithoutExtension + ext;
+
+      if (fileName.length > MAX_FILE_NAME_LENGTH) {
+        const trimToLen = MAX_FILE_NAME_LENGTH - ext.length;
+        fileName = trimToLen > 0 ? fileName.substring(0, trimToLen) + ext : fileName.substring(0, MAX_FILE_NAME_LENGTH);
+      }
+
+      fileName = fileName
+        .replace(ENDING_SPACE_PERIOD_REGEX, '-')
+        .replace(STARTING_SPACE_PERIOD_REGEX, '-')
+        .replace(INVALID_CHARS_REGEX, '-');
+
+      if (rawFileName !== fileName) {
+        await this.dispatchErrorToast('verb_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
+      }
+      return fileName;
+    } catch (error) {
+      console.error('Error sanitizing filename:', error);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Error renaming file: ${rawFileName}`, false);
+      return '---';
+    }
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
+
     let allFilesFailed = true;
     const errorTypes = new Set();
+
     for (const file of files) {
       let fail = false;
+      
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
         else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
@@ -333,14 +388,20 @@ export default class ActionBinder {
     return true;
   }
 
-  async handleSingleFileUpload(file, eventName) {
-    const fileData = { type: file.type, size: file.size, count: 1 };
+  async handleSingleFileUpload(file, eventName) {  
+    const sanitizedFileName = await this.sanitizeFileName(file.name); 
+
+    const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+    const fileData = { type: newFile.type, size: newFile.size, count: 1 };
+
     this.dispatchAnalyticsEvent(eventName, fileData);
-    if (!await this.validateFiles([file])) return;
+
+    if (!await this.validateFiles([newFile])) return;
+    
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(file, fileData);
-    else await this.uploadHandler.singleFileUserUpload(file, fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
+    else await this.uploadHandler.singleFileUserUpload(newFile, fileData);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
@@ -350,11 +411,17 @@ export default class ActionBinder {
     const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
+
+    const sanitizedFiles = await Promise.all(files.map(async (file) => {
+      const sanitizedFileName = await this.sanitizeFileName(file.name);
+      return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+    }));
+
     if (!await this.validateFiles(files)) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, filesData);
   }
 
   async processSingleFile(files, eventName) {
