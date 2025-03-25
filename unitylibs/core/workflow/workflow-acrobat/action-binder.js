@@ -20,6 +20,9 @@ class ServiceHandler {
     try {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length') || '0';
+      if (response.status === 202) {
+        return { response };
+      }
       if (response.status !== 200) {
         const error = new Error();
         if (contentLength !== '0') {
