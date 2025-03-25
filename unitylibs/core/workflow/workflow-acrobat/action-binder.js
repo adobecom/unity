@@ -20,9 +20,7 @@ class ServiceHandler {
     try {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length') || '0';
-      if (response.status === 202) {
-        return { status: 202, headers: response.headers };
-      }
+      if (response.status === 202) return { status: 202, headers: response.headers };
       if (response.status !== 200) {
         const error = new Error();
         if (contentLength !== '0') {
@@ -52,33 +50,19 @@ class ServiceHandler {
 
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
     let timeLapsed = 0;
-    try {
-      while (timeLapsed < maxRetryDelay) {
-        const response = await this.fetchFromService(url, options);
-        if (response.status === 202) {
-          if (response.headers?.get('retry-after')) {
-            const retryDelay = parseInt(response.headers.get('retry-after'));
-            await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
-            timeLapsed += retryDelay;
-          } else {
-            const contentLength = response.headers?.get('Content-Length') || '0';
-            if (contentLength === '0') return {};
-            return await response.json();
-          }
-        } else {
-          return response;
-        }
+    while (timeLapsed < maxRetryDelay) {
+      const response = await this.fetchFromService(url, options);
+      if (response.status === 202) {
+        const retryDelay = parseInt(response.headers.get('retry-after')) || 5;
+        await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+        timeLapsed += retryDelay;
+      } else {
+        return response;
       }
-      const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-      timeoutError.status = 504;
-      throw timeoutError;
-    } catch (e) {
-      if (['TimeoutError', 'AbortError'].includes(e.name)) {
-        e.status = 504;
-        e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
-      }
-      throw e;
     }
+    const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
+    timeoutError.status = 504;
+    throw timeoutError;
   }
 
   async postCallToService(api, options, additionalHeaders = {}) {
