@@ -21,7 +21,7 @@ class ServiceHandler {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length') || '0';
       if (response.status === 202) {
-        throw { response };
+        return { status: 202, headers: response.headers };
       }
       if (response.status !== 200) {
         const error = new Error();
@@ -50,28 +50,23 @@ class ServiceHandler {
     }
   }
 
-  handleAssetSpecificErrors(responseJson) {
-    const error = new Error();
-    ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-      if (responseJson.reason?.includes(errorMessage)) error.message = errorMessage;
-    });
-    return error.message ? error : null;
-  }
-
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
     let timeLapsed = 0;
     try {
       while (timeLapsed < maxRetryDelay) {
-        try {
-          return await this.fetchFromService(url, options);
-        } catch (error) {
-          if (error.response?.status === 202 && error.response?.headers?.get('retry-after')) {
-            const retryDelay = parseInt(error.response.headers.get('retry-after')) || 5;
+        const response = await this.fetchFromService(url, options);
+        if (response.status === 202) {
+          if (response.headers?.get('retry-after')) {
+            const retryDelay = parseInt(response.headers.get('retry-after'));
             await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
             timeLapsed += retryDelay;
           } else {
-            throw error;
+            const contentLength = response.headers?.get('Content-Length') || '0';
+            if (contentLength === '0') return {};
+            return await response.json();
           }
+        } else {
+          return response;
         }
       }
       const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
@@ -112,6 +107,14 @@ class ServiceHandler {
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
+  }
+
+  handleAssetSpecificErrors(responseJson) {
+    const error = new Error();
+    ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
+      if (responseJson.reason?.includes(errorMessage)) error.message = errorMessage;
+    });
+    return error.message ? error : null;
   }
 }
 
