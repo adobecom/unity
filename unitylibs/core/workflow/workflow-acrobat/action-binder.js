@@ -266,19 +266,18 @@ export default class ActionBinder {
 
   async sanitizeFileName(rawFileName) {
     try {
-      const { getExtension, withoutExtension } = await import('../../../utils/StringUtils.js');
       const MAX_FILE_NAME_LENGTH = 255;
       let fileName = rawFileName;
       if (!fileName || fileName === '.' || fileName === '..') {
         return '---';
       }
+      const { getExtension, removeExtension } = await import('../../../utils/StringUtils.js');
       let ext = getExtension(fileName);
-      const nameWithoutExtension = withoutExtension(fileName);
+      const nameWithoutExtension = removeExtension(fileName);
       ext = ext.length > 0 ? `.${ext}` : '';
       fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase()) 
         ? `---${ext}` 
         : nameWithoutExtension + ext;
-
       if (fileName.length > MAX_FILE_NAME_LENGTH) {
         const trimToLen = MAX_FILE_NAME_LENGTH - ext.length;
         fileName = trimToLen > 0 ? fileName.substring(0, trimToLen) + ext : fileName.substring(0, MAX_FILE_NAME_LENGTH);
@@ -287,7 +286,6 @@ export default class ActionBinder {
         .replace(ENDING_SPACE_PERIOD_REGEX, '-')
         .replace(STARTING_SPACE_PERIOD_REGEX, '-')
         .replace(INVALID_CHARS_REGEX, '-');
-
       if (rawFileName !== fileName) {
         await this.dispatchErrorToast('verb_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
       }
