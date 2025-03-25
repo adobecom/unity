@@ -296,13 +296,11 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    
     const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find(cn => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb)
     }
-
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
