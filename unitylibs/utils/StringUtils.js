@@ -3,11 +3,7 @@ export function getExtension(name) {
   }
 
 export function withoutExtension(name) {
-    if (name) {
-      const lastDot = name.lastIndexOf('.');
-      if (lastDot >= 0 && lastDot < name.length - 1) {
-        return name.substring(0, lastDot);
-      }
-    }
-    return name;
-  }
+  if (name == null) return name;
+  const lastDot = name.lastIndexOf('.');
+  return lastDot >= 0 && lastDot < name.length - 1 ? name.substring(0, lastDot) : name;
+}

@@ -21,10 +21,9 @@ const DOS_SPECIAL_NAMES = new Set([
   'LPT7', 'LPT8', 'LPT9'
 ]);
 
-// Pre-compile regular expressions to be used in sanitizeFileName
 const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
-const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;   // Handles multiple trailing spaces/periods
-const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/; // Handles multiple leading spaces/periods
+const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
+const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
 class ServiceHandler {
   async fetchFromService(url, options) {
@@ -268,19 +267,14 @@ export default class ActionBinder {
   async sanitizeFileName(rawFileName) {
     try {
       const { getExtension, withoutExtension } = await import('../../../utils/StringUtils.js');
-
       const MAX_FILE_NAME_LENGTH = 255;
       let fileName = rawFileName;
-
       if (!fileName || fileName === '.' || fileName === '..') {
         return '---';
       }
-      
       let ext = getExtension(fileName);
       const nameWithoutExtension = withoutExtension(fileName);
-
       ext = ext.length > 0 ? `.${ext}` : '';
-
       fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase()) 
         ? `---${ext}` 
         : nameWithoutExtension + ext;
@@ -289,7 +283,6 @@ export default class ActionBinder {
         const trimToLen = MAX_FILE_NAME_LENGTH - ext.length;
         fileName = trimToLen > 0 ? fileName.substring(0, trimToLen) + ext : fileName.substring(0, MAX_FILE_NAME_LENGTH);
       }
-
       fileName = fileName
         .replace(ENDING_SPACE_PERIOD_REGEX, '-')
         .replace(STARTING_SPACE_PERIOD_REGEX, '-')
@@ -310,13 +303,10 @@ export default class ActionBinder {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
-
     let allFilesFailed = true;
     const errorTypes = new Set();
-
     for (const file of files) {
       let fail = false;
-      
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
         else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
