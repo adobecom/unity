@@ -391,12 +391,10 @@ export default class ActionBinder {
     const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
-
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     }));
-
     if (!await this.validateFiles(files)) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
