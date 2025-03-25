@@ -271,7 +271,7 @@ export default class ActionBinder {
       if (!fileName || fileName === '.' || fileName === '..') {
         return '---';
       }
-      const { getExtension, removeExtension } = await import('../../../utils/StringUtils.js');
+      const { getExtension, removeExtension } = await import('../../../utils/FileUtils.js');
       let ext = getExtension(fileName);
       const nameWithoutExtension = removeExtension(fileName);
       ext = ext.length > 0 ? `.${ext}` : '';
