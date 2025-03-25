@@ -65,7 +65,7 @@ class ServiceHandler {
         try {
           return await this.fetchFromService(url, options);
         } catch (error) {
-          if (error.status === 202 && error.response?.headers?.get('retry-after')) {
+          if (error.response?.status === 202 && error.response?.headers?.get('retry-after')) {
             const retryDelay = parseInt(error.response.headers.get('retry-after')) || 5;
             await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
             timeLapsed += retryDelay;
