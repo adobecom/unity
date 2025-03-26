@@ -249,10 +249,6 @@ class WfInitiator {
     }
     if (!targetCfg.renderWidget && block.classList.contains('upload')) {
       return block.querySelectorAll(selector);
-      /*return Array.from(elements).map((element) => ({
-        element,
-        parent: element.parentElement,
-      }));*/
     }
     if (!targetCfg.renderWidget) return null;
     asset.insertAdjacentElement('beforebegin', iArea);
