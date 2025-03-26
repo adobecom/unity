@@ -368,14 +368,10 @@ export default class ActionBinder {
 
   async handleSingleFileUpload(file, eventName) {  
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
-
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     const fileData = { type: newFile.type, size: newFile.size, count: 1 };
-
     this.dispatchAnalyticsEvent(eventName, fileData);
-
     if (!await this.validateFiles([newFile])) return;
-    
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
