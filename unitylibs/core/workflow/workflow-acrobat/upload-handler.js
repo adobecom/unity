@@ -26,14 +26,12 @@ export default class UploadHandler {
       ...(multifile && { multifile }),
       ...(workflowId && { workflowId }),
     };
-    const response = await this.serviceHandler.postCallToService(
+    assetData = await this.serviceHandler.postCallToService(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       { body: JSON.stringify(data) },
       { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
     );
-    const specificError = this.serviceHandler.handleAssetSpecificErrors(response);
-    if (specificError) throw specificError;
-    return response;
+    return assetData
   }
 
   async getBlobData(file) {

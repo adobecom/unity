@@ -26,6 +26,9 @@ class ServiceHandler {
         if (contentLength !== '0') {
           try {
             error.responseJson = await response.json();
+            ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
+              if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
+            });
           } catch {
             error.message = `Failed to parse JSON response. URL: ${url}, Options: ${JSON.stringify(options)}`;
           }
@@ -91,14 +94,6 @@ class ServiceHandler {
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
-  }
-
-  handleAssetSpecificErrors(responseJson) {
-    const error = new Error();
-    ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-      if (responseJson.reason?.includes(errorMessage)) error.message = errorMessage;
-    });
-    return error.message ? error : null;
   }
 }
 
