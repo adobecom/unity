@@ -17,6 +17,7 @@ export default class UploadHandler {
   };
 
   async createAsset(file, multifile = false, workflowId = null) {
+    let assetData = null;
     const data = {
       surfaceId: unityConfig.surfaceId,
       targetProduct: this.actionBinder.workflowCfg.productName,
@@ -31,7 +32,7 @@ export default class UploadHandler {
       { body: JSON.stringify(data) },
       { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
     );
-    return assetData
+    return assetData;
   }
 
   async getBlobData(file) {
