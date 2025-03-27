@@ -193,19 +193,9 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${this.splashFragmentLink}.plain.html`,
       );
     }
     await priorityLoad(parr);
-  }
-
-  async getAccountType() {
-    try {
-      return window.adobeIMS.getAccountType();
-    } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception raised when getting account type: ${e.message}`, true);
-      return '';
-    }
   }
 
   async dispatchErrorToast(code, status, info = null, lanaOnly = false, showError = true) {
