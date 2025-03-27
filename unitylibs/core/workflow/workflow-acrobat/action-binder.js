@@ -367,6 +367,7 @@ export default class ActionBinder {
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
     else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, filesData);
+<<<<<<< HEAD
   }
 
   async loadVerbLimits(workflowName, keys) {
@@ -384,6 +385,8 @@ export default class ActionBinder {
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false);
       return {};
     }
+=======
+>>>>>>> 3ad8968 (MWPW-169794: Investigate Asset API 400 and 500 Errors (#317))
   }
 
   async processSingleFile(files, eventName) {
