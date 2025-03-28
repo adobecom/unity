@@ -180,11 +180,11 @@ export default class ActionBinder {
       const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
       const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
       alertClose.addEventListener('click', (e) => {
-        element.style.pointerEvents = 'auto';
         e.preventDefault();
         e.stopPropagation();
         errholder.classList.remove('show');
-      }, { once: true });
+        element.style.pointerEvents = 'auto';
+      });
       decorateDefaultLinkAnalytics(errholder);
       element.append(errholder);
     });
