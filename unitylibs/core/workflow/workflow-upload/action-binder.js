@@ -254,12 +254,15 @@ export default class ActionBinder {
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' });
+      return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
+      return;
     }
     if (this.limits.maxFileSize < file.size) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' });
+      return;
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
