@@ -180,11 +180,11 @@ export default class ActionBinder {
       const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
       const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
       alertClose.addEventListener('click', (e) => {
-        element.style.pointerEvents = 'auto';
         e.preventDefault();
         e.stopPropagation();
         errholder.classList.remove('show');
-      }, { once: true });
+        element.style.pointerEvents = 'auto';
+      });
       decorateDefaultLinkAnalytics(errholder);
       element.append(errholder);
     });
@@ -203,6 +203,7 @@ export default class ActionBinder {
     };
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.LOADER_LIMIT = 100;
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       const servicePromise = this.serviceHandler.postCallToService(
@@ -253,13 +254,16 @@ export default class ActionBinder {
     if (!files) return;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
-      this.showFileError('.icon-error-filecount', 'Only one file allowed!!');
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' });
+      return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
-      this.showFileError('.icon-error-filetype', 'File format not supported!!');
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
+      return;
     }
     if (this.limits.maxFileSize < file.size) {
-      this.showFileError('.icon-error-filesize', 'File too large!!');
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' });
+      return;
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
@@ -268,11 +272,6 @@ export default class ActionBinder {
     await this.transitionScreen.showSplashScreen(true);
     const assetId = await this.uploadAsset(file);
     await this.continueInApp(assetId);
-  }
-
-  showFileError(errorType, message) {
-    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType });
-    throw new Error(message);
   }
 
   async photoshopActionMaps(value, files) {
