@@ -192,6 +192,7 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId) {
+    this.LOADER_LIMIT = 100;
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
