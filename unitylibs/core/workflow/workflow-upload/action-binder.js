@@ -253,13 +253,13 @@ export default class ActionBinder {
     if (!files) return;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
-      this.showFileError('.icon-error-filecount', 'Only one file allowed!!');
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' });
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
-      this.showFileError('.icon-error-filetype', 'File format not supported!!');
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
     }
     if (this.limits.maxFileSize < file.size) {
-      this.showFileError('.icon-error-filesize', 'File too large!!');
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' });
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
@@ -268,11 +268,6 @@ export default class ActionBinder {
     await this.transitionScreen.showSplashScreen(true);
     const assetId = await this.uploadAsset(file);
     await this.continueInApp(assetId);
-  }
-
-  showFileError(errorType, message) {
-    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType });
-    throw new Error(message);
   }
 
   async photoshopActionMaps(value, files) {
