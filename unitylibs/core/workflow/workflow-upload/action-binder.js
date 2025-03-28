@@ -62,7 +62,6 @@ export default class ActionBinder {
     this.block = wfblock;
     this.actionMap = actionMap;
     this.canvasArea = canvasArea;
-    this.operations = [];
     this.errorToastEl = null;
     this.psApiConfig = this.getPsApiConfig();
     this.serviceHandler = null;
