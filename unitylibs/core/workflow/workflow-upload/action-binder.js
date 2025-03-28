@@ -47,7 +47,6 @@ class ServiceHandler {
       const closeBtn = errorToast?.querySelector('.alert-close');
       if (closeBtn) closeBtn.style.pointerEvents = 'auto';
       if (!errorToast) return;
-
       const alertText = errorToast.querySelector('.alert-text p');
       if (!alertText) return;
       alertText.innerText = msg;
@@ -88,7 +87,6 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${this.splashFragmentLink}.plain.html`,
       );
     }
     await priorityLoad(parr);
@@ -101,7 +99,6 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
-
       const cancelPromise = Promise.reject(e);
       this.promiseStack.unshift(cancelPromise);
     } catch (error) {
@@ -170,34 +167,27 @@ export default class ActionBinder {
       fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
     ]);
     const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
-
     this.canvasArea.forEach((element) => {
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
       const alertIcon = createTag('div', { class: 'alert-icon' });
       alertIcon.innerHTML = alertImg;
       alertIcon.append(alertText);
-
       const alertClose = createTag('a', { class: 'alert-close', href: '#' });
       alertClose.innerHTML = closeImg;
       alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
-
       const alertContent = createTag('div', { class: 'alert-content' });
       alertContent.append(alertIcon, alertClose);
-
       const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
       const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
-
       alertClose.addEventListener('click', (e) => {
         element.style.pointerEvents = 'auto';
         e.preventDefault();
         e.stopPropagation();
         errholder.classList.remove('show');
       }, { once: true });
-
       decorateDefaultLinkAnalytics(errholder);
       element.append(errholder);
     });
-
     return this.canvasArea[0]?.querySelector('.alert-holder');
   }
 
@@ -215,23 +205,18 @@ export default class ActionBinder {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
-
       const servicePromise = this.serviceHandler.postCallToService(
         this.psApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
-
       this.promiseStack.push(servicePromise);
       const response = await servicePromise;
-
       if (!response?.url) throw new Error('Error connecting to App');
-
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) {
         return;
       }
-
       window.location.href = response.url;
     } catch (e) {
       if (e.message === 'Operation termination requested.') {
