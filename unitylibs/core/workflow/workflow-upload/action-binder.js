@@ -192,7 +192,6 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId) {
-    this.LOADER_LIMIT = 100;
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
@@ -205,6 +204,7 @@ export default class ActionBinder {
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.LOADER_LIMIT = 100;
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       const servicePromise = this.serviceHandler.postCallToService(
         this.psApiConfig.connectorApiEndPoint,
