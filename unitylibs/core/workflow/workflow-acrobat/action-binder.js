@@ -321,7 +321,7 @@ export default class ActionBinder {
         const userType = localStorage.getItem('unity.user') === 'true' ? 'frictionless_return_user' : 'frictionless_new_user';
         const url = new URL(response.url);
         url.searchParams.append('user', userType);
-        this.redirectUrl = url.toString();
+        this.redirectUrl = url.href;
       })
       .catch(async (e) => {
         await this.showSplashScreen();
