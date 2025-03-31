@@ -125,7 +125,10 @@ export default class ActionBinder {
       body: blobData,
     };
     const response = await fetch(storageUrl, uploadOptions);
-    return response.status === 200 ? id : '';
+    if (response.status !== 200) {
+      throw new Error('Failed to upload image to Unity');
+    }
+    return id;
   }
 
   async scanImgForSafety(assetId) {
@@ -154,6 +157,8 @@ export default class ActionBinder {
       this.scanImgForSafety(assetId);
       return assetId;
     } catch (e) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' });
       throw e;
@@ -219,14 +224,10 @@ export default class ActionBinder {
       const response = await servicePromise;
       if (!response?.url) throw new Error('Error connecting to App');
       const finalResults = await Promise.allSettled(this.promiseStack);
-      if (finalResults.some((result) => result.status === 'rejected')) {
-        return;
-      }
+      if (finalResults.some((result) => result.status === 'rejected')) return;
       window.location.href = response.url;
     } catch (e) {
-      if (e.message === 'Operation termination requested.') {
-        return;
-      }
+      if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' });
       throw e;
