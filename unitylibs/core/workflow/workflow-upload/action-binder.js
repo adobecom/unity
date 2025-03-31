@@ -44,9 +44,9 @@ class ServiceHandler {
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
       const errorToast = element.querySelector('.alert-holder');
-      const closeBtn = errorToast?.querySelector('.alert-close');
-      if (closeBtn) closeBtn.style.pointerEvents = 'auto';
       if (!errorToast) return;
+      const closeBtn = errorToast.querySelector('.alert-close');
+      if (closeBtn) closeBtn.style.pointerEvents = 'auto';
       const alertText = errorToast.querySelector('.alert-text p');
       if (!alertText) return;
       alertText.innerText = msg;
