@@ -386,23 +386,6 @@ export default class ActionBinder {
     }
   }
 
-  async loadVerbLimits(workflowName, keys) {
-    try {
-      const response = await fetch(`${getUnityLibs()}/core/workflow/${workflowName}/limits.json`);
-      if (!response.ok) throw new Error('Error loading verb limits');
-      const limits = await response.json();
-      const combinedLimits = keys.reduce((acc, key) => {
-        if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
-        return acc;
-      }, {});
-      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false);
-      return combinedLimits;
-    } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false);
-      return {};
-    }
-  }
-
   async processSingleFile(files, eventName) {
     this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
     if (!this.limits || Object.keys(this.limits).length === 0) return;
