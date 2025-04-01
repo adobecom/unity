@@ -321,10 +321,6 @@ export default class ActionBinder {
         const response = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
         this.redirectUrl = response.url;
-        // const userType = localStorage.getItem('unity.user') === 'true' ? 'frictionless_return_user' : 'frictionless_new_user';
-        // const url = new URL(response.url);
-        // url.searchParams.append('user', userType);
-        // this.redirectUrl = url.href;
       })
       .catch(async (e) => {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
@@ -335,7 +331,7 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts) {
-    cOpts.payload.newUser = localStorage.getItem('unity.user') ? true : false;
+    cOpts.payload.newUser = localStorage.getItem('unity.user') ? false : true;
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
