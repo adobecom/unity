@@ -308,7 +308,6 @@ export default class ActionBinder {
   }
 
   async getRedirectUrl(cOpts) {
-    cOpts.payload.newUser = localStorage.getItem('unity.user') ? true : false;
     this.promiseStack.push(
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.connectorApiEndPoint,
