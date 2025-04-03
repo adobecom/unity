@@ -518,7 +518,9 @@ export default class ActionBinder {
           await this.cropPages(files, eventName);
           break;
         case value.actionType === 'continueInApp':
-          await this.continueInApp();
+          window.addEventListener('DCUnity:RedirectReady', (e) => {
+            await this.continueInApp();
+          });
           break;
         case value.actionType === 'interrupt':
           await this.cancelAcrobatOperation();
