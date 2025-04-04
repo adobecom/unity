@@ -131,6 +131,9 @@ export default class ActionBinder {
     'reorder-pages': ['single', 'page-limit-500'],
     'sendforsignature': ['single', 'sendforsignature'],
     'pdf-to-word': ['pdf-to-word'],
+    'pdf-to-excel': ['pdf-to-excel'],
+    'pdf-to-ppt': ['pdf-to-ppt'],
+    'pdf-to-jpg': ['pdf-to-jpg'],
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {

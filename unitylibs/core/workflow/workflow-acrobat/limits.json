@@ -80,5 +80,17 @@
   "pdf-to-word": {
     "maxFileSize": 262144000,
     "allowedFileTypes": ["application/pdf"]
+  },
+  "pdf-to-excel": {
+    "maxFileSize": 104857600,
+    "allowedFileTypes": ["application/pdf"]
+  },
+  "pdf-to-ppt": {
+    "maxFileSize": 262144000,
+    "allowedFileTypes": ["application/pdf"]
+  },
+  "pdf-to-jpg": {
+    "maxFileSize": 104857600,
+    "allowedFileTypes": ["application/pdf"]
   }
 }
