@@ -76,5 +76,9 @@
     "pageLimit": {
       "maxNumPages": 25
     }
+  },
+  "pdf-to-word": {
+    "maxFileSize": 262144000,
+    "allowedFileTypes": ["application/pdf"]
   }
 }

@@ -130,6 +130,7 @@ export default class ActionBinder {
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
     'sendforsignature': ['single', 'sendforsignature'],
+    'pdf-to-word': ['pdf-to-word'],
   };
 
 static ERROR_MAP = {
