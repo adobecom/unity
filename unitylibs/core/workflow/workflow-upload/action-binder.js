@@ -201,6 +201,8 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId) {
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling.textContent;
+    console.log('cgen: '+cgen);
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
