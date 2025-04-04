@@ -518,7 +518,7 @@ export default class ActionBinder {
           await this.cropPages(files, eventName);
           break;
         case value.actionType === 'continueInApp':
-          window.addEventListener('DCUnity:RedirectReady', (e) => {
+          window.addEventListener('DCUnity:RedirectReady', async (e) => {
             await this.continueInApp();
           });
           break;
