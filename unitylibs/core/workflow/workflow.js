@@ -287,6 +287,9 @@ class WfInitiator {
           'reorder-pages',
           'sendforsignature',
           'pdf-to-word',
+          'pdf-to-excel',
+          'pdf-to-ppt',
+          'pdf-to-jpg',
         ]),
       },
       'workflow-ai': {
