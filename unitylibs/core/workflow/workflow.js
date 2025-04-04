@@ -285,7 +285,8 @@ class WfInitiator {
           'insert-pdf',
           'extract-pages',
           'reorder-pages',
-          'sendforsignature'
+          'sendforsignature',
+          'pdf-to-word',
         ]),
       },
       'workflow-ai': {
