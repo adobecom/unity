@@ -517,11 +517,6 @@ export default class ActionBinder {
           this.promiseStack = [];
           await this.cropPages(files, eventName);
           break;
-        case value.actionType === 'continueInApp':
-          window.addEventListener('DCUnity:RedirectReady', async (e) => {
-            await this.continueInApp();
-          });
-          break;
         case value.actionType === 'interrupt':
           await this.cancelAcrobatOperation();
           break;
@@ -529,6 +524,9 @@ export default class ActionBinder {
           break;
       }
     }
+    window.addEventListener('DCUnity:RedirectReady', async (e) => {
+      await this.continueInApp();
+    });
   }
 
   extractFiles(e) {
