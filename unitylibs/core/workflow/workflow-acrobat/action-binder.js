@@ -491,6 +491,9 @@ export default class ActionBinder {
 
   async acrobatActionMaps(values, files, totalFileSize, eventName) {
     await this.handlePreloads();
+    window.addEventListener('DCUnity:RedirectReady', async (e) => {
+      await this.continueInApp();
+    });
     for (const value of values) {
       switch (true) {
         case value.actionType === 'fillsign':
@@ -524,9 +527,6 @@ export default class ActionBinder {
           break;
       }
     }
-    window.addEventListener('DCUnity:RedirectReady', async (e) => {
-      await this.continueInApp();
-    });
   }
 
   extractFiles(e) {
