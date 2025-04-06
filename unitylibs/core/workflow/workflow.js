@@ -290,6 +290,11 @@ class WfInitiator {
           'pdf-to-excel',
           'pdf-to-ppt',
           'pdf-to-jpg',
+          'word-to-pdf',
+          'excel-to-pdf',
+          'ppt-to-pdf',
+          'jpg-to-pdf',
+          'png-to-pdf',
         ]),
       },
       'workflow-ai': {
