@@ -134,6 +134,11 @@ export default class ActionBinder {
     'pdf-to-excel': ['single', 'pdf-to-excel'],
     'pdf-to-ppt': ['single', 'pdf-to-ppt'],
     'pdf-to-jpg': ['single', 'pdf-to-jpg'],
+    'word-to-pdf': ['single', 'word-to-pdf'],
+    'excel-to-pdf': ['single', 'excel-to-pdf'],
+    'ppt-to-pdf': ['single', 'ppt-to-pdf'],
+    'jpg-to-pdf': ['single', 'jpg-to-pdf'],
+    'png-to-pdf': ['single', 'png-to-pdf'],
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
