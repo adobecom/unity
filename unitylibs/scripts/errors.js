@@ -29,7 +29,7 @@ async function loadErrorMessages(verb) {
   : origin;
   const errorFile = locale.prefix && locale.prefix !== '/'
     ? `${baseUrl}${locale.prefix}/unity/configs/errors/${verb}.json`
-    : `${baseUrl}/unity/configs/errors/${verb}.json`;
+    : `${baseUrl}/unity/configs/errors/compress-pdf.json`;
   const errorRes = await fetch(errorFile);
   if (!errorRes.ok) {
     throw new Error('Failed to fetch error messages.');
