@@ -356,5 +356,8 @@ export default class ActionBinder {
   preventDefault(e) {
     e.preventDefault();
     e.stopPropagation();
+    this.canvasArea.forEach((element) => {
+      element.style.pointerEvents = 'auto';
+    });
   }
 }
