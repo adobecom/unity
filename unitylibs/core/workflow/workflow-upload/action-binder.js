@@ -309,8 +309,8 @@ export default class ActionBinder {
         });
       },
       DIV: (el, key) => {
-        el.addEventListener('dragover', this.preventDefault);
-        el.addEventListener('dragenter', this.preventDefault);
+        el.addEventListener('dragover', (e) => this.preventDefault.call(this, e));
+        el.addEventListener('dragenter', (e) => this.preventDefault.call(this, e));
         el.addEventListener('drop', async (e) => {
           e.preventDefault();
           e.stopPropagation();
