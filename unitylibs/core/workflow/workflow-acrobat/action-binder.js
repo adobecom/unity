@@ -119,8 +119,8 @@ export default class ActionBinder {
   };
 
   static LIMITS_MAP = {
-    fillsign: ['single', 'fillsign'],
-    'compress-pdf': ['hybrid'],
+    fillsign: ['single','page-limit-100'],
+    'compress-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-2-gb'],
     'add-comment': ['single'],
     'number-pages': ['single'],
     'split-pdf': ['single', 'split-pdf'],
@@ -129,7 +129,7 @@ export default class ActionBinder {
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'sendforsignature': ['single', 'sendforsignature'],
+    'sendforsignature': ['single', 'sendforsignature']
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
