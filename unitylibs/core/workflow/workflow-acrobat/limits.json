@@ -1,40 +1,12 @@
 {
   "single": {
+    "uploadType": "single",
     "maxNumFiles": 1,
-    "maxFileSize": 104857600,
-    "allowedFileTypes": ["application/pdf"]
+    "allowedFileTypes": ["application/pdf"],
+    "maxFileSize": 104857600
   },
   "hybrid": {
-    "maxFileSize": 2147483648,
-    "allowedFileTypes": [
-      "application/pdf",
-      "application/msword",
-      "application/xml",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "application/x-tika-ooxml",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/x-tika-msworks-spreadsheet",
-      "application/vnd.adobe.form.fillsign",
-      "application/illustrator",
-      "application/rtf",
-      "application/x-indesign",
-      "image/jpeg",
-      "image/png",
-      "image/bmp",
-      "image/gif",
-      "image/vnd.adobe.photoshop",
-      "image/tiff",
-      "message/rfc822",
-      "text/plain"
-    ]
-  },
-  "fillsign": {
-    "pageLimit": {
-      "maxNumPages": 100
-    }
+    "uploadType": "hybrid"
   },
   "split-pdf": {
     "maxFileSize": 1073741824,
@@ -66,6 +38,11 @@
       "text/plain"
     ]
   },
+  "page-limit-100": {
+    "pageLimit": {
+      "maxNumPages": 100
+    }
+  },
   "page-limit-500": {
     "pageLimit": {
       "maxNumPages": 500
@@ -76,5 +53,43 @@
     "pageLimit": {
       "maxNumPages": 25
     }
+  },
+  "max-filesize-100-mb": {
+    "maxFileSize": 104857600
+  },
+  "max-filesize-250-mb": {
+    "maxFileSize": 262144000
+  },
+  "max-filesize-2-gb": {
+    "maxFileSize": 2147483648
+  },
+  "allowed-filetypes-pdf-only": {
+    "allowedFileTypes": ["application/pdf"]
+  },
+  "allowed-filetypes-all": {
+    "allowedFileTypes": [
+      "application/pdf",
+      "application/msword",
+      "application/xml",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/x-tika-ooxml",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/x-tika-msworks-spreadsheet",
+      "application/vnd.adobe.form.fillsign",
+      "application/illustrator",
+      "application/rtf",
+      "application/x-indesign",
+      "image/jpeg",
+      "image/png",
+      "image/bmp",
+      "image/gif",
+      "image/vnd.adobe.photoshop",
+      "image/tiff",
+      "message/rfc822",
+      "text/plain"
+    ]
   }
 }
