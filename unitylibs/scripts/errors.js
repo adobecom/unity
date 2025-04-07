@@ -28,7 +28,7 @@ async function loadErrorMessages(verb) {
   ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
   : origin;
   const errorFile = locale.prefix && locale.prefix !== '/'
-    ? `${baseUrl}${locale.prefix}/unity/configs/errors/${verb}.json`
+    ? `${baseUrl}${locale.prefix}/unity/configs/errors/compress-pdf.json`
     : `${baseUrl}/unity/configs/errors/compress-pdf.json`;
   const errorRes = await fetch(errorFile);
   if (!errorRes.ok) {
