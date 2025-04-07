@@ -309,6 +309,11 @@ export default class ActionBinder {
         });
       },
       DIV: (el, key) => {
+        el.addEventListener('dragstart', () => {
+          this.canvasArea.forEach((element) => {
+            element.style.pointerEvents = 'auto';
+          });
+        });
         el.addEventListener('dragover', (e) => this.preventDefault.call(this, e));
         el.addEventListener('dragenter', (e) => this.preventDefault.call(this, e));
         el.addEventListener('drop', async (e) => {
