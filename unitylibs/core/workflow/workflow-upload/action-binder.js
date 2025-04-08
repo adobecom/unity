@@ -312,6 +312,7 @@ export default class ActionBinder {
         el.addEventListener('dragover', this.preventDefault);
         el.addEventListener('dragenter', this.preventDefault);
         el.addEventListener('drop', async (e) => {
+          sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
           e.preventDefault();
           e.stopPropagation();
           const files = this.extractFiles(e);
