@@ -12,6 +12,7 @@ import {
   getLocale,
   getLibs,
   getHeaders,
+  sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
