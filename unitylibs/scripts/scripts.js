@@ -136,5 +136,11 @@ const miloLibs = setLibs(LIBS);
 (async function loadPage() {
   const { loadArea, setConfig } = await import(`${miloLibs}/utils/utils.js`);
   const config = setConfig({ ...CONFIG, miloLibs });
+  loadLana({ clientId: 'unity' });
+  console.log('Lana Message from Unity');
+  const e = new Error();
+  e.message = 'testing unity';
+  e.status = 400;
+  window.lana?.log(`Lana Message from Unity: ${e}`);
   await loadArea();
 }());
