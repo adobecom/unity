@@ -12,6 +12,7 @@ import {
   loadImg,
   getHeaders,
 } from '../../../scripts/utils.js';
+import { showSplashScreen } from '../../../utils/splashScreenUtils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
@@ -239,7 +240,7 @@ export default class ActionBinder {
       if (!fileName || fileName === '.' || fileName === '..') {
         return '---';
       }
-      const { getExtension, removeExtension } = await import('../../../utils/FileUtils.js');
+      const { getExtension, removeExtension } = await import('../../../utils/fileUtils.js');
       let ext = getExtension(fileName);
       const nameWithoutExtension = removeExtension(fileName);
       ext = ext.length > 0 ? `.${ext}` : '';
@@ -322,17 +323,15 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-        await this.transitionScreen.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
+        await showSplashScreen();
       });
   }
 
   async handleRedirect(cOpts) {
     cOpts.payload.newUser = localStorage.getItem('unity.user') ? false : true;
     await this.getRedirectUrl(cOpts);
-    if (!this.redirectUrl) return false;
+    if (!this.redirectUrl) return false;  // why not sending analytics from here
     this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
     return true;
   }
@@ -452,11 +451,9 @@ export default class ActionBinder {
   }
 
   async cancelAcrobatOperation() {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    await this.transitionScreen.showSplashScreen();
-    this.redirectUrl = '';
     this.dispatchAnalyticsEvent('cancel');
+    await showSplashScreen();
+    this.redirectUrl = '';
     const e = new Error();
     e.message = 'Operation termination requested.';
     e.showError = false;
