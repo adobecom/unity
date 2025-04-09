@@ -1,6 +1,6 @@
 export function getExtension(name) {
-  return name && name.includes('.') ? name.split('.').pop() : '';
-}
+    return name && name.includes('.') ? name.split('.').pop() : '';
+  }
 
 export function removeExtension(name) {
   if (name == null) return name;
