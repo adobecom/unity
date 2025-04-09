@@ -352,14 +352,15 @@ export default class ActionBinder {
       await this.transitionScreen.delayedSplashLoader();
     }
     window.addEventListener('pageshow', (event) => {
-    const historyTraversal = event.persisted
-      || (typeof window.performance !== 'undefined'
-        && window.performance.getEntriesByType('navigation')[0].type === 'back_forward');
-    if (historyTraversal) {
-      window.location.reload();
-    }
+      const historyTraversal = event.persisted
+        || (typeof window.performance !== 'undefined'
+          && window.performance.getEntriesByType('navigation')[0].type === 'back_forward');
+      if (historyTraversal) {
+        window.location.reload();
+      }
+    });
   }
-
+  
   preventDefault(e) {
     e.preventDefault();
     e.stopPropagation();
