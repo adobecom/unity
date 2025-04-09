@@ -1,16 +1,12 @@
-export async function showSplashScreen(transitionScreen, displayOn = false) {
+import { getUnityLibs } from '../scripts/utils.js';
+
+export async function showSplashScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, displayOn = false) {
   try {
-    if (!transitionScreen) {
-      const { default: TransitionScreen } = await import('../scripts/transition-screen.js');
-      transitionScreen = new TransitionScreen(
-        transitionScreen?.splashScreenEl,
-        transitionScreen?.initActionListeners,
-        transitionScreen?.LOADER_LIMIT,
-        transitionScreen?.workflowCfg
-      );
-    }
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    const transitionScreen = new TransitionScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg);
     await transitionScreen.showSplashScreen(displayOn);
-  } catch (e) {
-    console.error('Error showing splash screen:', e);
+    return transitionScreen;
+  } catch (error) {
+    console.error('Error showing splash screen:', error);
   }
 }
