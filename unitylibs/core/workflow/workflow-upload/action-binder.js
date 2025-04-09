@@ -356,6 +356,7 @@ export default class ActionBinder {
     window.addEventListener('pageshow', (event) => {
       const historyTraversal = event.persisted
         || (typeof window.performance !== 'undefined'
+          && window.performance.getEntriesByType('navigation').length > 0
           && window.performance.getEntriesByType('navigation')[0].type === 'back_forward');
       if (historyTraversal) {
         window.location.reload();
