@@ -354,10 +354,11 @@ export default class ActionBinder {
       await this.transitionScreen.delayedSplashLoader();
     }
     window.addEventListener('pageshow', (event) => {
+      const navigationEntries = window.performance.getEntriesByType('navigation');
       const historyTraversal = event.persisted
         || (typeof window.performance !== 'undefined'
-          && window.performance.getEntriesByType('navigation').length > 0
-          && window.performance.getEntriesByType('navigation')[0].type === 'back_forward');
+          && navigationEntries.length > 0
+          && navigationEntries[0].type === 'back_forward');
       if (historyTraversal) {
         window.location.reload();
       }
