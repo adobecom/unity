@@ -353,6 +353,14 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.delayedSplashLoader();
     }
+    window.addEventListener('pageshow', (event) => {
+      const historyTraversal = event.persisted
+        || (typeof window.performance !== 'undefined'
+          && window.performance.getEntriesByType('navigation')[0].type === 'back_forward');
+      if (historyTraversal) {
+        window.location.reload();
+      }
+    });
   }
 
   preventDefault(e) {
