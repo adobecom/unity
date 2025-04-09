@@ -82,6 +82,10 @@ export default class ActionBinder {
     return unityConfig;
   }
 
+  delay(ms) {
+    return new Promise((res) => { setTimeout(() => { res(); }, ms); });
+  }
+
   async handlePreloads() {
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
@@ -212,6 +216,7 @@ export default class ActionBinder {
       },
     };
     try {
+      await delay(2000);
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.LOADER_LIMIT = 100;
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
