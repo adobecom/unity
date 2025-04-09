@@ -324,7 +324,12 @@ export default class ActionBinder {
       })
       .catch(async (e) => {
         await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
-        await showSplashScreen();
+        this.transitionScreen = await showSplashScreen(
+          this.splashScreenEl,
+          this.initActionListeners,
+          this.LOADER_LIMIT,
+          this.workflowCfg
+        );
       });
   }
 
@@ -445,14 +450,19 @@ export default class ActionBinder {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else window.location.href = this.redirectUrl;
     } catch (e) {
-      await this.transitionScreen.showSplashScreen();
+      await this.transitionScreen.showSplashScreen(); // fix
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
     }
   }
 
   async cancelAcrobatOperation() {
     this.dispatchAnalyticsEvent('cancel');
-    await showSplashScreen();
+    this.transitionScreen = await showSplashScreen(
+      this.transitionScreen.splashScreenEl,
+      this.initActionListeners,
+      this.LOADER_LIMIT,
+      this.workflowCfg
+    );
     this.redirectUrl = '';
     const e = new Error();
     e.message = 'Operation termination requested.';

@@ -145,7 +145,12 @@ export default class UploadHandler {
           return false;
         }
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`);
-        await showSplashScreen();
+        this.transitionScreen = await showSplashScreen(
+          this.actionBinder.transitionScreen.splashScreenEl,
+          this.actionBinder.initActionListeners,
+          this.actionBinder.LOADER_LIMIT,
+          this.actionBinder.workflowCfg
+        );
         this.actionBinder.operations = [];
         return false;
       }
@@ -155,7 +160,12 @@ export default class UploadHandler {
         return false;
       }
       await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError);
-      await showSplashScreen();
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       this.actionBinder.operations = [];
       return false;
     }
@@ -176,7 +186,12 @@ export default class UploadHandler {
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
             await this.actionBinder.dispatchErrorToast('verb_upload_error_max_page_count');
-            await showSplashScreen();
+            this.transitionScreen = await showSplashScreen(
+              this.actionBinder.transitionScreen.splashScreenEl,
+              this.actionBinder.initActionListeners,
+              this.actionBinder.LOADER_LIMIT,
+              this.actionBinder.workflowCfg
+            );
             resolve(true);
             return;
           }
@@ -184,7 +199,12 @@ export default class UploadHandler {
             && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
           ) {
             await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
-            await showSplashScreen();
+            this.transitionScreen = await showSplashScreen(
+              this.actionBinder.transitionScreen.splashScreenEl,
+              this.actionBinder.initActionListeners,
+              this.actionBinder.LOADER_LIMIT,
+              this.actionBinder.workflowCfg
+            );
             resolve(true);
             return;
           }
@@ -214,7 +234,12 @@ export default class UploadHandler {
       });
     } catch (e) {
       await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError);
-      await showSplashScreen();
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       this.actionBinder.operations = [];
       return false;
     }
@@ -239,7 +264,12 @@ export default class UploadHandler {
 
   async dispatchGenericError(info = null, showError = true) {
     this.actionBinder.operations = [];
-    await showSplashScreen();
+    this.transitionScreen = await showSplashScreen(
+      this.actionBinder.transitionScreen.splashScreenEl,
+      this.actionBinder.initActionListeners,
+      this.actionBinder.LOADER_LIMIT,
+      this.actionBinder.workflowCfg
+    );
     await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
   }
 
@@ -338,7 +368,13 @@ export default class UploadHandler {
 
   async singleFileGuestUpload(file, fileData) {
     try {
-      await showSplashScreen(true);
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg,
+        true
+      );
       if (this.isNonPdf([file])) {
         await this.actionBinder.delay(3000);
         const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'));
@@ -348,7 +384,12 @@ export default class UploadHandler {
       }
       await this.uploadSingleFile(file, fileData);
     } catch (e) {
-      await showSplashScreen();
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       this.actionBinder.operations = [];
       await this.handleUploadError(e);
     }
@@ -356,10 +397,20 @@ export default class UploadHandler {
 
   async singleFileUserUpload(file, fileData) {
     try {
-      await showSplashScreen(true);
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       await this.uploadSingleFile(file, fileData, this.isNonPdf([file]));
     } catch (e) {
-      await showSplashScreen();
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       this.actionBinder.operations = [];
       await this.handleUploadError(e);
     }
@@ -433,7 +484,12 @@ export default class UploadHandler {
 
   async multiFileGuestUpload(filesData) {
     try {
-      await showSplashScreen(true);
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
@@ -448,7 +504,12 @@ export default class UploadHandler {
 
   async multiFileUserUpload(files, filesData) {
     try {
-      await showSplashScreen(true);
+      this.transitionScreen = await showSplashScreen(
+        this.actionBinder.transitionScreen.splashScreenEl,
+        this.actionBinder.initActionListeners,
+        this.actionBinder.LOADER_LIMIT,
+        this.actionBinder.workflowCfg
+      );
       await this.uploadMultiFile(files, filesData);
     } catch (e) {
       await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
