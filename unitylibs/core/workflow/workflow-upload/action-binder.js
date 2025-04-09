@@ -319,8 +319,6 @@ export default class ActionBinder {
         });
         el.addEventListener('click', async (e) => {
           sendAnalyticsEvent(new CustomEvent('Click Drag and drop|UnityWidget'));
-          e.preventDefault();
-          await this.photoshopActionMaps(actMap[key]);
         });
       },
       INPUT: (el, key) => {
