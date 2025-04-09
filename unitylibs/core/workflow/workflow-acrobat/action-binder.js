@@ -534,7 +534,7 @@ export default class ActionBinder {
         case value.actionType === 'interrupt':
           await this.cancelAcrobatOperation();
           break;
-        case value.actionType === 'continue':
+        case value.actionType === 'continueInApp':
           if(this.actionBinder.redirectWithoutUpload) await this.continueInApp();
           break;
         default:
