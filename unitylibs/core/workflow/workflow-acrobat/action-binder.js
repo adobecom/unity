@@ -123,13 +123,13 @@ export default class ActionBinder {
     'compress-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-2-gb'],
     'add-comment': ['single'],
     'number-pages': ['single'],
-    'split-pdf': ['single', 'split-pdf'],
+    'split-pdf': ['single', 'max-filesize-1-gb','split-pdf-page-limits','signedInallowedFileTypes'],
     'crop-pages': ['single'],
     'delete-pages': ['single', 'page-limit-500'],
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'sendforsignature': ['single', 'sendforsignature']
+    'sendforsignature': ['single', 'max-filesize-500-mb', 'page-limit-25']
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
