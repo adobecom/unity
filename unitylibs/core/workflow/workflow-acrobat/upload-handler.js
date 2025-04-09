@@ -263,6 +263,7 @@ export default class UploadHandler {
   }
 
   async dispatchGenericError(info = null, showError = true) {
+    await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
     this.actionBinder.operations = [];
     this.transitionScreen = await showSplashScreen(
       this.actionBinder.transitionScreen.splashScreenEl,
@@ -270,7 +271,6 @@ export default class UploadHandler {
       this.actionBinder.LOADER_LIMIT,
       this.actionBinder.workflowCfg
     );
-    await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
   }
 
   getConcurrentLimits() {
