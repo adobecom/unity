@@ -1,13 +1,13 @@
 function isIPad(userAgent) {
   const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
-  if (typeof navigator !== 'undefined' && navigator.userAgentData) {
-    const platform = navigator.userAgentData.platform.toLowerCase();
-    const isMobile = navigator.userAgentData.mobile;
-    if (isMobile && platform === 'ios') {
-      return true;
-    }
-  }
   if (typeof navigator !== 'undefined') {
+    if (navigator.userAgentData) {
+      const platform = navigator.userAgentData.platform.toLowerCase();
+      const isMobile = navigator.userAgentData.mobile;
+      if (isMobile && platform === 'ios') {
+        return true;
+      }
+    }
     if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(ua)) {
       return true;
     }
@@ -26,8 +26,8 @@ function isWindowsTablet(userAgent) {
   }
   if (/Windows Phone|Windows Mobile/i.test(ua)) return true;
   if (/Windows NT/.test(ua) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 2) {
-    if (/Touch|Tablet|ARM|Windows.*Tablet PC/i.test(ua)) {
-      if (!/Laptop|Desktop/i.test(ua)) return true;
+    if (/Touch|Tablet|ARM|Windows.*Tablet PC/i.test(ua) && !/Laptop|Desktop/i.test(ua)) {
+      return true;
     }
   }
   return false;
@@ -35,15 +35,24 @@ function isWindowsTablet(userAgent) {
 
 function hasTouch() {
   if (typeof window === 'undefined') return false;
-  if (typeof navigator !== 'undefined' && navigator.maxTouchPoints) {
-    return navigator.maxTouchPoints > 0;
+  if (typeof navigator !== 'undefined') {
+    if (navigator.maxTouchPoints !== undefined) {
+      return navigator.maxTouchPoints > 0;
+    }
+    if (navigator.msMaxTouchPoints !== undefined) {
+      return navigator.msMaxTouchPoints > 0;
+    }
   }
-  return 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.msMaxTouchPoints > 0);
+  return 'ontouchstart' in window;
 }
 
 function hasMouse() {
   if (typeof window === 'undefined') return false;
   return 'onmouseover' in window;
+}
+
+function isHeadlessBrowser(ua) {
+  return /HeadlessChrome/.test(ua);
 }
 
 function getPlatformInfo(userAgent) {
@@ -56,37 +65,56 @@ function getPlatformInfo(userAgent) {
   }
   const uaLower = ua.toLowerCase();
   let platform = 'unknown';
-  if (/android/.test(uaLower)) {
-    platform = 'android';
-  } else if (/iphone|ipad|ipod|ios/.test(uaLower)) {
-    platform = 'ios';
-  } else if (/windows/.test(uaLower)) {
-    platform = 'windows';
-  } else if (/macintosh|mac os x/.test(uaLower)) {
-    platform = 'macos';
-  } else if (/linux/.test(uaLower)) {
-    platform = 'linux';
-  }
+  const mobileKeywords = [
+    'mobi',
+    'android',
+    'iphone',
+    'ipad',
+    'ipod',
+    'silk',
+    'blackberry',
+    'opera mini',
+    'uc browser',
+    'puffin',
+    'tizen',
+    'sailfish',
+    'webos',
+    'googlebot-mobile',
+    'kaios',
+    'fennec',
+    'firefox os',
+  ];
+  const platformPatterns = [
+    { pattern: /android/, platform: 'android' },
+    { pattern: /iphone|ipad|ipod|ios/, platform: 'ios' },
+    { pattern: /windows/, platform: 'windows' },
+    { pattern: /macintosh|mac os x/, platform: 'macos' },
+    { pattern: /linux/, platform: 'linux' },
+    { pattern: /chrome os/, platform: 'chromeos' },
+  ];
+  platform = platformPatterns.find(({ pattern }) => pattern.test(uaLower))?.platform || 'unknown';
+  const isMobile = mobileKeywords.some((keyword) => uaLower.includes(keyword))
+    || /mobile|windows phone/i.test(uaLower);
   return {
     platform,
-    isMobile: /mobile|android|ios|iphone|ipad|ipod|windows phone/i.test(uaLower),
+    isMobile,
   };
 }
 
 export default function isDesktop(userAgent) {
   const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  if (isHeadlessBrowser(ua)) return true;
   const platformInfo = getPlatformInfo(ua);
-  const isMobileOS = platformInfo.isMobile;
-  if (isMobileOS) return false;
-  const isDesktopOS = ['windows', 'macos', 'linux'].includes(platformInfo.platform);
+  if (platformInfo.isMobile) return false;
+  const isDesktopOS = ['windows', 'macos', 'linux', 'chromeos'].includes(platformInfo.platform);
   if (!isDesktopOS) return false;
   const isTabletIPad = isIPad(ua);
   const isTabletWindows = isWindowsTablet(ua);
+  if (isTabletIPad || isTabletWindows) return false;
   const deviceHasTouch = hasTouch();
   const deviceHasMouse = hasMouse();
+  if (!deviceHasTouch) return true;
   const isWindowsTouch = /Windows NT/.test(ua) && deviceHasTouch;
   const isWindowsLaptopWithTouch = isWindowsTouch && !isTabletWindows;
-  return !isTabletIPad
-    && !isTabletWindows
-    && (!deviceHasTouch || isWindowsLaptopWithTouch || (deviceHasTouch && deviceHasMouse));
+  return isWindowsLaptopWithTouch || (deviceHasTouch && deviceHasMouse);
 }
