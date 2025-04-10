@@ -333,6 +333,7 @@ export default class ActionBinder {
         });
         el.addEventListener('change', async (e) => {
           const files = this.extractFiles(e);
+          sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
           await this.photoshopActionMaps(actMap[key], files);
           e.target.value = '';
         });
