@@ -73,10 +73,7 @@ export default class ActionBinder {
     this.limits = workflowCfg.targetCfg.limits;
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
-    this.lanaOptions = {
-      sampleRate: 100,
-      tags: 'Unity-PS-Upload',
-    };
+    this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
   }
 
   getPsApiConfig() {
@@ -168,11 +165,7 @@ export default class ActionBinder {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.showSplashScreen();
-      this.serviceHandler.showErrorToast(
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
-        e,
-        this.lanaOptions,
-      );
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
     }
   }
@@ -241,11 +234,7 @@ export default class ActionBinder {
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
-      this.serviceHandler.showErrorToast(
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
-        e,
-        this.lanaOptions,
-      );
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
     }
   }
@@ -257,11 +246,7 @@ export default class ActionBinder {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
         if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
-          this.serviceHandler.showErrorToast(
-            { errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' },
-            'Unable to process the file type!',
-            this.lanaOptions,
-          );
+          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions);
           reject(new Error('Unable to process the file type!'));
         } else {
           resolve({ width, height });
@@ -279,27 +264,15 @@ export default class ActionBinder {
     if (!files) return;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
-      this.serviceHandler.showErrorToast(
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' },
-        '',
-        this.lanaOptions,
-      );
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' }, '', this.lanaOptions);
       return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
-      this.serviceHandler.showErrorToast(
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' },
-        '',
-        this.lanaOptions,
-      );
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' }, '', this.lanaOptions);
       return;
     }
     if (this.limits.maxFileSize < file.size) {
-      this.serviceHandler.showErrorToast(
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' },
-        '',
-        this.lanaOptions,
-      );
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' }, '', this.lanaOptions);
       return;
     }
     const objectUrl = URL.createObjectURL(file);
