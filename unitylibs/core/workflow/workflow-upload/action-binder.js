@@ -273,6 +273,7 @@ export default class ActionBinder {
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
+    sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen(true);
@@ -333,7 +334,6 @@ export default class ActionBinder {
         });
         el.addEventListener('change', async (e) => {
           const files = this.extractFiles(e);
-          sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
           await this.photoshopActionMaps(actMap[key], files);
           e.target.value = '';
         });
