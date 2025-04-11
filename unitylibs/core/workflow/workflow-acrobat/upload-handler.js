@@ -65,8 +65,8 @@ export default class UploadHandler {
       return response;
     } catch (e) {
       if (e instanceof TypeError) {
-        e.message = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes`;
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${e.message}`, true);
+        const info = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes; Message: ${e.message}`;
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${info}`, true);
       } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true);
       throw e;
     }

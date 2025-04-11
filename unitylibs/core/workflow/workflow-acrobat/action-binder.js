@@ -30,32 +30,29 @@ class ServiceHandler {
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (response.status !== 200) {
-        const error = new Error();
-        if (contentLength !== '0') {
+        let error = null;
+        if (contentLength === '0') error = new Error(`Error fetching from service. URL: ${url}`);
+        else {
           try {
-            error.responseJson = await response.json();
+            const responseJson = await response.json();
             ['quotaexceeded', 'notentitled'].forEach((errorMessage) => {
-              if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
+              if (responseJson.reason?.includes(errorMessage)) error = new Error(errorMessage);
             });
-          } catch {
-            error.message = `Failed to parse JSON response. URL: ${url}}`;
+          } catch (e) {
+            if (e instanceof SyntaxError) error = new Error(`Failed to parse JSON response. URL: ${url}}; Message: ${e.message}`);
+            else if (e instanceof TypeError) error = new Error(`Network error. URL: ${url}; Message: ${e.message}`);
+            else error = new Error(`Unexpected error parsing JSON response. URL: ${url}; Message: ${e.message}`);
           }
         }
-        if (!error.message) error.message = `Error fetching from service. URL: ${url}`;
         error.status = response.status;
         throw error;
       }
       if (contentLength === '0') return {};
       return response.json();
     } catch (e) {
-      if (e instanceof TypeError) {
-        e.status = 0;
-        e.message = `Network error. URL: ${url}`;
-      } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        e.status = 504;
-        e.message = `Request timed out. URL: ${url}`;
-      }
-      throw e;
+      if (e instanceof TypeError) throw Object.assign(new Error(), { status: e.status ? e.status : 0, message: `Network error. URL: ${url}; Message: ${e.message}` });
+      else if (e.name === 'TimeoutError' || e.name === 'AbortError') throw Object.assign(new Error(), { status: 504, message: `Request timed out. URL: ${url}; Message: ${e.message}` });
+      else throw e;
     }
   }
 
@@ -468,8 +465,7 @@ export default class ActionBinder {
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
     this.dispatchAnalyticsEvent('cancel');
-    const e = new Error();
-    e.message = 'Operation termination requested.';
+    const e = new Error('Operation termination requested.');
     e.showError = false;
     const cancelPromise = Promise.reject(e);
     this.promiseStack.unshift(cancelPromise);
