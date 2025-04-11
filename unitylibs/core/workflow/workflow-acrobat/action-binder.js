@@ -477,9 +477,6 @@ export default class ActionBinder {
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
     await this.handlePreloads();
-    window.addEventListener('DCUnity:RedirectReady', async (e) => {
-      await this.continueInApp();
-    });
     const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
     switch (value) {
       case 'upload':
@@ -493,7 +490,7 @@ export default class ActionBinder {
       default:
         break;
     }
-    if(this.redirectWithoutUpload) await this.continueInApp();
+    await this.continueInApp();
   }
 
   extractFiles(e) {
