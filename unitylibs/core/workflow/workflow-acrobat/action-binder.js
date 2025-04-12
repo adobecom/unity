@@ -149,6 +149,7 @@ export default class ActionBinder {
     this.signedOut = this.isSignedOut();
     this.redirectUrl = '';
     this.filesData = {};
+    this.errorData = {};
     this.redirectWithoutUpload = false;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
@@ -199,24 +200,35 @@ export default class ActionBinder {
     await priorityLoad(parr);
   }
 
-  async dispatchErrorToast(code, status, info = null, lanaOnly = false, showError = true) {
+  async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
+    errorMetaData = errorMetaData || {};
+
+    const errorMap = (await import('./error-handler.js')).errorMap;
+    const errorCode = errorMap[errorType] || '-999';
+
     if (showError) {
-      const errorMessage = code in this.workflowCfg.errors
-        ? this.workflowCfg.errors[code]
+      const errorMessage = errorType in this.workflowCfg.errors
+        ? this.workflowCfg.errors[errorType]
         : await (async () => {
           const getError = (await import('../../../scripts/errors.js')).default;
-          return getError(this.workflowCfg.enabledFeatures[0], code);
+          return getError(this.workflowCfg.enabledFeatures[0], errorType);
         })();
       const message = lanaOnly ? '' : errorMessage || 'Unable to process the request';
       this.block.dispatchEvent(new CustomEvent(
         unityConfig.errorToastEvent,
         {
           detail: {
-            code,
+            errorType,
             message: `${message}`,
             status,
             info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
             accountType: this.signedOut ? 'guest' : 'signed-in',
+            metaData: this.filesData,
+            errorData: {
+              errorCode,
+              subCode: errorMetaData.subCode || '',
+              description: errorMetaData.desc || message || 'Unhandled error'
+            }
           },
         },
       ));
@@ -261,7 +273,10 @@ export default class ActionBinder {
       return fileName;
     } catch (error) {
       console.error('Error sanitizing filename:', error);
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Error renaming file: ${rawFileName}`, false);
+      await this.dispatchErrorToast('verb_upload_error_renaming_file', 500, `Error renaming file: ${rawFileName}`, false, true, {
+        subCode: error.name,
+        desc: error.message,
+      });
       return '---';
     }
   }
