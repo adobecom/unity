@@ -149,6 +149,7 @@ export default class ActionBinder {
     this.promiseStack = [];
     this.signedOut = this.isSignedOut();
     this.redirectUrl = '';
+    this.filesData = {};
     this.redirectWithoutUpload = false;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
@@ -333,18 +334,18 @@ export default class ActionBinder {
       });
   }
 
-  async handleRedirect(cOpts) {
+  async handleRedirect(cOpts, filesData) {
     cOpts.payload.newUser = localStorage.getItem('unity.user') ? false : true;
     await this.getRedirectUrl(cOpts);
-    if (!this.redirectUrl) return false;  // why not sending analytics from here
-    this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
+    if (!this.redirectUrl) return false;
+    this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
     return true;
   }
 
   async handleSingleFileUpload(file, eventName) {  
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
-    const fileData = { type: newFile.type, size: newFile.size, count: 1 };
+    this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
     this.dispatchAnalyticsEvent(eventName, fileData);
     if (!await this.validateFiles([newFile])) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
@@ -357,7 +358,7 @@ export default class ActionBinder {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
+    this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
@@ -456,7 +457,7 @@ export default class ActionBinder {
   }
 
   async cancelAcrobatOperation() {
-    this.dispatchAnalyticsEvent('cancel');
+    this.dispatchAnalyticsEvent('cancel', this.filesData);
     this.transitionScreen = await showSplashScreen(
       this.transitionScreen.splashScreenEl,
       this.initActionListeners,
