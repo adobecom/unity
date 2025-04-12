@@ -346,12 +346,12 @@ export default class ActionBinder {
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
-    this.dispatchAnalyticsEvent(eventName, fileData);
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
     if (!await this.validateFiles([newFile])) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
-    else await this.uploadHandler.singleFileUserUpload(newFile, fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, this.filesData);
+    else await this.uploadHandler.singleFileUserUpload(newFile, this.filesData);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
@@ -368,8 +368,8 @@ export default class ActionBinder {
     if (!await this.validateFiles(files)) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
+    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, this.filesData);
   }
 
   async loadVerbLimits(workflowName, keys) {
