@@ -141,6 +141,7 @@ static ERROR_MAP = {
   'verb_upload_error_renaming_file_single': -150,
   'verb_upload_error_max_page_count_single': -151,
   'verb_upload_error_min_page_count_single': -152,
+  'verb_upload_error_verify_page_count': -153,
   'verb_upload_error_unsupported_type_single': -170,
   'verb_upload_error_empty_file_single': -171,
   'verb_upload_error_file_too_large_single': -172,
@@ -158,7 +159,9 @@ static ERROR_MAP = {
   'verb_upload_error_redirect': -351,
   'verb_upload_error_finalize': -352,
   'verb_upload_error_chunk_upload': -353,
-  'verb_cookie_not_set': -354
+  'verb_cookie_not_set': -354,
+  'verb_upload_error_redirect_to_app': -900,
+  'verb_upload_error_finalize_asset': -901
 };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
@@ -229,7 +232,8 @@ static ERROR_MAP = {
     await priorityLoad(parr);
   }
 
-  async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, errorMetaData = {}) {
+  async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
+    if (!showError) return;
     errorMetaData = errorMetaData || {};
     const errorCode = ActionBinder.ERROR_MAP[errorType] || -1;
     const errorMessage = errorType in this.workflowCfg.errors
@@ -314,20 +318,20 @@ static ERROR_MAP = {
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         fail = true;
         errorTypes.add('UNSUPPORTED_TYPE');
       }
       if (!file.size) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
-        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
+        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
         errorTypes.add('EMPTY_FILE');
       }
       if (file.size > this.limits.maxFileSize) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
-        else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
+        else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
         errorTypes.add('FILE_TOO_LARGE');
       }
@@ -337,14 +341,14 @@ static ERROR_MAP = {
       if (this.MULTI_FILE) {
         if (errorTypes.size === 1) {
           const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorMessages[errorType], null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages[errorType] });
+          await this.dispatchErrorToast(errorMessages[errorType], null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages[errorType] });
         } else {
           let errorDesc = '';
           for (const errorType of errorTypes) {
             errorDesc += `${errorMessages[errorType]}, `;
           }
           errorDesc = errorDesc.slice(0, -2);
-          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, { code: 'verb_upload_error_validate_files', subCode: 'verb_upload_error_multiple_invalid_files', desc: errorDesc });
+          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'verb_upload_error_validate_files', subCode: 'verb_upload_error_multiple_invalid_files', desc: errorDesc });
         }
       }
       return false;
@@ -370,7 +374,11 @@ static ERROR_MAP = {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
         await this.transitionScreen.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
+        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
+          code: 'verb_upload_error_fetch_redirect_url',
+          subCode: e.status,
+          desc: e.message,
+        });
       });
   }
 
@@ -432,10 +440,17 @@ static ERROR_MAP = {
         if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
         return acc;
       }, {});
-      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false);
+      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false, true, {
+        code: 'verb_upload_error_empty_verb_limits',
+        desc: 'No verb limits found',
+      });
       return combinedLimits;
     } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false, true, {
+        code: 'verb_upload_error_loading_verb_limits',
+        subCode: e.status,
+        desc: e.message,
+      });
       return {};
     }
   }
@@ -495,7 +510,11 @@ static ERROR_MAP = {
     try {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
-        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
+        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true, true, {
+          code: 'verb_upload_error_redirect_to_app',
+          subCode: 'verb_cookie_not_set',
+          desc: 'Not all cookies found, redirecting anyway',
+        });
       }
       await this.delay(500);
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
@@ -503,7 +522,11 @@ static ERROR_MAP = {
       } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
+        code: 'verb_upload_error_redirect_to_app',
+        subCode: e.status,
+        desc: e.message,
+      });
     }
   }
 
