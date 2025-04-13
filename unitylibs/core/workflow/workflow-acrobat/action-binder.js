@@ -228,38 +228,34 @@ static ERROR_MAP = {
     await priorityLoad(parr);
   }
 
-  async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
+  async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, errorMetaData = {}) {
     errorMetaData = errorMetaData || {};
-
     const errorCode = ActionBinder.ERROR_MAP[errorType] || -1;
-
-    if (showError) {
-      const errorMessage = errorType in this.workflowCfg.errors
-        ? this.workflowCfg.errors[errorType]
-        : await (async () => {
-          const getError = (await import('../../../scripts/errors.js')).default;
-          return getError(this.workflowCfg.enabledFeatures[0], errorType);
-        })();
-      const message = lanaOnly ? '' : errorMessage || 'Unable to process the request';
-      this.block.dispatchEvent(new CustomEvent(
-        unityConfig.errorToastEvent,
-        {
-          detail: {
-            code: errorType,
-            message: `${message}`,
-            status,
-            info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
-            accountType: this.signedOut ? 'guest' : 'signed-in',
-            metaData: this.filesData,
-            errorData: {
-              code,
-              subCode: errorMetaData.subCode || '',
-              desc: errorMetaData.desc || message || 'Unhandled error'
-            }
-          },
+    const errorMessage = errorType in this.workflowCfg.errors
+      ? this.workflowCfg.errors[errorType]
+      : await (async () => {
+        const getError = (await import('../../../scripts/errors.js')).default;
+        return getError(this.workflowCfg.enabledFeatures[0], errorType);
+      })();
+    const message = lanaOnly ? '' : errorMessage || 'Unable to process the request';
+    this.block.dispatchEvent(new CustomEvent(
+      unityConfig.errorToastEvent,
+      {
+        detail: {
+          code: errorType,
+          message: `${message}`,
+          status,
+          info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
+          accountType: this.signedOut ? 'guest' : 'signed-in',
+          metaData: this.filesData,
+          errorData: {
+            code: errorCode,
+            subCode: errorMetaData.subCode || '',
+            desc: errorMetaData.desc || message || 'Unhandled error'
+          }
         },
-      ));
-    }
+      },
+    ));
   }
 
   async dispatchAnalyticsEvent(eventName, data = null) {
