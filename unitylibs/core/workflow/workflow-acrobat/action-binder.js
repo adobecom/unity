@@ -245,16 +245,16 @@ static ERROR_MAP = {
         unityConfig.errorToastEvent,
         {
           detail: {
-            errorType,
+            code: errorType,
             message: `${message}`,
             status,
             info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
             accountType: this.signedOut ? 'guest' : 'signed-in',
             metaData: this.filesData,
             errorData: {
-              errorCode,
+              code,
               subCode: errorMetaData.subCode || '',
-              description: errorMetaData.desc || message || 'Unhandled error'
+              desc: errorMetaData.desc || message || 'Unhandled error'
             }
           },
         },
