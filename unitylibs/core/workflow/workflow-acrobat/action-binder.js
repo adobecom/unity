@@ -138,6 +138,7 @@ static ERROR_MAP = {
   'verb_upload_error_empty_verb_limits': -51,
   'verb_upload_error_duplicate_asset': -52,
   'verb_upload_error_validate_files': -100,
+  'verb_upload_error_renaming_file' : -101,
   'verb_upload_error_renaming_file_single': -150,
   'verb_upload_error_max_page_count_single': -151,
   'verb_upload_error_min_page_count_single': -152,
@@ -234,8 +235,6 @@ static ERROR_MAP = {
 
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
     if (!showError) return;
-    errorMetaData = errorMetaData || {};
-    const errorCode = ActionBinder.ERROR_MAP[errorType] || -1;
     const errorMessage = errorType in this.workflowCfg.errors
       ? this.workflowCfg.errors[errorType]
       : await (async () => {
@@ -254,8 +253,8 @@ static ERROR_MAP = {
           accountType: this.signedOut ? 'guest' : 'signed-in',
           metaData: this.filesData,
           errorData: {
-            code: errorMetaData.code || errorCode,
-            subCode: errorMetaData.subCode || '',
+            code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
+            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
             desc: errorMetaData.desc || message || 'Unhandled error'
           }
         },
