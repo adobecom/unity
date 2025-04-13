@@ -137,12 +137,13 @@ static ERROR_MAP = {
   'verb_upload_error_loading_verb_limits': -50,
   'verb_upload_error_empty_verb_limits': -51,
   'verb_upload_error_duplicate_asset': -52,
-  'verb_upload_error_renaming_file_single': -100,
-  'verb_upload_error_max_page_count_single': -101,
-  'verb_upload_error_min_page_count_single': -102,
-  'verb_upload_error_unsupported_type_single': -150,
-  'verb_upload_error_empty_file_single': -151,
-  'verb_upload_error_file_too_large_single': -152,
+  'verb_upload_error_validate_files': -100,
+  'verb_upload_error_renaming_file_single': -150,
+  'verb_upload_error_max_page_count_single': -151,
+  'verb_upload_error_min_page_count_single': -152,
+  'verb_upload_error_unsupported_type_single': -170,
+  'verb_upload_error_empty_file_single': -171,
+  'verb_upload_error_file_too_large_single': -172,
   'verb_upload_error_renaming_file_multi': -200,
   'verb_upload_error_unsupported_type_multi': -201,
   'verb_upload_error_empty_file_multi': -202,
@@ -249,7 +250,7 @@ static ERROR_MAP = {
           accountType: this.signedOut ? 'guest' : 'signed-in',
           metaData: this.filesData,
           errorData: {
-            code: errorCode,
+            code: errorMetaData.code || errorCode,
             subCode: errorMetaData.subCode || '',
             desc: errorMetaData.desc || message || 'Unhandled error'
           }
@@ -313,20 +314,20 @@ static ERROR_MAP = {
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
-        else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
+        else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         fail = true;
         errorTypes.add('UNSUPPORTED_TYPE');
       }
       if (!file.size) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true);
-        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE);
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
+        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
         errorTypes.add('EMPTY_FILE');
       }
       if (file.size > this.limits.maxFileSize) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true);
-        else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE);
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
+        else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
         errorTypes.add('FILE_TOO_LARGE');
       }
@@ -336,9 +337,14 @@ static ERROR_MAP = {
       if (this.MULTI_FILE) {
         if (errorTypes.size === 1) {
           const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorMessages[errorType]);
+          await this.dispatchErrorToast(errorMessages[errorType], null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages[errorType] });
         } else {
-          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false);
+          let errorDesc = '';
+          for (const errorType of errorTypes) {
+            errorDesc += `${errorMessages[errorType]}, `;
+          }
+          errorDesc = errorDesc.slice(0, -2);
+          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, { code: 'verb_upload_error_validate_files', subCode: 'verb_upload_error_multiple_invalid_files', desc: errorDesc });
         }
       }
       return false;
