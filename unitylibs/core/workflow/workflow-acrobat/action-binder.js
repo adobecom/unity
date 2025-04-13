@@ -296,7 +296,7 @@ static ERROR_MAP = {
       return fileName;
     } catch (error) {
       console.error('Error sanitizing filename:', error);
-      await this.dispatchErrorToast('verb_upload_error_renaming_file', 500, `Error renaming file: ${rawFileName}`, false, true, {
+      await this.dispatchErrorToast('verb_upload_error_renaming_file', 500, `Error renaming file: ${rawFileName}`, false, {
         subCode: error.name,
         desc: error.message,
       });
@@ -364,7 +364,7 @@ static ERROR_MAP = {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
         await this.transitionScreen.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
+        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false);
       });
   }
 
@@ -497,7 +497,7 @@ static ERROR_MAP = {
       } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false);
     }
   }
 
@@ -509,7 +509,7 @@ static ERROR_MAP = {
     this.dispatchAnalyticsEvent('cancel', this.filesData);
     const e = new Error();
     e.message = 'Operation termination requested.';
-    e.showError = false;
+    e.showError = false;  // check if needed
     const cancelPromise = Promise.reject(e);
     this.promiseStack.unshift(cancelPromise);
   }
