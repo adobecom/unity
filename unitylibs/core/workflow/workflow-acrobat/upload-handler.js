@@ -150,13 +150,13 @@ export default class UploadHandler {
       }
     } catch (e) {
       if (this.actionBinder.MULTI_FILE) {
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError);
         return false;
       }
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false);
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError);
       this.actionBinder.operations = [];
       return false;
     }
@@ -221,7 +221,7 @@ export default class UploadHandler {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false);
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError);
       this.actionBinder.operations = [];
       return false;
     }
@@ -244,12 +244,12 @@ export default class UploadHandler {
     return validated;
   }
 
-  async dispatchGenericError(info = null) {
+  async dispatchGenericError(info = null, showError = true) {
     this.actionBinder.operations = [];
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     await this.transitionScreen.showSplashScreen();
-    await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false);
+    await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
   }
 
   getConcurrentLimits() {
@@ -278,18 +278,18 @@ export default class UploadHandler {
   async handleUploadError(e) {
     switch (e.status) {
       case 409:
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, e.message, false);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_duplicate_asset', e.status, e.message, false, e.showError);
         break;
       case 401:
-        if (e.message === 'notentitled') await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, e.message, false);
-        else await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, false);
+        if (e.message === 'notentitled') await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, e.message, false, e.showError);
+        else await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, false, e.showError);
         break;
       case 403:
-        if (e.message === 'quotaexceeded') await this.actionBinder.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.status, e.message, false);
-        else await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, e.message, false);
+        if (e.message === 'quotaexceeded') await this.actionBinder.dispatchErrorToast('verb_upload_error_max_quota_exceeded', e.status, e.message, false, e.showError);
+        else await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, e.message, false, e.showError);
         break;
       default:
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception raised when uploading file(s): ${e.message}`, false);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception raised when uploading file(s): ${e.message}`, false, e.showError);
         break;
     }
   }
@@ -457,7 +457,7 @@ export default class UploadHandler {
       this.actionBinder.redirectWithoutUpload = true;
       return;
     } catch (e) {
-      await this.dispatchGenericError(`Exception raised when uploading multiple files for a guest user; ${e.message}, Files data: ${JSON.stringify(filesData)}`);
+      await this.dispatchGenericError(`Exception raised when uploading multiple files for a guest user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
     }
   }
 
@@ -468,7 +468,7 @@ export default class UploadHandler {
       await this.transitionScreen.showSplashScreen(true);
       await this.uploadMultiFile(files, filesData);
     } catch (e) {
-      await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`);
+      await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
       return;
     }
     this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
