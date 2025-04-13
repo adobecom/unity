@@ -132,6 +132,34 @@ export default class ActionBinder {
     'sendforsignature': ['single', 'sendforsignature'],
   };
 
+static ERROR_MAP = {
+  'verb_upload_error_generic': -1,
+  'verb_upload_error_loading_verb_limits': -50,
+  'verb_upload_error_empty_verb_limits': -51,
+  'verb_upload_error_duplicate_asset': -52,
+  'verb_upload_error_renaming_file_single': -100,
+  'verb_upload_error_max_page_count_single': -101,
+  'verb_upload_error_min_page_count_single': -102,
+  'verb_upload_error_unsupported_type_single': -150,
+  'verb_upload_error_empty_file_single': -151,
+  'verb_upload_error_file_too_large_single': -152,
+  'verb_upload_error_renaming_file_multi': -200,
+  'verb_upload_error_unsupported_type_multi': -201,
+  'verb_upload_error_empty_file_multi': -202,
+  'verb_upload_error_file_too_large_multi': -203,
+  'verb_upload_error_multiple_invalid_files': -204,
+  'verb_upload_error_max_quota_exceeded': -250,
+  'verb_upload_error_no_storage_provision': -251,
+  'verb_upload_error_duplicate_operation': -252,
+  'verb_upload_exception_finalize': -300,
+  'verb_upload_exception_validate_page_count': -301,
+  'verb_upload_error_fetch_redirect_url': -350,
+  'verb_upload_error_redirect': -351,
+  'verb_upload_error_finalize': -352,
+  'verb_upload_error_chunk_upload': -353,
+  'verb_cookie_not_set': -354
+};
+
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -203,8 +231,7 @@ export default class ActionBinder {
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
     errorMetaData = errorMetaData || {};
 
-    const errorMap = (await import('./error-handler.js')).errorMap;
-    const errorCode = errorMap[errorType] || '-999';
+    const errorCode = ActionBinder.ERROR_MAP[errorType] || -1;
 
     if (showError) {
       const errorMessage = errorType in this.workflowCfg.errors
