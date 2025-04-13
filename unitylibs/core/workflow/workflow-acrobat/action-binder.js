@@ -255,7 +255,7 @@ static ERROR_MAP = {
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
-            desc: errorMetaData.desc || message || 'Unhandled error'
+            desc: errorMetaData.desc || message || undefined
           }
         },
       },
