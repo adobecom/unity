@@ -39,10 +39,10 @@ class ServiceHandler {
               if (resJson.reason?.includes(errorMessage)) error.message = errorMessage;
             });
           } catch {
-            error.message = `Failed to parse JSON response. URL: ${url}, Options: ${JSON.stringify(options)}`;
+            error.message = `Failed to parse JSON response. URL: ${url}}`;
           }
         }
-        if (!error.message) error.message = `Error fetching from service. URL: ${url}, Options: ${JSON.stringify(options)}`;
+        if (!error.message) error.message = `Error fetching from service. URL: ${url}`;
         error.status = response.status;
         throw error;
       }
@@ -51,10 +51,10 @@ class ServiceHandler {
     } catch (e) {
       if (e instanceof TypeError) {
         e.status = 0;
-        e.message = `Network error. URL: ${url}, Options: ${JSON.stringify(options)}`;
+        e.message = `Network error. URL: ${url}`;
       } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
         e.status = 504;
-        e.message = `Request timed out. URL: ${url}, Options: ${JSON.stringify(options)}`;
+        e.message = `Request timed out. URL: ${url}`;
       }
       throw e;
     }
@@ -323,18 +323,29 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
         this.transitionScreen = await showSplashScreen(
           this.splashScreenEl,
           this.initActionListeners,
           this.LOADER_LIMIT,
           this.workflowCfg
         );
+        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
       });
   }
 
   async handleRedirect(cOpts) {
-    cOpts.payload.newUser = localStorage.getItem('unity.user') ? false : true;
+    try {
+      cOpts.payload.newUser = !localStorage.getItem('unity.user');
+      const numAttempts = parseInt(localStorage.getItem(`${this.workflowCfg.enabledFeatures[0]}_attempts`), 10) || 0;
+      const trialMapping = {
+        0: '1st',
+        1: '2nd',
+      };
+      cOpts.payload.attempts = trialMapping[numAttempts] || '2+';
+    } catch (e) {
+      cOpts.payload.newUser = true;
+      cOpts.payload.attempts = '1st';
+    }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;  // why not sending analytics from here
     this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
@@ -450,19 +461,19 @@ export default class ActionBinder {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else window.location.href = this.redirectUrl;
     } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
       await this.transitionScreen.showSplashScreen();
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
     }
   }
 
   async cancelAcrobatOperation() {
-    this.dispatchAnalyticsEvent('cancel');
     this.transitionScreen = await showSplashScreen(
       this.transitionScreen.splashScreenEl,
       this.initActionListeners,
       this.LOADER_LIMIT,
       this.workflowCfg
     );
+    this.dispatchAnalyticsEvent('cancel');
     this.redirectUrl = '';
     const e = new Error();
     e.message = 'Operation termination requested.';
@@ -473,6 +484,9 @@ export default class ActionBinder {
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
     await this.handlePreloads();
+    window.addEventListener('DCUnity:RedirectReady', async (e) => {
+      await this.continueInApp();
+    });
     const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
     switch (value) {
       case 'upload':
@@ -486,7 +500,7 @@ export default class ActionBinder {
       default:
         break;
     }
-    await this.continueInApp();
+    if(this.redirectWithoutUpload) await this.continueInApp();
   }
 
   extractFiles(e) {

@@ -60,15 +60,15 @@ export default class UploadHandler {
       if (!response.ok) {
         const error = new Error(response.statusText || 'Upload request failed');
         error.status = response.status;
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes, ${storageUrl}`, true);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true);
         throw error;
       }
       return response;
     } catch (e) {
       if (e instanceof TypeError) {
-        e.message = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes, URL: ${storageUrl}`;
+        e.message = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes`;
         await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${e.message}`, true);
-      } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes, ${storageUrl}`, true);
+      } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true);
       throw e;
     }
   }
@@ -144,13 +144,13 @@ export default class UploadHandler {
           await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`);
           return false;
         }
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`);
         this.transitionScreen = await showSplashScreen(
           this.actionBinder.transitionScreen.splashScreenEl,
           this.actionBinder.initActionListeners,
           this.actionBinder.LOADER_LIMIT,
           this.actionBinder.workflowCfg
         );
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`);
         this.actionBinder.operations = [];
         return false;
       }
@@ -159,13 +159,13 @@ export default class UploadHandler {
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError);
         return false;
       }
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError);
       this.transitionScreen = await showSplashScreen(
         this.actionBinder.transitionScreen.splashScreenEl,
         this.actionBinder.initActionListeners,
         this.actionBinder.LOADER_LIMIT,
         this.actionBinder.workflowCfg
       );
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError);
       this.actionBinder.operations = [];
       return false;
     }
@@ -185,26 +185,26 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.maxNumPages
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_max_page_count');
             this.transitionScreen = await showSplashScreen(
               this.actionBinder.transitionScreen.splashScreenEl,
               this.actionBinder.initActionListeners,
               this.actionBinder.LOADER_LIMIT,
               this.actionBinder.workflowCfg
             );
+            await this.actionBinder.dispatchErrorToast('verb_upload_error_max_page_count');
             resolve(true);
             return;
           }
           if (this.actionBinder?.limits?.pageLimit?.minNumPages
             && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
           ) {
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
             this.transitionScreen = await showSplashScreen(
               this.actionBinder.transitionScreen.splashScreenEl,
               this.actionBinder.initActionListeners,
               this.actionBinder.LOADER_LIMIT,
               this.actionBinder.workflowCfg
             );
+            await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
             resolve(true);
             return;
           }
@@ -233,13 +233,13 @@ export default class UploadHandler {
         }, totalDuration);
       });
     } catch (e) {
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError);
       this.transitionScreen = await showSplashScreen(
         this.actionBinder.transitionScreen.splashScreenEl,
         this.actionBinder.initActionListeners,
         this.actionBinder.LOADER_LIMIT,
         this.actionBinder.workflowCfg
       );
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError);
       this.actionBinder.operations = [];
       return false;
     }
@@ -263,7 +263,6 @@ export default class UploadHandler {
   }
 
   async dispatchGenericError(info = null, showError = true) {
-    await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
     this.actionBinder.operations = [];
     this.transitionScreen = await showSplashScreen(
       this.actionBinder.transitionScreen.splashScreenEl,
@@ -271,6 +270,7 @@ export default class UploadHandler {
       this.actionBinder.LOADER_LIMIT,
       this.actionBinder.workflowCfg
     );
+    await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, info, false, showError);
   }
 
   getConcurrentLimits() {
@@ -367,6 +367,8 @@ export default class UploadHandler {
   }
 
   async singleFileGuestUpload(file, fileData) {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       this.transitionScreen = await showSplashScreen(
         this.actionBinder.transitionScreen.splashScreenEl,
@@ -396,6 +398,8 @@ export default class UploadHandler {
   }
 
   async singleFileUserUpload(file, fileData) {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       this.transitionScreen = await showSplashScreen(
         this.actionBinder.transitionScreen.splashScreenEl,
