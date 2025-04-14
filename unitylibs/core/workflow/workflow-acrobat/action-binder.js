@@ -322,12 +322,7 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        this.transitionScreen = await showSplashScreen(
-          this.splashScreenEl,
-          this.initActionListeners,
-          this.LOADER_LIMIT,
-          this.workflowCfg
-        );
+        this.transitionScreen = await showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
       });
   }
@@ -466,12 +461,7 @@ export default class ActionBinder {
   }
 
   async cancelAcrobatOperation() {
-    this.transitionScreen = await showSplashScreen(
-      this.transitionScreen.splashScreenEl,
-      this.initActionListeners,
-      this.LOADER_LIMIT,
-      this.workflowCfg
-    );
+    this.transitionScreen = await showSplashScreen();
     this.redirectUrl = '';
     this.dispatchAnalyticsEvent('cancel');
     const e = new Error();
@@ -559,10 +549,15 @@ export default class ActionBinder {
   }
 }
 
-async function showSplashScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, displayOn = false) {
+async function showSplashScreen(displayOn = false) {
   try {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    const transitionScreen = new TransitionScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg);
+    const transitionScreen = new TransitionScreen(
+      this.transitionScreen.splashScreenEl,
+      this.initActionListeners,
+      this.LOADER_LIMIT,
+      this.workflowCfg
+    );
     await transitionScreen.showSplashScreen(displayOn);
     return transitionScreen;
   } catch (error) {
