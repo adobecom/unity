@@ -12,7 +12,6 @@ import {
   loadImg,
   getHeaders,
 } from '../../../scripts/utils.js';
-import { showSplashScreen } from '../../../utils/splashScreenUtils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
@@ -557,5 +556,16 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.delayedSplashLoader();
     }
+  }
+}
+
+async function showSplashScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, displayOn = false) {
+  try {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    const transitionScreen = new TransitionScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg);
+    await transitionScreen.showSplashScreen(displayOn);
+    return transitionScreen;
+  } catch (error) {
+    console.error('Error showing splash screen:', error);
   }
 }

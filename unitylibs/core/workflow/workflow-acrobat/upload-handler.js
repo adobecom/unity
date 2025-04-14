@@ -3,7 +3,6 @@
 /* eslint-disable no-restricted-syntax */
 
 import { unityConfig, getUnityLibs } from '../../../scripts/utils.js';
-import { showSplashScreen } from '../../../utils/splashScreenUtils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -523,5 +522,16 @@ export default class UploadHandler {
       return;
     }
     this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
+  }
+}
+
+async function showSplashScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, displayOn = false) {
+  try {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    const transitionScreen = new TransitionScreen(splashScreenEl, initActionListeners, loaderLimit, workflowCfg);
+    await transitionScreen.showSplashScreen(displayOn);
+    return transitionScreen;
+  } catch (error) {
+    console.error('Error showing splash screen:', error);
   }
 }
