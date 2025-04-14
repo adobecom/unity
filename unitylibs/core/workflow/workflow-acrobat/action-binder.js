@@ -240,6 +240,7 @@ static ERROR_MAP = {
         return getError(this.workflowCfg.enabledFeatures[0], errorType);
       })();
     const message = lanaOnly ? '' : errorMessage || 'Unable to process the request';
+    const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
     this.block.dispatchEvent(new CustomEvent(
       unityConfig.errorToastEvent,
       {
@@ -254,14 +255,16 @@ static ERROR_MAP = {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
             desc: errorMetaData.desc || message || undefined
-          }
+          },
+          sendToSplunk,
         },
       },
     ));
   }
 
   async dispatchAnalyticsEvent(eventName, data = null) {
-    const detail = { event: eventName, ...(data && { data }) };
+    const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
+    const detail = { event: eventName, ...(data && { data }) , sendToSplunk };
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
