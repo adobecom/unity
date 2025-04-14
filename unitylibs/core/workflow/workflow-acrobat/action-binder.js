@@ -347,7 +347,7 @@ export default class ActionBinder {
       cOpts.payload.attempts = '1st';
     }
     await this.getRedirectUrl(cOpts);
-    if (!this.redirectUrl) return false;  // why not sending analytics from here
+    if (!this.redirectUrl) return false;
     this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
     return true;
   }
@@ -473,8 +473,8 @@ export default class ActionBinder {
       this.LOADER_LIMIT,
       this.workflowCfg
     );
-    this.dispatchAnalyticsEvent('cancel');
     this.redirectUrl = '';
+    this.dispatchAnalyticsEvent('cancel');
     const e = new Error();
     e.message = 'Operation termination requested.';
     e.showError = false;

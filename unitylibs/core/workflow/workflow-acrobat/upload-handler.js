@@ -111,10 +111,10 @@ export default class UploadHandler {
         const end = Math.min(start + assetData.blocksize, blobData.size);
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
-        return async () => {
+        return () => {
           if (fileUploadFailed) return Promise.resolve();
           try {
-            return await this.uploadFileToUnity(url.href, chunk, fileType, assetData.id);
+            return this.uploadFileToUnity(url.href, chunk, fileType, assetData.id);
           } catch {
             failedFiles.add(fileIndex);
             fileUploadFailed = true;
@@ -352,7 +352,7 @@ export default class UploadHandler {
       [file.type],
       maxConcurrentChunks,
     );
-    if (uploadResult.size === 1) {  // what if atleast one chunk fails
+    if (uploadResult.size === 1) {
       await this.dispatchGenericError(`One or more chunks failed to upload for the single file: ${assetData.id}, ${file.size} bytes, ${file.type}`);
       return;
     }
@@ -405,7 +405,8 @@ export default class UploadHandler {
         this.actionBinder.transitionScreen.splashScreenEl,
         this.actionBinder.initActionListeners,
         this.actionBinder.LOADER_LIMIT,
-        this.actionBinder.workflowCfg
+        this.actionBinder.workflowCfg,
+        true
       );
       await this.uploadSingleFile(file, fileData, this.isNonPdf([file]));
     } catch (e) {
@@ -492,7 +493,8 @@ export default class UploadHandler {
         this.actionBinder.transitionScreen.splashScreenEl,
         this.actionBinder.initActionListeners,
         this.actionBinder.LOADER_LIMIT,
-        this.actionBinder.workflowCfg
+        this.actionBinder.workflowCfg,
+        true
       );
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
@@ -512,7 +514,8 @@ export default class UploadHandler {
         this.actionBinder.transitionScreen.splashScreenEl,
         this.actionBinder.initActionListeners,
         this.actionBinder.LOADER_LIMIT,
-        this.actionBinder.workflowCfg
+        this.actionBinder.workflowCfg,
+        true
       );
       await this.uploadMultiFile(files, filesData);
     } catch (e) {
