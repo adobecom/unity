@@ -148,6 +148,7 @@ export default class ActionBinder {
     this.promiseStack = [];
     this.signedOut = this.isSignedOut();
     this.redirectUrl = '';
+    this.filesData = {};
     this.redirectWithoutUpload = false;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
@@ -329,7 +330,7 @@ export default class ActionBinder {
       });
   }
 
-  async handleRedirect(cOpts) {
+  async handleRedirect(cOpts, filesData) {
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
       const numAttempts = parseInt(localStorage.getItem(`${this.workflowCfg.enabledFeatures[0]}_attempts`), 10) || 0;
@@ -344,29 +345,29 @@ export default class ActionBinder {
     }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
-    this.dispatchAnalyticsEvent('redirectUrl', this.redirectUrl);
+    this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
     return true;
   }
 
   async handleSingleFileUpload(file, eventName) {  
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
-    const fileData = { type: newFile.type, size: newFile.size, count: 1 };
-    this.dispatchAnalyticsEvent(eventName, fileData);
+    this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
     if (!await this.validateFiles([newFile])) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
-    else await this.uploadHandler.singleFileUserUpload(newFile, fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, this.filesData);
+    else await this.uploadHandler.singleFileUserUpload(newFile, this.filesData);
   }
 
   async handleMultiFileUpload(files, totalFileSize, eventName) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
-    this.dispatchAnalyticsEvent(eventName, filesData);
-    this.dispatchAnalyticsEvent('multifile', filesData);
+    this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    this.dispatchAnalyticsEvent('multifile', this.filesData);
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
@@ -374,8 +375,8 @@ export default class ActionBinder {
     if (!await this.validateFiles(files)) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
+    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, this.filesData);
   }
 
   async loadVerbLimits(workflowName, keys) {
@@ -467,7 +468,7 @@ export default class ActionBinder {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
-    this.dispatchAnalyticsEvent('cancel');
+    this.dispatchAnalyticsEvent('cancel', this.filesData);
     const e = new Error();
     e.message = 'Operation termination requested.';
     e.showError = false;

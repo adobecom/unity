@@ -322,9 +322,10 @@ export default class UploadHandler {
         ...(isNonPdf ? { feedback: 'nonpdf' } : {}),
       },
     };
-    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts);
+    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
     if (!redirectSuccess) return;
-    this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
+    const errorData = {code: '-401', subCode: '106', desc: "Sample test message"}
+    this.actionBinder.dispatchAnalyticsEvent('uploading', {...fileData, errorData});
     const uploadResult = await this.chunkPdf(
       [assetData],
       [blobData],
@@ -352,7 +353,7 @@ export default class UploadHandler {
       await this.transitionScreen.showSplashScreen(true);
       if (this.isNonPdf([file])) {
         await this.actionBinder.delay(3000);
-        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'));
+        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
         if (!redirectSuccess) return;
         this.actionBinder.redirectWithoutUpload = true;
         return;
@@ -418,7 +419,7 @@ export default class UploadHandler {
         workflowId,
       },
     };
-    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts);
+    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
     if (!redirectSuccess) return;
     this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
     const uploadResult = await this.chunkPdf(
@@ -452,7 +453,7 @@ export default class UploadHandler {
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
-      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('multifile'));
+      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('multifile'), filesData);
       if (!redirectSuccess) return;
       this.actionBinder.redirectWithoutUpload = true;
       return;
