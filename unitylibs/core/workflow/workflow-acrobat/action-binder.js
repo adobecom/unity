@@ -132,6 +132,37 @@ export default class ActionBinder {
     'sendforsignature': ['single', 'sendforsignature'],
   };
 
+static ERROR_MAP = {
+  'verb_upload_error_generic': -1,
+  'verb_upload_error_loading_verb_limits': -50,
+  'verb_upload_error_empty_verb_limits': -51,
+  'verb_upload_error_duplicate_asset': -52,
+  'verb_upload_error_validate_files': -100,
+  'verb_upload_error_renaming_file' : -101,
+  'verb_upload_error_max_page_count_single': -150,
+  'verb_upload_error_min_page_count_single': -151,
+  'verb_upload_error_verify_page_count': -152,
+  'verb_upload_error_unsupported_type_single': -170,
+  'verb_upload_error_empty_file_single': -171,
+  'verb_upload_error_file_too_large_single': -172,
+  'verb_upload_error_unsupported_type_multi': -200,
+  'verb_upload_error_empty_file_multi': -201,
+  'verb_upload_error_file_too_large_multi': -202,
+  'verb_upload_error_multiple_invalid_files': -203,
+  'verb_upload_error_max_quota_exceeded': -250,
+  'verb_upload_error_no_storage_provision': -251,
+  'verb_upload_error_duplicate_operation': -252,
+  'verb_upload_exception_finalize': -300,
+  'verb_upload_exception_validate_page_count': -301,
+  'verb_upload_error_fetch_redirect_url': -350,
+  'verb_upload_error_redirect': -351,
+  'verb_upload_error_finalize': -352,
+  'verb_upload_error_chunk_upload': -353,
+  'verb_cookie_not_set': -354,
+  'verb_upload_error_redirect_to_app': -900,
+  'verb_upload_error_finalize_asset': -901
+};
+
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -149,6 +180,7 @@ export default class ActionBinder {
     this.signedOut = this.isSignedOut();
     this.redirectUrl = '';
     this.filesData = {};
+    this.errorData = {};
     this.redirectWithoutUpload = false;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
@@ -199,28 +231,33 @@ export default class ActionBinder {
     await priorityLoad(parr);
   }
 
-  async dispatchErrorToast(code, status, info = null, lanaOnly = false, showError = true) {
-    if (showError) {
-      const errorMessage = code in this.workflowCfg.errors
-        ? this.workflowCfg.errors[code]
-        : await (async () => {
-          const getError = (await import('../../../scripts/errors.js')).default;
-          return getError(this.workflowCfg.enabledFeatures[0], code);
-        })();
-      const message = lanaOnly ? '' : errorMessage || 'Unable to process the request';
-      this.block.dispatchEvent(new CustomEvent(
-        unityConfig.errorToastEvent,
-        {
-          detail: {
-            code,
-            message: `${message}`,
-            status,
-            info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
-            accountType: this.signedOut ? 'guest' : 'signed-in',
-          },
+  async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
+    if (!showError) return;
+    const errorMessage = errorType in this.workflowCfg.errors
+      ? this.workflowCfg.errors[errorType]
+      : await (async () => {
+        const getError = (await import('../../../scripts/errors.js')).default;
+        return getError(this.workflowCfg.enabledFeatures[0], errorType);
+      })();
+    const message = lanaOnly ? '' : errorMessage || 'Unable to process the request';
+    this.block.dispatchEvent(new CustomEvent(
+      unityConfig.errorToastEvent,
+      {
+        detail: {
+          code: errorType,
+          message: `${message}`,
+          status,
+          info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
+          accountType: this.signedOut ? 'guest' : 'signed-in',
+          metaData: this.filesData,
+          errorData: {
+            code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
+            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
+            desc: errorMetaData.desc || message || undefined
+          }
         },
-      ));
-    }
+      },
+    ));
   }
 
   async dispatchAnalyticsEvent(eventName, data = null) {
@@ -261,7 +298,10 @@ export default class ActionBinder {
       return fileName;
     } catch (error) {
       console.error('Error sanitizing filename:', error);
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Error renaming file: ${rawFileName}`, false);
+      await this.dispatchErrorToast('verb_upload_error_renaming_file', 500, `Error renaming file: ${rawFileName}`, false, true, {
+        subCode: error.name,
+        desc: error.message,
+      });
       return '---';
     }
   }
@@ -275,20 +315,20 @@ export default class ActionBinder {
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true);
-        else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE);
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
+        else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, null, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         fail = true;
         errorTypes.add('UNSUPPORTED_TYPE');
       }
       if (!file.size) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true);
-        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE);
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
+        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
         errorTypes.add('EMPTY_FILE');
       }
       if (file.size > this.limits.maxFileSize) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true);
-        else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE);
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
+        else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
         errorTypes.add('FILE_TOO_LARGE');
       }
@@ -298,9 +338,14 @@ export default class ActionBinder {
       if (this.MULTI_FILE) {
         if (errorTypes.size === 1) {
           const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorMessages[errorType]);
+          await this.dispatchErrorToast(errorMessages[errorType], null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages[errorType] });
         } else {
-          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false);
+          let errorDesc = '';
+          for (const errorType of errorTypes) {
+            errorDesc += `${errorMessages[errorType]}, `;
+          }
+          errorDesc = errorDesc.slice(0, -2);
+          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'verb_upload_error_validate_files', subCode: 'verb_upload_error_multiple_invalid_files', desc: errorDesc });
         }
       }
       return false;
@@ -326,7 +371,11 @@ export default class ActionBinder {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
         await this.transitionScreen.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError);
+        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
+          code: 'verb_upload_error_fetch_redirect_url',
+          subCode: e.status,
+          desc: e.message,
+        });
       });
   }
 
@@ -388,10 +437,17 @@ export default class ActionBinder {
         if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
         return acc;
       }, {});
-      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false);
+      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false, true, {
+        code: 'verb_upload_error_empty_verb_limits',
+        desc: 'No verb limits found',
+      });
       return combinedLimits;
     } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false, true, {
+        code: 'verb_upload_error_loading_verb_limits',
+        subCode: e.status,
+        desc: e.message,
+      });
       return {};
     }
   }
@@ -451,7 +507,11 @@ export default class ActionBinder {
     try {
       await this.waitForCookie(2000);
       if (!this.checkCookie()) {
-        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true);
+        await this.dispatchErrorToast('verb_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true, true, {
+          code: 'verb_upload_error_redirect_to_app',
+          subCode: 'verb_cookie_not_set',
+          desc: 'Not all cookies found, redirecting anyway',
+        });
       }
       await this.delay(500);
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
@@ -459,7 +519,11 @@ export default class ActionBinder {
       } else window.location.href = this.redirectUrl;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError);
+      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
+        code: 'verb_upload_error_redirect_to_app',
+        subCode: e.status,
+        desc: e.message,
+      });
     }
   }
 
