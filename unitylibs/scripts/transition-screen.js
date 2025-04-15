@@ -3,7 +3,7 @@ import {
   localizeLink,
   loadImg,
   loadArea,
-} from '../scripts/utils.js';
+} from './utils.js';
 
 export default class TransitionScreen {
   constructor(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, isDesktop = false) {
@@ -128,10 +128,13 @@ export default class TransitionScreen {
   }
 
   updateForDesktop() {
-    const h2Element = this.splashScreenEl.querySelector('h:nth-of-type(2)');
-    const transitionText = h2Element.innerHTML.split('Photoshop');
-    const photoshopPart = transitionText.find((part) => part.includes('Photoshop'));
-    if (photoshopPart) h2Element.innerText = photoshopPart;
+    const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    const secondHeading = headingElements[1];
+    if (secondHeading) {
+      const transitionText = secondHeading.innerHTML.split('Photoshop');
+      const photoshopPart = transitionText.find((part) => part.includes('Photoshop'));
+      if (photoshopPart) secondHeading.innerText = photoshopPart;
+    }
   }
 
   async showSplashScreen(displayOn = false) {
