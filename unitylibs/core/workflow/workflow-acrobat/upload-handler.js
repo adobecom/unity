@@ -374,8 +374,6 @@ export default class UploadHandler {
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
     if (!redirectSuccess) return;
-    const errorData = {code: '-401', subCode: '106', desc: "Sample test message"}
-    this.actionBinder.dispatchAnalyticsEvent('uploading', {...fileData, errorData});
     const uploadResult = await this.chunkPdf(
       [assetData],
       [blobData],
