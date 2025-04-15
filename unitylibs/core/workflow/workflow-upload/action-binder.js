@@ -12,6 +12,7 @@ import {
   getLocale,
   getLibs,
   getHeaders,
+  sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
@@ -96,7 +97,7 @@ export default class ActionBinder {
 
   async cancelUploadOperation() {
     try {
-      document.querySelector('a.con-button[href*="#_cancel"]').setAttribute('daa-ll', 'cancel');
+      sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.showSplashScreen();
@@ -277,6 +278,7 @@ export default class ActionBinder {
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
+    sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen(true);
@@ -314,13 +316,15 @@ export default class ActionBinder {
         });
       },
       DIV: (el, key) => {
-        el.addEventListener('dragover', this.preventDefault);
-        el.addEventListener('dragenter', this.preventDefault);
         el.addEventListener('drop', async (e) => {
+          sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
           e.preventDefault();
           e.stopPropagation();
           const files = this.extractFiles(e);
           await this.photoshopActionMaps(actMap[key], files);
+        });
+        el.addEventListener('click', async (e) => {
+          sendAnalyticsEvent(new CustomEvent('Click Drag and drop|UnityWidget'));
         });
       },
       INPUT: (el, key) => {
@@ -356,6 +360,16 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.delayedSplashLoader();
     }
+    window.addEventListener('pageshow', (event) => {
+      const navigationEntries = window.performance.getEntriesByType('navigation');
+      const historyTraversal = event.persisted
+        || (typeof window.performance !== 'undefined'
+          && navigationEntries.length > 0
+          && navigationEntries[0].type === 'back_forward');
+      if (historyTraversal) {
+        window.location.reload();
+      }
+    });
   }
 
   preventDefault(e) {
