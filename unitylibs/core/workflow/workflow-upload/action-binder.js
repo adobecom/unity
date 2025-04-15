@@ -12,7 +12,6 @@ import {
   getLocale,
   getLibs,
   getHeaders,
-  sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
@@ -34,13 +33,14 @@ class ServiceHandler {
       if (!failOnError) return response;
       return await response.json();
     } catch (err) {
-      this.showErrorToast(errorCallbackOptions);
+      this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
       throw new Error('Operation failed');
     }
   }
 
-  showErrorToast(errorCallbackOptions) {
+  showErrorToast(errorCallbackOptions, error, lanaOptions) {
     if (!errorCallbackOptions.errorToastEl) return;
+    const errorUpdate = error || '';
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
@@ -53,6 +53,7 @@ class ServiceHandler {
       alertText.innerText = msg;
       errorToast.classList.add('show');
     });
+    window.lana?.log(`Message: ${msg}, Error: ${errorUpdate}`, lanaOptions);
   }
 }
 
@@ -72,6 +73,7 @@ export default class ActionBinder {
     this.limits = workflowCfg.targetCfg.limits;
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
+    this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
   }
 
   getPsApiConfig() {
@@ -94,7 +96,7 @@ export default class ActionBinder {
 
   async cancelUploadOperation() {
     try {
-      sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
+      document.querySelector('a.con-button[href*="#_cancel"]').setAttribute('daa-ll', 'cancel');
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.showSplashScreen();
@@ -103,6 +105,7 @@ export default class ActionBinder {
       this.promiseStack.unshift(cancelPromise);
     } catch (error) {
       await this.transitionScreen?.showSplashScreen();
+      window.lana?.log(`Message: Error cancelling upload operation, Error: ${error}`, this.lanaOptions);
       throw error;
     }
   }
@@ -127,6 +130,7 @@ export default class ActionBinder {
     };
     const response = await fetch(storageUrl, uploadOptions);
     if (response.status !== 200) {
+      window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
       throw new Error('Failed to upload image to Unity');
     }
     return id;
@@ -161,7 +165,7 @@ export default class ActionBinder {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.showSplashScreen();
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' });
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
     }
   }
@@ -171,7 +175,7 @@ export default class ActionBinder {
       const [alertImg, closeImg] = await Promise.all([
         fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
         fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
-      ]);   
+      ]);
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
       this.canvasArea.forEach((element) => {
         const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
@@ -196,7 +200,7 @@ export default class ActionBinder {
       });
       return this.canvasArea[0]?.querySelector('.alert-holder');
     } catch (e) {
-      console.error('Error creating error toast', e);
+      window.lana?.log(`Message: Error creating error toast, Error: ${e}`, this.lanaOptions);
       return null;
     }
   }
@@ -230,7 +234,7 @@ export default class ActionBinder {
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' });
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
     }
   }
@@ -242,7 +246,7 @@ export default class ActionBinder {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
         if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
-          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' });
+          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions);
           reject(new Error('Unable to process the file type!'));
         } else {
           resolve({ width, height });
@@ -260,20 +264,19 @@ export default class ActionBinder {
     if (!files) return;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' });
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' }, '', this.lanaOptions);
       return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' }, '', this.lanaOptions);
       return;
     }
     if (this.limits.maxFileSize < file.size) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' });
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' }, '', this.lanaOptions);
       return;
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
-    sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen(true);
@@ -311,15 +314,13 @@ export default class ActionBinder {
         });
       },
       DIV: (el, key) => {
+        el.addEventListener('dragover', this.preventDefault);
+        el.addEventListener('dragenter', this.preventDefault);
         el.addEventListener('drop', async (e) => {
-          sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
           e.preventDefault();
           e.stopPropagation();
           const files = this.extractFiles(e);
           await this.photoshopActionMaps(actMap[key], files);
-        });
-        el.addEventListener('click', async (e) => {
-          sendAnalyticsEvent(new CustomEvent('Click Drag and drop|UnityWidget'));
         });
       },
       INPUT: (el, key) => {
@@ -355,16 +356,6 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       await this.transitionScreen.delayedSplashLoader();
     }
-    window.addEventListener('pageshow', (event) => {
-      const navigationEntries = window.performance.getEntriesByType('navigation');
-      const historyTraversal = event.persisted
-        || (typeof window.performance !== 'undefined'
-          && navigationEntries.length > 0
-          && navigationEntries[0].type === 'back_forward');
-      if (historyTraversal) {
-        window.location.reload();
-      }
-    });
   }
 
   preventDefault(e) {
