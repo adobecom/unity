@@ -6,13 +6,14 @@ import {
 } from '../scripts/utils.js';
 
 export default class TransitionScreen {
-  constructor(splashScreenEl, initActionListeners, loaderLimit, workflowCfg) {
+  constructor(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, isDesktop = false) {
     this.splashScreenEl = splashScreenEl;
     this.initActionListeners = initActionListeners;
     this.LOADER_LIMIT = loaderLimit;
     this.workflowCfg = workflowCfg;
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
+    this.isDesktop = isDesktop;
   }
 
   updateProgressBar(layer, percentage) {
@@ -40,10 +41,12 @@ export default class TransitionScreen {
     delay = Math.min(delay + 100, 2000);
     i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (!initialize && progressBar?.getAttribute('value') >= this.LOADER_LIMIT) return;
+    const currentValue = parseInt(progressBar?.getAttribute('value'), 10);
+    if (currentValue === 100 || (!initialize && currentValue >= this.LOADER_LIMIT)) return;
     if (initialize) this.updateProgressBar(s, 0);
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
+      if (v === 100) return;
       this.updateProgressBar(s, v + i);
       this.progressBarHandler(s, delay, i);
     }, delay);
@@ -124,11 +127,19 @@ export default class TransitionScreen {
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
   }
 
+  updateForDesktop() {
+    const h2Element = this.splashScreenEl.querySelector('h:nth-of-type(2)');
+    const transitionText = h2Element.innerHTML.split('Photoshop');
+    const photoshopPart = transitionText.find((part) => part.includes('Photoshop'));
+    if (photoshopPart) h2Element.innerText = photoshopPart;
+  }
+
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl && !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
+      if (this.workflowCfg.productName.toLowerCase() === 'photoshop' && this.isDesktop) this.updateForDesktop();
       this.splashScreenEl.classList.remove('decorate');
     }
     this.splashVisibilityController(displayOn);
