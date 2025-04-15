@@ -544,6 +544,7 @@ static ERROR_MAP = {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    this.dispatchAnalyticsEvent('upload-start');
     await this.handlePreloads();
     window.addEventListener('DCUnity:RedirectReady', async (e) => {
       await this.continueInApp();
