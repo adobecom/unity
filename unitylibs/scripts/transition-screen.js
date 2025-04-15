@@ -131,9 +131,11 @@ export default class TransitionScreen {
     const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
     const secondHeading = headingElements[1];
     if (secondHeading) {
-      const transitionText = secondHeading.innerHTML.split('Photoshop');
-      const photoshopPart = transitionText.find((part) => part.includes('Photoshop'));
-      if (photoshopPart) secondHeading.innerText = photoshopPart;
+      const text = secondHeading.innerHTML;
+      const photoshopIndex = text.indexOf('Photoshop');
+      if (photoshopIndex !== -1) {
+        secondHeading.innerText = text.substring(photoshopIndex);
+      }
     }
   }
 
