@@ -374,6 +374,7 @@ export default class UploadHandler {
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
     if (!redirectSuccess) return;
+    this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
     const uploadResult = await this.chunkPdf(
       [assetData],
       [blobData],
