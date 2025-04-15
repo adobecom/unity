@@ -134,7 +134,8 @@ export default class TransitionScreen {
       const text = secondHeading.innerHTML;
       const photoshopIndex = text.indexOf('Photoshop');
       if (photoshopIndex !== -1) {
-        secondHeading.innerText = text.substring(photoshopIndex);
+        const endIndex = photoshopIndex + 'Photoshop'.length;
+        secondHeading.innerText = text.substring(0, endIndex);
       }
     }
   }
