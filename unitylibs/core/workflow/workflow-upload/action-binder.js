@@ -98,7 +98,7 @@ export default class ActionBinder {
     try {
       document.querySelector('a.con-button[href*="#_cancel"]').setAttribute('daa-ll', 'cancel');
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
       const cancelPromise = Promise.reject(e);
@@ -163,7 +163,7 @@ export default class ActionBinder {
       return assetId;
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
@@ -206,6 +206,7 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId) {
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling.textContent;
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
@@ -213,12 +214,14 @@ export default class ActionBinder {
         locale: getLocale(),
         workflow: this.workflowCfg.supportedFeatures.values().next().value,
         referer: window.location.href,
+        cgen,
+        desktop: this.desktop,
       },
     };
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.LOADER_LIMIT = 100;
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       const servicePromise = this.serviceHandler.postCallToService(
         this.psApiConfig.connectorApiEndPoint,
@@ -277,8 +280,10 @@ export default class ActionBinder {
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
+    const { default: isDesktop } = await import(`${getUnityLibs()}/scripts/device-detection.js`);
+    this.desktop = isDesktop();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     const assetId = await this.uploadAsset(file);
     await this.continueInApp(assetId);
@@ -353,7 +358,7 @@ export default class ActionBinder {
     }
     if (b === this.block) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.delayedSplashLoader();
     }
   }
