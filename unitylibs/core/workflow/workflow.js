@@ -176,7 +176,6 @@ class WfInitiator {
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
-    this.limits = this.targetConfig.limits;
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     await new ActionBinder(
       this.el,
@@ -184,7 +183,6 @@ class WfInitiator {
       this.targetBlock,
       this.interactiveArea,
       this.actionMap,
-      this.limits,
     ).initActionListeners();
   }
 
@@ -249,6 +247,9 @@ class WfInitiator {
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
+    if (!targetCfg.renderWidget && block.classList.contains('upload')) {
+      return block.querySelectorAll(selector);
+    }
     if (!targetCfg.renderWidget) return null;
     asset.insertAdjacentElement('beforebegin', iArea);
     iArea.append(asset);
@@ -259,6 +260,13 @@ class WfInitiator {
 
   getWorkFlowInformation() {
     let wfName = '';
+    let product = '';
+    let feature = '';
+    [...this.el.classList].forEach((cn) => {
+      if (cn.match('workflow-')) wfName = cn;
+      if (cn.match('product-')) product = cn.replace('product-', '');
+      if (cn.match('feature-')) feature = cn.replace('feature-', '');
+    });
     const workflowCfg = {
       'workflow-photoshop': {
         productName: 'Photoshop',
@@ -273,6 +281,11 @@ class WfInitiator {
           'number-pages',
           'split-pdf',
           'crop-pages',
+          'delete-pages',
+          'insert-pdf',
+          'extract-pages',
+          'reorder-pages',
+          'sendforsignature'
         ]),
       },
       'workflow-ai': {
@@ -280,8 +293,11 @@ class WfInitiator {
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'surpriseMe', 'generate']),
       },
+      'workflow-upload': {
+        productName: product,
+        sfList: new Set([feature]),
+      },
     };
-    [...this.el.classList].forEach((cn) => { if (cn.match('workflow-')) wfName = cn; });
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
       name: wfName,
@@ -296,13 +312,18 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget');
+    if (verbWidget) {
+      const verb = [...verbWidget.classList].find(cn => supportedFeatures.has(cn));
+      if (verb) this.workflowCfg.enabledFeatures.push(verb)
+    }
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
       if (!cfName) return;
       const fn = cfName.trim().replace('icon-', '');
       if (supportedFeatures.has(fn)) {
-        this.workflowCfg.enabledFeatures.push(fn);
+        if(!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
