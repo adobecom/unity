@@ -119,17 +119,16 @@ export default class ActionBinder {
   };
 
   static LIMITS_MAP = {
-    fillsign: ['single', 'fillsign'],
-    'compress-pdf': ['hybrid'],
+    fillsign: ['single','page-limit-100'],
+    'compress-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-2-gb'],
     'add-comment': ['single'],
     'number-pages': ['single'],
-    'split-pdf': ['single', 'split-pdf'],
+    'split-pdf': ['single', 'max-filesize-1-gb','split-pdf-page-limits','signedInallowedFileTypes'],
     'crop-pages': ['single'],
     'delete-pages': ['single', 'page-limit-500'],
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'sendforsignature': ['single', 'sendforsignature'],
     'pdf-to-word': ['single', 'pdf-to-word'],
     'pdf-to-excel': ['single', 'pdf-to-excel'],
     'pdf-to-ppt': ['single', 'pdf-to-ppt'],
@@ -139,6 +138,7 @@ export default class ActionBinder {
     'ppt-to-pdf': ['single', 'ppt-to-pdf'],
     'jpg-to-pdf': ['single', 'jpg-to-pdf'],
     'png-to-pdf': ['single', 'png-to-pdf'],
+    'sendforsignature': ['single', 'max-filesize-500-mb', 'page-limit-25']
   };
 
 static ERROR_MAP = {
