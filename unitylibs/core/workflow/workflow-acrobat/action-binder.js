@@ -292,7 +292,10 @@ export default class ActionBinder {
         fail = true;
         errorTypes.add('FILE_TOO_LARGE');
       }
-      if (!fail) allFilesFailed = false;
+      if (!fail) {
+        allFilesFailed = false;
+        validFiles.push(file);
+      }
     }
     if (allFilesFailed) {
       if (this.MULTI_FILE) {
@@ -349,12 +352,14 @@ export default class ActionBinder {
     return true;
   }
 
-  async handleSingleFileUpload(file, eventName) {  
-    const sanitizedFileName = await this.sanitizeFileName(file.name); 
-    const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
-    const fileData = { type: newFile.type, size: newFile.size, count: 1 };
-    this.dispatchAnalyticsEvent(eventName, fileData);
-    if (!await this.validateFiles([newFile])) return;
+  async handleSingleFileUpload(file, eventName, skipValidation=false) {  
+    if(!skipValidation){
+      const sanitizedFileName = await this.sanitizeFileName(file.name); 
+      const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+      const fileData = { type: newFile.type, size: newFile.size, count: 1 };
+      this.dispatchAnalyticsEvent(eventName, fileData);
+      if (!(await this.validateFiles([newFile])).isValid) return;
+    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, fileData);
@@ -374,9 +379,9 @@ export default class ActionBinder {
     }));
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
-    const verbWithoutFallback = ['compress-pdff'];
-    if (validFiles.length === 1 && !verbWithoutFallback.includes(this.workflowCfg.name)) {
-      await this.handleSingleFileUpload(validFiles[0], eventName);
+    const verbWithoutFallback = ['compress-pdf'];
+    if (validFiles.length === 1 && !verbWithoutFallback.includes(this.workflowCfg.enabledFeatures[0])) {
+      await this.handleSingleFileUpload(validFiles[0], eventName, true);
       return;
     }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
