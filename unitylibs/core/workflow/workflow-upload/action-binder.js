@@ -75,6 +75,7 @@ export default class ActionBinder {
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
+    this.desktop = false;
   }
 
   getPsApiConfig() {
@@ -99,12 +100,13 @@ export default class ActionBinder {
     try {
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
       const cancelPromise = Promise.reject(e);
       this.promiseStack.unshift(cancelPromise);
     } catch (error) {
+      sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
       await this.transitionScreen?.showSplashScreen();
       window.lana?.log(`Message: Error cancelling upload operation, Error: ${error}`, this.lanaOptions);
       throw error;
@@ -163,8 +165,9 @@ export default class ActionBinder {
       this.scanImgForSafety(assetId);
       return assetId;
     } catch (e) {
+      sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
@@ -207,6 +210,7 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId) {
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling.textContent;
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
@@ -214,12 +218,14 @@ export default class ActionBinder {
         locale: getLocale(),
         workflow: this.workflowCfg.supportedFeatures.values().next().value,
         referer: window.location.href,
+        cgen,
+        desktopDevice: this.desktop,
       },
     };
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.LOADER_LIMIT = 100;
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       const servicePromise = this.serviceHandler.postCallToService(
         this.psApiConfig.connectorApiEndPoint,
@@ -234,6 +240,7 @@ export default class ActionBinder {
       window.location.href = response.url;
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
+      sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       throw e;
@@ -247,6 +254,7 @@ export default class ActionBinder {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
         if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
+          sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
           this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions);
           reject(new Error('Unable to process the file type!'));
         } else {
@@ -265,22 +273,27 @@ export default class ActionBinder {
     if (!files) return;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
+      sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' }, '', this.lanaOptions);
       return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
+      sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' }, '', this.lanaOptions);
       return;
     }
     if (this.limits.maxFileSize < file.size) {
+      sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' }, '', this.lanaOptions);
       return;
     }
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
+    const { default: isDesktop } = await import(`${getUnityLibs()}/scripts/device-detection.js`);
+    this.desktop = isDesktop();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     const assetId = await this.uploadAsset(file);
     await this.continueInApp(assetId);
@@ -357,7 +370,7 @@ export default class ActionBinder {
     }
     if (b === this.block) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.delayedSplashLoader();
     }
     window.addEventListener('pageshow', (event) => {
