@@ -211,6 +211,16 @@ export default class ActionBinder {
 
   async continueInApp(assetId) {
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling.textContent;
+    const queryParams = {};
+    if (cgen) {
+      const params = cgen.split('&');
+      params.forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key && value) {
+          queryParams[key] = value;
+        }
+      });
+    }
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
@@ -218,8 +228,8 @@ export default class ActionBinder {
         locale: getLocale(),
         workflow: this.workflowCfg.supportedFeatures.values().next().value,
         referer: window.location.href,
-        cgen,
         desktopDevice: this.desktop,
+        additionalQueryParams: queryParams,
       },
     };
     try {
