@@ -315,6 +315,7 @@ static ERROR_MAP = {
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
     let allFilesFailed = true;
     const errorTypes = new Set();
+    const validFiles = [];
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
@@ -351,9 +352,9 @@ static ERROR_MAP = {
           await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'verb_upload_error_validate_files', subCode: 'verb_upload_error_multiple_invalid_files', desc: errorDesc });
         }
       }
-      return false;
+      return { isValid: false, validFiles};
     }
-    return true;
+    return {isValid: true, validFiles};
   }
 
   async getRedirectUrl(cOpts) {
@@ -424,7 +425,13 @@ static ERROR_MAP = {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     }));
-    if (!await this.validateFiles(files)) return;
+    const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
+    if (!isValid) return;
+    const verbWithoutFallback = ['compress-pdff'];
+    if (validFiles.length === 1 && !verbWithoutFallback.includes(this.workflowCfg.name)) {
+      await this.handleSingleFileUpload(validFiles[0], eventName);
+      return;
+    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
