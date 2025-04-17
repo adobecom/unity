@@ -13,7 +13,7 @@
       ".verb-wrapper": "upload",
       "#file-upload": "upload"
     },
-    "verbsWithoutMfuFallback": ["compress-pdf"],
-    "sendSplunkAnalytics": true
+    "sendSplunkAnalytics": true,
+    "verbsWithoutMfuFallback": ["compress-pdf"]
   }
 }
