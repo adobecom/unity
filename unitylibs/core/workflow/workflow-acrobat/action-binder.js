@@ -129,16 +129,16 @@ export default class ActionBinder {
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'pdf-to-word': ['single', 'pdf-to-word'],
-    'pdf-to-excel': ['single', 'pdf-to-excel'],
-    'pdf-to-ppt': ['single', 'pdf-to-ppt'],
-    'pdf-to-jpg': ['single', 'pdf-to-jpg'],
-    'word-to-pdf': ['single', 'word-to-pdf'],
-    'excel-to-pdf': ['single', 'excel-to-pdf'],
-    'ppt-to-pdf': ['single', 'ppt-to-pdf'],
-    'jpg-to-pdf': ['single', 'jpg-to-pdf'],
-    'png-to-pdf': ['single', 'png-to-pdf'],
-    'sendforsignature': ['single', 'max-filesize-500-mb', 'page-limit-25']
+    'sendforsignature': ['single', 'max-filesize-500-mb', 'page-limit-25'],
+    'pdf-to-word': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
+    'pdf-to-excel': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'pdf-to-ppt': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
+    'pdf-to-jpg': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'word-to-pdf': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'excel-to-pdf': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'ppt-to-pdf': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'jpg-to-pdf': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'png-to-pdf': ['single', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb']
   };
 
 static ERROR_MAP = {

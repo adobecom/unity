@@ -98,63 +98,10 @@
       "text/plain"
     ]
   },
-  "page-limit-500": {
-    "pageLimit": {
-      "maxNumPages": 500
-    }
-  },
   "sendforsignature": {
     "maxFileSize": 5242880,
     "pageLimit": {
       "maxNumPages": 25
     }
-  },
-  "pdf-to-word": {
-    "maxFileSize": 262144000,
-    "allowedFileTypes": ["application/pdf"]
-  },
-  "pdf-to-excel": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": ["application/pdf"]
-  },
-  "pdf-to-ppt": {
-    "maxFileSize": 262144000,
-    "allowedFileTypes": ["application/pdf"]
-  },
-  "pdf-to-jpg": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": ["application/pdf"]
-  },
-  "jpg-to-pdf": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": ["image/jpeg"]
-  },
-  "png-to-pdf": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": ["image/png"]
-  },
-  "excel-to-pdf": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": [
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/x-tika-msworks-spreadsheet"
-    ]
-  },
-  "ppt-to-pdf": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": [
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "application/x-tika-ooxml"
-    ]
-  },
-  "word-to-pdf": {
-    "maxFileSize": 104857600,
-    "allowedFileTypes": [
-      "application/msword",
-      "application/xml",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ]
   }
 }
