@@ -405,42 +405,31 @@ static ERROR_MAP = {
     return true;
   }
 
-  async handleSingleFileUpload(file, eventName, skipValidation=false) {  
-    if(!skipValidation){
-      const sanitizedFileName = await this.sanitizeFileName(file.name); 
-      const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
-      const fileData = { type: newFile.type, size: newFile.size, count: 1 };
-      this.dispatchAnalyticsEvent(eventName, fileData);
-      if (!(await this.validateFiles([newFile])).isValid) return;
-    }
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, this.filesData);
-    else await this.uploadHandler.singleFileUserUpload(newFile, this.filesData);
-  }
-
-  async handleMultiFileUpload(files, totalFileSize, eventName) {
-    this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 65;
-    const isMixedFileTypes = this.isMixedFileTypes(files);
-    this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
-    this.dispatchAnalyticsEvent('multifile', this.filesData);
+  async handleFileUpload(files, eventName, totalFileSize) {
+    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     }));
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
-    const verbWithoutFallback = ['compress-pdf'];
-    if (validFiles.length === 1 && !verbWithoutFallback.includes(this.workflowCfg.enabledFeatures[0])) {
-      await this.handleSingleFileUpload(validFiles[0], eventName, true);
-      return;
-    }
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
-    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, this.filesData);
+    if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
+      const fileData = { type: validFiles[0].type, size: validFiles[0].size, count: 1 };
+      this.dispatchAnalyticsEvent(eventName, fileData);
+      if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(validFiles[0], fileData);
+      else await this.uploadHandler.singleFileUserUpload(validFiles[0], fileData);
+    } else {
+      this.MULTI_FILE = true;
+      this.LOADER_LIMIT = 65;
+      const isMixedFileTypes = this.isMixedFileTypes(validFiles);
+      const filesData = { type: isMixedFileTypes, size: totalFileSize, count: validFiles.length };
+      this.dispatchAnalyticsEvent(eventName, filesData);
+      this.dispatchAnalyticsEvent('multifile', filesData);
+      if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
+      else await this.uploadHandler.multiFileUserUpload(validFiles, filesData);
+    }
   }
 
   async loadVerbLimits(workflowName, keys) {
@@ -476,7 +465,7 @@ static ERROR_MAP = {
     }
     const file = files[0];
     if (!file) return;
-    await this.handleSingleFileUpload(file, eventName);
+    await this.handleFileUpload(file, eventName);
   }
 
   async processHybrid(files, totalFileSize, eventName) {
@@ -486,9 +475,7 @@ static ERROR_MAP = {
     }
     this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
     if (!this.limits || Object.keys(this.limits).length === 0) return;
-    const isSingleFile = files.length === 1;
-    if (isSingleFile) await this.handleSingleFileUpload(files[0], eventName);
-    else await this.handleMultiFileUpload(files, totalFileSize, eventName);
+    await this.handleFileUpload(files, eventName, totalFileSize);
   }
 
   delay(ms) {
