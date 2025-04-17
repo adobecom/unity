@@ -127,24 +127,11 @@ export default class TransitionScreen {
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
   }
 
-  updateForDesktop() {
-    const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    const secondHeading = headingElements[1];
-    if (secondHeading) {
-      const text = secondHeading.innerHTML;
-      const photoshopIndex = text.lastIndexOf('Photoshop');
-      if (photoshopIndex !== -1) {
-        const endIndex = photoshopIndex + 'Photoshop'.length;
-        secondHeading.innerText = text.substring(0, endIndex);
-      }
-    }
-  }
-
-  updateCopyForDevice(isDesktop) {
+  updateCopyForDevice() {
     const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
     const mobileHeading = headingElements[1];
     const desktopHeading = headingElements[2];
-    if (isDesktop && desktopHeading) {
+    if (this.isDesktop && desktopHeading) {
       if (mobileHeading) mobileHeading.style.display = 'none';
       desktopHeading.style.display = 'block';
     } else {
@@ -158,7 +145,7 @@ export default class TransitionScreen {
     if (this.splashScreenEl.classList.contains('decorate')) {
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
-      if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice(this.isDesktop);
+      if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }
     this.splashVisibilityController(displayOn);
