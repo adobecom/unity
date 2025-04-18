@@ -129,7 +129,16 @@ export default class ActionBinder {
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'sendforsignature': ['single', 'max-filesize-500-mb', 'page-limit-25']
+    'pdf-to-word': ['single', 'max-filesize-250-mb'],
+    'pdf-to-excel': ['single', 'max-filesize-100-mb'],
+    'pdf-to-ppt': ['single', 'max-filesize-250-mb'],
+    'pdf-to-jpg': ['single', 'max-filesize-100-mb'],
+    'createpdf': ['single', 'max-filesize-100-mb'],
+    'word-to-pdf': ['single', 'max-filesize-100-mb'],
+    'excel-to-pdf': ['single', 'max-filesize-100-mb'],
+    'ppt-to-pdf': ['single', 'max-filesize-100-mb'],
+    'jpg-to-pdf': ['single', 'max-filesize-100-mb'],
+    'png-to-pdf': ['single', 'max-filesize-100-mb']
   };
 
 static ERROR_MAP = {
