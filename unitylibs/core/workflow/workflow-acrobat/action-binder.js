@@ -405,6 +405,24 @@ static ERROR_MAP = {
     return true;
   }
 
+  async handleSingleFileUpload(files, eventName) {
+    const fileData = { type: files[0].type, size: files[0].size, count: 1 };
+    this.dispatchAnalyticsEvent(eventName, fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(validFiles[0], fileData);
+    else await this.uploadHandler.singleFileUserUpload(validFiles[0], fileData);
+  }
+
+  async handleMultiFileUpload(files, eventName, totalFileSize) {
+    this.MULTI_FILE = true;
+    this.LOADER_LIMIT = 65;
+    const isMixedFileTypes = this.isMixedFileTypes(files);
+    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
+    this.dispatchAnalyticsEvent(eventName, filesData);
+    this.dispatchAnalyticsEvent('multifile', filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+  }
+
   async handleFileUpload(files, eventName, totalFileSize) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
@@ -416,19 +434,9 @@ static ERROR_MAP = {
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
-      const fileData = { type: validFiles[0].type, size: validFiles[0].size, count: 1 };
-      this.dispatchAnalyticsEvent(eventName, fileData);
-      if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(validFiles[0], fileData);
-      else await this.uploadHandler.singleFileUserUpload(validFiles[0], fileData);
+      await this.handleSingleFileUpload(validFiles, eventName);
     } else {
-      this.MULTI_FILE = true;
-      this.LOADER_LIMIT = 65;
-      const isMixedFileTypes = this.isMixedFileTypes(validFiles);
-      const filesData = { type: isMixedFileTypes, size: totalFileSize, count: validFiles.length };
-      this.dispatchAnalyticsEvent(eventName, filesData);
-      this.dispatchAnalyticsEvent('multifile', filesData);
-      if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-      else await this.uploadHandler.multiFileUserUpload(validFiles, filesData);
+      await this.handleMultiFileUpload(validFiles, eventName, totalFileSize);
     }
   }
 
