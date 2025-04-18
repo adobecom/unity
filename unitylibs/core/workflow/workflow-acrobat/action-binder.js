@@ -133,7 +133,7 @@ export default class ActionBinder {
     'pdf-to-excel': ['single', 'max-filesize-100-mb'],
     'pdf-to-ppt': ['single', 'max-filesize-250-mb'],
     'pdf-to-jpg': ['single', 'max-filesize-100-mb'],
-    'create-pdf': ['single', 'max-filesize-100-mb'],
+    'createpdf': ['single', 'max-filesize-100-mb'],
     'word-to-pdf': ['single', 'max-filesize-100-mb'],
     'excel-to-pdf': ['single', 'max-filesize-100-mb'],
     'ppt-to-pdf': ['single', 'max-filesize-100-mb'],
