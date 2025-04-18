@@ -119,17 +119,26 @@ export default class ActionBinder {
   };
 
   static LIMITS_MAP = {
-    fillsign: ['single', 'fillsign'],
-    'compress-pdf': ['hybrid'],
+    fillsign: ['single','page-limit-100'],
+    'compress-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-2-gb'],
     'add-comment': ['single'],
     'number-pages': ['single'],
-    'split-pdf': ['single', 'split-pdf'],
+    'split-pdf': ['single', 'max-filesize-1-gb','split-pdf-page-limits','signedInallowedFileTypes'],
     'crop-pages': ['single'],
     'delete-pages': ['single', 'page-limit-500'],
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'sendforsignature': ['single', 'sendforsignature'],
+    'pdf-to-word': ['single', 'max-filesize-250-mb'],
+    'pdf-to-excel': ['single', 'max-filesize-100-mb'],
+    'pdf-to-ppt': ['single', 'max-filesize-250-mb'],
+    'pdf-to-jpg': ['single', 'max-filesize-100-mb'],
+    'createpdf': ['single', 'max-filesize-100-mb'],
+    'word-to-pdf': ['single', 'max-filesize-100-mb'],
+    'excel-to-pdf': ['single', 'max-filesize-100-mb'],
+    'ppt-to-pdf': ['single', 'max-filesize-100-mb'],
+    'jpg-to-pdf': ['single', 'max-filesize-100-mb'],
+    'png-to-pdf': ['single', 'max-filesize-100-mb']
   };
 
 static ERROR_MAP = {
@@ -315,6 +324,7 @@ static ERROR_MAP = {
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
     let allFilesFailed = true;
     const errorTypes = new Set();
+    const validFiles = [];
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
@@ -335,7 +345,10 @@ static ERROR_MAP = {
         fail = true;
         errorTypes.add('FILE_TOO_LARGE');
       }
-      if (!fail) allFilesFailed = false;
+      if (!fail) {
+        allFilesFailed = false;
+        validFiles.push(file);
+      }
     }
     if (allFilesFailed) {
       if (this.MULTI_FILE) {
@@ -351,9 +364,9 @@ static ERROR_MAP = {
           await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'verb_upload_error_validate_files', subCode: 'verb_upload_error_multiple_invalid_files', desc: errorDesc });
         }
       }
-      return false;
+      return { isValid: false, validFiles};
     }
-    return true;
+    return {isValid: true, validFiles};
   }
 
   async getRedirectUrl(cOpts) {
@@ -401,34 +414,39 @@ static ERROR_MAP = {
     return true;
   }
 
-  async handleSingleFileUpload(file, eventName) {  
-    const sanitizedFileName = await this.sanitizeFileName(file.name); 
-    const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
-    this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
-    if (!await this.validateFiles([newFile])) return;
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(newFile, this.filesData);
-    else await this.uploadHandler.singleFileUserUpload(newFile, this.filesData);
+  async handleSingleFileUpload(files, eventName) {
+    const fileData = { type: files[0].type, size: files[0].size, count: 1 };
+    this.dispatchAnalyticsEvent(eventName, fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(validFiles[0], fileData);
+    else await this.uploadHandler.singleFileUserUpload(validFiles[0], fileData);
   }
 
-  async handleMultiFileUpload(files, totalFileSize, eventName) {
+  async handleMultiFileUpload(files, eventName, totalFileSize) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
-    this.dispatchAnalyticsEvent('multifile', this.filesData);
+    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
+    this.dispatchAnalyticsEvent(eventName, filesData);
+    this.dispatchAnalyticsEvent('multifile', filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+  }
+
+  async handleFileUpload(files, eventName, totalFileSize) {
+    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     }));
-    if (!await this.validateFiles(files)) return;
+    const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
+    if (!isValid) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
-    else await this.uploadHandler.multiFileUserUpload(sanitizedFiles, this.filesData);
+    if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
+      await this.handleSingleFileUpload(validFiles, eventName);
+    } else {
+      await this.handleMultiFileUpload(validFiles, eventName, totalFileSize);
+    }
   }
 
   async loadVerbLimits(workflowName, keys) {
@@ -464,7 +482,7 @@ static ERROR_MAP = {
     }
     const file = files[0];
     if (!file) return;
-    await this.handleSingleFileUpload(file, eventName);
+    await this.handleFileUpload(file, eventName);
   }
 
   async processHybrid(files, totalFileSize, eventName) {
@@ -474,9 +492,7 @@ static ERROR_MAP = {
     }
     this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
     if (!this.limits || Object.keys(this.limits).length === 0) return;
-    const isSingleFile = files.length === 1;
-    if (isSingleFile) await this.handleSingleFileUpload(files[0], eventName);
-    else await this.handleMultiFileUpload(files, totalFileSize, eventName);
+    await this.handleFileUpload(files, eventName, totalFileSize);
   }
 
   delay(ms) {
