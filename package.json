@@ -1,7 +1,6 @@
 {
   "name": "@adobecom/unity",
   "private": true,
-  "type": "module",
   "version": "1.0.0",
   "description": "Adobecom Unity interactivity components",
   "scripts": {
