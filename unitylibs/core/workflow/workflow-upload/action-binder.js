@@ -216,6 +216,14 @@ export default class ActionBinder {
       this.LOADER_LIMIT = 100;
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
+      const video = this.transitionScreen.splashScreenEl.querySelector('.text video');
+      let yOffset = 0;
+      if (video) {
+        const rect = video.getBoundingClientRect();
+        yOffset = Math.round(rect.top);
+      }
+      console.log(`yOffset: ${yOffset}`);
+      
       const servicePromise = this.serviceHandler.postCallToService(
         this.psApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
@@ -226,7 +234,10 @@ export default class ActionBinder {
       if (!response?.url) throw new Error('Error connecting to App');
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) return;
-      window.location.href = response.url;
+      
+      const redirectUrl = response.url;
+      const redirectUrlWithOffset = `${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}videoOffset=${yOffset}`;
+      window.location.href = redirectUrlWithOffset;
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
