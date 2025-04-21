@@ -76,6 +76,7 @@ export default class ActionBinder {
     this.initActionListeners = this.initActionListeners.bind(this);
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
     this.desktop = false;
+    this.sendAnalyticsToSplunk = null;
   }
 
   getPsApiConfig() {
@@ -281,6 +282,11 @@ export default class ActionBinder {
 
   async uploadImage(files) {
     if (!files) return;
+    const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
+    if (sendToSplunk) {
+      const module = await import(`${getUnityLibs()}/scripts/lana-analytics.js`);
+      this.sendAnalyticsToSplunk = module.default;
+    }
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
       sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
@@ -300,6 +306,15 @@ export default class ActionBinder {
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
+    if (this.sendAnalyticsToSplunk) {
+      this.sendAnalyticsToSplunk('Uploading Started|UnityWidget', {
+        eventName: 'Uploading Started|UnityWidget',
+        uploadTime: new Date().toISOString(),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      }, `${unityConfig.apiEndPoint}/log`);
+    }
     const { default: isDesktop } = await import(`${getUnityLibs()}/scripts/device-detection.js`);
     this.desktop = isDesktop();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
@@ -346,7 +361,7 @@ export default class ActionBinder {
           const files = this.extractFiles(e);
           await this.photoshopActionMaps(actMap[key], files);
         });
-        el.addEventListener('click', async (e) => {
+        el.addEventListener('click', () => {
           sendAnalyticsEvent(new CustomEvent('Click Drag and drop|UnityWidget'));
         });
       },
