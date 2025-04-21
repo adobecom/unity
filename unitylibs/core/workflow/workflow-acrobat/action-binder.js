@@ -50,11 +50,13 @@ class ServiceHandler {
       return response.json();
     } catch (e) {
       if (e instanceof TypeError) {
-        e.status = 0;
-        e.message = `Network error. URL: ${url}`;
+        const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
       } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        e.status = 504;
-        e.message = `Request timed out. URL: ${url}`;
+        const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
+        error.status = 504;
+        throw error;
       }
       throw e;
     }
@@ -537,8 +539,7 @@ static ERROR_MAP = {
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
     this.dispatchAnalyticsEvent('cancel', this.filesData);
-    const e = new Error();
-    e.message = 'Operation termination requested.';
+    const e = new Error('Operation termination requested.');
     e.showError = false;
     const cancelPromise = Promise.reject(e);
     this.promiseStack.unshift(cancelPromise);
