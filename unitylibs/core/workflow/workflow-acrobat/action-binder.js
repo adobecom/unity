@@ -27,7 +27,6 @@ class ServiceHandler {
   async fetchFromService(url, options, canRetry = true) {
     try {
       const response = await fetch(url, options);
-      var retry = options.retry;
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       else if(canRetry && response.status >= 500 && response.status < 600) {  return this.fetchFromService(url, options, false); }
