@@ -14,9 +14,6 @@ export default class TransitionScreen {
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
     this.isDesktop = isDesktop;
-    const [, mobileHeading, desktopHeading] = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    this.mobileHeading = mobileHeading;
-    this.desktopHeading = desktopHeading;
   }
 
   updateProgressBar(layer, percentage) {
@@ -131,11 +128,14 @@ export default class TransitionScreen {
   }
 
   updateCopyForDevice() {
-    if (this.mobileHeading) {
-      this.mobileHeading.style.display = (this.isDesktop && this.desktopHeading) ? 'none' : 'block';
+    const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    const mobileHeading = headingElements[1];
+    const desktopHeading = headingElements[2];
+    if (mobileHeading) {
+      mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
     }
-    if (this.desktopHeading) {
-      this.desktopHeading.style.display = (this.isDesktop && this.desktopHeading) ? 'block' : 'none';
+    if (desktopHeading) {
+      desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
     }
   }
 
