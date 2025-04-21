@@ -392,6 +392,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
+    this.actionBinder.uploadSuccess = true;
     this.actionBinder.dispatchAnalyticsEvent('uploaded', fileData);
   }
 
@@ -521,6 +522,7 @@ export default class UploadHandler {
       await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
       return;
     }
+    this.actionBinder.uploadSuccess = true;
     this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
   }
 }

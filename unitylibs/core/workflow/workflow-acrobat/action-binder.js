@@ -186,6 +186,7 @@ static ERROR_MAP = {
     this.MULTI_FILE = false;
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
+    this.uploadSuccess = false;
   }
 
   isSignedOut() {
@@ -519,7 +520,10 @@ static ERROR_MAP = {
       await this.delay(500);
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else window.location.href = this.redirectUrl;
+      } else {
+        const redirectUrlUploadSuccess = `${this.redirectUrl}${this.redirectUrl.includes('?') ? '&' : '?'}uploadSuccess=${this.uploadSuccess}`;
+        window.location.href = redirectUrlUploadSuccess;
+      }
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
