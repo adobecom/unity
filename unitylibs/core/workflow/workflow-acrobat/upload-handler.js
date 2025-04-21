@@ -88,7 +88,7 @@ export default class UploadHandler {
       return response;
     } catch (e) {
       if (e instanceof TypeError) {
-        const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes`;
+        const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
         await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
           code: 'verb_upload_error_chunk_upload',
           status: e.status || 0,
