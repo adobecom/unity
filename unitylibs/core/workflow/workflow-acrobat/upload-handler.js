@@ -49,7 +49,7 @@ export default class UploadHandler {
   }
 
   async uploadFileToUnityWithRetry(url, blobData, fileType, assetId) {
-    let retryDelay = 2000;
+    let retryDelay = 1000;
     const maxRetries = 3;
     let error = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -62,7 +62,8 @@ export default class UploadHandler {
             retryDelay *= 2;
         }
     }
-    error.message = error.message + ', Max retry delay exceeded during upload';
+    if (error) { error.message = error.message + ', Max retry delay exceeded during upload';
+    } else {  error = new Error('Max retry delay exceeded during upload');  }
     throw error 
   }
 
