@@ -61,7 +61,7 @@ class ServiceHandler {
     }
   }
 
-  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 150) {
+  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
     let timeLapsed = 0;
     while (timeLapsed < maxRetryDelay) {
       const response = await this.fetchFromService(url, options, false);
