@@ -48,6 +48,24 @@ export default class UploadHandler {
     return blob;
   }
 
+  async uploadFileToUnityWithRetry(url, blobData, fileType, assetId) {
+    let retryDelay = 2000;
+    const maxRetries = 3;
+    let error = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await this.uploadFileToUnity(url, blobData, fileType, assetId);
+            if (response.ok) {  return response; }
+        } catch (err) { error = err;}
+        if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            retryDelay *= 2;
+        }
+    }
+    error.message = error.message + ', Max retry delay exceeded during upload';
+    throw error 
+  }
+
   async uploadFileToUnity(storageUrl, blobData, fileType, assetId) {
     const uploadOptions = {
       method: 'PUT',
@@ -120,7 +138,7 @@ export default class UploadHandler {
         const url = assetData.uploadUrls[i];
         return () => {
           if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnity(url.href, chunk, fileType, assetData.id).catch(async () => {
+          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id).catch(async () => {
             failedFiles.add(fileIndex);
             fileUploadFailed = true;
           });

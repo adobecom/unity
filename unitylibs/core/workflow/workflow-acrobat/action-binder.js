@@ -24,11 +24,13 @@ const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
 class ServiceHandler {
-  async fetchFromService(url, options) {
+  async fetchFromService(url, options, canRetry = true) {
     try {
       const response = await fetch(url, options);
+      var retry = options.retry;
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
+      else if(canRetry && response.status >= 500 && response.status < 600) {  return this.fetchFromService(url, options, false); }
       if (response.status !== 200) {
         let errorMessage = `Error fetching from service. URL: ${url}`;
         if (contentLength !== '0') {
@@ -59,10 +61,10 @@ class ServiceHandler {
     }
   }
 
-  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
+  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 150) {
     let timeLapsed = 0;
     while (timeLapsed < maxRetryDelay) {
-      const response = await this.fetchFromService(url, options);
+      const response = await this.fetchFromService(url, options, false);
       if (response.status === 202) {
         const retryDelay = parseInt(response.headers.get('retry-after')) || 5;
         await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
