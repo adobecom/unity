@@ -239,6 +239,11 @@ static ERROR_MAP = {
     await priorityLoad(parr);
   }
 
+  setWorkflowStep(step) {
+    this.workflowStep = step;
+    console.log('Workflow step set to:', this.workflowStep);
+  }
+
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
     if (!showError) return;
     const errorMessage = errorType in this.workflowCfg.errors
@@ -403,6 +408,7 @@ static ERROR_MAP = {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
+    console.log(this.workflowStep);
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
@@ -410,7 +416,7 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(file, eventName) {
-    this.workflowStep = WorkflowStep.UPLOADSTART;
+    this.setWorkflowStep(WorkflowStep.UPLOADSTART);
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
