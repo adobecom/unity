@@ -79,7 +79,6 @@ export default class ActionBinder {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
-    this.file = null;
   }
 
   getPsApiConfig() {
@@ -341,7 +340,6 @@ export default class ActionBinder {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     const assetId = await this.uploadAsset(file);
-    this.file = file;
     await this.continueInApp(assetId);
   }
 
