@@ -102,6 +102,7 @@ export default class ActionBinder {
   async cancelUploadOperation() {
     try {
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
+      this.logAnalyticsinSplunk('Cancel|UnityWidget');
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
@@ -139,6 +140,7 @@ export default class ActionBinder {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
       throw new Error('Failed to upload image to Unity');
     }
+    this.logAnalyticsinSplunk('Upload Completed|UnityWidget');
     return id;
   }
 
