@@ -82,14 +82,6 @@ export default class ActionBinder {
     this.file = null;
   }
 
-  static ERROR_MAP = {
-    '.icon-error-filecount': -173,
-    '.icon-error-filesize': -172,
-    '.icon-error-filetype': -170,
-    '.icon-error-filedimension': -174,
-    '.icon-error-request': -1,
-  };
-
   getPsApiConfig() {
     unityConfig.psEndPoint = {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
