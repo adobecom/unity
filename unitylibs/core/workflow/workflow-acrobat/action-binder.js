@@ -29,7 +29,10 @@ class ServiceHandler {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
-      else if(canRetry && response.status >= 500 && response.status < 600) {  return this.fetchFromService(url, options, false); }
+      if(canRetry && response.status >= 500 && response.status < 600) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return this.fetchFromService(url, options, false);
+     }
       if (response.status !== 200) {
         let errorMessage = `Error fetching from service. URL: ${url}`;
         if (contentLength !== '0') {
