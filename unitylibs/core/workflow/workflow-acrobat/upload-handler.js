@@ -75,7 +75,11 @@ export default class UploadHandler {
           status: e.status || 0,
           message: `Exception raised when uploading chunk to storage; ${e.message}`,
         });
-      } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true);
+      } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
+        code: 'verb_upload_error_chunk_upload',
+        status: 504,
+        message: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`,
+      });
       throw e;
     }
   }
