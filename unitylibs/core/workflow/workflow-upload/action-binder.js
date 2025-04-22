@@ -79,6 +79,15 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
   }
 
+  static ERROR_MAP = {
+    'error_filecount': -173
+    'error_file_too_large': -172
+    'error_unsupported_type': -170
+    'error_unsupported_filedimension': -174
+    'error-request': -1
+    'error_redirect_to_app': -900,
+  };
+  
   getPsApiConfig() {
     unityConfig.psEndPoint = {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
