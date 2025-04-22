@@ -8,16 +8,12 @@ function getSessionID() {
 }
 
 function createPayloadForSplunk(metaData) {
-  const {
-    eventName, uploadTime, name, type, size, errorData,
-  } = metaData;
+  const { eventName, errorData, redirectUrl } = metaData;
   return {
     event: {
       name: eventName,
       category: 'photoshop',
-      ...(uploadTime && { uploadTime }),
     },
-    content: { name, type, size },
     source: {
       user_agent: navigator.userAgent,
       lang: document.documentElement.lang,
@@ -33,6 +29,7 @@ function createPayloadForSplunk(metaData) {
       ...(errorData.subCode && { subCode: errorData.subCode }),
       ...(errorData.desc && { desc: errorData.desc }),
     } : undefined,
+    ...(redirectUrl && { redirect: { url: redirectUrl } }),
   };
 }
 
