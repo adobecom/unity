@@ -26,8 +26,7 @@ const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 export const WorkflowStep = {
   UPLOADSTART: "upload-start",
   UPLOADING: "uploading",
-  UPLOADED: "uploaded",
-  REDIRECT: "redirect"
+  NOTSTARTED: "not-started"
 };
 
 class ServiceHandler {
@@ -173,7 +172,7 @@ static ERROR_MAP = {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
-    this.workflowStep = null;
+    this.workflowStep = WorkflowStep.NOTSTARTED;
     this.block = wfblock;
     this.canvasArea = canvasArea;
     this.actionMap = actionMap;
@@ -408,7 +407,6 @@ static ERROR_MAP = {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    console.log(this.workflowStep);
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});

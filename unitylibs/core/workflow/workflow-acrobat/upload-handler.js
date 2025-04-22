@@ -373,7 +373,6 @@ export default class UploadHandler {
         ...(isNonPdf ? { feedback: 'nonpdf' } : {}),
       },
     };
-    this.actionBinder.setWorkflowStep(WorkflowStep.REDIRECT);
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
     if (!redirectSuccess) return;
     this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
@@ -474,7 +473,7 @@ export default class UploadHandler {
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
     if (!redirectSuccess) return;
     this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
-    this.actionBinder.WorkflowStep = WorkflowStep.UPLOADING;
+    this.actionBinder.setWorkflowStep(WorkflowStep.UPLOADING);
     const uploadResult = await this.chunkPdf(
       assetDataArray,
       blobDataArray,
