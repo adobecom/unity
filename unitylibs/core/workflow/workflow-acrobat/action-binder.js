@@ -302,6 +302,7 @@ static ERROR_MAP = {
     } catch (error) {
       console.error('Error sanitizing filename:', error);
       await this.dispatchErrorToast('verb_upload_error_renaming_file', 500, `Error renaming file: ${rawFileName}`, false, true, {
+        code: 'verb_upload_error_renaming_file',
         subCode: error.name,
         desc: error.message,
       });
