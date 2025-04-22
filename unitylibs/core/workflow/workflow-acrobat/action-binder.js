@@ -414,7 +414,6 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(file, eventName) {
-    this.setWorkflowStep(WorkflowStep.UPLOADSTART);
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
@@ -429,7 +428,6 @@ static ERROR_MAP = {
   async handleMultiFileUpload(files, totalFileSize, eventName) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
-    this.workflowStep = WorkflowStep.UPLOADSTART;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
     this.dispatchAnalyticsEvent(eventName, this.filesData);

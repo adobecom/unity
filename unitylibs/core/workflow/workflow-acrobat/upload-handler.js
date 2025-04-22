@@ -350,6 +350,7 @@ export default class UploadHandler {
   }
 
   async uploadSingleFile(file, fileData, isNonPdf = false) {
+    this.actionBinder.setWorkflowStep(WorkflowStep.UPLOADSTART);
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     let cOpts = {};
     const [blobData, assetData] = await Promise.all([
@@ -431,6 +432,7 @@ export default class UploadHandler {
   }
 
   async uploadMultiFile(files, filesData) {
+    this.actionBinder.setWorkflowStep(WorkflowStep.UPLOADSTART);
     const workflowId = crypto.randomUUID();
     const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
     const blobDataArray = [];
