@@ -23,6 +23,13 @@ const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
+export const WorkflowStep = {
+  UPLOADSTART: "upload-start",
+  UPLOADING: "uploading",
+  UPLOADED: "uploaded",
+  REDIRECT: "redirect"
+};
+
 class ServiceHandler {
   async fetchFromService(url, options) {
     try {
@@ -166,6 +173,7 @@ static ERROR_MAP = {
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
+    this.workflowStep = null;
     this.block = wfblock;
     this.canvasArea = canvasArea;
     this.actionMap = actionMap;
@@ -401,7 +409,8 @@ static ERROR_MAP = {
     return true;
   }
 
-  async handleSingleFileUpload(file, eventName) {  
+  async handleSingleFileUpload(file, eventName) {
+    this.workflowStep = WorkflowStep.UPLOADSTART;
     const sanitizedFileName = await this.sanitizeFileName(file.name); 
     const newFile = new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     this.filesData = { name: newFile.name, type: newFile.type, size: newFile.size, count: 1, uploadType: 'sfu'};
@@ -416,6 +425,7 @@ static ERROR_MAP = {
   async handleMultiFileUpload(files, totalFileSize, eventName) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
+    this.workflowStep = WorkflowStep.UPLOADSTART;
     const isMixedFileTypes = this.isMixedFileTypes(files);
     this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
     this.dispatchAnalyticsEvent(eventName, this.filesData);
@@ -535,6 +545,9 @@ static ERROR_MAP = {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
+    if (this.filesData && (this.workflowStep === WorkflowStep.UPLOADSTART || this.workflowStep === WorkflowStep.UPLOADING)) {
+      this.filesData.count = this.workflowStep === WorkflowStep.UPLOADSTART ? -2 : -3;
+    }
     this.dispatchAnalyticsEvent('cancel', this.filesData);
     const e = new Error();
     e.message = 'Operation termination requested.';

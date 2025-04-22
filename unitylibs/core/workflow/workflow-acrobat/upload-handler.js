@@ -3,6 +3,7 @@
 /* eslint-disable no-restricted-syntax */
 
 import { unityConfig, getUnityLibs } from '../../../scripts/utils.js';
+import { WorkflowStep } from './action-binder.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -374,6 +375,7 @@ export default class UploadHandler {
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
     if (!redirectSuccess) return;
+    this.actionBinder.WorkflowStep = WorkflowStep.UPLOADING;
     this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
     const uploadResult = await this.chunkPdf(
       [assetData],
@@ -470,6 +472,7 @@ export default class UploadHandler {
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
     if (!redirectSuccess) return;
+    this.actionBinder.WorkflowStep = WorkflowStep.UPLOADING;
     this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
     const uploadResult = await this.chunkPdf(
       assetDataArray,
