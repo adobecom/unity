@@ -317,7 +317,7 @@ export default class UploadHandler {
       case 401:
         if (e.message === 'notentitled') await this.actionBinder.dispatchErrorToast('verb_upload_error_no_storage_provision', e.status, e.message, false, e.showError, {
           code: 'verb_upload_error_no_storage_provision',
-          status: e.status,
+          subCode: e.status,
           desc: `Exception raised when uploading file(s): ${e.message}`,
         });
         else await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status, e.message, false, e.showError, {
