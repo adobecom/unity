@@ -156,10 +156,9 @@ static ERROR_MAP = {
   'verb_upload_exception_finalize': -300,
   'verb_upload_exception_validate_page_count': -301,
   'verb_upload_error_fetch_redirect_url': -350,
-  'verb_upload_error_redirect': -351,
-  'verb_upload_error_finalize': -352,
-  'verb_upload_error_chunk_upload': -353,
-  'verb_cookie_not_set': -354,
+  'verb_upload_error_finalize': -351,
+  'verb_upload_error_chunk_upload': -352,
+  'verb_cookie_not_set': -353,
   'verb_upload_error_redirect_to_app': -900,
   'verb_upload_error_finalize_asset': -901
 };
