@@ -41,6 +41,7 @@ class ServiceHandler {
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     if (!errorCallbackOptions.errorToastEl) return;
+    sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
     const errorUpdate = error || '';
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
     this.canvasArea.forEach((element) => {
@@ -54,8 +55,6 @@ class ServiceHandler {
       alertText.innerText = msg;
       errorToast.classList.add('show');
     });
-    if (errorType === 'client') sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
-    else if (errorType === 'server') sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
     window.lana?.log(`Message: ${msg}, Error: ${errorUpdate}`, lanaOptions);
   }
 }
