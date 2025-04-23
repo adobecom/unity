@@ -173,7 +173,7 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      this.logAnalyticsinSplunk('Error|UnityWidget', {
+      this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
           subCode: `uploadAsset ${e.status}`,
@@ -262,7 +262,7 @@ export default class ActionBinder {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      this.logAnalyticsinSplunk('Error|UnityWidget', {
+      this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
           subCode: `continueInApp ${e.status}`,
