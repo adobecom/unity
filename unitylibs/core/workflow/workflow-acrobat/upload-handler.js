@@ -128,32 +128,64 @@ export default class UploadHandler {
   }
 
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
-    const uploadTasks = [];
-    const failedFiles = new Set();
-    assetDataArray.forEach((assetData, fileIndex) => {
+    const failedChunksMap = new Map();
+  
+    // Helper to generate upload task for a specific chunk
+    const createChunkTask = (fileIndex, chunkIndex) => {
+      const assetData = assetDataArray[fileIndex];
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
+      const start = chunkIndex * assetData.blocksize;
+      const end = Math.min(start + assetData.blocksize, blobData.size);
+      const chunk = blobData.slice(start, end);
+      const url = assetData.uploadUrls[chunkIndex];
+      return async () => {
+        try {
+          await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id);
+        } catch (e) {
+          if (!failedChunksMap.has(fileIndex)) {
+            failedChunksMap.set(fileIndex, new Set());
+          }
+          failedChunksMap.get(fileIndex).add(chunkIndex);
+        }
+      };
+    };
+  
+    // Initial upload pass
+    const initialUploadTasks = [];
+    assetDataArray.forEach((assetData, fileIndex) => {
+      const blobData = blobDataArray[fileIndex];
       const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
       if (assetData.uploadUrls.length !== totalChunks) return;
-      let fileUploadFailed = false;
-      const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
-        const start = i * assetData.blocksize;
-        const end = Math.min(start + assetData.blocksize, blobData.size);
-        const chunk = blobData.slice(start, end);
-        const url = assetData.uploadUrls[i];
-        return () => {
-          if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id).catch(async () => {
-            failedFiles.add(fileIndex);
-            fileUploadFailed = true;
-          });
-        };
-      });
-      uploadTasks.push(...chunkTasks);
+      for (let i = 0; i < totalChunks; i++) {
+        initialUploadTasks.push(createChunkTask(fileIndex, i));
+      }
     });
-    await this.batchUpload(uploadTasks, batchSize);
-    return failedFiles;
-  }
+  
+    await this.batchUpload(initialUploadTasks, batchSize);
+  
+    // Retry pass for failed chunks only
+    const retryTasks = [];
+    for (const [fileIndex, failedChunks] of failedChunksMap.entries()) {
+      for (const chunkIndex of failedChunks) {
+        retryTasks.push(createChunkTask(fileIndex, chunkIndex));
+      }
+    }
+  
+    if (retryTasks.length > 0) {
+      await this.batchUpload(retryTasks, batchSize);
+    }
+  
+    // After retry, track files that still have failed chunks
+    const finalFailedFiles = new Set();
+    for (const [fileIndex, failedChunks] of failedChunksMap.entries()) {
+      if (failedChunks.size > 0) {
+        finalFailedFiles.add(fileIndex);
+      }
+    }
+  
+    return finalFailedFiles;
+  }  
 
   async verifyContent(assetData) {
     try {
