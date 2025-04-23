@@ -547,6 +547,7 @@ static ERROR_MAP = {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
+    this.filesData = this.filesData || {};
     this.filesData.count = this.isUploading ? -3 : -2;
     this.dispatchAnalyticsEvent('cancel', this.filesData);
     this.setIsUploading(false);
