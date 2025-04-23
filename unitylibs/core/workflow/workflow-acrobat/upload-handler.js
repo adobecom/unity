@@ -53,14 +53,14 @@ export default class UploadHandler {
     const maxRetries = 3;
     let error = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            const response = await this.uploadFileToUnity(url, blobData, fileType, assetId);
-            if (response.ok) return response;
-        } catch (err) { error = err;}
-        if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-            retryDelay *= 2;
-        }
+      try {
+        const response = await this.uploadFileToUnity(url, blobData, fileType, assetId);
+        if (response.ok) return response;
+      } catch (err) { error = err;}
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        retryDelay *= 2;
+      }
     }
     if (error) error.message = error.message + ', Max retry delay exceeded during upload';
     else error = new Error('Max retry delay exceeded during upload');
@@ -87,18 +87,25 @@ export default class UploadHandler {
       }
       return response;
     } catch (e) {
-      if (e instanceof TypeError) {
+      if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
+        code: 'verb_upload_error_chunk_upload',
+        subCode: 504,
+        desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`,
+      }); else if (e instanceof TypeError) {
         const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
         await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
           code: 'verb_upload_error_chunk_upload',
           subCode: e.status || 0,
           desc: `Exception raised when uploading chunk to storage; ${errorMessage}`,
         });
-      } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
-        code: 'verb_upload_error_chunk_upload',
-        subCode: 504,
-        desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`,
-      });
+      } else {
+        const errorMessage = `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes`;
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_chunk_upload', e.status || 500, errorMessage, true, e.showError, {
+          code: 'verb_upload_error_chunk_upload',
+          subCode: e.status,
+          desc: errorMessage,
+        });
+      }
       throw e;
     }
   }
@@ -129,29 +136,54 @@ export default class UploadHandler {
 
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
     const uploadTasks = [];
-    const failedFiles = new Set();
+    const failedChunks = new Map();
     assetDataArray.forEach((assetData, fileIndex) => {
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
       const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
       if (assetData.uploadUrls.length !== totalChunks) return;
-      let fileUploadFailed = false;
       const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
         const start = i * assetData.blocksize;
         const end = Math.min(start + assetData.blocksize, blobData.size);
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
-        return () => {
-          if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id).catch(async () => {
-            failedFiles.add(fileIndex);
-            fileUploadFailed = true;
-          });
+        return async () => {
+          try {
+            await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id);
+          } catch (err) {
+            if (!failedChunks.has(fileIndex)) failedChunks.set(fileIndex, new Set());
+            failedChunks.get(fileIndex).add(i);
+          }
         };
       });
+
       uploadTasks.push(...chunkTasks);
     });
+    
     await this.batchUpload(uploadTasks, batchSize);
+    for (const [fileIndex, chunkIndices] of failedChunks.entries()) {
+      const assetData = assetDataArray[fileIndex];
+      const blobData = blobDataArray[fileIndex];
+      const fileType = filetypeArray[fileIndex];
+      const retryTasks = Array.from(chunkIndices, (i) => {
+        const start = i * assetData.blocksize;
+        const end = Math.min(start + assetData.blocksize, blobData.size);
+        const chunk = blobData.slice(start, end);
+        const url = assetData.uploadUrls[i];
+        return async () => {
+          try {
+            await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id);
+            chunkIndices.delete(i);
+          } catch (err) { }
+        };
+      });
+      await this.batchUpload(retryTasks, batchSize);
+    }
+    const failedFiles = new Set();
+    for (const [fileIndex, chunkIndices] of failedChunks.entries()) {
+      if (chunkIndices.size > 0) failedFiles.add(fileIndex);
+    }
+
     return failedFiles;
   }
 
