@@ -128,21 +128,35 @@ export default class UploadHandler {
   }
 
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
-    const failedChunksMap = new Map();
+    const failedChunksMap = new Map();       // Tracks failed chunks
+    const successfulChunksMap = new Map();   // Tracks successful chunks
   
-    // Helper to generate upload task for a specific chunk
     const createChunkTask = (fileIndex, chunkIndex) => {
       const assetData = assetDataArray[fileIndex];
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
+  
       const start = chunkIndex * assetData.blocksize;
       const end = Math.min(start + assetData.blocksize, blobData.size);
       const chunk = blobData.slice(start, end);
       const url = assetData.uploadUrls[chunkIndex];
+  
       return async () => {
+        // Skip if already marked successful
+        if (successfulChunksMap.has(fileIndex) && successfulChunksMap.get(fileIndex).has(chunkIndex)) {
+          return;
+        }
+  
         try {
           await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id);
+  
+          // Mark as success
+          if (!successfulChunksMap.has(fileIndex)) {
+            successfulChunksMap.set(fileIndex, new Set());
+          }
+          successfulChunksMap.get(fileIndex).add(chunkIndex);
         } catch (e) {
+          // Mark as failed
           if (!failedChunksMap.has(fileIndex)) {
             failedChunksMap.set(fileIndex, new Set());
           }
@@ -151,35 +165,37 @@ export default class UploadHandler {
       };
     };
   
-    // Initial upload pass
-    const initialUploadTasks = [];
-    assetDataArray.forEach((assetData, fileIndex) => {
-      const blobData = blobDataArray[fileIndex];
-      const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-      if (assetData.uploadUrls.length !== totalChunks) return;
-      for (let i = 0; i < totalChunks; i++) {
-        initialUploadTasks.push(createChunkTask(fileIndex, i));
-      }
-    });
+    const scheduleUploadTasks = () => {
+      const uploadTasks = [];
+      assetDataArray.forEach((assetData, fileIndex) => {
+        const blobData = blobDataArray[fileIndex];
+        const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+          const isAlreadySuccessful = successfulChunksMap.has(fileIndex) && successfulChunksMap.get(fileIndex).has(chunkIndex);
+          if (!isAlreadySuccessful) {
+            uploadTasks.push(createChunkTask(fileIndex, chunkIndex));
+          }
+        }
+      });
+      return uploadTasks;
+    };
   
-    await this.batchUpload(initialUploadTasks, batchSize);
+    let retryCount = 0;
+    const maxRetries = 2;
   
-    // Retry pass for failed chunks only
-    const retryTasks = [];
-    for (const [fileIndex, failedChunks] of failedChunksMap.entries()) {
-      for (const chunkIndex of failedChunks) {
-        retryTasks.push(createChunkTask(fileIndex, chunkIndex));
-      }
+    while (retryCount <= maxRetries) {
+      const uploadTasks = scheduleUploadTasks();
+      if (uploadTasks.length === 0) break;
+      await this.batchUpload(uploadTasks, batchSize);
+      retryCount += 1;
     }
   
-    if (retryTasks.length > 0) {
-      await this.batchUpload(retryTasks, batchSize);
-    }
-  
-    // After retry, track files that still have failed chunks
+    // Final: report files with any failed chunks
     const finalFailedFiles = new Set();
     for (const [fileIndex, failedChunks] of failedChunksMap.entries()) {
-      if (failedChunks.size > 0) {
+      const successful = successfulChunksMap.get(fileIndex) || new Set();
+      const totalChunks = Math.ceil(blobDataArray[fileIndex].size / assetDataArray[fileIndex].blocksize);
+      if (successful.size < totalChunks) {
         finalFailedFiles.add(fileIndex);
       }
     }
