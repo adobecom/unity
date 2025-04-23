@@ -55,7 +55,7 @@ class ServiceHandler {
       errorToast.classList.add('show');
     });
     if (errorType === 'client') sendAnalyticsEvent(new CustomEvent('Upload client error|UnityWidget'));
-    else sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
+    else if (errorType === 'server') sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
     window.lana?.log(`Message: ${msg}, Error: ${errorUpdate}`, lanaOptions);
   }
 }
