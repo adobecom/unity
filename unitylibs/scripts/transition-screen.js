@@ -131,12 +131,11 @@ export default class TransitionScreen {
     const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
     const mobileHeading = headingElements[1];
     const desktopHeading = headingElements[2];
-    if (this.isDesktop && desktopHeading) {
-      if (mobileHeading) mobileHeading.style.display = 'none';
-      desktopHeading.style.display = 'block';
-    } else {
-      if (mobileHeading) mobileHeading.style.display = 'block';
-      if (desktopHeading) desktopHeading.style.display = 'none';
+    if (mobileHeading) {
+      mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
+    }
+    if (desktopHeading) {
+      desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
     }
   }
 
