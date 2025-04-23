@@ -186,7 +186,7 @@ static ERROR_MAP = {
     this.MULTI_FILE = false;
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
-    this.uploadSuccess = false;
+    this.uploadTimestamp = null;
   }
 
   isSignedOut() {
@@ -521,8 +521,7 @@ static ERROR_MAP = {
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
       } else {
-        const redirectUrlUploadSuccess = `${this.redirectUrl}${this.redirectUrl.includes('?') ? '&' : '?'}uploadSuccess=${this.uploadSuccess}`;
-        window.location.href = redirectUrlUploadSuccess;
+        window.location.href = this.redirectWithoutUpload === false ? `${this.redirectUrl}${this.redirectUrl.includes('?') ? '&' : '?'}UTS_Uploaded=${this.uploadTimestamp}` : this.redirectUrl;
       }
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
