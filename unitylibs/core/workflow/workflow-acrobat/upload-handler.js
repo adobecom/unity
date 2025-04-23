@@ -137,53 +137,70 @@ export default class UploadHandler {
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
     const uploadTasks = [];
     const failedChunks = new Map();
+  
+    // Create initial upload tasks
     assetDataArray.forEach((assetData, fileIndex) => {
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
       const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
+  
       if (assetData.uploadUrls.length !== totalChunks) return;
+  
       const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
         const start = i * assetData.blocksize;
         const end = Math.min(start + assetData.blocksize, blobData.size);
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
+  
         return async () => {
           try {
             await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id);
           } catch (err) {
             if (!failedChunks.has(fileIndex)) failedChunks.set(fileIndex, new Set());
-            failedChunks.get(fileIndex).add(i);
+            failedChunks.get(fileIndex).add(i); // Track failed chunk index
           }
         };
       });
-
+  
       uploadTasks.push(...chunkTasks);
     });
-    
+  
+    // Execute initial upload tasks in batches
     await this.batchUpload(uploadTasks, batchSize);
+  
+    // Retry failed chunks
     for (const [fileIndex, chunkIndices] of failedChunks.entries()) {
       const assetData = assetDataArray[fileIndex];
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
+  
       const retryTasks = Array.from(chunkIndices, (i) => {
         const start = i * assetData.blocksize;
         const end = Math.min(start + assetData.blocksize, blobData.size);
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
+  
         return async () => {
           try {
             await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id);
-            chunkIndices.delete(i);
-          } catch (err) { }
+          } catch (err) {
+            // Keep the chunk in the failed set if retry fails
+            return;
+          }
+          // Remove successfully retried chunk
+          chunkIndices.delete(i);
         };
       });
+  
       await this.batchUpload(retryTasks, batchSize);
     }
+  
+    // Collect files with remaining failed chunks
     const failedFiles = new Set();
     for (const [fileIndex, chunkIndices] of failedChunks.entries()) {
       if (chunkIndices.size > 0) failedFiles.add(fileIndex);
     }
-
+  
     return failedFiles;
   }
 
