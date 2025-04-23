@@ -110,7 +110,6 @@ export default class ActionBinder {
       const cancelPromise = Promise.reject(e);
       this.promiseStack.unshift(cancelPromise);
     } catch (error) {
-      sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
       await this.transitionScreen?.showSplashScreen();
       window.lana?.log(`Message: Error cancelling upload operation, Error: ${error}`, this.lanaOptions);
       throw error;
