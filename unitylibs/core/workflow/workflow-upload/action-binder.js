@@ -258,7 +258,6 @@ export default class ActionBinder {
       if (!response?.url) throw new Error('Error connecting to App');
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) return;
-      this.logAnalyticsinSplunk('Redirecting to App|UnityWidget', { redirectUrl: response.url });
       window.location.href = response.url;
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
