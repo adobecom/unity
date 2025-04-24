@@ -1,7 +1,7 @@
 /* eslint-disable quote-props */
 /* eslint-disable quotes */
 import { expect } from '@esm-bundle/chai';
-import isDesktop from '../../unitylibs/scripts/device-detection.js';
+import isDesktop from '../../unitylibs/utils/device-detection.js';
 
 describe('Device Detection', () => {
   let originalNavigator;
