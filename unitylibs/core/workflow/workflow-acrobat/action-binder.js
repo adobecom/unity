@@ -447,7 +447,7 @@ static ERROR_MAP = {
 
   async handleFileUpload(files, eventName, totalFileSize) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuFallback;
-    const sanitizedFiles = await Promise.all(files.map(async (file) => {
+    const sanitizedFiles = await Promise.all([...files].map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     }));
