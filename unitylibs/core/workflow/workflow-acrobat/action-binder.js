@@ -495,7 +495,7 @@ static ERROR_MAP = {
     }
     const file = files[0];
     if (!file) return;
-    await this.handleFileUpload(files, eventName);
+    await this.handleFileUpload(file, eventName);
   }
 
   async processHybrid(files, totalFileSize, eventName) {
