@@ -6,8 +6,7 @@
     "maxFileSize": 104857600
   },
   "hybrid": {
-    "uploadType": "hybrid",
-    "allowedFileTypes": ["application/pdf"]
+    "uploadType": "hybrid"  
   },
   "split-pdf-page-limits": {
     "pageLimit": {
@@ -75,6 +74,7 @@
   },
   "allowed-filetypes-all": {
     "allowedFileTypes": [
+      "application/pdf",
       "application/msword",
       "application/xml",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
