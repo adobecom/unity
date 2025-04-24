@@ -430,8 +430,8 @@ static ERROR_MAP = {
   async handleSingleFileUpload(files, eventName) {
     const fileData = { type: files[0].type, size: files[0].size, count: 1 };
     this.dispatchAnalyticsEvent(eventName, fileData);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(validFiles[0], fileData);
-    else await this.uploadHandler.singleFileUserUpload(validFiles[0], fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], fileData);
+    else await this.uploadHandler.singleFileUserUpload(files[0], fileData);
   }
 
   async handleMultiFileUpload(files, eventName, totalFileSize) {
