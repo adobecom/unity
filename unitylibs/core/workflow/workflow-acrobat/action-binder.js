@@ -354,7 +354,7 @@ static ERROR_MAP = {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
-        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) { errorMessage = 'verb_upload_error_file_same_type'; }
+        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'verb_upload_error_file_same_type';
         if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessage });
         else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessage });
         fail = true;
