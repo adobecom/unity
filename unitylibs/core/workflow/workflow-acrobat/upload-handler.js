@@ -427,7 +427,7 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      if (this.isNonPdf([file])) {
+      if (this.actionBinder.workflowCfg.enabledFeatures[0] === 'compress-pdf' && this.isNonPdf([file])) {
         await this.actionBinder.delay(3000);
         const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
         if (!redirectSuccess) return;
