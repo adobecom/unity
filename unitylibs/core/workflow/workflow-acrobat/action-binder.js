@@ -135,16 +135,16 @@ export default class ActionBinder {
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
-    'pdf-to-word': ['single', 'max-filesize-250-mb'],
-    'pdf-to-excel': ['single', 'max-filesize-100-mb'],
-    'pdf-to-ppt': ['single', 'max-filesize-250-mb'],
-    'pdf-to-jpg': ['single', 'max-filesize-100-mb'],
-    'createpdf': ['single', 'max-filesize-100-mb'],
-    'word-to-pdf': ['single', 'max-filesize-100-mb'],
-    'excel-to-pdf': ['single', 'max-filesize-100-mb'],
-    'ppt-to-pdf': ['single', 'max-filesize-100-mb'],
-    'jpg-to-pdf': ['single', 'max-filesize-100-mb'],
-    'png-to-pdf': ['single', 'max-filesize-100-mb']
+    'pdf-to-word': ['hybrid', 'max-filesize-250-mb'],
+    'pdf-to-excel': ['hybrid', 'max-filesize-100-mb'],
+    'pdf-to-ppt': ['hybrid', 'max-filesize-250-mb'],
+    'pdf-to-jpg': ['hybrid', 'max-filesize-100-mb'],
+    'createpdf': ['hybrid', 'max-filesize-100-mb'],
+    'word-to-pdf': ['hybrid', 'max-filesize-100-mb'],
+    'excel-to-pdf': ['hybrid', 'max-filesize-100-mb'],
+    'ppt-to-pdf': ['hybrid', 'max-filesize-100-mb'],
+    'jpg-to-pdf': ['hybrid', 'max-filesize-100-mb'],
+    'png-to-pdf': ['hybrid', 'max-filesize-100-mb']
   };
 
 static ERROR_MAP = {
