@@ -42,7 +42,6 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions.errorToastEl) return;
-    const errorUpdate = error || '';
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
@@ -55,7 +54,7 @@ class ServiceHandler {
       alertText.innerText = msg;
       errorToast.classList.add('show');
     });
-    window.lana?.log(`Message: ${msg}, Error: ${errorUpdate}`, lanaOptions);
+    window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
   }
 }
 

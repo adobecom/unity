@@ -43,7 +43,7 @@ export default function sendAnalyticsToSplunk(eventName, metaData, splunkEndpoin
     });
   } catch (error) {
     window.lana?.log(
-      `An error occurred while sending ${eventName} to splunk, metadata: ${metaData}, error: ${error}`,
+      `An error occurred while sending ${eventName} to splunk, metadata: ${JSON.stringify(metaData || {})}, error: ${error || ''}`,
       { sampleRate: 100, tags: 'Unity-PS-Upload' },
     );
   }

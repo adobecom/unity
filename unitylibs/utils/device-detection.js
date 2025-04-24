@@ -1,5 +1,9 @@
+function getUserAgent(userAgent) {
+  return userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+}
+
 function isIPad(userAgent) {
-  const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const ua = getUserAgent(userAgent);
   if (typeof navigator !== 'undefined') {
     if (navigator.userAgentData) {
       const platform = navigator.userAgentData.platform.toLowerCase();
@@ -8,7 +12,7 @@ function isIPad(userAgent) {
         return true;
       }
     }
-    if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(ua)) {
+    if (navigator.maxTouchPoints > 2 && /Macintosh/.test(ua)) {
       return true;
     }
   }
@@ -16,7 +20,7 @@ function isIPad(userAgent) {
 }
 
 function isWindowsTablet(userAgent) {
-  const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const ua = getUserAgent(userAgent);
   if (typeof navigator !== 'undefined' && navigator.userAgentData) {
     const platform = navigator.userAgentData.platform.toLowerCase();
     const isMobile = navigator.userAgentData.mobile;
@@ -56,7 +60,7 @@ function isHeadlessBrowser(ua) {
 }
 
 function getPlatformInfo(userAgent) {
-  const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const ua = getUserAgent(userAgent);
   if (typeof navigator !== 'undefined' && navigator.userAgentData) {
     return {
       platform: navigator.userAgentData.platform.toLowerCase(),
@@ -102,7 +106,7 @@ function getPlatformInfo(userAgent) {
 }
 
 export default function isDesktop(userAgent) {
-  const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const ua = getUserAgent(userAgent);
   if (isHeadlessBrowser(ua)) return true;
   const platformInfo = getPlatformInfo(ua);
   if (platformInfo.isMobile) return false;
