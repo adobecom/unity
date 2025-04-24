@@ -219,11 +219,10 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId) {
-    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling.textContent;
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
     if (cgen) {
-      const params = cgen.split('&');
-      params.forEach((param) => {
+      cgen.split('&').forEach((param) => {
         const [key, value] = param.split('=');
         if (key && value) {
           queryParams[key] = value;
