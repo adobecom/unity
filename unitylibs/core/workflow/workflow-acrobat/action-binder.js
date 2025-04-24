@@ -161,6 +161,7 @@ static ERROR_MAP = {
   'verb_upload_error_empty_file': -171,
   'verb_upload_error_file_too_large': -172,
   'verb_upload_error_only_accept_one_file': -173,
+  'verb_upload_error_file_same_type': -174,
   'verb_upload_error_unsupported_type_multi': -200,
   'verb_upload_error_empty_file_multi': -201,
   'verb_upload_error_file_too_large_multi': -202,
@@ -331,6 +332,17 @@ static ERROR_MAP = {
     }
   }
 
+  isSameFileType(verb, fileType) {
+    const verbToFileTypeMap = {
+      'pdf-to-word': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/rtf'],
+      'pdf-to-excel': ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+      'pdf-to-ppt': ['application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+      'pdf-to-jpg': ['image/jpeg'],
+      'pdf-to-png': ['image/png'],
+    };
+    return verbToFileTypeMap[verb]?.includes(fileType) || false;
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -341,8 +353,10 @@ static ERROR_MAP = {
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
-        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
-        else await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
+        let errorMessage = errorMessages.UNSUPPORTED_TYPE;
+        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) { errorMessage = 'verb_upload_error_file_same_type'; }
+        if (this.MULTI_FILE) await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, true, { code: 'verb_upload_error_validate_files', subCode: errorMessage });
+        else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessage });
         fail = true;
         errorTypes.add('UNSUPPORTED_TYPE');
       }
