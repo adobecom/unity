@@ -55,7 +55,15 @@ export default class UploadHandler {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const response = await this.uploadFileToUnity(url, blobData, fileType, assetId);
-            if (response.ok) return response;
+            if (response.ok) {
+              this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
+                attempt,
+                assetId,
+                size: blobData.size,
+                type: fileType,
+              });
+              return response;
+            }
         } catch (err) { error = err;}
         if (attempt < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, retryDelay));
