@@ -135,6 +135,7 @@ export default class ActionBinder {
     'insert-pdf': ['single', 'page-limit-500'],
     'extract-pages': ['single', 'page-limit-500'],
     'reorder-pages': ['single', 'page-limit-500'],
+    'sendforsignature': ['single', 'max-filesize-5-mb', 'page-limit-25'],
     'pdf-to-word': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
     'pdf-to-excel': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'pdf-to-ppt': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],

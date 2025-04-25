@@ -54,14 +54,14 @@
       "maxNumPages": 25
     }
   },
+  "max-filesize-5-mb": {
+    "maxFileSize": 5242880
+  },
   "max-filesize-100-mb": {
     "maxFileSize": 104857600
   },
   "max-filesize-250-mb": {
     "maxFileSize": 262144000
-  },
-  "max-filesize-500-mb": {
-    "maxFileSize": 5242880
   },
   "max-filesize-1-gb": {
     "maxFileSize": 1073741824

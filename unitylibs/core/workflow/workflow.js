@@ -285,6 +285,7 @@ class WfInitiator {
           'insert-pdf',
           'extract-pages',
           'reorder-pages',
+          'sendforsignature',
           'pdf-to-word',
           'pdf-to-excel',
           'pdf-to-ppt',
