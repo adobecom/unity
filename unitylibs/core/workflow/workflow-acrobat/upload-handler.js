@@ -193,10 +193,7 @@ export default class UploadHandler {
         return false;
       }
     } catch (e) {
-      if (e.name === 'AbortError') {
-        console.log('Content verification (finalize call) aborted.');
-        return false;
-      }
+      if (e.name === 'AbortError') return false;
       if (this.actionBinder.MULTI_FILE) {
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
           code: 'verb_upload_error_finalize_asset',
@@ -419,11 +416,6 @@ export default class UploadHandler {
       abortSignal
     );
 
-    if (abortSignal.aborted) {
-      console.log('Upload aborted after chunkPdf');
-      return;
-    }
-
     if (uploadResult.size === 1) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
@@ -433,10 +425,7 @@ export default class UploadHandler {
     }
     this.actionBinder.operations.push(assetData.id);
     const verified = await this.verifyContent(assetData);
-    if (!verified || abortSignal.aborted) {
-      console.log('Upload aborted after verifyContent');
-      return;
-    }
+    if (!verified || abortSignal.aborted) return;
     if (!isNonPdf) {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
