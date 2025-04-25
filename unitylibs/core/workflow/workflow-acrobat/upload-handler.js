@@ -91,7 +91,7 @@ export default class UploadHandler {
       }
       return response;
     } catch (e) {
-      if (e.name === 'AbortError') {return;}
+      if (e.name === 'AbortError') {throw e;}
       else if (e instanceof TypeError) {
         const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
@@ -132,10 +132,9 @@ export default class UploadHandler {
     await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
   }
 
-  async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
+  async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize, signal) {
     const uploadTasks = [];
     const failedFiles = new Set();
-    const abortSignal = this.actionBinder.getAbortSignal();
     assetDataArray.forEach((assetData, fileIndex) => {
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
@@ -149,7 +148,7 @@ export default class UploadHandler {
         const url = assetData.uploadUrls[i];
         return () => {
           if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, abortSignal).catch(async (err) => {
+          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, signal).catch(async (err) => {
             if (err.name !== 'AbortError') {
               failedFiles.add(fileIndex);
               fileUploadFailed = true;
@@ -163,7 +162,7 @@ export default class UploadHandler {
     return failedFiles;
   }
 
-  async verifyContent(assetData) {
+  async verifyContent(assetData, signal) {
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
@@ -172,7 +171,7 @@ export default class UploadHandler {
       };
       const finalizeJson = await this.serviceHandler.postCallToServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData), signal: AbortSignal.timeout?.(80000) },
+        { body: JSON.stringify(finalAssetData), signal: signal },
         { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
@@ -194,6 +193,10 @@ export default class UploadHandler {
         return false;
       }
     } catch (e) {
+      if (e.name === 'AbortError') {
+        console.log('Content verification (finalize call) aborted.');
+        return false;
+      }
       if (this.actionBinder.MULTI_FILE) {
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
           code: 'verb_upload_error_finalize_asset',
@@ -381,6 +384,7 @@ export default class UploadHandler {
 
   async uploadSingleFile(file, fileData, isNonPdf = false) {
     const { maxConcurrentChunks } = this.getConcurrentLimits();
+    const abortSignal = this.actionBinder.getAbortSignal();
     let cOpts = {};
     const [blobData, assetData] = await Promise.all([
       this.getBlobData(file),
@@ -412,7 +416,14 @@ export default class UploadHandler {
       [blobData],
       [file.type],
       maxConcurrentChunks,
+      abortSignal
     );
+
+    if (abortSignal.aborted) {
+      console.log('Upload aborted after chunkPdf');
+      return;
+    }
+
     if (uploadResult.size === 1) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
@@ -422,7 +433,10 @@ export default class UploadHandler {
     }
     this.actionBinder.operations.push(assetData.id);
     const verified = await this.verifyContent(assetData);
-    if (!verified) return;
+    if (!verified || abortSignal.aborted) {
+      console.log('Upload aborted after verifyContent');
+      return;
+    }
     if (!isNonPdf) {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
