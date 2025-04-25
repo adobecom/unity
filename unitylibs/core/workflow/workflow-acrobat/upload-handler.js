@@ -48,15 +48,18 @@ export default class UploadHandler {
     return blob;
   }
 
-  async uploadFileToUnityWithRetry(url, blobData, fileType, assetId) {
+  async uploadFileToUnityWithRetry(url, blobData, fileType, assetId, signal) {
     let retryDelay = 1000;
     const maxRetries = 3;
     let error = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            const response = await this.uploadFileToUnity(url, blobData, fileType, assetId);
+            const response = await this.uploadFileToUnity(url, blobData, fileType, assetId, signal);
             if (response.ok) return response;
-        } catch (err) { error = err;}
+        } catch (err) { 
+          if (err.name === 'AbortError') {throw err;}
+          error = err;
+        }
         if (attempt < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, retryDelay));
             retryDelay *= 2;
@@ -67,11 +70,12 @@ export default class UploadHandler {
     throw error 
   }
 
-  async uploadFileToUnity(storageUrl, blobData, fileType, assetId) {
+  async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal) {
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
       body: blobData,
+      signal: signal
     };
     try {
       const response = await fetch(storageUrl, uploadOptions);
@@ -87,14 +91,15 @@ export default class UploadHandler {
       }
       return response;
     } catch (e) {
-      if (e instanceof TypeError) {
+      if (e.name === 'AbortError') {return;}
+      else if (e instanceof TypeError) {
         const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
           code: 'verb_upload_warn_chunk_upload',
           subCode: e.status || 0,
           desc: `Exception raised when uploading chunk to storage; ${errorMessage}`,
         });
-      } else if (['Timeout', 'AbortError'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
+      } else if (['Timeout'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
         code: 'verb_upload_warn_chunk_upload',
         subCode: e.status || 0,
         desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`,
@@ -130,6 +135,7 @@ export default class UploadHandler {
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize) {
     const uploadTasks = [];
     const failedFiles = new Set();
+    const abortSignal = this.actionBinder.getAbortSignal();
     assetDataArray.forEach((assetData, fileIndex) => {
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
@@ -143,9 +149,11 @@ export default class UploadHandler {
         const url = assetData.uploadUrls[i];
         return () => {
           if (fileUploadFailed) return Promise.resolve();
-          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id).catch(async () => {
-            failedFiles.add(fileIndex);
-            fileUploadFailed = true;
+          return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, abortSignal).catch(async (err) => {
+            if (err.name !== 'AbortError') {
+              failedFiles.add(fileIndex);
+              fileUploadFailed = true;
+            }
           });
         };
       });

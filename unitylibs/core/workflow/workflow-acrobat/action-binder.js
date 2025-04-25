@@ -194,6 +194,7 @@ static ERROR_MAP = {
     this.MULTI_FILE = false;
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
+    this.abortController = new AbortController();
   }
 
   isSignedOut() {
@@ -206,6 +207,10 @@ static ERROR_MAP = {
 
   setIsUploading(isUploading) {
     this.isUploading = isUploading;
+  }
+
+  getAbortSignal() {
+    return this.abortController.signal;
   }
 
   acrobatSignedInSettings() {
@@ -552,6 +557,8 @@ static ERROR_MAP = {
     this.filesData.count = this.isUploading ? -3 : -2;
     this.dispatchAnalyticsEvent('cancel', this.filesData);
     this.setIsUploading(false);
+    this.abortController.abort();
+    this.abortController = new AbortController();
     const e = new Error('Operation termination requested.');
     e.showError = false;
     const cancelPromise = Promise.reject(e);
