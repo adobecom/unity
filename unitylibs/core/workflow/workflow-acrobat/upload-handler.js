@@ -59,7 +59,7 @@ export default class UploadHandler {
           this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
             attempt: `${attempt}`,
             assetId,
-            chunkNumber: chunkNumber,
+            chunkNumber,
             size: `${blobData.size}`,
             type: `${fileType}`,
           });
@@ -152,6 +152,7 @@ export default class UploadHandler {
       const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
       if (assetData.uploadUrls.length !== totalChunks) return;
       let fileUploadFailed = false;
+      let maxAttempts = 0;
       const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
         const start = i * assetData.blocksize;
         const end = Math.min(start + assetData.blocksize, blobData.size);
@@ -163,7 +164,8 @@ export default class UploadHandler {
           const chunkNumber = urlObj.searchParams.get('partNumber') || 'unknown';
           try {
             const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, chunkNumber);
-            attemptMap.set(fileIndex, attempt);
+            if (attempt > maxAttempts) maxAttempts = attempt;
+            attemptMap.set(fileIndex, maxAttempts);
           } catch {
             failedFiles.add({ fileIndex, chunkNumber });
             fileUploadFailed = true;
