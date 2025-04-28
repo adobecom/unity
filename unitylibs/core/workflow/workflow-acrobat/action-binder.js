@@ -265,7 +265,7 @@ static ERROR_MAP = {
           metaData: this.filesData,
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
-            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
+            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode,
             desc: errorMetaData.desc || message || undefined
           },
           sendToSplunk,
