@@ -57,7 +57,7 @@ export default class UploadHandler {
         const response = await this.uploadFileToUnity(url, blobData, fileType, assetId, chunkNumber);
         if (response.ok) {
           this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
-            chunkUploadAttempt: `${attempt}`,
+            chunkUploadAttempt: attempt,
             assetId,
             chunkNumber,
             size: `${blobData.size}`,
@@ -442,7 +442,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
-    this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, chunkUploadAttempt: `${attemptMap.get(0)}` });
+    this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, maxRetryCount: attemptMap.get(0) });
   }
 
   async singleFileGuestUpload(file, fileData) {
