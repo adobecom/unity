@@ -442,7 +442,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
-    this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, chunkUploadAttempt: `${attemptMap.get(0)}` });
+    this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, chunkUploadAttempt: `${attemptMap.get(0)}` });
   }
 
   async singleFileGuestUpload(file, fileData) {
