@@ -57,7 +57,7 @@ export default class UploadHandler {
         const response = await this.uploadFileToUnity(url, blobData, fileType, assetId, chunkNumber);
         if (response.ok) {
           this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
-            attempt: `${attempt}`,
+            chunkUploadAttempt: `${attempt}`,
             assetId,
             chunkNumber,
             size: `${blobData.size}`,
