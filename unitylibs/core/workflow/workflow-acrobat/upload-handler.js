@@ -48,7 +48,7 @@ export default class UploadHandler {
     return blob;
   }
 
-  async uploadFileToUnityWithRetry(url, blobData, fileType, assetId, chunkNumber = 'unknown') {
+  async uploadFileToUnityWithRetry(url, blobData, fileType, assetId, chunkNumber = 0) {
     let retryDelay = 1000;
     const maxRetries = 4;
     let error = null;
@@ -161,9 +161,9 @@ export default class UploadHandler {
         return async () => {
           if (fileUploadFailed) return Promise.resolve();
           const urlObj = new URL(url.href);
-          const chunkNumber = urlObj.searchParams.get('partNumber') || 'unknown';
+          const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
           try {
-            const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, chunkNumber);
+            const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, parseInt(chunkNumber));
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
           } catch {
