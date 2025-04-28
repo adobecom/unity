@@ -136,6 +136,7 @@ export default class UploadHandler {
     const uploadTasks = [];
     const failedFiles = new Set();
     assetDataArray.forEach((assetData, fileIndex) => {
+      if (signal?.aborted) {return};
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
       const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
@@ -147,7 +148,7 @@ export default class UploadHandler {
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
         return () => {
-          if (fileUploadFailed) return Promise.resolve();
+          if (fileUploadFailed || signal?.aborted) return Promise.resolve();
           return this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, signal).catch(async (err) => {
             if (err.name !== 'AbortError') {
               failedFiles.add(fileIndex);
@@ -158,6 +159,7 @@ export default class UploadHandler {
       });
       uploadTasks.push(...chunkTasks);
     });
+    if (signal?.aborted) return;
     await this.batchUpload(uploadTasks, batchSize);
     return failedFiles;
   }
@@ -208,7 +210,7 @@ export default class UploadHandler {
       await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
         code: 'verb_upload_error_finalize_asset',
         subCode: e.status,
-        message: `Exception thrown when verifying content: ${e.message}, ${assetData.id}`,
+        desc: `Exception thrown when verifying content: ${e.message}, ${assetData.id}`,
       });
       this.actionBinder.operations = [];
       return false;
@@ -415,7 +417,7 @@ export default class UploadHandler {
       maxConcurrentChunks,
       abortSignal
     );
-
+    if (abortSignal.aborted) return;
     if (uploadResult.size === 1) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);

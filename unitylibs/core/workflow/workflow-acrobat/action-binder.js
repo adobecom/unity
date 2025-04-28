@@ -26,6 +26,12 @@ const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 class ServiceHandler {
   async fetchFromService(url, options, canRetry = true) {
     try {
+      if (options?.signal?.aborted) {
+        const error = new Error('Request aborted by user.');
+        error.name = 'AbortError';
+        error.status = 0;
+        throw error;
+      }
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
@@ -52,6 +58,12 @@ class ServiceHandler {
       if (contentLength === '0') return {};
       return response.json();
     } catch (e) {
+      if (options?.signal?.aborted) {
+        const error = new Error('Request aborted by user.');
+        error.name = 'AbortError';
+        error.status = 0;
+        throw error;
+      }
       if (e instanceof TypeError) {
         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
         error.status = 0;
@@ -68,6 +80,12 @@ class ServiceHandler {
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
     let timeLapsed = 0;
     while (timeLapsed < maxRetryDelay) {
+      if (options?.signal?.aborted) {
+        const error = new Error('Request aborted by user.');
+        error.name = 'AbortError';
+        error.status = 0;
+        throw error;
+      }
       const response = await this.fetchFromService(url, options, false);
       if (response.status === 202) {
         const retryDelay = parseInt(response.headers.get('retry-after')) || 5;
@@ -270,7 +288,7 @@ static ERROR_MAP = {
           metaData: this.filesData,
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
-            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
+            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode,
             desc: errorMetaData.desc || message || undefined
           },
           sendToSplunk,
