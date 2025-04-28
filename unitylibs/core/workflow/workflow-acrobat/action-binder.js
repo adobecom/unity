@@ -549,7 +549,7 @@ static ERROR_MAP = {
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
     this.filesData = this.filesData || {};
-    this.filesData.workflowStep = this.isUploading ? "uploading" : "preuploading";
+    this.filesData.workflowStep = this.isUploading ? 'uploading' : 'preuploading';
     this.dispatchAnalyticsEvent('cancel', this.filesData);
     this.setIsUploading(false);
     const e = new Error('Operation termination requested.');
