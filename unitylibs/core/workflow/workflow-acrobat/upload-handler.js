@@ -57,7 +57,7 @@ export default class UploadHandler {
             const response = await this.uploadFileToUnity(url, blobData, fileType, assetId, signal);
             if (response.ok) return response;
         } catch (err) { 
-          if (err.name === 'AbortError') {throw err;}
+          if (err.name === 'AbortError') throw err;
           error = err;
         }
         if (attempt < maxRetries) {
