@@ -153,7 +153,7 @@ export default class UploadHandler {
         const url = assetData.uploadUrls[i];
         return async () => {
           if (fileUploadFailed) return Promise.resolve();
-          const urlObj = new URL(url);
+          const urlObj = new URL(url.href);
           const chunkNumber = urlObj.searchParams.get('partNumber') || 'unknown';
           try {
             const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, chunkNumber);
