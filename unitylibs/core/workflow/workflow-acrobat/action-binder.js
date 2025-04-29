@@ -25,6 +25,7 @@ const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
 class ServiceHandler {
   handleAbortedRequest(url) {
+    if (!options?.signal?.aborted) return;
     const error = new Error(`Request to ${url} aborted by user.`);
     error.name = 'AbortError';
     error.status = 0;
