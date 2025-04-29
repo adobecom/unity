@@ -24,14 +24,15 @@ const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
 class ServiceHandler {
+  handleAbortedRequest(url) {
+    const error = new Error(`Request to ${url} aborted by user.`);
+    error.name = 'AbortError';
+    error.status = 0;
+    throw error;
+  }
   async fetchFromService(url, options, canRetry = true) {
     try {
-      if (options?.signal?.aborted) {
-        const error = new Error('Request aborted by user.');
-        error.name = 'AbortError';
-        error.status = 0;
-        throw error;
-      }
+      this.handleAbortedRequest(url);
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
@@ -58,12 +59,7 @@ class ServiceHandler {
       if (contentLength === '0') return {};
       return response.json();
     } catch (e) {
-      if (options?.signal?.aborted) {
-        const error = new Error('Request aborted by user.');
-        error.name = 'AbortError';
-        error.status = 0;
-        throw error;
-      }
+      this.handleAbortedRequest(url);
       if (e instanceof TypeError) {
         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
         error.status = 0;
@@ -80,12 +76,7 @@ class ServiceHandler {
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
     let timeLapsed = 0;
     while (timeLapsed < maxRetryDelay) {
-      if (options?.signal?.aborted) {
-        const error = new Error('Request aborted by user.');
-        error.name = 'AbortError';
-        error.status = 0;
-        throw error;
-      }
+      this.handleAbortedRequest(url);
       const response = await this.fetchFromService(url, options, false);
       if (response.status === 202) {
         const retryDelay = parseInt(response.headers.get('retry-after')) || 5;

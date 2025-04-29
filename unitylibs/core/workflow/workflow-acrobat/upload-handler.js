@@ -67,7 +67,7 @@ export default class UploadHandler {
     }
     if (error) error.message = error.message + ', Max retry delay exceeded during upload';
     else error = new Error('Max retry delay exceeded during upload');
-    throw error 
+    throw error;
   }
 
   async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal) {
@@ -91,7 +91,7 @@ export default class UploadHandler {
       }
       return response;
     } catch (e) {
-      if (e.name === 'AbortError') {throw e;}
+      if (e.name === 'AbortError') throw e;
       else if (e instanceof TypeError) {
         const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
         await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
@@ -136,7 +136,7 @@ export default class UploadHandler {
     const uploadTasks = [];
     const failedFiles = new Set();
     assetDataArray.forEach((assetData, fileIndex) => {
-      if (signal?.aborted) {return};
+      if (signal?.aborted) return;
       const blobData = blobDataArray[fileIndex];
       const fileType = filetypeArray[fileIndex];
       const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
