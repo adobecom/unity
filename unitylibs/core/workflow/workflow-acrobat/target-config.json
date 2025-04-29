@@ -13,6 +13,6 @@
       ".verb-wrapper": "upload",
       "#file-upload": "upload"
     },
-    "sendSplunkAnalytics": true
+    "sendSplunkAnalytics": false
   }
 }
