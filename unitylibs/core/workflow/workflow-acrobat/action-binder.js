@@ -443,21 +443,21 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    const fileData = { type: files[0].type, size: files[0].size, count: 1 };
-    this.dispatchAnalyticsEvent(eventName, fileData);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], fileData);
-    else await this.uploadHandler.singleFileUserUpload(files[0], fileData);
+    this.filesData = { type: files[0].type, size: files[0].size, count: 1 };
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
+    else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
 
   async handleMultiFileUpload(files, eventName, totalFileSize) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
-    this.dispatchAnalyticsEvent(eventName, filesData);
-    this.dispatchAnalyticsEvent('multifile', filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    this.dispatchAnalyticsEvent('multifile', this.filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
   async handleFileUpload(files, eventName, totalFileSize) {
