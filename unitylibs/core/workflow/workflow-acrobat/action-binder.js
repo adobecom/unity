@@ -145,6 +145,7 @@ export default class ActionBinder {
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
+    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'merge-pdf': ['hybrid', 'allowed-filetypes-pdf-only', 'page-limit-500', 'max-filesize-100-mb'],
   };
 
