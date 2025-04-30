@@ -630,6 +630,10 @@ static ERROR_MAP = {
     return { files, totalFileSize };
   }
 
+  setAssetId(assetId) {
+    this.filesData.assetId = assetId;
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
