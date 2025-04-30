@@ -443,7 +443,7 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    this.filesData = { type: files[0].type, size: files[0].size, count: 1 };
+    this.filesData = { name: files[0].name, type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu'};
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
@@ -453,7 +453,7 @@ static ERROR_MAP = {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
+    this.filesData = { name: '', type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     this.dispatchAnalyticsEvent('multifile', this.filesData);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
