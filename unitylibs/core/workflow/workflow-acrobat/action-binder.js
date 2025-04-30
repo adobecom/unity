@@ -145,7 +145,10 @@ export default class ActionBinder {
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb']
+    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
+    'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'protect-pdf': ['single']
   };
 
 static ERROR_MAP = {
