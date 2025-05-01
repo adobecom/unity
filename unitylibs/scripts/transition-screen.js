@@ -146,7 +146,7 @@ export default class TransitionScreen {
     if (this.splashScreenEl.classList.contains('decorate')) {
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
-      if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
+      this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }
     this.splashVisibilityController(displayOn);
