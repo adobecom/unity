@@ -33,7 +33,7 @@ export default class TransitionScreen {
       <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
     </div>
     </div>`;
-    return createTag('div', { class: 'progress-holder', tabindex: '-1' }, pdom);
+    return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
   progressBarHandler(s, delay, i, initialize = false) {
@@ -125,14 +125,13 @@ export default class TransitionScreen {
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
+    this.splashScreenEl.setAttribute('tabindex', '-1');
   }
 
   updateCopyForDevice() {
     const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
     const mobileHeading = headingElements[1];
     const desktopHeading = headingElements[2];
-    mobileHeading.setAttribute('tabindex', '-1');
-    desktopHeading.setAttribute('tabindex', '-1');
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
     }
