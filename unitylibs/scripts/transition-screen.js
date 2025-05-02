@@ -120,12 +120,22 @@ export default class TransitionScreen {
       this.LOADER_LIMIT = 95;
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
+      document.querySelector('main').removeAttribute('aria-hidden');
+      document.querySelector('header').removeAttribute('aria-hidden');
+      document.querySelector('footer').removeAttribute('aria-hidden');
       return;
     }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
     this.splashScreenEl.setAttribute('tabindex', '-1');
+    this.splashScreenEl.setAttribute('role', 'dialog');
+    this.splashScreenEl.setAttribute('aria-modal, 'true');
+    this.splashScreenEl.setAttribute('aria-label', 'Loading');
+    this.splashScreenEl.focus();
+    document.querySelector('main').setAttribute('aria-hidden', 'true');
+    document.querySelector('header').setAttribute('aria-hidden', 'true');
+    document.querySelector('footer').setAttribute('aria-hidden', 'true');
   }
 
   updateCopyForDevice() {
