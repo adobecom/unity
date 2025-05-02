@@ -130,7 +130,7 @@ export default class TransitionScreen {
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
     this.splashScreenEl.setAttribute('tabindex', '-1');
     this.splashScreenEl.setAttribute('role', 'dialog');
-    this.splashScreenEl.setAttribute('aria-modal, 'true');
+    this.splashScreenEl.setAttribute('aria-modal', 'true');
     this.splashScreenEl.setAttribute('aria-label', 'Loading');
     this.splashScreenEl.focus();
     document.querySelector('main').setAttribute('aria-hidden', 'true');
