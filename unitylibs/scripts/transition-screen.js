@@ -60,6 +60,10 @@ export default class TransitionScreen {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
+    f.setAttribute('tabindex', '-1');
+    f.setAttribute('role', 'dialog');
+    f.setAttribute('aria-modal', 'true');
+    f.setAttribute('aria-label', 'Loading');
     f.append(...sections);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
@@ -128,10 +132,6 @@ export default class TransitionScreen {
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
-    this.splashScreenEl.setAttribute('tabindex', '-1');
-    this.splashScreenEl.setAttribute('role', 'dialog');
-    this.splashScreenEl.setAttribute('aria-modal', 'true');
-    this.splashScreenEl.setAttribute('aria-label', 'Loading');
     this.splashScreenEl.focus();
     document.querySelector('main').setAttribute('aria-hidden', 'true');
     document.querySelector('header').setAttribute('aria-hidden', 'true');
