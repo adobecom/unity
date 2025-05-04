@@ -64,9 +64,6 @@ export default class TransitionScreen {
     f.setAttribute('role', 'dialog');
     f.setAttribute('aria-modal', 'true');
     f.append(...sections);
-    const headings = f.querySelectorAll('.heading-l');
-    const headingText = Array.from(headings).map(h => h.textContent).join(' ');
-    f.setAttribute('aria-label', headingText);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
     );
@@ -146,9 +143,11 @@ export default class TransitionScreen {
     const desktopHeading = headingElements[2];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
+      this.splashScreenEl.setAttribute('aria-label', mobileHeading.innerText);
     }
     if (desktopHeading) {
       desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
+      this.splashScreenEl.setAttribute('aria-label', desktopHeading.innerText);
     }
   }
 
