@@ -132,10 +132,10 @@ export default class TransitionScreen {
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
-    this.splashScreenEl.focus();
     document.querySelector('main').setAttribute('aria-hidden', 'true');
     document.querySelector('header').setAttribute('aria-hidden', 'true');
     document.querySelector('footer').setAttribute('aria-hidden', 'true');
+    setTimeout(() => splash.focus(), 50);
   }
 
   updateCopyForDevice() {
