@@ -23,21 +23,24 @@ export default class TransitionScreen {
     spb?.setAttribute('aria-valuenow', p);
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
-    const status = document.getElementById('progress-status');
+    const status = layer.querySelector('#progress-status');
     if (status) {
-    status.textContent = `Loading: ${p}% complete`;
-  }
+      const newText = `Loading: ${p}% complete`;
+      if (status.textContent !== newText) {
+        status.textContent = newText;
+      }
+    }
   }
 
   createProgressBar() {
     const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spectrum-ProgressBar--sideLabel" value="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-    <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
-    <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
-    <div class="spectrum-ProgressBar-track">
-      <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
+      <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
+      <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
+      <div class="spectrum-ProgressBar-track">
+        <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
+      </div>
     </div>
-    <div aria-live="polite" aria-atomic="true" class="sr-only" id="progress-status"></div>
-    </div>`;
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="progress-status"></div>`;
     return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
