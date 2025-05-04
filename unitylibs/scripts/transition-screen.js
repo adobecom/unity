@@ -140,7 +140,7 @@ export default class TransitionScreen {
     document.querySelector('header').setAttribute('aria-hidden', 'true');
     document.querySelector('footer').setAttribute('aria-hidden', 'true');
     /*setTimeout(() => splash.focus(), 50);*/
-    splash.focus();
+    this.splashScreenEl.focus();
   }
 
   updateCopyForDevice() {
