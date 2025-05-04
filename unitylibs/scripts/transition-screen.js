@@ -63,9 +63,10 @@ export default class TransitionScreen {
     f.setAttribute('tabindex', '-1');
     f.setAttribute('role', 'dialog');
     f.setAttribute('aria-modal', 'true');
-    /*f.setAttribute('aria-labelledby', 'splash-title');
-    f.setAttribute('aria-describedby', 'splash-desc');*/
     f.append(...sections);
+    const headings = f.querySelectorAll('.heading-l');
+    const headingText = Array.from(headings).map(h => h.textContent).join(' ');
+    f.setAttribute('aria-label', headingText);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
     );
