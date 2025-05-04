@@ -23,6 +23,10 @@ export default class TransitionScreen {
     spb?.setAttribute('aria-valuenow', p);
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
+    const status = document.getElementById('progress-status');
+    if (status) {
+    status.textContent = `Loading: ${p}% complete`;
+  }
   }
 
   createProgressBar() {
@@ -32,6 +36,7 @@ export default class TransitionScreen {
     <div class="spectrum-ProgressBar-track">
       <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
     </div>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="progress-status"></div>
     </div>`;
     return createTag('div', { class: 'progress-holder' }, pdom);
   }
