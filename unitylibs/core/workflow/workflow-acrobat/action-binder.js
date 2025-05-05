@@ -37,7 +37,7 @@ class ServiceHandler {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
-      if(canRetry && response.status >= 500 && response.status < 600) {
+      if(canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return this.fetchFromService(url, options, false);
      }
@@ -219,6 +219,7 @@ static ERROR_MAP = {
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
     this.abortController = new AbortController();
+    this.uploadTimestamp = null;
   }
 
   isSignedOut() {
@@ -579,9 +580,11 @@ static ERROR_MAP = {
         });
       }
       await this.delay(500);
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
+      const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
-        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else window.location.href = this.redirectUrl;
+        window.location.href = `${baseUrl}?${additionalParams}feedback=${this.multiFileFailure}&${queryString}`;
+      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${additionalParams}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
