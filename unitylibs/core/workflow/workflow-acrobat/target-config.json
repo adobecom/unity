@@ -15,6 +15,7 @@
     },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuFallback": ["compress-pdf"],
-    "autoRedirectVerbs": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "combine-pdf"]
+    "autoRedirectVerbs": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "combine-pdf"],
+    "multiFileSupportedVerbs": ["combine-pdf", "rotate-pdf"]
   }
 }

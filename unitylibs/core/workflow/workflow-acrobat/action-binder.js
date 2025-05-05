@@ -459,7 +459,7 @@ static ERROR_MAP = {
     const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
     this.dispatchAnalyticsEvent(eventName, filesData);
     this.dispatchAnalyticsEvent('multifile', filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
+    if (this.signedOut && !this.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.workflowCfg.enabledFeatures[0])) await this.uploadHandler.multiFileGuestUpload(filesData);
     else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
