@@ -525,11 +525,15 @@ export default class UploadHandler {
     this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
   }
 
-  async multiFileGuestUpload(filesData) {
+  async multiFileGuestUpload(files, filesData) {
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen(true);
+      if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+        await this.uploadMultiFile(files, filesData); 
+        return;
+      }
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
