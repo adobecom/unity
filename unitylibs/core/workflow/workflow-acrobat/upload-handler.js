@@ -532,6 +532,7 @@ export default class UploadHandler {
       await this.transitionScreen.showSplashScreen(true);
       if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
         await this.uploadMultiFile(files, filesData); 
+        this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
         return;
       }
       await this.actionBinder.delay(3000);
