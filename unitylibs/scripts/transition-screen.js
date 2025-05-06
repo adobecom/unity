@@ -140,6 +140,7 @@ export default class TransitionScreen {
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
+    this.splashScreenEl.setAttribute('aria-label', this.headingElements[1]);
     document.querySelector('main').setAttribute('aria-hidden', 'true');
     document.querySelector('header').setAttribute('aria-hidden', 'true');
     document.querySelector('footer').setAttribute('aria-hidden', 'true');
@@ -169,6 +170,5 @@ export default class TransitionScreen {
       this.splashScreenEl.classList.remove('decorate');
     }
     this.splashVisibilityController(displayOn);
-    this.splashScreenEl.setAttribute('aria-label', this.headingElements[1]);
   }
 }
