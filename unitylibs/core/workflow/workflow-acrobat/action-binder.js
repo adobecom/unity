@@ -545,9 +545,11 @@ static ERROR_MAP = {
         });
       }
       await this.delay(500);
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
+      const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
-        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else window.location.href = this.redirectUrl;
+        window.location.href = `${baseUrl}?${additionalParams}feedback=${this.multiFileFailure}&${queryString}`;
+      } else window.location.href = `${baseUrl}?${additionalParams}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
