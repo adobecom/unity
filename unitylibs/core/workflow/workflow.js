@@ -296,7 +296,7 @@ class WfInitiator {
           'ppt-to-pdf',
           'jpg-to-pdf',
           'png-to-pdf',
-          'merge-pdf'
+          'combine-pdf'
         ]),
       },
       'workflow-ai': {

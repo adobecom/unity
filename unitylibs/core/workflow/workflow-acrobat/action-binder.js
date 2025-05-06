@@ -146,7 +146,7 @@ export default class ActionBinder {
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'merge-pdf': ['hybrid', 'allowed-filetypes-pdf-only', 'page-limit-500', 'max-filesize-100-mb'],
+    'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
   };
 
 static ERROR_MAP = {
