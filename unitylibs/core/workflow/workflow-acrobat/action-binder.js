@@ -148,7 +148,10 @@ export default class ActionBinder {
     'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
     'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
-    'protect-pdf': ['single', 'max-filesize-100-mb']
+    'protect-pdf': ['single'],
+    'ocr-pdf': ['single'],
+    'chat-pdf': ['single'],
+    'chat-pdf-student': ['single']
   };
 
 static ERROR_MAP = {

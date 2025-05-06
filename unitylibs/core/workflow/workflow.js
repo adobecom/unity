@@ -298,7 +298,10 @@ class WfInitiator {
           'png-to-pdf',
           'combine-pdf',
           'rotate-pages',
-          'protect-pdf'
+          'protect-pdf',
+          'ocr-pdf',
+          'chat-pdf',
+          'chat-pdf-student'
         ]),
       },
       'workflow-ai': {
