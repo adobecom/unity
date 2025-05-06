@@ -14,7 +14,7 @@ export default class TransitionScreen {
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
     this.isDesktop = isDesktop;
-    this.headingElements = null;
+    this.headingElements = [];
   }
 
   updateProgressBar(layer, percentage) {
@@ -26,7 +26,7 @@ export default class TransitionScreen {
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
     const status = layer.querySelector('#progress-status');
     if (status) {
-      const newText = `Loading: ${p}% complete`;
+      const newText = `${p}%`;
       if (status.textContent !== newText) {
         status.textContent = newText;
       }
