@@ -14,6 +14,7 @@ export default class TransitionScreen {
     this.LOADER_DELAY = 800;
     this.LOADER_INCREMENT = 30;
     this.isDesktop = isDesktop;
+    this.headingElements = null;
   }
 
   updateProgressBar(layer, percentage) {
@@ -23,16 +24,24 @@ export default class TransitionScreen {
     spb?.setAttribute('aria-valuenow', p);
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
+    const status = layer.querySelector('#progress-status');
+    if (status) {
+      const newText = `Loading: ${p}% complete`;
+      if (status.textContent !== newText) {
+        status.textContent = newText;
+      }
+    }
   }
 
   createProgressBar() {
     const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spectrum-ProgressBar--sideLabel" value="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-    <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
-    <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
-    <div class="spectrum-ProgressBar-track">
-      <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
+      <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
+      <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
+      <div class="spectrum-ProgressBar-track">
+        <div class="spectrum-ProgressBar-fill" style="width: 0%;"></div>
+      </div>
     </div>
-    </div>`;
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="progress-status"></div>`;
     return createTag('div', { class: 'progress-holder' }, pdom);
   }
 
@@ -60,6 +69,9 @@ export default class TransitionScreen {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none' });
+    f.setAttribute('tabindex', '-1');
+    f.setAttribute('role', 'dialog');
+    f.setAttribute('aria-modal', 'true');
     f.append(...sections);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
@@ -120,22 +132,30 @@ export default class TransitionScreen {
       this.LOADER_LIMIT = 95;
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
+      document.querySelector('main').removeAttribute('aria-hidden');
+      document.querySelector('header').removeAttribute('aria-hidden');
+      document.querySelector('footer').removeAttribute('aria-hidden');
       return;
     }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
+    document.querySelector('main').setAttribute('aria-hidden', 'true');
+    document.querySelector('header').setAttribute('aria-hidden', 'true');
+    document.querySelector('footer').setAttribute('aria-hidden', 'true');
+    setTimeout(() => this.splashScreenEl.focus(), 50);
   }
 
   updateCopyForDevice() {
-    const headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    const mobileHeading = headingElements[1];
-    const desktopHeading = headingElements[2];
+    const mobileHeading = this.headingElements[1];
+    const desktopHeading = this.headingElements[2];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
+      this.splashScreenEl.setAttribute('aria-label', mobileHeading.innerText);
     }
     if (desktopHeading) {
       desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
+      this.splashScreenEl.setAttribute('aria-label', desktopHeading.innerText);
     }
   }
 
@@ -144,6 +164,8 @@ export default class TransitionScreen {
     if (this.splashScreenEl.classList.contains('decorate')) {
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
+      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      this.splashScreenEl.setAttribute('aria-label', this.headingElements[1]);
       if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }
