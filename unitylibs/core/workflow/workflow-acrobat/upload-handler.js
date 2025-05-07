@@ -114,7 +114,10 @@ export default class UploadHandler {
   async executeInBatches(items, batchSize, processFn) {
     const executing = new Set();
     for (const item of items) {
-      const p = processFn(item).then(() => executing.delete(p)).catch(() => {
+      const p = processFn(item)
+      .then(() => {
+        return executing.delete(p)
+      }).catch(() => {
         executing.delete(p);
       });
       executing.add(p);
@@ -464,6 +467,7 @@ export default class UploadHandler {
     const blobDataArray = [];
     const assetDataArray = [];
     const fileTypeArray = [];
+    const createdAssets = [];
     let cOpts = {};
     await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
       try {
@@ -474,6 +478,7 @@ export default class UploadHandler {
         blobDataArray.push(blobData);
         assetDataArray.push(assetData);
         fileTypeArray.push(file.type);
+        createdAssets.push(assetData);
       } catch (e) {
         await this.handleUploadError(e);
       }
@@ -515,10 +520,27 @@ export default class UploadHandler {
     const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
     this.actionBinder.operations.push(workflowId);
     let allVerified = 0;
+    const assetsToDelete = [];
     await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
       const verified = await this.verifyContent(assetData);
-      if (verified) allVerified += 1;
+      if (verified) {
+        const validated = await this.handleValidations(assetData, true);
+        if (validated) allVerified += 1;
+        else assetsToDelete.push(assetData);
+      } else {
+        assetsToDelete.push(assetData);
+      }
     });
+
+    await Promise.all(assetsToDelete.map(async (asset) => {
+      try {
+        await this.deleteAsset(asset.id, signal);
+        console.log(`Asset ${asset.id} deleted due to verification or validation failure.`);
+      } catch (error) {
+        console.error(`Error deleting asset ${asset.id}:`, error);
+      }
+    }));
+
     if (allVerified === 0) return;
     if (files.length !== allVerified) this.actionBinder.multiFileFailure = 'uploaderror';
     this.actionBinder.LOADER_LIMIT = 95;
