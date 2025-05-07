@@ -92,7 +92,7 @@ export default class UploadHandler {
       if (!response.ok) {
         const error = new Error(response.statusText || 'Upload request failed');
         error.status = response.status;
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true, true, {
+        await this.actionBinder.dispatchErrorToast('verb_upload_warn_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true, true, {
           code: 'verb_upload_warn_chunk_upload',
           subCode: chunkNumber,
           desc: `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes; status: ${response.status}`,
@@ -104,17 +104,17 @@ export default class UploadHandler {
       if (e.name === 'AbortError') throw e;
       else if (e instanceof TypeError) {
         const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
+        await this.actionBinder.dispatchErrorToast('verb_upload_warn_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
           code: 'verb_upload_warn_chunk_upload',
           subCode: chunkNumber,
           desc: `Exception raised when uploading chunk to storage; ${errorMessage}; status: ${e.status}`,
         });
-      } else if (['Timeout'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
+      } else if (['Timeout'].includes(e.name)) await this.actionBinder.dispatchErrorToast('verb_upload_warn_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
         code: 'verb_upload_warn_chunk_upload',
         subCode: chunkNumber,
         desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
       }); else {
-        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes`, true, true, {
+        await this.actionBinder.dispatchErrorToast('verb_upload_warn_chunk_upload', e.status || 500, `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes`, true, true, {
           code: 'verb_upload_warn_chunk_upload',
           subCode: chunkNumber,
           desc: `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
