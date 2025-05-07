@@ -460,6 +460,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
+    this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, maxRetryCount: attemptMap.get(0) });
   }
 
@@ -592,6 +593,7 @@ export default class UploadHandler {
       await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
       return;
     }
+    this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
   }
 }

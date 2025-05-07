@@ -205,6 +205,7 @@ static ERROR_MAP = {
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
     this.abortController = new AbortController();
+    this.uploadTimestamp = null;
   }
 
   isSignedOut() {
@@ -549,7 +550,7 @@ static ERROR_MAP = {
       const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${baseUrl}?${additionalParams}feedback=${this.multiFileFailure}&${queryString}`;
-      } else window.location.href = `${baseUrl}?${additionalParams}${queryString}`;
+      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${additionalParams}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
