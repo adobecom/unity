@@ -15,6 +15,7 @@ export default class TransitionScreen {
     this.LOADER_INCREMENT = 30;
     this.isDesktop = isDesktop;
     this.headingElements = [];
+    this.progressText = '';
   }
 
   updateProgressBar(layer, percentage) {
@@ -25,8 +26,7 @@ export default class TransitionScreen {
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
     const status = layer.querySelector('#progress-status');
-    const progressText = layer.querySelector('.icon-progress-bar');
-    if (status?.textContent !== `${progressText.replace('%', `${p}%`)}`) status.textContent = `${progressText.replace('%', `${p}%`)}`;
+    if (status?.textContent !== `${this.progressText.replace('%', `${p}%`)}`) status.textContent = `${this.progressText.replace('%', `${p}%`)}`;
   }
 
   createProgressBar() {
@@ -155,6 +155,7 @@ export default class TransitionScreen {
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
+      this.progressText = this.splashScreenEl.querySelector('.icon-progress-bar').innerText;
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
