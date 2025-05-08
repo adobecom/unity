@@ -540,7 +540,7 @@ export default class UploadHandler {
     if (!redirectSuccess) return;
     this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
     this.actionBinder.setIsUploading(true);
-    const failedFiles = await this.chunkPdf(
+    const {failedFiles, attemptMap} = await this.chunkPdf(
       assetDataArray,
       blobDataArray,
       fileTypeArray,
