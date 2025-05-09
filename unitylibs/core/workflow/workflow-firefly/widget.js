@@ -129,7 +129,7 @@ export default class UnityWidget {
   addWidget() {
     // TODO: Inject the widget for a simple use case
     // TODO: Introduce a placeholder for complex use cases
-    const interactArea = this.target.querySelector('.text');
+    const interactArea = this.target.querySelector('.copy');
     const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);
