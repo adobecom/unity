@@ -276,20 +276,25 @@ export default class UploadHandler {
     }
   }
 
-  async handleValidations(assetData) {
+  async handleValidations(assetData, isMultiFile = false) {
     let validated = true;
     for (const limit of Object.keys(this.actionBinder.limits)) {
       switch (limit) {
         case 'pageLimit': {
           const pageLimitRes = await this.checkPageNumCount(assetData);
-          if (pageLimitRes) validated = false;
+          console.log(`pageLimitRes for ${assetData.id} - ${pageLimitRes}`);
+          if (pageLimitRes) {
+            validated = false;
+            if (!isMultiFile) {
+              this.actionBinder.operations = [];
+            }
+          }
           break;
         }
         default:
           break;
       }
     }
-    if (!validated) this.actionBinder.operations = [];
     return validated;
   }
 
@@ -464,7 +469,6 @@ export default class UploadHandler {
     const blobDataArray = [];
     const assetDataArray = [];
     const fileTypeArray = [];
-    const createdAssets = [];
     let cOpts = {};
     await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
       try {
@@ -475,7 +479,6 @@ export default class UploadHandler {
         blobDataArray.push(blobData);
         assetDataArray.push(assetData);
         fileTypeArray.push(file.type);
-        createdAssets.push(assetData);
       } catch (e) {
         await this.handleUploadError(e);
       }
@@ -517,22 +520,23 @@ export default class UploadHandler {
     const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
     this.actionBinder.operations.push(workflowId);
     let allVerified = 0;
-    const assetsToDelete = [];
+    let assetsToDelete = [];
     await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
       const verified = await this.verifyContent(assetData);
       if (verified) {
         const validated = await this.handleValidations(assetData, true);
-        if (validated) allVerified += 1;
+        if (validated) {
+          allVerified += 1;
+        }
         else assetsToDelete.push(assetData);
       } else {
         assetsToDelete.push(assetData);
       }
     });
-    accessToken = await getGuestAccessToken()
+    let accessToken = await getGuestAccessToken()
     try {
       await Promise.all(assetsToDelete.map((asset) => {
-        console.log(`Asset ${asset.id} deleted due to verification or validation failure.`);
-        return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken, signal);
+        return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
       }))
     } catch (error) {
       console.error(`Error deleting asset ${asset.id}:`, error);
