@@ -1,32 +1,22 @@
 {
-  "aside": {
+  "hero-marquee": {
     "type": "text",
-    "selector": ".text",
+    "selector": ".copy",
     "handler": "render",
     "renderWidget": true,
-    "source": ".text .body-m",
+    "source": ".copy .main-copy",
     "target": "p:last-of-type",
     "insert": "before",
-    "floatPrompt": true,
+    "floatPrompt": false,
     "actionMap": {
       ".inp-field": [
         {
           "actionType": "autocomplete"
         }
       ],
-      ".surprise-btn": [
-        {
-          "actionType": "surprise"
-        }
-      ],
       ".gen-btn": [
         {
           "actionType": "generate"
-        }
-      ],
-      ".drop-item": [
-        {
-          "actionType": "setPromptValue"
         }
       ],
       ".refresh-btn": [

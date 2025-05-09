@@ -38,9 +38,35 @@ export default class UnityWidget {
     );
   }
 
+  verbDropdown() {
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const selectedVerb = verbs[0].nextElementSibling;
+    const { textContent, href } = selectedVerb;
+    const selectedElement = createTag('div', {
+      class: 'selected-verb',
+      role: 'option',
+      'data-selected-verb': textContent,
+    }, `<img src="${href}" alt="${textContent}" />${textContent}`);
+    const verbList = createTag('ul', { class: 'verb-list' });
+
+    verbs.forEach((verb) => {
+      const name = verb.nextElementSibling.textContent.trim();
+      const icon = verb.nextElementSibling.href;
+      const item = createTag('li', {
+        class: 'verb-item',
+        role: 'option',
+        'aria-label': name,
+        'aria-description': name,
+      }, `<img src="${icon}" alt="${name}" />${name}`);
+      verbList.append(item);
+    });
+    return [selectedElement, verbList];
+  }
+
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
+    const verbBtn = createTag('div', { class: 'verbs-container' });
     const inpField = createTag('input', {
       id: 'promptInput',
       class: 'inp-field',
@@ -53,10 +79,11 @@ export default class UnityWidget {
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
-    const surpriseBtn = this.createActBtn(this.el.querySelector('.icon-surpriseMe')?.closest('li'), 'surprise-btn');
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
-    actWrap.append(surpriseBtn, genBtn);
-    inpWrap.append(inpField, actWrap);
+    const verbDropdown = this.verbDropdown();
+    actWrap.append(genBtn);
+    verbBtn.append(...verbDropdown);
+    inpWrap.append(verbBtn, inpField, actWrap);
     return inpWrap;
   }
 
@@ -129,7 +156,7 @@ export default class UnityWidget {
   addWidget() {
     // TODO: Inject the widget for a simple use case
     // TODO: Introduce a placeholder for complex use cases
-    const interactArea = this.target.querySelector('.text');
+    const interactArea = this.target.querySelector('.copy');
     const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);
