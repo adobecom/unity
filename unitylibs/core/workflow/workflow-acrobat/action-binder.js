@@ -458,21 +458,21 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu'};
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
-    else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
+    const fileData = { type: files[0].type, size: files[0].size, count: 1 };
+    this.dispatchAnalyticsEvent(eventName, fileData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], fileData);
+    else await this.uploadHandler.singleFileUserUpload(files[0], fileData);
   }
 
   async handleMultiFileUpload(files, eventName, totalFileSize) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
-    this.dispatchAnalyticsEvent('multifile', this.filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
+    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
+    this.dispatchAnalyticsEvent(eventName, filesData);
+    this.dispatchAnalyticsEvent('multifile', filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, filesData);
   }
 
   async handleFileUpload(files, eventName, totalFileSize) {
@@ -645,10 +645,6 @@ static ERROR_MAP = {
       });
     }
     return { files, totalFileSize };
-  }
-
-  setAssetId(assetId) {
-    this.filesData.assetId = assetId;
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {

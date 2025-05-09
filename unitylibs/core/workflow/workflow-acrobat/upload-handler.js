@@ -415,8 +415,6 @@ export default class UploadHandler {
       this.getBlobData(file),
       this.createAsset(file),
     ]);
-    fileData.assetId = assetData.id;
-    this.actionBinder.setAssetId(assetData.id);
     cOpts = {
       assetId: assetData.id,
       targetProduct: this.actionBinder.workflowCfg.productName,
