@@ -29,7 +29,7 @@ class ServiceHandler {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
-      if(canRetry && response.status >= 500 && response.status < 600) {
+      if(canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return this.fetchFromService(url, options, false);
      }
@@ -110,8 +110,9 @@ class ServiceHandler {
     return this.fetchFromService(url, getOpts);
   }
 
-  async callToDeleteAsset(assetId, accessToken, signal) {
+  async callToDeleteAsset(assetId, accessToken) {
     return fetch(`https://unity-dev-ue1.adobe.io/api/v1/asset?id=${assetId}`, {
+      method: 'DELETE',
       headers: {
           'Authorization': accessToken,
           'x-api-key': 'unity',
