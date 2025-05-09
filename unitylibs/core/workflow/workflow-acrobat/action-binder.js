@@ -109,6 +109,18 @@ class ServiceHandler {
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
   }
+
+  async callToDeleteAsset(assetId, accessToken, signal) {
+    return fetch(`https://unity-dev-ue1.adobe.io/api/v1/asset?id=${assetId}`, {
+      headers: {
+          'Authorization': accessToken,
+          'x-api-key': 'unity',
+        }
+    }).catch((ex) => {
+      console.log(`Exception occurred: ${ex.message}`)
+      throw(ex)
+    });
+  }
 }
 
 export default class ActionBinder {
