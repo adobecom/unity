@@ -543,7 +543,7 @@ export default class UploadHandler {
     if (!redirectSuccess) return;
     this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
     this.actionBinder.setIsUploading(true);
-    const {failedFiles, attemptMap} = await this.chunkPdf(
+    const failedFiles = await this.chunkPdf(
       assetDataArray,
       blobDataArray,
       fileTypeArray,
@@ -588,7 +588,7 @@ export default class UploadHandler {
   async multiFileUserUpload(files, filesData) {
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT);
       await this.transitionScreen.showSplashScreen(true);
       await this.uploadMultiFile(files, filesData);
     } catch (e) {
