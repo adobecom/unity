@@ -296,6 +296,9 @@ class WfInitiator {
           'ppt-to-pdf',
           'jpg-to-pdf',
           'png-to-pdf',
+          'combine-pdf',
+          'rotate-pages',
+          'protect-pdf'
         ]),
       },
       'workflow-ai': {
