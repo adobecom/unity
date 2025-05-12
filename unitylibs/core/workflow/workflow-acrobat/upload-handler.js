@@ -221,20 +221,24 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.maxNumPages
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
-            const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-            this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-            await this.transitionScreen.showSplashScreen();
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_max_page_count');
+            if (!this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])){
+              const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+              this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+              await this.transitionScreen.showSplashScreen();
+              await this.actionBinder.dispatchErrorToast('verb_upload_error_max_page_count');
+            }
             resolve(true);
             return;
           }
           if (this.actionBinder?.limits?.pageLimit?.minNumPages
             && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
           ) {
-            const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-            this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-            await this.transitionScreen.showSplashScreen();
-            await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
+            if (!this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])){
+              const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+              this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+              await this.transitionScreen.showSplashScreen();
+              await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
+            }
             resolve(true);
             return;
           }
