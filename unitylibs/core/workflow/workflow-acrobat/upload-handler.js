@@ -525,27 +525,62 @@ export default class UploadHandler {
     this.actionBinder.operations.push(workflowId);
     let allVerified = 0;
     let assetsToDelete = [];
-    await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
-      const verified = await this.verifyContent(assetData);
-      if (verified) {
-        const validated = await this.handleValidations(assetData, true);
-        if (validated) {
-          allVerified += 1;
+
+    if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+      await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
+        const verified = await this.verifyContent(assetData);
+        if (verified) {
+          const validated = await this.handleValidations(assetData, true);
+          if (validated) {
+            allVerified += 1;
+          }
+          else assetsToDelete.push(assetData);
+        } else {
+          assetsToDelete.push(assetData);
         }
-        else assetsToDelete.push(assetData);
-      } else {
-        assetsToDelete.push(assetData);
+      });
+      let accessToken = await getGuestAccessToken()
+      try {
+        await Promise.all(assetsToDelete.map((asset) => {
+          return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
+        }))
+      } catch (error) {
+        console.error(`Error deleting asset ${asset.id}:`, error);
       }
-    });
-    let accessToken = await getGuestAccessToken()
-    try {
-      await Promise.all(assetsToDelete.map((asset) => {
-        return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
-      }))
-    } catch (error) {
-      console.error(`Error deleting asset ${asset.id}:`, error);
+      if (allVerified === 0) {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+        await this.transitionScreen.showSplashScreen();
+        return;
+      }
+    } else {
+      await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
+        const verified = await this.verifyContent(assetData);
+        if (verified) allVerified += 1;
+      });
+      if (allVerified === 0) return;
     }
-    if (allVerified === 0) return;
+    // await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
+    //   const verified = await this.verifyContent(assetData);
+    //   if (verified) {
+    //     const validated = await this.handleValidations(assetData, true);
+    //     if (validated) {
+    //       allVerified += 1;
+    //     }
+    //     else assetsToDelete.push(assetData);
+    //   } else {
+    //     assetsToDelete.push(assetData);
+    //   }
+    // });
+    // let accessToken = await getGuestAccessToken()
+    // try {
+    //   await Promise.all(assetsToDelete.map((asset) => {
+    //     return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
+    //   }))
+    // } catch (error) {
+    //   console.error(`Error deleting asset ${asset.id}:`, error);
+    // }
+    // if (allVerified === 0) return;
     if (files.length !== allVerified) this.actionBinder.multiFileFailure = 'uploaderror';
     this.actionBinder.LOADER_LIMIT = 95;
     this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
