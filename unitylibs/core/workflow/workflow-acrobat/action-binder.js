@@ -24,8 +24,16 @@ const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
 class ServiceHandler {
+  handleAbortedRequest(url, options) {
+    if (!(options?.signal?.aborted)) return;
+    const error = new Error(`Request to ${url} aborted by user.`);
+    error.name = 'AbortError';
+    error.status = 0;
+    throw error;
+  }
   async fetchFromService(url, options, canRetry = true) {
     try {
+      if (!options?.signal?.aborted)  this.handleAbortedRequest(url, options);
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
@@ -52,6 +60,7 @@ class ServiceHandler {
       if (contentLength === '0') return {};
       return response.json();
     } catch (e) {
+      this.handleAbortedRequest(url, options);
       if (e instanceof TypeError) {
         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
         error.status = 0;
@@ -68,6 +77,7 @@ class ServiceHandler {
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
     let timeLapsed = 0;
     while (timeLapsed < maxRetryDelay) {
+      this.handleAbortedRequest(url, options);
       const response = await this.fetchFromService(url, options, false);
       if (response.status === 202) {
         const retryDelay = parseInt(response.headers.get('retry-after')) || 5;
@@ -139,7 +149,7 @@ export default class ActionBinder {
     'pdf-to-word': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
     'pdf-to-excel': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'pdf-to-ppt': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
-    'pdf-to-image': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'pdf-to-jpg': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'createpdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'word-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
@@ -208,6 +218,7 @@ static ERROR_MAP = {
     this.MULTI_FILE = false;
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
+    this.abortController = new AbortController();
   }
 
   isSignedOut() {
@@ -220,6 +231,10 @@ static ERROR_MAP = {
 
   setIsUploading(isUploading) {
     this.isUploading = isUploading;
+  }
+
+  getAbortSignal() {
+    return this.abortController.signal;
   }
 
   acrobatSignedInSettings() {
@@ -279,7 +294,7 @@ static ERROR_MAP = {
           metaData: this.filesData,
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
-            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || undefined,
+            subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode,
             desc: errorMetaData.desc || message || undefined
           },
           sendToSplunk,
@@ -416,7 +431,7 @@ static ERROR_MAP = {
       })
       .catch(async (e) => {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+        this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
         await this.transitionScreen.showSplashScreen();
         await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
           code: 'verb_upload_error_fetch_redirect_url',
@@ -446,21 +461,21 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    const fileData = { type: files[0].type, size: files[0].size, count: 1 };
-    this.dispatchAnalyticsEvent(eventName, fileData);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], fileData);
-    else await this.uploadHandler.singleFileUserUpload(files[0], fileData);
+    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu'};
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
+    else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
 
   async handleMultiFileUpload(files, eventName, totalFileSize) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
-    this.dispatchAnalyticsEvent(eventName, filesData);
-    this.dispatchAnalyticsEvent('multifile', filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    this.dispatchAnalyticsEvent('multifile', this.filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
   async handleFileUpload(files, eventName, totalFileSize) {
@@ -583,9 +598,11 @@ static ERROR_MAP = {
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
     this.filesData = this.filesData || {};
-    this.filesData.count = this.isUploading ? -3 : -2;
+    this.filesData.workflowStep = this.isUploading ? 'uploading' : 'preuploading';
     this.dispatchAnalyticsEvent('cancel', this.filesData);
     this.setIsUploading(false);
+    this.abortController.abort();
+    this.abortController = new AbortController();
     const e = new Error('Operation termination requested.');
     e.showError = false;
     const cancelPromise = Promise.reject(e);
@@ -631,6 +648,10 @@ static ERROR_MAP = {
       });
     }
     return { files, totalFileSize };
+  }
+
+  setAssetId(assetId) {
+    this.filesData.assetId = assetId;
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
