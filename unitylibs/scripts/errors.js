@@ -28,8 +28,8 @@ async function loadErrorMessages(verb) {
   ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
   : origin;
   const errorFile = locale.prefix && locale.prefix !== '/'
-    ? `${baseUrl}${locale.prefix}/unity/configs/errors/${verb}.json`
-    : `${baseUrl}/unity/configs/errors/${verb}.json`;
+    ? `${baseUrl}${locale.prefix}/unity/configs/errors/combine-pdf.json`
+    : `${baseUrl}/unity/configs/errors/combine-pdf.json`;
   const errorRes = await fetch(errorFile);
   if (!errorRes.ok) {
     throw new Error('Failed to fetch error messages.');
