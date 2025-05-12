@@ -480,18 +480,10 @@ export default class UploadHandler {
       this.actionBinder.LOADER_LIMIT = 75;
       this.initSplashScreen();
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 75);
-  
       const redirectSuccess = await this.handleFileUploadRedirect(assetDataArray[0].id, filesData, workflowId);
       if (!redirectSuccess) return;
-
       this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
       this.actionBinder.setIsUploading(true);
-  
-      // const uploadedAssets = await this.uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks);
-      // if (uploadedAssets.length !== files.length) {
-      //   await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${files.map(f => f.type).join(', ')}`);
-      //   return;
-      // }
       const uploadResult = await this.chunkPdf(
         assetDataArray,
         blobDataArray,
@@ -504,16 +496,13 @@ export default class UploadHandler {
       }
       const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
       this.actionBinder.operations.push(workflowId);
-
       const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets, isMultiFileSupportedVerb);
       await this.deleteFailedAssets(assetsToDelete);
-  
       if (verifiedAssets.length === 0) {
-        // await this.initSplashScreen();
         await this.transitionScreen.showSplashScreen();
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_max_page_count_multi');
         return;
       }
-  
       if (files.length !== verifiedAssets.length) this.actionBinder.multiFileFailure = 'uploaderror';
       this.actionBinder.LOADER_LIMIT = 95;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
@@ -562,7 +551,6 @@ export default class UploadHandler {
   }
   
   async uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks) {
-    // const fileTypeArray = files.map(file => file.type);
     const uploadResult = await this.chunkPdf(
       assetDataArray,
       blobDataArray,

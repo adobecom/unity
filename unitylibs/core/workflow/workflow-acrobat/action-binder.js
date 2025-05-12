@@ -175,6 +175,7 @@ static ERROR_MAP = {
   'verb_upload_error_max_page_count': -150,
   'verb_upload_error_min_page_count': -151,
   'verb_upload_error_verify_page_count': -152,
+  'verb_upload_error_max_page_count_multi': -153,
   'verb_upload_error_unsupported_type': -170,
   'verb_upload_error_empty_file': -171,
   'verb_upload_error_file_too_large': -172,
