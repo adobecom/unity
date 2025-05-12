@@ -37,7 +37,7 @@ class ServiceHandler {
       const response = await fetch(url, options);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
-      if(canRetry && response.status >= 500 && response.status < 600) {
+      if(canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return this.fetchFromService(url, options, false);
      }
@@ -216,6 +216,7 @@ static ERROR_MAP = {
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
     this.abortController = new AbortController();
+    this.uploadTimestamp = null;
   }
 
   isSignedOut() {
@@ -458,21 +459,21 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    const fileData = { type: files[0].type, size: files[0].size, count: 1 };
-    this.dispatchAnalyticsEvent(eventName, fileData);
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], fileData);
-    else await this.uploadHandler.singleFileUserUpload(files[0], fileData);
+    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu' };
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
+    else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
 
   async handleMultiFileUpload(files, eventName, totalFileSize) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    const filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length };
-    this.dispatchAnalyticsEvent(eventName, filesData);
-    this.dispatchAnalyticsEvent('multifile', filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, filesData);
+    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length, uploadType: 'mfu' };
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    this.dispatchAnalyticsEvent('multifile', this.filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
   async handleFileUpload(files, eventName, totalFileSize) {
@@ -576,9 +577,11 @@ static ERROR_MAP = {
         });
       }
       await this.delay(500);
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
+      const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
-        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else window.location.href = this.redirectUrl;
+        window.location.href = `${baseUrl}?${additionalParams}feedback=${this.multiFileFailure}&${queryString}`;
+      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${additionalParams}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
@@ -645,6 +648,10 @@ static ERROR_MAP = {
       });
     }
     return { files, totalFileSize };
+  }
+
+  setAssetId(assetId) {
+    this.filesData.assetId = assetId;
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
