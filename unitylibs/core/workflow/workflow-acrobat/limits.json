@@ -39,6 +39,11 @@
       "text/plain"
     ]
   },
+  "page-limit-25": {
+    "pageLimit": {
+      "maxNumPages": 25
+    }
+  },
   "page-limit-100": {
     "pageLimit": {
       "maxNumPages": 100
@@ -49,9 +54,9 @@
       "maxNumPages": 500
     }
   },
-  "page-limit-25": {
+  "page-limit-600": {
     "pageLimit": {
-      "maxNumPages": 25
+      "maxNumPages": 600
     }
   },
   "max-filesize-5-mb": {
@@ -68,6 +73,12 @@
   },
   "max-filesize-2-gb": {
     "maxFileSize": 2147483648
+  },
+  "max-numfiles-1": {
+    "maxNumFiles": 1
+  },
+  "max-numfiles-10": {
+    "maxNumFiles": 10
   },
   "max-numfiles-100": {
     "maxNumFiles": 100
@@ -98,6 +109,16 @@
       "image/vnd.adobe.photoshop",
       "image/tiff",
       "message/rfc822",
+      "text/plain"
+    ]
+  },
+  "allowed-filetypes-pdf-word-ppt-txt": {
+    "allowedFileTypes": [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       "text/plain"
     ]
   }
