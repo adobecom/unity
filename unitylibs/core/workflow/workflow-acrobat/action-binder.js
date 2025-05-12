@@ -132,6 +132,7 @@ export default class ActionBinder {
     UNSUPPORTED_TYPE: 'verb_upload_error_unsupported_type_multi',
     EMPTY_FILE: 'verb_upload_error_empty_file_multi',
     FILE_TOO_LARGE: 'verb_upload_error_file_too_large_multi',
+    MAX_NUM_FILES: 'verb_upload_error_max_num_files'
   };
 
   static LIMITS_MAP = {
@@ -177,6 +178,7 @@ static ERROR_MAP = {
   'verb_upload_error_empty_file_multi': -201,
   'verb_upload_error_file_too_large_multi': -202,
   'verb_upload_error_multiple_invalid_files': -203,
+  'verb_upload_error_max_num_files': -204,
   'verb_upload_error_max_quota_exceeded': -250,
   'verb_upload_error_no_storage_provision': -251,
   'verb_upload_error_duplicate_operation': -252,
@@ -366,6 +368,15 @@ static ERROR_MAP = {
     let allFilesFailed = true;
     const errorTypes = new Set();
     const validFiles = [];
+
+    if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
+      await this.dispatchErrorToast(errorMessages.MAX_NUM_FILES, null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, { 
+        code: 'verb_upload_error_validate_files', 
+        subCode: errorMessages.MAX_NUM_FILES 
+      });
+      return { isValid: false, validFiles };
+    }
+
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
