@@ -470,10 +470,64 @@ export default class UploadHandler {
   async uploadMultiFile(files, filesData) {
     const workflowId = crypto.randomUUID();
     const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
+    const isMultiFileSupportedVerb = this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+    try {
+      const { blobDataArray, assetDataArray, fileTypeArray } = await this.createInitialAssets(files, workflowId, maxConcurrentFiles);
+      if (assetDataArray.length === 0) {
+        await this.dispatchGenericError(`No assets created for the files: ${JSON.stringify(filesData)}`);
+        return;
+      }
+      this.actionBinder.LOADER_LIMIT = 75;
+      this.initSplashScreen();
+      this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 75);
+  
+      const redirectSuccess = await this.handleFileUploadRedirect(assetDataArray[0].id, filesData, workflowId);
+      if (!redirectSuccess) return;
+
+      this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
+      this.actionBinder.setIsUploading(true);
+  
+      // const uploadedAssets = await this.uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks);
+      // if (uploadedAssets.length !== files.length) {
+      //   await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${files.map(f => f.type).join(', ')}`);
+      //   return;
+      // }
+      const uploadResult = await this.chunkPdf(
+        assetDataArray,
+        blobDataArray,
+        fileTypeArray,
+        maxConcurrentChunks,
+      );
+      if (uploadResult.size === files.length) {
+        await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
+        return;
+      }
+      const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
+      this.actionBinder.operations.push(workflowId);
+
+      const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets, isMultiFileSupportedVerb);
+      await this.deleteFailedAssets(assetsToDelete);
+  
+      if (verifiedAssets.length === 0) {
+        // await this.initSplashScreen();
+        await this.transitionScreen.showSplashScreen();
+        return;
+      }
+  
+      if (files.length !== verifiedAssets.length) this.actionBinder.multiFileFailure = 'uploaderror';
+      this.actionBinder.LOADER_LIMIT = 95;
+      this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
+      this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
+    } catch (error) {
+      await this.transitionScreen.showSplashScreen();
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Exception in uploading one or more files`, true, true);
+    } 
+  }
+  
+  async createInitialAssets(files, workflowId, maxConcurrentFiles) {
     const blobDataArray = [];
     const assetDataArray = [];
     const fileTypeArray = [];
-    let cOpts = {};
     await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
       try {
         const [blobData, assetData] = await Promise.all([
@@ -487,18 +541,13 @@ export default class UploadHandler {
         await this.handleUploadError(e);
       }
     });
-    if (assetDataArray.length === 0) {
-      await this.dispatchGenericError(`No assets created for the files: ${JSON.stringify(filesData)}`);
-      return;
-    }
-    this.actionBinder.LOADER_LIMIT = 75;
-
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-    this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 75);
-    cOpts = {
+    return { blobDataArray, assetDataArray, fileTypeArray };
+  }
+  
+  async handleFileUploadRedirect(firstAssetId, filesData, workflowId) {
+    const cOpts = {
       targetProduct: this.actionBinder.workflowCfg.productName,
-      assetId: assetDataArray[0].id,
+      assetId: firstAssetId,
       payload: {
         languageRegion: this.actionBinder.workflowCfg.langRegion,
         languageCode: this.actionBinder.workflowCfg.langCode,
@@ -508,84 +557,154 @@ export default class UploadHandler {
       },
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
-    if (!redirectSuccess) return;
-    this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
-    this.actionBinder.setIsUploading(true);
+    if (!redirectSuccess) return false;
+    return true;
+  }
+  
+  async uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks) {
+    // const fileTypeArray = files.map(file => file.type);
     const uploadResult = await this.chunkPdf(
       assetDataArray,
       blobDataArray,
       fileTypeArray,
       maxConcurrentChunks,
     );
-    if (uploadResult.size === files.length) {
-      await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
-      return;
-    }
-    const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
-    this.actionBinder.operations.push(workflowId);
-    let allVerified = 0;
-    let assetsToDelete = [];
-
-    if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
-      await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
-        const verified = await this.verifyContent(assetData);
-        if (verified) {
-          const validated = await this.handleValidations(assetData, true);
-          if (validated) {
-            allVerified += 1;
-          }
-          else assetsToDelete.push(assetData);
-        } else {
-          assetsToDelete.push(assetData);
-        }
-      });
-      let accessToken = await getGuestAccessToken()
-      try {
-        await Promise.all(assetsToDelete.map((asset) => {
-          return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
-        }))
-      } catch (error) {
-        console.error(`Error deleting asset ${asset.id}:`, error);
-      }
-      if (allVerified === 0) {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-        await this.transitionScreen.showSplashScreen();
-        return;
-      }
-    } else {
-      await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
-        const verified = await this.verifyContent(assetData);
-        if (verified) allVerified += 1;
-      });
-      if (allVerified === 0) return;
-    }
-    // await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
-    //   const verified = await this.verifyContent(assetData);
-    //   if (verified) {
-    //     const validated = await this.handleValidations(assetData, true);
-    //     if (validated) {
-    //       allVerified += 1;
-    //     }
-    //     else assetsToDelete.push(assetData);
-    //   } else {
-    //     assetsToDelete.push(assetData);
-    //   }
-    // });
-    // let accessToken = await getGuestAccessToken()
-    // try {
-    //   await Promise.all(assetsToDelete.map((asset) => {
-    //     return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
-    //   }))
-    // } catch (error) {
-    //   console.error(`Error deleting asset ${asset.id}:`, error);
-    // }
-    // if (allVerified === 0) return;
-    if (files.length !== allVerified) this.actionBinder.multiFileFailure = 'uploaderror';
-    this.actionBinder.LOADER_LIMIT = 95;
-    this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
-    this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
+    return assetDataArray.filter((_, index) => !uploadResult.has(index));
   }
+  
+  async processUploadedAssets(uploadedAssets) {
+    let allVerified = 0;
+    const assetsToDelete = [];
+    await this.executeInBatches(uploadedAssets, this.getConcurrentLimits().maxConcurrentFiles, async (assetData) => {
+      const verified = await this.verifyContent(assetData);
+      if (verified) {
+          const validated = await this.handleValidations(assetData, true);
+          if (validated) allVerified += 1;
+          else assetsToDelete.push(assetData);
+      } else assetsToDelete.push(assetData);
+    });
+    const verifiedAssets = uploadedAssets.filter(asset =>
+      !assetsToDelete.some(deletedAsset => deletedAsset.id === asset.id)
+    );
+    return { verifiedAssets, assetsToDelete };
+  }
+  
+  async deleteFailedAssets(assetsToDelete) {
+    if (assetsToDelete.length === 0) return;
+    const accessToken = await getGuestAccessToken();
+    try {
+      await Promise.all(assetsToDelete.map((asset) => {
+        return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
+      }));
+      console.log(`Deleted ${assetsToDelete.length} failed assets.`);
+    } catch (error) {
+      console.error("Error deleting failed assets:", error);
+    }
+  }
+  
+  async initSplashScreen() {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+  }
+
+  // async uploadMultiFile(files, filesData) {
+  //   const workflowId = crypto.randomUUID();
+  //   const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
+  //   const blobDataArray = [];
+  //   const assetDataArray = [];
+  //   const fileTypeArray = [];
+  //   let cOpts = {};
+  //   await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
+  //     try {
+  //       const [blobData, assetData] = await Promise.all([
+  //         this.getBlobData(file),
+  //         this.createAsset(file, true, workflowId),
+  //       ]);
+  //       blobDataArray.push(blobData);
+  //       assetDataArray.push(assetData);
+  //       fileTypeArray.push(file.type);
+  //     } catch (e) {
+  //       await this.handleUploadError(e);
+  //     }
+  //   });
+  //   if (assetDataArray.length === 0) {
+  //     await this.dispatchGenericError(`No assets created for the files: ${JSON.stringify(filesData)}`);
+  //     return;
+  //   }
+  //   this.actionBinder.LOADER_LIMIT = 75;
+
+  //   const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+  //   this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+  //   this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 75);
+  //   cOpts = {
+  //     targetProduct: this.actionBinder.workflowCfg.productName,
+  //     assetId: assetDataArray[0].id,
+  //     payload: {
+  //       languageRegion: this.actionBinder.workflowCfg.langRegion,
+  //       languageCode: this.actionBinder.workflowCfg.langCode,
+  //       verb: this.actionBinder.workflowCfg.enabledFeatures[0],
+  //       multifile: true,
+  //       workflowId,
+  //     },
+  //   };
+  //   const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
+  //   if (!redirectSuccess) return;
+  //   this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
+  //   this.actionBinder.setIsUploading(true);
+  //   const uploadResult = await this.chunkPdf(
+  //     assetDataArray,
+  //     blobDataArray,
+  //     fileTypeArray,
+  //     maxConcurrentChunks,
+  //   );
+  //   if (uploadResult.size === files.length) {
+  //     await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
+  //     return;
+  //   }
+  //   const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
+  //   this.actionBinder.operations.push(workflowId);
+  //   let allVerified = 0;
+  //   let assetsToDelete = [];
+
+  //   if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+  //     await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
+  //       const verified = await this.verifyContent(assetData);
+  //       if (verified) {
+  //         const validated = await this.handleValidations(assetData, true);
+  //         if (validated) {
+  //           allVerified += 1;
+  //         }
+  //         else assetsToDelete.push(assetData);
+  //       } else {
+  //         assetsToDelete.push(assetData);
+  //       }
+  //     });
+  //     let accessToken = await getGuestAccessToken()
+  //     try {
+  //       await Promise.all(assetsToDelete.map((asset) => {
+  //         return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
+  //       }))
+  //     } catch (error) {
+  //       console.error(`Error deleting asset ${asset.id}:`, error);
+  //     }
+  //     if (allVerified === 0) {
+  //       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+  //       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+  //       await this.transitionScreen.showSplashScreen();
+  //       return;
+  //     }
+  //   } else {
+  //     await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
+  //       const verified = await this.verifyContent(assetData);
+  //       if (verified) allVerified += 1;
+  //     });
+  //     if (allVerified === 0) return;
+  //   }
+  //   if (files.length !== allVerified) this.actionBinder.multiFileFailure = 'uploaderror';
+  //   this.actionBinder.LOADER_LIMIT = 95;
+  //   this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
+  //   this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
+  // }
 
   async multiFileGuestUpload(files, filesData) {
     try {
