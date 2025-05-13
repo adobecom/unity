@@ -276,13 +276,13 @@ export default class UnityWidget {
       throw new Error('Failed to fetch prompts.');
     }
     const promptJson = await promptRes.json();
-    window.uem = createPromptMap(promptJson?.content?.data);
+    window.upm = createPromptMap(promptJson?.content?.data);
   }
 
   async getPrompt(verb) {
     try {
-      if (!window.uem || Object.keys(window.uem).length === 0) await this.loadPrompts();
-      return window.uem?.[verb] || [];
+      if (!window.upm || Object.keys(window.upm).length === 0) await this.loadPrompts();
+      return window.upm?.[verb] || [];
     } catch (e) {
       return [];
     }
