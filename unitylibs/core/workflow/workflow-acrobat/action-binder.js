@@ -149,7 +149,7 @@ export default class ActionBinder {
     'pdf-to-word': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
     'pdf-to-excel': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'pdf-to-ppt': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
-    'pdf-to-jpg': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'pdf-to-image': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'createpdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'word-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
@@ -462,7 +462,7 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu'};
+    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu' };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
