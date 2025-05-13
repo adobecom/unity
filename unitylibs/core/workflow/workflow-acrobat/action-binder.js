@@ -202,7 +202,8 @@ static ERROR_MAP = {
   'verb_upload_error_finalize': -351,
   'verb_upload_error_chunk_upload': -352,
   'verb_cookie_not_set': -353,
-  'verb_upload_warn_chunk_upload': -354,
+  'verb_upload_warn_chunk_upload': -600,
+  'verb_upload_warn_delete_asset': -601,
   'verb_upload_error_redirect_to_app': -900,
   'verb_upload_error_finalize_asset': -901
 };

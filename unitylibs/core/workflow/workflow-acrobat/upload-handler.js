@@ -511,7 +511,6 @@ export default class UploadHandler {
   async uploadMultiFile(files, filesData) {
     const workflowId = crypto.randomUUID();
     const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
-    const isMultiFileSupportedVerb = this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
     try {
       const { blobDataArray, assetDataArray, fileTypeArray } = await this.createInitialAssets(files, workflowId, maxConcurrentFiles);
       if (assetDataArray.length === 0) {
@@ -537,7 +536,7 @@ export default class UploadHandler {
       }
       const uploadedAssets = assetDataArray.filter((_, index) => !failedFiles.has(index));
       this.actionBinder.operations.push(workflowId);
-      const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets, isMultiFileSupportedVerb);
+      const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets);
       await this.deleteFailedAssets(assetsToDelete);
       if (verifiedAssets.length === 0) {
         await this.transitionScreen.showSplashScreen();
@@ -550,7 +549,7 @@ export default class UploadHandler {
       this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
     } catch (error) {
       await this.transitionScreen.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 500, `Exception in uploading one or more files`, true, true);
+      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', error.code, `Exception in uploading one or more files`, true, true);
     } 
   }
   
@@ -626,9 +625,12 @@ export default class UploadHandler {
         const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
         return this.actionBinder.serviceHandler.callToDeleteAsset(url, accessToken);
       }));
-      console.log(`Deleted ${assetsToDelete.length} failed assets.`);
     } catch (error) {
-      console.error("Error deleting failed assets:", error);
+      await this.actionBinder.dispatchErrorToast('verb_upload_warn_chunk_upload', 0, 'Failed to delete one or all assets', true, true, {
+        code: 'verb_upload_warn_delete_asset',
+        subCode: error.code,
+        desc: `Failed to delete one or all assets`,
+      });
     }
   }
   
