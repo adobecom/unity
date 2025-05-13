@@ -1,10 +1,48 @@
+/* eslint-disable max-len */
+/* eslint-disable max-classes-per-file */
+/* eslint-disable no-await-in-loop */
+/* eslint-disable class-methods-use-this */
+/* eslint-disable no-restricted-syntax */
+
 import {
   unityConfig,
   createTag,
-  getUnityLibs,
   sendAnalyticsEvent,
   defineDeviceByScreenSize,
+  getHeaders,
 } from '../../../scripts/utils.js';
+class ServiceHandler {
+  constructor(renderWidget = false, canvasArea = null) {
+    this.renderWidget = renderWidget;
+    this.canvasArea = canvasArea;
+  }
+
+  async fetchFromService(url, options) {
+    try {
+      const response = await fetch(url, options);
+      const error = new Error();
+      if (response.status !== 200) {
+        error.status = response.status;
+        throw error;
+      }
+      return response.json();
+    } catch (error) {
+      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+        error.status = 504;
+      }
+      throw error;
+    }
+  }
+
+  async postCallToService(api, options) {
+    const postOpts = {
+      method: 'POST',
+      headers: await getHeaders(unityConfig.apiKey),
+      ...options,
+    };
+    return this.fetchFromService(api, postOpts);
+  }
+}
 
 export default class ActionBinder {
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
@@ -81,9 +119,6 @@ export default class ActionBinder {
   }
 
   async loadServiceHandler() {
-    const { default: ServiceHandler } = await import(
-      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-    );
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,

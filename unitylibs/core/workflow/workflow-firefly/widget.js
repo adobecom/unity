@@ -20,7 +20,7 @@ export default class UnityWidget {
     this.createBg();
     this.workflowCfg.placeholder = this.popPlaceholders();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    const dropdown = this.genDropdown(this.workflowCfg.placeholder);
+    const dropdown = await this.genDropdown(this.workflowCfg.placeholder, this.workflowCfg.verb);
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
@@ -38,9 +38,36 @@ export default class UnityWidget {
     );
   }
 
+  verbDropdown() {
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const selectedVerb = verbs[0].nextElementSibling;
+    const { textContent, href } = selectedVerb;
+    const selectedElement = createTag('div', {
+      class: 'selected-verb',
+      role: 'option',
+      'data-selected-verb': textContent,
+    }, `<img src="${href}" alt="${textContent}" />${textContent}`);
+    const verbList = createTag('ul', { class: 'verb-list' });
+
+    verbs.forEach((verb) => {
+      const name = verb.nextElementSibling.textContent.trim();
+      const icon = verb.nextElementSibling.href;
+      const item = createTag('li', {
+        class: 'verb-item',
+        role: 'option',
+        'aria-label': name,
+        'aria-description': name,
+      }, `<img src="${icon}" alt="${name}" />${name}`);
+      verbList.append(item);
+    });
+    return [selectedElement, verbList];
+  }
+
+
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
+    const verbBtn = createTag('div', { class: 'verbs-container' });
     const inpField = createTag('input', {
       id: 'promptInput',
       class: 'inp-field',
@@ -53,14 +80,15 @@ export default class UnityWidget {
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
-    const surpriseBtn = this.createActBtn(this.el.querySelector('.icon-surpriseMe')?.closest('li'), 'surprise-btn');
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
-    actWrap.append(surpriseBtn, genBtn);
-    inpWrap.append(inpField, actWrap);
+    const verbDropdown = this.verbDropdown();
+    actWrap.append(genBtn);
+    verbBtn.append(...verbDropdown);
+    inpWrap.append(verbBtn, inpField, actWrap);
     return inpWrap;
   }
 
-  genDropdown(ph) {
+  async genDropdown(ph, verb) {
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
       class: 'drop hidden',
@@ -74,19 +102,23 @@ export default class UnityWidget {
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': 'drop-close', 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
-    const prompts = this.el.querySelectorAll('.icon-prompt');
-    prompts.forEach((el, idx) => {
+
+    const prompts = await this.getPrompt('image');
+    const shuffled = prompts.sort(() => 0.5 - Math.random());
+    const limited = shuffled.slice(0, 3);
+    limited.forEach(({ prompt, assetid }) => {
       const item = createTag('li', {
-        id: `item-${idx}`,
+        id: assetid,
         class: 'drop-item',
         role: 'option',
         tabindex: '0',
-        'aria-label': el.closest('li').innerText,
+        'aria-label': prompt,
         'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
-        'daa-ll': `drop-cur-prompt-${idx}|${el.closest('li').innerText}`,
-      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${el.closest('li').innerText}`);
+        'daa-ll': `drop-cur-prompt|${prompt}`,
+      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${prompt}`);
       dd.append(item);
     });
+
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
     dd.append(this.createFooter(ph));
     return dd;
@@ -129,7 +161,7 @@ export default class UnityWidget {
   addWidget() {
     // TODO: Inject the widget for a simple use case
     // TODO: Introduce a placeholder for complex use cases
-    const interactArea = this.target.querySelector('.text');
+    const interactArea = this.target.querySelector('.copy');
     const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);
@@ -228,4 +260,44 @@ export default class UnityWidget {
     io.observe(el);
     return io;
   }
+
+  async loadPrompts() {
+    const { locale } = getConfig();
+    const { origin } = window.location;
+    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.')) 
+    ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+    : origin;
+    const promptFile = locale.prefix && locale.prefix !== '/'
+      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
+      : `${baseUrl}/unity/configs/errors/firefly-prompt.json`;
+    const promptRes = await fetch(promptFile);
+    if (!promptRes.ok) {
+      throw new Error('Failed to fetch prompts.');
+    }
+    const promptJson = await promptRes.json();
+    window.uem = createPromptMap(promptJson?.content?.data);
+  }
+
+  async getPrompt(verb) {
+    try {
+      if (!window.uem || Object.keys(window.uem).length === 0) await this.loadPrompts();
+      return window.uem?.[verb] || [];
+    } catch (e) {
+      return [];
+    }
+  }
 }
+
+function createPromptMap(data) {
+  const promptMap = {};
+  if (Array.isArray(data)) {
+    data.forEach((item) => {
+      if (item.verb && item.prompt && item.assetid) {
+        if (!promptMap[item.verb]) promptMap[item.verb] = [];
+        promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
+      }
+    });
+  }
+  return promptMap;
+}
+

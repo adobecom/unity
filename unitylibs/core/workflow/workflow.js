@@ -50,7 +50,7 @@ function createInteractiveArea(el, pic) {
 
 async function getTargetArea(el) {
   const metadataSec = el.closest('.section');
-  const intEnb = metadataSec.querySelector('.marquee, .aside');
+  const intEnb = metadataSec.querySelector('.marquee, .aside, .hero-marquee');
   try {
     intEnb.classList.add('unity-enabled');
     await intEnbReendered(intEnb);
@@ -134,6 +134,7 @@ class WfInitiator {
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       ],
       'workflow-ai': sharedWfRes,
+      'workflow-firefly': sharedWfRes,
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -306,6 +307,11 @@ class WfInitiator {
       'workflow-upload': {
         productName: product,
         sfList: new Set([feature]),
+      },
+      'workflow-firefly': {
+        productName: 'Firefly',
+        sfList: new Set(['text-to-mage']),
+        stList: new Set(['prompt', 'tip', 'legal', 'generate']),
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
