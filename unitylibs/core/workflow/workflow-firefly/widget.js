@@ -8,6 +8,7 @@ export default class UnityWidget {
     this.widget = null;
     this.actionMap = {};
     this.spriteCon = spriteCon;
+    this.prompts = null;
   }
 
   async initWidget() {
@@ -276,13 +277,13 @@ export default class UnityWidget {
       throw new Error('Failed to fetch prompts.');
     }
     const promptJson = await promptRes.json();
-    window.upm = createPromptMap(promptJson?.content?.data);
+    this.prompts = createPromptMap(promptJson?.content?.data);
   }
 
   async getPrompt(verb) {
     try {
-      if (!window.upm || Object.keys(window.upm).length === 0) await this.loadPrompts();
-      return window.upm?.[verb] || [];
+      if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
+      return this.prompts?.[verb] || [];
     } catch (e) {
       return [];
     }
