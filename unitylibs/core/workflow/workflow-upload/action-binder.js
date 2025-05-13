@@ -167,7 +167,6 @@ export default class ActionBinder {
       this.assetId = await this.uploadImgToUnity(href, id, file, file.type);
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       this.scanImgForSafety(this.assetId);
-      return this.assetId;
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
@@ -339,8 +338,8 @@ export default class ActionBinder {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
-    const assetId = await this.uploadAsset(file);
-    await this.continueInApp(assetId);
+    await this.uploadAsset(file);
+    await this.continueInApp(this.assetId);
   }
 
   async photoshopActionMaps(value, files) {
