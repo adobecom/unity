@@ -525,17 +525,17 @@ export default class UploadHandler {
       if (!redirectSuccess) return;
       this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
       this.actionBinder.setIsUploading(true);
-      const uploadResult = await this.chunkPdf(
+      const { failedFiles, attemptMap } = await this.chunkPdf(
         assetDataArray,
         blobDataArray,
         fileTypeArray,
         maxConcurrentChunks,
       );
-      if (uploadResult.size === files.length) {
+      if (failedFiles.size === files.length) {
         await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
         return;
       }
-      const uploadedAssets = assetDataArray.filter((_, index) => !uploadResult.has(index));
+      const uploadedAssets = assetDataArray.filter((_, index) => !failedFiles.has(index));
       this.actionBinder.operations.push(workflowId);
       const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets, isMultiFileSupportedVerb);
       await this.deleteFailedAssets(assetsToDelete);
