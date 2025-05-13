@@ -138,7 +138,7 @@ export default class ActionBinder {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
       throw new Error('Failed to upload image to Unity');
     }
-    this.logAnalyticsinSplunk('Uploading Completed|UnityWidget', { assetId: this.assetId });
+    this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
     return id;
   }
 
