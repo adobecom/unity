@@ -139,7 +139,6 @@ export default class ActionBinder {
       throw new Error('Failed to upload image to Unity');
     }
     this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
-    return id;
   }
 
   async scanImgForSafety(assetId) {
@@ -164,8 +163,9 @@ export default class ActionBinder {
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href } = resJson;
-      this.assetId = await this.uploadImgToUnity(href, id, file, file.type);
+      this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
+      await this.uploadImgToUnity(href, id, file, file.type);
       this.scanImgForSafety(this.assetId);
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
