@@ -120,7 +120,7 @@ class ServiceHandler {
     return this.fetchFromService(url, getOpts);
   }
 
-  async callToDeleteAsset(url, accessToken) {
+  async deleteCallToService(url, accessToken) {
     const options = {
       method: 'DELETE',
       headers: {

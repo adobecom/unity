@@ -322,7 +322,6 @@ export default class UploadHandler {
       switch (limit) {
         case 'pageLimit': {
           const pageLimitRes = await this.checkPageNumCount(assetData);
-          console.log(`pageLimitRes for ${assetData.id} - ${pageLimitRes}`);
           if (pageLimitRes) {
             validated = false;
             if (!isMultiFile) {
@@ -585,9 +584,7 @@ export default class UploadHandler {
         workflowId,
       },
     };
-    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
-    if (!redirectSuccess) return false;
-    return true;
+    return await this.actionBinder.handleRedirect(cOpts, filesData);
   }
   
   async uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks) {
@@ -623,13 +620,12 @@ export default class UploadHandler {
     try {
       await Promise.all(assetsToDelete.map((asset) => {
         const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
-        return this.actionBinder.serviceHandler.callToDeleteAsset(url, accessToken);
+        return this.actionBinder.serviceHandler.deleteCallToService(url, accessToken);
       }));
     } catch (error) {
-      await this.actionBinder.dispatchErrorToast('verb_upload_warn_chunk_upload', 0, 'Failed to delete one or all assets', true, true, {
+      await this.actionBinder.dispatchErrorToast('verb_upload_warn_delete_asset', 0, 'Failed to delete one or all assets', true, true, {
         code: 'verb_upload_warn_delete_asset',
-        subCode: error.code,
-        desc: `Failed to delete one or all assets`,
+        subCode: error.code
       });
     }
   }
