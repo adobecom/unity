@@ -164,9 +164,10 @@ export default class ActionBinder {
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href } = resJson;
-      const assetId = await this.uploadImgToUnity(href, id, file, file.type);
-      this.scanImgForSafety(assetId);
-      return assetId;
+      this.assetId = await this.uploadImgToUnity(href, id, file, file.type);
+      this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
+      this.scanImgForSafety(this.assetId);
+      return this.assetId;
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
@@ -338,9 +339,8 @@ export default class ActionBinder {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
-    this.assetId = await this.uploadAsset(file);
-    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
-    await this.continueInApp(this.assetId);
+    const assetId = await this.uploadAsset(file);
+    await this.continueInApp(assetId);
   }
 
   async photoshopActionMaps(value, files) {
