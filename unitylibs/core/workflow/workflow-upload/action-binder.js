@@ -332,13 +332,14 @@ export default class ActionBinder {
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
-    this.logAnalyticsinSplunk('Uploading Started|UnityWidget', { assetId: this.assetId });
+    this.logAnalyticsinSplunk('Uploading Started|UnityWidget');
     const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
     this.desktop = isDesktop();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     this.assetId = await this.uploadAsset(file);
+    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
     await this.continueInApp(this.assetId);
   }
 
