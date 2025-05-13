@@ -132,7 +132,6 @@ export default class ActionBinder {
     UNSUPPORTED_TYPE: 'verb_upload_error_unsupported_type_multi',
     EMPTY_FILE: 'verb_upload_error_empty_file_multi',
     FILE_TOO_LARGE: 'verb_upload_error_file_too_large_multi',
-    MAX_NUM_FILES: 'verb_upload_error_max_num_files'
   };
 
   static LIMITS_MAP = {
@@ -370,9 +369,9 @@ static ERROR_MAP = {
     const validFiles = [];
 
     if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast(errorMessages.MAX_NUM_FILES, null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, { 
+      await this.dispatchErrorToast('verb_upload_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, { 
         code: 'verb_upload_error_validate_files', 
-        subCode: errorMessages.MAX_NUM_FILES 
+        subCode: 'verb_upload_error_max_num_files'
       });
       return { isValid: false, validFiles };
     }
