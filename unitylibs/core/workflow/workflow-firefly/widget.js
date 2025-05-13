@@ -107,6 +107,7 @@ export default class UnityWidget {
     const shuffled = prompts.sort(() => 0.5 - Math.random());
     const limited = shuffled.slice(0, 3);
     limited.forEach(({ prompt, assetid }) => {
+      const displayPrompt = prompt.length > 105 ? prompt.slice(0, 105) + '…' : prompt;
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -115,7 +116,7 @@ export default class UnityWidget {
         'aria-label': prompt,
         'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt|${prompt}`,
-      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${prompt}`);
+      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dd.append(item);
     });
 
