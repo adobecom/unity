@@ -110,17 +110,15 @@ class ServiceHandler {
     return this.fetchFromService(url, getOpts);
   }
 
-  async callToDeleteAsset(assetId, accessToken) {
-    return fetch(`https://unity-dev-ue1.adobe.io/api/v1/asset?id=${assetId}`, {
+  async callToDeleteAsset(url, accessToken) {
+    const options = {
       method: 'DELETE',
       headers: {
-          'Authorization': accessToken,
-          'x-api-key': 'unity',
-        }
-    }).catch((ex) => {
-      console.log(`Exception occurred: ${ex.message}`)
-      throw(ex)
-    });
+        'Authorization': accessToken,
+        'x-api-key': 'unity', 
+      },
+    };
+    return this.fetchFromService(url, options);
   }
 }
 
@@ -257,7 +255,7 @@ static ERROR_MAP = {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`
     };
     return unityConfig;
   }

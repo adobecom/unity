@@ -582,7 +582,8 @@ export default class UploadHandler {
     const accessToken = await getGuestAccessToken();
     try {
       await Promise.all(assetsToDelete.map((asset) => {
-        return this.actionBinder.serviceHandler.callToDeleteAsset(asset.id, accessToken);
+        const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
+        return this.actionBinder.serviceHandler.callToDeleteAsset(url, accessToken);
       }));
       console.log(`Deleted ${assetsToDelete.length} failed assets.`);
     } catch (error) {
