@@ -77,6 +77,7 @@ export default class ActionBinder {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
+    this.assetId = null;
   }
 
   getPsApiConfig() {
@@ -100,7 +101,7 @@ export default class ActionBinder {
   async cancelUploadOperation() {
     try {
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
-      this.logAnalyticsinSplunk('Cancel|UnityWidget');
+      this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId: this.assetId });
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
@@ -137,7 +138,7 @@ export default class ActionBinder {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
       throw new Error('Failed to upload image to Unity');
     }
-    this.logAnalyticsinSplunk('Upload Completed|UnityWidget');
+    this.logAnalyticsinSplunk('Uploading Completed|UnityWidget', { assetId: this.assetId });
     return id;
   }
 
@@ -177,6 +178,7 @@ export default class ActionBinder {
           subCode: `uploadAsset ${e.status}`,
           desc: e.message || undefined,
         },
+        assetId: this.assetId,
       });
       throw e;
     }
@@ -265,6 +267,7 @@ export default class ActionBinder {
           subCode: `continueInApp ${e.status}`,
           desc: e.message || undefined,
         },
+        assetId: this.assetId,
       });
       throw e;
     }
@@ -329,14 +332,14 @@ export default class ActionBinder {
     const objectUrl = URL.createObjectURL(file);
     await this.checkImageDimensions(objectUrl);
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
-    this.logAnalyticsinSplunk('Uploading Started|UnityWidget');
+    this.logAnalyticsinSplunk('Uploading Started|UnityWidget', { assetId: this.assetId });
     const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
     this.desktop = isDesktop();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
-    const assetId = await this.uploadAsset(file);
-    await this.continueInApp(assetId);
+    this.assetId = await this.uploadAsset(file);
+    await this.continueInApp(this.assetId);
   }
 
   async photoshopActionMaps(value, files) {
