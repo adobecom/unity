@@ -269,7 +269,7 @@ export default class UnityWidget {
     : origin;
     const promptFile = locale.prefix && locale.prefix !== '/'
       ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
-      : `${baseUrl}/unity/configs/errors/firefly-prompt.json`;
+      : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
     const promptRes = await fetch(promptFile);
     if (!promptRes.ok) {
       throw new Error('Failed to fetch prompts.');
