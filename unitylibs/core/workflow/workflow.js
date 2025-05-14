@@ -262,7 +262,7 @@ class WfInitiator {
     let wfName = '';
     let product = '';
     let feature = '';
-    let psw = null;
+    let psw = '';
     [...this.el.classList].forEach((cn) => {
       if (cn.match('workflow-')) wfName = cn;
       if (cn.match('product-')) product = cn.replace('product-', '');
