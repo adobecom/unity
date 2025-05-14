@@ -31,7 +31,11 @@ class ServiceHandler {
     };
     try {
       const response = await fetch(api, postOpts);
-      if (failOnError && response.status !== 200) throw new Error('Operation failed');
+      if (failOnError && response.status !== 200) {
+        const error = new Error('Operation failed');
+        error.status = response.status;
+        throw error;
+      }
       if (!failOnError) return response;
       return await response.json();
     } catch (err) {
