@@ -89,6 +89,31 @@ export default class UnityWidget {
     return inpWrap;
   }
 
+  // Helper to get 3 randomized prompts with displayPrompt truncated
+  getLimitedDisplayPrompts(prompts) {
+    const shuffled = prompts.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3).map(({ prompt, assetid }) => ({
+      prompt,
+      assetid,
+      displayPrompt: prompt.length > 105 ? prompt.slice(0, 105) + '…' : prompt,
+    }));
+  }
+
+  addPromptItemsToDropdown(dropdown, prompts, placeholder) {
+    prompts.forEach(({ prompt, assetid, displayPrompt }) => {
+      const item = createTag('li', {
+        id: assetid,
+        class: 'drop-item',
+        role: 'option',
+        tabindex: '0',
+        'aria-label': prompt,
+        'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
+        'daa-ll': `drop-cur-prompt|${prompt}`,
+      }, `<svg><use xlink:href=\"#unity-prompt-icon\"></use></svg> ${displayPrompt}`);
+      dropdown.insertBefore(item, dropdown.children[dropdown.children.length - 2]);
+    });
+  }
+
   async genDropdown(ph, verb) {
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
@@ -105,21 +130,8 @@ export default class UnityWidget {
     dd.append(titleCon);
 
     const prompts = await this.getPrompt('image');
-    const shuffled = prompts.sort(() => 0.5 - Math.random());
-    const limited = shuffled.slice(0, 3);
-    limited.forEach(({ prompt, assetid }) => {
-      const displayPrompt = prompt.length > 105 ? prompt.slice(0, 105) + '…' : prompt;
-      const item = createTag('li', {
-        id: assetid,
-        class: 'drop-item',
-        role: 'option',
-        tabindex: '0',
-        'aria-label': prompt,
-        'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
-        'daa-ll': `drop-cur-prompt|${prompt}`,
-      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
-      dd.append(item);
-    });
+    const limited = this.getLimitedDisplayPrompts(prompts);
+    this.addPromptItemsToDropdown(dd, limited, ph);
 
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
     dd.append(this.createFooter(ph));
@@ -277,7 +289,7 @@ export default class UnityWidget {
       throw new Error('Failed to fetch prompts.');
     }
     const promptJson = await promptRes.json();
-    this.prompts = createPromptMap(promptJson?.content?.data);
+    this.prompts = this.createPromptMap(promptJson?.content?.data);
   }
 
   async getPrompt(verb) {
@@ -288,18 +300,28 @@ export default class UnityWidget {
       return [];
     }
   }
-}
 
-function createPromptMap(data) {
-  const promptMap = {};
-  if (Array.isArray(data)) {
-    data.forEach((item) => {
-      if (item.verb && item.prompt && item.assetid) {
-        if (!promptMap[item.verb]) promptMap[item.verb] = [];
-        promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
-      }
-    });
+  createPromptMap(data) {
+    const promptMap = {};
+    if (Array.isArray(data)) {
+      data.forEach((item) => {
+        if (item.verb && item.prompt && item.assetid) {
+          if (!promptMap[item.verb]) promptMap[item.verb] = [];
+          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
+        }
+      });
+    }
+    return promptMap;
   }
-  return promptMap;
+
+  async updateDropdownForVerb(verb) {
+    const dropdown = this.widget.querySelector('#prompt-dropdown');
+    while (dropdown.children.length > 3) {
+      dropdown.removeChild(dropdown.children[1]);
+    }
+    const prompts = await this.getPrompt(verb);
+    const limited = this.getLimitedDisplayPrompts(prompts);
+    this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+  }
 }
 
