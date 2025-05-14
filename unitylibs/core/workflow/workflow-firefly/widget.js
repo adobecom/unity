@@ -100,7 +100,7 @@ export default class UnityWidget {
   }
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
-    prompts.forEach(({ prompt, assetid, displayPrompt }) => {
+    prompts.forEach(({ prompt, assetid, displayPrompt }, idx) => {
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -110,7 +110,7 @@ export default class UnityWidget {
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt|${prompt}`,
       }, `<svg><use xlink:href=\"#unity-prompt-icon\"></use></svg> ${displayPrompt}`);
-      dropdown.insertBefore(item, dropdown.children[dropdown.children.length - 2]);
+      dropdown.insertBefore(item, dropdown.children[2 + idx]);
     });
   }
 
