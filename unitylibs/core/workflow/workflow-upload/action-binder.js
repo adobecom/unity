@@ -30,12 +30,16 @@ class ServiceHandler {
     };
     try {
       const response = await fetch(api, postOpts);
-      if (failOnError && response.status !== 200) throw new Error('Operation failed');
+      if (failOnError && response.status !== 200) {
+        const error = new Error('Operation failed');
+        error.status = response.status;
+        throw error;
+      }
       if (!failOnError) return response;
       return await response.json();
     } catch (err) {
       this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
-      throw new Error('Operation failed');
+      throw err;
     }
   }
 
@@ -77,6 +81,7 @@ export default class ActionBinder {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
+    this.assetId = null;
   }
 
   getPsApiConfig() {
@@ -100,7 +105,7 @@ export default class ActionBinder {
   async cancelUploadOperation() {
     try {
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
-      this.logAnalyticsinSplunk('Cancel|UnityWidget');
+      this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId: this.assetId });
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
@@ -135,10 +140,11 @@ export default class ActionBinder {
     const response = await fetch(storageUrl, uploadOptions);
     if (response.status !== 200) {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
-      throw new Error('Failed to upload image to Unity');
+      const error = new Error('Failed to upload image to Unity');
+      error.status = response.status;
+      throw error;
     }
-    this.logAnalyticsinSplunk('Upload Completed|UnityWidget');
-    return id;
+    this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
   }
 
   async scanImgForSafety(assetId) {
@@ -163,9 +169,10 @@ export default class ActionBinder {
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href } = resJson;
-      const assetId = await this.uploadImgToUnity(href, id, file, file.type);
-      this.scanImgForSafety(assetId);
-      return assetId;
+      this.assetId = id;
+      this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
+      await this.uploadImgToUnity(href, id, file, file.type);
+      this.scanImgForSafety(this.assetId);
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
@@ -177,6 +184,7 @@ export default class ActionBinder {
           subCode: `uploadAsset ${e.status}`,
           desc: e.message || undefined,
         },
+        assetId: this.assetId,
       });
       throw e;
     }
@@ -251,7 +259,11 @@ export default class ActionBinder {
       );
       this.promiseStack.push(servicePromise);
       const response = await servicePromise;
-      if (!response?.url) throw new Error('Error connecting to App');
+      if (!response?.url) {
+        const error = new Error('Error connecting to App');
+        error.status = response.status;
+        throw error;
+      }
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) return;
       window.location.href = response.url;
@@ -265,6 +277,7 @@ export default class ActionBinder {
           subCode: `continueInApp ${e.status}`,
           desc: e.message || undefined,
         },
+        assetId: this.assetId,
       });
       throw e;
     }
@@ -335,8 +348,8 @@ export default class ActionBinder {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
-    const assetId = await this.uploadAsset(file);
-    await this.continueInApp(assetId);
+    await this.uploadAsset(file);
+    await this.continueInApp(this.assetId);
   }
 
   async photoshopActionMaps(value, files) {
