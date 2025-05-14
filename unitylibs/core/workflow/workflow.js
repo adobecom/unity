@@ -320,7 +320,7 @@ class WfInitiator {
       featureCfg: [],
       errors: {},
       supportedTexts: workflowCfg[wfName]?.stList ?? null,
-      desktopFeature: desktop ? true : false;
+      desktopFeature: desktop ? true : false,
     };
   }
 
