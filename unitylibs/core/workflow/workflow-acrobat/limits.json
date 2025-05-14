@@ -74,9 +74,6 @@
   "max-filesize-2-gb": {
     "maxFileSize": 2147483648
   },
-  "max-numfiles-1": {
-    "maxNumFiles": 1
-  },
   "max-numfiles-10": {
     "maxNumFiles": 10
   },
