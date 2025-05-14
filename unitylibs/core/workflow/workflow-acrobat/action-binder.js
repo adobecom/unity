@@ -160,7 +160,7 @@ export default class ActionBinder {
     'pdf-to-word': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
     'pdf-to-excel': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'pdf-to-ppt': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
-    'pdf-to-jpg': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'pdf-to-image': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'createpdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'word-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
@@ -232,6 +232,7 @@ static ERROR_MAP = {
     this.applySignedInSettings();
     this.initActionListeners = this.initActionListeners.bind(this);
     this.abortController = new AbortController();
+    this.uploadTimestamp = null;
   }
 
   isSignedOut() {
@@ -474,7 +475,7 @@ static ERROR_MAP = {
   }
 
   async handleSingleFileUpload(files, eventName) {
-    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu'};
+    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu' };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
@@ -484,7 +485,7 @@ static ERROR_MAP = {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     const isMixedFileTypes = this.isMixedFileTypes(files);
-    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length , uploadType: 'mfu'};
+    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length, uploadType: 'mfu' };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     this.dispatchAnalyticsEvent('multifile', this.filesData);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
@@ -592,9 +593,11 @@ static ERROR_MAP = {
         });
       }
       await this.delay(500);
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
+      const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
-        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else window.location.href = this.redirectUrl;
+        window.location.href = `${baseUrl}?${additionalParams}feedback=${this.multiFileFailure}&${queryString}`;
+      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${additionalParams}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
