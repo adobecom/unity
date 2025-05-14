@@ -167,12 +167,11 @@ export default class ActionBinder {
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'combine-pdf': ['hybrid', 'page-limit-25', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
-    'rotate-pages': ['hybrid', 'page-limit-25', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single']
-  }; 
-  //change page-limit to 500 pages. 25 pages is just for testing
-
+  };
+   
 static ERROR_MAP = {
   'verb_upload_error_generic': -1,
   'verb_upload_error_loading_verb_limits': -50,
