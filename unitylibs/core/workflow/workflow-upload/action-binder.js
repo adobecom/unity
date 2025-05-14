@@ -343,7 +343,7 @@ export default class ActionBinder {
     await this.checkImageDimensions(objectUrl);
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     this.logAnalyticsinSplunk('Uploading Started|UnityWidget');
-    if (this.workflowCfg.desktopFeature) {
+    if (this.workflowCfg.pswFeature) {
       const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
       this.desktop = isDesktop();
     }
