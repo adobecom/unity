@@ -119,6 +119,17 @@ class ServiceHandler {
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
   }
+
+  async deleteCallToService(url, accessToken) {
+    const options = {
+      method: 'DELETE',
+      headers: {
+        'Authorization': accessToken,
+        'x-api-key': 'unity', 
+      },
+    };
+    return this.fetchFromService(url, options);
+  }
 }
 
 export default class ActionBinder {
@@ -160,7 +171,7 @@ export default class ActionBinder {
     'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single']
   };
-
+   
 static ERROR_MAP = {
   'verb_upload_error_generic': -1,
   'verb_upload_error_loading_verb_limits': -50,
@@ -171,6 +182,7 @@ static ERROR_MAP = {
   'verb_upload_error_max_page_count': -150,
   'verb_upload_error_min_page_count': -151,
   'verb_upload_error_verify_page_count': -152,
+  'verb_upload_error_max_page_count_multi': -153,
   'verb_upload_error_unsupported_type': -170,
   'verb_upload_error_empty_file': -171,
   'verb_upload_error_file_too_large': -172,
@@ -189,7 +201,8 @@ static ERROR_MAP = {
   'verb_upload_error_finalize': -351,
   'verb_upload_error_chunk_upload': -352,
   'verb_cookie_not_set': -353,
-  'verb_upload_warn_chunk_upload': -354,
+  'verb_upload_warn_chunk_upload': -600,
+  'verb_upload_warn_delete_asset': -601,
   'verb_upload_error_redirect_to_app': -900,
   'verb_upload_error_finalize_asset': -901
 };
@@ -258,7 +271,7 @@ static ERROR_MAP = {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`
     };
     return unityConfig;
   }
