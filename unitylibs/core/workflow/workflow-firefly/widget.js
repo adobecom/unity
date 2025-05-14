@@ -88,7 +88,7 @@ export default class UnityWidget {
         const copiedNodes = e.target.cloneNode(true).childNodes;
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
-        updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
+        this.updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
       });
     });
     return [selectedElement, verbList];
