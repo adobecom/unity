@@ -344,9 +344,10 @@ export default class UnityWidget {
 
   async updateDropdownForVerb(verb) {
     const dropdown = this.widget.querySelector('#prompt-dropdown');
-    while (dropdown.children.length > 3) {
-      dropdown.removeChild(dropdown.children[1]);
-    }
+    // Remove all existing prompt items
+    const promptItems = dropdown.querySelectorAll('.drop-item');
+    promptItems.forEach(item => dropdown.removeChild(item));
+    // Add new prompts
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
