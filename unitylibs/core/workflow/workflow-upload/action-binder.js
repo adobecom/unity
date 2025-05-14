@@ -35,7 +35,7 @@ class ServiceHandler {
       return await response.json();
     } catch (err) {
       this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
-      throw new Error('Operation failed');
+      throw err;
     }
   }
 
