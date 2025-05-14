@@ -38,9 +38,64 @@ export default class UnityWidget {
     );
   }
 
+  showVerbMenu(selectedElement) {
+    selectedElement.parentElement.classList.toggle('show-menu');
+    selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
+  }
+
+  verbDropdown() {
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const selectedVerbType = verbs[0]?.className.split('-')[2];
+    const selectedVerb = verbs[0].nextElementSibling;
+    const { href } = selectedVerb;
+    const selectedElement = createTag('button', {
+      class: 'selected-verb',
+      'aria-expanded': 'false',
+      'aria-controls': 'prompt-menu',
+      'data-selected-verb': selectedVerbType,
+    }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
+    selectedElement.append(menuIcon);
+
+    if (verbs.length <= 1) {
+      selectedElement.setAttribute('disabled', 'true');
+      return [selectedElement];
+    }
+
+    const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
+    selectedElement.addEventListener('click', () => this.showVerbMenu(selectedElement), true);
+
+    verbs.forEach((verb) => {
+      const name = verb.nextElementSibling.textContent.trim();
+      const verbType = verb.className.split('-')[2];
+      const icon = verb.nextElementSibling.href;
+      const item = createTag('li', { class: 'verb-item' });
+      const link = createTag('a', {
+        href: '#',
+        class: 'verb-link',
+        'data-verb-type': verbType,
+      }, `<img src="${icon}" alt="${name}" />${name}`);
+      item.append(link);
+      verbList.append(item);
+
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedElement.parentElement.classList.toggle('show-menu');
+        selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
+        link.classList.toggle('selected');
+
+        const copiedNodes = e.target.cloneNode(true).childNodes;
+        selectedElement.replaceChildren(...copiedNodes, menuIcon);
+        selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
+      });
+    });
+    return [selectedElement, verbList];
+  }
+
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
+    const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });
     const inpField = createTag('input', {
       id: 'promptInput',
       class: 'inp-field',
@@ -53,10 +108,11 @@ export default class UnityWidget {
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
-    const surpriseBtn = this.createActBtn(this.el.querySelector('.icon-surpriseMe')?.closest('li'), 'surprise-btn');
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
-    actWrap.append(surpriseBtn, genBtn);
-    inpWrap.append(inpField, actWrap);
+    const verbDropdown = this.verbDropdown();
+    actWrap.append(genBtn);
+    verbBtn.append(...verbDropdown);
+    inpWrap.append(verbBtn, inpField, actWrap);
     return inpWrap;
   }
 
@@ -129,7 +185,7 @@ export default class UnityWidget {
   addWidget() {
     // TODO: Inject the widget for a simple use case
     // TODO: Introduce a placeholder for complex use cases
-    const interactArea = this.target.querySelector('.text');
+    const interactArea = this.target.querySelector('.copy');
     const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);
