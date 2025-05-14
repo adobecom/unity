@@ -8,6 +8,7 @@ export default class UnityWidget {
     this.widget = null;
     this.actionMap = {};
     this.spriteCon = spriteCon;
+    this.prompts = null;
   }
 
   async initWidget() {
