@@ -308,7 +308,7 @@ class WfInitiator {
       'workflow-upload': {
         productName: product,
         sfList: new Set([feature]),
-        psw: psw,
+        psw,
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
@@ -320,7 +320,7 @@ class WfInitiator {
       featureCfg: [],
       errors: {},
       supportedTexts: workflowCfg[wfName]?.stList ?? null,
-      pswFeature: psw ? true : false,
+      pswFeature: !!psw,
     };
   }
 
