@@ -262,12 +262,12 @@ class WfInitiator {
     let wfName = '';
     let product = '';
     let feature = '';
-    let desktop = null;
+    let psw = null;
     [...this.el.classList].forEach((cn) => {
       if (cn.match('workflow-')) wfName = cn;
       if (cn.match('product-')) product = cn.replace('product-', '');
       if (cn.match('feature-')) feature = cn.replace('feature-', '');
-      if (cn.match('desktop-enabled')) desktop = cn;
+      if (cn.match('psw-enabled')) psw = cn;
     });
     const workflowCfg = {
       'workflow-photoshop': {
@@ -308,7 +308,7 @@ class WfInitiator {
       'workflow-upload': {
         productName: product,
         sfList: new Set([feature]),
-        desktop: desktop,
+        psw: psw,
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
@@ -320,7 +320,7 @@ class WfInitiator {
       featureCfg: [],
       errors: {},
       supportedTexts: workflowCfg[wfName]?.stList ?? null,
-      desktopFeature: desktop ? true : false,
+      pswFeature: psw ? true : false,
     };
   }
 
