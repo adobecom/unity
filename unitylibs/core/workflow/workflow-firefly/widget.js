@@ -21,7 +21,7 @@ export default class UnityWidget {
     this.createBg();
     this.workflowCfg.placeholder = this.popPlaceholders();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    const dropdown = this.genDropdown(this.workflowCfg.placeholder);
+    const dropdown = this.genDropdown(this.workflowCfg.placeholder, this.workflowCfg.verb);
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
