@@ -5,9 +5,8 @@
     "handler": "render",
     "renderWidget": true,
     "source": ".copy .main-copy",
-    "target": "p:last-of-type",
+    "target": "a:last-of-type",
     "insert": "before",
-    "floatPrompt": false,
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
       ".gen-btn": { "actionType": "generate" },

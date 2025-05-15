@@ -10,6 +10,7 @@ import {
   sendAnalyticsEvent,
   defineDeviceByScreenSize,
   getHeaders,
+  getLocale,
 } from '../../../scripts/utils.js';
 class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
@@ -178,12 +179,34 @@ export default class ActionBinder {
 
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+    const queryParams = {};
+    if (cgen) {
+      cgen.split('&').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key && value) {
+          queryParams[key] = value;
+        }
+      });
+    }
     if (!this.query) this.query = this.inputField.value.trim();
+
     try {
       const payload = {
-        query: this.query,
         targetProduct: this.workflowCfg.productName,
+        payload: {
+          workflow: `text-to-${this.selectedVerbType}`,
+          locale: getLocale(),
+          additionalQueryParams: queryParams,
+        },
       };
+      if (this.id) {
+        payload.assetId = this.id;
+        payload.action = 'prompt-suggestion';
+      } else {
+        payload.query = this.query;
+        payload.action = 'generate';
+      }
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
