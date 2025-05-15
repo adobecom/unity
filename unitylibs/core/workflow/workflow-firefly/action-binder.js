@@ -138,14 +138,6 @@ export default class ActionBinder {
   }
 
   addInputEvents(el) {
-    let debounce;
-    el.addEventListener('input', ({ target }) => {
-      clearTimeout(debounce);
-      this.query = target.value.trim();
-      if (this.query.length >= 3) {
-        debounce = setTimeout(() => this.execActions(actions), 1000);
-      }
-    });
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
@@ -186,6 +178,7 @@ export default class ActionBinder {
 
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
+    if (!this.query) this.query = this.inputField.value.trim();
     try {
       const payload = {
         query: this.query,
