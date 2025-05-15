@@ -178,7 +178,7 @@ export default class ActionBinder {
 
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
-    if (this.query) this.query = this.inputField.value.trim();
+    if (!this.query) this.query = this.inputField.value.trim();
     try {
       const payload = {
         query: this.query,
