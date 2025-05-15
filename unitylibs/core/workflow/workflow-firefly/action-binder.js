@@ -10,6 +10,7 @@ import {
   sendAnalyticsEvent,
   defineDeviceByScreenSize,
   getHeaders,
+  getLocale,
 } from '../../../scripts/utils.js';
 class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
@@ -53,7 +54,7 @@ export default class ActionBinder {
     this.actions = actionMap;
     this.query = '';
     this.serviceHandler = null;
-    this.sendAnalyticsOnFocus = true;
+    this.sendAnalyticsOnFocus = fasle;
     this.activeIndex = -1;
     this.id = '';
     this.init();
@@ -179,10 +180,25 @@ export default class ActionBinder {
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
     if (!this.query) this.query = this.inputField.value.trim();
+    let assetFinder = ''
+    let action = ''
+    if (!this.id) {
+      assetFinder = `assetId: ${this.id}`;
+      action = 'prompt-suggestion';
+    }
+    else {
+      assetFinder = `query: ${this.query}`;
+      action = 'generate';
+    }
     try {
       const payload = {
-        query: this.query,
+        assetFinder,
         targetProduct: this.workflowCfg.productName,
+        payload: {
+          workflow: `text-to-${this.selectedVerbType}`,
+          action, 
+          locale: getLocale(),
+        }
       };
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,

@@ -45,6 +45,20 @@ export default class UnityWidget {
     selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
   }
 
+  hidePromptDropdown() {
+    const dropdown = this.widget.querySelector('#prompt-dropdown');
+    const inputField = this.widget.querySelector('.inp-field');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+      dropdown.setAttribute('inert', '');
+      dropdown.setAttribute('aria-hidden', 'true');
+      if (inputField) inputField.setAttribute('aria-expanded', 'false');
+      if (this.boundOutsideClickHandler) {
+        document.removeEventListener('click', this.boundOutsideClickHandler, true);
+      }
+    }
+  }
+
   verbDropdown() {
     const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
     const selectedVerbType = verbs[0]?.className.split('-')[2];
@@ -66,7 +80,16 @@ export default class UnityWidget {
     }
 
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
-    selectedElement.addEventListener('click', () => this.showVerbMenu(selectedElement), true);
+    selectedElement.addEventListener('click', () => {
+      this.hideDropdown();
+      this.showVerbMenu(selectedElement);
+    }, true);
+    selectedElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        this.hideDropdown();
+        this.showVerbMenu(selectedElement);
+      }
+    });
 
     verbs.forEach((verb) => {
       const name = verb.nextElementSibling.textContent.trim();
@@ -162,12 +185,10 @@ export default class UnityWidget {
     });
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
-
     const selectedVerb = this.selectedElement?.dataset.selectedVerb || verb || 'image';
     const prompts = await this.getPrompt(selectedVerb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
-
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
     dd.append(this.createFooter(ph));
     return dd;
@@ -218,98 +239,6 @@ export default class UnityWidget {
     else interactArea.appendChild(this.widgetWrap);
   }
 
-  initIO() {
-    const unityWrap = this.target.querySelector('.ex-unity-wrap');
-    if (!unityWrap) return;
-    const obsEl = unityWrap.closest('.unity-enabled')?.querySelector('[class*="heading-"], h1, h2, h3, h4, h5, h6');
-    if (!obsEl) return;
-    const getFooterEl = () => document.querySelector('.global-footer');
-    const waitForFooter = () => {
-      const footerEl = getFooterEl();
-      if (!footerEl) {
-        setTimeout(waitForFooter, 3000);
-        return;
-      }
-      this.setupIO(obsEl, footerEl);
-    };
-    waitForFooter();
-    const checkVisibility = () => {
-      const { top, bottom } = obsEl.getBoundingClientRect();
-      const isIntersecting = (top === 0 && bottom === 0)
-      || (bottom > 0 && top < window.innerHeight);
-      this.addSticky({ isIntersecting });
-    };
-    requestAnimationFrame(() => requestAnimationFrame(checkVisibility));
-  }
-
-  setupIO(observerEl, footerEl) {
-    this.createCustIntsecObs({
-      el: observerEl,
-      callback: (cfg) => this.addSticky(cfg),
-      cfg: this.workflowCfg,
-      options: { root: null, rootMargin: '200px', threshold: [0.1, 0.9] },
-    });
-
-    this.createCustIntsecObs({
-      el: footerEl,
-      callback: (cfg) => this.toggleVisibility(cfg),
-      cfg: {},
-      options: { root: null, rootMargin: '0px', threshold: [0.0] },
-    });
-  }
-
-  addSticky(cfg) {
-    const dropdown = this.widget.querySelector('.drop');
-    if (cfg.isIntersecting) {
-      this.widgetWrap.classList.remove('sticky');
-      dropdown.classList.remove('open-upward');
-      dropdown.setAttribute('daa-lh', 'Marquee');
-      return;
-    }
-    this.widgetWrap.classList.add('sticky');
-    dropdown.classList.add('open-upward');
-    dropdown.setAttribute('daa-lh', 'Floating');
-  }
-
-  toggleVisibility(cfg) {
-    const wrapper = this.target.querySelector('.ex-unity-wrap');
-    if (!wrapper) return;
-    wrapper.classList[cfg.isIntersecting ? 'add' : 'remove']('hidden');
-  }
-
-  debounce(func, del) {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => func(...args), del);
-    };
-  }
-
-  createCustIntsecObs({ el, callback, cfg, options = {} }) {
-    const debouncedCallback = this.debounce(callback, 100);
-    let lastState = null;
-    let lastExecutionTime = 0;
-    const MIN_INTERVAL = 200;
-    const observerOptions = {
-      threshold: [0.1, 0.9],
-      ...options,
-    };
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        const currentState = entry.isIntersecting;
-        const now = Date.now();
-        if (currentState !== lastState && now - lastExecutionTime >= MIN_INTERVAL) {
-          lastState = currentState;
-          lastExecutionTime = now;
-          cfg.isIntersecting = currentState;
-          debouncedCallback(cfg);
-        }
-      });
-    }, observerOptions);
-    io.observe(el);
-    return io;
-  }
-
   async loadPrompts() {
     const { locale } = getConfig();
     const { origin } = window.location;
@@ -330,7 +259,6 @@ export default class UnityWidget {
   async getPrompt(verb) {
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
-      // Filter out prompts with empty or whitespace-only prompt fields
       return (this.prompts?.[verb] || []).filter(item => item.prompt && item.prompt.trim() !== '');
     } catch (e) {
       return [];
@@ -352,10 +280,8 @@ export default class UnityWidget {
 
   async updateDropdownForVerb(verb) {
     const dropdown = this.widget.querySelector('#prompt-dropdown');
-    // Remove all existing prompt items
     const promptItems = dropdown.querySelectorAll('.drop-item');
     promptItems.forEach(item => dropdown.removeChild(item));
-    // Add new prompts
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
