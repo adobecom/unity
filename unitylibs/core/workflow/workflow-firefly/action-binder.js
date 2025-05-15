@@ -52,19 +52,16 @@ export default class ActionBinder {
     this.canvasArea = canvasArea;
     this.actions = actionMap;
     this.query = '';
-    this.maxResults = 0;
     this.serviceHandler = null;
     this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
-    this.suggestion = [];
+    this.id = '';
     this.init();
   }
 
   init() {
-    this.apiConfig = this.initializeApiConfig();
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
-    this.surpriseBtn = this.getElement('.surprise-btn');
     this.widget = this.getElement('.ex-unity-widget');
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.boundOutsideClickHandler = this.handleOutsideClick.bind(this);
@@ -91,13 +88,6 @@ export default class ActionBinder {
       };
       document.addEventListener('click', handleClick, { once: true });
     });
-  }
-
-  initializeApiConfig() {
-    return {
-      ...unityConfig,
-      expressEndpoint: { autoComplete: `${unityConfig.apiEndPoint}/providers/AutoComplete` },
-    };
   }
 
   getElement(selector) {
@@ -130,7 +120,6 @@ export default class ActionBinder {
       event.preventDefault();
       await this.execActions(actionsList, el);
     };
-
     switch (el.nodeName) {
       case 'A':
       case 'BUTTON':
@@ -148,16 +137,7 @@ export default class ActionBinder {
     }
   }
 
-  addInputEvents(el, actions) {
-    let debounce;
-    el.addEventListener('input', ({ target }) => {
-      clearTimeout(debounce);
-      this.query = target.value.trim();
-      this.toggleSurpriseBtn();
-      if (this.query.length >= 3) {
-        debounce = setTimeout(() => this.execActions(actions), 1000);
-      }
-    });
+  addInputEvents(el) {
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
@@ -187,9 +167,6 @@ export default class ActionBinder {
 
   async handleAction(action, el) {
     const actionMap = {
-      autocomplete: () => this.fetchAutoComplete(),
-      refreshSuggestion: () => this.refreshSuggestions(),
-      surprise: () => this.triggerSurprise(),
       generate: () => this.generateContent(),
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
@@ -199,68 +176,9 @@ export default class ActionBinder {
     if (execute) await execute();
   }
 
-  async fetchAutoComplete(fetchType = 'default') {
-    try {
-      if (!this.serviceHandler) await this.loadServiceHandler();
-      this.maxResults = fetchType === 'refresh' ? this.maxResults * 2 : 12;
-      if (fetchType !== 'refresh' && this.query) sendAnalyticsEvent(new CustomEvent('promptInput', { detail: { query: this.query } }));
-      const payload = {
-        query: this.query,
-        targetProduct: this.apiConfig.productName,
-        maxResults: this.maxResults,
-      };
-      const response = await this.serviceHandler.postCallToService(
-        this.apiConfig.expressEndpoint.autoComplete,
-        { body: JSON.stringify(payload) },
-      );
-      if (response?.completions) {
-        this.suggestion = fetchType === 'refresh'
-          ? response.completions.slice(this.maxResults / 2)
-          : response.completions;
-        this.displaySuggestions();
-        this.inputField.focus();
-      }
-    } catch (err) {
-      console.error('Error fetching autocomplete suggestions:', err);
-    }
-  }
-
-  async refreshSuggestions() {
-    if (this.suggestion.length) {
-      this.displaySuggestions();
-      this.inputField.focus();
-      return;
-    }
-    await this.fetchAutoComplete('refresh');
-  }
-
-  displaySuggestions() {
-    this.clearDropdown();
-    this.toggleDefaultItems(false);
-    const dynamicHeader = this.createDynamicHeader();
-    this.dropdown.prepend(dynamicHeader);
-    if (this.suggestion.length === 0) {
-      this.showEmptyState(dynamicHeader);
-      this.scrRead.textContent = this.workflowCfg.placeholder['placeholder-no-suggestions'];
-    } else {
-      const suggestionsToAdd = this.suggestion.splice(0, 3);
-      this.addSuggestionItems(suggestionsToAdd, dynamicHeader);
-      this.scrRead.textContent = `${suggestionsToAdd.length} suggestions ${suggestionsToAdd.reverse().toString()} available. Use up and down arrows to navigate`;
-    }
-    this.showDropdown();
-    this.initActionListeners();
-    this.addAccessibility();
-  }
-
-  async triggerSurprise() {
-    const prompts = this.workflowCfg?.supportedTexts?.prompt || [];
-    if (!prompts.length) return;
-    this.query = prompts[Math.floor(Math.random() * prompts.length)];
-    await this.generateContent();
-  }
-
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
+    if (!this.query) this.query = this.inputField.value.trim();
     try {
       const payload = {
         query: this.query,
@@ -278,55 +196,10 @@ export default class ActionBinder {
     }
   }
 
-  toggleDefaultItems(show = true) {
-    this.dropdown
-      .querySelectorAll('.drop-item, .drop-title-con')
-      .forEach((item) => item.classList.toggle('hidden', !show));
-  }
-
-  showEmptyState(header) {
-    if (!this.dropdown.querySelector('.drop-empty-msg')) {
-      const emptyMessage = createTag('li', {
-        class: 'drop-empty-msg',
-        role: 'presentation',
-      }, this.workflowCfg.placeholder['placeholder-no-suggestions']);
-      header.after(emptyMessage);
-    }
-  }
-
-  addSuggestionItems(suggestions, header) {
-    suggestions.reverse().forEach((suggestion, idx) => {
-      const item = createTag('li', {
-        id: `item-${idx}`,
-        class: 'drop-item dynamic',
-        'daa-ll': `prompt-API-powered|${suggestion}`,
-        tabindex: '0',
-        role: 'option',
-        'aria-label': suggestion,
-        'aria-description': `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})`,
-      }, `<svg><use xlink:href="#unity-search-icon"></use></svg> ${suggestion}`);
-      const referenceNode = header.nextSibling;
-      this.dropdown.insertBefore(item, referenceNode);
-    });
-  }
-
-  createDynamicHeader() {
-    const elements = [
-      { tag: 'span', attrs: { class: 'title-text', id: 'prompt-suggestions' }, content: `${this.workflowCfg.placeholder['placeholder-suggestions']} (English ${this.workflowCfg.placeholder['placeholder-only']})` },
-      { tag: 'button', attrs: { class: 'refresh-btn dynamic', 'daa-ll': 'prompt-dropdown-refresh', 'aria-label': 'Refresh suggestions' }, content: '<svg><use xlink:href="#unity-refresh-icon"></use></svg>' },
-      { tag: 'button', attrs: { class: 'close-btn dynamic', 'daa-ll': 'prompt-dropdown-close', 'aria-label': 'Close dropdown' }, content: '<svg><use xlink:href="#unity-close-icon"></use></svg>' },
-    ];
-    const header = createTag('li', { class: 'drop-title-con dynamic', 'aria-labelledby': 'prompt-suggestions' });
-    elements.forEach(({ tag, attrs, content = '' }) => {
-      const element = createTag(tag, attrs, content);
-      header.appendChild(element);
-    });
-    return header;
-  }
-
   setPrompt(el) {
-    const prompt = el.textContent.trim();
+    const prompt = el.getAttribute('aria-label').trim();
     this.query = prompt;
+    this.id = el.getAttribute('id').trim();
     this.generateContent();
     this.hideDropdown();
   }
@@ -386,17 +259,12 @@ export default class ActionBinder {
     return tipCon ? [...allItems, tipCon] : allItems;
   }
 
-  getFocusElems(isDynamic) {
+  getFocusElems() {
     let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
     if (this.viewport !== 'MOBILE') {
       elmSelector = `${elmSelector}, .legal-text`;
     }
-    const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
-    const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
-    const baseSelector = `.inp-field, .gen-btn, ${elmSelector}`;
-    const selector = isDynamic
-      ? `${baseSelector}, .refresh-btn, ${surpriseBtnSelector}`.trim().replace(/,+$/, '')
-      : `${baseSelector}, ${surpriseBtnSelector}`.trim().replace(/,+$/, '');
+    const selector = `.inp-field, .gen-btn, ${elmSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
   }
 
@@ -476,11 +344,6 @@ export default class ActionBinder {
     await this.generateContent();
   }
 
-  clearDropdown() {
-    this.dropdown.querySelectorAll('.drop-item.dynamic, .drop-title-con.dynamic, .drop-empty-msg').forEach((el) => el.remove());
-    this.addAccessibility();
-  }
-
   showDropdown() {
     this.dropdown.classList.remove('hidden');
     this.dropdown.removeAttribute('inert');
@@ -503,18 +366,10 @@ export default class ActionBinder {
     if (!this.widget.contains(event.target)) this.hideDropdown();
   }
 
-  toggleSurpriseBtn() {
-    this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
-    if (!this.query) this.resetDropdown();
-  }
-
   resetDropdown() {
     this.inputField.focus();
     if (!this.query) {
       this.inputField.value = '';
-      this.surpriseBtn.classList.remove('hidden');
-      this.clearDropdown();
-      this.toggleDefaultItems();
     }
     this.hideDropdown();
   }
