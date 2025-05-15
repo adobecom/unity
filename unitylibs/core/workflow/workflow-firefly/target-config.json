@@ -9,19 +9,9 @@
     "insert": "before",
     "floatPrompt": false,
     "actionMap": {
-      ".inp-field": [
-        {
-          "actionType": "autocomplete"
-        }
-      ],
       ".gen-btn": [
         {
           "actionType": "generate"
-        }
-      ],
-      ".refresh-btn": [
-        {
-          "actionType": "refreshSuggestion"
         }
       ],
       ".close-btn": [
