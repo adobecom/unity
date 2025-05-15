@@ -9,6 +9,7 @@ export default class UnityWidget {
     this.actionMap = {};
     this.spriteCon = spriteCon;
     this.prompts = null;
+    this.selectedVerbType = '';
   }
 
   async initWidget() {
@@ -55,6 +56,7 @@ export default class UnityWidget {
       'aria-controls': 'prompt-menu',
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
+    this.selectedVerbType=  selectedVerbType;
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     selectedElement.append(menuIcon);
 
@@ -157,7 +159,8 @@ export default class UnityWidget {
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
 
-    const prompts = await this.getPrompt('image');
+    const selectedVerb = this.selectedElement?.dataset.selectedVerb || verb || 'image';
+    const prompts = await this.getPrompt(selectedVerb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
 
