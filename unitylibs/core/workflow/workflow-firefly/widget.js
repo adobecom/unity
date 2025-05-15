@@ -156,6 +156,10 @@ export default class UnityWidget {
     const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': 'drop-close', 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
+    closeBtn.addEventListener('click', () => {
+      dd.classList.add('hidden');
+      dd.setAttribute('aria-hidden', 'true');
+    });
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
 
