@@ -323,7 +323,8 @@ export default class UnityWidget {
   async getPrompt(verb) {
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
-      return this.prompts?.[verb] || [];
+      // Filter out prompts with empty or whitespace-only prompt fields
+      return (this.prompts?.[verb] || []).filter(item => item.prompt && item.prompt.trim() !== '');
     } catch (e) {
       return [];
     }
