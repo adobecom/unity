@@ -55,6 +55,7 @@ export default class ActionBinder {
     this.serviceHandler = null;
     this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
+    this.id = '';
     this.init();
   }
 
@@ -136,7 +137,15 @@ export default class ActionBinder {
     }
   }
 
-  addInputEvents(el, actions) {
+  addInputEvents(el) {
+    let debounce;
+    el.addEventListener('input', ({ target }) => {
+      clearTimeout(debounce);
+      this.query = target.value.trim();
+      if (this.query.length >= 3) {
+        debounce = setTimeout(() => this.execActions(actions), 1000);
+      }
+    });
     el.addEventListener('focus', () => {
       this.showDropdown();
       if (this.sendAnalyticsOnFocus) {
@@ -195,8 +204,9 @@ export default class ActionBinder {
   }
 
   setPrompt(el) {
-    const prompt = el.textContent.trim();
+    const prompt = el.getAttribute('aria-label').trim();
     this.query = prompt;
+    this.id = el.getAttribute('id').trim();
     this.generateContent();
     this.hideDropdown();
   }
@@ -346,11 +356,6 @@ export default class ActionBinder {
     await this.generateContent();
   }
 
-  clearDropdown() {
-    this.dropdown.querySelectorAll('.drop-item.dynamic, .drop-title-con.dynamic, .drop-empty-msg').forEach((el) => el.remove());
-    this.addAccessibility();
-  }
-
   showDropdown() {
     this.dropdown.classList.remove('hidden');
     this.dropdown.removeAttribute('inert');
@@ -373,18 +378,10 @@ export default class ActionBinder {
     if (!this.widget.contains(event.target)) this.hideDropdown();
   }
 
-  toggleSurpriseBtn() {
-    this.surpriseBtn.classList.toggle('hidden', this.query.length > 0);
-    if (!this.query) this.resetDropdown();
-  }
-
   resetDropdown() {
     this.inputField.focus();
     if (!this.query) {
       this.inputField.value = '';
-      this.surpriseBtn.classList.remove('hidden');
-      this.clearDropdown();
-      this.toggleDefaultItems();
     }
     this.hideDropdown();
   }
