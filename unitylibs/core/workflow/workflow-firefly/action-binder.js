@@ -178,7 +178,7 @@ export default class ActionBinder {
 
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
-    if (!this.query) this.query = this.inputField.value.trim();
+    if (this.query) this.query = this.inputField.value.trim();
     try {
       const payload = {
         query: this.query,
@@ -259,17 +259,12 @@ export default class ActionBinder {
     return tipCon ? [...allItems, tipCon] : allItems;
   }
 
-  getFocusElems(isDynamic) {
+  getFocusElems() {
     let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
     if (this.viewport !== 'MOBILE') {
       elmSelector = `${elmSelector}, .legal-text`;
     }
-    const isSurBtnVisible = !this.surpriseBtn.classList.contains('hidden');
-    const surpriseBtnSelector = isSurBtnVisible ? '.surprise-btn' : '';
-    const baseSelector = `.inp-field, .gen-btn, ${elmSelector}`;
-    const selector = isDynamic
-      ? `${baseSelector}, .refresh-btn, ${surpriseBtnSelector}`.trim().replace(/,+$/, '')
-      : `${baseSelector}, ${surpriseBtnSelector}`.trim().replace(/,+$/, '');
+    const selector = `.inp-field, .gen-btn, ${elmSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
   }
 
