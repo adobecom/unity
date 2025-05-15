@@ -54,7 +54,7 @@ export default class ActionBinder {
     this.actions = actionMap;
     this.query = '';
     this.serviceHandler = null;
-    this.sendAnalyticsOnFocus = fasle;
+    this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
     this.id = '';
     this.init();
