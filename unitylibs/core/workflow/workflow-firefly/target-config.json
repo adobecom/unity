@@ -18,6 +18,11 @@
         {
           "actionType": "closeDropdown"
         }
+      ],
+      ".drop-item": [
+        {
+          "actionType": "setPromptValue"
+        }
       ]
     }
   }
