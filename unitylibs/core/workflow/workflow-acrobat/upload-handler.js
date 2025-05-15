@@ -240,7 +240,7 @@ export default class UploadHandler {
     return true;
   }
 
-  async checkPageNumCount(assetData) {
+  async checkPageNumCount(assetData, isMultiFile=false) {
     try {
       const intervalDuration = 500;
       const totalDuration = 5000;
@@ -253,7 +253,7 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.maxNumPages
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
-            if (!this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])){
+            if (!isMultiFile){
               const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
               this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
               await this.transitionScreen.showSplashScreen();
@@ -265,12 +265,10 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.minNumPages
             && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
           ) {
-            if (!this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])){
-              const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-              this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-              await this.transitionScreen.showSplashScreen();
-              await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
-            }
+            const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+            this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+            await this.transitionScreen.showSplashScreen();
+            await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
             resolve(true);
             return;
           }
@@ -317,7 +315,7 @@ export default class UploadHandler {
     for (const limit of Object.keys(this.actionBinder.limits)) {
       switch (limit) {
         case 'pageLimit': {
-          const pageLimitRes = await this.checkPageNumCount(assetData);
+          const pageLimitRes = await this.checkPageNumCount(assetData, isMultiFile);
           if (pageLimitRes) {
             validated = false;
             if (!isMultiFile) {
@@ -473,7 +471,7 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      const nonpdfUploadVerbs = this.actionBinder.workflowCfg.targetCfg.autoRedirectVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      const nonpdfUploadVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfUploadVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
       if(this.isPdf(file) || nonpdfUploadVerbs) return await this.uploadSingleFile(file, fileData);;
       await this.actionBinder.delay(3000);
       const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
