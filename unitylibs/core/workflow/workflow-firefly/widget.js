@@ -1,3 +1,5 @@
+/* eslint-disable class-methods-use-this */
+
 import { createTag, getConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
@@ -70,7 +72,7 @@ export default class UnityWidget {
       'aria-controls': 'prompt-menu',
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
-    this.selectedVerbType=  selectedVerbType;
+    this.selectedVerbType = selectedVerbType;
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     selectedElement.append(menuIcon);
 
@@ -148,7 +150,7 @@ export default class UnityWidget {
     return shuffled.slice(0, 3).map(({ prompt, assetid }) => ({
       prompt,
       assetid,
-      displayPrompt: prompt.length > 105 ? prompt.slice(0, 105) + '…' : prompt,
+      displayPrompt: prompt.length > 105 ? `${prompt.slice(0, 105)}…` : prompt,
     }));
   }
 
@@ -243,8 +245,8 @@ export default class UnityWidget {
     const { locale } = getConfig();
     const { origin } = window.location;
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.')) 
-    ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-    : origin;
+      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+      : origin;
     const promptFile = locale.prefix && locale.prefix !== '/'
       ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
       : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
@@ -259,7 +261,7 @@ export default class UnityWidget {
   async getPrompt(verb) {
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
-      return (this.prompts?.[verb] || []).filter(item => item.prompt && item.prompt.trim() !== '');
+      return (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
     } catch (e) {
       return [];
     }
@@ -281,7 +283,7 @@ export default class UnityWidget {
   async updateDropdownForVerb(verb) {
     const dropdown = this.widget.querySelector('#prompt-dropdown');
     const promptItems = dropdown.querySelectorAll('.drop-item');
-    promptItems.forEach(item => dropdown.removeChild(item));
+    promptItems.forEach((item) => dropdown.removeChild(item));
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);

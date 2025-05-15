@@ -7,7 +7,6 @@
     "source": ".copy .main-copy",
     "target": "a:last-of-type",
     "insert": "before",
-    "floatPrompt": false,
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
       ".gen-btn": { "actionType": "generate" },

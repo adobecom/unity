@@ -179,14 +179,23 @@ export default class ActionBinder {
 
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+    const queryParams = {};
+    if (cgen) {
+      cgen.split('&').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key && value) {
+          queryParams[key] = value;
+        }
+      });
+    }
     if (!this.query) this.query = this.inputField.value.trim();
-    let assetFinder = ''
-    let action = ''
+    let assetFinder = '';
+    let action = '';
     if (!this.id) {
       assetFinder = `assetId: ${this.id}`;
       action = 'prompt-suggestion';
-    }
-    else {
+    } else {
       assetFinder = `query: ${this.query}`;
       action = 'generate';
     }
@@ -196,9 +205,10 @@ export default class ActionBinder {
         targetProduct: this.workflowCfg.productName,
         payload: {
           workflow: `text-to-${this.selectedVerbType}`,
-          action, 
+          action,
           locale: getLocale(),
-        }
+          additionalQueryParams: queryParams,
+        },
       };
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
