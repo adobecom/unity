@@ -81,12 +81,12 @@ export default class UnityWidget {
 
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
     selectedElement.addEventListener('click', () => {
-      this.hideDropdown();
+      this.hidePromptDropdown();
       this.showVerbMenu(selectedElement);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.hideDropdown();
+        this.hidePromptDropdown();
         this.showVerbMenu(selectedElement);
       }
     });
