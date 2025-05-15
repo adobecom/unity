@@ -15,7 +15,7 @@
     },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuFallback": ["compress-pdf"],
-    "autoRedirectVerbs": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "combine-pdf", "chat-pdf", "chat-pdf-student"],
+    "nonpdfUploadVerbs": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "combine-pdf", "chat-pdf", "chat-pdf-student"],
     "multiFileSupportedVerbs": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student"]
   }
 }

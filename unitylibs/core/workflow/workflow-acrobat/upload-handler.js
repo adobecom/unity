@@ -407,11 +407,11 @@ export default class UploadHandler {
     }
   }
 
-  isNonPdf(files) {
-    return files.some((file) => file.type !== 'application/pdf');
+  isPdf(file) {
+    return file.type === 'application/pdf';
   }
 
-  async uploadSingleFile(file, fileData, isNonPdf = false) {
+  async uploadSingleFile(file, fileData, isPdf = true) {
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     const abortSignal = this.actionBinder.getAbortSignal();
     let cOpts = {};
@@ -435,7 +435,7 @@ export default class UploadHandler {
             type: file.type,
           },
         },
-        ...(isNonPdf ? { feedback: 'nonpdf' } : {}),
+        ...(!isPdf ? { feedback: 'nonpdf' } : {}),
       },
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
@@ -460,7 +460,7 @@ export default class UploadHandler {
     this.actionBinder.operations.push(assetData.id);
     const verified = await this.verifyContent(assetData);
     if (!verified || abortSignal.aborted) return;
-    if (!isNonPdf) {
+    if (isPdf) {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
@@ -473,17 +473,12 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      const autoRedirect = this.actionBinder.workflowCfg.targetCfg.autoRedirectVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      if (!this.actionBinder.workflowCfg.targetCfg.verbsWithoutMfuFallback.includes(this.actionBinder.workflowCfg.enabledFeatures[0]) 
-          && this.isNonPdf([file])
-          && !autoRedirect) {
-        await this.actionBinder.delay(3000);
-        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
-        if (!redirectSuccess) return;
-        this.actionBinder.redirectWithoutUpload = true;
-        return;
-      }
-      await this.uploadSingleFile(file, fileData);
+      const nonpdfUploadVerbs = this.actionBinder.workflowCfg.targetCfg.autoRedirectVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      if(this.isPdf(file) || nonpdfUploadVerbs) return await this.uploadSingleFile(file, fileData);;
+      await this.actionBinder.delay(3000);
+      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
+      if (!redirectSuccess) return;
+      this.actionBinder.redirectWithoutUpload = true;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
@@ -496,7 +491,7 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      await this.uploadSingleFile(file, fileData, this.isNonPdf([file]));
+      await this.uploadSingleFile(file, fileData, !this.isPdf(file));
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
