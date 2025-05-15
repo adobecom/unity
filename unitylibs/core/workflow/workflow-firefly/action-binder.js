@@ -190,26 +190,23 @@ export default class ActionBinder {
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
-    let assetFinder = '';
-    let action = '';
-    if (!this.id) {
-      assetFinder = `assetId: ${this.id}`;
-      action = 'prompt-suggestion';
-    } else {
-      assetFinder = `query: ${this.query}`;
-      action = 'generate';
-    }
+
     try {
       const payload = {
-        assetFinder,
         targetProduct: this.workflowCfg.productName,
         payload: {
           workflow: `text-to-${this.selectedVerbType}`,
-          action,
           locale: getLocale(),
           additionalQueryParams: queryParams,
         },
       };
+      if (this.id) {
+        payload.assetId = this.id;
+        payload.action = 'prompt-suggestion';
+      } else {
+        payload.query = this.query;
+        payload.action = 'generate';
+      }
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
