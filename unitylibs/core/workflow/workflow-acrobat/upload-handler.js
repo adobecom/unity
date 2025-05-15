@@ -630,7 +630,8 @@ export default class UploadHandler {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen(true);
-      if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+      const hasPdf = files.some(this.isPdf);
+      if (hasPdf && this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
         await this.uploadMultiFile(files, filesData); 
         return;
       }
