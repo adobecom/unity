@@ -50,8 +50,6 @@ export default class UnityWidget {
         container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
       }
     });
-    menuContainer.classList.toggle('show-menu');
-    selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
   }
 
   hidePromptDropdown() {
@@ -102,6 +100,7 @@ export default class UnityWidget {
       this.showVerbMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
+
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         this.hidePromptDropdown();
@@ -131,6 +130,7 @@ export default class UnityWidget {
         verbList.querySelectorAll('.verb-link').forEach((listLink) => {
           listLink.parentElement.classList.remove('selected');
         });
+
         selectedElement.parentElement.classList.toggle('show-menu');
         selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
         link.parentElement.classList.add('selected');
