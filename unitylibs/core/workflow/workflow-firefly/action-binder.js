@@ -196,10 +196,10 @@ export default class ActionBinder {
       const selectedVerbType = this.getSelectedVerbType();
       const payload = {
         targetProduct: this.workflowCfg.productName,
+        additionalQueryParams: queryParams,
         payload: {
           workflow: `text-to-${selectedVerbType}`,
           locale: getLocale(),
-          additionalQueryParams: queryParams,
         },
       };
       if (this.id) {
