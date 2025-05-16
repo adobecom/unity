@@ -471,8 +471,8 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      const nonpdfUploadVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfUploadVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      if(this.isPdf(file) || nonpdfUploadVerbs) return await this.uploadSingleFile(file, fileData);;
+      const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      if(this.isPdf(file) || nonpdfSfuProductScreenVerbs) return await this.uploadSingleFile(file, fileData);
       await this.actionBinder.delay(3000);
       const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
       if (!redirectSuccess) return;
@@ -630,8 +630,23 @@ export default class UploadHandler {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen(true);
-      const hasPdf = files.some(this.isPdf);
-      if (hasPdf && this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+      const nonpdfMfuFeedbackScreenTypeNonpdf = this.actionBinder.workflowCfg.targetCfg.nonpdfMfuFeedbackScreenTypeNonpdf.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      const allNonPdf = files.every(file => !this.isPdf(file));
+      if (nonpdfMfuFeedbackScreenTypeNonpdf) {
+        if(allNonPdf){
+          const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), filesData);
+          if (!redirectSuccess) return;
+          this.actionBinder.redirectWithoutUpload = true;
+          return;
+        }
+      }
+      if (this.actionBinder.workflowCfg.targetCfg.mfuUploadAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+        if (this.actionBinder.workflowCfg.targetCfg.mfuUploadOnlyPdfAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+          const pdfFiles = files.filter(this.isPdf);
+          let fileData = { type: 'mixed', size: filesData.size, count: pdfFiles.length, uploadType: 'mfu' };
+          await this.uploadMultiFile(pdfFiles, fileData);
+          return;
+        }
         await this.uploadMultiFile(files, filesData); 
         return;
       }
