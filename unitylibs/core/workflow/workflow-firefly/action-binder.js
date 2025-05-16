@@ -70,6 +70,9 @@ export default class ActionBinder {
     this.viewport = defineDeviceByScreenSize();
     this.addAccessibility();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
+    this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => {
+      this.initActionListeners();
+    });
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
     this.initAction();
