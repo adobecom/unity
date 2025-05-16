@@ -218,6 +218,7 @@ export default class ActionBinder {
         { body: JSON.stringify(payload) },
       );
       this.query = '';
+      this.id = '';
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
