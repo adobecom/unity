@@ -50,6 +50,8 @@ export default class UnityWidget {
         container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
       }
     });
+    menuContainer.classList.toggle('show-menu');
+    selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
   }
 
   hidePromptDropdown() {
