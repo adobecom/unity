@@ -170,7 +170,6 @@ export default class ActionBinder {
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
-
     const execute = actionMap[action.actionType];
     if (execute) await execute();
   }

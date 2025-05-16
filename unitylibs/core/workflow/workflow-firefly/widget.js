@@ -43,8 +43,15 @@ export default class UnityWidget {
   }
 
   showVerbMenu(selectedElement) {
-    selectedElement.parentElement.classList.toggle('show-menu');
-    selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
+    const menuContainer = selectedElement.parentElement;
+    document.querySelectorAll('.verbs-container').forEach((container) => {
+      if (container !== menuContainer) {
+        container.classList.remove('show-menu');
+        container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+    menuContainer.classList.toggle('show-menu');
+    selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
   }
 
   hidePromptDropdown() {
@@ -74,18 +81,26 @@ export default class UnityWidget {
     }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    selectedElement.append(menuIcon);
-
     if (verbs.length <= 1) {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
     }
-
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
-    selectedElement.addEventListener('click', () => {
+    selectedElement.append(menuIcon);
+    const handleDocumentClick = (e) => {
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer.contains(e.target)) {
+        document.removeEventListener('click', handleDocumentClick);
+        menuContainer.classList.remove('show-menu');
+        selectedElement.setAttribute('aria-expanded', 'false');
+      }
+    };
+    selectedElement.addEventListener('click', (e) => {
+      e.stopPropagation();
       this.hidePromptDropdown();
       this.showVerbMenu(selectedElement);
+      document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -94,26 +109,33 @@ export default class UnityWidget {
       }
     });
 
-    verbs.forEach((verb) => {
+    verbs.forEach((verb, idx) => {
       const name = verb.nextElementSibling.textContent.trim();
       const verbType = verb.className.split('-')[2];
       const icon = verb.nextElementSibling.href;
       const item = createTag('li', { class: 'verb-item' });
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const link = createTag('a', {
         href: '#',
         class: 'verb-link',
         'data-verb-type': verbType,
       }, `<img src="${icon}" alt="${name}" />${name}`);
+      if (idx === 0) item.classList.add('selected');
+      verbs[0].classList.add('selected');
+      link.prepend(selectedIcon);
       item.append(link);
       verbList.append(item);
-
       link.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
+        verbList.querySelectorAll('.verb-link').forEach((listLink) => {
+          listLink.parentElement.classList.remove('selected');
+        });
         selectedElement.parentElement.classList.toggle('show-menu');
         selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
-        link.classList.toggle('selected');
-
+        link.parentElement.classList.add('selected');
         const copiedNodes = e.target.cloneNode(true).childNodes;
+        copiedNodes[0].remove();
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
         this.updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
@@ -247,7 +269,7 @@ export default class UnityWidget {
   async loadPrompts() {
     const { locale } = getConfig();
     const { origin } = window.location;
-    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.')) 
+    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
     const promptFile = locale.prefix && locale.prefix !== '/'
