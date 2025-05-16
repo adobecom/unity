@@ -61,6 +61,7 @@ export default class ActionBinder {
   }
 
   init() {
+    this.apiConfig = this.initializeApiConfig();
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
     this.widget = this.getElement('.ex-unity-widget');
@@ -89,6 +90,10 @@ export default class ActionBinder {
       };
       document.addEventListener('click', handleClick, { once: true });
     });
+  }
+
+  initializeApiConfig() {
+    return { ...unityConfig };
   }
 
   getElement(selector) {
