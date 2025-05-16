@@ -7,7 +7,7 @@
 import {
   unityConfig,
   createTag,
-  sendAnalyticsEvent,
+  //sendAnalyticsEvent,
   defineDeviceByScreenSize,
   getHeaders,
   getLocale,
@@ -54,7 +54,7 @@ export default class ActionBinder {
     this.actions = actionMap;
     this.query = '';
     this.serviceHandler = null;
-    this.sendAnalyticsOnFocus = true;
+    //this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
     this.id = '';
     this.init();
@@ -146,10 +146,10 @@ export default class ActionBinder {
   addInputEvents(el) {
     el.addEventListener('focus', () => {
       this.showDropdown();
-      if (this.sendAnalyticsOnFocus) {
+      /*if (this.sendAnalyticsOnFocus) {
         sendAnalyticsEvent(new Event('promptOpen'));
         this.sendAnalyticsOnFocus = false;
-      }
+      }*/
     });
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
       if (!relatedTarget) {
@@ -166,15 +166,20 @@ export default class ActionBinder {
       // ToDo: send to LANA
     }
   }
-  
+
   async handleAction(action, el) {
     const actionMap = {
       generate: () => this.generateContent(),
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
+
     const execute = actionMap[action.actionType];
     if (execute) await execute();
+  }
+
+  getSelectedVerbType() {
+    return this.widgetWrap.getAttribute('data-selected-verb');
   }
 
   async generateContent() {
@@ -192,12 +197,13 @@ export default class ActionBinder {
     if (!this.query) this.query = this.inputField.value.trim();
 
     try {
+      const selectedVerbType = this.getSelectedVerbType();
       const payload = {
         targetProduct: this.workflowCfg.productName,
-        additionalQueryParams: queryParams,
         payload: {
-          workflow: `text-to-${this.selectedVerbType}`,
+          workflow: `text-to-${selectedVerbType}`,
           locale: getLocale(),
+          additionalQueryParams: queryParams,
         },
       };
       if (this.id) {
