@@ -240,7 +240,7 @@ export default class UploadHandler {
     return true;
   }
 
-  async checkPageNumCount(assetData) {
+  async checkPageNumCount(assetData, isMultiFile=false) {
     try {
       const intervalDuration = 500;
       const totalDuration = 5000;
@@ -253,7 +253,7 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.maxNumPages
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
-            if (!this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])){
+            if (!isMultiFile){
               const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
               this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
               await this.transitionScreen.showSplashScreen();
@@ -265,12 +265,10 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.minNumPages
             && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
           ) {
-            if (!this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])){
-              const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-              this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-              await this.transitionScreen.showSplashScreen();
-              await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
-            }
+            const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+            this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+            await this.transitionScreen.showSplashScreen();
+            await this.actionBinder.dispatchErrorToast('verb_upload_error_min_page_count');
             resolve(true);
             return;
           }
@@ -317,7 +315,7 @@ export default class UploadHandler {
     for (const limit of Object.keys(this.actionBinder.limits)) {
       switch (limit) {
         case 'pageLimit': {
-          const pageLimitRes = await this.checkPageNumCount(assetData);
+          const pageLimitRes = await this.checkPageNumCount(assetData, isMultiFile);
           if (pageLimitRes) {
             validated = false;
             if (!isMultiFile) {
@@ -632,7 +630,8 @@ export default class UploadHandler {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen(true);
-      if (this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
+      const hasPdf = files.some(this.isPdf);
+      if (hasPdf && this.actionBinder.workflowCfg.targetCfg.multiFileSupportedVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
         await this.uploadMultiFile(files, filesData); 
         return;
       }
