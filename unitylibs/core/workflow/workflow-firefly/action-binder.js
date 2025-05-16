@@ -7,7 +7,6 @@
 import {
   unityConfig,
   createTag,
-  //sendAnalyticsEvent,
   defineDeviceByScreenSize,
   getHeaders,
   getLocale,
@@ -54,7 +53,6 @@ export default class ActionBinder {
     this.actions = actionMap;
     this.query = '';
     this.serviceHandler = null;
-    //this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
     this.id = '';
     this.init();
@@ -149,10 +147,6 @@ export default class ActionBinder {
   addInputEvents(el) {
     el.addEventListener('focus', () => {
       this.showDropdown();
-      /*if (this.sendAnalyticsOnFocus) {
-        sendAnalyticsEvent(new Event('promptOpen'));
-        this.sendAnalyticsOnFocus = false;
-      }*/
     });
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
       if (!relatedTarget) {
