@@ -73,6 +73,7 @@ export default class UnityWidget {
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     selectedElement.append(menuIcon);
 
@@ -116,6 +117,8 @@ export default class UnityWidget {
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
         this.updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
+        this.selectedVerbType = e.target.getAttribute('data-verb-type');
+        this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       });
     });
     return [selectedElement, verbList];
@@ -164,7 +167,7 @@ export default class UnityWidget {
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt|${prompt}`,
-      }, `<svg><use xlink:href=\"#unity-prompt-icon\"></use></svg> ${displayPrompt}`);
+      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dropdown.insertBefore(item, dropdown.children[2 + idx]);
     });
   }
