@@ -154,25 +154,20 @@ export default class ActionBinder {
     });
   }
 
-  async execActions(actions, el = null) {
-    await Promise.all(
-      actions.map(async (act) => {
-        try {
-          await this.handleAction(act, el);
-        } catch (err) {
-          // console.error(`Error handling action ${act}:`, err);
-        }
-      }),
-    );
+  async execActions(action, el = null) {
+    try {
+      await this.handleAction(action, el);
+    } catch (err) {
+      // ToDo: send to LANA
+    }
   }
-
+  
   async handleAction(action, el) {
     const actionMap = {
       generate: () => this.generateContent(),
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
-
     const execute = actionMap[action.actionType];
     if (execute) await execute();
   }
