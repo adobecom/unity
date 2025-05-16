@@ -44,14 +44,12 @@ export default class UnityWidget {
 
   showVerbMenu(selectedElement) {
     const menuContainer = selectedElement.parentElement;
-
     document.querySelectorAll('.verbs-container').forEach((container) => {
       if (container !== menuContainer) {
         container.classList.remove('show-menu');
         container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
       }
     });
-
     menuContainer.classList.toggle('show-menu');
     selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
   }
@@ -82,16 +80,14 @@ export default class UnityWidget {
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
-
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     if (verbs.length <= 1) {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
     }
-
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
     selectedElement.append(menuIcon);
-
     const handleDocumentClick = (e) => {
       const menuContainer = selectedElement.parentElement;
       if (!menuContainer.contains(e.target)) {
@@ -100,7 +96,6 @@ export default class UnityWidget {
         selectedElement.setAttribute('aria-expanded', 'false');
       }
     };
-
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown();
@@ -126,18 +121,14 @@ export default class UnityWidget {
         class: 'verb-link',
         'data-verb-type': verbType,
       }, `<img src="${icon}" alt="${name}" />${name}`);
-
       if (idx === 0) item.classList.add('selected');
-
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
       item.append(link);
       verbList.append(item);
-
       link.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-
         verbList.querySelectorAll('.verb-link').forEach((listLink) => {
           listLink.parentElement.classList.remove('selected');
         });
@@ -145,12 +136,13 @@ export default class UnityWidget {
         selectedElement.parentElement.classList.toggle('show-menu');
         selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
         link.parentElement.classList.add('selected');
-
         const copiedNodes = e.target.cloneNode(true).childNodes;
         copiedNodes[0].remove();
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
         this.updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
+        this.selectedVerbType = e.target.getAttribute('data-verb-type');
+        this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       });
     });
     return [selectedElement, verbList];
@@ -199,7 +191,7 @@ export default class UnityWidget {
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `drop-cur-prompt|${prompt}`,
-      }, `<svg><use xlink:href=\"#unity-prompt-icon\"></use></svg> ${displayPrompt}`);
+      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dropdown.insertBefore(item, dropdown.children[2 + idx]);
     });
   }
@@ -322,5 +314,6 @@ export default class UnityWidget {
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
   }
 }

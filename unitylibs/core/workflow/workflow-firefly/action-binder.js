@@ -7,7 +7,6 @@
 import {
   unityConfig,
   createTag,
-  sendAnalyticsEvent,
   defineDeviceByScreenSize,
   getHeaders,
   getLocale,
@@ -54,13 +53,13 @@ export default class ActionBinder {
     this.actions = actionMap;
     this.query = '';
     this.serviceHandler = null;
-    this.sendAnalyticsOnFocus = true;
     this.activeIndex = -1;
     this.id = '';
     this.init();
   }
 
   init() {
+    this.apiConfig = this.initializeApiConfig();
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
     this.widget = this.getElement('.ex-unity-widget');
@@ -69,6 +68,9 @@ export default class ActionBinder {
     this.viewport = defineDeviceByScreenSize();
     this.addAccessibility();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
+    this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => {
+      this.initActionListeners();
+    });
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
     this.initAction();
@@ -89,6 +91,10 @@ export default class ActionBinder {
       };
       document.addEventListener('click', handleClick, { once: true });
     });
+  }
+
+  initializeApiConfig() {
+    return { ...unityConfig };
   }
 
   getElement(selector) {
@@ -141,10 +147,6 @@ export default class ActionBinder {
   addInputEvents(el) {
     el.addEventListener('focus', () => {
       this.showDropdown();
-      if (this.sendAnalyticsOnFocus) {
-        sendAnalyticsEvent(new Event('promptOpen'));
-        this.sendAnalyticsOnFocus = false;
-      }
     });
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
       if (!relatedTarget) {
@@ -154,16 +156,12 @@ export default class ActionBinder {
     });
   }
 
-  async execActions(actions, el = null) {
-    await Promise.all(
-      actions.map(async (act) => {
-        try {
-          await this.handleAction(act, el);
-        } catch (err) {
-          // console.error(`Error handling action ${act}:`, err);
-        }
-      }),
-    );
+  async execActions(action, el = null) {
+    try {
+      await this.handleAction(action, el);
+    } catch (err) {
+      // ToDo: send to LANA
+    }
   }
 
   async handleAction(action, el) {
@@ -172,9 +170,12 @@ export default class ActionBinder {
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
-
     const execute = actionMap[action.actionType];
     if (execute) await execute();
+  }
+
+  getSelectedVerbType() {
+    return this.widgetWrap.getAttribute('data-selected-verb');
   }
 
   async generateContent() {
@@ -192,12 +193,13 @@ export default class ActionBinder {
     if (!this.query) this.query = this.inputField.value.trim();
 
     try {
+      const selectedVerbType = this.getSelectedVerbType();
       const payload = {
         targetProduct: this.workflowCfg.productName,
+        additionalQueryParams: queryParams,
         payload: {
-          workflow: `text-to-${this.selectedVerbType}`,
+          workflow: `text-to-${selectedVerbType}`,
           locale: getLocale(),
-          additionalQueryParams: queryParams,
         },
       };
       if (this.id) {
@@ -212,6 +214,7 @@ export default class ActionBinder {
         { body: JSON.stringify(payload) },
       );
       this.query = '';
+      this.id = '';
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
