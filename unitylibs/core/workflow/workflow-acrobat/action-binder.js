@@ -119,6 +119,17 @@ class ServiceHandler {
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
   }
+
+  async deleteCallToService(url, accessToken) {
+    const options = {
+      method: 'DELETE',
+      headers: {
+        'Authorization': accessToken,
+        'x-api-key': 'unity', 
+      },
+    };
+    return this.fetchFromService(url, options);
+  }
 }
 
 export default class ActionBinder {
@@ -155,9 +166,15 @@ export default class ActionBinder {
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb']
+    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
+    'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'protect-pdf': ['single'],
+    'ocr-pdf': ['hybrid', 'allowed-filetypes-all', 'page-limit-100', 'max-filesize-100-mb'],
+    'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
+    'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
   };
-
+   
 static ERROR_MAP = {
   'verb_upload_error_generic': -1,
   'verb_upload_error_loading_verb_limits': -50,
@@ -168,6 +185,7 @@ static ERROR_MAP = {
   'verb_upload_error_max_page_count': -150,
   'verb_upload_error_min_page_count': -151,
   'verb_upload_error_verify_page_count': -152,
+  'verb_upload_error_max_page_count_multi': -153,
   'verb_upload_error_unsupported_type': -170,
   'verb_upload_error_empty_file': -171,
   'verb_upload_error_file_too_large': -172,
@@ -177,6 +195,7 @@ static ERROR_MAP = {
   'verb_upload_error_empty_file_multi': -201,
   'verb_upload_error_file_too_large_multi': -202,
   'verb_upload_error_multiple_invalid_files': -203,
+  'verb_upload_error_max_num_files': -204,
   'verb_upload_error_max_quota_exceeded': -250,
   'verb_upload_error_no_storage_provision': -251,
   'verb_upload_error_duplicate_operation': -252,
@@ -186,7 +205,8 @@ static ERROR_MAP = {
   'verb_upload_error_finalize': -351,
   'verb_upload_error_chunk_upload': -352,
   'verb_cookie_not_set': -353,
-  'verb_upload_warn_chunk_upload': -354,
+  'verb_upload_warn_chunk_upload': -600,
+  'verb_upload_warn_delete_asset': -601,
   'verb_upload_error_redirect_to_app': -900,
   'verb_upload_error_finalize_asset': -901
 };
@@ -255,7 +275,7 @@ static ERROR_MAP = {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`
     };
     return unityConfig;
   }
@@ -367,6 +387,15 @@ static ERROR_MAP = {
     let allFilesFailed = true;
     const errorTypes = new Set();
     const validFiles = [];
+
+    if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
+      await this.dispatchErrorToast('verb_upload_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, { 
+        code: 'verb_upload_error_validate_files', 
+        subCode: 'verb_upload_error_max_num_files'
+      });
+      return { isValid: false, validFiles };
+    }
+
     for (const file of files) {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
@@ -472,12 +501,12 @@ static ERROR_MAP = {
     this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length, uploadType: 'mfu' };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     this.dispatchAnalyticsEvent('multifile', this.filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
   async handleFileUpload(files, eventName, totalFileSize) {
-    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuFallback;
+    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
