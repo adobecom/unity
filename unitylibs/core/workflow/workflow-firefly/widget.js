@@ -290,5 +290,8 @@ export default class UnityWidget {
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+    if (window.actionBinderInstance && typeof window.actionBinderInstance.initActionListeners === 'function') {
+      window.actionBinderInstance.initActionListeners();
+    }
   }
 }
