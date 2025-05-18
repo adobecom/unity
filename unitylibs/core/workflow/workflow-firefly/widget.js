@@ -181,8 +181,8 @@ export default class UnityWidget {
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
-    const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     const verbDropdown = this.verbDropdown();
+    const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
     verbBtn.append(...verbDropdown);
     inpWrap.append(verbBtn, inpField, actWrap);
