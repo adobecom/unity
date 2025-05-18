@@ -12,6 +12,9 @@ export default class UnityWidget {
     this.spriteCon = spriteCon;
     this.prompts = null;
     this.selectedVerbType = '';
+    this.closeBtn = null;
+    this.promptItems = [];
+    this.genBtn = null;
   }
 
   async initWidget() {
@@ -21,7 +24,6 @@ export default class UnityWidget {
     this.widget = widget;
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
-    this.createBg();
     this.workflowCfg.placeholder = this.popPlaceholders();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
     const dropdown = await this.genDropdown(this.workflowCfg.placeholder, this.workflowCfg.verb);
@@ -65,6 +67,20 @@ export default class UnityWidget {
       if (this.boundOutsideClickHandler) {
         document.removeEventListener('click', this.boundOutsideClickHandler, true);
       }
+    }
+  }
+
+  updateAnalytics(verb) {
+    if (this.closeBtn) {
+      this.closeBtn.setAttribute('daa-ll', `X Close Prompt--${verb}--Prompt suggestions`);
+    }
+    if (this.promptItems && this.promptItems.length > 0) {
+      this.promptItems.forEach((item, idx) => {
+        item.setAttribute('daa-ll', `Prompt ${idx + 1}--${verb}--Prompt suggestion`);
+      });
+    }
+    if (this.genBtn) {
+      this.genBtn.setAttribute('daa-ll', `Generate--${verb}`);
     }
   }
 
@@ -140,9 +156,10 @@ export default class UnityWidget {
         copiedNodes[0].remove();
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
-        this.updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
         this.selectedVerbType = e.target.getAttribute('data-verb-type');
+        this.updateDropdownForVerb(this.selectedVerbType);
         this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+        this.updateAnalytics(this.selectedVerbType);
       });
     });
     return [selectedElement, verbList];
@@ -182,6 +199,7 @@ export default class UnityWidget {
   }
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
+    this.promptItems = [];
     prompts.forEach(({ prompt, assetid, displayPrompt }, idx) => {
       const item = createTag('li', {
         id: assetid,
@@ -190,9 +208,10 @@ export default class UnityWidget {
         tabindex: '0',
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
-        'daa-ll': `drop-cur-prompt|${prompt}`,
+        'daa-ll': `Prompt ${idx + 1}--${this.selectedVerbType}--Prompt suggestion`,
       }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dropdown.insertBefore(item, dropdown.children[2 + idx]);
+      this.promptItems.push(item);
     });
   }
 
@@ -207,15 +226,15 @@ export default class UnityWidget {
     });
     const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
-    const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': 'drop-close', 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
+    const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
       dd.classList.add('hidden');
       dd.setAttribute('aria-hidden', 'true');
     });
+    this.closeBtn = closeBtn;
     titleCon.append(title, closeBtn);
     dd.append(titleCon);
-    const selectedVerb = this.selectedElement?.dataset.selectedVerb || verb || 'image';
-    const prompts = await this.getPrompt(selectedVerb);
+    const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
@@ -243,23 +262,14 @@ export default class UnityWidget {
     if (!cfg) return null;
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}` });
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
+    this.genBtn = btn;
     return btn;
   }
 
-  createBg() {
-    const bgCon = createTag('div', { class: 'widget-bg blur' });
-    const bgOne = createTag('div', { class: 'bg-one' });
-    const bgTwo = createTag('div', { class: 'bg-two' });
-    bgCon.append(bgOne, bgTwo);
-    this.widgetWrap.append(bgCon);
-  }
-
   addWidget() {
-    // TODO: Inject the widget for a simple use case
-    // TODO: Introduce a placeholder for complex use cases
     const interactArea = this.target.querySelector('.copy');
     const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
