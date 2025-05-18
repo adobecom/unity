@@ -26,7 +26,7 @@ export default class UnityWidget {
     this.widgetWrap.append(unitySprite);
     this.workflowCfg.placeholder = this.popPlaceholders();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    const dropdown = await this.genDropdown(this.workflowCfg.placeholder, this.workflowCfg.verb);
+    const dropdown = await this.genDropdown(this.workflowCfg.placeholder);
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
     comboboxContainer.append(inputWrapper, dropdown);
     this.widget.append(comboboxContainer);
@@ -215,7 +215,7 @@ export default class UnityWidget {
     });
   }
 
-  async genDropdown(ph, verb) {
+  async genDropdown(ph) {
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
       class: 'drop hidden',
