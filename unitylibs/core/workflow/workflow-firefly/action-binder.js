@@ -204,10 +204,10 @@ export default class ActionBinder {
       };
       if (this.id) {
         payload.assetId = this.id;
-        payload.action = 'prompt-suggestion';
+        payload.payload.action = 'prompt-suggestion';
       } else {
         payload.query = this.query;
-        payload.action = 'generate';
+        payload.payload.action = 'generate';
       }
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
