@@ -78,7 +78,7 @@ export default class UnityWidget {
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
       'data-selected-verb': selectedVerbType,
-    }, `<img src="${href}" alt="${selectedVerbType}" />${selectedVerbType}`);
+    }, `<img src="${href}" alt="" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     if (verbs.length <= 1) {
@@ -120,7 +120,7 @@ export default class UnityWidget {
         href: '#',
         class: 'verb-link',
         'data-verb-type': verbType,
-      }, `<img src="${icon}" alt="${name}" />${name}`);
+      }, `<img src="${icon}" alt="" />${name}`);
       if (idx === 0) item.classList.add('selected');
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
@@ -136,12 +136,12 @@ export default class UnityWidget {
         selectedElement.parentElement.classList.toggle('show-menu');
         selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
         link.parentElement.classList.add('selected');
-        const copiedNodes = e.target.cloneNode(true).childNodes;
+        const copiedNodes = link.cloneNode(true).childNodes;
         copiedNodes[0].remove();
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
-        selectedElement.dataset.selectedVerb = e.target.getAttribute('data-verb-type');
-        this.updateDropdownForVerb(e.target.getAttribute('data-verb-type'));
-        this.selectedVerbType = e.target.getAttribute('data-verb-type');
+        selectedElement.dataset.selectedVerb = link.getAttribute('data-verb-type');
+        this.updateDropdownForVerb(link.getAttribute('data-verb-type'));
+        this.selectedVerbType = link.getAttribute('data-verb-type');
         this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       });
     });
