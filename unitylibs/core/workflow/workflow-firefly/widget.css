@@ -161,7 +161,7 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: flex;
-  padding-right: var(--spacing-xxs);
+  padding-inline-end: var(--spacing-xxs);
   align-items: center;
   border-radius: var(--spacing-m);
   gap: var(--spacing-s);
@@ -482,7 +482,7 @@
 .unity-enabled .interactive-area .verbs-container {
   display: flex;
   flex-wrap: wrap;
-  border-right: 1px solid #B8B5B9;
+  border-inline-end: 1px solid #B8B5B9;
   width: 144px;
   height: 70px;
   justify-content: flex-start;
@@ -504,7 +504,7 @@
   gap: 7px;
   justify-content: stretch;
   padding: 0 32px;
-  border-right: 1px solid #000;
+  border-inline-end: 1px solid #000;
   color: #333;
   cursor: pointer;
   border: none;
@@ -575,7 +575,7 @@
 
   .unity-enabled .interactive-area .verbs-container {
     order: 2;
-    border-right: none;
+    border-inline-end: none;
     height: auto;
     position: relative;
   }
