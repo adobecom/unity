@@ -238,7 +238,7 @@ export default class ActionBinder {
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
-    if (this.inputField.value.length === 0) {
+    if (this.inputField.value.length === 0 && !this.id) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
       return;
     }
@@ -331,11 +331,11 @@ export default class ActionBinder {
 
   getDropdownItems() {
     if (!this.dropdown) return [];
-    const dynamicItems = Array.from(this.dropdown.querySelectorAll('.drop-item.dynamic'));
+    const dynamicItems = Array.from(this.dropdown?.querySelectorAll('.drop-item.dynamic'));
     let tipCon = null;
-    if (this.viewport !== 'MOBILE') tipCon = this.dropdown.querySelector('.tip-con');
+    if (this.viewport !== 'MOBILE') tipCon = this.dropdown?.querySelector('.tip-con');
     if (dynamicItems.length > 0) return tipCon ? [...dynamicItems, tipCon] : dynamicItems;
-    const allItems = Array.from(this.dropdown.querySelectorAll('.drop-item'));
+    const allItems = Array.from(this.dropdown?.querySelectorAll('.drop-item'));
     return tipCon ? [...allItems, tipCon] : allItems;
   }
 
@@ -346,7 +346,7 @@ export default class ActionBinder {
     return Array.from(this.block.querySelectorAll(selector));
   }
 
-  isDropdownVisible = () => !this.dropdown.classList.contains('hidden');
+  isDropdownVisible = () => !this.dropdown?.classList.contains('hidden');
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
@@ -416,18 +416,18 @@ export default class ActionBinder {
   }
 
   showDropdown() {
-    this.dropdown.classList.remove('hidden');
-    this.dropdown.removeAttribute('inert');
+    this.dropdown?.classList.remove('hidden');
+    this.dropdown?.removeAttribute('inert');
     this.inputField.setAttribute('aria-expanded', 'true');
-    this.dropdown.removeAttribute('aria-hidden');
+    this.dropdown?.removeAttribute('aria-hidden');
     document.addEventListener('click', this.boundOutsideClickHandler, true);
   }
 
   hideDropdown() {
     if (this.isDropdownVisible()) {
-      this.dropdown.classList.add('hidden');
-      this.dropdown.setAttribute('inert', '');
-      this.dropdown.setAttribute('aria-hidden', 'true');
+      this.dropdown?.classList.add('hidden');
+      this.dropdown?.setAttribute('inert', '');
+      this.dropdown?.setAttribute('aria-hidden', 'true');
       this.inputField.setAttribute('aria-expanded', 'false');
       document.removeEventListener('click', this.boundOutsideClickHandler, true);
     }
