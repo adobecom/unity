@@ -64,9 +64,6 @@ export default class UnityWidget {
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
       if (inputField) inputField.setAttribute('aria-expanded', 'false');
-      if (this.boundOutsideClickHandler) {
-        document.removeEventListener('click', this.boundOutsideClickHandler, true);
-      }
     }
   }
 
@@ -84,10 +81,32 @@ export default class UnityWidget {
     }
   }
 
+  // Extracted event handler for verb link click
+  handleVerbLinkClick(link, verbList, selectedElement, menuIcon) {
+    return (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      verbList.querySelectorAll('.verb-link').forEach((listLink) => {
+        listLink.parentElement.classList.remove('selected');
+      });
+      selectedElement.parentElement.classList.toggle('show-menu');
+      selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
+      link.parentElement.classList.add('selected');
+      const copiedNodes = link.cloneNode(true).childNodes;
+      copiedNodes[0].remove();
+      selectedElement.replaceChildren(...copiedNodes, menuIcon);
+      selectedElement.dataset.selectedVerb = link.getAttribute('data-verb-type');
+      this.updateDropdownForVerb(link.getAttribute('data-verb-type'));
+      this.selectedVerbType = link.getAttribute('data-verb-type');
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      this.updateAnalytics(this.selectedVerbType);
+    };
+  }
+
   verbDropdown() {
     const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
     const selectedVerbType = verbs[0]?.className.split('-')[2];
-    const selectedVerb = verbs[0].nextElementSibling;
+    const selectedVerb = verbs[0]?.nextElementSibling;
     const { href } = selectedVerb;
     const selectedElement = createTag('button', {
       class: 'selected-verb',
@@ -118,18 +137,16 @@ export default class UnityWidget {
       this.showVerbMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
-
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         this.hidePromptDropdown();
         this.showVerbMenu(selectedElement);
       }
     });
-
     verbs.forEach((verb, idx) => {
-      const name = verb.nextElementSibling.textContent.trim();
+      const name = verb.nextElementSibling?.textContent.trim();
       const verbType = verb.className.split('-')[2];
-      const icon = verb.nextElementSibling.href;
+      const icon = verb.nextElementSibling?.href;
       const item = createTag('li', { class: 'verb-item' });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const link = createTag('a', {
@@ -142,25 +159,7 @@ export default class UnityWidget {
       link.prepend(selectedIcon);
       item.append(link);
       verbList.append(item);
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        verbList.querySelectorAll('.verb-link').forEach((listLink) => {
-          listLink.parentElement.classList.remove('selected');
-        });
-
-        selectedElement.parentElement.classList.toggle('show-menu');
-        selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
-        link.parentElement.classList.add('selected');
-        const copiedNodes = link.cloneNode(true).childNodes;
-        copiedNodes[0].remove();
-        selectedElement.replaceChildren(...copiedNodes, menuIcon);
-        selectedElement.dataset.selectedVerb = link.getAttribute('data-verb-type');
-        this.updateDropdownForVerb(link.getAttribute('data-verb-type'));
-        this.selectedVerbType = link.getAttribute('data-verb-type');
-        this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-        this.updateAnalytics(this.selectedVerbType);
-      });
+      link.addEventListener('click', this.handleVerbLinkClick(link, verbList, selectedElement, menuIcon));
     });
     return [selectedElement, verbList];
   }
@@ -271,11 +270,11 @@ export default class UnityWidget {
 
   addWidget() {
     const interactArea = this.target.querySelector('.copy');
-    const para = interactArea.querySelector(this.workflowCfg.targetCfg.target);
+    const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);
     else if (para) para.after(this.widgetWrap);
-    else interactArea.appendChild(this.widgetWrap);
+    else interactArea?.appendChild(this.widgetWrap);
   }
 
   async loadPrompts() {
@@ -319,8 +318,7 @@ export default class UnityWidget {
 
   async updateDropdownForVerb(verb) {
     const dropdown = this.widget.querySelector('#prompt-dropdown');
-    const promptItems = dropdown.querySelectorAll('.drop-item');
-    promptItems.forEach((item) => dropdown.removeChild(item));
+    dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
