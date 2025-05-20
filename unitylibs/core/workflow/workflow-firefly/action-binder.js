@@ -6,16 +6,20 @@
 
 import {
   unityConfig,
+  getUnityLibs,
   createTag,
   defineDeviceByScreenSize,
+  getLibs,
   getHeaders,
   getLocale,
+  sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
+    this.unityEl = unityEl;
   }
 
   async fetchFromService(url, options) {
@@ -43,6 +47,23 @@ class ServiceHandler {
     };
     return this.fetchFromService(api, postOpts);
   }
+
+  showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
+    sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
+    if (!errorCallbackOptions?.errorToastEl) return;
+    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
+    promptBarEl.style.pointerEvents = 'none';
+    const errorToast = promptBarEl.querySelector('.alert-holder');
+    if (!errorToast) return;
+    const closeBtn = errorToast.querySelector('.alert-close');
+    if (closeBtn) closeBtn.style.pointerEvents = 'auto';
+    const alertText = errorToast.querySelector('.alert-text p');
+    if (!alertText) return;
+    alertText.innerText = msg;
+    errorToast.classList.add('show');
+    window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
+  }
 }
 
 export default class ActionBinder {
@@ -69,11 +90,14 @@ export default class ActionBinder {
     this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
+    this.errorToastEl = null;
+    this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
     this.addAccessibility();
     this.initAction();
   }
 
-  initAction() {
+  async initAction() {
+    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
       || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
     if (!isIos) return;
@@ -88,6 +112,40 @@ export default class ActionBinder {
       };
       document.addEventListener('click', handleClick, { once: true });
     });
+  }
+
+  async createErrorToast() {
+    try {
+      const [alertImg, closeImg] = await Promise.all([
+        fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
+        fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
+      ]);
+      const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
+      const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
+      const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
+      const alertIcon = createTag('div', { class: 'alert-icon' });
+      alertIcon.innerHTML = alertImg;
+      alertIcon.append(alertText);
+      const alertClose = createTag('a', { class: 'alert-close', href: '#' });
+      alertClose.innerHTML = closeImg;
+      alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
+      const alertContent = createTag('div', { class: 'alert-content' });
+      alertContent.append(alertIcon, alertClose);
+      const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
+      const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
+      alertClose.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        errholder.classList.remove('show');
+        promptBarEl.style.pointerEvents = 'auto';
+      });
+      decorateDefaultLinkAnalytics(errholder);
+      promptBarEl.prepend(errholder);
+      return promptBarEl?.querySelector('.alert-holder');
+    } catch (e) {
+      window.lana?.log(`Message: Error creating error toast, Error: ${e}`, this.lanaOptions);
+      return null;
+    }
   }
 
   initializeApiConfig() {
@@ -115,6 +173,7 @@ export default class ActionBinder {
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
+      this.unityEl,
     );
   }
 
@@ -152,7 +211,7 @@ export default class ActionBinder {
     try {
       await this.handleAction(action, el);
     } catch (err) {
-      // ToDo: send to LANA
+      window.lana?.log(`Message: Actions failed, Error: ${err}`, this.lanaOptions);
     }
   }
 
@@ -179,6 +238,14 @@ export default class ActionBinder {
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
+    if (this.inputField.value.length === 0) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
+      return;
+    }
+    if (this.inputField.value.length > 750) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
+      return;
+    }
     try {
       const selectedVerbType = this.getSelectedVerbType();
       const payload = {
@@ -205,8 +272,8 @@ export default class ActionBinder {
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
-      //ToDo Lana logging
-      console.error('Content generation failed:', err);
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+      window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
     }
   }
 
