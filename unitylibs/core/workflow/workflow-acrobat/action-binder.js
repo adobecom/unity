@@ -202,9 +202,8 @@ static ERROR_MAP = {
   'upload_error_chunk_upload': -402,
   'upload_error_finalize_asset': -403,
   'upload_error_redirect_to_app': -500,
-  'warn_cookie_not_set': -600,
-  'upload_warn_chunk_upload': -601,
-  'pre_upload_warn_renamed_invalid_file_name' : -53,
+  'upload_warn_chunk_upload': -600,
+  'pre_upload_warn_renamed_invalid_file_name' : -601,
   'warn_delete_asset': -602,
 };
 
@@ -569,24 +568,6 @@ static ERROR_MAP = {
     return new Promise((res) => { setTimeout(() => { res(); }, ms); });
   }
 
-  checkCookie = () => {
-    const cookies = document.cookie.split(';').map((item) => item.trim());
-    const target = /^UTS_Uploaded=/;
-    return cookies.some((item) => target.test(item));
-  };
-
-  waitForCookie = (timeout) => new Promise((resolve) => {
-    const interval = 100;
-    let elapsed = 0;
-    const intervalId = setInterval(() => {
-      if (this.checkCookie() || elapsed >= timeout) {
-        clearInterval(intervalId);
-        resolve();
-      }
-      elapsed += interval;
-    }, interval);
-  });
-
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
@@ -594,14 +575,6 @@ static ERROR_MAP = {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
-      await this.waitForCookie(2000);
-      if (!this.checkCookie()) {
-        await this.dispatchErrorToast('warn_cookie_not_set', 200, 'Not all cookies found, redirecting anyway', true, true, {
-          code: 'warn_cookie_not_set',
-          subCode: 'upload_error_redirect_to_app',
-          desc: 'Not all cookies found, redirecting anyway',
-        });
-      }
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
       const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
