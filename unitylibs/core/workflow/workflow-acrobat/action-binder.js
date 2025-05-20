@@ -487,25 +487,27 @@ static ERROR_MAP = {
     return true;
   }
 
-  async handleSingleFileUpload(files, eventName) {
-    this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu' };
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
+  async handleSingleFileUpload(files) {
+    //this.filesData = { type: files[0].type, size: files[0].size, count: 1, uploadType: 'sfu' };
+    this.filesData = {...this.filesData,uploadType: 'sfu'};
+    //this.dispatchAnalyticsEvent(eventName, this.filesData);
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
 
-  async handleMultiFileUpload(files, eventName, totalFileSize) {
+  async handleMultiFileUpload(files) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
-    const isMixedFileTypes = this.isMixedFileTypes(files);
-    this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length, uploadType: 'mfu' };
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
+    //const isMixedFileTypes = this.isMixedFileTypes(files);
+    // this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length, uploadType: 'mfu' };
+    this.filesData = {...this.filesData,uploadType: 'mfu'};
+    //this.dispatchAnalyticsEvent(eventName, this.filesData);
     this.dispatchAnalyticsEvent('multifile', this.filesData);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
-  async handleFileUpload(files, eventName, totalFileSize) {
+  async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
@@ -516,9 +518,9 @@ static ERROR_MAP = {
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
-      await this.handleSingleFileUpload(validFiles, eventName);
+      await this.handleSingleFileUpload(validFiles);
     } else {
-      await this.handleMultiFileUpload(validFiles, eventName, totalFileSize);
+      await this.handleMultiFileUpload(validFiles);
     }
   }
 
@@ -546,7 +548,7 @@ static ERROR_MAP = {
     }
   }
 
-  async processSingleFile(files, eventName) {
+  async processSingleFile(files) {
     this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
     if (!this.limits || Object.keys(this.limits).length === 0) return;
     if (!files || files.length > this.limits.maxNumFiles) {
@@ -555,17 +557,17 @@ static ERROR_MAP = {
     }
     const file = files[0];
     if (!file) return;
-    await this.handleFileUpload(files, eventName);
+    await this.handleFileUpload(files);
   }
 
-  async processHybrid(files, totalFileSize, eventName) {
+  async processHybrid(files) {
     if (!files) {
       await this.dispatchErrorToast('verb_upload_error_only_accept_one_file');
       return;
     }
     this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
     if (!this.limits || Object.keys(this.limits).length === 0) return;
-    await this.handleFileUpload(files, eventName, totalFileSize);
+    await this.handleFileUpload(files);
   }
 
   delay(ms) {
@@ -639,6 +641,8 @@ static ERROR_MAP = {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    this.filesData = { type: this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length>1 ? 'mfu' : 'sfu' };
+    this.dispatchAnalyticsEvent(eventName, this.filesData);
     await this.handlePreloads();
     window.addEventListener('DCUnity:RedirectReady', async (e) => {
       await this.continueInApp();
@@ -647,8 +651,8 @@ static ERROR_MAP = {
     switch (value) {
       case 'upload':
         this.promiseStack = [];
-        if (uploadType === 'single') await this.processSingleFile(files, eventName);
-        else if (uploadType === 'hybrid') await this.processHybrid(files, totalFileSize, eventName);
+        if (uploadType === 'single') await this.processSingleFile(files);
+        else if (uploadType === 'hybrid') await this.processHybrid(files);
         break;
       case 'interrupt':
         await this.cancelAcrobatOperation();
