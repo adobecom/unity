@@ -15,6 +15,7 @@ export default class UnityWidget {
     this.closeBtn = null;
     this.promptItems = [];
     this.genBtn = null;
+    this.hasPromptSuggestions = false;
   }
 
   async initWidget() {
@@ -25,10 +26,15 @@ export default class UnityWidget {
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
     this.workflowCfg.placeholder = this.popPlaceholders();
+    const hasPromptPlaceholder = !!this.el.querySelector('.icon-placeholder-prompt');
+    const hasSuggestionsPlaceholder = !!this.el.querySelector('.icon-placeholder-suggestions');
+    this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    const dropdown = await this.genDropdown(this.workflowCfg.placeholder);
+    let dropdown = null;
+    if (this.hasPromptSuggestions) dropdown = await this.genDropdown(this.workflowCfg.placeholder);
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
-    comboboxContainer.append(inputWrapper, dropdown);
+    comboboxContainer.append(inputWrapper);
+    if (dropdown) comboboxContainer.append(dropdown);
     this.widget.append(comboboxContainer);
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
@@ -214,6 +220,7 @@ export default class UnityWidget {
   }
 
   async genDropdown(ph) {
+    if (!this.hasPromptSuggestions) return null;
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
       class: 'drop hidden',
@@ -294,6 +301,7 @@ export default class UnityWidget {
   }
 
   async getPrompt(verb) {
+    if (!this.hasPromptSuggestions) return [];
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
       return (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
@@ -316,7 +324,9 @@ export default class UnityWidget {
   }
 
   async updateDropdownForVerb(verb) {
+    if (!this.hasPromptSuggestions) return;
     const dropdown = this.widget.querySelector('#prompt-dropdown');
+    if (!dropdown) return;
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
