@@ -2,7 +2,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig, getUnityLibs, getGuestAccessToken } from '../../../scripts/utils.js';
+import { unityConfig, getUnityLibs } from '../../../scripts/utils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -240,7 +240,7 @@ export default class UploadHandler {
     return true;
   }
 
-  async checkPageNumCount(assetData, isMultiFile=false) {
+  async checkPageNumCount(assetData) {
     try {
       const intervalDuration = 500;
       const totalDuration = 5000;
@@ -310,24 +310,20 @@ export default class UploadHandler {
     }
   }
 
-  async handleValidations(assetData, isMultiFile = false) {
+  async handleValidations(assetData) {
     let validated = true;
     for (const limit of Object.keys(this.actionBinder.limits)) {
       switch (limit) {
         case 'pageLimit': {
-          const pageLimitRes = await this.checkPageNumCount(assetData, isMultiFile);
-          if (pageLimitRes) {
-            validated = false;
-            if (!isMultiFile) {
-              this.actionBinder.operations = [];
-            }
-          }
+          const pageLimitRes = await this.checkPageNumCount(assetData);
+          if (pageLimitRes) validated = false;
           break;
         }
         default:
           break;
       }
     }
+    if (!validated) this.actionBinder.operations = [];
     return validated;
   }
 
@@ -405,11 +401,11 @@ export default class UploadHandler {
     }
   }
 
-  isPdf(file) {
-    return file.type === 'application/pdf';
+  isNonPdf(files) {
+    return files.some((file) => file.type !== 'application/pdf');
   }
 
-  async uploadSingleFile(file, fileData, isPdf = true) {
+  async uploadSingleFile(file, fileData, isNonPdf = false) {
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     const abortSignal = this.actionBinder.getAbortSignal();
     let cOpts = {};
@@ -433,7 +429,7 @@ export default class UploadHandler {
             type: file.type,
           },
         },
-        ...(!isPdf ? { feedback: 'nonpdf' } : {}),
+        ...(isNonPdf ? { feedback: 'nonpdf' } : {}),
       },
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
@@ -458,7 +454,7 @@ export default class UploadHandler {
     this.actionBinder.operations.push(assetData.id);
     const verified = await this.verifyContent(assetData);
     if (!verified || abortSignal.aborted) return;
-    if (isPdf) {
+    if (!isNonPdf) {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
@@ -471,12 +467,17 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      if(this.isPdf(file) || nonpdfSfuProductScreenVerbs) return await this.uploadSingleFile(file, fileData);
-      await this.actionBinder.delay(3000);
-      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
-      if (!redirectSuccess) return;
-      this.actionBinder.redirectWithoutUpload = true;
+      const autoRedirect = this.actionBinder.workflowCfg.targetCfg.autoRedirectVerbs.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      if (!this.actionBinder.workflowCfg.targetCfg.verbsWithoutMfuFallback.includes(this.actionBinder.workflowCfg.enabledFeatures[0]) 
+          && this.isNonPdf([file])
+          && !autoRedirect) {
+        await this.actionBinder.delay(3000);
+        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
+        if (!redirectSuccess) return;
+        this.actionBinder.redirectWithoutUpload = true;
+        return;
+      }
+      await this.uploadSingleFile(file, fileData);
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
@@ -489,7 +490,7 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      await this.uploadSingleFile(file, fileData, !this.isPdf(file));
+      await this.uploadSingleFile(file, fileData, this.isNonPdf([file]));
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
@@ -546,6 +547,7 @@ export default class UploadHandler {
     const blobDataArray = [];
     const assetDataArray = [];
     const fileTypeArray = [];
+    let cOpts = {};
     await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
       try {
         const [blobData, assetData] = await Promise.all([
@@ -559,13 +561,18 @@ export default class UploadHandler {
         await this.handleUploadError(e);
       }
     });
-    return { blobDataArray, assetDataArray, fileTypeArray };
-  }
-  
-  async handleFileUploadRedirect(firstAssetId, filesData, workflowId) {
-    const cOpts = {
+    if (assetDataArray.length === 0) {
+      await this.dispatchGenericError(`No assets created for the files: ${JSON.stringify(filesData)}`);
+      return;
+    }
+    this.actionBinder.LOADER_LIMIT = 75;
+
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+    this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 75);
+    cOpts = {
       targetProduct: this.actionBinder.workflowCfg.productName,
-      assetId: firstAssetId,
+      assetId: assetDataArray[0].id,
       payload: {
         languageRegion: this.actionBinder.workflowCfg.langRegion,
         languageCode: this.actionBinder.workflowCfg.langCode,
@@ -574,11 +581,11 @@ export default class UploadHandler {
         workflowId,
       },
     };
-    return await this.actionBinder.handleRedirect(cOpts, filesData);
-  }
-  
-  async uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks) {
-    const uploadResult = await this.chunkPdf(
+    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, filesData);
+    if (!redirectSuccess) return;
+    this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
+    this.actionBinder.setIsUploading(true);
+    const {failedFiles, attemptMap} = await this.chunkPdf(
       assetDataArray,
       blobDataArray,
       fileTypeArray,
@@ -618,38 +625,26 @@ export default class UploadHandler {
         subCode: error.code
       });
     }
-  }
-  
-  async initSplashScreen() {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+    const uploadedAssets = assetDataArray.filter((_, index) => 
+      !(failedFiles && [...failedFiles].some(failed => failed.fileIndex === index))
+    );
+    this.actionBinder.operations.push(workflowId);
+    let allVerified = 0;
+    await this.executeInBatches(uploadedAssets, maxConcurrentFiles, async (assetData) => {
+      const verified = await this.verifyContent(assetData);
+      if (verified) allVerified += 1;
+    });
+    if (allVerified === 0) return;
+    if (files.length !== allVerified) this.actionBinder.multiFileFailure = 'uploaderror';
+    this.actionBinder.LOADER_LIMIT = 95;
+    this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
   }
 
-  async multiFileGuestUpload(files, filesData) {
+  async multiFileGuestUpload(filesData) {
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen(true);
-      const nonpdfMfuFeedbackScreenTypeNonpdf = this.actionBinder.workflowCfg.targetCfg.nonpdfMfuFeedbackScreenTypeNonpdf.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      const allNonPdf = files.every(file => !this.isPdf(file));
-      if (nonpdfMfuFeedbackScreenTypeNonpdf) {
-        if(allNonPdf){
-          const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), filesData);
-          if (!redirectSuccess) return;
-          this.actionBinder.redirectWithoutUpload = true;
-          return;
-        }
-      }
-      if (this.actionBinder.workflowCfg.targetCfg.mfuUploadAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
-        if (this.actionBinder.workflowCfg.targetCfg.mfuUploadOnlyPdfAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
-          const pdfFiles = files.filter(this.isPdf);
-          let fileData = { type: 'mixed', size: filesData.size, count: pdfFiles.length, uploadType: 'mfu' };
-          await this.uploadMultiFile(pdfFiles, fileData);
-          return;
-        }
-        await this.uploadMultiFile(files, filesData); 
-        return;
-      }
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
