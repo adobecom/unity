@@ -238,7 +238,7 @@ export default class ActionBinder {
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
-    if (this.inputField.value.length === 0) {
+    if (this.inputField.value.length === 0 && !this.id) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
       return;
     }
