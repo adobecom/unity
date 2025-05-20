@@ -10,7 +10,7 @@
   right: 0;
   height: 20px;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
+  background: linear-gradient(180deg, rgba(255 255 255 / 0%), rgba(255 255 255 / 50%));
   filter: blur(5px);
   backdrop-filter: blur(1px);
   opacity: 0.8;
@@ -46,6 +46,31 @@
   font-size: var(--type-body-xs-size);
   line-height: var(--type-body-xs-lh);
   padding-top: var(--spacing-s);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap {
+  position: relative;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
+  background: none;
+  transform: translateY(-100%);
+  bottom: 30%;
+  top: unset;
+}
+
+.unity-enabled .interactive-area .alert-holder .alert-toast {
+  width: auto;
+  max-width: 340px;
+}
+
+.unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-icon {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text p {
+  padding-top: 0;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap + a {
@@ -86,6 +111,7 @@
   visibility: visible;
   transition: opacity 0.2s cubic-bezier(0, 0, 1, 1), visibility 0.2s cubic-bezier(0, 0, 1, 1);
 }
+
 .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .widget-bg {
   visibility: hidden;
   opacity: 0;
@@ -117,32 +143,32 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
   padding: 0 var(--spacing-l);
-  animation: promptSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fade-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   z-index: 1;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
   width: 720px;
-  animation: promptSlideOut 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fade-out 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .ex-unity-widget {
   animation: none;
 }
 
-@keyframes promptSlideIn {
+@keyframes fade-in {
   0% {
-    transform: translateY(50px);
+    opacity: 0;
   }
 
   100% {
-    transform: translateY(0);
+    opacity: 1;
   }
 }
-@keyframes promptSlideOut {
+@keyframes fade-out {
   0% {
-    transform: translateY(150px);
+    opacity: 1;
   }
 
   100% {
@@ -198,16 +224,16 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap {
-  background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
+  background: linear-gradient(rgba(255 255 255 / 80%), rgba(255 255 255 / 80%));
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap:hover {
-  background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9));
+  background: linear-gradient(rgba(255 255 255 / 90%), rgba(255 255 255 / 90%));
   transition: background 0.2s ease-in-out;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget .inp-wrap:focus-within {
-  background: linear-gradient(rgba(255, 255, 255, 1), rgba(255, 255, 255, 1));
+  background: linear-gradient(rgba(255 255 255 / 100%), rgba(255 255 255 / 100%));
   transition: background 0.2s ease-in-out;
 }
 
@@ -223,7 +249,7 @@
   border-radius: 3px;
   font-family: inherit;
   outline: none;
-  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
+  background: linear-gradient(rgba(255 255 255 / 0%), rgba(55 255 255 / 0%));
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
@@ -299,7 +325,7 @@
   width: 100%;
   border-radius: 16px;
   padding: 8px 0;
-  margin: 8px 0 0 0;
+  margin: 8px 0 0;
   position: absolute;
   z-index: 1;
   opacity: 1;
@@ -345,11 +371,14 @@
   margin-left: auto;
 }
 
-.unity-enabled .interactive-area .selected-verb .menu-icon svg {
-  width: 12px;
-  height: 12px;
+.unity-enabled .interactive-area .selected-verb .menu-icon,
+.unity-enabled .interactive-area .verb-list .verb-link .selected-icon {
+  font-size: 0;
 }
 
+.unity-enabled .interactive-area .selected-verb .menu-icon,
+.unity-enabled .interactive-area .selected-verb .menu-icon svg,
+.unity-enabled .interactive-area .verb-list .verb-link .selected-icon,
 .unity-enabled .interactive-area .verb-list .verb-link .selected-icon svg {
   width: 12px;
   height: 12px;
