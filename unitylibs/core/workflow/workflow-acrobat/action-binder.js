@@ -204,6 +204,7 @@ static ERROR_MAP = {
   'upload_error_redirect_to_app': -500,
   'warn_cookie_not_set': -600,
   'upload_warn_chunk_upload': -601,
+  'pre_upload_warn_renamed_invalid_file_name' : -53,
   'warn_delete_asset': -602,
 };
 
@@ -351,12 +352,12 @@ static ERROR_MAP = {
         .replace(STARTING_SPACE_PERIOD_REGEX, '-')
         .replace(INVALID_CHARS_REGEX, '-');
       if (rawFileName !== fileName) {
-        await this.dispatchErrorToast('verb_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
+        await this.dispatchErrorToast('pre_upload_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
       }
       return fileName;
     } catch (error) {
       console.error('Error sanitizing filename:', error);
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Error renaming file: ${rawFileName}`, false, true, {
+      await this.dispatchErrorToast('error_generic', 500, `Error renaming file: ${rawFileName}`, false, true, {
         code: 'pre_upload_error_renaming_file',
         subCode: error.name,
         desc: error.message,
@@ -430,7 +431,7 @@ static ERROR_MAP = {
             errorDesc += `${errorMessages[errorType]}, `;
           }
           errorDesc = errorDesc.slice(0, -2);
-          await this.dispatchErrorToast('verb_upload_error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
+          await this.dispatchErrorToast('error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
         }
       }
       return { isValid: false, validFiles};
@@ -456,7 +457,7 @@ static ERROR_MAP = {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
         await this.transitionScreen.showSplashScreen();
-        await this.dispatchErrorToast('verb_upload_error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
+        await this.dispatchErrorToast('error_generic', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
           code: 'pre_upload_error_fetch_redirect_url',
           subCode: e.status,
           desc: e.message,
@@ -527,13 +528,13 @@ static ERROR_MAP = {
         if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
         return acc;
       }, {});
-      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('verb_upload_error_generic', 500, 'No verb limits found', false, true, {
+      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('error_generic', 500, 'No verb limits found', false, true, {
         code: 'pre_upload_error_empty_verb_limits',
         desc: 'No verb limits found',
       });
       return combinedLimits;
     } catch (e) {
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false, true, {
+      await this.dispatchErrorToast('error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false, true, {
         code: 'pre_upload_error_loading_verb_limits',
         subCode: e.status,
         desc: e.message,
@@ -609,7 +610,7 @@ static ERROR_MAP = {
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${additionalParams}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
-      await this.dispatchErrorToast('verb_upload_error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
+      await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
         code: 'upload_error_redirect_to_app',
         subCode: e.status,
         desc: e.message,
