@@ -119,6 +119,17 @@ class ServiceHandler {
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
   }
+
+  async deleteCallToService(url, accessToken) {
+    const options = {
+      method: 'DELETE',
+      headers: {
+        'Authorization': accessToken,
+        'x-api-key': 'unity', 
+      },
+    };
+    return this.fetchFromService(url, options);
+  }
 }
 
 export default class ActionBinder {
@@ -155,9 +166,15 @@ export default class ActionBinder {
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb']
+    'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
+    'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'protect-pdf': ['single'],
+    'ocr-pdf': ['hybrid', 'allowed-filetypes-all', 'page-limit-100', 'max-filesize-100-mb'],
+    'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
+    'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
   };
-
+   
 static ERROR_MAP = {
   'error_generic': -1,
   'pre_upload_error_loading_verb_limits': -50,
@@ -254,7 +271,7 @@ static ERROR_MAP = {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`
     };
     return unityConfig;
   }
@@ -480,12 +497,12 @@ static ERROR_MAP = {
     this.filesData = { type: isMixedFileTypes, size: totalFileSize, count: files.length, uploadType: 'mfu' };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     this.dispatchAnalyticsEvent('multifile', this.filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(this.filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
   async handleFileUpload(files, eventName, totalFileSize) {
-    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuFallback;
+    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
