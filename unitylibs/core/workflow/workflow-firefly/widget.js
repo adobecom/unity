@@ -81,7 +81,6 @@ export default class UnityWidget {
     }
   }
 
-  // Extracted event handler for verb link click
   handleVerbLinkClick(link, verbList, selectedElement, menuIcon) {
     return (e) => {
       e.preventDefault();
