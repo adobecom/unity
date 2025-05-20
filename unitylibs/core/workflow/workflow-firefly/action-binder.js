@@ -11,6 +11,7 @@ import {
   getHeaders,
   getLocale,
 } from '../../../scripts/utils.js';
+
 class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null) {
     this.renderWidget = renderWidget;
@@ -45,6 +46,10 @@ class ServiceHandler {
 }
 
 export default class ActionBinder {
+  boundHandleKeyDown = this.handleKeyDown.bind(this);
+
+  boundOutsideClickHandler = this.handleOutsideClick.bind(this);
+
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -55,30 +60,22 @@ export default class ActionBinder {
     this.serviceHandler = null;
     this.activeIndex = -1;
     this.id = '';
-    this.init();
-  }
-
-  init() {
-    this.apiConfig = this.initializeApiConfig();
+    this.apiConfig = { ...unityConfig };
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
     this.widget = this.getElement('.ex-unity-widget');
-    this.boundHandleKeyDown = this.handleKeyDown.bind(this);
-    this.boundOutsideClickHandler = this.handleOutsideClick.bind(this);
     this.viewport = defineDeviceByScreenSize();
-    this.addAccessibility();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
-    this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => {
-      this.initActionListeners();
-    });
+    this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
+    this.addAccessibility();
     this.initAction();
   }
 
   initAction() {
     const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
+      || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
     if (!isIos) return;
     window.addEventListener('pageshow', ({ persisted }) => {
       if (!persisted || document.visibilityState !== 'visible') return;
@@ -105,8 +102,7 @@ export default class ActionBinder {
 
   async initActionListeners() {
     Object.entries(this.actions).forEach(([selector, actionsList]) => {
-      const elements = this.block.querySelectorAll(selector);
-      elements.forEach((el) => {
+      this.block.querySelectorAll(selector).forEach((el) => {
         if (!el.hasAttribute('data-event-bound')) {
           this.addEventListeners(el, actionsList);
           el.setAttribute('data-event-bound', 'true');
@@ -137,7 +133,7 @@ export default class ActionBinder {
         el.addEventListener('click', handleClick);
         break;
       case 'INPUT':
-        this.addInputEvents(el, actionsList);
+        this.addInputEvents(el);
         break;
       default:
         break;
@@ -145,14 +141,10 @@ export default class ActionBinder {
   }
 
   addInputEvents(el) {
-    el.addEventListener('focus', () => {
-      this.showDropdown();
-    });
+    el.addEventListener('focus', () => this.showDropdown());
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
-      if (!relatedTarget) {
-        if (this.widget.contains(currentTarget)) return;
-      }
-      if (!this.widget.contains(relatedTarget)) this.hideDropdown();
+      if (!relatedTarget && this.widget?.contains(currentTarget)) return;
+      if (!this.widget?.contains(relatedTarget)) this.hideDropdown();
     });
   }
 
@@ -174,9 +166,7 @@ export default class ActionBinder {
     if (execute) await execute();
   }
 
-  getSelectedVerbType() {
-    return this.widgetWrap.getAttribute('data-selected-verb');
-  }
+  getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
   async generateContent() {
     if (!this.serviceHandler) await this.loadServiceHandler();
@@ -185,13 +175,10 @@ export default class ActionBinder {
     if (cgen) {
       cgen.split('&').forEach((param) => {
         const [key, value] = param.split('=');
-        if (key && value) {
-          queryParams[key] = value;
-        }
+        if (key && value) queryParams[key] = value;
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
-
     try {
       const selectedVerbType = this.getSelectedVerbType();
       const payload = {
@@ -218,14 +205,14 @@ export default class ActionBinder {
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
+      //ToDo Lana logging
       console.error('Content generation failed:', err);
     }
   }
 
   setPrompt(el) {
-    const prompt = el.getAttribute('aria-label').trim();
-    this.query = prompt;
-    this.id = el.getAttribute('id').trim();
+    this.query = el.getAttribute('aria-label')?.trim();
+    this.id = el.getAttribute('id')?.trim();
     this.generateContent();
     this.hideDropdown();
   }
@@ -287,16 +274,12 @@ export default class ActionBinder {
 
   getFocusElems() {
     let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
-    if (this.viewport !== 'MOBILE') {
-      elmSelector = `${elmSelector}, .legal-text`;
-    }
+    if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
     const selector = `.inp-field, .gen-btn, ${elmSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
   }
 
-  isDropdownVisible() {
-    return !this.dropdown.classList.contains('hidden');
-  }
+  isDropdownVisible = () => !this.dropdown.classList.contains('hidden');
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
@@ -326,9 +309,7 @@ export default class ActionBinder {
     this.setActiveItem(dropItems, this.activeIndex, this.inputField);
   }
 
-  isDropdownItemFocused(dropItems) {
-    return dropItems.some((item) => item === document.activeElement);
-  }
+  isDropdownItemFocused = (dropItems) => dropItems.some((item) => item === document.activeElement);
 
   handleEnter(ev, dropItems, focusElems, currIdx) {
     ev.preventDefault();
@@ -348,11 +329,8 @@ export default class ActionBinder {
     const actions = { 'inp-field': () => this.inpRedirect() };
     if (tarElem) {
       const matchCls = Object.keys(actions).find((cls) => tarElem.classList.contains(cls));
-      if (matchCls) {
-        actions[matchCls]();
-      } else if (currIdx !== -1) {
-        tarElem.click();
-      }
+      if (matchCls) actions[matchCls]();
+      else if (currIdx !== -1) tarElem.click();
     }
   }
 
@@ -389,14 +367,12 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
-    if (!this.widget.contains(event.target)) this.hideDropdown();
+    if (!this.widget?.contains(event.target)) this.hideDropdown();
   }
 
   resetDropdown() {
     this.inputField.focus();
-    if (!this.query) {
-      this.inputField.value = '';
-    }
+    if (!this.query) this.inputField.value = '';
     this.hideDropdown();
   }
 }
