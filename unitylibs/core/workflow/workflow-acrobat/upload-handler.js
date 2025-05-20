@@ -520,7 +520,7 @@ export default class UploadHandler {
         maxConcurrentChunks,
       );
       if (failedFiles.size === files.length) {
-        await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
+        await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', 504, `One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`, false, true, { code: 'verb_upload_error_chunk_upload', desc: `${failedFiles}` });
         return;
       }
       const uploadedAssets = assetDataArray.filter((_, index) => !failedFiles.has(index));
@@ -538,7 +538,7 @@ export default class UploadHandler {
       this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
     } catch (error) {
       await this.transitionScreen.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('verb_upload_error_generic', error.code, `Exception in uploading one or more files`, true, true);
+      await this.handleUploadError(e);
     } 
   }
   
@@ -556,7 +556,7 @@ export default class UploadHandler {
         assetDataArray.push(assetData);
         fileTypeArray.push(file.type);
       } catch (e) {
-        await this.handleUploadError(e);
+        throw e;
       }
     });
     return { blobDataArray, assetDataArray, fileTypeArray };
