@@ -37,7 +37,7 @@ function createPayloadForSplunk(metaData) {
   };
 }
 
-function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
+export default function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
   try {
     const eventDataPayload = createPayloadForSplunk({ ...metaData, eventName, product });
     fetch(splunkEndpoint, {
@@ -51,8 +51,4 @@ function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
       { sampleRate: 100, tags: 'Unity-PS-Upload' },
     );
   }
-}
-
-export default function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
-  sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint);
 }
