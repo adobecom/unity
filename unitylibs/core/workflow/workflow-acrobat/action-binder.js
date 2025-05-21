@@ -588,10 +588,6 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
-    // eslint-disable-next-line no-param-reassign
-    files = Array.isArray(files) ? files : [];
-    this.filesData = { type: this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length>1 ? 'mfu' : 'sfu' };
-    this.dispatchAnalyticsEvent(eventName, this.filesData);
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       await this.dispatchErrorToast('pre_upload_error_fetching_access_token', 401, 'IMS access token could not be fetched', false, true, {
@@ -608,6 +604,8 @@ export default class ActionBinder {
     switch (value) {
       case 'upload':
         this.promiseStack = [];
+        this.filesData = { type: this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length>1 ? 'mfu' : 'sfu' };
+        this.dispatchAnalyticsEvent(eventName, this.filesData);
         if (uploadType === 'single') await this.processSingleFile(files);
         else if (uploadType === 'hybrid') await this.processHybrid(files);
         break;
