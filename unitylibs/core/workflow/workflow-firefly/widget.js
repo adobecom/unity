@@ -79,7 +79,8 @@ export default class UnityWidget {
     }
     if (this.promptItems && this.promptItems.length > 0) {
       this.promptItems.forEach((item) => {
-        item.setAttribute('daa-ll', `${item.getAttribute('aria-label').slice(0, 20)}--${verb}--Prompt suggestion`);
+        const ariaLabel = item.getAttribute('aria-label') || '';
+        item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
       });
     }
     if (this.genBtn) {
