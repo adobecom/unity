@@ -306,17 +306,14 @@ export default class ActionBinder {
   }
 
   async initAnalytics() {
-    if (this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+    if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
       this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
     }
   }
 
   logAnalyticsinSplunk(eventName, data) {
     if (this.sendAnalyticsToSplunk) {
-      this.sendAnalyticsToSplunk(eventName, {
-        eventName,
-        ...data,
-      }, `${unityConfig.apiEndPoint}/log`);
+      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, data, `${unityConfig.apiEndPoint}/log`);
     }
   }
 
