@@ -315,7 +315,6 @@ export default class ActionBinder {
   }
 
   isMixedFileTypes(files) {
-    if(!Array.isArray(files) || files.length === 0) return undefined;
     const fileTypes = new Set(files.map((file) => file.type));
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
@@ -589,6 +588,8 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    // eslint-disable-next-line no-param-reassign
+    files = Array.isArray(files) ? files : [];
     this.filesData = { type: this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length>1 ? 'mfu' : 'sfu' };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
     await this.handlePreloads();
