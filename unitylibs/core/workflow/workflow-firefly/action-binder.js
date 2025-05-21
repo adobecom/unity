@@ -92,7 +92,7 @@ export default class ActionBinder {
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
-    this.sendFFAnalyticsToSplunk = null;
+    this.sendAnalyticsToSplunk = null;
     this.addAccessibility();
     this.initAction();
   }
@@ -246,14 +246,14 @@ export default class ActionBinder {
   }
 
   async initAnalytics() {
-    if (!this.sendFFAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendFFAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).sendFFAnalyticsToSplunk;
+    if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
     }
   }
 
   logAnalyticsinSplunk(eventName, data) {
-    if (this.sendFFAnalyticsToSplunk) {
-      this.sendFFAnalyticsToSplunk(eventName, {...data}, `${unityConfig.apiEndPoint}/log`);
+    if (this.sendAnalyticsToSplunk) {
+      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, data, `${unityConfig.apiEndPoint}/log`);
     }
   }
 

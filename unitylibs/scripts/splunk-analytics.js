@@ -53,10 +53,6 @@ function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
   }
 }
 
-export function sendPsAnalyticsToSplunk(eventName, metaData, splunkEndpoint) {
-    sendAnalyticsToSplunk(eventName, 'photoshop', metaData, splunkEndpoint);
-}
-
-export function sendFFAnalyticsToSplunk(eventName, metaData, splunkEndpoint) {
-  sendAnalyticsToSplunk(eventName, 'firefly', metaData, splunkEndpoint);
+export default function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
+  sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint);
 }

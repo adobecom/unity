@@ -80,7 +80,7 @@ export default class ActionBinder {
     this.initActionListeners = this.initActionListeners.bind(this);
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
     this.desktop = false;
-    this.sendPsAnalyticsToSplunk = null;
+    this.sendAnalyticsToSplunk = null;
     this.assetId = null;
   }
 
@@ -306,14 +306,14 @@ export default class ActionBinder {
   }
 
   async initAnalytics() {
-    if (!this.sendPsAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendPsAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).sendPsAnalyticsToSplunk;
+    if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
     }
   }
 
   logAnalyticsinSplunk(eventName, data) {
-    if (this.sendPsAnalyticsToSplunk) {
-      this.sendPsAnalyticsToSplunk(eventName, data, `${unityConfig.apiEndPoint}/log`);
+    if (this.sendAnalyticsToSplunk) {
+      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, data, `${unityConfig.apiEndPoint}/log`);
     }
   }
 
