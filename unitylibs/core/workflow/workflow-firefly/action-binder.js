@@ -246,22 +246,15 @@ export default class ActionBinder {
     }
   }
 
-  logAnalyticsinSplunk(eventName, data) {
+  logAnalytics(eventName, data, { workflowStep, statusCode } = {}) {
+    const logData = {
+      ...data,
+      ...(workflowStep && { workflowStep }),
+      ...(typeof statusCode !== 'undefined' && { statusCode }),
+    };
     if (this.sendAnalyticsToSplunk) {
-      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, data, `${unityConfig.apiEndPoint}/log`);
+      this.sendAnalyticsToSplunk?.( eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`);
     }
-  }
-
-  logWorkflowStart(eventName, data) {
-    this.logAnalyticsinSplunk(eventName, { ...data, workflowStep: 'start' });
-  }
-
-  logErrorAnalytics(eventName, data) {
-    this.logAnalyticsinSplunk(eventName, { ...data, workflowStep: 'complete', statusCode: -1 });
-  }
-
-  logSuccessAnalytics(eventName, data) {
-    this.logAnalyticsinSplunk(eventName, { ...data, workflowStep: 'complete' , statusCode: 0 });
   }
 
   async generateContent() {
@@ -279,10 +272,10 @@ export default class ActionBinder {
     const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
     const action = (this.id ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
-    this.logWorkflowStart('generate', eventData);
+    this.logAnalytics('generate', eventData, { workflowStep: 'start' });
     const validation = this.validateInput();
     if (!validation.isValid) {
-      this.logErrorAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode }});
+      this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
       return;
     }
     try {
@@ -296,16 +289,16 @@ export default class ActionBinder {
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
-      this.logSuccessAnalytics('generate', eventData);
+      this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
       this.id = '';
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
-      this.logErrorAnalytics('generate', { ...eventData,
+      this.logAnalytics('generate', { ...eventData,
         errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
-      });
+      }, { workflowStep: 'complete', statusCode: -1 });
       window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
     }
   }
