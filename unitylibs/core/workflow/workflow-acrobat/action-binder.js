@@ -315,7 +315,7 @@ export default class ActionBinder {
   }
 
   isMixedFileTypes(files) {
-    const fileTypes = new Set(files?.map((file) => file.type));
+    const fileTypes = new Set(files?.map((file) => file?.type));
     return fileTypes.size > 1 ? 'mixed' : files[0].type;
   }
 
