@@ -92,6 +92,7 @@ export default class ActionBinder {
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
+    this.sendAnalyticsToSplunk = null;
     this.addAccessibility();
     this.initAction();
   }
@@ -227,7 +228,35 @@ export default class ActionBinder {
 
   getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
+  validateInput() {
+    if (this.inputField.value.length === 0 && !this.id) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
+      return { isValid: false, errorCode: 'empty-input' };
+    }
+    if (this.inputField.value.length > 750) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
+      return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
+    }
+    return { isValid: true };
+  }
+
+  async initAnalytics() {
+    if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+    }
+  }
+
+  logAnalytics(eventName, data, { workflowStep, statusCode } = {}) {
+    const logData = {
+      ...data,
+      ...(workflowStep && { workflowStep }),
+      ...(typeof statusCode !== 'undefined' && { statusCode }),
+    };
+    this.sendAnalyticsToSplunk?.( eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`, true);
+  }
+
   async generateContent() {
+    await this.initAnalytics();
     if (!this.serviceHandler) await this.loadServiceHandler();
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
@@ -238,41 +267,36 @@ export default class ActionBinder {
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
-    if (this.inputField.value.length === 0 && !this.id) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
-      return;
-    }
-    if (this.inputField.value.length > 750) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
+    const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
+    const action = (this.id ? 'prompt-suggestion' : 'generate');
+    const eventData = { assetId: this.id, verb: selectedVerbType, action };
+    this.logAnalytics('generate', eventData, { workflowStep: 'start' });
+    const validation = this.validateInput();
+    if (!validation.isValid) {
+      this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
       return;
     }
     try {
-      const selectedVerbType = this.getSelectedVerbType();
       const payload = {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
-        payload: {
-          workflow: `text-to-${selectedVerbType}`,
-          locale: getLocale(),
-        },
+        payload: { workflow: selectedVerbType, locale: getLocale(), action },
+        ...(this.id ? { assetId: this.id } : { query: this.query }),
       };
-      if (this.id) {
-        payload.assetId = this.id;
-        payload.payload.action = 'prompt-suggestion';
-      } else {
-        payload.query = this.query;
-        payload.payload.action = 'generate';
-      }
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
+      this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
       this.id = '';
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+      this.logAnalytics('generate', { ...eventData,
+        errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
+      }, { workflowStep: 'complete', statusCode: -1 });
       window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
     }
   }
