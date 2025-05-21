@@ -226,12 +226,7 @@ export default class ActionBinder {
     if (execute) await execute();
   }
 
-  getSelectedVerbType = () => {
-    if (!this.selectedVerbType) {
-      this.selectedVerbType = this.widgetWrap.getAttribute('data-selected-verb');
-    }
-    return this.selectedVerbType;
-  };
+  getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
   validateInput() {
     if (this.inputField.value.length === 0 && !this.id) {
@@ -258,31 +253,15 @@ export default class ActionBinder {
   }
 
   logWorkflowStart(eventName, data) {
-    this.logAnalyticsinSplunk(eventName, {
-      ...data,
-      workflowStep: 'start',
-    });
-  }
-
-  logWorkflowComplete(eventName, data) {
-    this.logAnalyticsinSplunk(eventName, {
-      ...data,
-      workflowStep: 'complete',
-    });
+    this.logAnalyticsinSplunk(eventName, { ...data, workflowStep: 'start' });
   }
 
   logErrorAnalytics(eventName, data) {
-    this.logWorkflowComplete(eventName, {
-      ...data,
-      statusCode: -1,
-    });
+    this.logAnalyticsinSplunk(eventName, { ...data, workflowStep: 'complete', statusCode: -1 });
   }
 
   logSuccessAnalytics(eventName, data) {
-    this.logWorkflowComplete(eventName, {
-      ...data,
-      statusCode: 0,
-    });
+    this.logAnalyticsinSplunk(eventName, { ...data, workflowStep: 'complete' , statusCode: 0 });
   }
 
   async generateContent() {
@@ -299,56 +278,33 @@ export default class ActionBinder {
     if (!this.query) this.query = this.inputField.value.trim();
     const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
     const action = (this.id ? 'prompt-suggestion' : 'generate');
-    this.logWorkflowStart('generate', {
-      assetId: this.id,
-      verb: selectedVerbType,
-      action,
-    });
+    const eventData = { assetId: this.id, verb: selectedVerbType, action };
+    this.logWorkflowStart('generate', eventData);
     const validation = this.validateInput();
     if (!validation.isValid) {
-      this.logErrorAnalytics('generate', {
-        assetId: this.id,
-        verb: selectedVerbType,
-        action,
-        errorData: { code: validation.errorCode },
-      });
+      this.logErrorAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode }});
       return;
     }
     try {
       const payload = {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
-        payload: {
-          workflow: selectedVerbType,
-          locale: getLocale(),
-          action,
-        },
+        payload: { workflow: selectedVerbType, locale: getLocale(), action },
         ...(this.id ? { assetId: this.id } : { query: this.query }),
       };
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
-      this.logSuccessAnalytics('generate', {
-        assetId: this.id,
-        verb: selectedVerbType,
-        action,
-      });
+      this.logSuccessAnalytics('generate', eventData);
       this.query = '';
       this.id = '';
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
-      this.logErrorAnalytics('generate', {
-        assetId: this.id,
-        verb: selectedVerbType,
-        action,
-        errorData: {
-          code: 'request-failed',
-          subCode: err.status,
-          desc: err.message,
-        },
+      this.logErrorAnalytics('generate', { ...eventData,
+        errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
       });
       window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
     }
