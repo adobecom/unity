@@ -46,13 +46,23 @@ async function getRefreshToken() {
   }
 }
 
-export async function getGuestAccessToken() {
-  const guestAccessToken = window.adobeIMS?.getAccessToken();
-  if (guestAccessToken?.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
+async function getImsToken() {
+  const accessToken = window.adobeIMS?.getAccessToken();
+  if (!accessToken || accessToken?.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
     const refreshToken = await getRefreshToken();
     return refreshToken;
   }
+  return accessToken;
+}
+
+export async function getGuestAccessToken() {
+  const guestAccessToken = await getImsToken();
   return `Bearer ${guestAccessToken?.token}`;
+}
+
+export async function isGuestUser() {
+  const accessToken = await getImsToken();
+  return accessToken?.isGuestToken;
 }
 
 export async function getHeaders(apiKey, additionalHeaders = {}) {
@@ -273,7 +283,9 @@ export const unityConfig = (() => {
     },
   };
   if (host.includes('hlx.page')
+    || host.includes('hlx.live') 
     || host.includes('aem.page')
+    || host.includes('aem.live') 
     || host.includes('localhost')
     || host.includes('stage.adobe')
     || host.includes('corp.adobe')
