@@ -247,7 +247,15 @@ export default class ActionBinder {
 
   async initAnalytics() {
     if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+      try {
+        const unityLibs = getUnityLibs();
+        const analyticsPath = `${unityLibs}/scripts/splunk-analytics.js`;
+        console.log(unityLibs + " | " + analyticsPath);
+        const analyticsModule = await import('../../../scripts/splunk-analytics.js');
+        this.sendAnalyticsToSplunk = analyticsModule.default;
+      } catch (error) {
+        console.error('Failed to dynamically import splunk-analytics.js:', error);
+      }
     }
   }
 
