@@ -228,9 +228,21 @@ export default class ActionBinder {
 
   getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb'); // optimise this
 
+  validateInput() {
+    if (this.inputField.value.length === 0 && !this.id) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
+      return { isValid: false, errorCode: 'empty-input' };
+    }
+    if (this.inputField.value.length > 750) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
+      return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
+    }
+    return { isValid: true };
+  }
+
   async initAnalytics() {
     if (!this.sendFFAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendFFAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+      this.sendFFAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).sendFFAnalyticsToSplunk;
     }
   }
 
@@ -254,14 +266,10 @@ export default class ActionBinder {
     });
   }
 
-  logErrorAnalytics(eventName, data, errorCode, errorSubcode, errorDesc) {
+  logErrorAnalytics(eventName, data) {
     this.logWorkflowComplete(eventName, {
       ...data,
       statusCode: -1,
-      errorData: {
-        code: errorCode,
-        subCode: errorSubcode,
-        desc: errorDesc,},
     });
   }
 
@@ -291,29 +299,13 @@ export default class ActionBinder {
       verb: selectedVerbType,
       action,
     });
-    if (this.inputField.value.length === 0 && !this.id) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
-      this.logWorkflowComplete('generate', {
+    const validation = this.validateInput();
+    if (!validation.isValid) {
+      this.logErrorAnalytics('generate', {
         assetId: this.id,
         verb: selectedVerbType,
         action,
-        statusCode: -1,
-        errorData: {
-          code: 'empty-input',
-        },
-      });
-      return;
-    }
-    if (this.inputField.value.length > 750) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
-      this.logWorkflowComplete('generate', {
-        assetId: this.id,
-        verb: selectedVerbType,
-        action,
-        statusCode: -1,
-        errorData: {
-          code: 'max-prompt-characters-exceeded',
-        },
+        errorData: { code: validation.errorCode },
       });
       return;
     }
@@ -324,14 +316,10 @@ export default class ActionBinder {
         payload: {
           verb: selectedVerbType,
           locale: getLocale(),
+          action,
         },
+        ...(this.id ? { assetId: this.id } : { query: this.query }),
       };
-      if (this.id) {
-        payload.assetId = this.id;
-      } else {
-        payload.query = this.query;
-      }
-      payload.payload.action = action;
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
