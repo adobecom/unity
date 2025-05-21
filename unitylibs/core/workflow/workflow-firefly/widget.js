@@ -93,16 +93,20 @@ export default class UnityWidget {
       e.stopPropagation();
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
+        listLink.parentElement.removeAttribute('aria-label');
       });
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
       const copiedNodes = link.cloneNode(true).childNodes;
       copiedNodes[0].remove();
-      selectedElement.replaceChildren(...copiedNodes, menuIcon);
-      selectedElement.dataset.selectedVerb = link.getAttribute('data-verb-type');
-      this.updateDropdownForVerb(link.getAttribute('data-verb-type'));
       this.selectedVerbType = link.getAttribute('data-verb-type');
+      selectedElement.replaceChildren(...copiedNodes, menuIcon);
+      selectedElement.dataset.selectedVerb = this.selectedVerbType;
+      selectedElement.setAttribute('aria-label', `${this.selectedVerbType} prompt type selected`);
+      selectedElement.focus();
+      link.parentElement.setAttribute('aria-label', `${this.selectedVerbType} prompt type selected`);
+      this.updateDropdownForVerb(this.selectedVerbType);
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       this.updateAnalytics(this.selectedVerbType);
     };
@@ -117,6 +121,7 @@ export default class UnityWidget {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
+      'aria-label': `${selectedVerbType} prompt type selected`,
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
@@ -147,6 +152,10 @@ export default class UnityWidget {
         this.hidePromptDropdown();
         this.showVerbMenu(selectedElement);
       }
+      if (e.key === 'Escape' || e.code === 27) {
+        selectedElement.parentElement.classList?.remove('show-menu');
+        selectedElement.focus();
+      }
     });
     verbs.forEach((verb, idx) => {
       const name = verb.nextElementSibling?.textContent.trim();
@@ -159,7 +168,10 @@ export default class UnityWidget {
         class: 'verb-link',
         'data-verb-type': verbType,
       }, `<img src="${icon}" alt="" />${name}`);
-      if (idx === 0) item.classList.add('selected');
+      if (idx === 0) {
+        item.classList.add('selected');
+        item.setAttribute('aria-label', `${verbType} prompt type selected`);
+      }
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
       item.append(link);
