@@ -8,11 +8,13 @@ function getSessionID() {
 }
 
 function createPayloadForSplunk(metaData) {
-  const { eventName, errorData, redirectUrl, assetId } = metaData;
+  const { eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action } = metaData;
   return {
     event: {
       name: eventName,
-      category: 'photoshop',
+      category: product,
+      ...(verb && { subcategory: verb }),
+      ...(action && { action }),
     },
     content: { ...(assetId && { assetId }) },
     source: {
@@ -25,6 +27,7 @@ function createPayloadForSplunk(metaData) {
       locale: document.documentElement.lang.toLocaleLowerCase(),
       id: getSessionID(),
     },
+    ...(statusCode && { statusCode }),
     error: errorData ? {
       type: errorData.code,
       ...(errorData.subCode && { subCode: errorData.subCode }),
@@ -34,9 +37,9 @@ function createPayloadForSplunk(metaData) {
   };
 }
 
-export default function sendAnalyticsToSplunk(eventName, metaData, splunkEndpoint) {
+function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint) {
   try {
-    const eventDataPayload = createPayloadForSplunk({ ...metaData, eventName });
+    const eventDataPayload = createPayloadForSplunk({ ...metaData, eventName, product });
     fetch(splunkEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -48,4 +51,12 @@ export default function sendAnalyticsToSplunk(eventName, metaData, splunkEndpoin
       { sampleRate: 100, tags: 'Unity-PS-Upload' },
     );
   }
+}
+
+export default function sendPsAnalyticsToSplunk(eventName, metaData, splunkEndpoint) {
+    sendAnalyticsToSplunk(eventName, 'photoshop', metaData, splunkEndpoint);
+}
+
+export default function sendFFAnalyticsToSplunk(eventName, metaData, splunkEndpoint) {
+  sendAnalyticsToSplunk(eventName, 'firefly', metaData, splunkEndpoint);
 }

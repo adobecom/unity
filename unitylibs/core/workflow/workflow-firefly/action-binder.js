@@ -92,6 +92,7 @@ export default class ActionBinder {
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
+    this.sendFFAnalyticsToSplunk = null;
     this.addAccessibility();
     this.initAction();
   }
@@ -225,9 +226,54 @@ export default class ActionBinder {
     if (execute) await execute();
   }
 
-  getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
+  getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb'); // optimise this
+
+  async initAnalytics() {
+    if (!this.sendFFAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+      this.sendFFAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+    }
+  }
+
+  logAnalyticsinSplunk(eventName, data) {
+    if (this.sendFFAnalyticsToSplunk) {
+      this.sendFFAnalyticsToSplunk(eventName, {...data}, `${unityConfig.apiEndPoint}/log`);
+    }
+  }
+
+  logWorkflowStart(eventName, data) {
+    this.logAnalyticsinSplunk(eventName, {
+      ...data,
+      workflowStep: 'start',
+    });
+  }
+
+  logWorkflowComplete(eventName, data) {
+    this.logAnalyticsinSplunk(eventName, {
+      ...data,
+      workflowStep: 'complete',
+    });
+  }
+
+  logErrorAnalytics(eventName, data, errorCode, errorSubcode, errorDesc) {
+    this.logWorkflowComplete(eventName, {
+      ...data,
+      statusCode: -1,
+      errorData: {
+        code: errorCode,
+        subCode: errorSubcode,
+        desc: errorDesc,},
+    });
+  }
+
+  logSuccessAnalytics(eventName, data) {
+    this.logWorkflowComplete(eventName, {
+      ...data,
+      statusCode: 0,
+    });
+  }
 
   async generateContent() {
+    this.initAnalytics();
     if (!this.serviceHandler) await this.loadServiceHandler();
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
@@ -238,41 +284,79 @@ export default class ActionBinder {
       });
     }
     if (!this.query) this.query = this.inputField.value.trim();
+    const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
+    const action = (this.id ? 'prompt-suggestion' : 'generate');
+    this.logWorkflowStart('generate', {
+      assetId: this.id,
+      verb: selectedVerbType,
+      action,
+    });
     if (this.inputField.value.length === 0 && !this.id) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
+      this.logWorkflowComplete('generate', {
+        assetId: this.id,
+        verb: selectedVerbType,
+        action,
+        statusCode: -1,
+        errorData: {
+          code: 'empty-input',
+        },
+      });
       return;
     }
     if (this.inputField.value.length > 750) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
+      this.logWorkflowComplete('generate', {
+        assetId: this.id,
+        verb: selectedVerbType,
+        action,
+        statusCode: -1,
+        errorData: {
+          code: 'max-prompt-characters-exceeded',
+        },
+      });
       return;
     }
     try {
-      const selectedVerbType = this.getSelectedVerbType();
       const payload = {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
         payload: {
-          workflow: `text-to-${selectedVerbType}`,
+          verb: selectedVerbType,
           locale: getLocale(),
         },
       };
       if (this.id) {
         payload.assetId = this.id;
-        payload.payload.action = 'prompt-suggestion';
       } else {
         payload.query = this.query;
-        payload.payload.action = 'generate';
       }
+      payload.payload.action = action;
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
       );
+      this.logSuccessAnalytics('generate', {
+        assetId: this.id,
+        verb: selectedVerbType,
+        action,
+      });
       this.query = '';
       this.id = '';
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+      this.logErrorAnalytics('generate', {
+        assetId: this.id,
+        verb: selectedVerbType,
+        action,
+        errorData: {
+          code: 'request-failed',
+          subCode: err.status,
+          desc: err.message,
+        },
+      });
       window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
     }
   }
