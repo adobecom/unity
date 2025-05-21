@@ -226,7 +226,12 @@ export default class ActionBinder {
     if (execute) await execute();
   }
 
-  getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb'); // optimise this
+  getSelectedVerbType = () => {
+    if (!this.selectedVerbType) {
+      this.selectedVerbType = this.widgetWrap.getAttribute('data-selected-verb');
+    }
+    return this.selectedVerbType;
+  };
 
   validateInput() {
     if (this.inputField.value.length === 0 && !this.id) {
