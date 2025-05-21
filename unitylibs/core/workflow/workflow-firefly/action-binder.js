@@ -286,7 +286,7 @@ export default class ActionBinder {
   }
 
   async generateContent() {
-    this.initAnalytics();
+    await this.initAnalytics();
     if (!this.serviceHandler) await this.loadServiceHandler();
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};

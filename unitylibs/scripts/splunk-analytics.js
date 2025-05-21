@@ -15,6 +15,7 @@ function createPayloadForSplunk(metaData) {
       category: product,
       ...(verb && { subcategory: verb }),
       ...(action && { action }),
+      ...(statusCode && { statusCode }),
     },
     content: { ...(assetId && { assetId }) },
     source: {
@@ -27,7 +28,6 @@ function createPayloadForSplunk(metaData) {
       locale: document.documentElement.lang.toLocaleLowerCase(),
       id: getSessionID(),
     },
-    ...(statusCode && { statusCode }),
     error: errorData ? {
       type: errorData.code,
       ...(errorData.subCode && { subCode: errorData.subCode }),
