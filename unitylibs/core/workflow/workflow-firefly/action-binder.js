@@ -319,7 +319,7 @@ export default class ActionBinder {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
         payload: {
-          verb: selectedVerbType,
+          workflow: selectedVerbType,
           locale: getLocale(),
           action,
         },
