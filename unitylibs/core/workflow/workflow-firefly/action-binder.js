@@ -252,9 +252,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    if (this.sendAnalyticsToSplunk) {
-      this.sendAnalyticsToSplunk?.( eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`);
-    }
+    this.sendAnalyticsToSplunk?.( eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`);
   }
 
   async generateContent() {
