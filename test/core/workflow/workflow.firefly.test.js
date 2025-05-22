@@ -20,7 +20,6 @@ describe('Firefly Workflow Tests', () => {
     unityElement = document.querySelector('.unity');
     workflowCfg = {
       name: 'workflow-firefly',
-      placeholder: { 'placeholder-no-suggestions': 'No Suggestions available' },
       targetCfg: { renderWidget: true, insert: 'before', target: 'a:last-of-type' },
     };
     spriteContainer = '<svg></svg>';
