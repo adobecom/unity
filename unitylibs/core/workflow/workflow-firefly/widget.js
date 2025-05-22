@@ -15,6 +15,7 @@ export default class UnityWidget {
     this.closeBtn = null;
     this.promptItems = [];
     this.genBtn = null;
+    this.hasPromptSuggestions = false;
   }
 
   async initWidget() {
@@ -25,14 +26,26 @@ export default class UnityWidget {
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
     this.workflowCfg.placeholder = this.popPlaceholders();
+    const hasPromptPlaceholder = !!this.el.querySelector('.icon-placeholder-prompt');
+    const hasSuggestionsPlaceholder = !!this.el.querySelector('.icon-placeholder-suggestions');
+    this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    const dropdown = await this.genDropdown(this.workflowCfg.placeholder);
+    let dropdown = null;
+    if (this.hasPromptSuggestions) dropdown = await this.genDropdown(this.workflowCfg.placeholder);
     const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
-    comboboxContainer.append(inputWrapper, dropdown);
+    comboboxContainer.append(inputWrapper);
+    if (dropdown) comboboxContainer.append(dropdown);
     this.widget.append(comboboxContainer);
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  createNoSuggestionsMessage(placeholderText) {
+    return createTag('li', {
+      class: 'drop-empty-msg',
+      role: 'presentation',
+    }, placeholderText);
   }
 
   popPlaceholders() {
@@ -72,8 +85,9 @@ export default class UnityWidget {
       this.closeBtn.setAttribute('daa-ll', `X Close Prompt--${verb}--Prompt suggestions`);
     }
     if (this.promptItems && this.promptItems.length > 0) {
-      this.promptItems.forEach((item, idx) => {
-        item.setAttribute('daa-ll', `Prompt ${idx + 1}--${verb}--Prompt suggestion`);
+      this.promptItems.forEach((item) => {
+        const ariaLabel = item.getAttribute('aria-label') || '';
+        item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
       });
     }
     if (this.genBtn) {
@@ -87,16 +101,20 @@ export default class UnityWidget {
       e.stopPropagation();
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
+        listLink.parentElement.removeAttribute('aria-label');
       });
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
       const copiedNodes = link.cloneNode(true).childNodes;
       copiedNodes[0].remove();
-      selectedElement.replaceChildren(...copiedNodes, menuIcon);
-      selectedElement.dataset.selectedVerb = link.getAttribute('data-verb-type');
-      this.updateDropdownForVerb(link.getAttribute('data-verb-type'));
       this.selectedVerbType = link.getAttribute('data-verb-type');
+      selectedElement.replaceChildren(...copiedNodes, menuIcon);
+      selectedElement.dataset.selectedVerb = this.selectedVerbType;
+      selectedElement.setAttribute('aria-label', `${this.selectedVerbType} prompt type selected`);
+      selectedElement.focus();
+      link.parentElement.setAttribute('aria-label', `${this.selectedVerbType} prompt type selected`);
+      this.updateDropdownForVerb(this.selectedVerbType);
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       this.updateAnalytics(this.selectedVerbType);
     };
@@ -111,6 +129,7 @@ export default class UnityWidget {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
+      'aria-label': `${selectedVerbType} prompt type selected`,
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
@@ -141,6 +160,10 @@ export default class UnityWidget {
         this.hidePromptDropdown();
         this.showVerbMenu(selectedElement);
       }
+      if (e.key === 'Escape' || e.code === 27) {
+        selectedElement.parentElement.classList?.remove('show-menu');
+        selectedElement.focus();
+      }
     });
     verbs.forEach((verb, idx) => {
       const name = verb.nextElementSibling?.textContent.trim();
@@ -153,7 +176,10 @@ export default class UnityWidget {
         class: 'verb-link',
         'data-verb-type': verbType,
       }, `<img src="${icon}" alt="" />${name}`);
-      if (idx === 0) item.classList.add('selected');
+      if (idx === 0) {
+        item.classList.add('selected');
+        item.setAttribute('aria-label', `${verbType} prompt type selected`);
+      }
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
       item.append(link);
@@ -206,7 +232,7 @@ export default class UnityWidget {
         tabindex: '0',
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
-        'daa-ll': `Prompt ${idx + 1}--${this.selectedVerbType}--Prompt suggestion`,
+        'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
       }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dropdown.insertBefore(item, dropdown.children[2 + idx]);
       this.promptItems.push(item);
@@ -214,6 +240,7 @@ export default class UnityWidget {
   }
 
   async genDropdown(ph) {
+    if (!this.hasPromptSuggestions) return null;
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
       class: 'drop hidden',
@@ -234,7 +261,12 @@ export default class UnityWidget {
     dd.append(titleCon);
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dd, limited, ph);
+    if (limited.length > 0) {
+      this.addPromptItemsToDropdown(dd, limited, ph);
+    } else {
+      const emptyMessage = this.createNoSuggestionsMessage(this.workflowCfg.placeholder['placeholder-no-suggestions']);
+      dd.insertBefore(emptyMessage, dd.querySelector('.drop-sep'));
+    }
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
     dd.append(this.createFooter(ph));
     return dd;
@@ -294,6 +326,7 @@ export default class UnityWidget {
   }
 
   async getPrompt(verb) {
+    if (!this.hasPromptSuggestions) return [];
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
       return (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
@@ -316,11 +349,19 @@ export default class UnityWidget {
   }
 
   async updateDropdownForVerb(verb) {
+    if (!this.hasPromptSuggestions) return;
     const dropdown = this.widget.querySelector('#prompt-dropdown');
-    dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
+    if (!dropdown) return;
+    dropdown.querySelectorAll('.drop-item, .drop-empty-msg').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+    if (limited.length > 0) {
+      this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+    } else {
+      const emptyMessage = this.createNoSuggestionsMessage(this.workflowCfg.placeholder['placeholder-no-suggestions']);
+      dropdown.insertBefore(emptyMessage, dropdown.querySelector('.drop-sep'));
+    }
+
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
   }
 }
