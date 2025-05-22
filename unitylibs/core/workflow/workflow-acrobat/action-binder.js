@@ -207,6 +207,7 @@ static ERROR_MAP = {
   'verb_cookie_not_set': -353,
   'verb_upload_warn_chunk_upload': -600,
   'verb_upload_warn_delete_asset': -601,
+  'verb_upload_warn_validate_files': -602,
   'verb_upload_error_redirect_to_app': -900,
   'verb_upload_error_finalize_asset': -901
 };
@@ -402,8 +403,8 @@ static ERROR_MAP = {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'verb_upload_error_file_same_type';
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, false, { code: 'verb_upload_error_validate_files', subCode: errorMessage });
-          this.multiFileFailure='uploaderror';
+          await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, false, { code: 'verb_upload_warn_validate_files', subCode: errorMessage });
+          this.multiFileFailure='uploaderror'; //subject to input from product
         }
         else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessage });
         fail = true;
@@ -411,8 +412,8 @@ static ERROR_MAP = {
       }
       if (!file.size) {
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
-          this.multiFileFailure='uploaderror';
+          await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, false, { code: 'verb_upload_warn_validate_files', subCode: errorMessages.EMPTY_FILE });
+          this.multiFileFailure='uploaderror';  //subject to input from product
         }
           else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
@@ -420,8 +421,8 @@ static ERROR_MAP = {
       }
       if (file.size > this.limits.maxFileSize) {
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, false, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
-          this.multiFileFailure='uploaderror';
+          await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, false, { code: 'verb_upload_warn_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
+          this.multiFileFailure='uploaderror'; //subject to input from product
         }
         else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'verb_upload_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
