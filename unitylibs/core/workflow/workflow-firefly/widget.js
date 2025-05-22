@@ -88,13 +88,13 @@ export default class UnityWidget {
     }
   }
 
-  handleVerbLinkClick(link, verbList, selectedElement, menuIcon) {
+  handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder) {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
-        listLink.parentElement.removeAttribute('aria-label');
+        listLink.parentElement.setAttribute('aria-label', `${listLink.getAttribute('data-verb-type')} prompt: ${inputPlaceHolder}`);
       });
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
@@ -104,9 +104,9 @@ export default class UnityWidget {
       this.selectedVerbType = link.getAttribute('data-verb-type');
       selectedElement.replaceChildren(...copiedNodes, menuIcon);
       selectedElement.dataset.selectedVerb = this.selectedVerbType;
-      selectedElement.setAttribute('aria-label', `${this.selectedVerbType} prompt type selected`);
+      selectedElement.setAttribute('aria-label', `${this.selectedVerbType} prompt: ${inputPlaceHolder}`);
       selectedElement.focus();
-      link.parentElement.setAttribute('aria-label', `${this.selectedVerbType} prompt type selected`);
+      link.parentElement.setAttribute('aria-label', `${this.selectedVerbType} prompt selected:  ${inputPlaceHolder}`);
       this.updateDropdownForVerb(this.selectedVerbType);
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       this.updateAnalytics(this.selectedVerbType);
@@ -115,6 +115,7 @@ export default class UnityWidget {
 
   verbDropdown() {
     const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedVerbType = verbs[0]?.className.split('-')[2];
     const selectedVerb = verbs[0]?.nextElementSibling;
     const { href } = selectedVerb;
@@ -122,7 +123,7 @@ export default class UnityWidget {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
-      'aria-label': `${selectedVerbType} prompt type selected`,
+      'aria-label': `${selectedVerbType} prompt: ${inputPlaceHolder}`,
       'data-selected-verb': selectedVerbType,
     }, `<img src="${href}" alt="" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
@@ -162,7 +163,10 @@ export default class UnityWidget {
       const name = verb.nextElementSibling?.textContent.trim();
       const verbType = verb.className.split('-')[2];
       const icon = verb.nextElementSibling?.href;
-      const item = createTag('li', { class: 'verb-item' });
+      const item = createTag('li', {
+        class: 'verb-item',
+        'aria-label': `${verbType} prompt: ${inputPlaceHolder}`,
+      });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const link = createTag('a', {
         href: '#',
@@ -171,13 +175,13 @@ export default class UnityWidget {
       }, `<img src="${icon}" alt="" />${name}`);
       if (idx === 0) {
         item.classList.add('selected');
-        item.setAttribute('aria-label', `${verbType} prompt type selected`);
+        item.setAttribute('aria-label', `${verbType} prompt selected: ${inputPlaceHolder}`);
       }
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
       item.append(link);
       verbList.append(item);
-      link.addEventListener('click', this.handleVerbLinkClick(link, verbList, selectedElement, menuIcon));
+      link.addEventListener('click', this.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder));
     });
     return [selectedElement, verbList];
   }
