@@ -315,8 +315,8 @@ export default class UnityWidget {
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
     const promptFile = locale.prefix && locale.prefix !== '/'
-      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
-      : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
+      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt1.json`
+      : `${baseUrl}/unity/configs/prompt/firefly-prompt1.json`;
     const promptRes = await fetch(promptFile);
     if (!promptRes.ok) {
       throw new Error('Failed to fetch prompts.');
