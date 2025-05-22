@@ -41,6 +41,13 @@ export default class UnityWidget {
     return this.workflowCfg.targetCfg.actionMap;
   }
 
+  createNoSuggestionsMessage(placeholderText) {
+    return createTag('li', {
+      class: 'drop-empty-msg',
+      role: 'presentation',
+    }, placeholderText);
+  }
+
   popPlaceholders() {
     return Object.fromEntries(
       [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
@@ -254,7 +261,12 @@ export default class UnityWidget {
     dd.append(titleCon);
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dd, limited, ph);
+    if (limited.length > 0) {
+      this.addPromptItemsToDropdown(dd, limited, ph);
+    } else {
+      const emptyMessage = this.createNoSuggestionsMessage(this.workflowCfg.placeholder['placeholder-no-suggestions']);
+      dd.insertBefore(emptyMessage, dd.querySelector('.drop-sep'));
+    }
     dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
     dd.append(this.createFooter(ph));
     return dd;
@@ -340,10 +352,16 @@ export default class UnityWidget {
     if (!this.hasPromptSuggestions) return;
     const dropdown = this.widget.querySelector('#prompt-dropdown');
     if (!dropdown) return;
-    dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
+    dropdown.querySelectorAll('.drop-item, .drop-empty-msg').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+    if (limited.length > 0) {
+      this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
+    } else {
+      const emptyMessage = this.createNoSuggestionsMessage(this.workflowCfg.placeholder['placeholder-no-suggestions']);
+      dropdown.insertBefore(emptyMessage, dropdown.querySelector('.drop-sep'));
+    }
+
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
   }
 }
