@@ -78,8 +78,9 @@ export default class UnityWidget {
       this.closeBtn.setAttribute('daa-ll', `X Close Prompt--${verb}--Prompt suggestions`);
     }
     if (this.promptItems && this.promptItems.length > 0) {
-      this.promptItems.forEach((item, idx) => {
-        item.setAttribute('daa-ll', `Prompt ${idx + 1}--${verb}--Prompt suggestion`);
+      this.promptItems.forEach((item) => {
+        const ariaLabel = item.getAttribute('aria-label') || '';
+        item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
       });
     }
     if (this.genBtn) {
@@ -224,7 +225,7 @@ export default class UnityWidget {
         tabindex: '0',
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
-        'daa-ll': `Prompt ${idx + 1}--${this.selectedVerbType}--Prompt suggestion`,
+        'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
       }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dropdown.insertBefore(item, dropdown.children[2 + idx]);
       this.promptItems.push(item);

@@ -12,6 +12,7 @@
       ".gen-btn": { "actionType": "generate" },
       ".close-btn": { "actionType": "closeDropdown" },
       ".drop-item": { "actionType": "setPromptValue" }
-    }
+    },
+    "sendSplunkAnalytics": true
   }
 }
