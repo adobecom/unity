@@ -69,6 +69,10 @@
   width: 100%;
 }
 
+.unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text {
+  width: auto;
+}
+
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text p {
   padding-top: 0;
 }
@@ -511,7 +515,7 @@
 .unity-enabled .interactive-area .verbs-container {
   display: flex;
   flex-wrap: wrap;
-  border-right: 1px solid #B8B5B9;
+  border-right: 1px solid rgb(0 0 0 / 9%);
   width: 144px;
   height: 70px;
   justify-content: flex-start;
@@ -554,6 +558,7 @@
   padding: 18px;
   list-style: none;
   background: #fff;
+  box-shadow: 0 0 10px #0000001c;
   border-radius: 10px;
   color: #292929;
   margin: 8px 0 0;
@@ -623,6 +628,11 @@
     left: 0;
     width: 100%;
     transform: translateY(70px);
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
+    transform: translateY(-80%);
+    bottom: 0;
   }
 }
 
@@ -702,5 +712,9 @@
 
   .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
     width: 140px;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
+    transform: translateY(-90%);
   }
 }
