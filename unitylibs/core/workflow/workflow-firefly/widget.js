@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 
-import { createTag, getConfig } from '../../../scripts/utils.js';
+import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -17,6 +17,7 @@ export default class UnityWidget {
     this.genBtn = null;
     this.hasPromptSuggestions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
+    this.promptsEnv = null;
   }
 
   async initWidget() {
@@ -315,6 +316,7 @@ export default class UnityWidget {
       throw new Error('Failed to fetch prompts.');
     }
     const promptJson = await promptRes.json();
+    this.promptsEnv = promptJson?.env || 'prod';
     this.prompts = this.createPromptMap(promptJson?.content?.data);
   }
 
@@ -333,7 +335,8 @@ export default class UnityWidget {
     const promptMap = {};
     if (Array.isArray(data)) {
       data.forEach((item) => {
-        if (item.verb && item.prompt && item.assetid) {
+        const itemEnv = item.env || 'prod';
+        if (item.verb && item.prompt && item.assetid && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
           promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
         }
