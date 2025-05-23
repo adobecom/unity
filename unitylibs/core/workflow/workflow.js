@@ -319,7 +319,6 @@ class WfInitiator {
       },
       'workflow-firefly': {
         productName: 'Firefly',
-        sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
       },
     };
