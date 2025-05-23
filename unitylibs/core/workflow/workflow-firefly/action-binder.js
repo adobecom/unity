@@ -39,10 +39,13 @@ class ServiceHandler {
     }
   }
 
-  async postCallToService(api, options) {
+  async postCallToService(api, options, unityProduct, unityAction) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      headers: await getHeaders(unityConfig.apiKey, {
+        'x-unity-product': unityProduct,
+        'x-unity-action': unityAction,
+      }),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
@@ -252,7 +255,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.( eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {
@@ -286,6 +289,8 @@ export default class ActionBinder {
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
+        this.workflowCfg.productName,
+        action,
       );
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
