@@ -16,6 +16,7 @@ export default class UnityWidget {
     this.promptItems = [];
     this.genBtn = null;
     this.hasPromptSuggestions = false;
+    this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
   }
 
   async initWidget() {
@@ -323,6 +324,7 @@ export default class UnityWidget {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
       return (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
     } catch (e) {
+      window.lana?.log(`Message: Error loading promts, Error: ${e}`, this.lanaOptions);
       return [];
     }
   }
