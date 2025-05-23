@@ -17,7 +17,6 @@ export default class UnityWidget {
     this.genBtn = null;
     this.hasPromptSuggestions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
-    this.promptsEnv = null;
   }
 
   async initWidget() {
@@ -316,7 +315,6 @@ export default class UnityWidget {
       throw new Error('Failed to fetch prompts.');
     }
     const promptJson = await promptRes.json();
-    this.promptsEnv = promptJson?.env || 'prod';
     this.prompts = this.createPromptMap(promptJson?.content?.data);
   }
 
