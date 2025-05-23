@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 
-import { createTag, getConfig } from '../../../scripts/utils.js';
+import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -333,7 +333,8 @@ export default class UnityWidget {
     const promptMap = {};
     if (Array.isArray(data)) {
       data.forEach((item) => {
-        if (item.verb && item.prompt && item.assetid) {
+        const itemEnv = item.env || 'prod';
+        if (item.verb && item.prompt && item.assetid && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
           promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
         }
