@@ -205,12 +205,12 @@ export async function priorityLoad(parr, additionalParams = '') {
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
       const pr = loadScript(p, 'module', { mode: 'async' });
-      promiseArr.push(pr+additionalParams);
+      promiseArr.push(pr);
     } else if (p.endsWith('.css')) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
-      promiseArr.push(pr+additionalParams);
+      promiseArr.push(pr);
     } else {
-      promiseArr.push(fetch(p)+additionalParams);
+      promiseArr.push(fetch(p+additionalParams));
     }
   });
   return await Promise.all(promiseArr);
