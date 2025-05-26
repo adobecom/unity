@@ -290,7 +290,7 @@ export default class ActionBinder {
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
         this.workflowCfg.productName,
-        action,
+        `${action}-${this.getSelectedVerbType()}Generation`,
       );
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
