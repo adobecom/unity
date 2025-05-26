@@ -200,17 +200,17 @@ export async function createActionBtn(btnCfg, btnClass, iconAsImg = false, swapO
   return actionBtn;
 }
 
-export async function priorityLoad(parr) {
+export async function priorityLoad(parr, additionalParams = '') {
   const promiseArr = [];
   parr.forEach((p) => {
     if (p.endsWith('.js')) {
       const pr = loadScript(p, 'module', { mode: 'async' });
-      promiseArr.push(pr);
+      promiseArr.push(pr+additionalParams);
     } else if (p.endsWith('.css')) {
       const pr = new Promise((res) => { loadLink(p, { rel: 'stylesheet', callback: res }); });
-      promiseArr.push(pr);
+      promiseArr.push(pr+additionalParams);
     } else {
-      promiseArr.push(fetch(p));
+      promiseArr.push(fetch(p)+additionalParams);
     }
   });
   return await Promise.all(promiseArr);
