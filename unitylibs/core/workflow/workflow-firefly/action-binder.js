@@ -206,6 +206,13 @@ export default class ActionBinder {
       if (!relatedTarget && this.widget?.contains(currentTarget)) return;
       if (!this.widget?.contains(relatedTarget)) this.hideDropdown();
     });
+    el.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const genBtn = this.block.querySelector('.gen-btn');
+        if (genBtn) genBtn.click();
+      }
+    });
   }
 
   async execActions(action, el = null) {
