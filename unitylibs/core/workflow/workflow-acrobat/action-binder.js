@@ -527,7 +527,7 @@ export default class ActionBinder {
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
     const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
-    this.redirectUrl = `${baseUrl}?${additionalParams}&${queryString}`;
+    this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
     this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
     return true;
   }
