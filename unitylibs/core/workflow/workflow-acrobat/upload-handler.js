@@ -650,8 +650,8 @@ export default class UploadHandler {
       this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
       await this.transitionScreen.showSplashScreen(true);
       const nonpdfMfuFeedbackScreenTypeNonpdf = this.actionBinder.workflowCfg.targetCfg.nonpdfMfuFeedbackScreenTypeNonpdf.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      const allNonPdf = files.every(file => !this.isPdf(file));
       if (nonpdfMfuFeedbackScreenTypeNonpdf) {
+        const allNonPdf = files.every(file => !this.isPdf(file));
         if(allNonPdf){
           const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), filesData);
           if (!redirectSuccess) return;
