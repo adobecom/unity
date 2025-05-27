@@ -94,13 +94,12 @@ export default class ActionBinder {
 
   async handlePreloads() {
     const parr = [];
-    const additionalParams = unityConfig.env === 'stage' ? `?${window.location.search.slice(1)}` : '';
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
-        `${getUnityLibs()}/core/styles/splash-screen.css${additionalParams}`,
+        `${getUnityLibs()}/core/styles/splash-screen.css`,
       );
     }
-    await priorityLoad(parr, additionalParams);
+    await priorityLoad(parr);
   }
 
   async cancelUploadOperation() {
