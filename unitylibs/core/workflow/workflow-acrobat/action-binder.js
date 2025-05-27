@@ -94,17 +94,10 @@ class ServiceHandler {
     throw timeoutError;
   }
 
-  async getHeadersWrapper(additionalHeaders = {}) {
-    return await getHeaders(unityConfig.apiKey, {...additionalHeaders,
-      'x-unity-product': this.workflowCfg.productName,
-      'x-unity-action': this.filesData?.uploadType || 'unknown',
-    });
-  }
-
   async postCallToService(api, options, additionalHeaders = {}) {
     const postOpts = {
       method: 'POST',
-      headers: await this.getHeadersWrapper(additionalHeaders),
+      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
@@ -113,7 +106,7 @@ class ServiceHandler {
   async postCallToServiceWithRetry(api, options, additionalHeaders = {}) {
     const postOpts = {
       method: 'POST',
-      headers: await this.getHeadersWrapper(additionalHeaders),
+      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
       ...options,
     };
     return this.fetchFromServiceWithRetry(api, postOpts);
@@ -122,19 +115,20 @@ class ServiceHandler {
   async getCallToService(api, params, additionalHeaders = {}) {
     const getOpts = {
       method: 'GET',
-      headers: await this.getHeadersWrapper(additionalHeaders),
+      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
     };
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
     return this.fetchFromService(url, getOpts);
   }
 
-  async deleteCallToService(url, accessToken) {
+  async deleteCallToService(url, accessToken, additionalHeaders = {}) {
     const options = {
       method: 'DELETE',
       headers: {
+        ...additionalHeaders,
         'Authorization': accessToken,
-        'x-api-key': 'unity', 
+        'x-api-key': 'unity'
       },
     };
     return this.fetchFromService(url, options);
@@ -328,6 +322,14 @@ export default class ActionBinder {
     return unityConfig;
   }
 
+  getAdditionalHeaders() {
+    return {
+      'x-unity-dc-verb': this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0],
+      'x-unity-product': this.workflowCfg.productName,
+      'x-unity-action': this.filesData?.uploadType || 'unknown',
+    };
+  }
+
   async handlePreloads() {
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
@@ -496,7 +498,7 @@ export default class ActionBinder {
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
-        { 'x-unity-dc-verb': this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0] },
+        this.getAdditionalHeaders(),
       ),
     );
     await Promise.all(this.promiseStack)
