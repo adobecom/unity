@@ -94,10 +94,17 @@ class ServiceHandler {
     throw timeoutError;
   }
 
+  async getHeadersWrapper(additionalHeaders = {}) {
+    return await getHeaders(unityConfig.apiKey, {...additionalHeaders,
+      'x-unity-product': this.workflowCfg.productName,
+      'x-unity-action': this.filesData?.uploadType || 'unknown',
+    });
+  }
+
   async postCallToService(api, options, additionalHeaders = {}) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
+      headers: await this.getHeadersWrapper(additionalHeaders),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
@@ -106,7 +113,7 @@ class ServiceHandler {
   async postCallToServiceWithRetry(api, options, additionalHeaders = {}) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
+      headers: await this.getHeadersWrapper(additionalHeaders),
       ...options,
     };
     return this.fetchFromServiceWithRetry(api, postOpts);
@@ -115,7 +122,7 @@ class ServiceHandler {
   async getCallToService(api, params, additionalHeaders = {}) {
     const getOpts = {
       method: 'GET',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
+      headers: await this.getHeadersWrapper(additionalHeaders),
     };
     const queryString = new URLSearchParams(params).toString();
     const url = `${api}?${queryString}`;
