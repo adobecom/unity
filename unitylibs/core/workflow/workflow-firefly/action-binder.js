@@ -209,8 +209,7 @@ export default class ActionBinder {
     el.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
-        const genBtn = this.block.querySelector('.gen-btn');
-        if (genBtn) genBtn.click();
+        this.block.querySelector('.gen-btn')?.click();
       }
     });
   }
