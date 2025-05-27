@@ -624,7 +624,10 @@ export default class ActionBinder {
       await this.delay(500);
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
         window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else window.location.href = `${this.redirectUrl}?${this.redirectWithoutUpload === false ? `&UTS_Uploaded=${this.uploadTimestamp}` : ''}`;
+      } else  {
+        const separator = this.redirectUrl.includes('?') ? '&' : '?';
+        window.location.href = `${this.redirectUrl}${separator}${this.redirectWithoutUpload === false ? `&UTS_Uploaded=${this.uploadTimestamp}` : ''}`;
+      }
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
