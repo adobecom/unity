@@ -364,7 +364,7 @@ export default class ActionBinder {
   }
 
   getFocusElems() {
-    let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
+    let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
     const selector = `.inp-field, .gen-btn, ${elmSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
