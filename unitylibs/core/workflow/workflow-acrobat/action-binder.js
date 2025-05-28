@@ -446,7 +446,7 @@ export default class ActionBinder {
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'verb_upload_error_file_same_type';
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessage });
-          this.multiFileFailure='uploaderror';
+          this.multiFileFailure = 'uploaderror';
         }
         else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessage });
         fail = true;
