@@ -14,7 +14,7 @@
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/drafts/ruchika/unity/splash-page/splashscreen11",
-      "splashScreenParent": "body",
+      "splashScreenParent": "body"
     },
     "actionMap": {
       ".drop-zone": "upload",
