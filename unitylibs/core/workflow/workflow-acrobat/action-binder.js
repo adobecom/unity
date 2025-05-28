@@ -439,6 +439,7 @@ export default class ActionBinder {
     }
 
     for (const file of files) {
+      
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
