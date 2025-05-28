@@ -444,7 +444,7 @@ export default class ActionBinder {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
-        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'verb_upload_error_file_same_type';
+        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'validation_error_file_same_type';
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessage });
           this.multiFileValidationFailure = true;
