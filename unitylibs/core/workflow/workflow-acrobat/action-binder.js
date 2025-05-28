@@ -531,9 +531,7 @@ export default class ActionBinder {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    if (this.showInfoToast) {
-      cOpts.payload.feedback = 'nonpdf';
-    }
+    if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
