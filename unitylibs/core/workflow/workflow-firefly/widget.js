@@ -222,7 +222,8 @@ export default class UnityWidget {
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
     this.promptItems = [];
-    prompts.forEach(({ prompt, assetid, displayPrompt }, idx) => {
+    const separator = dropdown.querySelector('.drop-sep');
+    prompts.forEach(({ prompt, assetid, displayPrompt }) => {
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -232,7 +233,7 @@ export default class UnityWidget {
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
       }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
-      dropdown.insertBefore(item, dropdown.children[2 + idx]);
+      dropdown.insertBefore(item, separator);
       this.promptItems.push(item);
     });
   }
