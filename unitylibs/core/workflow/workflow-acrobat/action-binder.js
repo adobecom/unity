@@ -455,16 +455,16 @@ export default class ActionBinder {
       if (!file.size) {
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, false, { code: 'validation_warn_validate_files', subCode: errorMessages.EMPTY_FILE });
-          this.multiFileFailure='uploaderror';
+          this.multiFileFailure = 'uploaderror';
         }
-          else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
+        else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
         errorTypes.add('EMPTY_FILE');
       }
       if (file.size > this.limits.maxFileSize) {
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
-          this.multiFileFailure='uploaderror';
+          this.multiFileFailure = 'uploaderror';
         }
         else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
@@ -560,7 +560,7 @@ export default class ActionBinder {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
       return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
     }));
-    this.MULTI_FILE = files.length>1 ? true : false;
+    this.MULTI_FILE = files.length > 1 ? true : false;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
