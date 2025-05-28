@@ -273,6 +273,7 @@ export default class ActionBinder {
     this.uploadTimestamp = null;
     this.showInfoToast = false;
     this.multiFileValidationFailure = false;
+    this.showInfoToast = false;
     this.initialize();
   }
 
@@ -532,8 +533,8 @@ export default class ActionBinder {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
+    if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
