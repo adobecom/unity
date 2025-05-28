@@ -272,6 +272,7 @@ export default class ActionBinder {
     this.abortController = new AbortController();
     this.uploadTimestamp = null;
     this.showInfoToast = false;
+    this.multiFileValidationFailure = false;
     this.initialize();
   }
 
@@ -444,10 +445,10 @@ export default class ActionBinder {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
-        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'verb_upload_error_file_same_type';
+        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'validation_error_file_same_type';
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessage });
-          this.multiFileFailure = 'uploaderror';
+          this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessage });
         fail = true;
         errorTypes.add('UNSUPPORTED_TYPE');
@@ -455,7 +456,7 @@ export default class ActionBinder {
       if (!file.size) {
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, false, { code: 'validation_warn_validate_files', subCode: errorMessages.EMPTY_FILE });
-          this.multiFileFailure = 'uploaderror';
+          this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
         errorTypes.add('EMPTY_FILE');
@@ -463,7 +464,7 @@ export default class ActionBinder {
       if (file.size > this.limits.maxFileSize) {
         if (this.MULTI_FILE) {
           await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
-          this.multiFileFailure = 'uploaderror';
+          this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
         errorTypes.add('FILE_TOO_LARGE');
@@ -532,6 +533,7 @@ export default class ActionBinder {
       cOpts.payload.attempts = '1st';
     }
     if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
+    if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
