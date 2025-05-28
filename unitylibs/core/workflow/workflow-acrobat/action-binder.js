@@ -622,12 +622,10 @@ export default class ActionBinder {
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.delay(500);
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
       if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
-        window.location.href = `${this.redirectUrl}&feedback=${this.multiFileFailure}`;
-      } else  {
-        const separator = this.redirectUrl.includes('?') ? '&' : '?';
-        window.location.href = `${this.redirectUrl}${separator}${this.redirectWithoutUpload === false ? `&UTS_Uploaded=${this.uploadTimestamp}` : ''}`;
-      }
+        window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
+      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
