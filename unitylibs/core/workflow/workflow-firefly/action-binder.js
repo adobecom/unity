@@ -155,7 +155,7 @@ export default class ActionBinder {
 
   getElement(selector) {
     const element = this.block.querySelector(selector);
-    if (!element) console.warn(`Element with selector "${selector}" not found.`);
+    if (!element) window.lana?.log(`Element with selector "${selector}" not found.`, this.lanaOptions);
     return element;
   }
 
@@ -258,7 +258,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.( eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {
@@ -300,7 +300,8 @@ export default class ActionBinder {
       if (url) window.location.href = url;
     } catch (err) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
-      this.logAnalytics('generate', { ...eventData,
+      this.logAnalytics('generate', {
+        ...eventData,
         errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
       }, { workflowStep: 'complete', statusCode: -1 });
       window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
