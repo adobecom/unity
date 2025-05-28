@@ -661,7 +661,8 @@ export default class UploadHandler {
       }
       if (this.actionBinder.workflowCfg.targetCfg.mfuUploadAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
         if (this.actionBinder.workflowCfg.targetCfg.mfuUploadOnlyPdfAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
-          const pdfFiles = files.filter(this.isPdf);
+          const pdfFiles = files.filter(file => this.isPdf(file));
+          this.actionBinder.showInfoToast = pdfFiles.length < files.length;
           let fileData = { type: 'mixed', size: filesData.size, count: pdfFiles.length, uploadType: 'mfu' };
           await this.uploadMultiFile(pdfFiles, fileData);
           return;

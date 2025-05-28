@@ -271,6 +271,7 @@ export default class ActionBinder {
     this.initActionListeners = this.initActionListeners.bind(this);
     this.abortController = new AbortController();
     this.uploadTimestamp = null;
+    this.showInfoToast = false;
     this.initialize();
   }
 
@@ -529,6 +530,9 @@ export default class ActionBinder {
     } catch (e) {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
+    }
+    if (this.showInfoToast) {
+      cOpts.payload.feedback = 'nonpdf';
     }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
