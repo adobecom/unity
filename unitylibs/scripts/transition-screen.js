@@ -24,16 +24,12 @@ export default class TransitionScreen {
     const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
       .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
     this.progressText = textNodes.map((node) => node.textContent.trim()).join(' ');
-    if (this.progressText) {
-      TransitionScreen.lastProgressText = this.progressText;
-    }
+    if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
     return textNodes;
   }
 
   updateProgressBar(layer, percentage) {
-    if (!this.progressText && TransitionScreen.lastProgressText) {
-      this.progressText = TransitionScreen.lastProgressText;
-    }
+    if (!this.progressText && TransitionScreen.lastProgressText) this.progressText = TransitionScreen.lastProgressText;
     const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
@@ -44,9 +40,7 @@ export default class TransitionScreen {
     const newStatus = (this.progressText && this.progressText.trim() !== '')
       ? this.progressText.replace('%', `${p}%`)
       : `${p}%`;
-    if (status && status.textContent !== newStatus) {
-      status.textContent = newStatus;
-    }
+    if (status && status.textContent !== newStatus) status.textContent = newStatus;
   }
 
   createProgressBar() {
