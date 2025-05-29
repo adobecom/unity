@@ -273,7 +273,6 @@ export default class ActionBinder {
     this.uploadTimestamp = null;
     this.showInfoToast = false;
     this.multiFileValidationFailure = false;
-    this.showInfoToast = false;
     this.initialize();
   }
 
