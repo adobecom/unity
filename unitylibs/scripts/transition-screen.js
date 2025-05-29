@@ -160,8 +160,10 @@ export default class TransitionScreen {
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
-      this.progressText = this.splashScreenEl.querySelector('.icon-area').innerText;
-      this.splashScreenEl.querySelector('.icon-area').innerText = '';
+      const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
+        .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+      this.progressText = textNodes.map((node) => node.textContent.trim()).join(' ');
+      textNodes.forEach((node) => { node.textContent = ''; });
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
