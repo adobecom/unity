@@ -15,6 +15,7 @@ export default class TransitionScreen {
     this.LOADER_INCREMENT = 30;
     this.isDesktop = isDesktop;
     this.headingElements = [];
+    this.progressText = '';
   }
 
   updateProgressBar(layer, percentage) {
@@ -25,7 +26,12 @@ export default class TransitionScreen {
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
     const status = layer.querySelector('#progress-status');
-    if (status?.textContent !== `${p}%`) status.textContent = `${p}%`;
+    const newStatus = (this.progressText && this.progressText.trim() !== '')
+      ? this.progressText.replace('%', `${p}%`)
+      : `${p}%`;
+    if (status && status.textContent !== newStatus) {
+      status.textContent = newStatus;
+    }
   }
 
   createProgressBar() {
@@ -143,20 +149,21 @@ export default class TransitionScreen {
     const desktopHeading = this.headingElements[2];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
+      this.splashScreenEl.setAttribute('aria-label', mobileHeading.innerText);
     }
     if (desktopHeading) {
-      if (this.isDesktop) {
-        desktopHeading.style.display = 'block';
-        this.splashScreenEl.setAttribute('aria-label', desktopHeading.innerText);
-      } else {
-        desktopHeading.style.display = 'none';
-      }
+      desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
+      this.splashScreenEl.setAttribute('aria-label', desktopHeading.innerText);
     }
   }
 
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
+      const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
+        .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+      this.progressText = textNodes.map((node) => node.textContent.trim()).join(' ');
+      textNodes.forEach((node) => { node.textContent = ''; });
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
