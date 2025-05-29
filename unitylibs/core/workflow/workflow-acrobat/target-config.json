@@ -6,7 +6,7 @@
     "target": ".verb-wrapper .verb-container",
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink": "/drafts/ruchika/unity/splash",
       "splashScreenParent": "body"
     },
     "actionMap": {
