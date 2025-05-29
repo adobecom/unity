@@ -26,7 +26,12 @@ export default class TransitionScreen {
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
     const status = layer.querySelector('#progress-status');
-    if (status?.textContent !== `${this.progressText.replace('%', `${p}%`)}`) status.textContent = `${this.progressText.replace('%', `${p}%`)}`;
+    const newStatus = (this.progressText && this.progressText.trim() !== '')
+      ? this.progressText.replace('%', `${p}%`)
+      : `${p}%`;
+    if (status && status.textContent !== newStatus) {
+      status.textContent = newStatus;
+    }
   }
 
   createProgressBar() {
