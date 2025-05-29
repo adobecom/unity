@@ -508,7 +508,7 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      await this.uploadSingleFile(file, fileData, !this.isPdf(file));
+      await this.uploadSingleFile(file, fileData, this.isPdf(file));
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
