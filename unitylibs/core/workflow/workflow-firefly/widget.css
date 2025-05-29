@@ -744,6 +744,14 @@
     text-align: left;
   }
 
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-top: 4px;
+  }
+
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-text,
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-desc {
     text-align: left;
