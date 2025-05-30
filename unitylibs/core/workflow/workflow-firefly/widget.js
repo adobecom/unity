@@ -241,13 +241,12 @@ export default class UnityWidget {
   async genDropdown(ph) {
     if (!this.hasPromptSuggestions) return null;
     const container = createTag('div', { class: 'dropdown-container' });
-
-    // Title and close button
+    const dropdownContent = createTag('div', { class: 'dropdown-content hidden' });
     const titleCon = createTag('div', { class: 'drop-title-con' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
-      class: 'drop hidden',
+      class: 'drop',
       'daa-lh': 'Marquee',
       role: 'listbox',
       'aria-labelledby': 'promptInput',
@@ -255,23 +254,20 @@ export default class UnityWidget {
     });
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
-      dd.classList.add('hidden');
+      dropdownContent.classList.add('hidden');
       dd.setAttribute('aria-hidden', 'true');
     });
     this.closeBtn = closeBtn;
     titleCon.append(title, closeBtn);
-    container.append(titleCon);
-
-    // Add options and separator to ul
+    dropdownContent.append(titleCon);
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
     dd.append(createTag('li', { class: 'drop-sep', role: 'presentation', 'aria-hidden': true }));
-    container.append(dd);
-
-    // Footer
+    dropdownContent.append(dd);
     const footer = this.createFooter(ph);
-    if (footer) container.append(footer);
+    if (footer) dropdownContent.append(footer);
+    container.append(dropdownContent);
     return container;
   }
 
