@@ -83,7 +83,7 @@ export default class ActionBinder {
     this.id = '';
     this.apiConfig = { ...unityConfig };
     this.inputField = this.getElement('.inp-field');
-    this.dropdown = this.getElement('.drop');
+    this.dropdown = this.getElement('.dropdown-content');
     this.widget = this.getElement('.ex-unity-widget');
     this.viewport = defineDeviceByScreenSize();
     this.widgetWrap = this.getElement('.ex-unity-wrap');

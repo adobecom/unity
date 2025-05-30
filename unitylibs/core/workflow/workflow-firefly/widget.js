@@ -237,30 +237,46 @@ export default class UnityWidget {
 
   async genDropdown(ph) {
     if (!this.hasPromptSuggestions) return null;
-    const dd = createTag('ul', {
-      id: 'prompt-dropdown',
-      class: 'drop hidden',
-      'daa-lh': 'Marquee',
-      role: 'listbox',
-      'aria-labelledby': 'promptInput',
-      'aria-hidden': 'true',
-    });
-    const titleCon = createTag('li', { class: 'drop-title-con' });
+    const dropdownContent = createTag('div', { class: 'dropdown-content hidden', role: 'listbox', 'aria-labelledby': 'promptInput' });
+    const titleCon = createTag('div', { class: 'drop-title-con' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
-      dd.classList.add('hidden');
-      dd.setAttribute('aria-hidden', 'true');
+      dropdownContent.classList.add('hidden');
+      dropdownContent.setAttribute('aria-hidden', 'true');
     });
     this.closeBtn = closeBtn;
     titleCon.append(title, closeBtn);
-    dd.append(titleCon);
+    dropdownContent.append(titleCon);
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dd, limited, ph);
-    dd.append(createTag('li', { class: 'drop-sep', role: 'presentation' }));
-    dd.append(this.createFooter(ph));
-    return dd;
+    limited.forEach(({ prompt, assetid, displayPrompt }) => {
+      const item = createTag('div', {
+        id: assetid,
+        class: 'drop-item',
+        role: 'option',
+        tabindex: '0',
+        'aria-label': prompt,
+        'aria-description': `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`,
+        'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
+      }, `<svg><use xlink:href='#unity-prompt-icon'></use></svg> ${displayPrompt}`);
+      dropdownContent.append(item);
+    });
+    dropdownContent.append(createTag('div', { class: 'drop-sep', 'aria-hidden': 'true' }));
+    const footer = createTag('div', { class: 'drop-footer' });
+    const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
+    const tipCon = createTag('div', { id: 'tip-content', class: 'tip-con', tabindex: '-1', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` }, '<svg><use xlink:href="#unity-info-icon"></use></svg>');
+    const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
+    const tipDesc = createTag('span', { class: 'tip-desc', id: 'tip-desc' }, tipEl?.innerText || '');
+    tipCon.append(tipText, tipDesc);
+    const legalEl = this.el.querySelector('.icon-legal')?.closest('li');
+    const legalCon = createTag('div', { class: 'legal-con' });
+    const legalLink = legalEl?.querySelector('a');
+    const legalText = createTag('a', { href: legalLink?.href || '#', class: 'legal-text' }, legalLink?.innerText || 'Legal');
+    legalCon.append(legalText);
+    footer.append(tipCon, legalCon);
+    dropdownContent.append(footer);
+    return dropdownContent;
   }
 
   createFooter(ph) {
