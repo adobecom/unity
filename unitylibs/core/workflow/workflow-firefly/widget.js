@@ -142,6 +142,7 @@ export default class UnityWidget {
     }, `<img src="${href}" alt="" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    this.selectedVerbText = selectedVerb?.textContent.trim();
     if (verbs.length <= 1) {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
@@ -190,7 +191,6 @@ export default class UnityWidget {
       if (idx === 0) {
         item.classList.add('selected');
         item.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
-        this.selectedVerbText = name;
       }
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
