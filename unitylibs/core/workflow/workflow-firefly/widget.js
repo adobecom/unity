@@ -248,7 +248,7 @@ export default class UnityWidget {
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
     });
-    const titleCon = createTag('li', { class: 'drop-title-con' });
+    const titleCon = createTag('li', { class: 'drop-title-con', 'aria-disabled': true });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
@@ -261,13 +261,13 @@ export default class UnityWidget {
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
-    dd.append(createTag('li', { class: 'drop-sep' }));
+    dd.append(createTag('li', { class: 'drop-sep', role: 'presentation' }));
     dd.append(this.createFooter(ph));
     return dd;
   }
 
   createFooter(ph) {
-    const footer = createTag('li', { class: 'drop-footer' });
+    const footer = createTag('li', { class: 'drop-footer', 'aria-disabled': true });
     const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
     const tipCon = createTag('div', { id: 'tip-content', class: 'tip-con', tabindex: '-1', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` }, '<svg><use xlink:href="#unity-info-icon"></use></svg>');
     const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
