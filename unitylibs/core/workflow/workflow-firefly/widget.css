@@ -755,3 +755,7 @@
     white-space: nowrap;
   }
 }
+
+.dropdown-content.hidden {
+  display: none;
+}
