@@ -755,3 +755,11 @@
     white-space: nowrap;
   }
 }
+
+/* Ensure .drop-title-con, .drop-sep, and .drop-footer are block elements inside .drop */
+.drop .drop-title-con,
+.drop .drop-sep,
+.drop .drop-footer {
+  display: block;
+  width: 100%;
+}

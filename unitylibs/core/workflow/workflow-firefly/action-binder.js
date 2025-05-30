@@ -366,7 +366,7 @@ export default class ActionBinder {
     let tipCon = null;
     if (this.viewport !== 'MOBILE') tipCon = this.dropdown?.querySelector('.tip-con');
     if (dynamicItems.length > 0) return tipCon ? [...dynamicItems, tipCon] : dynamicItems;
-    const allItems = Array.from(this.dropdown?.querySelectorAll('.drop-item'));
+    const allItems = Array.from(this.dropdown?.querySelectorAll('li.drop-item'));
     return tipCon ? [...allItems, tipCon] : allItems;
   }
 
