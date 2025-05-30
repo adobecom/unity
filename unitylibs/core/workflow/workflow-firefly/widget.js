@@ -33,7 +33,7 @@ export default class UnityWidget {
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
     let dropdown = null;
     if (this.hasPromptSuggestions) dropdown = await this.genDropdown(this.workflowCfg.placeholder);
-    const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
+    const comboboxContainer = createTag('div', { class: 'autocomplete' });
     comboboxContainer.append(inputWrapper);
     if (dropdown) comboboxContainer.append(dropdown);
     this.widget.append(comboboxContainer);
@@ -65,12 +65,10 @@ export default class UnityWidget {
 
   hidePromptDropdown() {
     const dropdown = this.widget.querySelector('#prompt-dropdown');
-    const inputField = this.widget.querySelector('.inp-field');
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
-      if (inputField) inputField.setAttribute('aria-expanded', 'false');
     }
   }
 
@@ -199,7 +197,6 @@ export default class UnityWidget {
       'aria-autocomplete': 'list',
       'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
-      'aria-expanded': 'false',
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
@@ -248,7 +245,7 @@ export default class UnityWidget {
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
     });
-    const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
+    const titleCon = createTag('li', { class: 'drop-title-con' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
@@ -261,7 +258,7 @@ export default class UnityWidget {
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
-    dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
+    dd.append(createTag('li', { class: 'drop-sep', role: 'presentation' }));
     dd.append(this.createFooter(ph));
     return dd;
   }
@@ -286,7 +283,7 @@ export default class UnityWidget {
     if (!cfg) return null;
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}` });
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbType}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
     this.genBtn = btn;
