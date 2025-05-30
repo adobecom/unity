@@ -33,7 +33,7 @@ export default class UnityWidget {
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
     let dropdown = null;
     if (this.hasPromptSuggestions) dropdown = await this.genDropdown(this.workflowCfg.placeholder);
-    const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
+    const comboboxContainer = createTag('div', { class: 'autocomplete' });
     comboboxContainer.append(inputWrapper);
     if (dropdown) comboboxContainer.append(dropdown);
     this.widget.append(comboboxContainer);
@@ -65,12 +65,10 @@ export default class UnityWidget {
 
   hidePromptDropdown() {
     const dropdown = this.widget.querySelector('#prompt-dropdown');
-    const inputField = this.widget.querySelector('.inp-field');
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
-      if (inputField) inputField.setAttribute('aria-expanded', 'false');
     }
   }
 
@@ -199,7 +197,6 @@ export default class UnityWidget {
       'aria-autocomplete': 'list',
       'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
-      'aria-expanded': 'false',
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
