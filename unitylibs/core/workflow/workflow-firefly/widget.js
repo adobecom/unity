@@ -240,6 +240,11 @@ export default class UnityWidget {
 
   async genDropdown(ph) {
     if (!this.hasPromptSuggestions) return null;
+    const container = createTag('div', { class: 'dropdown-container' });
+
+    // Title and close button
+    const titleCon = createTag('div', { class: 'drop-title-con' });
+    const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
       class: 'drop hidden',
@@ -248,8 +253,6 @@ export default class UnityWidget {
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
     });
-    const titleCon = createTag('li', { class: 'drop-title-con' });
-    const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
       dd.classList.add('hidden');
@@ -257,17 +260,23 @@ export default class UnityWidget {
     });
     this.closeBtn = closeBtn;
     titleCon.append(title, closeBtn);
-    dd.append(titleCon);
+    container.append(titleCon);
+
+    // Add options and separator to ul
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
-    dd.append(createTag('li', { class: 'drop-sep' }));
-    dd.append(this.createFooter(ph));
-    return dd;
+    dd.append(createTag('li', { class: 'drop-sep', role: 'presentation', 'aria-hidden': true }));
+    container.append(dd);
+
+    // Footer
+    const footer = this.createFooter(ph);
+    if (footer) container.append(footer);
+    return container;
   }
 
   createFooter(ph) {
-    const footer = createTag('li', { class: 'drop-footer' });
+    const footer = createTag('div', { class: 'drop-footer' });
     const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
     const tipCon = createTag('div', { id: 'tip-content', class: 'tip-con', tabindex: '-1', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` }, '<svg><use xlink:href="#unity-info-icon"></use></svg>');
     const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
