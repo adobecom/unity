@@ -522,10 +522,7 @@ export default class UploadHandler {
     try {
       const { blobDataArray, assetDataArray, fileTypeArray } = await this.createInitialAssets(files, workflowId, maxConcurrentFiles);
       if (assetDataArray.length === 0) {
-        await this.actionBinder.dispatchErrorToast('pre_upload_error_create_asset', error.status || 500, `Error during asset creation or blob retrieval: ${error.message}`, false, true, {
-          code: 'pre_upload_error_create_asset',
-          desc: 'No assets created for the files, error is: ' + error.message,
-        });
+        await this.actionBinder.dispatchErrorToast('pre_upload_error_create_asset', 500, `Error during asset creation or blob retrieval:`, false, true, {code: 'pre_upload_error_create_asset', desc: 'No assets created for the files, error is:',});
         return;
       }
       this.actionBinder.LOADER_LIMIT = 75;
@@ -547,16 +544,14 @@ export default class UploadHandler {
         await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload_exception', error.status || 500, `Error during chunk upload: ${error.message}`, false, true, {
           code: 'upload_warn_chunk_upload_exception',
           subCode: error.status,
-          desc: 'Exception during chunk upload: ' + error.message,
+          desc: `Exception during chunk upload: ${error.message}`,
         });
       }
       if (failedFiles.size === files.length) {
         await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`, false, true, { code: 'upload_error_chunk_upload', desc: `${failedFiles}` });
         return;
       }
-      const uploadedAssets = assetDataArray.filter((_, index) => 
-        !(failedFiles && [...failedFiles].some(failed => failed.fileIndex === index))
-      );
+      const uploadedAssets = assetDataArray.filter((_, index) =>!(failedFiles && [...failedFiles].some(failed => failed.fileIndex === index)));
       this.actionBinder.operations.push(workflowId);
       const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets);
       await this.deleteFailedAssets(assetsToDelete);
