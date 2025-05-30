@@ -509,6 +509,15 @@
   line-height: var(--type-detail-s-lh);
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-text,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-desc,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con .legal-text {
+  text-align: start;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con .legal-text:focus {
   outline: 2px solid #005FCC;
 }
