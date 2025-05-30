@@ -449,7 +449,6 @@ export default class ActionBinder {
   showDropdown() {
     this.dropdown?.classList.remove('hidden');
     this.dropdown?.removeAttribute('inert');
-    // this.inputField.setAttribute('aria-expanded', 'true');
     this.dropdown?.removeAttribute('aria-hidden');
     document.addEventListener('click', this.boundOutsideClickHandler, true);
   }
@@ -459,7 +458,6 @@ export default class ActionBinder {
       this.dropdown?.classList.add('hidden');
       this.dropdown?.setAttribute('inert', '');
       this.dropdown?.setAttribute('aria-hidden', 'true');
-      // this.inputField.setAttribute('aria-expanded', 'false');
       document.removeEventListener('click', this.boundOutsideClickHandler, true);
     }
   }
