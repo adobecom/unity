@@ -240,34 +240,52 @@ export default class UnityWidget {
 
   async genDropdown(ph) {
     if (!this.hasPromptSuggestions) return null;
+    const container = createTag('div', { class: 'dropdown-container' });
+    const dropdownContent = createTag('div', { class: 'dropdown-content hidden' });
     const dd = createTag('ul', {
       id: 'prompt-dropdown',
-      class: 'drop hidden',
+      class: 'drop',
       'daa-lh': 'Marquee',
       role: 'listbox',
       'aria-labelledby': 'promptInput',
       'aria-hidden': 'true',
     });
-    const titleCon = createTag('li', { class: 'drop-title-con', 'aria-labelledby': 'prompt-suggestions' });
+    // Create the title and close button as a div
+    const titleCon = createTag('div', { class: 'drop-title-con' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
     closeBtn.addEventListener('click', () => {
-      dd.classList.add('hidden');
+      dropdownContent.classList.add('hidden');
       dd.setAttribute('aria-hidden', 'true');
     });
     this.closeBtn = closeBtn;
     titleCon.append(title, closeBtn);
-    dd.append(titleCon);
+    dropdownContent.append(titleCon);
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
-    dd.append(createTag('li', { class: 'drop-sep', role: 'separator' }));
-    dd.append(this.createFooter(ph));
-    return dd;
+    dd.append(createTag('li', { class: 'drop-sep', role: 'presentation', 'aria-hidden': true }));
+    dropdownContent.append(dd);
+    // Create the footer as a div and append after the ul
+    const footer = createTag('div', { class: 'drop-footer' });
+    const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
+    const tipCon = createTag('div', { id: 'tip-content', class: 'tip-con', tabindex: '-1', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` }, '<svg><use xlink:href="#unity-info-icon"></use></svg>');
+    const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
+    const tipDesc = createTag('span', { class: 'tip-desc', id: 'tip-desc' }, tipEl?.innerText || '');
+    tipCon.append(tipText, tipDesc);
+    const legalEl = this.el.querySelector('.icon-legal')?.closest('li');
+    const legalCon = createTag('div', { class: 'legal-con' });
+    const legalLink = legalEl?.querySelector('a');
+    const legalText = createTag('a', { href: legalLink?.href || '#', class: 'legal-text' }, legalLink?.innerText || 'Legal');
+    legalCon.append(legalText);
+    footer.append(tipCon, legalCon);
+    dropdownContent.append(footer);
+    container.append(dropdownContent);
+    return container;
   }
 
   createFooter(ph) {
-    const footer = createTag('li', { class: 'drop-footer' });
+    const footer = createTag('li', { class: 'drop-footer', role: 'presentation', 'aria-hidden': 'true' });
     const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
     const tipCon = createTag('div', { id: 'tip-content', class: 'tip-con', tabindex: '-1', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` }, '<svg><use xlink:href="#unity-info-icon"></use></svg>');
     const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
@@ -286,7 +304,7 @@ export default class UnityWidget {
     if (!cfg) return null;
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}` });
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbType}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
     this.genBtn = btn;
