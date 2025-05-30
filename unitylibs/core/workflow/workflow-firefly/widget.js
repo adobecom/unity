@@ -12,6 +12,7 @@ export default class UnityWidget {
     this.spriteCon = spriteCon;
     this.prompts = null;
     this.selectedVerbType = '';
+    this.selectedVerbText = '';
     this.closeBtn = null;
     this.promptItems = [];
     this.genBtn = null;
@@ -91,24 +92,38 @@ export default class UnityWidget {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const verbLinkTexts = [];
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
         listLink.parentElement.setAttribute('aria-label', `${listLink.getAttribute('data-verb-type')} prompt: ${inputPlaceHolder}`);
+        const text = listLink.textContent.trim();
+        if (text) verbLinkTexts.push(text);
       });
+      verbLinkTexts.sort((a, b) => b.length - a.length);
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
       const copiedNodes = link.cloneNode(true).childNodes;
       copiedNodes[0].remove();
       this.selectedVerbType = link.getAttribute('data-verb-type');
+      this.selectedVerbText = link.textContent.trim();
       selectedElement.replaceChildren(...copiedNodes, menuIcon);
       selectedElement.dataset.selectedVerb = this.selectedVerbType;
-      selectedElement.setAttribute('aria-label', `${this.selectedVerbType} prompt: ${inputPlaceHolder}`);
+      selectedElement.setAttribute('aria-label', `${this.selectedVerbText} prompt: ${inputPlaceHolder}`);
       selectedElement.focus();
-      link.parentElement.setAttribute('aria-label', `${this.selectedVerbType} prompt selected:  ${inputPlaceHolder}`);
+      link.parentElement.setAttribute('aria-label', `${this.selectedVerbText} prompt selected:  ${inputPlaceHolder}`);
       this.updateDropdownForVerb(this.selectedVerbType);
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       this.updateAnalytics(this.selectedVerbType);
+      if (this.genBtn) {
+        this.genBtn.setAttribute(
+          'aria-label',
+          (this.genBtn.getAttribute('aria-label') || '').replace(
+            new RegExp(`\\b(${verbLinkTexts.join('|')})\\b`),
+            this.selectedVerbText,
+          ),
+        );
+      }
     };
   }
 
@@ -127,6 +142,7 @@ export default class UnityWidget {
     }, `<img src="${href}" alt="" />${selectedVerbType}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    this.selectedVerbText = selectedVerb?.textContent.trim();
     if (verbs.length <= 1) {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
@@ -164,7 +180,7 @@ export default class UnityWidget {
       const icon = verb.nextElementSibling?.href;
       const item = createTag('li', {
         class: 'verb-item',
-        'aria-label': `${verbType} prompt: ${inputPlaceHolder}`,
+        'aria-label': `${name} prompt: ${inputPlaceHolder}`,
       });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const link = createTag('a', {
@@ -174,7 +190,7 @@ export default class UnityWidget {
       }, `<img src="${icon}" alt="" />${name}`);
       if (idx === 0) {
         item.classList.add('selected');
-        item.setAttribute('aria-label', `${verbType} prompt selected: ${inputPlaceHolder}`);
+        item.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
       }
       verbs[0].classList.add('selected');
       link.prepend(selectedIcon);
@@ -280,7 +296,7 @@ export default class UnityWidget {
     if (!cfg) return null;
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbType}` });
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
     this.genBtn = btn;
