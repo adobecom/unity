@@ -418,8 +418,7 @@ export default class ActionBinder {
       'pdf-to-word': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/rtf'],
       'pdf-to-excel': ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
       'pdf-to-ppt': ['application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
-      'pdf-to-jpg': ['image/jpeg'],
-      'pdf-to-png': ['image/png'],
+      'pdf-to-image': ['image/jpeg', 'image/png'],
     };
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
