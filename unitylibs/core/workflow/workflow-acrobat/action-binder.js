@@ -635,7 +635,7 @@ export default class ActionBinder {
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
-      if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
+      if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
     } catch (e) {
