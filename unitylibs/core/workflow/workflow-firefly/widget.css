@@ -357,6 +357,12 @@
   padding: var(--spacing-xxs) var(--spacing-xs);
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-suggestions-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .drop-title {
   font-weight: 700;
   font-size: var(--type-body-s-size);
@@ -452,13 +458,8 @@
   background-color: #e6e6e6;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-sep {
-  border-top: 1px solid #E1E1E1;
-  margin: 0 16px;
-}
-
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
-  padding: var(--spacing-xxs) var(--spacing-xs);
+  margin: 0 var(--spacing-xs) var(--spacing-xxs) var(--spacing-xs);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -466,6 +467,8 @@
   color: #292929;
   font-weight: 400;
   line-height: var(--type-body-s-lh);
+  border-top: 1px solid #E1E1E1;
+  padding-top: 8px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con {
@@ -497,7 +500,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con::before {
   content: "|";
   color: #C6C6C6;
-  margin-right: var(--spacing-xxs);;
+  margin-inline-end: var(--spacing-xxs);
   font-size: 12px;
 }
 
@@ -625,7 +628,7 @@
 
   .unity-enabled .interactive-area .verbs-container {
     order: 2;
-    border-right: none;
+    border-inline-end: none;
     height: auto;
     position: relative;
   }
