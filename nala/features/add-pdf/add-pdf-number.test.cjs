@@ -1,39 +1,39 @@
 import path from 'path';
 import { expect, test } from '@playwright/test';
-import { features } from './pdf-editor.spec.cjs';
-import PdfEditor from './pdf-editor.page.cjs';
+import { features } from './add-pdf-number.spec.cjs';
+import AddPdfNumberPage from './add-pdf-number.page.cjs';
 
-const pdfFilePath = path.resolve(__dirname, '../../assets/1-PDF-pdf-editor.pdf');
+const pdfFilePath = path.resolve(__dirname, '../../assets/1-PDF-AddPageNumbers-pdf.pdf');
 
-let pdfEditor;
+let addPdf;
 
 const unityLibs = process.env.UNITY_LIBS || '';
 
-test.describe('Unity PDF Editor test suite', () => {
+test.describe('Unity Add PDF page number test suite', () => {
   test.beforeEach(async ({ page }) => {
-    pdfEditor = new PdfEditor(page);
+    addPdf = new AddPdfNumberPage(page);
   });
 
-  // Test 0 : PDF Editor or Add-Comment
+  // Test 0 : Add PDF Page Numbers
   test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
     console.info(`[Test Page]: ${baseURL}${features[0].path}${unityLibs}`);
     const { data } = features[0];
 
-    await test.step('step-1: Go to PDF Editor test page', async () => {
+    await test.step('step-1: Go to Add Pdf page numbers test page', async () => {
       await page.goto(`${baseURL}${features[0].path}${unityLibs}`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(`${baseURL}${features[0].path}${unityLibs}`);
     });
 
-    await test.step('step-2: Verify PDF Editor or Add Comment content/specs', async () => {
-      await expect(await pdfEditor.PdfEditor).toBeVisible();
-      await expect(await pdfEditor.dropZone).toBeVisible();
-      await expect(await pdfEditor.verbImage).toBeVisible();
-      await expect(await pdfEditor.acrobatIcon).toBeVisible();
-      const actualText = await pdfEditor.verbHeader.textContent();
+    await test.step('step-2: Verify PDF Add page numbers content/specs', async () => {
+      await expect(await addPdf.addPdf).toBeVisible();
+      await expect(await addPdf.dropZone).toBeVisible();
+      await expect(await addPdf.verbImage).toBeVisible();
+      await expect(await addPdf.acrobatIcon).toBeVisible();
+      const actualText = await addPdf.verbHeader.textContent();
       expect(actualText.trim()).toBe(data.verbHeading);
-      await expect(await pdfEditor.verbTitle).toContainText(data.verbTitle);
-      await expect(await pdfEditor.verbCopy).toContainText(data.verbCopy);
+      await expect(await addPdf.verbTitle).toContainText(data.verbTitle);
+      await expect(await addPdf.verbCopy).toContainText(data.verbCopy);
     });
 
     await test.step('step-3: Upload a sample PDF file', async () => {
@@ -48,7 +48,7 @@ test.describe('Unity PDF Editor test suite', () => {
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
       expect(urlObj.searchParams.get('x_api_client_id')).toBe('unity');
-      expect(urlObj.searchParams.get('x_api_client_location')).toBe('add-comment');
+      expect(urlObj.searchParams.get('x_api_client_location')).toBe('number-pages');
       expect(urlObj.searchParams.get('user')).toBe('frictionless_new_user');
       expect(urlObj.searchParams.get('attempts')).toBe('1st');
       console.log({

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { features } from './compress-pdf.spec.cjs';
 import CompressPdf from './compress-pdf.page.cjs';
 
-const pdfFilePath = path.resolve(__dirname, '../../assets/1-PDF-compressed.pdf');
+const pdfFilePath = path.resolve(__dirname, '../../assets/1-PDF-compress-pdf.pdf');
 
 let compressPdf;
 
