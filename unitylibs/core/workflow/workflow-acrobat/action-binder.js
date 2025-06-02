@@ -76,7 +76,7 @@ class ServiceHandler {
     }
   }
 
-  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 120) {
+  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
     let timeLapsed = 0;
     while (timeLapsed < maxRetryDelay) {
       this.handleAbortedRequest(url, options);
