@@ -275,6 +275,7 @@ export default class ActionBinder {
     this.initActionListeners = this.initActionListeners.bind(this);
     this.abortController = new AbortController();
     this.uploadTimestamp = null;
+    this.showInfoToast = false;
     this.multiFileValidationFailure = false;
     this.initialize();
   }
@@ -533,9 +534,8 @@ export default class ActionBinder {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    if (this.multiFileValidationFailure) {
-      cOpts.payload.feedback = "uploaderror";
-    }
+    if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
+    if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
@@ -637,7 +637,7 @@ export default class ActionBinder {
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
-      if (this.multiFileFailure && this.redirectUrl.includes('#folder')) {
+      if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
     } catch (e) {
