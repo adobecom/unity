@@ -405,7 +405,6 @@ export default class ActionBinder {
       }
       return fileName;
     } catch (error) {
-      console.error('Error sanitizing filename:', error);
       await this.dispatchErrorToast('error_generic', 500, `Error renaming file: ${rawFileName}`, false, true, {
         code: 'pre_upload_error_renaming_file',
         subCode: error.name,
@@ -451,7 +450,7 @@ export default class ActionBinder {
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessage });
         fail = true;
-        errorTypes.add(errorMessage.key);
+        errorTypes.add(errorMessage);
       }
       if (!file.size) {
         if (this.MULTI_FILE) {
@@ -459,7 +458,7 @@ export default class ActionBinder {
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
-        errorTypes.add('EMPTY_FILE');
+        errorTypes.add(errorMessages.EMPTY_FILE);
       }
       if (file.size > this.limits.maxFileSize) {
         if (this.MULTI_FILE) {
@@ -467,7 +466,7 @@ export default class ActionBinder {
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
-        errorTypes.add('FILE_TOO_LARGE');
+        errorTypes.add(errorMessages.FILE_TOO_LARGE);
       }
       if (!fail) {
         allFilesFailed = false;
@@ -478,11 +477,11 @@ export default class ActionBinder {
       if (this.MULTI_FILE) {
         if (errorTypes.size === 1) {
           const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorMessages[errorType], null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages[errorType] });
+          await this.dispatchErrorToast(errorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorType });
         } else {
           let errorDesc = '';
           for (const errorType of errorTypes) {
-            errorDesc += `${errorMessages[errorType]}, `;
+            errorDesc += `${errorType}, `;
           }
           errorDesc = errorDesc.slice(0, -2);
           await this.dispatchErrorToast('error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
