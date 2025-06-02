@@ -139,12 +139,14 @@ export default class ActionBinder {
     UNSUPPORTED_TYPE: 'validation_error_unsupported_type',
     EMPTY_FILE: 'validation_error_empty_file',
     FILE_TOO_LARGE: 'validation_error_file_too_large',
+    SAME_FILE_TYPE: 'validation_error_file_same_type',
   };
 
   static MULTI_FILE_ERROR_MESSAGES = {
     UNSUPPORTED_TYPE: 'validation_error_unsupported_type_multi',
     EMPTY_FILE: 'validation_error_empty_file_multi',
     FILE_TOO_LARGE: 'validation_error_file_too_large_multi',
+    SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
   };
 
   static LIMITS_MAP = {
@@ -443,17 +445,17 @@ export default class ActionBinder {
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
-        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = 'validation_error_file_same_type';
+        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast(errorMessage, null, `File type: ${file.type}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessage });
+          await this.dispatchErrorToast('validation_warn_validate_files', null, `File type: ${file.type}`, true, true, { code: 'validation_warn_validate_files', subCode: errorMessage });
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessage });
         fail = true;
-        errorTypes.add('UNSUPPORTED_TYPE');
+        errorTypes.add(errorMessage.key);
       }
       if (!file.size) {
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, 'Empty file', true, false, { code: 'validation_warn_validate_files', subCode: errorMessages.EMPTY_FILE });
+          await this.dispatchErrorToast('validation_warn_validate_files', null, 'Empty file', true, true, { code: 'validation_warn_validate_files', subCode: errorMessages.EMPTY_FILE });
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
@@ -461,7 +463,7 @@ export default class ActionBinder {
       }
       if (file.size > this.limits.maxFileSize) {
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, true, false, { code: 'validation_warn_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
+          await this.dispatchErrorToast('validation_warn_validate_files', null, `File too large: ${file.size}`, true, true, { code: 'validation_warn_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
