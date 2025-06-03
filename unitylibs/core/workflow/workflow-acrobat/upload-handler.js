@@ -522,7 +522,7 @@ export default class UploadHandler {
     try {
       const { blobDataArray, assetDataArray, fileTypeArray } = await this.createInitialAssets(files, workflowId, maxConcurrentFiles);
       if (assetDataArray.length === 0) {
-        await this.actionBinder.dispatchErrorToast('pre_upload_error_create_asset', 500, `Error during asset creation or blob retrieval:`, false, true, {code: 'pre_upload_error_create_asset', desc: 'No assets created for the files, error is:',});
+        await this.actionBinder.dispatchErrorToast('pre_upload_error_create_asset', 500, 'Error during asset creation or blob retrieval', false, true, {code: 'pre_upload_error_create_asset'});
         return;
       }
       this.actionBinder.LOADER_LIMIT = 75;
