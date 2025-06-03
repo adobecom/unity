@@ -644,7 +644,7 @@ export default class ActionBinder {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
         
       } else {
-        console.log(`redirecturl: ${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`);
+        console.log(`redirecturl: ${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`);
         window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
       }
     } catch (e) {
