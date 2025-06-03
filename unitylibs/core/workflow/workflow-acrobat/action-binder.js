@@ -534,7 +534,7 @@ export default class ActionBinder {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    if(!(this.redirectUrl.includes('feedback=nonpdf') || this.redirectUrl.includes('feedback=multifile'))) {
+    if(!(cOpts.payload.feedback)) {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
