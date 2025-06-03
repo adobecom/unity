@@ -534,8 +534,10 @@ export default class ActionBinder {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
-    if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
+    if(!(this.redirectUrl.includes('feedback=nonpdf') || this.redirectUrl.includes('feedback=multifile'))) {
+      if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
+      if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
+    }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
