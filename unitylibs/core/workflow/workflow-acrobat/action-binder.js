@@ -186,7 +186,7 @@ export default class ActionBinder {
     pre_upload_error_renaming_file: -52,
     pre_upload_error_fetch_redirect_url: -53,
     pre_upload_error_fetching_access_token: -54,
-    pre_upload_error_create_asset: -54,
+    pre_upload_error_create_asset: -55,
     validation_error_validate_files: -100,
     validation_error_unsupported_type: -101,
     validation_error_empty_file: -102,
@@ -213,7 +213,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload: -600,
     upload_warn_chunk_upload_exception: -601,
     pre_upload_warn_renamed_invalid_file_name: -602,
-    warn_delete_asset: -603,
+    upload_warn_delete_asset: -603,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -534,8 +534,10 @@ export default class ActionBinder {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
     }
-    if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
-    if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
+    if(!(cOpts.payload.feedback)) {
+      if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
+      if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
+    }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
