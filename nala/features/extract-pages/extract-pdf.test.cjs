@@ -14,7 +14,7 @@ test.describe('Unity Rearrange PDF test suite', () => {
     extractPages = new ExtractPages(page);
   });
 
-  // Test 0 : Rearrange PDF Page Numbers
+  // Test 0 : Extract PDF
   test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
     console.info(`[Test Page]: ${baseURL}${features[0].path}${unityLibs}`);
     const { data } = features[0];
