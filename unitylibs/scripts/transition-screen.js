@@ -158,7 +158,6 @@ export default class TransitionScreen {
     const desktopHeading = this.headingElements[2];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
-      this.splashScreenEl.setAttribute('aria-label', mobileHeading.innerText);
     }
     if (desktopHeading) {
       desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
