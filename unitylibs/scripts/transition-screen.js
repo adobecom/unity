@@ -161,7 +161,7 @@ export default class TransitionScreen {
     }
     if (desktopHeading) {
       desktopHeading.style.display = (this.isDesktop && desktopHeading) ? 'block' : 'none';
-      this.splashScreenEl.setAttribute('aria-label', desktopHeading.innerText);
+      if (this.isDesktop) this.splashScreenEl.setAttribute('aria-label', desktopHeading.innerText);
     }
   }
 
