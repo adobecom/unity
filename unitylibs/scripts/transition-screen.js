@@ -166,6 +166,7 @@ export default class TransitionScreen {
       } else {
         desktopHeading.style.display = 'none';
       }
+    }
   }
 
   async showSplashScreen(displayOn = false) {
