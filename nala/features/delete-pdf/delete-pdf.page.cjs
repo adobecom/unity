@@ -1,7 +1,7 @@
 export default class DeletePdf {
   constructor(page, nth = 0) {
     this.page = page;
-    // compress-pdf widget locators
+    // delete-pdf widget locators
     this.section = this.page.locator('.section').nth(nth);
     this.deletePdf = this.page.locator('.delete-pages.unity-enabled').nth(nth);
     this.dropZone = this.deletePdf.locator('#drop-zone');
