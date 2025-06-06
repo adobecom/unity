@@ -191,7 +191,7 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: flex;
-  padding-right: var(--spacing-xxs);
+  padding-inline-end: var(--spacing-xxs);
   align-items: center;
   border-radius: var(--spacing-m);
   gap: var(--spacing-s);
@@ -357,6 +357,12 @@
   padding: var(--spacing-xxs) var(--spacing-xs);
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-suggestions-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .drop-title {
   font-weight: 700;
   font-size: var(--type-body-s-size);
@@ -452,13 +458,8 @@
   background-color: #e6e6e6;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-sep {
-  border-top: 1px solid #E1E1E1;
-  margin: 0 16px;
-}
-
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
-  padding: var(--spacing-xxs) var(--spacing-xs);
+  margin: 0 var(--spacing-xs) var(--spacing-xxs) var(--spacing-xs);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -466,6 +467,8 @@
   color: #292929;
   font-weight: 400;
   line-height: var(--type-body-s-lh);
+  border-top: 1px solid #E1E1E1;
+  padding-top: 8px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con {
@@ -497,7 +500,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con::before {
   content: "|";
   color: #C6C6C6;
-  margin-right: var(--spacing-xxs);;
+  margin-inline-end: var(--spacing-xxs);
   font-size: 12px;
 }
 
@@ -509,6 +512,15 @@
   line-height: var(--type-detail-s-lh);
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-text,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-desc,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con .legal-text {
+  text-align: start;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con .legal-text:focus {
   outline: 2px solid #005FCC;
 }
@@ -516,7 +528,7 @@
 .unity-enabled .interactive-area .verbs-container {
   display: flex;
   flex-wrap: wrap;
-  border-right: 1px solid rgb(0 0 0 / 9%);
+  border-inline-end: 1px solid rgb(0 0 0 / 9%);
   width: 144px;
   height: 70px;
   justify-content: flex-start;
@@ -563,6 +575,7 @@
   border-radius: 10px;
   color: #292929;
   margin: 8px 0 0;
+  min-width: 110px;
 }
 
 .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
@@ -574,7 +587,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px 10px 20px;
+  padding: 10px;
+  padding-inline-start: 25px;
   text-transform: capitalize;
   text-decoration: none;
   position: relative;
@@ -590,6 +604,10 @@
   top: 50%;
   left: 3px;
   transform: translateY(-50%);
+}
+
+[dir="rtl"] .unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+  right: 3px;
 }
 
 @media (max-width: 1024px) {
@@ -610,7 +628,7 @@
 
   .unity-enabled .interactive-area .verbs-container {
     order: 2;
-    border-right: none;
+    border-inline-end: none;
     height: auto;
     position: relative;
   }
@@ -626,9 +644,13 @@
   .unity-enabled .interactive-area .verb-list {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
+    left: calc(var(--spacing-m) * -1);
     transform: translateY(70px);
+  }
+
+  [dir="rtl"] .unity-enabled .interactive-area .verb-list {
+    left: unset;
+    right: calc(var(--spacing-m) * -1);
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
@@ -712,7 +734,13 @@
   }
 
   .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
-    width: 140px;
+    margin-top: 0;
+    left: calc(var(--spacing-s) * -1);
+  }
+
+  [dir="rtl"] .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
+    left: unset;
+    right: calc(var(--spacing-s) * -1);
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
