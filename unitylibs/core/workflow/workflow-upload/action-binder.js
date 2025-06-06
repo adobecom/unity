@@ -16,18 +16,19 @@ import {
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null, unityEl = null) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null, productName = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
+    this.productName = productName;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
       headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': options.targetProduct,
-        'x-unity-action': 'fileupload',
+        'x-unity-product': this.productName,
+        'x-unity-action': 'singlefileupload',
       }),
       ...options,
     };
@@ -375,6 +376,7 @@ export default class ActionBinder {
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
       this.unityEl,
+      this.workflowCfg.productName,
     );
     const actions = {
       A: (el, key) => {
