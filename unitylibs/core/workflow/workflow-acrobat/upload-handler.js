@@ -508,7 +508,7 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
       await this.transitionScreen.showSplashScreen(true);
-      await this.uploadSingleFile(file, fileData, !this.isPdf(file));
+      await this.uploadSingleFile(file, fileData, this.isPdf(file));
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
@@ -522,7 +522,7 @@ export default class UploadHandler {
     try {
       const { blobDataArray, assetDataArray, fileTypeArray } = await this.createInitialAssets(files, workflowId, maxConcurrentFiles);
       if (assetDataArray.length === 0) {
-        await this.dispatchGenericError(`No assets created for the files: ${JSON.stringify(filesData)}`);
+        await this.actionBinder.dispatchErrorToast('pre_upload_error_create_asset', 500, 'Error during asset creation or blob retrieval', false, true, {code: 'pre_upload_error_create_asset'});
         return;
       }
       this.actionBinder.LOADER_LIMIT = 75;
@@ -532,17 +532,26 @@ export default class UploadHandler {
       if (!redirectSuccess) return;
       this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
       this.actionBinder.setIsUploading(true);
-      const { failedFiles, attemptMap } = await this.chunkPdf(
-        assetDataArray,
-        blobDataArray,
-        fileTypeArray,
-        maxConcurrentChunks,
-      );
+      let failedFiles, attemptMap;
+      try {
+        ({ failedFiles, attemptMap } = await this.chunkPdf(
+          assetDataArray,
+          blobDataArray,
+          fileTypeArray,
+          maxConcurrentChunks,
+        ));
+      } catch (error) {
+        await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload_exception', error.status || 500, `Error during chunk upload: ${error.message}`, false, true, {
+          code: 'upload_warn_chunk_upload_exception',
+          subCode: error.status,
+          desc: `Exception during chunk upload: ${error.message}`,
+        });
+      }
       if (failedFiles.size === files.length) {
-        await this.dispatchGenericError(`One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`);
+        await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`, false, true, { code: 'upload_error_chunk_upload', desc: `${failedFiles}` });
         return;
       }
-      const uploadedAssets = assetDataArray.filter((_, index) => !failedFiles.has(index));
+      const uploadedAssets = assetDataArray.filter((_, index) =>!(failedFiles && [...failedFiles].some(failed => failed.fileIndex === index)));
       this.actionBinder.operations.push(workflowId);
       const { verifiedAssets, assetsToDelete } = await this.processUploadedAssets(uploadedAssets);
       await this.deleteFailedAssets(assetsToDelete);
@@ -661,7 +670,8 @@ export default class UploadHandler {
       }
       if (this.actionBinder.workflowCfg.targetCfg.mfuUploadAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
         if (this.actionBinder.workflowCfg.targetCfg.mfuUploadOnlyPdfAllowed.includes(this.actionBinder.workflowCfg.enabledFeatures[0])) {
-          const pdfFiles = files.filter(this.isPdf);
+          const pdfFiles = files.filter((file) => this.isPdf(file));
+          this.actionBinder.showInfoToast = pdfFiles.length < files.length;
           let fileData = { type: 'mixed', size: filesData.size, count: pdfFiles.length, uploadType: 'mfu' };
           await this.uploadMultiFile(pdfFiles, fileData);
           return;

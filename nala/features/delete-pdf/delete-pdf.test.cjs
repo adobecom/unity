@@ -1,39 +1,39 @@
 import path from 'path';
 import { expect, test } from '@playwright/test';
-import { features } from './compress-pdf.spec.cjs';
-import CompressPdf from './compress-pdf.page.cjs';
+import { features } from './delete-pdf.spec.cjs';
+import DeletePdf from './delete-pdf.page.cjs';
 
-const pdfFilePath = path.resolve(__dirname, '../../assets/1-PDF-compress-pdf.pdf');
+const pdfFilePath = path.resolve(__dirname, '../../assets/1-PDF-delete-pdf.pdf');
 
-let compressPdf;
+let deletePdf;
 
 const unityLibs = process.env.UNITY_LIBS || '';
 
-test.describe('Unity Compress PDF test suite', () => {
+test.describe('Unity Delete PDF test suite', () => {
   test.beforeEach(async ({ page }) => {
-    compressPdf = new CompressPdf(page);
+    deletePdf = new DeletePdf(page);
   });
 
-  // Test 0 : Compress PDF
+  // Test 0 : Delete PDF Pages
   test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
     console.info(`[Test Page]: ${baseURL}${features[0].path}${unityLibs}`);
     const { data } = features[0];
 
-    await test.step('step-1: Go to Compress PDF test page', async () => {
+    await test.step('step-1: Go to Delete Pdf page test page', async () => {
       await page.goto(`${baseURL}${features[0].path}${unityLibs}`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(`${baseURL}${features[0].path}${unityLibs}`);
     });
 
-    await test.step('step-2: Verify Compress PDF content/specs', async () => {
-      await expect(await compressPdf.compressPdf).toBeVisible();
-      await expect(await compressPdf.dropZone).toBeVisible();
-      await expect(await compressPdf.verbImage).toBeVisible();
-      await expect(await compressPdf.acrobatIcon).toBeVisible();
-      const actualText = await compressPdf.verbHeader.textContent();
+    await test.step('step-2: Verify Delete Pdf content/specs', async () => {
+      await expect(await deletePdf.deletePdf).toBeVisible();
+      await expect(await deletePdf.dropZone).toBeVisible();
+      await expect(await deletePdf.verbImage).toBeVisible();
+      await expect(await deletePdf.acrobatIcon).toBeVisible();
+      const actualText = await deletePdf.verbHeader.textContent();
       expect(actualText.trim()).toBe(data.verbHeading);
-      await expect(await compressPdf.verbTitle).toContainText(data.verbTitle);
-      await expect(await compressPdf.verbCopy).toContainText(data.verbCopy);
+      await expect(await deletePdf.verbTitle).toContainText(data.verbTitle);
+      await expect(await deletePdf.verbCopy).toContainText(data.verbCopy);
     });
 
     await test.step('step-3: Upload a sample PDF file', async () => {
@@ -48,7 +48,7 @@ test.describe('Unity Compress PDF test suite', () => {
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
       expect(urlObj.searchParams.get('x_api_client_id')).toBe('unity');
-      expect(urlObj.searchParams.get('x_api_client_location')).toBe('compress-pdf');
+      expect(urlObj.searchParams.get('x_api_client_location')).toBe('delete-pages');
       expect(urlObj.searchParams.get('user')).toBe('frictionless_new_user');
       expect(urlObj.searchParams.get('attempts')).toBe('1st');
       console.log({
