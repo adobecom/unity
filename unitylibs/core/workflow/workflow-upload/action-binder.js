@@ -25,7 +25,10 @@ class ServiceHandler {
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      headers: await getHeaders(unityConfig.apiKey, {
+        'x-unity-product': options.targetProduct,
+        'x-unity-action': 'fileupload',
+      }),
       ...options,
     };
     try {
