@@ -330,10 +330,11 @@ export default class ActionBinder {
   }
 
   getAdditionalHeaders() {
+    const verb = this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0];
     return {
-      'x-unity-dc-verb': this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0],
+      'x-unity-dc-verb': verb,
       'x-unity-product': this.workflowCfg.productName,
-      'x-unity-action': this.filesData?.uploadType || 'unknown',
+      'x-unity-action': verb,
     };
   }
 
