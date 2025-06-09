@@ -478,16 +478,12 @@ export default class ActionBinder {
     }
     if (allFilesFailed) {
       if (this.MULTI_FILE) {
+        const errorType = Array.from(errorTypes)[0];
         if (errorTypes.size === 1) {
-          const errorType = Array.from(errorTypes)[0];
           await this.dispatchErrorToast(errorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorType });
         } else {
-          let errorDesc = '';
-          for (const errorType of errorTypes) {
-            errorDesc += `${errorType}, `;
-          }
-          errorDesc = errorDesc.slice(0, -2);
-          await this.dispatchErrorToast('error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
+          const errorDesc = Array.from(errorTypes).join(', ');
+          await this.dispatchErrorToast(errorType, null, `All ${files.length} files failed validation. Error Types: ${errorDesc}`, false, true, { code: 'validation_error_validate_files', subCode: errorType, desc: errorDesc });
         }
       }
       return { isValid: false, validFiles};
