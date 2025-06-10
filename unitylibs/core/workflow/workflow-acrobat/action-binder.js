@@ -174,7 +174,7 @@ export default class ActionBinder {
     'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
     'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single'],
-    'ocr-pdf': ['hybrid', 'allowed-filetypes-all', 'page-limit-100', 'max-filesize-100-mb'],
+    'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
   };
@@ -376,20 +376,26 @@ export default class ActionBinder {
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
-  isMixedFileTypes(files) {
-    const fileTypes = new Set(files.map((file) => file.type));
-    return fileTypes.size > 1 ? 'mixed' : files[0].type;
+  async getFileExtension(file) {
+    const { getExtension } = await import('../../../utils/FileUtils.js');
+    return getExtension(file.name);
   }
 
-  async sanitizeFileName(rawFileName) {
+  async isMixedFileTypes(files) {
+    const extensions = await Promise.all(files.map((file) => this.getFileExtension(file)));
+    const fileTypes = new Set(extensions);
+    return fileTypes.size > 1 ? 'mixed' : extensions[0];
+  }
+
+  async sanitizeFileName(file) {
     try {
       const MAX_FILE_NAME_LENGTH = 255;
-      let fileName = rawFileName;
+      let fileName = file.name;
       if (!fileName || fileName === '.' || fileName === '..') {
         return '---';
       }
-      const { getExtension, removeExtension } = await import('../../../utils/FileUtils.js');
-      let ext = getExtension(fileName);
+      let ext = await this.getFileExtension(file);
+      const { removeExtension } = await import('../../../utils/FileUtils.js');
       const nameWithoutExtension = removeExtension(fileName);
       ext = ext.length > 0 ? `.${ext}` : '';
       fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase()) 
@@ -403,12 +409,12 @@ export default class ActionBinder {
         .replace(ENDING_SPACE_PERIOD_REGEX, '-')
         .replace(STARTING_SPACE_PERIOD_REGEX, '-')
         .replace(INVALID_CHARS_REGEX, '-');
-      if (rawFileName !== fileName) {
-        await this.dispatchErrorToast('pre_upload_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
+      if (file.name !== fileName) {
+        await this.dispatchErrorToast('pre_upload_warn_renamed_invalid_file_name', null, `Renamed ${file.name} to ${fileName}`, true)
       }
       return fileName;
     } catch (error) {
-      await this.dispatchErrorToast('error_generic', 500, `Error renaming file: ${rawFileName}`, false, true, {
+      await this.dispatchErrorToast('error_generic', 500, `Error renaming file: ${file.name}`, false, true, {
         code: 'pre_upload_error_renaming_file',
         subCode: error.name,
         desc: error.message,
@@ -419,10 +425,10 @@ export default class ActionBinder {
 
   isSameFileType(verb, fileType) {
     const verbToFileTypeMap = {
-      'pdf-to-word': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/rtf'],
-      'pdf-to-excel': ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-      'pdf-to-ppt': ['application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
-      'pdf-to-image': ['image/jpeg', 'image/png'],
+      'pdf-to-word': ['docx', 'doc', 'rtf'],
+      'pdf-to-excel': ['xls', 'xlsx'],
+      'pdf-to-ppt': ['ppt', 'pptx'],
+      'pdf-to-image': ['jpg', 'jpeg', 'png'],
     };
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
@@ -434,7 +440,6 @@ export default class ActionBinder {
     let allFilesFailed = true;
     const errorTypes = new Set();
     const validFiles = [];
-
     if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('validation_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, { 
         code: 'validation_error_validate_files', 
@@ -442,14 +447,14 @@ export default class ActionBinder {
       });
       return { isValid: false, validFiles };
     }
-
     for (const file of files) {
       let fail = false;
-      if (!this.limits.allowedFileTypes.includes(file.type)) {
+      const extension = await this.getFileExtension(file);
+      if (!this.limits.allowedFileTypes.includes(extension)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
-        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
+        if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], extension)) errorMessage = errorMessages.SAME_FILE_TYPE;
         if (this.MULTI_FILE) {
-          await this.dispatchErrorToast('validation_warn_validate_files', null, `File type: ${file.type}`, true, true, { code: 'validation_warn_validate_files', subCode: errorMessage });
+          await this.dispatchErrorToast('validation_warn_validate_files', null, `File type: ${extension}`, true, true, { code: 'validation_warn_validate_files', subCode: errorMessage });
           this.multiFileValidationFailure = true;
         } else await this.dispatchErrorToast(errorMessage, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessage });
         fail = true;
@@ -565,8 +570,8 @@ export default class ActionBinder {
   async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
-      const sanitizedFileName = await this.sanitizeFileName(file.name);
-      return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+      const sanitizedFileName = await this.sanitizeFileName(file);
+      return new File([file], sanitizedFileName, { type: await this.getFileExtension(file), lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
@@ -688,7 +693,7 @@ export default class ActionBinder {
     switch (value) {
       case 'upload':
         this.promiseStack = [];
-        this.filesData = { type: this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length > 1 ? 'mfu' : 'sfu' };
+        this.filesData = { type: await this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length > 1 ? 'mfu' : 'sfu' };
         this.dispatchAnalyticsEvent(eventName, this.filesData);
         if (uploadType === 'single') await this.processSingleFile(files);
         else if (uploadType === 'hybrid') await this.processHybrid(files);
