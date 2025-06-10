@@ -46,7 +46,7 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions.errorToastEl) return;
-    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
       const errorToast = element.querySelector('.alert-holder');
