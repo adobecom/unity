@@ -16,19 +16,19 @@ import {
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null, unityEl = null, productName = null) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null, worflowCfg = {}) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
-    this.productName = productName;
+    this.workflowCfg = worflowCfg;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
       headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': this.productName,
-        'x-unity-action': 'singlefileupload',
+        'x-unity-product': this.workflowCfg.productName,
+        'x-unity-action': this.workflowCfg.supportedFeatures.values().next().value,
       }),
       ...options,
     };
@@ -50,7 +50,7 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions.errorToastEl) return;
-    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
       const errorToast = element.querySelector('.alert-holder');
@@ -376,7 +376,7 @@ export default class ActionBinder {
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
       this.unityEl,
-      this.workflowCfg.productName,
+      this.workflowCfg,
     );
     const actions = {
       A: (el, key) => {
