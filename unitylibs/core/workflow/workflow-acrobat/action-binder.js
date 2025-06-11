@@ -174,7 +174,7 @@ export default class ActionBinder {
     'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
     'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single'],
-    'ocr-pdf': ['hybrid', 'allowed-filetypes-all', 'page-limit-100', 'max-filesize-100-mb'],
+    'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
   };
