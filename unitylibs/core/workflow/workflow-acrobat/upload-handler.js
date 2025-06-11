@@ -367,14 +367,14 @@ export default class UploadHandler {
       case 409:
         await this.actionBinder.dispatchErrorToast('upload_validation_error_duplicate_asset', e.status, e.message, false, e.showError, {
           code: errorCode,
-          subCode: upload_validation_error_duplicate_asset,
+          subCode: 'upload_validation_error_duplicate_asset',
           desc: `Exception raised when uploading file(s): ${e.message}`,
         });
         break;
       case 401:
         if (e.message === 'notentitled') await this.actionBinder.dispatchErrorToast('upload_error_no_storage_provision', e.status, e.message, false, e.showError, {
           code: errorCode,
-          subCode: upload_error_no_storage_provision,
+          subCode: 'upload_error_no_storage_provision',
           desc: `Exception raised when uploading file(s): ${e.message}`,
         });
         else await this.actionBinder.dispatchErrorToast('error_generic', e.status, e.message, false, e.showError, {
