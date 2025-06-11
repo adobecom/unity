@@ -427,19 +427,6 @@ export default class ActionBinder {
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
 
-  getMieType(file) {
-    if (!file.type) {
-      const extToTypeMap = {
-        'indd': 'application/x-indesign',
-        'ai': 'application/illustrator',
-        'psd': 'image/vnd.adobe.photoshop',
-      };
-      const ext = file.name.split('.').pop();
-      return extToTypeMap[ext];
-    }
-    return file.type;
-  }
-
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -458,7 +445,7 @@ export default class ActionBinder {
 
     for (const file of files) {
       let fail = false;
-      if (!this.limits.allowedFileTypes.includes(file.type || this.getMieType(file))) {
+      if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
         if (this.MULTI_FILE) {
@@ -579,7 +566,7 @@ export default class ActionBinder {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
-      return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+      return new File([file], sanitizedFileName, { type: file.type || this.getMimeType(file), lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
