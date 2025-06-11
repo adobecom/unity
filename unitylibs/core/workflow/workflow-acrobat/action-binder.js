@@ -427,6 +427,19 @@ export default class ActionBinder {
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
 
+  handleEmptyMimType(file) {
+    const extToTypeMap = {
+      'indd': 'application/x-indesign',
+      'ai': 'application/illustrator',
+      'psd': 'image/vnd.adobe.photoshop',
+    };
+    if (!file.type) {
+      const ext = file.name.split('.').pop();
+      file.type = extToTypeMap[ext];
+    }
+    return file;
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -444,6 +457,7 @@ export default class ActionBinder {
     }
 
     for (const file of files) {
+      file = this.handleEmptyMimType(file);
       let fail = false;
       if (!this.limits.allowedFileTypes.includes(file.type)) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
