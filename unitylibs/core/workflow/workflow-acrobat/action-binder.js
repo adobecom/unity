@@ -427,17 +427,17 @@ export default class ActionBinder {
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
 
-  handleEmptyMimType(file) {
-    const extToTypeMap = {
-      'indd': 'application/x-indesign',
-      'ai': 'application/illustrator',
-      'psd': 'image/vnd.adobe.photoshop',
-    };
+  getMieType(file) {
     if (!file.type) {
+      const extToTypeMap = {
+        'indd': 'application/x-indesign',
+        'ai': 'application/illustrator',
+        'psd': 'image/vnd.adobe.photoshop',
+      };
       const ext = file.name.split('.').pop();
-      file.type = extToTypeMap[ext];
+      return extToTypeMap[ext];
     }
-    return file;
+    return file.type;
   }
 
   async validateFiles(files) {
@@ -457,9 +457,8 @@ export default class ActionBinder {
     }
 
     for (const file of files) {
-      file = this.handleEmptyMimType(file);
       let fail = false;
-      if (!this.limits.allowedFileTypes.includes(file.type)) {
+      if (!this.limits.allowedFileTypes.includes(file.type || this.getMieType(file))) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
         if (this.MULTI_FILE) {
