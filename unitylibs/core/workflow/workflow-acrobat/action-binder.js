@@ -562,11 +562,17 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
+  async getMimeType(file) {
+    const { getMimeType } = await import('../../../utils/FileUtils.js');
+    return getMimeType(file.name);
+  }
+
   async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
-      return new File([file], sanitizedFileName, { type: file.type || this.getMimeType(file), lastModified: file.lastModified });
+      const mimeType = file.type || await this.getMimeType(file);
+      return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
