@@ -13,6 +13,7 @@ export function getMimeType(fileName) {
     indd: 'application/x-indesign',
     ai: 'application/illustrator',
     psd: 'image/vnd.adobe.photoshop',
+    form: 'application/vnd.adobe.form.fillsign',
   };
   return extToTypeMap[getExtension(fileName)];
 }
