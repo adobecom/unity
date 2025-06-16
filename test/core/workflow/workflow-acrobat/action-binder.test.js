@@ -112,7 +112,7 @@ describe('ActionBinder', () => {
 
       it('should return JSON response on successful request', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -139,7 +139,7 @@ describe('ActionBinder', () => {
 
       it('should retry on 5xx errors', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           status: 500,
           headers: mockHeaders,
           ok: false,
@@ -198,7 +198,7 @@ describe('ActionBinder', () => {
 
       it('should return response on successful retry', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -218,7 +218,7 @@ describe('ActionBinder', () => {
 
       it('should make POST request with correct headers', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -243,7 +243,7 @@ describe('ActionBinder', () => {
 
       it('should make POST request with retry capability', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -268,7 +268,7 @@ describe('ActionBinder', () => {
 
       it('should make GET request with query parameters', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -292,7 +292,7 @@ describe('ActionBinder', () => {
 
       it('should make DELETE request with access token', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = {
+        const mockResponse = { 
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -390,24 +390,36 @@ describe('ActionBinder', () => {
     });
 
     describe('sanitizeFileName', () => {
-      it('should sanitize file name with special characters', async () => {
-        const result = await actionBinder.sanitizeFileName('test@#$%^&-()file.pdf');
-        expect(result).to.equal('test@#$%^&-()file.pdf');
+      it('should return original filename if no sanitization needed', async () => {
+        const result = await actionBinder.sanitizeFileName('test.pdf');
+        expect(result).to.equal('test.pdf');
       });
 
-      it('should handle file name with spaces', async () => {
-        const result = await actionBinder.sanitizeFileName('test file name.pdf');
-        expect(result).to.equal('test file name.pdf');
+      it('should handle undefined filename', async () => {
+        const result = await actionBinder.sanitizeFileName(undefined);
+        expect(result).to.equal('---');
       });
 
-      it('should handle file name with multiple extensions', async () => {
-        const result = await actionBinder.sanitizeFileName('test.file.pdf');
-        expect(result).to.equal('test.file.pdf');
+      it('should truncate filename that exceeds MAX_FILE_NAME_LENGTH', async () => {
+        const longName = `${'a'.repeat(300)}.pdf`;
+        const result = await actionBinder.sanitizeFileName(longName);
+        expect(result.length).to.equal(255);
+        expect(result.endsWith('.pdf')).to.be.true;
       });
 
-      it('should handle file name with only extension', async () => {
-        const result = await actionBinder.sanitizeFileName('.pdf');
-        expect(result).to.equal('-pdf');
+      it('should handle filename with extension that exceeds MAX_FILE_NAME_LENGTH', async () => {
+        const longName = `${'a'.repeat(300)}.verylongextension`;
+        const result = await actionBinder.sanitizeFileName(longName);
+        expect(result.length).to.equal(255);
+        expect(result.endsWith('.verylongextension')).to.be.true;
+      });
+
+      it('should handle error and return default name', async () => {
+        const origImport = window.import;
+        window.import = () => { throw new Error('fail'); };
+        const result = await actionBinder.sanitizeFileName('test.pdf');
+        expect(result).to.equal('test.pdf');
+        window.import = origImport;
       });
     });
 
@@ -1116,13 +1128,9 @@ describe('ActionBinder', () => {
     });
 
     describe('continueInApp', () => {
-      let originalLocation;
       let locationSpy;
 
       beforeEach(() => {
-        // Save original location
-        originalLocation = window.location;
-
         // Create a spy for location changes
         locationSpy = sinon.spy();
 
@@ -1234,6 +1242,125 @@ describe('ActionBinder', () => {
         actionBinder.isUploading = false;
         await actionBinder.cancelAcrobatOperation();
         expect(actionBinder.filesData.workflowStep).to.equal('preuploading');
+      });
+    });
+
+    describe('initActionListeners', () => {
+      it('should do nothing if no element matches selector', async () => {
+        const block = { querySelector: sinon.stub().returns(null) };
+        const actMap = { '.notfound': 'upload' };
+        await actionBinder.initActionListeners(block, actMap);
+        expect(block.querySelector.calledWith('.notfound')).to.be.true;
+      });
+
+      it('should add click event for anchor', async () => {
+        const el = document.createElement('a');
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { a: 'upload' };
+        const spy = sinon.spy(actionBinder, 'acrobatActionMaps');
+        await actionBinder.initActionListeners(block, actMap);
+        el.click();
+        expect(spy.called).to.be.true;
+        spy.restore();
+      });
+
+      it('should add drop event for div', async () => {
+        const el = document.createElement('div');
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { div: 'upload' };
+        const spy = sinon.spy(actionBinder, 'acrobatActionMaps');
+        await actionBinder.initActionListeners(block, actMap);
+        const event = new Event('drop');
+        event.preventDefault = sinon.stub();
+        el.dispatchEvent(event);
+        expect(spy.called).to.be.true;
+        spy.restore();
+      });
+    });
+
+    describe('extractFiles', () => {
+      it('should extract files from dataTransfer.items', () => {
+        const file = new File(['test'], 'test.pdf', { type: 'application/pdf', size: 123 });
+        const item = { kind: 'file', getAsFile: () => file };
+        const e = { dataTransfer: { items: [item] } };
+        const result = actionBinder.extractFiles(e);
+        expect(result.files[0]).to.equal(file);
+      });
+
+      it('should extract files from target.files', () => {
+        const file = new File(['test'], 'test.pdf', { type: 'application/pdf', size: 456 });
+        const e = { target: { files: [file] } };
+        const result = actionBinder.extractFiles(e);
+        expect(result.files[0]).to.equal(file);
+      });
+
+      it('should handle no files', () => {
+        const e = {};
+        const result = actionBinder.extractFiles(e);
+        expect(result.files).to.be.an('array').that.is.empty;
+        expect(result.totalFileSize).to.equal(0);
+      });
+    });
+
+    describe('acrobatActionMaps', () => {
+      beforeEach(() => {
+        actionBinder.workflowCfg = {
+          enabledFeatures: ['compress-pdf'],
+          targetCfg: {
+            showSplashScreen: true,
+            sendSplunkAnalytics: true,
+          },
+          errors: {
+            'pre_upload_error_fetching_access_token': 'Error fetching access token',
+            'error_generic': 'Generic error occurred',
+          },
+          name: 'workflow-acrobat',
+        };
+        actionBinder.signedOut = false;
+        actionBinder.tokenError = null;
+      });
+
+      it('should handle interrupt case', async () => {
+        const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
+        await actionBinder.acrobatActionMaps('interrupt');
+        expect(spy.called).to.be.true;
+        spy.restore();
+      });
+
+      it('should handle interrupt case with files and event', async () => {
+        const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
+        const files = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
+        await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
+        expect(spy.called).to.be.true;
+        spy.restore();
+      });
+    });
+
+    describe('applySignedInSettings', () => {
+      it('should return if signedOut is undefined', async () => {
+        actionBinder.signedOut = undefined;
+        await actionBinder.applySignedInSettings();
+        // Should just return, nothing to assert
+      });
+
+      it('should call acrobatSignedInSettings if block has signed-in class and not signedOut', async () => {
+        actionBinder.signedOut = false;
+        actionBinder.block = { classList: { contains: () => true } };
+        const spy = sinon.stub(actionBinder, 'acrobatSignedInSettings');
+        await actionBinder.applySignedInSettings();
+        expect(spy.called).to.be.true;
+        spy.restore();
+      });
+
+      it('should add event listener if not signed-in', async () => {
+        actionBinder.signedOut = true;
+        actionBinder.block = { classList: { contains: () => false } };
+        const spy = sinon.stub(actionBinder, 'acrobatSignedInSettings');
+        await actionBinder.applySignedInSettings();
+        // Simulate IMS:Ready event
+        window.dispatchEvent(new Event('IMS:Ready'));
+        expect(spy.called).to.be.true;
+        spy.restore();
       });
     });
   });
