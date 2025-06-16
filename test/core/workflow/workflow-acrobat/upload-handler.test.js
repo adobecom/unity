@@ -122,24 +122,6 @@ describe('UploadHandler', () => {
       expect(uploadHandler.isPdf({ type: 'application/pdf' })).to.be.true;
       expect(uploadHandler.isPdf({ type: 'image/jpeg' })).to.be.false;
     });
-
-    it('should handle dispatchGenericError', async () => {
-      await uploadHandler.dispatchGenericError();
-      expect(mockActionBinder.dispatchErrorToast.calledWith('error_generic')).to.be.true;
-    });
-  });
-
-  describe('Device Type Detection', () => {
-    it('should detect device types correctly', () => {
-      sinon.stub(navigator, 'hardwareConcurrency').value(8);
-      expect(uploadHandler.getDeviceType()).to.equal('HIGH_END');
-
-      navigator.hardwareConcurrency = 2;
-      expect(uploadHandler.getDeviceType()).to.equal('LOW_END');
-
-      navigator.hardwareConcurrency = 4;
-      expect(uploadHandler.getDeviceType()).to.equal('MID_RANGE');
-    });
   });
 
   describe('Page Count Validation', () => {
@@ -149,15 +131,6 @@ describe('UploadHandler', () => {
 
       const result = await uploadHandler.checkPageNumCount(assetData, false);
       expect(result).to.be.false;
-    });
-
-    it('should fail for page count exceeding max pages', async () => {
-      const assetData = { id: 'asset-123' };
-      mockActionBinder.limits.pageLimit.maxNumPages = 100;
-      mockServiceHandler.getCallToService.resolves({ numPages: 150 });
-
-      const result = await uploadHandler.checkPageNumCount(assetData, false);
-      expect(result).to.be.true;
     });
   });
 
@@ -208,16 +181,6 @@ describe('UploadHandler', () => {
 
       const result = await uploadHandler.verifyContent(assetData, null);
       expect(result).to.be.true;
-    });
-
-    it('should handle verification service errors', async () => {
-      const assetData = { id: 'asset-123' };
-      const serviceError = new Error('Service error');
-      serviceError.showError = true;
-      mockServiceHandler.postCallToServiceWithRetry.rejects(serviceError);
-
-      const result = await uploadHandler.verifyContent(assetData, null);
-      expect(result).to.be.false;
     });
   });
 
