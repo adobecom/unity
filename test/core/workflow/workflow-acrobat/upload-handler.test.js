@@ -100,6 +100,8 @@ describe('UploadHandler', () => {
 
     uploadHandler = new UploadHandler(mockActionBinder, mockServiceHandler);
     uploadHandler.transitionScreen = mockTransitionScreen;
+    sinon.stub(uploadHandler, 'showSplashScreen').resolves();
+    sinon.stub(uploadHandler, 'initSplashScreen').resolves();
   });
 
   afterEach(() => {
@@ -133,13 +135,60 @@ describe('UploadHandler', () => {
     });
   });
 
-  describe('Page Count Validation', () => {
+  describe('checkPageNumCount', () => {
     it('should validate normal page count', async () => {
       const assetData = { id: 'asset-123' };
       mockServiceHandler.getCallToService.resolves({ numPages: 50 });
-
       const result = await uploadHandler.checkPageNumCount(assetData, false);
       expect(result).to.be.false;
+    });
+
+    it('should handle error in checkPageNumCount', async () => {
+      const clock = sinon.useFakeTimers();
+      uploadHandler.serviceHandler.getCallToService = sinon.stub().rejects(new Error('fail'));
+      const assetData = { id: 'asset-123' };
+      const promise = uploadHandler.checkPageNumCount(assetData, false);
+      clock.tick(5000); // Fast-forward timers to trigger setTimeout/setInterval
+      const result = await promise;
+      expect(result).to.be.false;
+      clock.restore();
+    });
+
+    it('should handle max page count exceeded', async () => {
+      const assetData = { id: 'asset-123' };
+      uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 101 });
+      uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
+      const result = await uploadHandler.checkPageNumCount(assetData, false);
+      expect(result).to.be.true;
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_max_page_count')).to.be.true;
+    });
+
+    it('should handle min page count not met', async () => {
+      const assetData = { id: 'asset-123' };
+      uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 0 });
+      uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
+      const result = await uploadHandler.checkPageNumCount(assetData, false);
+      expect(result).to.be.true;
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_min_page_count')).to.be.true;
+    });
+
+    it('should handle max page count exceeded for multi-file', async () => {
+      const assetData = { id: 'asset-123' };
+      uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 101 });
+      uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
+      const result = await uploadHandler.checkPageNumCount(assetData, true);
+      expect(result).to.be.true;
+      expect(uploadHandler.showSplashScreen.called).to.be.false;
+    });
+
+    it('should handle min page count not met for multi-file', async () => {
+      const assetData = { id: 'asset-123' };
+      uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 0 });
+      uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
+      const result = await uploadHandler.checkPageNumCount(assetData, true);
+      expect(result).to.be.true;
     });
   });
 
@@ -191,6 +240,33 @@ describe('UploadHandler', () => {
       const result = await uploadHandler.verifyContent(assetData, null);
       expect(result).to.be.true;
     });
+
+    it('should handle unexpected response', async () => {
+      mockServiceHandler.postCallToServiceWithRetry.resolves({ foo: 'bar' });
+      const assetData = { id: 'asset-123' };
+      mockActionBinder.MULTI_FILE = false;
+      const result = await uploadHandler.verifyContent(assetData, null);
+      expect(result).to.be.false;
+    });
+
+    it('should handle error and abort', async () => {
+      const error = new Error('Aborted');
+      error.name = 'AbortError';
+      mockServiceHandler.postCallToServiceWithRetry.rejects(error);
+      const assetData = { id: 'asset-123' };
+      const result = await uploadHandler.verifyContent(assetData, null);
+      expect(result).to.be.false;
+    });
+
+    it('should handle error and multi-file', async () => {
+      const error = new Error('Failed');
+      error.status = 500;
+      mockServiceHandler.postCallToServiceWithRetry.rejects(error);
+      const assetData = { id: 'asset-123' };
+      mockActionBinder.MULTI_FILE = true;
+      const result = await uploadHandler.verifyContent(assetData, null);
+      expect(result).to.be.false;
+    });
   });
 
   describe('Asset Creation', () => {
@@ -228,6 +304,36 @@ describe('UploadHandler', () => {
       expect(mockActionBinder.dispatchErrorToast.calledOnce).to.be.true;
       const [errorCode] = mockActionBinder.dispatchErrorToast.getCall(0).args;
       expect(errorCode).to.equal('upload_error_max_quota_exceeded');
+    });
+
+    it('should handle 401 notentitled error', async () => {
+      const error = new Error('notentitled');
+      error.status = 401;
+      error.message = 'notentitled';
+      await uploadHandler.handleUploadError(error);
+      expect(mockActionBinder.dispatchErrorToast.calledWith(
+        'upload_error_no_storage_provision',
+        401,
+        'notentitled',
+        false,
+        error.showError,
+        sinon.match.has('subCode', 'upload_error_no_storage_provision'),
+      )).to.be.true;
+    });
+
+    it('should handle 401 generic error', async () => {
+      const error = new Error('some other 401');
+      error.status = 401;
+      error.message = 'some other 401';
+      await uploadHandler.handleUploadError(error);
+      expect(mockActionBinder.dispatchErrorToast.calledWith(
+        'error_generic',
+        401,
+        'some other 401',
+        false,
+        error.showError,
+        sinon.match.has('subCode', 401),
+      )).to.be.true;
     });
   });
 
@@ -343,6 +449,35 @@ describe('UploadHandler', () => {
       } catch (err) {
         expect(err).to.equal(networkError);
         expect(mockActionBinder.dispatchErrorToast.calledOnce).to.be.true;
+      }
+    });
+
+    it('should handle non-ok response', async () => {
+      fetchStub.resolves({ ok: false, status: 500, statusText: 'fail' });
+      try {
+        await uploadHandler.uploadFileToUnity('url', new Blob(['test']), 'application/pdf', 'id', null, 1);
+      } catch (e) {
+        expect(mockActionBinder.dispatchErrorToast.calledWith('upload_warn_chunk_upload')).to.be.true;
+      }
+    });
+
+    it('should handle network error', async () => {
+      fetchStub.rejects(new TypeError('Network error'));
+      try {
+        await uploadHandler.uploadFileToUnity('url', new Blob(['test']), 'application/pdf', 'id', null, 1);
+      } catch (e) {
+        expect(mockActionBinder.dispatchErrorToast.calledWith('upload_warn_chunk_upload')).to.be.true;
+      }
+    });
+
+    it('should handle timeout error', async () => {
+      const error = new Error('Timeout');
+      error.name = 'Timeout';
+      fetchStub.rejects(error);
+      try {
+        await uploadHandler.uploadFileToUnity('url', new Blob(['test']), 'application/pdf', 'id', null, 1);
+      } catch (e) {
+        expect(mockActionBinder.dispatchErrorToast.calledWith('upload_warn_chunk_upload')).to.be.true;
       }
     });
   });
@@ -468,12 +603,30 @@ describe('UploadHandler', () => {
     });
 
     it('should handle asset creation error', async () => {
-      uploadHandler.createAsset.rejects(new Error('Asset creation failed'));
+      uploadHandler.createAsset = sinon.stub().rejects(new Error('fail'));
 
       await uploadHandler.uploadSingleFile(file, fileData);
 
       expect(mockActionBinder.dispatchErrorToast.calledOnce).to.be.true;
       expect(mockActionBinder.handleRedirect.called).to.be.false;
+    });
+
+    it('should handle chunkPdf error', async () => {
+      uploadHandler.getBlobData = sinon.stub().resolves(new Blob(['test']));
+      uploadHandler.createAsset = sinon.stub().resolves({ id: 'asset-123', blocksize: 50, uploadUrls: [{ href: 'url' }] });
+      uploadHandler.chunkPdf = sinon.stub().throws(new Error('fail'));
+      await uploadHandler.uploadSingleFile(new File(['test'], 'test.pdf', { type: 'application/pdf' }), {});
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_error_chunk_upload')).to.be.true;
+    });
+
+    it('should handle failedFiles.size === 1', async () => {
+      uploadHandler.getBlobData = sinon.stub().resolves(new Blob(['test']));
+      uploadHandler.createAsset = sinon.stub().resolves({ id: 'asset-123', blocksize: 50, uploadUrls: [{ href: 'url' }] });
+      uploadHandler.chunkPdf = sinon.stub().resolves({ failedFiles: new Set([{}]), attemptMap: new Map() });
+      uploadHandler.showSplashScreen = sinon.stub().resolves();
+      await uploadHandler.uploadSingleFile(new File(['test'], 'test.pdf', { type: 'application/pdf' }), {});
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_error_chunk_upload')).to.be.true;
     });
   });
 
@@ -524,6 +677,37 @@ describe('UploadHandler', () => {
 
       expect(mockActionBinder.dispatchErrorToast.calledOnce).to.be.true;
       expect(mockActionBinder.handleRedirect.called).to.be.false;
+    });
+
+    it('should handle all files failing chunk upload', async () => {
+      uploadHandler.createInitialAssets = sinon.stub().resolves({
+        blobDataArray: [new Blob(['test'])],
+        assetDataArray: [{ id: 'asset1' }],
+        fileTypeArray: ['application/pdf'],
+      });
+      uploadHandler.chunkPdf = sinon.stub().resolves({ failedFiles: new Set([0]), attemptMap: new Map() });
+      const failingFiles = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
+      await uploadHandler.uploadMultiFile(failingFiles, {});
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_error_chunk_upload')).to.be.true;
+    });
+
+    it('should handle verifiedAssets.length === 0', async () => {
+      uploadHandler.createInitialAssets = sinon.stub().resolves({
+        blobDataArray: [new Blob(['test'])],
+        assetDataArray: [{ id: 'asset1' }],
+        fileTypeArray: ['application/pdf'],
+      });
+      uploadHandler.chunkPdf = sinon.stub().resolves({ failedFiles: new Set(), attemptMap: new Map() });
+      uploadHandler.processUploadedAssets = sinon.stub().resolves({
+        verifiedAssets: [],
+        assetsToDelete: [],
+      });
+      uploadHandler.deleteFailedAssets = sinon.stub().resolves();
+      uploadHandler.transitionScreen = { showSplashScreen: sinon.stub().resolves(), updateProgressBar: sinon.stub() };
+      const noVerifiedFiles = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
+      await uploadHandler.uploadMultiFile(noVerifiedFiles, {});
+      expect(uploadHandler.transitionScreen.showSplashScreen.called).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_max_page_count_multi')).to.be.true;
     });
   });
 
@@ -624,6 +808,183 @@ describe('UploadHandler', () => {
     it('should not attempt deletion for empty array', async () => {
       await uploadHandler.deleteFailedAssets([]);
       expect(mockServiceHandler.deleteCallToService.called).to.be.false;
+    });
+  });
+
+  describe('dispatchGenericError', () => {
+    it('should call showSplashScreen and dispatchErrorToast', async () => {
+      await uploadHandler.dispatchGenericError('info', true);
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.called).to.be.true;
+    });
+  });
+
+  describe('singleFileGuestUpload', () => {
+    it('should upload PDF file', async () => {
+      sinon.stub(uploadHandler, 'isPdf').returns(true);
+      sinon.stub(uploadHandler, 'uploadSingleFile').resolves();
+      const file = { type: 'application/pdf' };
+      await uploadHandler.singleFileGuestUpload(file, {});
+      expect(uploadHandler.uploadSingleFile.called).to.be.true;
+    });
+    it('should handle non-PDF file', async () => {
+      sinon.stub(uploadHandler, 'isPdf').returns(false);
+      mockActionBinder.handleRedirect.resetBehavior();
+      mockActionBinder.handleRedirect.resolves(true);
+      const file = { type: 'text/plain' };
+      await uploadHandler.singleFileGuestUpload(file, {});
+      expect(mockActionBinder.handleRedirect.called).to.be.true;
+    });
+    it('should handle error', async () => {
+      sinon.stub(uploadHandler, 'uploadSingleFile').rejects(new Error('fail'));
+      sinon.stub(uploadHandler, 'isPdf').returns(true);
+      const file = { type: 'application/pdf' };
+      await uploadHandler.singleFileGuestUpload(file, {});
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+    });
+  });
+
+  describe('singleFileUserUpload', () => {
+    it('should upload PDF file', async () => {
+      sinon.stub(uploadHandler, 'isPdf').returns(true);
+      sinon.stub(uploadHandler, 'uploadSingleFile').resolves();
+      const file = { type: 'application/pdf' };
+      await uploadHandler.singleFileUserUpload(file, {});
+      expect(uploadHandler.uploadSingleFile.called).to.be.true;
+    });
+    it('should handle error', async () => {
+      sinon.stub(uploadHandler, 'uploadSingleFile').rejects(new Error('fail'));
+      sinon.stub(uploadHandler, 'isPdf').returns(true);
+      const file = { type: 'application/pdf' };
+      await uploadHandler.singleFileUserUpload(file, {});
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+    });
+  });
+
+  describe('uploadFileChunks', () => {
+    it('should call chunkPdf and return filtered assets', async () => {
+      const assetDataArray = [{ id: 'a1' }, { id: 'a2' }];
+      const blobDataArray = [new Blob(['a']), new Blob(['b'])];
+      const fileTypeArray = ['application/pdf', 'application/pdf'];
+      sinon.stub(uploadHandler, 'chunkPdf').resolves(new Set([1]));
+      const result = await uploadHandler.uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, 2);
+      expect(uploadHandler.chunkPdf.calledOnce).to.be.true;
+      expect(result).to.deep.equal([assetDataArray[0]]);
+    });
+  });
+
+  describe('showSplashScreen', () => {
+    it('should call initSplashScreen and transitionScreen.showSplashScreen', async () => {
+      uploadHandler.showSplashScreen.restore();
+      uploadHandler.initSplashScreen.restore();
+      const showStub = sinon.stub().resolves();
+      sinon.stub(uploadHandler, 'initSplashScreen').callsFake(() => {
+        uploadHandler.transitionScreen = { showSplashScreen: showStub };
+      });
+      await uploadHandler.showSplashScreen(true);
+      expect(uploadHandler.initSplashScreen.calledOnce).to.be.true;
+      expect(showStub.calledWith(true)).to.be.true;
+    });
+  });
+
+  describe('multiFileGuestUpload', () => {
+    beforeEach(() => {
+      sinon.restore();
+      if (uploadHandler.showSplashScreen.restore) uploadHandler.showSplashScreen.restore();
+      sinon.stub(uploadHandler, 'showSplashScreen').resolves();
+      sinon.stub(uploadHandler, 'uploadMultiFile').resolves();
+      sinon.stub(uploadHandler, 'dispatchGenericError').resolves();
+    });
+    afterEach(() => {
+      sinon.restore();
+    });
+    it('should redirect if all files are non-PDF', async () => {
+      sinon.stub(uploadHandler, 'isPdf').returns(false);
+      mockActionBinder.workflowCfg.targetCfg.nonpdfMfuFeedbackScreenTypeNonpdf = ['test-feature'];
+      const files = [{ type: 'text/plain' }];
+      await uploadHandler.multiFileGuestUpload(files, {});
+      expect(mockActionBinder.handleRedirect.called).to.be.true;
+    });
+    it('should call uploadMultiFile if mfuUploadAllowed', async () => {
+      mockActionBinder.workflowCfg.targetCfg.mfuUploadAllowed = ['test-feature'];
+      const files = [{ type: 'application/pdf' }];
+      await uploadHandler.multiFileGuestUpload(files, {});
+      expect(uploadHandler.uploadMultiFile.called).to.be.true;
+    });
+    it('should call uploadMultiFile with only PDFs if mfuUploadOnlyPdfAllowed', async () => {
+      mockActionBinder.workflowCfg.targetCfg.mfuUploadAllowed = ['test-feature'];
+      mockActionBinder.workflowCfg.targetCfg.mfuUploadOnlyPdfAllowed = ['test-feature'];
+      sinon.stub(uploadHandler, 'isPdf').returns(true);
+      const files = [{ type: 'application/pdf' }, { type: 'application/pdf' }];
+      await uploadHandler.multiFileGuestUpload(files, {});
+      expect(uploadHandler.uploadMultiFile.called).to.be.true;
+    });
+    it('should handle fallback (delay, update progress, redirect)', async () => {
+      mockActionBinder.workflowCfg.targetCfg.mfuUploadAllowed = [];
+      const files = [{ type: 'application/pdf' }];
+      await uploadHandler.multiFileGuestUpload(files, {});
+      expect(mockActionBinder.delay.called).to.be.true;
+      expect(uploadHandler.transitionScreen.updateProgressBar.called).to.be.true;
+      expect(mockActionBinder.handleRedirect.called).to.be.true;
+    });
+    it('should handle error', async () => {
+      uploadHandler.uploadMultiFile.restore();
+      sinon.stub(uploadHandler, 'uploadMultiFile').throws(new Error('fail'));
+      mockActionBinder.workflowCfg.targetCfg.mfuUploadAllowed = ['test-feature'];
+      const files = [{ type: 'application/pdf' }];
+      await uploadHandler.multiFileGuestUpload(files, {});
+      expect(uploadHandler.dispatchGenericError.called).to.be.true;
+    });
+  });
+
+  describe('multiFileUserUpload', () => {
+    beforeEach(() => {
+      if (uploadHandler.showSplashScreen.restore) uploadHandler.showSplashScreen.restore();
+      sinon.stub(uploadHandler, 'showSplashScreen').resolves();
+      sinon.stub(uploadHandler, 'uploadMultiFile').resolves();
+      sinon.stub(uploadHandler, 'dispatchGenericError').resolves();
+      if (mockActionBinder.dispatchAnalyticsEvent.resetHistory) {
+        mockActionBinder.dispatchAnalyticsEvent.resetHistory();
+      }
+    });
+    afterEach(() => {
+      sinon.restore();
+    });
+    it('should call showSplashScreen, uploadMultiFile, and analytics', async () => {
+      const files = [{ type: 'application/pdf' }];
+      await uploadHandler.multiFileUserUpload(files, {});
+      expect(uploadHandler.showSplashScreen.called).to.be.true;
+      expect(uploadHandler.uploadMultiFile.called).to.be.true;
+      expect(mockActionBinder.dispatchAnalyticsEvent.calledWith('uploaded')).to.be.true;
+    });
+    it('should handle error', async () => {
+      uploadHandler.uploadMultiFile.restore();
+      sinon.stub(uploadHandler, 'uploadMultiFile').throws(new Error('fail'));
+      const files = [{ type: 'application/pdf' }];
+      await uploadHandler.multiFileUserUpload(files, {});
+      expect(uploadHandler.dispatchGenericError.called).to.be.true;
+    });
+  });
+
+  describe('getConcurrentLimits', () => {
+    it('should return correct concurrent limits for multi-file', () => {
+      uploadHandler.actionBinder.MULTI_FILE = true;
+      const limits = uploadHandler.getConcurrentLimits();
+      expect(limits).to.have.property('maxConcurrentFiles');
+      expect(limits).to.have.property('maxConcurrentChunks');
+    });
+  });
+
+  describe('verifyContent', () => {
+    it('should handle unexpected response in verifyContent', async () => {
+      mockServiceHandler.postCallToServiceWithRetry.resolves({ foo: 'bar' });
+      const assetData = { id: 'asset-123' };
+      uploadHandler.actionBinder.MULTI_FILE = true;
+      const result = await uploadHandler.verifyContent(assetData, null);
+      expect(result).to.be.false;
+      expect(mockActionBinder.dispatchErrorToast.calledWith(
+        'upload_error_finalize_asset',
+      )).to.be.true;
     });
   });
 });
