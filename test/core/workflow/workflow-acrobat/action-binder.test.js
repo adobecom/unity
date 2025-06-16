@@ -14,18 +14,12 @@ describe('ActionBinder', () => {
     mockWorkflowCfg = {
       productName: 'test-product',
       enabledFeatures: ['test-feature'],
-      targetCfg: {
-        sendSplunkAnalytics: true,
-      },
-      errors: {
-        'test-error': 'Test error message',
-      },
+      targetCfg: { sendSplunkAnalytics: true },
+      errors: { 'test-error': 'Test error message' },
     };
 
     // Mock DOM elements
-    mockUnityEl = {
-      classList: { contains: sinon.stub().returns(false) },
-    };
+    mockUnityEl = { classList: { contains: sinon.stub().returns(false) } };
 
     mockWfblock = {
       classList: { contains: sinon.stub().returns(false) },
@@ -118,7 +112,7 @@ describe('ActionBinder', () => {
 
       it('should return JSON response on successful request', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -145,7 +139,7 @@ describe('ActionBinder', () => {
 
       it('should retry on 5xx errors', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           status: 500,
           headers: mockHeaders,
           ok: false,
@@ -204,7 +198,7 @@ describe('ActionBinder', () => {
 
       it('should return response on successful retry', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -224,7 +218,7 @@ describe('ActionBinder', () => {
 
       it('should make POST request with correct headers', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -249,7 +243,7 @@ describe('ActionBinder', () => {
 
       it('should make POST request with retry capability', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -274,7 +268,7 @@ describe('ActionBinder', () => {
 
       it('should make GET request with query parameters', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -298,7 +292,7 @@ describe('ActionBinder', () => {
 
       it('should make DELETE request with access token', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -376,7 +370,7 @@ describe('ActionBinder', () => {
       it('should return true for mixed file types', () => {
         const files = [
           { type: 'application/pdf' },
-          { type: 'image/jpeg' }
+          { type: 'image/jpeg' },
         ];
         expect(actionBinder.isMixedFileTypes(files)).to.equal('mixed');
       });
@@ -384,7 +378,7 @@ describe('ActionBinder', () => {
       it('should return false for same file types', () => {
         const files = [
           { type: 'application/pdf' },
-          { type: 'application/pdf' }
+          { type: 'application/pdf' },
         ];
         expect(actionBinder.isMixedFileTypes(files)).to.equal('application/pdf');
       });
@@ -419,9 +413,7 @@ describe('ActionBinder', () => {
 
     describe('isSameFileType', () => {
       beforeEach(() => {
-        mockWorkflowCfg.targetCfg = {
-          allowedFileTypes: ['application/pdf']
-        };
+        mockWorkflowCfg.targetCfg = { allowedFileTypes: ['application/pdf'] };
       });
 
       it('should return true for matching file types', () => {
@@ -440,39 +432,96 @@ describe('ActionBinder', () => {
     describe('validateFiles', () => {
       beforeEach(() => {
         mockWorkflowCfg.limits = {
+          maxNumFiles: 2,
+          allowedFileTypes: ['application/pdf'],
           maxFileSize: 10485760, // 10MB
-          allowedFileTypes: ['application/pdf', 'image/jpeg']
-        };
-        mockWorkflowCfg.targetCfg = {
-          allowedFileTypes: ['application/pdf', 'image/jpeg']
         };
         actionBinder.limits = mockWorkflowCfg.limits;
         actionBinder.workflowCfg = mockWorkflowCfg;
+        sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+        actionBinder.MULTI_FILE = false;
       });
 
-      it('should validate files within limits', async () => {
+      it('should return false if files exceed maxNumFiles', async () => {
         const files = [
-          { type: 'application/pdf', size: 5242880 }, // 5MB
-          { type: 'image/jpeg', size: 2097152 } // 2MB
-        ];
-        const result = await actionBinder.validateFiles(files);
-        expect(result.isValid).to.be.true;
-        expect(result.validFiles).to.deep.equal(files);
-      });
-
-      it('should reject files exceeding size limit', async () => {
-        const files = [
-          { type: 'application/pdf', size: 15728640 } // 15MB
+          { type: 'application/pdf', size: 100 },
+          { type: 'application/pdf', size: 100 },
+          { type: 'application/pdf', size: 100 },
         ];
         const result = await actionBinder.validateFiles(files);
         expect(result.isValid).to.be.false;
         expect(result.validFiles).to.be.empty;
+        expect(actionBinder.dispatchErrorToast.calledWith('validation_error_max_num_files')).to.be.true;
       });
 
-      it('should reject files with unsupported types', async () => {
+      it('should handle unsupported file type', async () => {
+        const files = [{ type: 'application/zip', size: 100 }];
+        const result = await actionBinder.validateFiles(files);
+        expect(result.isValid).to.be.false;
+        expect(result.validFiles).to.be.empty;
+        expect(actionBinder.dispatchErrorToast.calledWith('validation_error_unsupported_type')).to.be.true;
+      });
+
+      it('should handle empty file', async () => {
+        const files = [{ type: 'application/pdf', size: 0 }];
+        const result = await actionBinder.validateFiles(files);
+        expect(result.isValid).to.be.false;
+        expect(result.validFiles).to.be.empty;
+        expect(actionBinder.dispatchErrorToast.calledWith('validation_error_empty_file')).to.be.true;
+      });
+
+      it('should handle file too large', async () => {
+        const files = [{ type: 'application/pdf', size: 99999999 }];
+        const result = await actionBinder.validateFiles(files);
+        expect(result.isValid).to.be.false;
+        expect(result.validFiles).to.be.empty;
+        expect(actionBinder.dispatchErrorToast.calledWith('validation_error_file_too_large')).to.be.true;
+      });
+
+      it('should handle all files failing for different reasons (multi-file)', async () => {
+        actionBinder.MULTI_FILE = true;
         const files = [
-          { type: 'application/zip', size: 5242880 } // 5MB
+          { type: 'application/zip', size: 0 }, // unsupported and empty
+          { type: 'application/pdf', size: 99999999 }, // too large
         ];
+        const result = await actionBinder.validateFiles(files);
+        expect(result.isValid).to.be.false;
+        expect(result.validFiles).to.be.empty;
+        expect(actionBinder.dispatchErrorToast.called).to.be.true;
+      });
+
+      it('should handle all files failing for same reason (multi-file)', async () => {
+        actionBinder.MULTI_FILE = true;
+        const files = [
+          { type: 'application/zip', size: 100 },
+          { type: 'application/zip', size: 200 },
+        ];
+        const result = await actionBinder.validateFiles(files);
+        expect(result.isValid).to.be.false;
+        expect(result.validFiles).to.be.empty;
+        expect(actionBinder.dispatchErrorToast.called).to.be.true;
+      });
+
+      it('should handle some files valid, some invalid (multi-file)', async () => {
+        actionBinder.MULTI_FILE = true;
+        const files = [
+          { type: 'application/pdf', size: 100 }, // valid
+          { type: 'application/zip', size: 100 }, // invalid
+        ];
+        const result = await actionBinder.validateFiles(files);
+        expect(result.isValid).to.be.true;
+        expect(result.validFiles).to.have.lengthOf(1);
+        expect(result.validFiles[0].type).to.equal('application/pdf');
+      });
+
+      it('should handle empty files array', async () => {
+        const result = await actionBinder.validateFiles([]);
+        expect(result.isValid).to.be.false;
+        expect(result.validFiles).to.be.empty;
+      });
+
+      it('should handle file missing type or size', async () => {
+        const files = [{}, { type: 'application/pdf' }, { size: 100 }];
         const result = await actionBinder.validateFiles(files);
         expect(result.isValid).to.be.false;
         expect(result.validFiles).to.be.empty;
@@ -484,22 +533,18 @@ describe('ActionBinder', () => {
         mockWorkflowCfg.limits = {
           'test-verb': {
             maxFileSize: 10485760,
-            allowedFileTypes: ['application/pdf']
-          }
+            allowedFileTypes: ['application/pdf'],
+          },
         };
         actionBinder.workflowCfg = mockWorkflowCfg;
         actionBinder.limits = mockWorkflowCfg.limits['test-verb'];
         actionBinder.serviceHandler = {
           getCallToService: sinon.stub().resolves({
             maxFileSize: 10485760,
-            allowedFileTypes: ['application/pdf']
-          })
+            allowedFileTypes: ['application/pdf'],
+          }),
         };
-        actionBinder.acrobatApiConfig = {
-          acrobatEndpoint: {
-            getVerbLimits: '/api/verb-limits'
-          }
-        };
+        actionBinder.acrobatApiConfig = { acrobatEndpoint: { getVerbLimits: '/api/verb-limits' } };
       });
 
       it('should load verb limits successfully', async () => {
@@ -514,9 +559,9 @@ describe('ActionBinder', () => {
           target: {
             files: [
               { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
-              { name: 'test2.pdf', type: 'application/pdf', size: 2097152 }
-            ]
-          }
+              { name: 'test2.pdf', type: 'application/pdf', size: 2097152 },
+            ],
+          },
         };
 
         const result = actionBinder.extractFiles(mockEvent);
@@ -528,11 +573,7 @@ describe('ActionBinder', () => {
       });
 
       it('should handle empty files', () => {
-        const mockEvent = {
-          target: {
-            files: []
-          }
-        };
+        const mockEvent = { target: { files: [] } };
 
         const result = actionBinder.extractFiles(mockEvent);
         expect(result).to.have.property('files');
@@ -738,5 +779,462 @@ describe('ActionBinder', () => {
         expect(actionBinder.limits.allowedFileTypes).to.deep.equal(['application/pdf']);
       });
     });
+
+    describe('Redirect Methods', () => {
+      beforeEach(() => {
+        actionBinder.serviceHandler = { postCallToService: sinon.stub().resolves({ url: 'https://test-redirect-url.com' }) };
+        actionBinder.acrobatApiConfig = { connectorApiEndPoint: 'https://test-api.com/connector' };
+        actionBinder.workflowCfg = { enabledFeatures: ['test-feature'] };
+        actionBinder.MULTI_FILE = false;
+        actionBinder.promiseStack = [];
+        actionBinder.dispatchErrorToast = sinon.stub().resolves();
+        actionBinder.dispatchAnalyticsEvent = sinon.stub();
+        actionBinder.showTransitionScreen = sinon.stub().resolves();
+        actionBinder.transitionScreen = { updateProgressBar: sinon.stub() };
+        actionBinder.LOADER_LIMIT = 95;
+        actionBinder.redirectUrl = 'https://test-redirect-url.com';
+        actionBinder.filesData = {};
+        actionBinder.redirectWithoutUpload = false;
+        actionBinder.operations = [];
+        actionBinder.uploadTimestamp = Date.now();
+        actionBinder.multiFileFailure = null;
+        window.unityConfig = { env: 'prod' };
+        localStorage.clear();
+      });
+
+      describe('getRedirectUrl', () => {
+        it('should successfully get redirect URL', async () => {
+          const cOpts = { test: 'options' };
+          await actionBinder.getRedirectUrl(cOpts);
+
+          expect(actionBinder.serviceHandler.postCallToService.calledWith(
+            actionBinder.acrobatApiConfig.connectorApiEndPoint,
+            { body: JSON.stringify(cOpts) },
+            { 'x-unity-dc-verb': 'test-feature' },
+          )).to.be.true;
+          expect(actionBinder.redirectUrl).to.equal('https://test-redirect-url.com');
+        });
+
+        it('should handle error when getting redirect URL', async () => {
+          const error = new Error('Test error');
+          error.status = 500;
+          actionBinder.serviceHandler.postCallToService.rejects(error);
+
+          const cOpts = { test: 'options' };
+          await actionBinder.getRedirectUrl(cOpts);
+
+          expect(actionBinder.showTransitionScreen.calledOnce).to.be.true;
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'pre_upload_error_fetch_redirect_url',
+            500,
+            `Exception thrown when retrieving redirect URL. Message: ${error.message}, Options: ${JSON.stringify(cOpts)}`,
+            false,
+            undefined,
+            {
+              code: 'pre_upload_error_fetch_redirect_url',
+              subCode: 500,
+              desc: error.message,
+            },
+          )).to.be.true;
+        });
+
+        it('should handle missing URL in response', async () => {
+          actionBinder.serviceHandler.postCallToService.resolves({});
+
+          const cOpts = { test: 'options' };
+          await actionBinder.getRedirectUrl(cOpts);
+
+          expect(actionBinder.showTransitionScreen.calledOnce).to.be.true;
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'pre_upload_error_fetch_redirect_url',
+            500,
+            'Exception thrown when retrieving redirect URL. Message: Error connecting to App, Options: {"test":"options"}',
+            false,
+            undefined,
+            {
+              code: 'pre_upload_error_fetch_redirect_url',
+              subCode: undefined,
+              desc: 'Error connecting to App',
+            },
+          )).to.be.true;
+        });
+      });
+
+      describe('handleRedirect', () => {
+        beforeEach(() => {
+          actionBinder.getRedirectUrl = sinon.stub().resolves();
+          actionBinder.redirectUrl = 'https://test-redirect-url.com';
+          localStorage.clear();
+        });
+
+        it('should handle redirect for new user', async () => {
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.newUser).to.be.true;
+          expect(cOpts.payload.attempts).to.equal('1st');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(actionBinder.dispatchAnalyticsEvent.calledWith('redirectUrl', {
+            ...filesData,
+            redirectUrl: actionBinder.redirectUrl,
+          })).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should handle redirect for returning user', async () => {
+          localStorage.setItem('unity.user', 'test-user');
+          localStorage.setItem('test-feature_attempts', '2');
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.newUser).to.be.false;
+          expect(cOpts.payload.attempts).to.equal('2+');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should handle redirect with feedback for multi-file validation failure', async () => {
+          actionBinder.multiFileValidationFailure = true;
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.feedback).to.equal('uploaderror');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should handle redirect with feedback for non-PDF files', async () => {
+          actionBinder.showInfoToast = true;
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.feedback).to.equal('nonpdf');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should return false when redirect URL is not available', async () => {
+          actionBinder.redirectUrl = '';
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(result).to.be.false;
+        });
+      });
+    });
+
+    describe('handleSingleFileUpload', () => {
+      beforeEach(() => {
+        actionBinder.uploadHandler = {
+          singleFileGuestUpload: sinon.stub().resolves(),
+          singleFileUserUpload: sinon.stub().resolves(),
+        };
+        actionBinder.signedOut = false;
+        actionBinder.dispatchErrorToast = sinon.stub().resolves();
+        actionBinder.dispatchAnalyticsEvent = sinon.stub();
+        actionBinder.filesData = {};
+        actionBinder.uploadTimestamp = Date.now();
+      });
+
+      it('should handle single file upload for signed-in user', async () => {
+        const files = [{ type: 'application/pdf', size: 1048576 }];
+        await actionBinder.handleSingleFileUpload(files);
+
+        expect(actionBinder.uploadHandler.singleFileUserUpload.calledWith(files[0], actionBinder.filesData)).to.be.true;
+        expect(actionBinder.uploadHandler.singleFileGuestUpload.called).to.be.false;
+      });
+
+      it('should handle single file upload for guest user', async () => {
+        actionBinder.signedOut = true;
+        const files = [{ type: 'application/pdf', size: 1048576 }];
+        await actionBinder.handleSingleFileUpload(files);
+
+        expect(actionBinder.uploadHandler.singleFileGuestUpload.calledWith(files[0], actionBinder.filesData)).to.be.true;
+        expect(actionBinder.uploadHandler.singleFileUserUpload.called).to.be.false;
+      });
+    });
+
+    describe('handleMultiFileUpload', () => {
+      beforeEach(() => {
+        actionBinder.uploadHandler = {
+          multiFileGuestUpload: sinon.stub().resolves(),
+          multiFileUserUpload: sinon.stub().resolves(),
+        };
+        actionBinder.signedOut = false;
+        actionBinder.dispatchErrorToast = sinon.stub().resolves();
+        actionBinder.dispatchAnalyticsEvent = sinon.stub();
+        actionBinder.filesData = {};
+        actionBinder.uploadTimestamp = Date.now();
+        actionBinder.MULTI_FILE = false;
+        actionBinder.LOADER_LIMIT = 95;
+      });
+
+      it('should handle multi file upload for signed-in user', async () => {
+        const files = [
+          { type: 'application/pdf', size: 1048576 },
+          { type: 'application/pdf', size: 2097152 },
+        ];
+        await actionBinder.handleMultiFileUpload(files);
+
+        expect(actionBinder.MULTI_FILE).to.be.true;
+        expect(actionBinder.LOADER_LIMIT).to.equal(65);
+        expect(actionBinder.filesData).to.deep.include({ uploadType: 'mfu' });
+        expect(actionBinder.uploadHandler.multiFileUserUpload.calledWith(files, actionBinder.filesData)).to.be.true;
+        expect(actionBinder.uploadHandler.multiFileGuestUpload.called).to.be.false;
+        expect(actionBinder.dispatchAnalyticsEvent.calledWith('multifile', actionBinder.filesData)).to.be.true;
+      });
+
+      it('should handle multi file upload for guest user', async () => {
+        actionBinder.signedOut = true;
+        const files = [
+          { type: 'application/pdf', size: 1048576 },
+          { type: 'application/pdf', size: 2097152 },
+        ];
+        await actionBinder.handleMultiFileUpload(files);
+
+        expect(actionBinder.MULTI_FILE).to.be.true;
+        expect(actionBinder.LOADER_LIMIT).to.equal(65);
+        expect(actionBinder.filesData).to.deep.include({ uploadType: 'mfu' });
+        expect(actionBinder.uploadHandler.multiFileGuestUpload.calledWith(files, actionBinder.filesData)).to.be.true;
+        expect(actionBinder.uploadHandler.multiFileUserUpload.called).to.be.false;
+        expect(actionBinder.dispatchAnalyticsEvent.calledWith('multifile', actionBinder.filesData)).to.be.true;
+      });
+
+      it('should preserve existing filesData properties', async () => {
+        actionBinder.filesData = { existingProp: 'value' };
+        const files = [
+          { type: 'application/pdf', size: 1048576 },
+          { type: 'application/pdf', size: 2097152 },
+        ];
+        await actionBinder.handleMultiFileUpload(files);
+
+        expect(actionBinder.filesData).to.deep.include({
+          existingProp: 'value',
+          uploadType: 'mfu',
+        });
+      });
+    });
+
+    describe('handleFileUpload', () => {
+      beforeEach(() => {
+        actionBinder.workflowCfg = {
+          name: 'workflow-acrobat',
+          enabledFeatures: ['test-feature'],
+          targetCfg: { verbsWithoutMfuToSfuFallback: ['compress-pdf'] },
+        };
+        actionBinder.sanitizeFileName = sinon.stub().resolves('sanitized-file.pdf');
+        actionBinder.validateFiles = sinon.stub().resolves({ isValid: true, validFiles: [] });
+        actionBinder.handleSingleFileUpload = sinon.stub().resolves();
+        actionBinder.handleMultiFileUpload = sinon.stub().resolves();
+        actionBinder.initUploadHandler = sinon.stub().resolves();
+        actionBinder.MULTI_FILE = false;
+        actionBinder.uploadHandler = null;
+      });
+
+      it('should handle single file upload', async () => {
+        const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.sanitizeFileName.calledWith('test.pdf')).to.be.true;
+        expect(actionBinder.validateFiles.called).to.be.true;
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.calledWith(files)).to.be.true;
+        expect(actionBinder.handleMultiFileUpload.called).to.be.false;
+      });
+
+      it('should handle multi file upload', async () => {
+        const files = [
+          { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
+          { name: 'test2.pdf', type: 'application/pdf', size: 2097152 },
+        ];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.validateFiles.called).to.be.true;
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleMultiFileUpload.calledWith(files)).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.called).to.be.false;
+      });
+
+      it('should handle single file from multi-file upload when validation fails for others', async () => {
+        const files = [
+          { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
+          { name: 'test2.pdf', type: 'application/pdf', size: 2097152 },
+        ];
+        const validFile = [files[0]];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: validFile });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.validateFiles.called).to.be.true;
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.calledWith(validFile)).to.be.true;
+        expect(actionBinder.handleMultiFileUpload.called).to.be.false;
+      });
+
+      it('should not proceed with upload if validation fails', async () => {
+        const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
+        actionBinder.validateFiles.resolves({ isValid: false, validFiles: [] });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.sanitizeFileName.calledWith('test.pdf')).to.be.true;
+        expect(actionBinder.validateFiles.called).to.be.true;
+        expect(actionBinder.initUploadHandler.called).to.be.false;
+        expect(actionBinder.handleSingleFileUpload.called).to.be.false;
+        expect(actionBinder.handleMultiFileUpload.called).to.be.false;
+      });
+
+      it('should handle verbs that require multi-file upload', async () => {
+        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+        const files = [
+          { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
+          { name: 'test2.pdf', type: 'application/pdf', size: 2097152 },
+        ];
+        const validFile = [files[0]];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: validFile });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.validateFiles.called).to.be.true;
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleMultiFileUpload.calledWith(validFile)).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.called).to.be.false;
+      });
+    });
+
+    describe('continueInApp', () => {
+      let originalLocation;
+      let locationSpy;
+
+      beforeEach(() => {
+        // Save original location
+        originalLocation = window.location;
+
+        // Create a spy for location changes
+        locationSpy = sinon.spy();
+
+        actionBinder.redirectUrl = 'https://test.com?param=value';
+        actionBinder.operations = ['test-operation'];
+        actionBinder.redirectWithoutUpload = false;
+        actionBinder.LOADER_LIMIT = 95;
+        actionBinder.uploadTimestamp = Date.now();
+        actionBinder.multiFileFailure = null;
+        actionBinder.showTransitionScreen = sinon.stub().resolves();
+        actionBinder.transitionScreen = {
+          updateProgressBar: sinon.stub(),
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        actionBinder.dispatchErrorToast = sinon.stub().resolves();
+        actionBinder.delay = sinon.stub().resolves();
+      });
+
+      it('should not proceed if redirectUrl is not available', async () => {
+        actionBinder.redirectUrl = '';
+        await actionBinder.continueInApp();
+        expect(actionBinder.showTransitionScreen.called).to.be.false;
+        expect(locationSpy.called).to.be.false;
+      });
+
+      it('should not proceed if no operations and not redirectWithoutUpload', async () => {
+        actionBinder.operations = [];
+        await actionBinder.continueInApp();
+        expect(actionBinder.showTransitionScreen.called).to.be.false;
+        expect(locationSpy.called).to.be.false;
+      });
+
+      it('should handle redirect errors', async () => {
+        const error = new Error('Redirect failed');
+        error.status = 500;
+        actionBinder.delay.rejects(error);
+        await actionBinder.continueInApp();
+        expect(actionBinder.transitionScreen.showSplashScreen.called).to.be.true;
+        expect(actionBinder.dispatchErrorToast.calledWith(
+          'error_generic',
+          500,
+          'Exception thrown when redirecting to product; Redirect failed',
+          false,
+          undefined,
+          {
+            code: 'upload_error_redirect_to_app',
+            subCode: 500,
+            desc: 'Redirect failed',
+          },
+        )).to.be.true;
+      });
+    });
+
+    describe('cancelAcrobatOperation', () => {
+      beforeEach(() => {
+        actionBinder.redirectUrl = 'https://test.com';
+        actionBinder.filesData = { test: 'data' };
+        actionBinder.isUploading = true;
+        actionBinder.showTransitionScreen = sinon.stub().resolves();
+        actionBinder.dispatchAnalyticsEvent = sinon.stub();
+        actionBinder.setIsUploading = sinon.stub();
+        actionBinder.abortController = new AbortController();
+        actionBinder.promiseStack = [];
+      });
+
+      it('should show transition screen when canceling', async () => {
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.showTransitionScreen.called).to.be.true;
+      });
+
+      it('should clear redirect URL', async () => {
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.redirectUrl).to.equal('');
+      });
+
+      it('should update filesData with workflow step', async () => {
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.filesData).to.deep.include({
+          test: 'data',
+          workflowStep: 'uploading',
+        });
+      });
+
+      it('should dispatch analytics event with cancel data', async () => {
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.dispatchAnalyticsEvent.calledWith('cancel', actionBinder.filesData)).to.be.true;
+      });
+
+      it('should set isUploading to false', async () => {
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.setIsUploading.calledWith(false)).to.be.true;
+      });
+
+      it('should abort current controller and create new one', async () => {
+        const originalSignal = actionBinder.abortController.signal;
+        await actionBinder.cancelAcrobatOperation();
+        expect(originalSignal.aborted).to.be.true;
+        expect(actionBinder.abortController).to.not.equal(originalSignal);
+        expect(actionBinder.abortController.signal.aborted).to.be.false;
+      });
+
+      it('should add cancel promise to promise stack', async () => {
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.promiseStack).to.have.lengthOf(1);
+        expect(actionBinder.promiseStack[0]).to.be.instanceOf(Promise);
+      });
+
+      it('should handle pre-upload cancellation', async () => {
+        actionBinder.isUploading = false;
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.filesData.workflowStep).to.equal('preuploading');
+      });
+    });
   });
-}); 
+});
