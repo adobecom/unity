@@ -174,7 +174,7 @@ export default class ActionBinder {
     'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
     'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single'],
-    'ocr-pdf': ['hybrid', 'allowed-filetypes-all', 'page-limit-100', 'max-filesize-100-mb'],
+    'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
   };
@@ -562,11 +562,17 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
+  async getMimeType(file) {
+    const { getMimeType } = await import('../../../utils/FileUtils.js');
+    return getMimeType(file.name);
+  }
+
   async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
-      return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+      const mimeType = file.type || await this.getMimeType(file);
+      return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
