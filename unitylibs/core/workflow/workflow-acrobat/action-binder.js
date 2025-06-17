@@ -33,14 +33,33 @@ class ServiceHandler {
     throw error;
   }
 
+  async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const mergedOptions = { ...options, signal: controller.signal };
+    try {
+      const response = await fetch(url, mergedOptions);
+      clearTimeout(timeout);
+      return response;
+    } catch (e) {
+      clearTimeout(timeout);
+      if (e.name === 'AbortError') {
+        const error = new Error(`Request timed out after ${timeoutMs}ms`);
+        error.name = 'TimeoutError';
+        throw error;
+      }
+      throw e;
+    }
+  }
+
   async fetchFromService(url, options, canRetry = true) {
     try {
-      if (!options?.signal?.aborted)  this.handleAbortedRequest(url, options);
-      const response = await fetch(url, options);
+      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
+      const response = await this.fetchWithTimeout(url, options, 60000);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return this.fetchFromService(url, options, false);
       }
       if (response.status !== 200) {
