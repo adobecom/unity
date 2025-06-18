@@ -162,7 +162,8 @@ body > .splash-loader {
   .splash-loader h2,
   .splash-loader h3,
   .splash-loader h4,
-  .splash-loader h5 {
+  .splash-loader h5,
+  .splash-loader p {
     font-size: var(--type-heading-xl-size);
     line-height: var(--type-heading-xl-lh);
     font-weight: 700;
