@@ -446,6 +446,12 @@ export default class ActionBinder {
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
 
+  convertToSingleFileErrorMessage(multiFileErrorMessage) {
+    return multiFileErrorMessage.endsWith('_multi') 
+      ? multiFileErrorMessage.slice(0, -6) 
+      : multiFileErrorMessage;
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -497,16 +503,13 @@ export default class ActionBinder {
     }
     if (allFilesFailed) {
       if (this.MULTI_FILE) {
+        const firstErrorType = Array.from(errorTypes)[0];
         if (errorTypes.size === 1) {
-          const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorType });
+          await this.dispatchErrorToast(firstErrorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: firstErrorType });
         } else {
-          let errorDesc = '';
-          for (const errorType of errorTypes) {
-            errorDesc += `${errorType}, `;
-          }
-          errorDesc = errorDesc.slice(0, -2);
-          await this.dispatchErrorToast('error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
+          const singleFileErrorType = this.convertToSingleFileErrorMessage(firstErrorType);
+          const errorDesc = Array.from(errorTypes).join(', ');
+          await this.dispatchErrorToast(singleFileErrorType, null, `All ${files.length} files failed validation. Error Types: ${errorDesc}`, false, true, { code: 'validation_error_validate_files', subCode: singleFileErrorType, desc: errorDesc });
         }
       }
       return { isValid: false, validFiles};
