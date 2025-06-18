@@ -152,10 +152,15 @@ body > .splash-loader {
 .splash-loader .text h2:first-of-type,
 .splash-loader .text h3:first-of-type,
 .splash-loader .text h4:first-of-type,
-.splash-loader .text h5:first-of-type,
-.splash-loader .text p:first-of-type {
+.splash-loader .text h5:first-of-type {
   font-size: var(--type-heading-m-size);
   line-height: var(--type-heading-m-lh);
+}
+
+.splash-loader .text-block p {
+  font-size: var(--type-heading-m-size);
+  line-height: var(--type-heading-m-lh);
+  font-weight: 700;
 }
 
 @media screen and (min-width: 600px) {
@@ -163,8 +168,7 @@ body > .splash-loader {
   .splash-loader h2,
   .splash-loader h3,
   .splash-loader h4,
-  .splash-loader h5,
-  .splash-loader p {
+  .splash-loader h5 {
     font-size: var(--type-heading-xl-size);
     line-height: var(--type-heading-xl-lh);
     font-weight: 700;
@@ -174,10 +178,15 @@ body > .splash-loader {
   .splash-loader .text h2:first-of-type,
   .splash-loader .text h3:first-of-type,
   .splash-loader .text h4:first-of-type,
-  .splash-loader .text h5:first-of-type,
-  .splash-loader .text p:first-of-type {
+  .splash-loader .text h5:first-of-type {
     font-size: var(--type-heading-l-size);
     line-height: var(--type-heading-l-lh);
+  }
+
+  .splash-loader .text-block p {
+    font-size: var(--type-heading-l-size);
+    line-height: var(--type-heading-l-lh);
+    font-weight: 700;
   }
 }
 
