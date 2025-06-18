@@ -158,8 +158,8 @@ body > .splash-loader {
 }
 
 .splash-loader .text-block p {
-  font-size: var(--type-heading-m-size);
-  line-height: var(--type-heading-m-lh);
+  font-size: var(--type-heading-l-size);
+  line-height: var(--type-heading-l-lh);
   font-weight: 700;
 }
 
@@ -184,8 +184,8 @@ body > .splash-loader {
   }
 
   .splash-loader .text-block p {
-    font-size: var(--type-heading-l-size);
-    line-height: var(--type-heading-l-lh);
+    font-size: var(--type-heading-xl-size);
+    line-height: var(--type-heading-xl-lh);
     font-weight: 700;
   }
 }
