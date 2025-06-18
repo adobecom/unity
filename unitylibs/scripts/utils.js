@@ -80,6 +80,7 @@ async function getImsToken() {
           message: `Token refresh failed after retry. Original error: ${firstAttempt.error.message}`,
           type: 'refresh_error',
           originalToken: accessToken,
+          originalError: JSON.stringify(firstAttempt.error),
         },
       };
     }
@@ -89,6 +90,7 @@ async function getImsToken() {
       token: null,
       error: {
         message: `Error getting IMS access token: ${error.message}`,
+        originalError: JSON.stringify(error),
         type: 'token_error',
       },
     };
