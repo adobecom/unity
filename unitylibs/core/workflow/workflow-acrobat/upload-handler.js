@@ -420,6 +420,8 @@ export default class UploadHandler {
         this.createAsset(file),
       ]);
     } catch (error) {
+      this.initSplashScreen();
+      await this.transitionScreen.showSplashScreen();
       this.handleUploadError(error, 'pre_upload_error_create_asset');
       return;
     }

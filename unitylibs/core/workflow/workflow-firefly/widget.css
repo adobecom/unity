@@ -42,12 +42,6 @@
   font-weight: 400;
 }
 
-.hero-marquee.unity-enabled p:last-of-type {
-  font-size: var(--type-body-xs-size);
-  line-height: var(--type-body-xs-lh);
-  padding-top: var(--spacing-s);
-}
-
 .unity-enabled .interactive-area .ex-unity-wrap {
   position: relative;
 }
@@ -656,6 +650,10 @@
   .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
     transform: translateY(-80%);
     bottom: 0;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item {
+    -webkit-text-size-adjust: 100%;
   }
 }
 
