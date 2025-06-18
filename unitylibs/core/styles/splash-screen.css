@@ -152,7 +152,8 @@ body > .splash-loader {
 .splash-loader .text h2:first-of-type,
 .splash-loader .text h3:first-of-type,
 .splash-loader .text h4:first-of-type,
-.splash-loader .text h5:first-of-type {
+.splash-loader .text h5:first-of-type,
+.splash-loader .text p:first-of-type {
   font-size: var(--type-heading-m-size);
   line-height: var(--type-heading-m-lh);
 }
@@ -173,7 +174,8 @@ body > .splash-loader {
   .splash-loader .text h2:first-of-type,
   .splash-loader .text h3:first-of-type,
   .splash-loader .text h4:first-of-type,
-  .splash-loader .text h5:first-of-type {
+  .splash-loader .text h5:first-of-type,
+  .splash-loader .text p:first-of-type {
     font-size: var(--type-heading-l-size);
     line-height: var(--type-heading-l-lh);
   }
