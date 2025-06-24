@@ -165,8 +165,8 @@ export default class TransitionScreen {
   }
 
   updateCopyForDevice() {
-    const mobileHeading = this.headingElements[1];
-    const desktopHeading = this.headingElements[2];
+    const mobileHeading = this.headingElements[2];
+    const desktopHeading = this.headingElements[3];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
     }
@@ -188,7 +188,7 @@ export default class TransitionScreen {
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
-      this.splashScreenEl.setAttribute('aria-label', this.headingElements[1].innerText);
+      this.splashScreenEl.setAttribute('aria-label', this.headingElements[2].innerText);
       if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }
