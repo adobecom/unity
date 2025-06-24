@@ -33,14 +33,33 @@ class ServiceHandler {
     throw error;
   }
 
+  async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const mergedOptions = { ...options, signal: controller.signal };
+    try {
+      const response = await fetch(url, mergedOptions);
+      clearTimeout(timeout);
+      return response;
+    } catch (e) {
+      clearTimeout(timeout);
+      if (e.name === 'AbortError') {
+        const error = new Error(`Request timed out after ${timeoutMs}ms`);
+        error.name = 'TimeoutError';
+        throw error;
+      }
+      throw e;
+    }
+  }
+
   async fetchFromService(url, options, canRetry = true) {
     try {
-      if (!options?.signal?.aborted)  this.handleAbortedRequest(url, options);
-      const response = await fetch(url, options);
+      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
+      const response = await this.fetchWithTimeout(url, options, 60000);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return this.fetchFromService(url, options, false);
       }
       if (response.status !== 200) {
@@ -427,6 +446,12 @@ export default class ActionBinder {
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
 
+  convertToSingleFileErrorMessage(multiFileErrorMessage) {
+    return multiFileErrorMessage.endsWith('_multi') 
+      ? multiFileErrorMessage.slice(0, -6) 
+      : multiFileErrorMessage;
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -478,16 +503,13 @@ export default class ActionBinder {
     }
     if (allFilesFailed) {
       if (this.MULTI_FILE) {
+        const firstErrorType = Array.from(errorTypes)[0];
         if (errorTypes.size === 1) {
-          const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorType });
+          await this.dispatchErrorToast(firstErrorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: firstErrorType });
         } else {
-          let errorDesc = '';
-          for (const errorType of errorTypes) {
-            errorDesc += `${errorType}, `;
-          }
-          errorDesc = errorDesc.slice(0, -2);
-          await this.dispatchErrorToast('error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
+          const singleFileErrorType = this.convertToSingleFileErrorMessage(firstErrorType);
+          const errorDesc = Array.from(errorTypes).join(', ');
+          await this.dispatchErrorToast(singleFileErrorType, null, `All ${files.length} files failed validation. Error Types: ${errorDesc}`, false, true, { code: 'validation_error_validate_files', subCode: singleFileErrorType, desc: errorDesc });
         }
       }
       return { isValid: false, validFiles};
