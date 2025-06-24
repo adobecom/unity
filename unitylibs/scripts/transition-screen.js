@@ -77,15 +77,6 @@ export default class TransitionScreen {
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const headingToReplace = doc.querySelector('#one-moment-as-we-take-you-to-acrobatadobecom');
-    if (headingToReplace && headingToReplace.tagName.toLowerCase() === 'h2') {
-      const p = doc.createElement('p');
-      Array.from(headingToReplace.attributes).forEach((attr) => {
-        p.setAttribute(attr.name, attr.value);
-      });
-      p.innerHTML = headingToReplace.innerHTML;
-      headingToReplace.replaceWith(p);
-    }
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     f.append(...sections);
