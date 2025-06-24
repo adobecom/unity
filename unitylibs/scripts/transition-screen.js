@@ -77,6 +77,17 @@ export default class TransitionScreen {
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    const h2Elements = doc.querySelectorAll('h2');
+    if (h2Elements.length > 1) {
+      Array.from(h2Elements).slice(1).forEach((headingToReplace) => {
+        const p = doc.createElement('p');
+        Array.from(headingToReplace.attributes).forEach((attr) => {
+          p.setAttribute(attr.name, attr.value);
+        });
+        p.innerHTML = headingToReplace.innerHTML;
+        headingToReplace.replaceWith(p);
+      });
+    }
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     f.append(...sections);
@@ -154,8 +165,8 @@ export default class TransitionScreen {
   }
 
   updateCopyForDevice() {
-    const mobileHeading = this.headingElements[1];
-    const desktopHeading = this.headingElements[2];
+    const mobileHeading = this.headingElements[2];
+    const desktopHeading = this.headingElements[3];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
     }
@@ -176,8 +187,8 @@ export default class TransitionScreen {
       textNodes.forEach((node) => { node.textContent = ''; });
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
-      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      this.splashScreenEl.setAttribute('aria-label', this.headingElements[1].innerText);
+      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
+      this.splashScreenEl.setAttribute('aria-label', this.headingElements[2].innerText);
       if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }
