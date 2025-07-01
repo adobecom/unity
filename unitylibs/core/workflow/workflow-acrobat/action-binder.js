@@ -348,7 +348,9 @@ export default class ActionBinder {
   }
 
   handlePropositions(AJOPropositionResult) {
-    console.log('AJOPropositionResult: ', AJOPropositionResult);
+    const data = AJOPropositionResult.decisions[0].items[0].data.content;
+    const { verb, experience } = data;
+    console.log('AJOPropositionResult: ', AJOPropositionResult, 'Verb: ', verb, 'Experience: ', experience);
   }
 
   async fetchAjoResponse() {
