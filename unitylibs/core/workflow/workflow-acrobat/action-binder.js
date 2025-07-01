@@ -299,11 +299,11 @@ export default class ActionBinder {
     this.initialize();
   }
 
-  function handlePropositions(AJOPropositionResult) {
+  async handlePropositions(AJOPropositionResult) {
     console.log('AJOPropositionResult: ', AJOPropositionResult);
   }
   
-  function fetchAjoResponse() {
+  async fetchAjoResponse() {
     window._satellite.track('propositionFetch', {
       personalization: { surfaces: ['web://adobe.com/acrobat#projectUnity'] },
       data: {},
@@ -323,7 +323,7 @@ export default class ActionBinder {
   async initialize() {
     await this.isSignedOut();
     await this.applySignedInSettings();
-    fetchAjoResponse();
+    await fetchAjoResponse();
   }
 
   async isSignedOut() {
