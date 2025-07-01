@@ -358,7 +358,7 @@ export default class ActionBinder {
       personalization: { surfaces: ['web://adobe.com/acrobat#projectUnity'] },
       data: {},
       xdm: {},
-      done(AJOPropositionResult, error) {
+      done: (AJOPropositionResult, error) => {
         if (error) {
           console.error('[AJO Fetch Error]:', error);
           return;
