@@ -299,9 +299,31 @@ export default class ActionBinder {
     this.initialize();
   }
 
+  function handlePropositions(AJOPropositionResult) {
+    console.log('AJOPropositionResult: ', AJOPropositionResult);
+  }
+  
+  function fetchAjoResponse() {
+    window._satellite.track('propositionFetch', {
+      personalization: { surfaces: ['web://adobe.com/acrobat#projectUnity'] },
+      data: {},
+      xdm: {},
+      done(AJOPropositionResult, error) {
+        console.log('AJOPropositionResult: ', AJOPropositionResult);
+        if (error) {
+          console.error('[AJO Fetch Error]:', err);
+          return;
+        }
+        handlePropositions(AJOPropositionResult);
+        window._satellite.track('propositionDisplay', AJOPropositionResult.propositions); // update Analytics/CJA response was displayed
+      },
+    });
+  }
+
   async initialize() {
     await this.isSignedOut();
     await this.applySignedInSettings();
+    fetchAjoResponse();
   }
 
   async isSignedOut() {
