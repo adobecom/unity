@@ -347,7 +347,28 @@ export default class ActionBinder {
     return unityConfig;
   }
 
+  handlePropositions(AJOPropositionResult) {
+    console.log('AJOPropositionResult: ', AJOPropositionResult);
+  }
+
+  async fetchAjoResponse() {
+    window._satellite.track('propositionFetch', {
+      personalization: { surfaces: ['web://adobe.com/acrobat#projectUnity'] },
+      data: {},
+      xdm: {},
+      done(AJOPropositionResult, error) {
+        if (error) {
+          console.error('[AJO Fetch Error]:', error);
+          return;
+        }
+        this.handlePropositions(AJOPropositionResult);
+        window._satellite.track('propositionDisplay', AJOPropositionResult.propositions);
+      },
+    });
+  }
+
   async handlePreloads() {
+    await this.fetchAjoResponse(); // Do we need to await this?
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
