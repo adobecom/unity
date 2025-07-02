@@ -701,10 +701,10 @@ export default class ActionBinder {
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       if (this.tokenError) {
-        const errorDetails = JSON.stringify(this.tokenError, null, 2);
-        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails}`, false, true, {
+        const errorDetails = this.tokenError;
+        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
-          desc: `Could not fetch access token; Error: ${errorDetails}`,
+          desc: `${errorDetails.message}; Error: ${errorDetails.originalError.message}, Stack : ${errorDetails.originalError.stack}`,
         });
         return;
       }
