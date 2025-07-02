@@ -44,10 +44,7 @@ async function getRefreshToken() {
   } catch (e) {
     return {
       token: null,
-      error: {
-        message: `Token refresh failed: ${e.message}`,
-        type: 'refresh_error',
-      },
+      error: e
     };
   }
 }
@@ -65,20 +62,17 @@ async function getImsToken() {
   try {
     const accessToken = window.adobeIMS?.getAccessToken();
     if (!accessToken || accessToken?.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
+      const reason = !accessToken ? 'access_token_null' : 'access_token_expired';
       const firstAttempt = await attemptTokenRefresh();
-      if (!firstAttempt.error) {
-        return firstAttempt;
-      }
+      if (!firstAttempt.error) return firstAttempt;
       await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
       const retryAttempt = await attemptTokenRefresh();
-      if (!retryAttempt.error) {
-        return retryAttempt;
-      }
+      if (!retryAttempt.error) return retryAttempt;
       return {
         token: null,
         error: {
-          message: `Token refresh failed after retry. Original error: ${firstAttempt.error}`,
-          type: 'refresh_error',
+          message: `Token refresh failed after retry. refresh_error_${reason}`,
+          originalError: retryAttempt.error,
           originalToken: accessToken
         },
       };
@@ -105,11 +99,7 @@ export async function isGuestUser() {
   if (result.error) {
     return {
       isGuest: null,
-      error: {
-        message: `Error checking guest user status: ${result.error.message}`,
-        type: 'guest_status_error',
-        originalError: result.error,
-      },
+      error: result.error
     };
   }
   return { isGuest: result.token?.isGuestToken, error: null };
