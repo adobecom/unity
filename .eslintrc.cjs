@@ -21,6 +21,7 @@ module.exports = {
     'no-return-assign': ['error', 'except-parens'],
     'no-unused-expressions': 0,
     'chai-friendly/no-unused-expressions': 2,
+    'max-len': ['warn', { code: 120 }],
   },
   overrides: [
     {
