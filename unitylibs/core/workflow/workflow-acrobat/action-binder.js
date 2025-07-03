@@ -8,8 +8,6 @@ import {
   unityConfig,
   getUnityLibs,
   priorityLoad,
-  loadArea,
-  loadImg,
   isGuestUser,
   getHeaders,
 } from '../../../scripts/utils.js';
@@ -20,6 +18,7 @@ const DOS_SPECIAL_NAMES = new Set([
   'LPT7', 'LPT8', 'LPT9',
 ]);
 
+// eslint-disable-next-line no-control-regex
 const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
@@ -59,7 +58,9 @@ class ServiceHandler {
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
         return this.fetchFromService(url, options, false);
       }
       if (response.status !== 200) {
@@ -101,8 +102,10 @@ class ServiceHandler {
       this.handleAbortedRequest(url, options);
       const response = await this.fetchFromService(url, options, false);
       if (response.status === 202) {
-        const retryDelay = parseInt(response.headers.get('retry-after')) || 5;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay * 1000));
+        const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
+        await new Promise((resolve) => {
+          setTimeout(resolve, retryDelay * 1000);
+        });
         timeLapsed += retryDelay;
       } else {
         return response;
