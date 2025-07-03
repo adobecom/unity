@@ -12,7 +12,7 @@ class HealthCheck {
     const apiStatuses = {};
     for (const [categoryName, apis] of Object.entries(this.services)) {
       const results = await this.checkCategory(categoryName, apis);
-      apiStatuses[categoryName] = results.results.reduce((max, res) => res.success ? max : Math.max(max, res.statusCode || 500), 200);
+      apiStatuses[categoryName] = results.results.reduce((max, res) => (res.success ? max : Math.max(max, res.statusCode || 500)), 200);
       this.printResults(categoryName, results);
     }
     this.printApiResponse(apiStatuses);
@@ -37,9 +37,9 @@ class HealthCheck {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', `${getUnityLibs()}/img/healthcheck.jpeg`);
       xhr.responseType = 'blob';
-      xhr.onload = () => xhr.status === 200
+      xhr.onload = () => (xhr.status === 200
         ? res({ ...options, body: xhr.response, headers: { 'Content-Type': 'image/jpeg' } })
-        : rej(xhr.status);
+        : rej(xhr.status));
       xhr.send();
     });
   }
@@ -65,7 +65,7 @@ class HealthCheck {
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
       if (service.replaceKey) {
         const data = await response.json();
-        service.replaceKey.forEach(key => {
+        service.replaceKey.forEach((key) => {
           this.services[category] = this.replacePlaceholders(this.services[category], `{{${key}}}`, data[key]);
         });
         apis.forEach((_, i) => apis[i] = this.services[category][i]);

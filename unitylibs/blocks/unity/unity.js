@@ -10,9 +10,9 @@ function getUnityLibs(prodLibs, project = 'unity') {
   }
   const branch = new URLSearchParams(window.location.search).get('unitylibs') || 'main';
   const helixVersion = hostname.includes('.hlx.') ? 'hlx' : 'aem';
-  return branch.indexOf('--') > -1 
-  ? `https://${branch}.${helixVersion}.live/unitylibs` 
-  : `https://${branch}--unity--adobecom.${helixVersion}.live/unitylibs`;
+  return branch.indexOf('--') > -1
+    ? `https://${branch}.${helixVersion}.live/unitylibs`
+    : `https://${branch}--unity--adobecom.${helixVersion}.live/unitylibs`;
 }
 
 export default async function init(el) {

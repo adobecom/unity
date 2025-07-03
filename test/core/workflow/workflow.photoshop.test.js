@@ -12,7 +12,7 @@ const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js
 document.body.innerHTML = await readFile({ path: './mocks/ps-body.html' });
 
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 describe('Unity PS Block', () => {
@@ -53,7 +53,7 @@ describe('Unity PS Block', () => {
     await delay(300);
     const fileInput = document.querySelector('.file-upload');
     const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/78fKfoAAAAASUVORK5CYII=';
-    const imageBuffer = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
+    const imageBuffer = Uint8Array.from(atob(base64Image), (c) => c.charCodeAt(0));
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
     const file = new File([imageBlob], 'image.png', { type: 'image/png' });
     const dataTransfer = new DataTransfer();

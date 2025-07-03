@@ -21,6 +21,9 @@ module.exports = {
     'no-return-assign': ['error', 'except-parens'],
     'no-unused-expressions': 0,
     'chai-friendly/no-unused-expressions': 2,
+    'max-len': 'off',
+    'no-plusplus': ['error', { allowForLoopAfterthoughts: true }],
+    camelcase: 'off',
   },
   overrides: [
     {

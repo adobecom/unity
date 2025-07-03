@@ -94,7 +94,7 @@ export default class ActionBinder {
   }
 
   toggleElement(item, actionValue, b) {
-    let tel = typeof item === 'string' ? b?.querySelector(item) : item;
+    const tel = typeof item === 'string' ? b?.querySelector(item) : item;
     if (tel?.classList.contains('show')) {
       item?.classList.remove('show');
       actionValue.controlClass.forEach((c) => actionValue.controlEl.classList.remove(c));

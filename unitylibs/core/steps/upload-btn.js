@@ -58,9 +58,9 @@ export default async function createUpload(cfg, target, callback = null) {
           }
           if (!targetEl.classList.contains(GRAY_BG)) targetEl.classList.add(GRAY_BG);
           if (target.naturalWidth > targetElWidth) {
-              cfg.imgDisplay = 'landscape';
-              if (!target.classList.contains(IMG_LANDSCAPE)) target.classList.add(IMG_LANDSCAPE);
-              if (target.classList.contains(FULL_HEIGHT)) target.classList.remove(FULL_HEIGHT);
+            cfg.imgDisplay = 'landscape';
+            if (!target.classList.contains(IMG_LANDSCAPE)) target.classList.add(IMG_LANDSCAPE);
+            if (target.classList.contains(FULL_HEIGHT)) target.classList.remove(FULL_HEIGHT);
           } else {
             cfg.imgDisplay = 'portrait';
             if (!target.classList.contains(IMG_PORTRAIT)) target.classList.add(IMG_PORTRAIT);
@@ -92,6 +92,6 @@ export default async function createUpload(cfg, target, callback = null) {
   a.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') input.click();
   });
-  a.addEventListener('click', () => input.click()); 
+  a.addEventListener('click', () => input.click());
   return a;
 }
