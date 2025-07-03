@@ -44,7 +44,7 @@ async function getRefreshToken() {
   } catch (e) {
     return {
       token: null,
-      error: e
+      error: e,
     };
   }
 }
@@ -73,7 +73,7 @@ async function getImsToken() {
         error: {
           message: `Token refresh failed after retry. refresh_error_${reason}`,
           originalError: retryAttempt.error,
-          originalToken: accessToken
+          originalToken: accessToken,
         },
       };
     }
@@ -99,7 +99,7 @@ export async function isGuestUser() {
   if (result.error) {
     return {
       isGuest: null,
-      error: result.error
+      error: result.error,
     };
   }
   return { isGuest: result.token?.isGuestToken, error: null };
@@ -126,8 +126,8 @@ export function defineDeviceByScreenSize() {
 }
 
 export function getLocale() {
-  const currLocale = getConfig().locale?.prefix.replace('/', '')
-  return currLocale ? currLocale : 'us';
+  const currLocale = getConfig().locale?.prefix.replace('/', '');
+  return currLocale || 'us';
 }
 
 export async function loadSvg(src) {
@@ -148,7 +148,7 @@ export async function loadSvgs(svgs) {
       fetch(svg.src)
         .then((res) => {
           if (res.ok) return res.text();
-          else throw new Error('Could not fetch SVG');
+          throw new Error('Could not fetch SVG');
         })
         .then((txt) => { svg.parentElement.innerHTML = txt; })
         .catch((e) => { svg.remove(); }),
@@ -284,17 +284,17 @@ export function delay(durationMs = 1000) {
   });
 }
 
-export function updateQueryParameter(url, paramName='format', oldValue='webply', newValue='jpeg') {
+export function updateQueryParameter(url, paramName = 'format', oldValue = 'webply', newValue = 'jpeg') {
   try {
-      const urlObj = new URL(url);
-      const params = urlObj.searchParams;
-      if (params.get(paramName) === oldValue) {
-          params.set(paramName, newValue);
-      }
+    const urlObj = new URL(url);
+    const params = urlObj.searchParams;
+    if (params.get(paramName) === oldValue) {
+      params.set(paramName, newValue);
+    }
 
-      return urlObj.toString();
+    return urlObj.toString();
   } catch (error) {
-      return null;
+    return null;
   }
 }
 
@@ -323,9 +323,9 @@ export const unityConfig = (() => {
     },
   };
   if (host.includes('hlx.page')
-    || host.includes('hlx.live') 
+    || host.includes('hlx.live')
     || host.includes('aem.page')
-    || host.includes('aem.live') 
+    || host.includes('aem.live')
     || host.includes('localhost')
     || host.includes('stage.adobe')
     || host.includes('corp.adobe')

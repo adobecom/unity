@@ -304,7 +304,7 @@ class WfInitiator {
           'protect-pdf',
           'ocr-pdf',
           'chat-pdf',
-          'chat-pdf-student'
+          'chat-pdf-student',
         ]),
       },
       'workflow-ai': {
@@ -340,8 +340,8 @@ class WfInitiator {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
     const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget');
     if (verbWidget) {
-      const verb = [...verbWidget.classList].find(cn => supportedFeatures.has(cn));
-      if (verb) this.workflowCfg.enabledFeatures.push(verb)
+      const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
+      if (verb) this.workflowCfg.enabledFeatures.push(verb);
     }
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
     configuredFeatures.forEach((cf) => {
@@ -349,7 +349,7 @@ class WfInitiator {
       if (!cfName) return;
       const fn = cfName.trim().replace('icon-', '');
       if (supportedFeatures.has(fn)) {
-        if(!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
+        if (!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
@@ -363,7 +363,7 @@ class WfInitiator {
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
   let uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
-  if (el.classList.contains('workflow-ai')) uv = 'v2'; //This line will be removed once CC moves to unity V2
+  if (el.classList.contains('workflow-ai')) uv = 'v2'; // This line will be removed once CC moves to unity V2
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
