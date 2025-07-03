@@ -121,7 +121,7 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  async priorityLibFetch(workflowName) {
+  static async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const sharedWfRes = [
       `${baseWfPath}/sprite.svg`,
@@ -160,7 +160,7 @@ class WfInitiator {
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await this.priorityLibFetch(this.workflowCfg.name);
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
     this.callbackMap = {};
@@ -231,7 +231,7 @@ class WfInitiator {
     return [prevElem, ta, targetCfg];
   }
 
-  getImgSrc(pic) {
+  static getImgSrc(pic) {
     const viewport = defineDeviceByScreenSize();
     let source = '';
     if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
@@ -243,7 +243,7 @@ class WfInitiator {
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {
-      asset.querySelector('img').src = this.getImgSrc(asset);
+      asset.querySelector('img').src = WfInitiator.getImgSrc(asset);
       [...asset.querySelectorAll('source')].forEach((s) => s.remove());
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);

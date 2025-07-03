@@ -26,7 +26,7 @@ export const [setUnityLibs, getUnityLibs] = (() => {
   ];
 })();
 
-export function decorateArea(area = document) {}
+export function decorateArea() {}
 
 const miloLibs = setLibs('/libs');
 
@@ -65,7 +65,7 @@ async function getImsToken() {
       const reason = !accessToken ? 'access_token_null' : 'access_token_expired';
       const firstAttempt = await attemptTokenRefresh();
       if (!firstAttempt.error) return firstAttempt;
-      await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+      await new Promise((resolve) => { setTimeout(resolve, RETRY_WAIT); });
       const retryAttempt = await attemptTokenRefresh();
       if (!retryAttempt.error) return retryAttempt;
       return {
@@ -151,7 +151,7 @@ export async function loadSvgs(svgs) {
           throw new Error('Could not fetch SVG');
         })
         .then((txt) => { svg.parentElement.innerHTML = txt; })
-        .catch((e) => { svg.remove(); }),
+        .catch(() => { svg.remove(); }),
     );
   });
   await Promise.all(promiseArr);
@@ -203,7 +203,7 @@ export async function priorityLoad(parr) {
       promiseArr.push(fetch(p));
     }
   });
-  return await Promise.all(promiseArr);
+  return Promise.all(promiseArr);
 }
 
 async function createErrorToast() {
@@ -247,18 +247,21 @@ export async function showErrorToast(targetEl, unityEl, className) {
   document.querySelector('.unity-enabled .interactive-area .alert-holder').style.display = 'flex';
 }
 
-export async function retryRequestUntilProductRedirect(cfg, requestFunction, delay = 1000) {
+export async function retryRequestUntilProductRedirect(cfg, requestFunction, retryDelay = 1000) {
   while (cfg.continueRetrying) {
     try {
+      // eslint-disable-next-line no-await-in-loop
       const scanResponse = await requestFunction();
       if (scanResponse.status === 429 || (scanResponse.status >= 500 && scanResponse.status < 600)) {
-        await new Promise((res) => setTimeout(res, delay));
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((res) => { setTimeout(res, retryDelay); });
       } else {
         cfg.scanResponseAfterRetries = scanResponse;
         return scanResponse;
       }
     } catch (e) {
-      await new Promise((res) => setTimeout(res, delay));
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((res) => { setTimeout(res, retryDelay); });
     }
   }
   return cfg.scanResponseAfterRetries;
@@ -341,7 +344,7 @@ export function sendAnalyticsEvent(event) {
     data: { web: { webInteraction: { name: event?.type } } },
   };
   if (event?.detail) {
-    data.data._adobe_corpnew = { digitalData: event.detail };
+    data.data.adobeCorpnew = { digitalData: event.detail }; // eslint-disable-line no-underscore-dangle
   }
-  window._satellite?.track('event', data);
+  window._satellite?.track('event', data); // eslint-disable-line no-underscore-dangle
 }

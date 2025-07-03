@@ -70,7 +70,8 @@ export default class UploadHandler {
         error = err;
       }
       if (attempt < maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        const delay = retryDelay;
+        await new Promise((resolve) => { setTimeout(resolve, delay); });
         retryDelay *= 2;
       }
     }
@@ -167,11 +168,11 @@ export default class UploadHandler {
         const chunk = blobData.slice(start, end);
         const url = assetData.uploadUrls[i];
         return async () => {
-          if (fileUploadFailed || signal?.aborted) return Promise.resolve();
+          if (fileUploadFailed || signal?.aborted) return;
           const urlObj = new URL(url.href);
           const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
           try {
-            const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, signal, parseInt(chunkNumber));
+            const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, signal, parseInt(chunkNumber, 10));
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
           } catch (err) {
@@ -247,6 +248,7 @@ export default class UploadHandler {
       const totalDuration = 5000;
       let metadata = {};
       let intervalId;
+      let timeoutId;
       let requestInProgress = false;
       let metadataExists = false;
       return new Promise((resolve) => {
@@ -291,7 +293,7 @@ export default class UploadHandler {
             await handleMetadata();
           }
         }, intervalDuration);
-        const timeoutId = setTimeout(async () => {
+        timeoutId = setTimeout(async () => {
           clearInterval(intervalId);
           if (!metadataExists) resolve(false);
           else await handleMetadata();
@@ -368,7 +370,7 @@ export default class UploadHandler {
       case 409:
         await this.actionBinder.dispatchErrorToast('upload_validation_error_duplicate_asset', e.status, e.message, false, e.showError, {
           code: errorCode,
-          subCode: upload_validation_error_duplicate_asset,
+          subCode: 'upload_validation_error_duplicate_asset',
           desc: `Exception raised when uploading file(s): ${e.message}`,
         });
         break;
@@ -376,7 +378,7 @@ export default class UploadHandler {
         if (e.message === 'notentitled') {
           await this.actionBinder.dispatchErrorToast('upload_error_no_storage_provision', e.status, e.message, false, e.showError, {
             code: errorCode,
-            subCode: upload_error_no_storage_provision,
+            subCode: 'upload_error_no_storage_provision',
             desc: `Exception raised when uploading file(s): ${e.message}`,
           });
         } else {
@@ -456,8 +458,7 @@ export default class UploadHandler {
     if (!redirectSuccess) return;
     this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
     this.actionBinder.setIsUploading(true);
-    let failedFiles; let
-      attemptMap;
+    let failedFiles; let attemptMap;
     try {
       ({ failedFiles, attemptMap } = await this.chunkPdf(
         [assetData],
@@ -502,11 +503,11 @@ export default class UploadHandler {
     try {
       await this.transitionScreen.showSplashScreen(true);
       const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) return await this.uploadSingleFile(file, fileData);
-      await this.actionBinder.delay(3000);
-      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
-      if (!redirectSuccess) return;
-      this.actionBinder.redirectWithoutUpload = true;
+      if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) { await this.uploadSingleFile(file, fileData); } else {
+        await this.actionBinder.delay(3000);
+        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
+        if (redirectSuccess) this.actionBinder.redirectWithoutUpload = true;
+      }
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       this.actionBinder.operations = [];
@@ -543,9 +544,9 @@ export default class UploadHandler {
       if (!redirectSuccess) return;
       this.actionBinder.dispatchAnalyticsEvent('uploading', filesData);
       this.actionBinder.setIsUploading(true);
-      let failedFiles; let
-        attemptMap;
+      let failedFiles; let attemptMap;
       try {
+        // eslint-disable-next-line no-unused-vars
         ({ failedFiles, attemptMap } = await this.chunkPdf(
           assetDataArray,
           blobDataArray,
@@ -614,7 +615,7 @@ export default class UploadHandler {
         workflowId,
       },
     };
-    return await this.actionBinder.handleRedirect(cOpts, filesData);
+    return this.actionBinder.handleRedirect(cOpts, filesData);
   }
 
   async uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks) {
@@ -628,14 +629,12 @@ export default class UploadHandler {
   }
 
   async processUploadedAssets(uploadedAssets) {
-    let allVerified = 0;
     const assetsToDelete = [];
     await this.executeInBatches(uploadedAssets, this.getConcurrentLimits().maxConcurrentFiles, async (assetData) => {
       const verified = await this.verifyContent(assetData);
       if (verified) {
         const validated = await this.handleValidations(assetData, true);
-        if (validated) allVerified += 1;
-        else assetsToDelete.push(assetData);
+        if (!validated) assetsToDelete.push(assetData);
       } else assetsToDelete.push(assetData);
     });
     const verifiedAssets = uploadedAssets.filter((asset) => !assetsToDelete.some((deletedAsset) => deletedAsset.id === asset.id));

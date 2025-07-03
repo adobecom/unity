@@ -43,7 +43,7 @@ function createPayloadForSplunk(metaData) {
 export default function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint, sendBeacon = false) {
   try {
     const eventDataPayload = createPayloadForSplunk({ ...metaData, eventName, product });
-    if (navigator.sendBeacon && navigator.sendBeacon(splunkEndpoint, JSON.stringify(eventDataPayload))) return;
+    if (sendBeacon && navigator.sendBeacon && navigator.sendBeacon(splunkEndpoint, JSON.stringify(eventDataPayload))) return;
     fetch(splunkEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
