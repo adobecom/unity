@@ -235,10 +235,6 @@ export default class ActionBinder {
   getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
   validateInput() {
-    if (this.inputField.value.length === 0 && !this.id) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
-      return { isValid: false, errorCode: 'empty-input' };
-    }
     if (this.inputField.value.length > 750) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };

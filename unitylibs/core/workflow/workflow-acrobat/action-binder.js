@@ -33,14 +33,33 @@ class ServiceHandler {
     throw error;
   }
 
+  async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const mergedOptions = { ...options, signal: controller.signal };
+    try {
+      const response = await fetch(url, mergedOptions);
+      clearTimeout(timeout);
+      return response;
+    } catch (e) {
+      clearTimeout(timeout);
+      if (e.name === 'AbortError') {
+        const error = new Error(`Request timed out after ${timeoutMs}ms`);
+        error.name = 'TimeoutError';
+        throw error;
+      }
+      throw e;
+    }
+  }
+
   async fetchFromService(url, options, canRetry = true) {
     try {
-      if (!options?.signal?.aborted)  this.handleAbortedRequest(url, options);
-      const response = await fetch(url, options);
+      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
+      const response = await this.fetchWithTimeout(url, options, 60000);
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return this.fetchFromService(url, options, false);
       }
       if (response.status !== 200) {
@@ -174,7 +193,7 @@ export default class ActionBinder {
     'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
     'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single'],
-    'ocr-pdf': ['hybrid', 'allowed-filetypes-all', 'page-limit-100', 'max-filesize-100-mb'],
+    'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
   };
@@ -427,6 +446,12 @@ export default class ActionBinder {
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
 
+  convertToSingleFileErrorMessage(multiFileErrorMessage) {
+    return multiFileErrorMessage.endsWith('_multi') 
+      ? multiFileErrorMessage.slice(0, -6) 
+      : multiFileErrorMessage;
+  }
+
   async validateFiles(files) {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
@@ -478,16 +503,13 @@ export default class ActionBinder {
     }
     if (allFilesFailed) {
       if (this.MULTI_FILE) {
+        const firstErrorType = Array.from(errorTypes)[0];
         if (errorTypes.size === 1) {
-          const errorType = Array.from(errorTypes)[0];
-          await this.dispatchErrorToast(errorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorType });
+          await this.dispatchErrorToast(firstErrorType, null, null, false, true, { code: 'validation_error_validate_files', subCode: firstErrorType });
         } else {
-          let errorDesc = '';
-          for (const errorType of errorTypes) {
-            errorDesc += `${errorType}, `;
-          }
-          errorDesc = errorDesc.slice(0, -2);
-          await this.dispatchErrorToast('error_generic', null, `All ${files.length} files failed validation. Error Types: ${Array.from(errorTypes).join(', ')}`, false, true, { code: 'validation_error_validate_files', subCode: 'validation_error_multiple_invalid_files', desc: errorDesc });
+          const singleFileErrorType = this.convertToSingleFileErrorMessage(firstErrorType);
+          const errorDesc = Array.from(errorTypes).join(', ');
+          await this.dispatchErrorToast(singleFileErrorType, null, `All ${files.length} files failed validation. Error Types: ${errorDesc}`, false, true, { code: 'validation_error_validate_files', subCode: singleFileErrorType, desc: errorDesc });
         }
       }
       return { isValid: false, validFiles};
@@ -571,11 +593,17 @@ export default class ActionBinder {
     this.uploadHandler = new UploadHandler(this, this.serviceHandler);
   }
 
+  async getMimeType(file) {
+    const { getMimeType } = await import('../../../utils/FileUtils.js');
+    return getMimeType(file.name);
+  }
+
   async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
-      return new File([file], sanitizedFileName, { type: file.type, lastModified: file.lastModified });
+      const mimeType = file.type || await this.getMimeType(file);
+      return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
@@ -678,10 +706,10 @@ export default class ActionBinder {
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       if (this.tokenError) {
-        const errorDetails = JSON.stringify(this.tokenError, null, 2);
-        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails}`, false, true, {
+        const errorDetails = this.tokenError;
+        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
-          desc: `Could not fetch access token; Error: ${errorDetails}`,
+          desc: `${errorDetails.message}; Error: ${errorDetails.originalError.message}, Stack : ${errorDetails.originalError.stack}`,
         });
         return;
       }

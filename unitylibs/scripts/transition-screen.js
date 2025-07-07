@@ -6,6 +6,8 @@ import {
 } from './utils.js';
 
 export default class TransitionScreen {
+  static lastProgressText = '';
+
   constructor(splashScreenEl, initActionListeners, loaderLimit, workflowCfg, isDesktop = false) {
     this.splashScreenEl = splashScreenEl;
     this.initActionListeners = initActionListeners;
@@ -15,9 +17,19 @@ export default class TransitionScreen {
     this.LOADER_INCREMENT = 30;
     this.isDesktop = isDesktop;
     this.headingElements = [];
+    this.progressText = '';
+  }
+
+  setProgressTextFromDOM() {
+    const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
+      .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+    this.progressText = textNodes.map((node) => node.textContent.trim()).join(' ');
+    if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
+    return textNodes;
   }
 
   updateProgressBar(layer, percentage) {
+    if (!this.progressText && TransitionScreen.lastProgressText) this.progressText = TransitionScreen.lastProgressText;
     const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
     spb?.setAttribute('value', p);
@@ -25,7 +37,10 @@ export default class TransitionScreen {
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
     layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
     const status = layer.querySelector('#progress-status');
-    if (status?.textContent !== `${p}%`) status.textContent = `${p}%`;
+    const newStatus = (this.progressText && this.progressText.trim() !== '')
+      ? this.progressText.replace('%', `${p}%`)
+      : `${p}%`;
+    if (status && status.textContent !== newStatus) status.textContent = newStatus;
   }
 
   createProgressBar() {
@@ -62,6 +77,17 @@ export default class TransitionScreen {
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    const h2Elements = doc.querySelectorAll('h2');
+    if (h2Elements.length > 1) {
+      Array.from(h2Elements).slice(1).forEach((headingToReplace) => {
+        const p = doc.createElement('p');
+        Array.from(headingToReplace.attributes).forEach((attr) => {
+          p.setAttribute(attr.name, attr.value);
+        });
+        p.innerHTML = headingToReplace.innerHTML;
+        headingToReplace.replaceWith(p);
+      });
+    }
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     f.append(...sections);
@@ -139,8 +165,8 @@ export default class TransitionScreen {
   }
 
   updateCopyForDevice() {
-    const mobileHeading = this.headingElements[1];
-    const desktopHeading = this.headingElements[2];
+    const mobileHeading = this.headingElements[2];
+    const desktopHeading = this.headingElements[3];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
     }
@@ -157,10 +183,12 @@ export default class TransitionScreen {
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
+      const textNodes = this.setProgressTextFromDOM();
+      textNodes.forEach((node) => { node.textContent = ''; });
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
-      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      this.splashScreenEl.setAttribute('aria-label', this.headingElements[1].innerText);
+      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
+      this.splashScreenEl.setAttribute('aria-label', this.headingElements[2].innerText);
       if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }
