@@ -118,7 +118,7 @@ describe('TransitionScreen', () => {
       h1.innerText = 'Mobile';
       const h2 = document.createElement('h2');
       h2.innerText = 'Desktop';
-      screen.headingElements = [null, h1, h2];
+      screen.headingElements = [null, null, h1, h2];
       screen.isDesktop = true;
       screen.splashScreenEl = document.createElement('div');
       screen.updateCopyForDevice();
@@ -152,8 +152,11 @@ describe('TransitionScreen', () => {
       h0.innerText = 'Heading 0';
       const h1 = document.createElement('h2');
       h1.innerText = 'Heading 1';
+      const h2 = document.createElement('h3');
+      h2.innerText = 'Heading 2';
       splashScreenEl.appendChild(h0);
       splashScreenEl.appendChild(h1);
+      splashScreenEl.appendChild(h2);
       const stub1 = sinon.stub(screen, 'handleSplashProgressBar').resolves();
       const stub2 = sinon.stub(screen, 'handleOperationCancel');
       await screen.showSplashScreen();

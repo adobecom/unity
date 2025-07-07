@@ -9,8 +9,15 @@ describe('ActionBinder', () => {
   let mockWfblock;
   let mockCanvasArea;
   let mockServiceHandler;
+  let mockGetHeaders;
 
   beforeEach(() => {
+    // Mock the getHeaders function
+    mockGetHeaders = sinon.stub().resolves({ 'Content-Type': 'application/json', Authorization: 'mock-token', 'x-api-key': 'test-api-key' });
+
+    // Mock the global getHeaders function
+    window.getHeaders = mockGetHeaders;
+
     mockWorkflowCfg = {
       productName: 'test-product',
       enabledFeatures: ['test-feature'],
@@ -112,7 +119,7 @@ describe('ActionBinder', () => {
 
       it('should return JSON response on successful request', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -139,7 +146,7 @@ describe('ActionBinder', () => {
 
       it('should retry on 5xx errors', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           status: 500,
           headers: mockHeaders,
           ok: false,
@@ -198,7 +205,7 @@ describe('ActionBinder', () => {
 
       it('should return response on successful retry', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -218,7 +225,7 @@ describe('ActionBinder', () => {
 
       it('should make POST request with correct headers', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -228,11 +235,12 @@ describe('ActionBinder', () => {
 
         await mockServiceHandler.postCallToService('test-url', { body: 'test' });
 
-        expect(window.fetch.calledWith('test-url', {
-          method: 'POST',
-          headers: sinon.match.object,
-          body: 'test',
-        })).to.be.true;
+        const fetchCall = window.fetch.getCall(0);
+        expect(fetchCall.args[0]).to.equal('test-url');
+        expect(fetchCall.args[1].method).to.equal('POST');
+        expect(fetchCall.args[1].body).to.equal('test');
+        expect(fetchCall.args[1].headers).to.have.property('Authorization');
+        expect(fetchCall.args[1].headers).to.have.property('x-api-key');
       });
     });
 
@@ -243,7 +251,7 @@ describe('ActionBinder', () => {
 
       it('should make POST request with retry capability', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -253,11 +261,12 @@ describe('ActionBinder', () => {
 
         await mockServiceHandler.postCallToServiceWithRetry('test-url', { body: 'test' });
 
-        expect(window.fetch.calledWith('test-url', {
-          method: 'POST',
-          headers: sinon.match.object,
-          body: 'test',
-        })).to.be.true;
+        const fetchCall = window.fetch.getCall(0);
+        expect(fetchCall.args[0]).to.equal('test-url');
+        expect(fetchCall.args[1].method).to.equal('POST');
+        expect(fetchCall.args[1].body).to.equal('test');
+        expect(fetchCall.args[1].headers).to.have.property('Authorization');
+        expect(fetchCall.args[1].headers).to.have.property('x-api-key');
       });
     });
 
@@ -268,7 +277,7 @@ describe('ActionBinder', () => {
 
       it('should make GET request with query parameters', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -278,10 +287,11 @@ describe('ActionBinder', () => {
 
         await mockServiceHandler.getCallToService('test-url', { param: 'value' });
 
-        expect(window.fetch.calledWith('test-url?param=value', {
-          method: 'GET',
-          headers: sinon.match.object,
-        })).to.be.true;
+        const fetchCall = window.fetch.getCall(0);
+        expect(fetchCall.args[0]).to.equal('test-url?param=value');
+        expect(fetchCall.args[1].method).to.equal('GET');
+        expect(fetchCall.args[1].headers).to.have.property('Authorization');
+        expect(fetchCall.args[1].headers).to.have.property('x-api-key');
       });
     });
 
@@ -292,7 +302,7 @@ describe('ActionBinder', () => {
 
       it('should make DELETE request with access token', async () => {
         const mockHeaders = new Headers();
-        const mockResponse = { 
+        const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
           headers: mockHeaders,
           ok: true,
@@ -302,13 +312,11 @@ describe('ActionBinder', () => {
 
         await mockServiceHandler.deleteCallToService('test-url', 'test-token');
 
-        expect(window.fetch.calledWith('test-url', {
-          method: 'DELETE',
-          headers: {
-            Authorization: 'test-token',
-            'x-api-key': 'unity',
-          },
-        })).to.be.true;
+        const fetchCall = window.fetch.getCall(0);
+        expect(fetchCall.args[0]).to.equal('test-url');
+        expect(fetchCall.args[1].method).to.equal('DELETE');
+        expect(fetchCall.args[1].headers.Authorization).to.equal('test-token');
+        expect(fetchCall.args[1].headers['x-api-key']).to.equal('unity');
       });
     });
   });
@@ -1311,8 +1319,8 @@ describe('ActionBinder', () => {
             sendSplunkAnalytics: true,
           },
           errors: {
-            'pre_upload_error_fetching_access_token': 'Error fetching access token',
-            'error_generic': 'Generic error occurred',
+            pre_upload_error_fetching_access_token: 'Error fetching access token',
+            error_generic: 'Generic error occurred',
           },
           name: 'workflow-acrobat',
         };
@@ -1361,6 +1369,103 @@ describe('ActionBinder', () => {
         window.dispatchEvent(new Event('IMS:Ready'));
         expect(spy.called).to.be.true;
         spy.restore();
+      });
+    });
+
+    describe('getMimeType', () => {
+      beforeEach(() => {
+        actionBinder.workflowCfg = { name: 'workflow-acrobat' };
+      });
+
+      it('should return correct mime type for .indd file', async () => {
+        const file = { name: 'test.indd' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => 'application/x-indesign' });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.equal('application/x-indesign');
+
+        // Restore original import
+        window.import = originalImport;
+      });
+
+      it('should return correct mime type for .ai file', async () => {
+        const file = { name: 'test.ai' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => 'application/illustrator' });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.equal('application/illustrator');
+
+        // Restore original import
+        window.import = originalImport;
+      });
+
+      it('should return correct mime type for .psd file', async () => {
+        const file = { name: 'test.psd' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => 'image/vnd.adobe.photoshop' });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.equal('image/vnd.adobe.photoshop');
+
+        // Restore original import
+        window.import = originalImport;
+      });
+
+      it('should return correct mime type for .form file', async () => {
+        const file = { name: 'test.form' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => 'application/vnd.adobe.form.fillsign' });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.equal('application/vnd.adobe.form.fillsign');
+
+        // Restore original import
+        window.import = originalImport;
+      });
+
+      it('should return undefined for unknown file extension', async () => {
+        const file = { name: 'test.unknown' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => undefined });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.be.undefined;
+
+        // Restore original import
+        window.import = originalImport;
+      });
+
+      it('should handle file without extension', async () => {
+        const file = { name: 'testfile' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => undefined });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.be.undefined;
+
+        // Restore original import
+        window.import = originalImport;
+      });
+
+      it('should handle file with multiple dots', async () => {
+        const file = { name: 'test.backup.indd' };
+        const originalImport = window.import;
+        window.import = () => Promise.resolve({ getMimeType: () => 'application/x-indesign' });
+
+        const result = await actionBinder.getMimeType(file);
+
+        expect(result).to.equal('application/x-indesign');
+
+        // Restore original import
+        window.import = originalImport;
       });
     });
   });
