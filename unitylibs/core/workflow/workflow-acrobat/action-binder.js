@@ -348,19 +348,19 @@ export default class ActionBinder {
   }
 
   handlePropositions(AJOPropositionResult) {
-    const data = AJOPropositionResult.decisions[0].items[0].data.content;
-    const { verb, experience } = data;
+    this.ajoData = AJOPropositionResult.decisions[0].items[0].data.content;
+    const { verb, experience } = this.ajoData;
     console.log('AJOPropositionResult: ', AJOPropositionResult, 'Verb: ', verb, 'Experience: ', experience);
   }
 
   async fetchAjoResponse() {
     window._satellite.track('propositionFetch', {
-      personalization: { surfaces: ['web://adobe.com/acrobat#projectUnity'] },
+      personalization: { surfaces: this.workflowCfg.targetCfg.ajoSurfaces },
       data: {},
       xdm: {},
       done: (AJOPropositionResult, error) => {
         if (error) {
-          console.error('[AJO Fetch Error]:', error);
+          // Log error to splunk
           return;
         }
         this.handlePropositions(AJOPropositionResult);
@@ -370,7 +370,7 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    await this.fetchAjoResponse(); // Do we need to await this?
+    await this.fetchAjoResponse();
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
@@ -578,6 +578,10 @@ export default class ActionBinder {
     } catch (e) {
       cOpts.payload.newUser = true;
       cOpts.payload.attempts = '1st';
+      cOpts.payload.ajoData = {
+        experience: this.ajoData.experience || '0',
+        verb: this.ajoData.verb || 'add-comment',
+      };
     }
     if(!(cOpts.payload.feedback)) {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
