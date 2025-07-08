@@ -344,7 +344,7 @@ export function sendAnalyticsEvent(event) {
     data: { web: { webInteraction: { name: event?.type } } },
   };
   if (event?.detail) {
-    data.data.adobeCorpnew = { digitalData: event.detail }; // eslint-disable-line no-underscore-dangle
+    data.data._adobe_corpnew = { digitalData: event.detail }; // eslint-disable-line no-underscore-dangle
   }
   window._satellite?.track('event', data); // eslint-disable-line no-underscore-dangle
 }

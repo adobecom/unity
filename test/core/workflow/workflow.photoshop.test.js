@@ -10,9 +10,10 @@ window.adobeIMS = {
 };
 const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js');
 document.body.innerHTML = await readFile({ path: './mocks/ps-body.html' });
-
 function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(() => { resolve(); }, ms);
+  });
 }
 
 describe('Unity PS Block', () => {

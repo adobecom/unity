@@ -13,7 +13,7 @@ module.exports = {
     'linebreak-style': ['error', 'unix'],
     'import/extensions': ['error', { js: 'always' }],
     'object-curly-newline': ['error', {
-      ObjectExpression: { multiline: true, minProperties: 6 },
+      ObjectExpression: { multiline: true, minProperties: 10 },
       ObjectPattern: { multiline: true, minProperties: 6 },
       ImportDeclaration: { multiline: true, minProperties: 6 },
       ExportDeclaration: { multiline: true, minProperties: 6 },

@@ -11,9 +11,11 @@ window.adobeIMS = {
 const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js');
 document.body.innerHTML = await readFile({ path: './mocks/dc-body.html' });
 function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
-describe('Unity DC Block', function () {
+describe('Unity DC Block', () => {
   this.timeout(10000);
   before(async () => {
     const fetchStub = sinon.stub(window, 'fetch');

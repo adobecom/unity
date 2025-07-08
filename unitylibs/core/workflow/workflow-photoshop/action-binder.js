@@ -310,7 +310,7 @@ export default class ActionBinder {
     this.operations = [];
     const file = e.target.files[0];
     if (!file) return;
-    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
+    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) === -1) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
       throw new Error('File format not supported!!');
     }

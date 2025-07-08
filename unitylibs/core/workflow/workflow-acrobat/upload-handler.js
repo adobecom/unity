@@ -422,8 +422,7 @@ export default class UploadHandler {
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     const abortSignal = this.actionBinder.getAbortSignal();
     let cOpts = {};
-    let blobData; let
-      assetData;
+    let blobData; let assetData;
     try {
       [blobData, assetData] = await Promise.all([
         this.getBlobData(file),
