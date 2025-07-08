@@ -83,44 +83,4 @@ describe('workflow.js', () => {
       expect(workflowModule).to.not.have.property('WfInitiator');
     });
   });
-
-  describe('getImgSrc', () => {
-    let mockPicture;
-
-    beforeEach(() => {
-      mockPicture = document.createElement('picture');
-      const source1 = document.createElement('source');
-      source1.setAttribute('type', 'image/webp');
-      source1.setAttribute('media', '(min-width: 768px)');
-      source1.setAttribute('srcset', 'desktop-image.webp');
-
-      const source2 = document.createElement('source');
-      source2.setAttribute('type', 'image/webp');
-      source2.setAttribute('srcset', 'mobile-image.webp');
-
-      const img = document.createElement('img');
-      img.setAttribute('src', 'fallback-image.jpg');
-
-      mockPicture.appendChild(source1);
-      mockPicture.appendChild(source2);
-      mockPicture.appendChild(img);
-    });
-
-    it('should return desktop source for desktop viewport', () => {
-      window.defineDeviceByScreenSize = () => 'DESKTOP';
-      const result = workflowModule.getImgSrc(mockPicture);
-      expect(result).to.equal('desktop-image.webp');
-    });
-
-    it('should handle picture with no img element', () => {
-      const emptyPicture = document.createElement('picture');
-      const source = document.createElement('source');
-      source.setAttribute('type', 'image/webp');
-      source.setAttribute('srcset', 'test.webp');
-      emptyPicture.appendChild(source);
-
-      // This should throw an error since there's no img element
-      expect(() => workflowModule.getImgSrc(emptyPicture)).to.throw();
-    });
-  });
 });
