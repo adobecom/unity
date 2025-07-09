@@ -299,7 +299,6 @@ export default class ActionBinder {
     this.uploadTimestamp = null;
     this.showInfoToast = false;
     this.multiFileValidationFailure = false;
-    this.isRedirecting = false;
     this.initialize();
   }
 
@@ -522,7 +521,6 @@ export default class ActionBinder {
   }
 
   async showTransitionScreen() {
-    if (this.isRedirecting) return;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();
@@ -681,7 +679,6 @@ export default class ActionBinder {
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.delay(500);
-      this.isRedirecting = true;
       const [baseUrl, queryString] = this.redirectUrl.split('?');
       if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
