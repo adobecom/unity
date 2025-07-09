@@ -520,6 +520,12 @@ export default class ActionBinder {
     return { isValid: true, validFiles };
   }
 
+  async showTransitionScreen() {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    await this.transitionScreen.showSplashScreen();
+  }
+
   async getRedirectUrl(cOpts) {
     this.promiseStack.push(
       this.serviceHandler.postCallToService(
@@ -535,9 +541,7 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-        await this.transitionScreen.showSplashScreen();
+        await this.showTransitionScreen();
         await this.dispatchErrorToast('pre_upload_error_fetch_redirect_url', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
           code: 'pre_upload_error_fetch_redirect_url',
           subCode: e.status,
@@ -587,6 +591,11 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
+  async initUploadHandler() {
+    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+  }
+
   async getMimeType(file) {
     const { getMimeType } = await import('../../../utils/FileUtils.js');
     return getMimeType(file.name);
@@ -602,8 +611,7 @@ export default class ActionBinder {
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+    await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
     } else {
@@ -686,9 +694,7 @@ export default class ActionBinder {
   }
 
   async cancelAcrobatOperation() {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    await this.transitionScreen.showSplashScreen();
+    await this.showTransitionScreen();
     this.redirectUrl = '';
     this.filesData = this.filesData || {};
     this.filesData.workflowStep = this.isUploading ? 'uploading' : 'preuploading';

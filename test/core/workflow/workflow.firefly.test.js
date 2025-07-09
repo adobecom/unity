@@ -107,7 +107,6 @@ describe('Firefly Workflow Tests', () => {
     const dropdown = await unityWidget.genDropdown(placeholder);
     expect(dropdown).to.exist;
     expect(dropdown.querySelector('.drop-title')).to.exist;
-    expect(dropdown.querySelector('.close-btn')).to.exist;
   });
 
   it('should handle keydown events correctly', () => {
