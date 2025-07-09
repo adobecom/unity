@@ -578,35 +578,13 @@ export default class ActionBinder {
     return true;
   }
 
-  async handleFileUpload(files) {
-    if (this.isRedirecting) return;
-    this.isRedirecting = false;
-    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
-    const sanitizedFiles = await Promise.all(files.map(async (file) => {
-      const sanitizedFileName = await this.sanitizeFileName(file.name);
-      const mimeType = file.type || await this.getMimeType(file);
-      return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
-    }));
-    this.MULTI_FILE = files.length > 1;
-    const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
-    if (!isValid) return;
-    await this.initUploadHandler();
-    if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
-      await this.handleSingleFileUpload(validFiles);
-    } else {
-      await this.handleMultiFileUpload(validFiles);
-    }
-  }
-
   async handleSingleFileUpload(files) {
-    if (this.isRedirecting) return;
     this.filesData = { ...this.filesData, uploadType: 'sfu' };
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
 
   async handleMultiFileUpload(files) {
-    if (this.isRedirecting) return;
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
     this.filesData = { ...this.filesData, uploadType: 'mfu' };
@@ -623,6 +601,25 @@ export default class ActionBinder {
   async getMimeType(file) {
     const { getMimeType } = await import('../../../utils/FileUtils.js');
     return getMimeType(file.name);
+  }
+
+  async handleFileUpload(files) {
+    this.isRedirecting = false;
+    const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
+    const sanitizedFiles = await Promise.all(files.map(async (file) => {
+      const sanitizedFileName = await this.sanitizeFileName(file.name);
+      const mimeType = file.type || await this.getMimeType(file);
+      return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
+    }));
+    this.MULTI_FILE = files.length > 1;
+    const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
+    if (!isValid) return;
+    await this.initUploadHandler();
+    if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
+      await this.handleSingleFileUpload(validFiles);
+    } else {
+      await this.handleMultiFileUpload(validFiles);
+    }
   }
 
   async loadVerbLimits(workflowName, keys) {
