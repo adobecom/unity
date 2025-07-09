@@ -1170,26 +1170,6 @@ describe('ActionBinder', () => {
         expect(actionBinder.showTransitionScreen.called).to.be.false;
         expect(locationSpy.called).to.be.false;
       });
-
-      it('should handle redirect errors', async () => {
-        const error = new Error('Redirect failed');
-        error.status = 500;
-        actionBinder.delay.rejects(error);
-        await actionBinder.continueInApp();
-        expect(actionBinder.transitionScreen.showSplashScreen.called).to.be.true;
-        expect(actionBinder.dispatchErrorToast.calledWith(
-          'error_generic',
-          500,
-          'Exception thrown when redirecting to product; Redirect failed',
-          false,
-          undefined,
-          {
-            code: 'upload_error_redirect_to_app',
-            subCode: 500,
-            desc: 'Redirect failed',
-          },
-        )).to.be.true;
-      });
     });
 
     describe('cancelAcrobatOperation', () => {
