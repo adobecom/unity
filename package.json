@@ -7,6 +7,7 @@
   "scripts": {
     "test": "wtr --config ./web-test-runner.config.mjs \"./test/**/*.test.(js|html)\" --node-resolve --port=2000 --coverage",
     "test:watch": "npm test -- --watch",
+    "test:coverage": "npm test && node scripts/check-coverage.js",
     "nala": "node nala/utils/nala.run.cjs",
     "lcov": "lcov -a coverage/jest/lcov.info -a coverage/wtr/lcov.info -o coverage/lcov.info",
     "lint": "npm run lint:js && npm run lint:css",
