@@ -186,7 +186,8 @@ class BaseReporter {
     return { name, tags, url, browser, env, branch, repo };
   }
 
-  async persistData() {}
+  // eslint-disable-next-line no-empty-function
+  static async persistData() {}
 
   printPersistingOption() {
     if (this.options?.persist) {

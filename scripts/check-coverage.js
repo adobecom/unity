@@ -60,6 +60,7 @@ function parseLcovFile(filePath) {
     console.error('Error reading coverage file:', error.message);
     process.exit(1);
   }
+  return null;
 }
 
 function checkCoverage() {
