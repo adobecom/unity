@@ -715,7 +715,7 @@ export default class ActionBinder {
         const errorDetails = this.tokenError;
         await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
-          desc: `${errorDetails.message}; Error: ${errorDetails.originalError.message}, Stack : ${errorDetails.originalError.stack}`,
+          desc: errorDetails
         });
         return;
       }
