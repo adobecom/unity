@@ -604,7 +604,6 @@ export default class ActionBinder {
   }
 
   async handleFileUpload(files) {
-    this.isRedirecting = false;
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
