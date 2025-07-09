@@ -166,4 +166,4 @@ describe('TransitionScreen', () => {
       stub2.restore();
     });
   });
-}); 
+});

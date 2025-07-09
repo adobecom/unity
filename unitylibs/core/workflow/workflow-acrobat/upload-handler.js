@@ -252,7 +252,7 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.maxNumPages
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
-            if (!isMultiFile){
+            if (!isMultiFile) {
               await this.showSplashScreen();
               await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
             }

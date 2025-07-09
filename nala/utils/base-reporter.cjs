@@ -183,9 +183,7 @@ class BaseReporter {
       [branch, repo] = branchAndRepo.split('--');
     }
 
-    return {
-      name, tags, url, browser, env, branch, repo,
-    };
+    return { name, tags, url, browser, env, branch, repo };
   }
 
   async persistData() {}

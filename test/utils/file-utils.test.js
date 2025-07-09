@@ -61,4 +61,4 @@ describe('FileUtils', () => {
       expect(removeExtension('.gitignore')).to.equal('.gitignore');
     });
   });
-}); 
+});

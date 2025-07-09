@@ -197,4 +197,4 @@ describe('utils.js', () => {
 
   // DOM-heavy and async: createErrorToast, showErrorToast, createActionBtn
   // These can be tested with more advanced DOM mocking if needed
-}); 
+});

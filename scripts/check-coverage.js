@@ -90,4 +90,4 @@ function checkCoverage() {
   }
 }
 
-checkCoverage(); 
+checkCoverage();
