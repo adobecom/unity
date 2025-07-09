@@ -11,7 +11,10 @@
     "lcov": "lcov -a coverage/jest/lcov.info -a coverage/wtr/lcov.info -o coverage/lcov.info",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint .",
-    "lint:css": "stylelint 'unitylibs/blocks/**/*.css' 'unitylibs/styles/*.css'"
+    "lint:js:fix": "eslint . --fix",
+    "lint:css": "stylelint 'unitylibs/blocks/**/*.css' 'unitylibs/styles/*.css'",
+    "lint:css:fix": "stylelint 'unitylibs/blocks/**/*.css' 'unitylibs/styles/*.css' --fix",
+    "lint:fix": "npm run lint:js:fix && npm run lint:css:fix"
   },
   "repository": {
     "type": "git",
