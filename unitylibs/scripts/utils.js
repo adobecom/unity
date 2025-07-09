@@ -37,6 +37,8 @@ export {
   createTag, loadStyle, getConfig, loadLink, loadScript, localizeLink, loadArea,
 };
 
+
+
 async function getRefreshToken() {
   try {
     const { tokenInfo } = window.adobeIMS ? await window.adobeIMS.refreshToken() : {};
@@ -68,12 +70,13 @@ async function getImsToken() {
       await new Promise((resolve) => { setTimeout(resolve, RETRY_WAIT); });
       const retryAttempt = await attemptTokenRefresh();
       if (!retryAttempt.error) return retryAttempt;
+      const { flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
       return {
         token: null,
         error: {
           message: `Token refresh failed after retry. refresh_error_${reason}`,
-          originalError: retryAttempt.error,
-          originalToken: accessToken,
+          originalError: flattenObject(retryAttempt.error),
+          originalToken: accessToken
         },
       };
     }
