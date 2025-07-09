@@ -644,7 +644,7 @@ export default class UploadHandler {
   }
 
   async showSplashScreen(displayOn = false) {
-    this.initSplashScreen();
+    await this.initSplashScreen();
     await this.transitionScreen.showSplashScreen(displayOn);
   }
 

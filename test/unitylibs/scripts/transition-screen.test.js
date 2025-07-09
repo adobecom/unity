@@ -37,7 +37,7 @@ describe('TransitionScreen', () => {
 
   describe('createProgressBar', () => {
     it('should return a div with class progress-holder', () => {
-      const el = screen.createProgressBar();
+      const el = TransitionScreen.createProgressBar();
       expect(el).to.be.instanceOf(HTMLElement);
       expect(el.className).to.include('progress-holder');
       expect(el.innerHTML).to.include('spectrum-ProgressBar');
