@@ -1277,7 +1277,7 @@ describe('ActionBinder', () => {
         await actionBinder.initActionListeners(block, actMap);
 
         // Find the handler attached to 'change'
-        const handler = addEventListenerSpy.getCalls().find(call => call.args[0] === 'change').args[1];
+        const handler = addEventListenerSpy.getCalls().find((call) => call.args[0] === 'change').args[1];
 
         // Set required properties to avoid TypeError
         actionBinder.signedOut = false;
@@ -1308,7 +1308,7 @@ describe('ActionBinder', () => {
 
         await actionBinder.initActionListeners(block, actMap);
 
-        const handler = addEventListenerSpy.getCalls().find(call => call.args[0] === 'change').args[1];
+        const handler = addEventListenerSpy.getCalls().find((call) => call.args[0] === 'change').args[1];
 
         // Set required properties to avoid TypeError
         actionBinder.signedOut = false;
@@ -1598,9 +1598,7 @@ describe('ActionBinder', () => {
       beforeEach(() => {
         actionBinder.workflowCfg = {
           enabledFeatures: ['compress-pdf'],
-          errors: {
-            error_generic: 'Generic error occurred',
-          },
+          errors: { error_generic: 'Generic error occurred' },
         };
         actionBinder.signedOut = false;
         actionBinder.tokenError = null;
@@ -1610,22 +1608,20 @@ describe('ActionBinder', () => {
         // Mock localStorage.getItem to throw an error
         const localStorageStub = sinon.stub(window.localStorage, 'getItem');
         localStorageStub.throws(new Error('localStorage not available'));
-        
-        const cOpts = {
-          payload: {},
-        };
+
+        const cOpts = { payload: {} };
         const filesData = { type: 'application/pdf', size: 123, count: 1 };
-        
+
         // Mock the redirect URL fetch to succeed
         const mockResponse = { url: 'https://test-redirect.com' };
         sinon.stub(mockServiceHandler, 'postCallToService').resolves(mockResponse);
-        
+
         const result = await actionBinder.handleRedirect(cOpts, filesData);
-        
+
         expect(result).to.be.true;
         expect(cOpts.payload.newUser).to.be.true;
         expect(cOpts.payload.attempts).to.equal('1st');
-        
+
         localStorageStub.restore();
         mockServiceHandler.postCallToService.restore();
       });
