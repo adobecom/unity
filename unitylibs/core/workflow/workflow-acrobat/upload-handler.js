@@ -208,9 +208,7 @@ export default class UploadHandler {
           });
           return false;
         }
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-        await this.transitionScreen.showSplashScreen();
+        await this.showSplashScreen();
         await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`, false, true, {
           code: 'upload_error_finalize_asset',
           desc: `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`,
@@ -228,9 +226,7 @@ export default class UploadHandler {
         });
         return false;
       }
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-      await this.transitionScreen.showSplashScreen();
+      await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
         code: 'upload_error_finalize_asset',
         subCode: e.status,
@@ -257,9 +253,7 @@ export default class UploadHandler {
             && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
           ) {
             if (!isMultiFile) {
-              const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-              this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-              await this.transitionScreen.showSplashScreen();
+              await this.showSplashScreen();
               await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
             }
             resolve(true);
@@ -268,9 +262,7 @@ export default class UploadHandler {
           if (this.actionBinder?.limits?.pageLimit?.minNumPages
             && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
           ) {
-            const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-            this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-            await this.transitionScreen.showSplashScreen();
+            await this.showSplashScreen();
             await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
             resolve(true);
             return;
@@ -300,9 +292,7 @@ export default class UploadHandler {
         }, totalDuration);
       });
     } catch (e) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-      await this.transitionScreen.showSplashScreen();
+      await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
         code: 'upload_validation_error_verify_page_count',
         subCode: e.status,
@@ -336,9 +326,7 @@ export default class UploadHandler {
 
   async dispatchGenericError(info = null, showError = true) {
     this.actionBinder.operations = [];
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-    await this.transitionScreen.showSplashScreen();
+    await this.showSplashScreen();
     await this.actionBinder.dispatchErrorToast('error_generic', 500, info, false, showError);
   }
 
@@ -476,9 +464,7 @@ export default class UploadHandler {
     }
     if (abortSignal.aborted) return;
     if (failedFiles?.size === 1) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-      await this.transitionScreen.showSplashScreen();
+      await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for the single file: ${assetData.id}, ${file.size} bytes, ${file.type}`, false, true, {
         code: 'upload_error_chunk_upload',
         desc: `${Array.from(failedFiles)[0]?.chunkNumber || 'unknown'}`,
@@ -497,10 +483,8 @@ export default class UploadHandler {
   }
 
   async singleFileGuestUpload(file, fileData) {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
-      await this.transitionScreen.showSplashScreen(true);
+      await this.showSplashScreen(true);
       const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
       if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) { await this.uploadSingleFile(file, fileData); } else {
         await this.actionBinder.delay(3000);
@@ -508,20 +492,18 @@ export default class UploadHandler {
         if (redirectSuccess) this.actionBinder.redirectWithoutUpload = true;
       }
     } catch (e) {
-      await this.transitionScreen.showSplashScreen();
+      await this.showSplashScreen();
       this.actionBinder.operations = [];
       await this.handleUploadError(e);
     }
   }
 
   async singleFileUserUpload(file, fileData) {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
     try {
-      await this.transitionScreen.showSplashScreen(true);
+      await this.showSplashScreen(true);
       await this.uploadSingleFile(file, fileData, this.isPdf(file));
     } catch (e) {
-      await this.transitionScreen.showSplashScreen();
+      await this.showSplashScreen();
       this.actionBinder.operations = [];
       await this.handleUploadError(e);
     }
@@ -661,11 +643,14 @@ export default class UploadHandler {
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
   }
 
+  async showSplashScreen(displayOn = false) {
+    await this.initSplashScreen();
+    await this.transitionScreen.showSplashScreen(displayOn);
+  }
+
   async multiFileGuestUpload(files, filesData) {
     try {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-      await this.transitionScreen.showSplashScreen(true);
+      await this.showSplashScreen(true);
       const nonpdfMfuFeedbackScreenTypeNonpdf = this.actionBinder.workflowCfg.targetCfg.nonpdfMfuFeedbackScreenTypeNonpdf.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
       if (nonpdfMfuFeedbackScreenTypeNonpdf) {
         const allNonPdf = files.every((file) => !this.isPdf(file));
@@ -701,9 +686,7 @@ export default class UploadHandler {
 
   async multiFileUserUpload(files, filesData) {
     try {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
-      await this.transitionScreen.showSplashScreen(true);
+      await this.showSplashScreen(true);
       await this.uploadMultiFile(files, filesData);
     } catch (e) {
       await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
