@@ -578,32 +578,8 @@ export default class ActionBinder {
     return true;
   }
 
-  async handleSingleFileUpload(files) {
-    this.filesData = { ...this.filesData, uploadType: 'sfu' };
-    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
-    else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
-  }
-
-  async handleMultiFileUpload(files) {
-    this.MULTI_FILE = true;
-    this.LOADER_LIMIT = 65;
-    this.filesData = { ...this.filesData, uploadType: 'mfu' };
-    this.dispatchAnalyticsEvent('multifile', this.filesData);
-    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
-    else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
-  }
-
-  async initUploadHandler() {
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
-  }
-
-  async getMimeType(file) {
-    const { getMimeType } = await import('../../../utils/FileUtils.js');
-    return getMimeType(file.name);
-  }
-
   async handleFileUpload(files) {
+    if (this.isRedirecting) return;
     this.isRedirecting = false;
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
@@ -620,6 +596,33 @@ export default class ActionBinder {
     } else {
       await this.handleMultiFileUpload(validFiles);
     }
+  }
+
+  async handleSingleFileUpload(files) {
+    if (this.isRedirecting) return;
+    this.filesData = { ...this.filesData, uploadType: 'sfu' };
+    if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
+    else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
+  }
+
+  async handleMultiFileUpload(files) {
+    if (this.isRedirecting) return;
+    this.MULTI_FILE = true;
+    this.LOADER_LIMIT = 65;
+    this.filesData = { ...this.filesData, uploadType: 'mfu' };
+    this.dispatchAnalyticsEvent('multifile', this.filesData);
+    if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
+    else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
+  }
+
+  async initUploadHandler() {
+    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+  }
+
+  async getMimeType(file) {
+    const { getMimeType } = await import('../../../utils/FileUtils.js');
+    return getMimeType(file.name);
   }
 
   async loadVerbLimits(workflowName, keys) {
