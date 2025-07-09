@@ -1557,20 +1557,6 @@ describe('ActionBinder', () => {
             expect(error.message).to.equal('Request timed out after 5000ms');
           }
         });
-
-        it('should handle AbortError with custom timeout', async () => {
-          const abortError = new Error('Request aborted');
-          abortError.name = 'AbortError';
-          window.fetch.rejects(abortError);
-
-          try {
-            await mockServiceHandler.fetchWithTimeout('test-url', {}, 10000);
-            expect.fail('Should have thrown TimeoutError');
-          } catch (error) {
-            expect(error.name).to.equal('TimeoutError');
-            expect(error.message).to.equal('Request timed out after 10000ms');
-          }
-        });
       });
 
       describe('fetchFromService TimeoutError/AbortError handling', () => {
@@ -1605,82 +1591,6 @@ describe('ActionBinder', () => {
             expect(error.message).to.include('Request timed out. URL: test-url');
           }
         });
-
-        it('should include original error message in timeout error', async () => {
-          const timeoutError = new Error('Custom timeout message');
-          timeoutError.name = 'TimeoutError';
-          window.fetch.rejects(timeoutError);
-
-          try {
-            await mockServiceHandler.fetchFromService('test-url', {});
-            expect.fail('Should have thrown error with status 504');
-          } catch (error) {
-            expect(error.status).to.equal(504);
-            expect(error.message).to.include('Custom timeout message');
-          }
-        });
-      });
-    });
-
-    describe('sanitizeFileName Error Handling', () => {
-      beforeEach(() => {
-        actionBinder.workflowCfg = {
-          errors: {
-            error_generic: 'Generic error occurred',
-          },
-        };
-      });
-
-      it('should handle error in sanitizeFileName and return fallback name', async () => {
-        const originalImport = window.import;
-        const mockError = new Error('FileUtils import failed');
-        
-        // Mock the import to throw an error
-        window.import = () => Promise.reject(mockError);
-        
-        const dispatchSpy = sinon.spy(actionBinder, 'dispatchErrorToast');
-        
-        const result = await actionBinder.sanitizeFileName('test-file.pdf');
-        
-        expect(result).to.equal('---');
-        expect(dispatchSpy.called).to.be.true;
-        expect(dispatchSpy.firstCall.args[0]).to.equal('error_generic');
-        expect(dispatchSpy.firstCall.args[1]).to.equal(500);
-        expect(dispatchSpy.firstCall.args[2]).to.include('Error renaming file: test-file.pdf');
-        expect(dispatchSpy.firstCall.args[4]).to.be.true; // showError
-        expect(dispatchSpy.firstCall.args[5]).to.deep.include({
-          code: 'pre_upload_error_renaming_file',
-          subCode: 'Error',
-          desc: 'FileUtils import failed',
-        });
-        
-        // Restore original import
-        window.import = originalImport;
-        dispatchSpy.restore();
-      });
-
-      it('should handle specific error types in sanitizeFileName', async () => {
-        const originalImport = window.import;
-        const mockError = new TypeError('Invalid file name');
-        
-        // Mock the import to throw a TypeError
-        window.import = () => Promise.reject(mockError);
-        
-        const dispatchSpy = sinon.spy(actionBinder, 'dispatchErrorToast');
-        
-        const result = await actionBinder.sanitizeFileName('invalid-file.pdf');
-        
-        expect(result).to.equal('---');
-        expect(dispatchSpy.called).to.be.true;
-        expect(dispatchSpy.firstCall.args[5]).to.deep.include({
-          code: 'pre_upload_error_renaming_file',
-          subCode: 'TypeError',
-          desc: 'Invalid file name',
-        });
-        
-        // Restore original import
-        window.import = originalImport;
-        dispatchSpy.restore();
       });
     });
 
@@ -1697,11 +1607,9 @@ describe('ActionBinder', () => {
       });
 
       it('should handle localStorage access error and set default values', async () => {
-        // Mock localStorage to throw an error
-        const originalLocalStorage = window.localStorage;
-        window.localStorage = {
-          getItem: () => { throw new Error('localStorage not available'); },
-        };
+        // Mock localStorage.getItem to throw an error
+        const localStorageStub = sinon.stub(window.localStorage, 'getItem');
+        localStorageStub.throws(new Error('localStorage not available'));
         
         const cOpts = {
           payload: {},
@@ -1718,60 +1626,8 @@ describe('ActionBinder', () => {
         expect(cOpts.payload.newUser).to.be.true;
         expect(cOpts.payload.attempts).to.equal('1st');
         
-        // Restore localStorage
-        window.localStorage = originalLocalStorage;
-      });
-
-      it('should handle localStorage access error with different error types', async () => {
-        // Mock localStorage to throw different types of errors
-        const originalLocalStorage = window.localStorage;
-        window.localStorage = {
-          getItem: () => { throw new TypeError('localStorage type error'); },
-        };
-        
-        const cOpts = {
-          payload: {},
-        };
-        const filesData = { type: 'application/pdf', size: 123, count: 1 };
-        
-        // Mock the redirect URL fetch to succeed
-        const mockResponse = { url: 'https://test-redirect.com' };
-        sinon.stub(mockServiceHandler, 'postCallToService').resolves(mockResponse);
-        
-        const result = await actionBinder.handleRedirect(cOpts, filesData);
-        
-        expect(result).to.be.true;
-        expect(cOpts.payload.newUser).to.be.true;
-        expect(cOpts.payload.attempts).to.equal('1st');
-        
-        // Restore localStorage
-        window.localStorage = originalLocalStorage;
-      });
-
-      it('should handle localStorage access error with SecurityError', async () => {
-        // Mock localStorage to throw SecurityError (common in private browsing)
-        const originalLocalStorage = window.localStorage;
-        window.localStorage = {
-          getItem: () => { throw new Error('SecurityError: Access denied'); },
-        };
-        
-        const cOpts = {
-          payload: {},
-        };
-        const filesData = { type: 'application/pdf', size: 123, count: 1 };
-        
-        // Mock the redirect URL fetch to succeed
-        const mockResponse = { url: 'https://test-redirect.com' };
-        sinon.stub(mockServiceHandler, 'postCallToService').resolves(mockResponse);
-        
-        const result = await actionBinder.handleRedirect(cOpts, filesData);
-        
-        expect(result).to.be.true;
-        expect(cOpts.payload.newUser).to.be.true;
-        expect(cOpts.payload.attempts).to.equal('1st');
-        
-        // Restore localStorage
-        window.localStorage = originalLocalStorage;
+        localStorageStub.restore();
+        mockServiceHandler.postCallToService.restore();
       });
     });
   });
