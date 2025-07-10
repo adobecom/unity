@@ -149,8 +149,8 @@ class ServiceHandler {
       method: 'DELETE',
       headers: {
         ...additionalHeaders,
-        'Authorization': accessToken,
-        'x-api-key': 'unity'
+        Authorization: accessToken,
+        'x-api-key': 'unity',
       },
     };
     return this.fetchFromService(url, options);
@@ -725,7 +725,7 @@ export default class ActionBinder {
         const errorDetails = this.tokenError;
         await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
-          desc: errorDetails
+          desc: errorDetails,
         });
         return;
       }

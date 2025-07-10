@@ -6,7 +6,7 @@ export function flattenObject(obj, options = {}) {
     includeArrays = true,
     preserveNull = false,
     excludeTypes = ['function'],
-    seenObjects = new WeakSet()
+    seenObjects = new WeakSet(),
   } = options;
   if (obj === null || obj === undefined) return preserveNull ? { [prefix || 'value']: obj } : {};
   if (typeof obj !== 'object') return { [prefix || 'value']: obj };
@@ -24,14 +24,13 @@ export function flattenObject(obj, options = {}) {
             ...options,
             prefix: key,
             maxDepth: maxDepth - 1,
-            seenObjects
+            seenObjects,
           });
           Object.assign(flattened, nested);
         });
       }
-    } 
-    else {
-      Object.keys(obj).forEach(key => {
+    } else {
+      Object.keys(obj).forEach((key) => {
         const value = obj[key];
         const newKey = prefix ? `${prefix}${separator}${key}` : key;
         if (excludeTypes.includes(typeof value)) {
@@ -48,7 +47,7 @@ export function flattenObject(obj, options = {}) {
             ...options,
             prefix: newKey,
             maxDepth: maxDepth - 1,
-            seenObjects
+            seenObjects,
           });
           Object.assign(flattened, nested);
         }
@@ -58,4 +57,4 @@ export function flattenObject(obj, options = {}) {
     seenObjects.delete(obj);
   }
   return flattened;
-} 
+}

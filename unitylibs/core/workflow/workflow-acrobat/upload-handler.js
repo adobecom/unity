@@ -628,7 +628,7 @@ export default class UploadHandler {
     try {
       await Promise.all(assetsToDelete.map((asset) => {
         const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
-        return this.actionBinder.serviceHandler.deleteCallToService(url, accessToken, getAdditionalHeaders() || {});
+        return this.actionBinder.serviceHandler.deleteCallToService(url, accessToken, this.actionBinder.getAdditionalHeaders() || {});
       }));
     } catch (error) {
       await this.actionBinder.dispatchErrorToast('upload_warn_delete_asset', 0, 'Failed to delete one or all assets', true, true, {
