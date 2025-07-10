@@ -328,8 +328,6 @@ export const unityConfig = (() => {
   };
   if (host.includes('hlx.page')
     || host.includes('hlx.live')
-    || host.includes('aem.page')
-    || host.includes('aem.live')
     || host.includes('localhost')
     || host.includes('stage.adobe')
     || host.includes('corp.adobe')
