@@ -43,7 +43,7 @@ export default class TransitionScreen {
     if (status && status.textContent !== newStatus) status.textContent = newStatus;
   }
 
-  createProgressBar() {
+  static createProgressBar() {
     const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spectrum-ProgressBar--sideLabel" value="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
     <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
     <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
@@ -57,8 +57,8 @@ export default class TransitionScreen {
 
   progressBarHandler(s, delay, i, initialize = false) {
     if (!s) return;
-    delay = Math.min(delay + 100, 2000);
-    i = Math.max(i - 5, 5);
+    const newDelay = Math.min(delay + 100, 2000);
+    const newI = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
     const currentValue = parseInt(progressBar?.getAttribute('value'), 10);
     if (currentValue === 100 || (!initialize && currentValue >= this.LOADER_LIMIT)) return;
@@ -66,9 +66,9 @@ export default class TransitionScreen {
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       if (v === 100) return;
-      this.updateProgressBar(s, v + i);
-      this.progressBarHandler(s, delay, i);
-    }, delay);
+      this.updateProgressBar(s, v + newI);
+      this.progressBarHandler(s, newDelay, newI);
+    }, newDelay);
   }
 
   async loadSplashFragment() {
@@ -77,6 +77,17 @@ export default class TransitionScreen {
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    const h2Elements = doc.querySelectorAll('h2');
+    if (h2Elements.length > 1) {
+      Array.from(h2Elements).slice(1).forEach((headingToReplace) => {
+        const p = doc.createElement('p');
+        Array.from(headingToReplace.attributes).forEach((attr) => {
+          p.setAttribute(attr.name, attr.value);
+        });
+        p.innerHTML = headingToReplace.innerHTML;
+        headingToReplace.replaceWith(p);
+      });
+    }
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     f.append(...sections);
@@ -88,23 +99,11 @@ export default class TransitionScreen {
     if (img) loadImg(img);
     await loadArea(f);
     this.splashScreenEl = f;
-    return f;
   }
 
   async delayedSplashLoader() {
     let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
-    const interactionHandler = async () => {
-      await this.loadSplashFragment();
-      cleanup(interactionHandler);
-    };
-
-    const timeoutHandler = async () => {
-      await this.loadSplashFragment();
-      cleanup(interactionHandler);
-    };
-
-    // Timeout to load after 8 seconds
-    let timeoutId = setTimeout(timeoutHandler, 8000);
+    let timeoutId;
 
     const cleanup = (handler) => {
       if (timeoutId) {
@@ -116,6 +115,20 @@ export default class TransitionScreen {
         eventListeners = null;
       }
     };
+
+    const interactionHandler = async () => {
+      await this.loadSplashFragment();
+      cleanup(interactionHandler);
+    };
+
+    const timeoutHandler = async () => {
+      await this.loadSplashFragment();
+      cleanup(interactionHandler);
+    };
+
+    // Timeout to load after 8 seconds
+    timeoutId = setTimeout(timeoutHandler, 8000);
+
     eventListeners.forEach((event) => document.addEventListener(
       event,
       interactionHandler,
@@ -124,7 +137,7 @@ export default class TransitionScreen {
   }
 
   async handleSplashProgressBar() {
-    const pb = this.createProgressBar();
+    const pb = TransitionScreen.createProgressBar();
     this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }
@@ -154,8 +167,8 @@ export default class TransitionScreen {
   }
 
   updateCopyForDevice() {
-    const mobileHeading = this.headingElements[1];
-    const desktopHeading = this.headingElements[2];
+    const mobileHeading = this.headingElements[2];
+    const desktopHeading = this.headingElements[3];
     if (mobileHeading) {
       mobileHeading.style.display = (this.isDesktop && desktopHeading) ? 'none' : 'block';
     }
@@ -176,8 +189,8 @@ export default class TransitionScreen {
       textNodes.forEach((node) => { node.textContent = ''; });
       if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
-      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      this.splashScreenEl.setAttribute('aria-label', this.headingElements[1].innerText);
+      this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
+      this.splashScreenEl.setAttribute('aria-label', this.headingElements[2].innerText);
       if (this.workflowCfg.productName.toLowerCase() === 'photoshop') this.updateCopyForDevice();
       this.splashScreenEl.classList.remove('decorate');
     }

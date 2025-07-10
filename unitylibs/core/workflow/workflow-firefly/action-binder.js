@@ -238,10 +238,6 @@ export default class ActionBinder {
   getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
   validateInput() {
-    if (this.inputField.value.length === 0 && !this.id) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty-input' }, 'Empty input');
-      return { isValid: false, errorCode: 'empty-input' };
-    }
     if (this.inputField.value.length > 750) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
@@ -367,16 +363,14 @@ export default class ActionBinder {
 
   getDropdownItems() {
     if (!this.dropdown) return [];
-    const dynamicItems = Array.from(this.dropdown?.querySelectorAll('.drop-item.dynamic'));
     let tipCon = null;
     if (this.viewport !== 'MOBILE') tipCon = this.dropdown?.querySelector('.tip-con');
-    if (dynamicItems.length > 0) return tipCon ? [...dynamicItems, tipCon] : dynamicItems;
     const allItems = Array.from(this.dropdown?.querySelectorAll('.drop-item'));
     return tipCon ? [...allItems, tipCon] : allItems;
   }
 
   getFocusElems() {
-    let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
+    let elmSelector = '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
     const selector = `.inp-field, .gen-btn, ${elmSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
