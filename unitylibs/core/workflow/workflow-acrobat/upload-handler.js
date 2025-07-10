@@ -30,7 +30,7 @@ export default class UploadHandler {
     assetData = await this.serviceHandler.postCallToService(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       { body: JSON.stringify(data) },
-      { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
+      this.actionBinder.getAdditionalHeaders() || {},
     );
     return assetData;
   }
@@ -198,7 +198,7 @@ export default class UploadHandler {
       const finalizeJson = await this.serviceHandler.postCallToServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         { body: JSON.stringify(finalAssetData), signal },
-        { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
+        this.actionBinder.getAdditionalHeaders() || {},
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -275,7 +275,7 @@ export default class UploadHandler {
           metadata = await this.serviceHandler.getCallToService(
             this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata,
             { id: assetData.id },
-            { 'x-unity-dc-verb': this.actionBinder.MULTI_FILE ? `${this.actionBinder.workflowCfg.enabledFeatures[0]}MFU` : this.actionBinder.workflowCfg.enabledFeatures[0] },
+            this.actionBinder.getAdditionalHeaders() || {},
           );
           requestInProgress = false;
           if (metadata?.numPages !== undefined) {
@@ -628,7 +628,7 @@ export default class UploadHandler {
     try {
       await Promise.all(assetsToDelete.map((asset) => {
         const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
-        return this.actionBinder.serviceHandler.deleteCallToService(url, accessToken);
+        return this.actionBinder.serviceHandler.deleteCallToService(url, accessToken, this.actionBinder.getAdditionalHeaders() || {});
       }));
     } catch (error) {
       await this.actionBinder.dispatchErrorToast('upload_warn_delete_asset', 0, 'Failed to delete one or all assets', true, true, {
