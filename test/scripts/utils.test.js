@@ -87,22 +87,16 @@ describe('Headers and Token', () => {
     });
   });
 
-  it('Should return headers with empty string if refresh token fails', async function () {
-    this.timeout(5000); // Increase timeout to handle retry delay
+  it('Should return headers with empty string if refresh token fails', async () => {
     const token = { token: 'guest-token', expire: Date.now() - (10 * 60 * 1000) };
     adobeIMSStub.returns(token);
-    const refreshTokenStub = sinon.stub(window.adobeIMS, 'refreshToken').rejects(new Error('Refresh token failed'));
+    sinon.stub(window.adobeIMS, 'refreshToken').rejects(new Error('Refresh token failed'));
 
-    try {
-      const headers = await getHeaders('test-api-key');
-      // When refresh token fails, utils returns "Bearer undefined"
-      expect(headers).to.deep.equal({
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer undefined',
-        'x-api-key': 'test-api-key',
-      });
-    } finally {
-      refreshTokenStub.restore();
-    }
+    const headers = await getHeaders('test-api-key');
+    expect(headers).to.deep.equal({
+      'Content-Type': 'application/json',
+      Authorization: '',
+      'x-api-key': 'test-api-key',
+    });
   });
 });

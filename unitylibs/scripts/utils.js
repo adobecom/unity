@@ -26,7 +26,7 @@ export const [setUnityLibs, getUnityLibs] = (() => {
   ];
 })();
 
-export function decorateArea() {}
+export function decorateArea(area = document) {}
 
 const miloLibs = setLibs('/libs');
 
@@ -44,7 +44,10 @@ async function getRefreshToken() {
   } catch (e) {
     return {
       token: null,
-      error: e,
+      error: {
+        message: `Token refresh failed: ${e.message}`,
+        type: 'refresh_error',
+      },
     };
   }
 }
@@ -62,19 +65,21 @@ async function getImsToken() {
   try {
     const accessToken = window.adobeIMS?.getAccessToken();
     if (!accessToken || accessToken?.expire.valueOf() <= Date.now() + (5 * 60 * 1000)) {
-      const reason = !accessToken ? 'access_token_null' : 'access_token_expired';
       const firstAttempt = await attemptTokenRefresh();
-      if (!firstAttempt.error) return firstAttempt;
-      await new Promise((resolve) => { setTimeout(resolve, RETRY_WAIT); });
+      if (!firstAttempt.error) {
+        return firstAttempt;
+      }
+      await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
       const retryAttempt = await attemptTokenRefresh();
-      if (!retryAttempt.error) return retryAttempt;
-      const { flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
+      if (!retryAttempt.error) {
+        return retryAttempt;
+      }
       return {
         token: null,
         error: {
-          message: `Token refresh failed after retry. refresh_error_${reason}`,
-          originalError: flattenObject(retryAttempt.error),
-          originalToken: accessToken,
+          message: `Token refresh failed after retry. Original error: ${firstAttempt.error}`,
+          type: 'refresh_error',
+          originalToken: accessToken
         },
       };
     }
@@ -100,7 +105,11 @@ export async function isGuestUser() {
   if (result.error) {
     return {
       isGuest: null,
-      error: result.error,
+      error: {
+        message: `Error checking guest user status: ${result.error.message}`,
+        type: 'guest_status_error',
+        originalError: result.error,
+      },
     };
   }
   return { isGuest: result.token?.isGuestToken, error: null };
@@ -127,8 +136,8 @@ export function defineDeviceByScreenSize() {
 }
 
 export function getLocale() {
-  const currLocale = getConfig().locale?.prefix.replace('/', '');
-  return currLocale || 'us';
+  const currLocale = getConfig().locale?.prefix.replace('/', '')
+  return currLocale ? currLocale : 'us';
 }
 
 export async function loadSvg(src) {
@@ -149,10 +158,10 @@ export async function loadSvgs(svgs) {
       fetch(svg.src)
         .then((res) => {
           if (res.ok) return res.text();
-          throw new Error('Could not fetch SVG');
+          else throw new Error('Could not fetch SVG');
         })
         .then((txt) => { svg.parentElement.innerHTML = txt; })
-        .catch(() => { svg.remove(); }),
+        .catch((e) => { svg.remove(); }),
     );
   });
   await Promise.all(promiseArr);
@@ -204,7 +213,7 @@ export async function priorityLoad(parr) {
       promiseArr.push(fetch(p));
     }
   });
-  return Promise.all(promiseArr);
+  return await Promise.all(promiseArr);
 }
 
 async function createErrorToast() {
@@ -248,21 +257,18 @@ export async function showErrorToast(targetEl, unityEl, className) {
   document.querySelector('.unity-enabled .interactive-area .alert-holder').style.display = 'flex';
 }
 
-export async function retryRequestUntilProductRedirect(cfg, requestFunction, retryDelay = 1000) {
+export async function retryRequestUntilProductRedirect(cfg, requestFunction, delay = 1000) {
   while (cfg.continueRetrying) {
     try {
-      // eslint-disable-next-line no-await-in-loop
       const scanResponse = await requestFunction();
       if (scanResponse.status === 429 || (scanResponse.status >= 500 && scanResponse.status < 600)) {
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((res) => { setTimeout(res, retryDelay); });
+        await new Promise((res) => setTimeout(res, delay));
       } else {
         cfg.scanResponseAfterRetries = scanResponse;
         return scanResponse;
       }
     } catch (e) {
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((res) => { setTimeout(res, retryDelay); });
+      await new Promise((res) => setTimeout(res, delay));
     }
   }
   return cfg.scanResponseAfterRetries;
@@ -288,17 +294,17 @@ export function delay(durationMs = 1000) {
   });
 }
 
-export function updateQueryParameter(url, paramName = 'format', oldValue = 'webply', newValue = 'jpeg') {
+export function updateQueryParameter(url, paramName='format', oldValue='webply', newValue='jpeg') {
   try {
-    const urlObj = new URL(url);
-    const params = urlObj.searchParams;
-    if (params.get(paramName) === oldValue) {
-      params.set(paramName, newValue);
-    }
+      const urlObj = new URL(url);
+      const params = urlObj.searchParams;
+      if (params.get(paramName) === oldValue) {
+          params.set(paramName, newValue);
+      }
 
-    return urlObj.toString();
+      return urlObj.toString();
   } catch (error) {
-    return null;
+      return null;
   }
 }
 
@@ -327,9 +333,9 @@ export const unityConfig = (() => {
     },
   };
   if (host.includes('hlx.page')
-    || host.includes('hlx.live')
+    || host.includes('hlx.live') 
     || host.includes('aem.page')
-    || host.includes('aem.live')
+    || host.includes('aem.live') 
     || host.includes('localhost')
     || host.includes('stage.adobe')
     || host.includes('corp.adobe')
@@ -345,7 +351,7 @@ export function sendAnalyticsEvent(event) {
     data: { web: { webInteraction: { name: event?.type } } },
   };
   if (event?.detail) {
-    data.data._adobe_corpnew = { digitalData: event.detail }; // eslint-disable-line no-underscore-dangle
+    data.data._adobe_corpnew = { digitalData: event.detail };
   }
-  window._satellite?.track('event', data); // eslint-disable-line no-underscore-dangle
+  window._satellite?.track('event', data);
 }

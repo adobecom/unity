@@ -9,7 +9,7 @@ import {
   priorityLoad,
   getLibs,
   delay,
-  updateQueryParameter,
+  updateQueryParameter
 } from '../../../scripts/utils.js';
 
 const miloLibs = getLibs('/libs');
@@ -122,7 +122,7 @@ function checkImgModified(hostname) {
   return isModified;
 }
 
-async function removeBgHandler(cfg, changeDisplay = true, cachedImg = null) {
+async function removeBgHandler(cfg, changeDisplay = true, cachedImg=null) {
   const {
     apiEndPoint,
     apiKey,
@@ -144,14 +144,14 @@ async function removeBgHandler(cfg, changeDisplay = true, cachedImg = null) {
     cfg.presentState.adjustments = {};
     cfg.presentState.assetId = null;
     cfg.preludeState.operations = [];
-    if (cfg.preludeState.href) {
+    if(cfg.preludeState.href) {
       cfg.preludeState.href = null;
     }
   }
-  if (cfg.presentState.cache && cachedImg) {
+  if(cfg.presentState.cache && cachedImg) {
     await delay(500);
-    cfg.presentState.removeBgState.assetUrl = cachedImg.src;
-    cfg.presentState.removeBgState.assetId = cachedId;
+    cfg.presentState.removeBgState.assetUrl=cachedImg.src;
+    cfg.presentState.removeBgState.assetId = cachedId; 
     cfg.preludeState.href = updateQueryParameter(img.src);
     cfg.preludeState.finalAssetUrl = updateQueryParameter(cachedImg.src);
   }
@@ -219,7 +219,7 @@ async function removebg(cfg, featureName) {
   const { wfDetail, unityWidget } = cfg;
   const removebgBtn = unityWidget.querySelector('.ps-action-btn.removebg-button');
   if (removebgBtn) return removebgBtn;
-  const { authorCfg } = wfDetail[featureName];
+  const { authorCfg }  = wfDetail[featureName];
   const btn = await createActionBtn(authorCfg, 'ps-action-btn removebg-button show');
   btn.addEventListener('click', async (evt) => {
     evt.preventDefault();
@@ -245,8 +245,8 @@ async function changeBgHandler(cfg, selectedUrl = null, refreshState = true, cac
   const bgImg = selectedUrl || unityWidget.querySelector('.unity-option-area .changebg-options-tray img').dataset.backgroundImg;
   const { origin, pathname } = new URL(bgImg);
   const bgImgUrl = `${origin}${pathname}`;
-  if (cfg.presentState.cache && cachedImg) {
-    await delay(500);
+  if(cfg.presentState.cache && cachedImg) {
+    await delay(500)
     img.src = cachedImg.src;
     await loadImg(img);
     const bgImgUrlUpdated = updateQueryParameter(bgImgUrl);
@@ -316,8 +316,8 @@ async function changebg(cfg, featureName) {
   [...bgOptions].forEach((o) => {
     let thumbnail = null;
     let bgImg = null;
-    const imgs = o.querySelectorAll('img');
-    bgImg = imgs[0];
+    let imgs = o.querySelectorAll('img');
+    bgImg = imgs[0]
     thumbnail = bgImg;
     thumbnail.dataset.backgroundImg = bgImg.src;
     thumbnail.setAttribute('src', updateQueryParam(bgImg.src, { format: 'webply', width: '68', height: '68' }));
@@ -527,7 +527,7 @@ async function uploadCallback(cfg) {
 
 export default async function init(cfg) {
   const { targetEl, unityEl, unityWidget, interactiveSwitchEvent, refreshWidgetEvent } = cfg;
-  // check if caching is enabled
+  //check if caching is enabled
   const cached = !!cfg.wfDetail?.removebg?.authorCfg?.querySelectorAll('picture img')[1];
   cfg.cacheDefault = cached;
   resetWorkflowState(cfg);

@@ -20,7 +20,8 @@ function delay(ms) {
   });
 }
 
-describe('Unity Upload Block', () => {
+describe('Unity Upload Block', function() {
+  this.timeout(10000);
   let unityEl;
   let mockFile;
   let fetchStub;

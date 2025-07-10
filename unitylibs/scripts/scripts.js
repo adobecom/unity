@@ -135,7 +135,7 @@ const miloLibs = setLibs(LIBS);
 
 (async function loadPage() {
   const { loadArea, setConfig, loadLana } = await import(`${miloLibs}/utils/utils.js`);
-  setConfig({ ...CONFIG, miloLibs });
+  const config = setConfig({ ...CONFIG, miloLibs });
   loadLana({ clientId: 'unity', tags: 'info' });
   await loadArea();
 }());

@@ -1,17 +1,11 @@
 export function getExtension(name) {
-  if (!name || typeof name !== 'string' || (name.startsWith('.') && name.indexOf('.', 1) === -1) || !name.includes('.')) return '';
-  const lastDot = name.lastIndexOf('.');
-  if (lastDot === 0) return '';
-  return name.substring(lastDot + 1);
-}
+    return name && name.includes('.') ? name.split('.').pop() : '';
+  }
 
 export function removeExtension(name) {
-  if (name == null || typeof name !== 'string' || (name.startsWith('.') && name.indexOf('.', 1) === -1)) return name;
+  if (name == null) return name;
   const lastDot = name.lastIndexOf('.');
-  if (lastDot > 0 && lastDot < name.length - 1) {
-    return name.substring(0, lastDot);
-  }
-  return name;
+  return lastDot >= 0 && lastDot < name.length - 1 ? name.substring(0, lastDot) : name;
 }
 
 export function getMimeType(fileName) {

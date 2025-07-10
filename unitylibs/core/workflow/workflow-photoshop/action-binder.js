@@ -94,7 +94,7 @@ export default class ActionBinder {
   }
 
   toggleElement(item, actionValue, b) {
-    const tel = typeof item === 'string' ? b?.querySelector(item) : item;
+    let tel = typeof item === 'string' ? b?.querySelector(item) : item;
     if (tel?.classList.contains('show')) {
       item?.classList.remove('show');
       actionValue.controlClass.forEach((c) => actionValue.controlEl.classList.remove(c));
@@ -310,7 +310,7 @@ export default class ActionBinder {
     this.operations = [];
     const file = e.target.files[0];
     if (!file) return;
-    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) === -1) {
+    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' });
       throw new Error('File format not supported!!');
     }
