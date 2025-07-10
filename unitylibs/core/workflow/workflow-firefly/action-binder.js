@@ -39,10 +39,13 @@ class ServiceHandler {
     }
   }
 
-  async postCallToService(api, options) {
+  async postCallToService(api, options, unityProduct, unityAction) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      headers: await getHeaders(unityConfig.apiKey, {
+        'x-unity-product': unityProduct,
+        'x-unity-action': unityAction,
+      }),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
@@ -288,6 +291,8 @@ export default class ActionBinder {
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
+        this.workflowCfg.productName,
+        `${action}-${this.getSelectedVerbType()}Generation`,
       );
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';

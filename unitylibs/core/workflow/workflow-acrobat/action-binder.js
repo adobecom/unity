@@ -144,10 +144,11 @@ class ServiceHandler {
     return this.fetchFromService(url, getOpts);
   }
 
-  async deleteCallToService(url, accessToken) {
+  async deleteCallToService(url, accessToken, additionalHeaders = {}) {
     const options = {
       method: 'DELETE',
       headers: {
+        ...additionalHeaders,
         Authorization: accessToken,
         'x-api-key': 'unity',
       },
@@ -350,6 +351,15 @@ export default class ActionBinder {
     return unityConfig;
   }
 
+  getAdditionalHeaders() {
+    const verb = this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0];
+    return {
+      'x-unity-dc-verb': verb,
+      'x-unity-product': this.workflowCfg.productName,
+      'x-unity-action': verb,
+    };
+  }
+
   async handlePreloads() {
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
@@ -531,7 +541,7 @@ export default class ActionBinder {
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
-        { 'x-unity-dc-verb': this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0] },
+        this.getAdditionalHeaders(),
       ),
     );
     await Promise.all(this.promiseStack)
@@ -715,7 +725,7 @@ export default class ActionBinder {
         const errorDetails = this.tokenError;
         await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
-          desc: errorDetails
+          desc: errorDetails,
         });
         return;
       }
