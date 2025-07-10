@@ -16,16 +16,20 @@ import {
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null, unityEl = null) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
+    this.workflowCfg = workflowCfg;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      headers: await getHeaders(unityConfig.apiKey, {
+        'x-unity-product': this.workflowCfg?.productName,
+        'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+      }),
       ...options,
     };
     try {
@@ -372,6 +376,7 @@ export default class ActionBinder {
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,
       this.unityEl,
+      this.workflowCfg,
     );
     const actions = {
       A: (el, key) => {
