@@ -37,8 +37,6 @@ export {
   createTag, loadStyle, getConfig, loadLink, loadScript, localizeLink, loadArea,
 };
 
-
-
 async function getRefreshToken() {
   try {
     const { tokenInfo } = window.adobeIMS ? await window.adobeIMS.refreshToken() : {};
@@ -76,7 +74,7 @@ async function getImsToken() {
         error: {
           message: `Token refresh failed after retry. refresh_error_${reason}`,
           originalError: flattenObject(retryAttempt.error),
-          originalToken: accessToken
+          originalToken: accessToken,
         },
       };
     }
