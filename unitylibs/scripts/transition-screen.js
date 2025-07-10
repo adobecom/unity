@@ -43,7 +43,7 @@ export default class TransitionScreen {
     if (status && status.textContent !== newStatus) status.textContent = newStatus;
   }
 
-  static createProgressBar() {
+  createProgressBar() {
     const pdom = `<div class="spectrum-ProgressBar spectrum-ProgressBar--sizeM spectrum-ProgressBar--sideLabel" value="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
     <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-label"></div>
     <div class="spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-ProgressBar-percentage">0%</div>
@@ -57,8 +57,8 @@ export default class TransitionScreen {
 
   progressBarHandler(s, delay, i, initialize = false) {
     if (!s) return;
-    const newDelay = Math.min(delay + 100, 2000);
-    const newI = Math.max(i - 5, 5);
+    delay = Math.min(delay + 100, 2000);
+    i = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
     const currentValue = parseInt(progressBar?.getAttribute('value'), 10);
     if (currentValue === 100 || (!initialize && currentValue >= this.LOADER_LIMIT)) return;
@@ -66,9 +66,9 @@ export default class TransitionScreen {
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       if (v === 100) return;
-      this.updateProgressBar(s, v + newI);
-      this.progressBarHandler(s, newDelay, newI);
-    }, newDelay);
+      this.updateProgressBar(s, v + i);
+      this.progressBarHandler(s, delay, i);
+    }, delay);
   }
 
   async loadSplashFragment() {
@@ -99,23 +99,11 @@ export default class TransitionScreen {
     if (img) loadImg(img);
     await loadArea(f);
     this.splashScreenEl = f;
+    return f;
   }
 
   async delayedSplashLoader() {
     let eventListeners = ['mousemove', 'keydown', 'click', 'touchstart'];
-    let timeoutId;
-
-    const cleanup = (handler) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (eventListeners) {
-        eventListeners.forEach((event) => document.removeEventListener(event, handler));
-        eventListeners = null;
-      }
-    };
-
     const interactionHandler = async () => {
       await this.loadSplashFragment();
       cleanup(interactionHandler);
@@ -127,8 +115,18 @@ export default class TransitionScreen {
     };
 
     // Timeout to load after 8 seconds
-    timeoutId = setTimeout(timeoutHandler, 8000);
+    let timeoutId = setTimeout(timeoutHandler, 8000);
 
+    const cleanup = (handler) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (eventListeners) {
+        eventListeners.forEach((event) => document.removeEventListener(event, handler));
+        eventListeners = null;
+      }
+    };
     eventListeners.forEach((event) => document.addEventListener(
       event,
       interactionHandler,
@@ -137,7 +135,7 @@ export default class TransitionScreen {
   }
 
   async handleSplashProgressBar() {
-    const pb = TransitionScreen.createProgressBar();
+    const pb = this.createProgressBar();
     this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }

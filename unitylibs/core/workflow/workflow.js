@@ -121,7 +121,7 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  static async priorityLibFetch(workflowName) {
+  async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const sharedWfRes = [
       `${baseWfPath}/sprite.svg`,
@@ -160,7 +160,7 @@ class WfInitiator {
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await this.priorityLibFetch(this.workflowCfg.name);
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
     this.callbackMap = {};
@@ -231,7 +231,7 @@ class WfInitiator {
     return [prevElem, ta, targetCfg];
   }
 
-  static getImgSrc(pic) {
+  getImgSrc(pic) {
     const viewport = defineDeviceByScreenSize();
     let source = '';
     if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
@@ -243,7 +243,7 @@ class WfInitiator {
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {
-      asset.querySelector('img').src = WfInitiator.getImgSrc(asset);
+      asset.querySelector('img').src = this.getImgSrc(asset);
       [...asset.querySelectorAll('source')].forEach((s) => s.remove());
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
@@ -304,7 +304,7 @@ class WfInitiator {
           'protect-pdf',
           'ocr-pdf',
           'chat-pdf',
-          'chat-pdf-student',
+          'chat-pdf-student'
         ]),
       },
       'workflow-ai': {
@@ -340,8 +340,8 @@ class WfInitiator {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
     const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget');
     if (verbWidget) {
-      const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
-      if (verb) this.workflowCfg.enabledFeatures.push(verb);
+      const verb = [...verbWidget.classList].find(cn => supportedFeatures.has(cn));
+      if (verb) this.workflowCfg.enabledFeatures.push(verb)
     }
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
     configuredFeatures.forEach((cf) => {
@@ -349,7 +349,7 @@ class WfInitiator {
       if (!cfName) return;
       const fn = cfName.trim().replace('icon-', '');
       if (supportedFeatures.has(fn)) {
-        if (!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
+        if(!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
@@ -363,7 +363,7 @@ class WfInitiator {
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v1', langRegion = 'us', langCode = 'en') {
   let uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
-  if (el.classList.contains('workflow-ai')) uv = 'v2'; // This line will be removed once CC moves to unity V2
+  if (el.classList.contains('workflow-ai')) uv = 'v2'; //This line will be removed once CC moves to unity V2
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);

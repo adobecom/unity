@@ -3,49 +3,48 @@ import { unityConfig, getHeaders, getUnityLibs, setUnityLibs } from '../../scrip
 class HealthCheck {
   constructor(el) {
     this.el = el;
-    this.workflowFunctions = { getBlobData: HealthCheck.getBlobData, uploadPdf: HealthCheck.uploadPdf };
+    this.workflowFunctions = { getBlobData: this.getBlobData, uploadPdf: this.uploadPdf };
     this.init();
   }
 
   async init() {
-    this.services = this.services || await HealthCheck.loadServices();
+    this.services = this.services || await this.loadServices();
     const apiStatuses = {};
-    await Promise.all(Object.entries(this.services).map(async ([categoryName, apis]) => {
+    for (const [categoryName, apis] of Object.entries(this.services)) {
       const results = await this.checkCategory(categoryName, apis);
-      apiStatuses[categoryName] = results.results.reduce((max, res) => (res.success ? max : Math.max(max, res.statusCode || 500)), 200);
+      apiStatuses[categoryName] = results.results.reduce((max, res) => res.success ? max : Math.max(max, res.statusCode || 500), 200);
       this.printResults(categoryName, results);
-    }));
+    }
     this.printApiResponse(apiStatuses);
   }
 
-  static async loadServices() {
+  async loadServices() {
     try {
       const response = await fetch(`${getUnityLibs()}/blocks/healthcheck/service-config.json`);
       if (!response.ok) throw new Error('Failed to load services configuration');
-      return HealthCheck.replacePlaceholders(await response.json(), '{{apiEndPoint}}', unityConfig.apiEndPoint);
+      return this.replacePlaceholders(await response.json(), '{{apiEndPoint}}', unityConfig.apiEndPoint);
     } catch (error) {
-      // Error loading services; returning null
-      return null;
+      console.error('Error loading services:', error.message);
     }
   }
 
-  static replacePlaceholders(services, placeholder, value) {
+  replacePlaceholders(services, placeholder, value) {
     return JSON.parse(JSON.stringify(services).replace(new RegExp(placeholder, 'g'), value));
   }
 
-  static async getBlobData(options) {
+  async getBlobData(options) {
     return new Promise((res, rej) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', `${getUnityLibs()}/img/healthcheck.jpeg`);
       xhr.responseType = 'blob';
-      xhr.onload = () => (xhr.status === 200
+      xhr.onload = () => xhr.status === 200
         ? res({ ...options, body: xhr.response, headers: { 'Content-Type': 'image/jpeg' } })
-        : rej(xhr.status));
+        : rej(xhr.status);
       xhr.send();
     });
   }
 
-  static async uploadPdf(options) {
+  async uploadPdf(options) {
     const pdfData = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]);
     const objUrl = URL.createObjectURL(new Blob([pdfData], { type: 'application/pdf' }));
     const response = await fetch(objUrl);
@@ -66,20 +65,20 @@ class HealthCheck {
       if (!response.ok) throw new Error(`${service.name} failed with status ${response.status}`);
       if (service.replaceKey) {
         const data = await response.json();
-        service.replaceKey.forEach((key) => {
-          this.services[category] = HealthCheck.replacePlaceholders(this.services[category], `{{${key}}}`, data[key]);
+        service.replaceKey.forEach(key => {
+          this.services[category] = this.replacePlaceholders(this.services[category], `{{${key}}}`, data[key]);
         });
-        apis.forEach((_, i) => { apis[i] = this.services[category][i]; });
+        apis.forEach((_, i) => apis[i] = this.services[category][i]);
       }
       return { name: service.name, status: 'UP', success: true, statusCode: response.status };
     } catch (error) {
-      return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: parseInt(error.message.match(/\d+/)?.[0], 10) || 500 };
+      return { name: service.name, status: 'DOWN', success: false, error: error.message, statusCode: parseInt(error.message.match(/\d+/)?.[0]) || 500 };
     }
   }
 
   async checkCategory(category, apis) {
-    // Run all service checks in parallel
-    const results = await Promise.all(apis.map((service) => this.checkService(category, service, apis)));
+    const results = [];
+    for (const service of apis) results.push(await this.checkService(category, service, apis));
     return { allSuccess: results.every((res) => res.success), results };
   }
 
@@ -106,11 +105,5 @@ class HealthCheck {
 
 export default function init(el, project = 'unity', unityLibs = '/unitylibs') {
   setUnityLibs(unityLibs, project);
-  let healthCheckInstance;
-  if (window.adobeIMS) {
-    healthCheckInstance = new HealthCheck(el);
-  } else {
-    window.addEventListener('onImsLibInstance', () => { healthCheckInstance = new HealthCheck(el); }, { once: true });
-  }
-  return healthCheckInstance;
+  window.adobeIMS ? new HealthCheck(el) : window.addEventListener('onImsLibInstance', () => new HealthCheck(el), { once: true });
 }

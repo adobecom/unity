@@ -8,7 +8,7 @@ module.exports = {
       data: {
         verbTitle: 'Adobe Acrobat',
         verbHeading: 'Add page numbers to a PDF',
-        verbCopy: 'Drag and drop a PDF to add page numbers.',
+        verbCopy: 'Drag and drop a PDF, then add a password to protect your file.',
       },
       tags: '@add-pdf @smoke @regression @unity',
     },

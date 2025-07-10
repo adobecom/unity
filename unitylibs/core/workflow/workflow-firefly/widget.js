@@ -13,6 +13,7 @@ export default class UnityWidget {
     this.prompts = null;
     this.selectedVerbType = '';
     this.selectedVerbText = '';
+    this.closeBtn = null;
     this.promptItems = [];
     this.genBtn = null;
     this.hasPromptSuggestions = false;
@@ -73,6 +74,9 @@ export default class UnityWidget {
   }
 
   updateAnalytics(verb) {
+    if (this.closeBtn) {
+      this.closeBtn.setAttribute('daa-ll', `X Close Prompt--${verb}--Prompt suggestions`);
+    }
     if (this.promptItems && this.promptItems.length > 0) {
       this.promptItems.forEach((item) => {
         const ariaLabel = item.getAttribute('aria-label') || '';
@@ -258,7 +262,13 @@ export default class UnityWidget {
     });
     const titleCon = createTag('div', { class: 'drop-title-con' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
-    titleCon.append(title);
+    const closeBtn = createTag('button', { class: 'close-btn', 'daa-ll': `X Close Prompt--${this.selectedVerbType}--Prompt suggestions`, 'aria-label': 'Close dropdown' }, '<svg><use xlink:href="#unity-close-icon"></use></svg>');
+    closeBtn.addEventListener('click', () => {
+      promptDropdownContainer.classList.add('hidden');
+      promptDropdownContainer.setAttribute('aria-hidden', 'true');
+    });
+    this.closeBtn = closeBtn;
+    titleCon.append(title, closeBtn);
     const prompts = await this.getPrompt(this.selectedVerbType);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);

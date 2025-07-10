@@ -13,7 +13,7 @@ module.exports = {
     'linebreak-style': ['error', 'unix'],
     'import/extensions': ['error', { js: 'always' }],
     'object-curly-newline': ['error', {
-      ObjectExpression: { multiline: true, minProperties: 10 },
+      ObjectExpression: { multiline: true, minProperties: 6 },
       ObjectPattern: { multiline: true, minProperties: 6 },
       ImportDeclaration: { multiline: true, minProperties: 6 },
       ExportDeclaration: { multiline: true, minProperties: 6 },
@@ -21,9 +21,6 @@ module.exports = {
     'no-return-assign': ['error', 'except-parens'],
     'no-unused-expressions': 0,
     'chai-friendly/no-unused-expressions': 2,
-    'max-len': 'off',
-    'no-plusplus': ['error', { allowForLoopAfterthoughts: true }],
-    camelcase: 'off',
   },
   overrides: [
     {

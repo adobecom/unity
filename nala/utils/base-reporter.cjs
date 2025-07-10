@@ -183,11 +183,12 @@ class BaseReporter {
       [branch, repo] = branchAndRepo.split('--');
     }
 
-    return { name, tags, url, browser, env, branch, repo };
+    return {
+      name, tags, url, browser, env, branch, repo,
+    };
   }
 
-  // eslint-disable-next-line no-empty-function
-  static async persistData() {}
+  async persistData() {}
 
   printPersistingOption() {
     if (this.options?.persist) {

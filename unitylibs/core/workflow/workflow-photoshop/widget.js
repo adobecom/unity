@@ -86,7 +86,7 @@ export default class UnityWidget {
         targets: ['.interactive-area > picture img'],
         propertyName: 'filter',
         propertyValue: '',
-      },
+      }
     ];
   }
 
@@ -139,7 +139,7 @@ export default class UnityWidget {
         btn = this.createActionBtn(
           authCfg,
           `continue-in-app ${featName}-button ${addClasses}`,
-          this.workflowCfg.productName.toLowerCase(),
+          this.workflowCfg.productName.toLowerCase()
         );
         actionArea.append(btn);
         this.initContinueInAppActions(featName);
@@ -218,7 +218,7 @@ export default class UnityWidget {
         target: this.target.querySelector('img'),
         cachedOutputUrl: authCfg.querySelector(':scope ul li img')
           ? this.updateQueryParameter(
-            authCfg.querySelector(':scope ul li img').src,
+            authCfg.querySelector(':scope ul li img').src
           )
           : null,
       },
