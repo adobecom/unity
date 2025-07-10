@@ -8,8 +8,6 @@ import {
   unityConfig,
   getUnityLibs,
   priorityLoad,
-  loadArea,
-  loadImg,
   isGuestUser,
   getHeaders,
 } from '../../../scripts/utils.js';
@@ -17,9 +15,10 @@ import {
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
   'COM7', 'COM8', 'COM9', 'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6',
-  'LPT7', 'LPT8', 'LPT9'
+  'LPT7', 'LPT8', 'LPT9',
 ]);
 
+// eslint-disable-next-line no-control-regex
 const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
@@ -59,7 +58,9 @@ class ServiceHandler {
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
         return this.fetchFromService(url, options, false);
       }
       if (response.status !== 200) {
@@ -101,8 +102,10 @@ class ServiceHandler {
       this.handleAbortedRequest(url, options);
       const response = await this.fetchFromService(url, options, false);
       if (response.status === 202) {
-        const retryDelay = parseInt(response.headers.get('retry-after')) || 5;
-        await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+        const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
+        await new Promise((resolve) => {
+          setTimeout(resolve, retryDelay * 1000);
+        });
         timeLapsed += retryDelay;
       } else {
         return response;
@@ -141,12 +144,13 @@ class ServiceHandler {
     return this.fetchFromService(url, getOpts);
   }
 
-  async deleteCallToService(url, accessToken) {
+  async deleteCallToService(url, accessToken, additionalHeaders = {}) {
     const options = {
       method: 'DELETE',
       headers: {
-        'Authorization': accessToken,
-        'x-api-key': 'unity', 
+        ...additionalHeaders,
+        Authorization: accessToken,
+        'x-api-key': 'unity',
       },
     };
     return this.fetchFromService(url, options);
@@ -169,11 +173,11 @@ export default class ActionBinder {
   };
 
   static LIMITS_MAP = {
-    fillsign: ['single','page-limit-100'],
+    fillsign: ['single', 'page-limit-100'],
     'compress-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-2-gb'],
     'add-comment': ['single'],
     'number-pages': ['single'],
-    'split-pdf': ['single', 'max-filesize-1-gb','split-pdf-page-limits','signedInallowedFileTypes'],
+    'split-pdf': ['single', 'max-filesize-1-gb', 'split-pdf-page-limits', 'signedInallowedFileTypes'],
     'crop-pages': ['single'],
     'delete-pages': ['single', 'page-limit-500'],
     'insert-pdf': ['single', 'page-limit-500'],
@@ -195,7 +199,7 @@ export default class ActionBinder {
     'protect-pdf': ['single'],
     'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
-    'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb']
+    'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -236,36 +240,36 @@ export default class ActionBinder {
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
-    'error_generic': 'verb_upload_error_generic',
-    'pre_upload_error_loading_verb_limits': 'verb_upload_error_loading_verb_limits',
-    'pre_upload_error_empty_verb_limits': 'verb_upload_error_empty_verb_limits',
-    'pre_upload_error_renaming_file': 'verb_upload_error_renaming_file',
-    'pre_upload_error_fetch_redirect_url': 'verb_upload_error_fetch_redirect_url',
-    'validation_error_validate_files': 'verb_upload_error_validate_files',
-    'validation_error_unsupported_type': 'verb_upload_error_unsupported_type',
-    'validation_error_empty_file': 'verb_upload_error_empty_file',
-    'validation_error_file_too_large': 'verb_upload_error_file_too_large',
-    'validation_error_only_accept_one_file': 'verb_upload_error_only_accept_one_file',
-    'validation_error_file_same_type': 'verb_upload_error_file_same_type',
-    'validation_error_unsupported_type_multi': 'verb_upload_error_unsupported_type_multi',
-    'validation_error_empty_file_multi': 'verb_upload_error_empty_file_multi',
-    'validation_error_file_too_large_multi': 'verb_upload_error_file_too_large_multi',
-    'validation_error_multiple_invalid_files': 'verb_upload_error_multiple_invalid_files',
-    'validation_error_max_num_files': 'verb_upload_error_max_num_files',
-    'validation_error_file_same_type_multi': 'verb_upload_error_file_same_type_multi',
-    'upload_validation_error_max_page_count': 'verb_upload_error_max_page_count',
-    'upload_validation_error_min_page_count': 'verb_upload_error_min_page_count',
-    'upload_validation_error_verify_page_count': 'verb_upload_error_verify_page_count',
-    'upload_validation_error_max_page_count_multi': 'verb_upload_error_max_page_count_multi',
-    'upload_validation_error_duplicate_asset': 'verb_upload_error_duplicate_asset',
-    'upload_error_max_quota_exceeded': 'verb_upload_error_max_quota_exceeded',
-    'upload_error_no_storage_provision': 'verb_upload_error_no_storage_provision',
-    'upload_error_chunk_upload': 'verb_upload_error_chunk_upload',
-    'upload_error_finalize_asset': 'verb_upload_error_finalize_asset',
-    'upload_error_redirect_to_app': 'verb_upload_error_redirect_to_app',
-    'upload_warn_chunk_upload': 'verb_upload_warn_chunk_upload',
-    'pre_upload_warn_renamed_invalid_file_name': 'verb_warn_renamed_invalid_file_name',
-    'warn_delete_asset': 'verb_upload_warn_delete_asset',
+    error_generic: 'verb_upload_error_generic',
+    pre_upload_error_loading_verb_limits: 'verb_upload_error_loading_verb_limits',
+    pre_upload_error_empty_verb_limits: 'verb_upload_error_empty_verb_limits',
+    pre_upload_error_renaming_file: 'verb_upload_error_renaming_file',
+    pre_upload_error_fetch_redirect_url: 'verb_upload_error_fetch_redirect_url',
+    validation_error_validate_files: 'verb_upload_error_validate_files',
+    validation_error_unsupported_type: 'verb_upload_error_unsupported_type',
+    validation_error_empty_file: 'verb_upload_error_empty_file',
+    validation_error_file_too_large: 'verb_upload_error_file_too_large',
+    validation_error_only_accept_one_file: 'verb_upload_error_only_accept_one_file',
+    validation_error_file_same_type: 'verb_upload_error_file_same_type',
+    validation_error_unsupported_type_multi: 'verb_upload_error_unsupported_type_multi',
+    validation_error_empty_file_multi: 'verb_upload_error_empty_file_multi',
+    validation_error_file_too_large_multi: 'verb_upload_error_file_too_large_multi',
+    validation_error_multiple_invalid_files: 'verb_upload_error_multiple_invalid_files',
+    validation_error_max_num_files: 'verb_upload_error_max_num_files',
+    validation_error_file_same_type_multi: 'verb_upload_error_file_same_type_multi',
+    upload_validation_error_max_page_count: 'verb_upload_error_max_page_count',
+    upload_validation_error_min_page_count: 'verb_upload_error_min_page_count',
+    upload_validation_error_verify_page_count: 'verb_upload_error_verify_page_count',
+    upload_validation_error_max_page_count_multi: 'verb_upload_error_max_page_count_multi',
+    upload_validation_error_duplicate_asset: 'verb_upload_error_duplicate_asset',
+    upload_error_max_quota_exceeded: 'verb_upload_error_max_quota_exceeded',
+    upload_error_no_storage_provision: 'verb_upload_error_no_storage_provision',
+    upload_error_chunk_upload: 'verb_upload_error_chunk_upload',
+    upload_error_finalize_asset: 'verb_upload_error_finalize_asset',
+    upload_error_redirect_to_app: 'verb_upload_error_redirect_to_app',
+    upload_warn_chunk_upload: 'verb_upload_warn_chunk_upload',
+    pre_upload_warn_renamed_invalid_file_name: 'verb_warn_renamed_invalid_file_name',
+    warn_delete_asset: 'verb_upload_warn_delete_asset',
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
@@ -342,7 +346,7 @@ export default class ActionBinder {
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`
+      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
     };
     return unityConfig;
   }
@@ -367,6 +371,15 @@ export default class ActionBinder {
         window._satellite.track('propositionDisplay', AJOPropositionResult.propositions);
       },
     });
+  }
+
+  getAdditionalHeaders() {
+    const verb = this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0];
+    return {
+      'x-unity-dc-verb': verb,
+      'x-unity-product': this.workflowCfg.productName,
+      'x-unity-action': verb,
+    };
   }
 
   async handlePreloads() {
@@ -404,7 +417,7 @@ export default class ActionBinder {
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode,
-            desc: errorMetaData.desc || message || undefined
+            desc: errorMetaData.desc || message || undefined,
           },
           sendToSplunk,
         },
@@ -414,7 +427,7 @@ export default class ActionBinder {
 
   async dispatchAnalyticsEvent(eventName, data = null) {
     const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
-    const detail = { event: eventName, ...(data && { data }) , sendToSplunk };
+    const detail = { event: eventName, ...(data && { data }), sendToSplunk };
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
@@ -434,8 +447,8 @@ export default class ActionBinder {
       let ext = getExtension(fileName);
       const nameWithoutExtension = removeExtension(fileName);
       ext = ext.length > 0 ? `.${ext}` : '';
-      fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase()) 
-        ? `---${ext}` 
+      fileName = DOS_SPECIAL_NAMES.has(nameWithoutExtension.toUpperCase())
+        ? `---${ext}`
         : nameWithoutExtension + ext;
       if (fileName.length > MAX_FILE_NAME_LENGTH) {
         const trimToLen = MAX_FILE_NAME_LENGTH - ext.length;
@@ -446,7 +459,7 @@ export default class ActionBinder {
         .replace(STARTING_SPACE_PERIOD_REGEX, '-')
         .replace(INVALID_CHARS_REGEX, '-');
       if (rawFileName !== fileName) {
-        await this.dispatchErrorToast('pre_upload_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true)
+        await this.dispatchErrorToast('pre_upload_warn_renamed_invalid_file_name', null, `Renamed ${rawFileName} to ${fileName}`, true);
       }
       return fileName;
     } catch (error) {
@@ -470,8 +483,8 @@ export default class ActionBinder {
   }
 
   convertToSingleFileErrorMessage(multiFileErrorMessage) {
-    return multiFileErrorMessage.endsWith('_multi') 
-      ? multiFileErrorMessage.slice(0, -6) 
+    return multiFileErrorMessage.endsWith('_multi')
+      ? multiFileErrorMessage.slice(0, -6)
       : multiFileErrorMessage;
   }
 
@@ -484,9 +497,9 @@ export default class ActionBinder {
     const validFiles = [];
 
     if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('validation_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, { 
-        code: 'validation_error_validate_files', 
-        subCode: 'validation_error_max_num_files'
+      await this.dispatchErrorToast('validation_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, {
+        code: 'validation_error_validate_files',
+        subCode: 'validation_error_max_num_files',
       });
       return { isValid: false, validFiles };
     }
@@ -535,9 +548,15 @@ export default class ActionBinder {
           await this.dispatchErrorToast(singleFileErrorType, null, `All ${files.length} files failed validation. Error Types: ${errorDesc}`, false, true, { code: 'validation_error_validate_files', subCode: singleFileErrorType, desc: errorDesc });
         }
       }
-      return { isValid: false, validFiles};
+      return { isValid: false, validFiles };
     }
-    return {isValid: true, validFiles};
+    return { isValid: true, validFiles };
+  }
+
+  async showTransitionScreen() {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    await this.transitionScreen.showSplashScreen();
   }
 
   async getRedirectUrl(cOpts) {
@@ -545,7 +564,7 @@ export default class ActionBinder {
       this.serviceHandler.postCallToService(
         this.acrobatApiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
-        { 'x-unity-dc-verb': this.MULTI_FILE ? `${this.workflowCfg.enabledFeatures[0]}MFU` : this.workflowCfg.enabledFeatures[0] },
+        this.getAdditionalHeaders(),
       ),
     );
     await Promise.all(this.promiseStack)
@@ -555,9 +574,7 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-        await this.transitionScreen.showSplashScreen();
+        await this.showTransitionScreen();
         await this.dispatchErrorToast('pre_upload_error_fetch_redirect_url', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
           code: 'pre_upload_error_fetch_redirect_url',
           subCode: e.status,
@@ -583,8 +600,8 @@ export default class ActionBinder {
         verb: this.ajoData.verb || 'add-comment',
       };
     }
-    if(!(cOpts.payload.feedback)) {
-      if (this.multiFileValidationFailure) cOpts.payload.feedback = "uploaderror";
+    if (!(cOpts.payload.feedback)) {
+      if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
     await this.getRedirectUrl(cOpts);
@@ -592,12 +609,12 @@ export default class ActionBinder {
     const [baseUrl, queryString] = this.redirectUrl.split('?');
     const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
     this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
-    this.dispatchAnalyticsEvent('redirectUrl', {...filesData, redirectUrl: this.redirectUrl});
+    this.dispatchAnalyticsEvent('redirectUrl', { ...filesData, redirectUrl: this.redirectUrl });
     return true;
   }
 
   async handleSingleFileUpload(files) {
-    this.filesData = {...this.filesData,uploadType: 'sfu'};
+    this.filesData = { ...this.filesData, uploadType: 'sfu' };
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
@@ -605,10 +622,15 @@ export default class ActionBinder {
   async handleMultiFileUpload(files) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
-    this.filesData = {...this.filesData,uploadType: 'mfu'};
+    this.filesData = { ...this.filesData, uploadType: 'mfu' };
     this.dispatchAnalyticsEvent('multifile', this.filesData);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
+  }
+
+  async initUploadHandler() {
+    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
   }
 
   async getMimeType(file) {
@@ -626,8 +648,7 @@ export default class ActionBinder {
     this.MULTI_FILE = files.length > 1;
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+    await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
     } else {
@@ -644,10 +665,12 @@ export default class ActionBinder {
         if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
         return acc;
       }, {});
-      if (!combinedLimits || Object.keys(combinedLimits).length === 0) await this.dispatchErrorToast('error_generic', 500, 'No verb limits found', false, true, {
-        code: 'pre_upload_error_empty_verb_limits',
-        desc: 'No verb limits found',
-      });
+      if (!combinedLimits || Object.keys(combinedLimits).length === 0) {
+        await this.dispatchErrorToast('error_generic', 500, 'No verb limits found', false, true, {
+          code: 'pre_upload_error_empty_verb_limits',
+          desc: 'No verb limits found',
+        });
+      }
       return combinedLimits;
     } catch (e) {
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when loading verb limits: ${e.message}`, false, true, {
@@ -708,9 +731,7 @@ export default class ActionBinder {
   }
 
   async cancelAcrobatOperation() {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    await this.transitionScreen.showSplashScreen();
+    await this.showTransitionScreen();
     this.redirectUrl = '';
     this.filesData = this.filesData || {};
     this.filesData.workflowStep = this.isUploading ? 'uploading' : 'preuploading';
@@ -728,10 +749,10 @@ export default class ActionBinder {
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       if (this.tokenError) {
-        const errorDetails = JSON.stringify(this.tokenError, null, 2);
-        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails}`, false, true, {
+        const errorDetails = this.tokenError;
+        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
-          desc: `Could not fetch access token; Error: ${errorDetails}`,
+          desc: errorDetails,
         });
         return;
       }
