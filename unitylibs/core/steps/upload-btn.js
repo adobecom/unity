@@ -30,7 +30,7 @@ export default async function createUpload(cfg, target, callback = null) {
     const { showErrorToast } = await import('../../scripts/utils.js');
     const file = fileUpload.files[0];
     if (!file) return;
-    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) == -1) {
+    if (['image/jpeg', 'image/png', 'image/jpg'].indexOf(file.type) === -1) {
       await showErrorToast(targetEl, unityEl, '.icon-error-filetype');
       return;
     }
@@ -58,15 +58,15 @@ export default async function createUpload(cfg, target, callback = null) {
           }
           if (!targetEl.classList.contains(GRAY_BG)) targetEl.classList.add(GRAY_BG);
           if (target.naturalWidth > targetElWidth) {
-              cfg.imgDisplay = 'landscape';
-              if (!target.classList.contains(IMG_LANDSCAPE)) target.classList.add(IMG_LANDSCAPE);
-              if (target.classList.contains(FULL_HEIGHT)) target.classList.remove(FULL_HEIGHT);
+            cfg.imgDisplay = 'landscape';
+            if (!target.classList.contains(IMG_LANDSCAPE)) target.classList.add(IMG_LANDSCAPE);
+            if (target.classList.contains(FULL_HEIGHT)) target.classList.remove(FULL_HEIGHT);
           } else {
             cfg.imgDisplay = 'portrait';
             if (!target.classList.contains(IMG_PORTRAIT)) target.classList.add(IMG_PORTRAIT);
             if (!target.classList.contains(FULL_HEIGHT)) target.classList.add(FULL_HEIGHT);
           }
-          if (target.naturalWidth == targetElWidth && target.naturalHeight == targetElHeight) {
+          if (target.naturalWidth === targetElWidth && target.naturalHeight === targetElHeight) {
             cfg.imgDisplay = '';
             resetClasses(target, targetEl);
           }
@@ -92,6 +92,6 @@ export default async function createUpload(cfg, target, callback = null) {
   a.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') input.click();
   });
-  a.addEventListener('click', () => input.click()); 
+  a.addEventListener('click', () => input.click());
   return a;
 }
