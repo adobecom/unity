@@ -115,7 +115,7 @@ const CONFIG = {
     enableGuestAccounts: true,
     enableGuestTokenForceRefresh: true,
   },
-  prodDomains: ['www.adobe.com'],
+  prodDomains: ['www.adobe.com', 'main--dc--adobecom.aem.live'],
   decorateArea,
 };
 decorateArea();
