@@ -360,7 +360,42 @@ export default class ActionBinder {
     };
   }
 
+  handlePropositions(TargetPropositionResult) {
+    this.targetData = TargetPropositionResult.decisions[0].items[0].data.content;
+    console.log('TargetPropositionResult: ', TargetPropositionResult, 'targetData: ', this.targetData);
+  }
+
+  async fetchTargetResponse() {
+    const decisionScopes = ['ACOM_UNITY_ACROBAT_EDITPDF_POC'];
+    const decisionScopeParams = {
+      countryCode: 'US',
+      firstTimeUser: false,
+      isTrialUser: false,
+      language: 'en-US',
+      subscriptionLevel: '',
+      subscriptionName: '',
+      userRole: '',
+    };
+    try {
+      window._satellite.track('propositionFetch', {
+        decisionScopes,
+        data: { __adobe: { target: decisionScopeParams } },
+        done: (TargetPropositionResult, error) => {
+          if (error) {
+            // Log error to splunk
+            return;
+          }
+          this.handlePropositions(TargetPropositionResult);
+          window._satellite.track('propositionDisplay', TargetPropositionResult.propositions);
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   async handlePreloads() {
+    await this.fetchTargetResponse();
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
