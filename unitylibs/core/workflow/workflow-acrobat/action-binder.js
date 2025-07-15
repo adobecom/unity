@@ -367,19 +367,10 @@ export default class ActionBinder {
 
   async fetchTargetResponse() {
     const decisionScopes = ['ACOM_UNITY_ACROBAT_EDITPDF_POC'];
-    const decisionScopeParams = {
-      countryCode: 'US',
-      firstTimeUser: false,
-      isTrialUser: false,
-      language: 'en-US',
-      subscriptionLevel: '',
-      subscriptionName: '',
-      userRole: '',
-    };
     try {
       window._satellite.track('propositionFetch', {
         decisionScopes,
-        data: { __adobe: { target: decisionScopeParams } },
+        data: { },
         done: (TargetPropositionResult, error) => {
           if (error) {
             // Log error to splunk
