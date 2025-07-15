@@ -39,10 +39,13 @@ class ServiceHandler {
     }
   }
 
-  async postCallToService(api, options) {
+  async postCallToService(api, options, unityProduct, unityAction) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey),
+      headers: await getHeaders(unityConfig.apiKey, {
+        'x-unity-product': unityProduct,
+        'x-unity-action': unityAction,
+      }),
       ...options,
     };
     return this.fetchFromService(api, postOpts);
@@ -288,6 +291,8 @@ export default class ActionBinder {
       const { url } = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(payload) },
+        this.workflowCfg.productName,
+        `${action}-${this.getSelectedVerbType()}Generation`,
       );
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
@@ -358,16 +363,14 @@ export default class ActionBinder {
 
   getDropdownItems() {
     if (!this.dropdown) return [];
-    const dynamicItems = Array.from(this.dropdown?.querySelectorAll('.drop-item.dynamic'));
     let tipCon = null;
     if (this.viewport !== 'MOBILE') tipCon = this.dropdown?.querySelector('.tip-con');
-    if (dynamicItems.length > 0) return tipCon ? [...dynamicItems, tipCon] : dynamicItems;
     const allItems = Array.from(this.dropdown?.querySelectorAll('.drop-item'));
     return tipCon ? [...allItems, tipCon] : allItems;
   }
 
   getFocusElems() {
-    let elmSelector = this.block.querySelector('.close-btn.dynamic') ? '.close-btn.dynamic,.drop-item.dynamic' : '.close-btn,.drop-item';
+    let elmSelector = '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
     const selector = `.inp-field, .gen-btn, ${elmSelector}`;
     return Array.from(this.block.querySelectorAll(selector));
