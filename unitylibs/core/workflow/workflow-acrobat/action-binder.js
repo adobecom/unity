@@ -366,11 +366,20 @@ export default class ActionBinder {
 
   async fetchTargetResponse() {
     const decisionScopes = ['ACOM_UNITY_ACROBAT_EDITPDF_POC'];
+    const decisionScopeParams = {
+      countryCode: 'US',
+      firstTimeUser: false,
+      isTrialUser: false,
+      language: 'en-US',
+      subscriptionLevel: '',
+      subscriptionName: '',
+      userRole: '',
+    };
     try {
       // eslint-disable-next-line no-underscore-dangle
       window._satellite.track('propositionFetch', {
         decisionScopes,
-        data: { },
+        data: { __adobe: { target: decisionScopeParams } },
         done: (TargetPropositionResult, error) => {
           if (error) {
             return;
