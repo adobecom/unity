@@ -8,6 +8,18 @@ describe('UploadHandler', () => {
   let mockServiceHandler;
   let mockTransitionScreen;
 
+  async function runWithFakeTimers(testFn, tickMs = 500) {
+    const clock = sinon.useFakeTimers();
+    try {
+      const promise = testFn();
+      clock.tick(tickMs);
+      await clock.runAllAsync();
+      return await promise;
+    } finally {
+      clock.restore();
+    }
+  }
+
   before(async () => {
     const originalImport = window.import;
 
@@ -89,6 +101,7 @@ describe('UploadHandler', () => {
       delay: sinon.stub().resolves(),
       setIsUploading: sinon.stub(),
       dispatchGenericError: sinon.stub().resolves(),
+      getAdditionalHeaders: sinon.stub().returns({}),
     };
 
     mockServiceHandler = {
@@ -139,26 +152,22 @@ describe('UploadHandler', () => {
     it('should validate normal page count', async () => {
       const assetData = { id: 'asset-123' };
       mockServiceHandler.getCallToService.resolves({ numPages: 50 });
-      const result = await uploadHandler.checkPageNumCount(assetData, false);
+      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, false));
       expect(result).to.be.false;
     });
 
     it('should handle error in checkPageNumCount', async () => {
-      const clock = sinon.useFakeTimers();
       uploadHandler.serviceHandler.getCallToService = sinon.stub().rejects(new Error('fail'));
       const assetData = { id: 'asset-123' };
-      const promise = uploadHandler.checkPageNumCount(assetData, false);
-      clock.tick(5000); // Fast-forward timers to trigger setTimeout/setInterval
-      const result = await promise;
+      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, false), 5000);
       expect(result).to.be.false;
-      clock.restore();
     });
 
     it('should handle max page count exceeded', async () => {
       const assetData = { id: 'asset-123' };
       uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 101 });
       uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
-      const result = await uploadHandler.checkPageNumCount(assetData, false);
+      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, false));
       expect(result).to.be.true;
       expect(uploadHandler.showSplashScreen.called).to.be.true;
       expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_max_page_count')).to.be.true;
@@ -168,7 +177,7 @@ describe('UploadHandler', () => {
       const assetData = { id: 'asset-123' };
       uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 0 });
       uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
-      const result = await uploadHandler.checkPageNumCount(assetData, false);
+      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, false));
       expect(result).to.be.true;
       expect(uploadHandler.showSplashScreen.called).to.be.true;
       expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_min_page_count')).to.be.true;
@@ -178,7 +187,7 @@ describe('UploadHandler', () => {
       const assetData = { id: 'asset-123' };
       uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 101 });
       uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
-      const result = await uploadHandler.checkPageNumCount(assetData, true);
+      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, true));
       expect(result).to.be.true;
       expect(uploadHandler.showSplashScreen.called).to.be.false;
     });
@@ -187,7 +196,7 @@ describe('UploadHandler', () => {
       const assetData = { id: 'asset-123' };
       uploadHandler.serviceHandler.getCallToService = sinon.stub().resolves({ numPages: 0 });
       uploadHandler.actionBinder.limits = { pageLimit: { maxNumPages: 100, minNumPages: 1 } };
-      const result = await uploadHandler.checkPageNumCount(assetData, true);
+      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, true));
       expect(result).to.be.true;
     });
   });

@@ -804,7 +804,10 @@ describe('ActionBinder', () => {
       beforeEach(() => {
         actionBinder.serviceHandler = { postCallToService: sinon.stub().resolves({ url: 'https://test-redirect-url.com' }) };
         actionBinder.acrobatApiConfig = { connectorApiEndPoint: 'https://test-api.com/connector' };
-        actionBinder.workflowCfg = { enabledFeatures: ['test-feature'] };
+        actionBinder.workflowCfg = {
+          enabledFeatures: ['test-feature'],
+          productName: 'test-product',
+        };
         actionBinder.MULTI_FILE = false;
         actionBinder.promiseStack = [];
         actionBinder.dispatchErrorToast = sinon.stub().resolves();
@@ -830,7 +833,11 @@ describe('ActionBinder', () => {
           expect(actionBinder.serviceHandler.postCallToService.calledWith(
             actionBinder.acrobatApiConfig.connectorApiEndPoint,
             { body: JSON.stringify(cOpts) },
-            { 'x-unity-dc-verb': 'test-feature' },
+            {
+              'x-unity-dc-verb': actionBinder.workflowCfg.enabledFeatures[0],
+              'x-unity-product': actionBinder.workflowCfg.productName,
+              'x-unity-action': actionBinder.workflowCfg.enabledFeatures[0],
+            },
           )).to.be.true;
           expect(actionBinder.redirectUrl).to.equal('https://test-redirect-url.com');
         });
