@@ -9,6 +9,8 @@
       "maxFileSize": 40000000,
       "maxHeignt": 8000,
       "maxWidth": 8000,
+      "upscaleMaxWidth": 2048,
+      "upscaleMaxHeight": 2048,
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"]
     },
     "showSplashScreen": true,

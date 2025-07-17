@@ -293,15 +293,26 @@ export default class ActionBinder {
       img.onload = async () => {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
-        if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
-          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
-          this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filedimension' } });
+        const aspectRatio = width / height;
+        const isGenerativeUpscale = this.workflowCfg.supportedFeatures.values().next().value === 'generative-upscale';
+        const handleError = (errorType, errorCode) => {
+          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType },'Unable to process the file type!', this.lanaOptions, 'client');
+          this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode } });
           reject(new Error('Unable to process the file type!'));
-        } else {
-          resolve({ width, height });
+        };
+        if (isGenerativeUpscale && (aspectRatio < 0.25 || aspectRatio > 4)) {
+          handleError('.icon-error-fileaspect', 'error-fileaspect');
+          return;
         }
+        const maxWidth = isGenerativeUpscale ? this.limits.upscaleMaxWidth : this.limits.maxWidth;
+        const maxHeight = isGenerativeUpscale ? this.limits.upscaleMaxHeight : this.limits.maxHeight;        
+        if (width > maxWidth || height > maxHeight) {
+          handleError('.icon-error-filedimension', 'error-filedimension');
+          return;
+        }
+        resolve({ width, height });
       };
-      img.onerror = () => {
+      img.onerror = () => { 
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Failed to load image'));
       };
