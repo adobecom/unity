@@ -1,12 +1,11 @@
+/* eslint-disable no-underscore-dangle */
 import { expect } from '@esm-bundle/chai';
 import getExperimentData from '../../unitylibs/utils/experiment-provider.js';
 
 describe('getExperimentData', () => {
   beforeEach(() => {
     // Mock window._satellite
-    window._satellite = {
-      track: () => {},
-    };
+    window._satellite = { track: () => {} };
   });
 
   afterEach(() => {
@@ -32,13 +31,7 @@ describe('getExperimentData', () => {
 
     window._satellite.track = (event, options) => {
       const mockResult = {
-        decisions: [{
-          items: [{
-            data: {
-              content: mockTargetData,
-            },
-          }],
-        }],
+        decisions: [{ items: [{ data: { content: mockTargetData } }] }],
         propositions: ['test-proposition'],
       };
       setTimeout(() => {
@@ -116,4 +109,4 @@ describe('getExperimentData', () => {
     const result = await getExperimentData();
     expect(result).to.deep.equal({ variationId: 'variant1' });
   });
-}); 
+});
