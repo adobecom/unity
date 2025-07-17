@@ -305,7 +305,7 @@ class WfInitiator {
           'ocr-pdf',
           'chat-pdf',
           'chat-pdf-student',
-          'summary-generator',
+          'summarize-pdf',
         ]),
       },
       'workflow-ai': {
