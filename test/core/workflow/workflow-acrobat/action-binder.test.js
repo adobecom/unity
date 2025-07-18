@@ -1423,92 +1423,92 @@ describe('ActionBinder', () => {
       describe('enabledFeatures validation', () => {
         it('should dispatch error when enabledFeatures is null', async () => {
           actionBinder.workflowCfg.enabledFeatures = null;
-          
+
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-          
+
           expect(actionBinder.dispatchErrorToast.calledWith(
             'error_generic',
             500,
             'Invalid or missing verb configuration on Unity',
             false,
             true,
-            { code: 'pre_upload_error_missing_verb_config' }
+            { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
 
         it('should dispatch error when enabledFeatures is undefined', async () => {
           actionBinder.workflowCfg.enabledFeatures = undefined;
-          
+
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-          
+
           expect(actionBinder.dispatchErrorToast.calledWith(
             'error_generic',
             500,
             'Invalid or missing verb configuration on Unity',
             false,
             true,
-            { code: 'pre_upload_error_missing_verb_config' }
+            { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
 
         it('should dispatch error when enabledFeatures is empty array', async () => {
           actionBinder.workflowCfg.enabledFeatures = [];
-          
+
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-          
+
           expect(actionBinder.dispatchErrorToast.calledWith(
             'error_generic',
             500,
             'Invalid or missing verb configuration on Unity',
             false,
             true,
-            { code: 'pre_upload_error_missing_verb_config' }
+            { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
 
         it('should dispatch error when enabledFeatures[0] is falsy', async () => {
           actionBinder.workflowCfg.enabledFeatures = [null];
-          
+
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-          
+
           expect(actionBinder.dispatchErrorToast.calledWith(
             'error_generic',
             500,
             'Invalid or missing verb configuration on Unity',
             false,
             true,
-            { code: 'pre_upload_error_missing_verb_config' }
+            { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
 
         it('should dispatch error when enabledFeatures[0] is not in LIMITS_MAP', async () => {
           actionBinder.workflowCfg.enabledFeatures = ['invalid-feature'];
-          
+
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-          
+
           expect(actionBinder.dispatchErrorToast.calledWith(
             'error_generic',
             500,
             'Invalid or missing verb configuration on Unity',
             false,
             true,
-            { code: 'pre_upload_error_missing_verb_config' }
+            { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
 
         it('should not dispatch error when enabledFeatures[0] is valid', async () => {
           // Reset the spy to ensure clean state
           actionBinder.dispatchErrorToast.resetHistory();
-          
+
           // Mock the processSingleFile method to avoid other execution paths
           actionBinder.processSingleFile = sinon.stub().resolves();
           actionBinder.processHybrid = sinon.stub().resolves();
-          
+
           // Set valid enabled feature that exists in LIMITS_MAP
           actionBinder.workflowCfg.enabledFeatures = ['fillsign'];
-          
+
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-          
+
           // Should NOT call dispatchErrorToast for missing verb config
           expect(actionBinder.dispatchErrorToast.neverCalledWith(
             'error_generic',
@@ -1516,7 +1516,7 @@ describe('ActionBinder', () => {
             'Invalid or missing verb configuration on Unity',
             false,
             true,
-            { code: 'pre_upload_error_missing_verb_config' }
+            { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
       });

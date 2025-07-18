@@ -735,9 +735,7 @@ export default class ActionBinder {
       await this.continueInApp();
     });
     if (!this.workflowCfg.enabledFeatures || !this.workflowCfg.enabledFeatures[0] || !ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]) {
-      await this.dispatchErrorToast('error_generic', 500, 'Invalid or missing verb configuration on Unity', false, true, {
-        code: 'pre_upload_error_missing_verb_config'
-      });
+      await this.dispatchErrorToast('error_generic', 500, 'Invalid or missing verb configuration on Unity', false, true, { code: 'pre_upload_error_missing_verb_config' });
       return;
     }
     const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
