@@ -68,7 +68,7 @@ async function getImsToken() {
       await new Promise((resolve) => { setTimeout(resolve, RETRY_WAIT); });
       const retryAttempt = await attemptTokenRefresh();
       if (!retryAttempt.error) return retryAttempt;
-      const { flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
+      const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
       return {
         token: null,
         error: {
