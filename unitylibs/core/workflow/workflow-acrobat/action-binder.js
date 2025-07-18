@@ -360,34 +360,7 @@ export default class ActionBinder {
     };
   }
 
-  handlePropositions(TargetPropositionResult) {
-    this.targetData = TargetPropositionResult.decisions[0].items[0].data.content;
-  }
-
-  async fetchTargetResponse() {
-    const decisionScopes = ['ACOM_UNITY_ACROBAT_EDITPDF_POC'];
-    try {
-      // eslint-disable-next-line no-underscore-dangle
-      window._satellite.track('propositionFetch', {
-        decisionScopes,
-        data: { },
-        done: (TargetPropositionResult, error) => {
-          if (error) {
-            return;
-          }
-          this.handlePropositions(TargetPropositionResult);
-          // eslint-disable-next-line no-underscore-dangle
-          window._satellite.track('propositionDisplay', TargetPropositionResult.propositions);
-        },
-      });
-    // eslint-disable-next-line no-empty
-    } catch (error) { }
-  }
-
   async handlePreloads() {
-    if (this.workflowCfg.targetCfg.experimentationOn.includes(this.workflowCfg.enabledFeatures[0])) {
-      await this.fetchTargetResponse();
-    }
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
