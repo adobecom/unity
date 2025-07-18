@@ -1,4 +1,4 @@
-export function flattenObject(obj, options = {}) {
+export default function flattenObject(obj, options = {}) {
   const {
     separator = '.',
     prefix = '',
@@ -30,10 +30,9 @@ export function flattenObject(obj, options = {}) {
         });
       }
     } else {
-      const keys = obj instanceof Error 
+      const keys = obj instanceof Error
         ? Object.getOwnPropertyNames(obj)
         : Object.keys(obj);
-        
       keys.forEach((key) => {
         const value = obj[key];
         const newKey = prefix ? `${prefix}${separator}${key}` : key;
