@@ -361,6 +361,10 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
+    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+      const getExperimentData = (await import('../../../utils/experiment-provider.js')).default;
+      this.experimentData = await getExperimentData();
+    }
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
@@ -576,6 +580,9 @@ export default class ActionBinder {
     if (!(cOpts.payload.feedback)) {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
+    }
+    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData) {
+      cOpts.payload.variationId = this.experimentData.variationId;
     }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
