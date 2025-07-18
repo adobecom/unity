@@ -1,6 +1,5 @@
 export default async function getExperimentData() {
   const decisionScopes = ['ACOM_UNITY_ACROBAT_EDITPDF_POC'];
-
   return new Promise((resolve) => {
     try {
       // eslint-disable-next-line no-underscore-dangle
