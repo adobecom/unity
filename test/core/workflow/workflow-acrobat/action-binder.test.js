@@ -1674,7 +1674,7 @@ describe('ActionBinder', () => {
 
           // Mock the dynamic import by stubbing the handlePreloads method
           const mockGetExperimentData = sinon.stub().resolves({ variationId: 'test-variant' });
-          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function () {
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithExperiment() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = await mockGetExperimentData();
             }
@@ -1701,7 +1701,7 @@ describe('ActionBinder', () => {
           };
 
           // Mock the handlePreloads method
-          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function () {
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsDisabled() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
             }
@@ -1722,7 +1722,7 @@ describe('ActionBinder', () => {
           actionBinder.workflowCfg = { enabledFeatures: ['add-comment'] };
 
           // Mock the handlePreloads method
-          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function () {
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsNoTargetCfg() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
             }
@@ -1748,7 +1748,7 @@ describe('ActionBinder', () => {
           };
 
           // Mock the handlePreloads method
-          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function () {
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsNoExperimentationOn() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
             }
@@ -1897,7 +1897,7 @@ describe('ActionBinder', () => {
 
           // Mock the handlePreloads method
           const mockGetExperimentData = sinon.stub().resolves({ variationId: 'integration-test-variant' });
-          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function () {
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsIntegration() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = await mockGetExperimentData();
             }
@@ -1936,7 +1936,7 @@ describe('ActionBinder', () => {
           };
 
           // Mock the handlePreloads method
-          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function () {
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithoutExperiment() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
             }
