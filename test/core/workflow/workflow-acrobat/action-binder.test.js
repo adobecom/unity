@@ -1503,13 +1503,12 @@ describe('ActionBinder', () => {
           // Mock the processSingleFile method to avoid other execution paths
           actionBinder.processSingleFile = sinon.stub().resolves();
           actionBinder.processHybrid = sinon.stub().resolves();
-
-          // Set valid enabled feature that exists in LIMITS_MAP
-          actionBinder.workflowCfg.enabledFeatures = ['fillsign'];
-
-          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
-
-          // Should NOT call dispatchErrorToast for missing verb config
+          actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+          const validFiles = [
+            { name: 'test.pdf', type: 'application/pdf', size: 1048576 },
+          ];
+          const totalFileSize = validFiles.reduce((sum, file) => sum + file.size, 0);
+          await actionBinder.acrobatActionMaps('upload', validFiles, totalFileSize, 'test-event');
           expect(actionBinder.dispatchErrorToast.neverCalledWith(
             'error_generic',
             500,
