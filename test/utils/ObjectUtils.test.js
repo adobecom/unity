@@ -44,7 +44,13 @@ describe('ObjectUtils', () => {
 
     describe('Array handling', () => {
       it('should flatten arrays by default', () => {
+<<<<<<< HEAD
         const input = { items: ['first', 'second', { nested: 'value' }] };
+=======
+        const input = {
+          items: ['first', 'second', { nested: 'value' }],
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const expected = {
           'items.0': 'first',
           'items.1': 'second',
@@ -55,15 +61,33 @@ describe('ObjectUtils', () => {
       });
 
       it('should not flatten arrays when includeArrays is false', () => {
+<<<<<<< HEAD
         const input = { items: ['first', 'second'] };
         const expected = { items: '[Array(2)]' };
+=======
+        const input = {
+          items: ['first', 'second'],
+        };
+        const expected = {
+          items: '[Array(2)]',
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, { includeArrays: false });
         expect(result).to.deep.equal(expected);
       });
 
       it('should handle empty arrays', () => {
+<<<<<<< HEAD
         const input = { empty: [] };
         const expected = { empty: '[Array(0)]' };
+=======
+        const input = {
+          empty: [],
+        };
+        const expected = {
+          empty: '[Array(0)]',
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, { includeArrays: false });
         expect(result).to.deep.equal(expected);
       });
@@ -71,22 +95,57 @@ describe('ObjectUtils', () => {
 
     describe('Options handling', () => {
       it('should use custom separator', () => {
+<<<<<<< HEAD
         const input = { user: { name: 'John' } };
         const expected = { 'user|name': 'John' };
+=======
+        const input = {
+          user: {
+            name: 'John',
+          },
+        };
+        const expected = {
+          'user|name': 'John',
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, { separator: '|' });
         expect(result).to.deep.equal(expected);
       });
 
       it('should use custom prefix', () => {
+<<<<<<< HEAD
         const input = { name: 'John' };
         const expected = { 'root.name': 'John' };
+=======
+        const input = {
+          name: 'John',
+        };
+        const expected = {
+          'root.name': 'John',
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, { prefix: 'root' });
         expect(result).to.deep.equal(expected);
       });
 
       it('should respect maxDepth limit', () => {
+<<<<<<< HEAD
         const input = { level1: { level2: { level3: { value: 'deep' } } } };
         const expected = { 'level1.level2': '[Max Depth Reached]' };
+=======
+        const input = {
+          level1: {
+            level2: {
+              level3: {
+                value: 'deep',
+              },
+            },
+          },
+        };
+        const expected = {
+          'level1.level2': '[Max Depth Reached]',
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, { maxDepth: 2 });
         expect(result).to.deep.equal(expected);
       });
@@ -129,7 +188,13 @@ describe('ObjectUtils', () => {
           nullValue: null,
           undefinedValue: undefined,
         };
+<<<<<<< HEAD
         const expected = { valid: 'value' };
+=======
+        const expected = {
+          valid: 'value',
+        };
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input);
         expect(result).to.deep.equal(expected);
       });
@@ -191,7 +256,11 @@ describe('ObjectUtils', () => {
       it('should handle circular references', () => {
         const input = { name: 'parent' };
         input.self = input; // Create circular reference
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input);
         expect(result).to.have.property('name', 'parent');
         expect(result).to.have.property('self', '[Circular Reference]');
@@ -201,10 +270,17 @@ describe('ObjectUtils', () => {
         const parent = { name: 'parent' };
         const child = { name: 'child', parent };
         parent.child = child; // Create circular reference
+<<<<<<< HEAD
 
         const input = { root: parent };
         const result = flattenObject(input);
 
+=======
+        
+        const input = { root: parent };
+        const result = flattenObject(input);
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         expect(result).to.have.property('root.name', 'parent');
         expect(result).to.have.property('root.child.name', 'child');
         expect(result).to.have.property('root.child.parent', '[Circular Reference]');
@@ -215,6 +291,7 @@ describe('ObjectUtils', () => {
       it('should flatten Error objects with non-enumerable properties', () => {
         const error = new Error('Test error');
         error.customProp = 'custom';
+<<<<<<< HEAD
 
         const input = { error };
         const result = flattenObject(input);
@@ -222,6 +299,16 @@ describe('ObjectUtils', () => {
         expect(result).to.have.property('error.message', 'Test error');
         expect(result).to.have.property('error.customProp', 'custom');
         expect(result).to.have.property('error.stack');
+=======
+        
+        const input = { error };
+        const result = flattenObject(input);
+        
+        expect(result).to.have.property('error.message', 'Test error');
+        expect(result).to.have.property('error.customProp', 'custom');
+        expect(result).to.have.property('error.stack');
+        // Note: 'name' is inherited from Error.prototype, not an own property
+>>>>>>> 708c1990 (UTs for objectUtils)
       });
 
       it('should handle nested Error objects', () => {
@@ -232,12 +319,22 @@ describe('ObjectUtils', () => {
             message: 'Something went wrong',
           },
         };
+<<<<<<< HEAD
 
         const result = flattenObject(input);
 
         expect(result).to.have.property('exception.message', 'Something went wrong');
         expect(result).to.have.property('exception.cause.message', 'Nested error');
         expect(result).to.have.property('exception.cause.stack');
+=======
+        
+        const result = flattenObject(input);
+        
+        expect(result).to.have.property('exception.message', 'Something went wrong');
+        expect(result).to.have.property('exception.cause.message', 'Nested error');
+        expect(result).to.have.property('exception.cause.stack');
+        // Note: 'name' is inherited from Error.prototype, not an own property
+>>>>>>> 708c1990 (UTs for objectUtils)
       });
     });
 
@@ -259,9 +356,15 @@ describe('ObjectUtils', () => {
             version: '1.0.0',
           },
         };
+<<<<<<< HEAD
 
         const result = flattenObject(input);
 
+=======
+        
+        const result = flattenObject(input);
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         expect(result).to.have.property('user.name', 'John');
         expect(result).to.have.property('user.age', 30);
         expect(result).to.have.property('user.active', true);
@@ -278,9 +381,17 @@ describe('ObjectUtils', () => {
       it('should handle empty objects', () => {
         const input = {
           empty: {},
+<<<<<<< HEAD
           nested: { empty: {} },
         };
 
+=======
+          nested: {
+            empty: {},
+          },
+        };
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input);
         expect(result).to.deep.equal({});
       });
@@ -293,7 +404,11 @@ describe('ObjectUtils', () => {
             func: () => {},
           },
         };
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, {
           separator: '|',
           prefix: 'root',
@@ -301,13 +416,21 @@ describe('ObjectUtils', () => {
           includeArrays: false,
           excludeTypes: ['function', 'number'],
         });
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const expected = {
           'root|data|items': '[Array(3)]',
           'root|data|nullValue': null,
           'root|data|func': '[function]',
         };
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         expect(result).to.deep.equal(expected);
       });
     });
@@ -318,7 +441,11 @@ describe('ObjectUtils', () => {
         for (let i = 0; i < 5; i++) {
           input = { level: input };
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input, { maxDepth: 10 });
         expect(result).to.have.property('level.level.level.level.level.value', 'end');
       });
@@ -331,7 +458,11 @@ describe('ObjectUtils', () => {
             10: 'tenth',
           },
         };
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input);
         expect(result).to.deep.equal({
           'data.0': 'first',
@@ -346,7 +477,11 @@ describe('ObjectUtils', () => {
           'key.with.dots': 'value2',
           'key with spaces': 'value3',
         };
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 708c1990 (UTs for objectUtils)
         const result = flattenObject(input);
         expect(result).to.deep.equal({
           'key-with-dashes': 'value1',
@@ -358,18 +493,34 @@ describe('ObjectUtils', () => {
       it('should handle Date objects', () => {
         const date = new Date('2023-01-01');
         const input = { timestamp: date };
+<<<<<<< HEAD
 
         const result = flattenObject(input);
+=======
+        
+        const result = flattenObject(input);
+        // Date objects have no own enumerable properties, so they become empty objects
+>>>>>>> 708c1990 (UTs for objectUtils)
         expect(result).to.deep.equal({});
       });
 
       it('should handle RegExp objects', () => {
         const regex = /test/g;
         const input = { pattern: regex };
+<<<<<<< HEAD
 
         const result = flattenObject(input);
+=======
+        
+        const result = flattenObject(input);
+        // RegExp objects have 'lastIndex' but it's non-enumerable, so they become empty objects
+>>>>>>> 708c1990 (UTs for objectUtils)
         expect(result).to.deep.equal({});
       });
     });
   });
+<<<<<<< HEAD
 });
+=======
+}); 
+>>>>>>> 708c1990 (UTs for objectUtils)
