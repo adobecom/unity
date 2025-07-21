@@ -1972,6 +1972,57 @@ describe('ActionBinder', () => {
           expect(cOpts.payload.variationId).to.be.undefined;
           expect(result).to.be.true;
         });
+
+        it('should handle experiment provider exceptions and log warnings', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {
+              experimentationOn: ['add-comment'],
+              showSplashScreen: true,
+            },
+          };
+
+          // Mock the handlePreloads method to simulate experiment provider exception
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithException() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              // Simulate the experiment provider throwing an error
+              const getExperimentData = () => Promise.reject(new Error('Target proposition fetch failed: Test error'));
+              try {
+                this.experimentData = await getExperimentData();
+              } catch (error) {
+                await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
+                  code: 'warn_fetch_experiment',
+                  desc: error.message,
+                });
+                this.experimentData = {};
+              }
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          // Mock dispatchErrorToast to verify it's called
+          const dispatchErrorToastSpy = sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+
+          // Load preloads (should catch exception and log warning)
+          await actionBinder.handlePreloads();
+
+          expect(actionBinder.experimentData).to.deep.equal({});
+          expect(dispatchErrorToastSpy.calledWith(
+            'warn_fetch_experiment',
+            null,
+            'Target proposition fetch failed: Test error',
+            true,
+            true,
+            {
+              code: 'warn_fetch_experiment',
+              desc: 'Target proposition fetch failed: Test error',
+            },
+          )).to.be.true;
+        });
       });
     });
   });

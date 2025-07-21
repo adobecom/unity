@@ -237,6 +237,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload_exception: -601,
     pre_upload_warn_renamed_invalid_file_name: -602,
     upload_warn_delete_asset: -603,
+    warn_fetch_experiment: -604,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -270,6 +271,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload: 'verb_upload_warn_chunk_upload',
     pre_upload_warn_renamed_invalid_file_name: 'verb_warn_renamed_invalid_file_name',
     warn_delete_asset: 'verb_upload_warn_delete_asset',
+    warn_fetch_experiment: 'verb_warn_fetch_experiment',
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
@@ -363,7 +365,14 @@ export default class ActionBinder {
   async handlePreloads() {
     if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
       const getExperimentData = (await import('../../../utils/experiment-provider.js')).default;
-      this.experimentData = await getExperimentData();
+      try {
+        this.experimentData = await getExperimentData();
+      } catch (error) {
+        await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, false, true, {
+          code: 'warn_fetch_experiment',
+          desc: error.message,
+        });
+      }
     }
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
@@ -581,7 +590,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
-    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData?.variationId) {
+    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
     await this.getRedirectUrl(cOpts);

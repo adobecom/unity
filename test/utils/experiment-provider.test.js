@@ -12,15 +12,19 @@ describe('getExperimentData', () => {
     delete window._satellite;
   });
 
-  it('should return empty object when target fetch fails', async () => {
+  it('should reject when target fetch fails', async () => {
     window._satellite.track = (event, options) => {
       setTimeout(() => {
         if (typeof options.done === 'function') options.done(null, new Error('Test error'));
       }, 0);
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Target proposition fetch failed: Test error');
+    }
   });
 
   it('should fetch target data when target returns valid data', async () => {
@@ -43,7 +47,7 @@ describe('getExperimentData', () => {
     expect(result).to.deep.equal(mockTargetData);
   });
 
-  it('should return empty object when target returns empty decisions', async () => {
+  it('should reject when target returns empty decisions', async () => {
     window._satellite.track = (event, options) => {
       const mockResult = { decisions: [] };
       setTimeout(() => {
@@ -51,11 +55,15 @@ describe('getExperimentData', () => {
       }, 0);
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Target proposition returned but no valid data found in response structure');
+    }
   });
 
-  it('should return empty object when target returns empty items', async () => {
+  it('should reject when target returns empty items', async () => {
     window._satellite.track = (event, options) => {
       const mockResult = { decisions: [{ items: [] }] };
       setTimeout(() => {
@@ -63,11 +71,15 @@ describe('getExperimentData', () => {
       }, 0);
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Target proposition returned but no valid data found in response structure');
+    }
   });
 
-  it('should return empty object when target returns invalid structure', async () => {
+  it('should reject when target returns invalid structure', async () => {
     window._satellite.track = (event, options) => {
       const mockResult = { invalid: 'structure' };
       setTimeout(() => {
@@ -75,38 +87,54 @@ describe('getExperimentData', () => {
       }, 0);
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Target proposition returned but no valid data found in response structure');
+    }
   });
 
-  it('should handle satellite track exceptions', async () => {
+  it('should reject when satellite track throws exception', async () => {
     window._satellite.track = () => {
       throw new Error('Satellite error');
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Exception during Target proposition fetch: Satellite error');
+    }
   });
 
-  it('should handle null target result', async () => {
+  it('should reject when target result is null', async () => {
     window._satellite.track = (event, options) => {
       setTimeout(() => {
         if (typeof options.done === 'function') options.done(null, null);
       }, 0);
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Target proposition returned but no valid data found in response structure');
+    }
   });
 
-  it('should handle undefined target result', async () => {
+  it('should reject when target result is undefined', async () => {
     window._satellite.track = (event, options) => {
       setTimeout(() => {
         if (typeof options.done === 'function') options.done(undefined, null);
       }, 0);
     };
 
-    const result = await getExperimentData();
-    expect(result).to.deep.equal({});
+    try {
+      await getExperimentData();
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('Target proposition returned but no valid data found in response structure');
+    }
   });
 });
