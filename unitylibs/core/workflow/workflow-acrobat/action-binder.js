@@ -581,7 +581,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
-    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData) {
+    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData?.variationId) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
     await this.getRedirectUrl(cOpts);

@@ -12,7 +12,7 @@ describe('getExperimentData', () => {
     delete window._satellite;
   });
 
-  it('should return default data when target fetch fails', async () => {
+  it('should return empty object when target fetch fails', async () => {
     window._satellite.track = (event, options) => {
       setTimeout(() => {
         if (typeof options.done === 'function') options.done(null, new Error('Test error'));
@@ -20,7 +20,7 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 
   it('should fetch target data when target returns valid data', async () => {
@@ -43,7 +43,7 @@ describe('getExperimentData', () => {
     expect(result).to.deep.equal(mockTargetData);
   });
 
-  it('should return default data when target returns empty decisions', async () => {
+  it('should return empty object when target returns empty decisions', async () => {
     window._satellite.track = (event, options) => {
       const mockResult = { decisions: [] };
       setTimeout(() => {
@@ -52,10 +52,10 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 
-  it('should return default data when target returns empty items', async () => {
+  it('should return empty object when target returns empty items', async () => {
     window._satellite.track = (event, options) => {
       const mockResult = { decisions: [{ items: [] }] };
       setTimeout(() => {
@@ -64,10 +64,10 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 
-  it('should return default data when target returns invalid structure', async () => {
+  it('should return empty object when target returns invalid structure', async () => {
     window._satellite.track = (event, options) => {
       const mockResult = { invalid: 'structure' };
       setTimeout(() => {
@@ -76,7 +76,7 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 
   it('should handle satellite track exceptions', async () => {
@@ -85,7 +85,7 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 
   it('should handle null target result', async () => {
@@ -96,7 +96,7 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 
   it('should handle undefined target result', async () => {
@@ -107,6 +107,6 @@ describe('getExperimentData', () => {
     };
 
     const result = await getExperimentData();
-    expect(result).to.deep.equal({ variationId: 'variant1' });
+    expect(result).to.deep.equal({});
   });
 });

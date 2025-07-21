@@ -1704,6 +1704,8 @@ describe('ActionBinder', () => {
           sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsDisabled() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
             }
             const parr = [];
             if (this.workflowCfg.targetCfg?.showSplashScreen) {
@@ -1714,7 +1716,7 @@ describe('ActionBinder', () => {
 
           await actionBinder.handlePreloads();
 
-          expect(actionBinder.experimentData).to.be.undefined;
+          expect(actionBinder.experimentData).to.deep.equal({});
           expect(window.priorityLoad.called).to.be.true;
         });
 
@@ -1725,6 +1727,8 @@ describe('ActionBinder', () => {
           sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsNoTargetCfg() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
             }
             const parr = [];
             if (this.workflowCfg.targetCfg?.showSplashScreen) {
@@ -1737,7 +1741,7 @@ describe('ActionBinder', () => {
 
           await actionBinder.handlePreloads();
 
-          expect(actionBinder.experimentData).to.be.undefined;
+          expect(actionBinder.experimentData).to.deep.equal({});
           expect(window.priorityLoad.called).to.be.false;
         });
 
@@ -1751,6 +1755,8 @@ describe('ActionBinder', () => {
           sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsNoExperimentationOn() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
             }
             const parr = [];
             if (this.workflowCfg.targetCfg?.showSplashScreen) {
@@ -1761,7 +1767,7 @@ describe('ActionBinder', () => {
 
           await actionBinder.handlePreloads();
 
-          expect(actionBinder.experimentData).to.be.undefined;
+          expect(actionBinder.experimentData).to.deep.equal({});
           expect(window.priorityLoad.called).to.be.true;
         });
       });
@@ -1813,7 +1819,7 @@ describe('ActionBinder', () => {
             enabledFeatures: ['add-comment'],
             targetCfg: { experimentationOn: ['add-comment'] },
           };
-          actionBinder.experimentData = undefined;
+          actionBinder.experimentData = {};
 
           const cOpts = { payload: {} };
           const filesData = { test: 'data' };
@@ -1939,6 +1945,8 @@ describe('ActionBinder', () => {
           sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithoutExperiment() {
             if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
               this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
             }
             const parr = [];
             if (this.workflowCfg.targetCfg?.showSplashScreen) {
@@ -1949,7 +1957,7 @@ describe('ActionBinder', () => {
 
           // Load preloads (should not load experiment data)
           await actionBinder.handlePreloads();
-          expect(actionBinder.experimentData).to.be.undefined;
+          expect(actionBinder.experimentData).to.deep.equal({});
 
           // Use in redirect (should not add variationId)
           actionBinder.getRedirectUrl = sinon.stub().resolves();

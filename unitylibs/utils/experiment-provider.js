@@ -8,7 +8,7 @@ export default async function getExperimentData() {
         data: {},
         done: (TargetPropositionResult, error) => {
           if (error) {
-            resolve({ variationId: 'variant1' });
+            resolve({});
             return;
           }
 
@@ -18,12 +18,12 @@ export default async function getExperimentData() {
             window._satellite.track('propositionDisplay', TargetPropositionResult.propositions);
             resolve(targetData);
           } else {
-            resolve({ variationId: 'variant1' });
+            resolve({});
           }
         },
       });
     } catch (e) {
-      resolve({ variationId: 'variant1' });
+      resolve({});
     }
   });
 }
