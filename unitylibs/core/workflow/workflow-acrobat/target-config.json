@@ -19,6 +19,7 @@
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
     "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student"],
     "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student"],
-    "mfuUploadOnlyPdfAllowed": ["combine-pdf"]
+    "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
+    "experimentationOn": ["add-comment"]
   }
 }
