@@ -54,7 +54,8 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions?.errorToastEl) return;
-    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    const lang = document.querySelector('html').getAttribute('lang');
+    const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
     const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
     promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
