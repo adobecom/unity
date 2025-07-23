@@ -222,7 +222,6 @@ describe('ObjectUtils', () => {
         expect(result).to.have.property('error.message', 'Test error');
         expect(result).to.have.property('error.customProp', 'custom');
         expect(result).to.have.property('error.stack');
-        // Note: 'name' is inherited from Error.prototype, not an own property
       });
 
       it('should handle nested Error objects', () => {
@@ -239,7 +238,6 @@ describe('ObjectUtils', () => {
         expect(result).to.have.property('exception.message', 'Something went wrong');
         expect(result).to.have.property('exception.cause.message', 'Nested error');
         expect(result).to.have.property('exception.cause.stack');
-        // Note: 'name' is inherited from Error.prototype, not an own property
       });
     });
 
@@ -362,7 +360,6 @@ describe('ObjectUtils', () => {
         const input = { timestamp: date };
 
         const result = flattenObject(input);
-        // Date objects have no own enumerable properties, so they become empty objects
         expect(result).to.deep.equal({});
       });
 
@@ -371,7 +368,6 @@ describe('ObjectUtils', () => {
         const input = { pattern: regex };
 
         const result = flattenObject(input);
-        // RegExp objects have 'lastIndex' but it's non-enumerable, so they become empty objects
         expect(result).to.deep.equal({});
       });
     });
