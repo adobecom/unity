@@ -1402,6 +1402,7 @@ describe('ActionBinder', () => {
         };
         actionBinder.signedOut = false;
         actionBinder.tokenError = null;
+        actionBinder.dispatchErrorToast = sinon.stub().resolves();
       });
 
       it('should handle interrupt case', async () => {
@@ -1417,6 +1418,106 @@ describe('ActionBinder', () => {
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
         expect(spy.called).to.be.true;
         spy.restore();
+      });
+
+      describe('enabledFeatures validation', () => {
+        it('should dispatch error when enabledFeatures is null', async () => {
+          actionBinder.workflowCfg.enabledFeatures = null;
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
+
+        it('should dispatch error when enabledFeatures is undefined', async () => {
+          actionBinder.workflowCfg.enabledFeatures = undefined;
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
+
+        it('should dispatch error when enabledFeatures is empty array', async () => {
+          actionBinder.workflowCfg.enabledFeatures = [];
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
+
+        it('should dispatch error when enabledFeatures[0] is falsy', async () => {
+          actionBinder.workflowCfg.enabledFeatures = [null];
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
+
+        it('should dispatch error when enabledFeatures[0] is not in LIMITS_MAP', async () => {
+          actionBinder.workflowCfg.enabledFeatures = ['invalid-feature'];
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
+
+        it('should not dispatch error when enabledFeatures[0] is valid', async () => {
+          // Reset the spy to ensure clean state
+          actionBinder.dispatchErrorToast.resetHistory();
+
+          // Mock the processSingleFile method to avoid other execution paths
+          actionBinder.processSingleFile = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+          const validFiles = [
+            { name: 'test.pdf', type: 'application/pdf', size: 1048576 },
+          ];
+          const totalFileSize = validFiles.reduce((sum, file) => sum + file.size, 0);
+          await actionBinder.acrobatActionMaps('upload', validFiles, totalFileSize, 'test-event');
+          expect(actionBinder.dispatchErrorToast.neverCalledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
       });
     });
 
