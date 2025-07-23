@@ -20,18 +20,8 @@ describe('ObjectUtils', () => {
       });
 
       it('should handle deeply nested objects', () => {
-        const input = {
-          level1: {
-            level2: {
-              level3: {
-                value: 'deep',
-              },
-            },
-          },
-        };
-        const expected = {
-          'level1.level2.level3.value': 'deep',
-        };
+        const input = { level1: { level2: { level3: { value: 'deep' } } } };
+        const expected = { 'level1.level2.level3.value': 'deep' };
         const result = flattenObject(input);
         expect(result).to.deep.equal(expected);
       });
@@ -54,9 +44,7 @@ describe('ObjectUtils', () => {
 
     describe('Array handling', () => {
       it('should flatten arrays by default', () => {
-        const input = {
-          items: ['first', 'second', { nested: 'value' }],
-        };
+        const input = { items: ['first', 'second', { nested: 'value' }] };
         const expected = {
           'items.0': 'first',
           'items.1': 'second',
@@ -67,23 +55,15 @@ describe('ObjectUtils', () => {
       });
 
       it('should not flatten arrays when includeArrays is false', () => {
-        const input = {
-          items: ['first', 'second'],
-        };
-        const expected = {
-          items: '[Array(2)]',
-        };
+        const input = { items: ['first', 'second'] };
+        const expected = { items: '[Array(2)]' };
         const result = flattenObject(input, { includeArrays: false });
         expect(result).to.deep.equal(expected);
       });
 
       it('should handle empty arrays', () => {
-        const input = {
-          empty: [],
-        };
-        const expected = {
-          empty: '[Array(0)]',
-        };
+        const input = { empty: [] };
+        const expected = { empty: '[Array(0)]' };
         const result = flattenObject(input, { includeArrays: false });
         expect(result).to.deep.equal(expected);
       });
@@ -91,42 +71,22 @@ describe('ObjectUtils', () => {
 
     describe('Options handling', () => {
       it('should use custom separator', () => {
-        const input = {
-          user: {
-            name: 'John',
-          },
-        };
-        const expected = {
-          'user|name': 'John',
-        };
+        const input = { user: { name: 'John' } };
+        const expected = { 'user|name': 'John' };
         const result = flattenObject(input, { separator: '|' });
         expect(result).to.deep.equal(expected);
       });
 
       it('should use custom prefix', () => {
-        const input = {
-          name: 'John',
-        };
-        const expected = {
-          'root.name': 'John',
-        };
+        const input = { name: 'John' };
+        const expected = { 'root.name': 'John' };
         const result = flattenObject(input, { prefix: 'root' });
         expect(result).to.deep.equal(expected);
       });
 
       it('should respect maxDepth limit', () => {
-        const input = {
-          level1: {
-            level2: {
-              level3: {
-                value: 'deep',
-              },
-            },
-          },
-        };
-        const expected = {
-          'level1.level2': '[Max Depth Reached]',
-        };
+        const input = { level1: { level2: { level3: { value: 'deep' } } } };
+        const expected = { 'level1.level2': '[Max Depth Reached]' };
         const result = flattenObject(input, { maxDepth: 2 });
         expect(result).to.deep.equal(expected);
       });
@@ -169,9 +129,7 @@ describe('ObjectUtils', () => {
           nullValue: null,
           undefinedValue: undefined,
         };
-        const expected = {
-          valid: 'value',
-        };
+        const expected = { valid: 'value' };
         const result = flattenObject(input);
         expect(result).to.deep.equal(expected);
       });
@@ -233,7 +191,7 @@ describe('ObjectUtils', () => {
       it('should handle circular references', () => {
         const input = { name: 'parent' };
         input.self = input; // Create circular reference
-        
+
         const result = flattenObject(input);
         expect(result).to.have.property('name', 'parent');
         expect(result).to.have.property('self', '[Circular Reference]');
@@ -243,10 +201,10 @@ describe('ObjectUtils', () => {
         const parent = { name: 'parent' };
         const child = { name: 'child', parent };
         parent.child = child; // Create circular reference
-        
+
         const input = { root: parent };
         const result = flattenObject(input);
-        
+
         expect(result).to.have.property('root.name', 'parent');
         expect(result).to.have.property('root.child.name', 'child');
         expect(result).to.have.property('root.child.parent', '[Circular Reference]');
@@ -257,10 +215,10 @@ describe('ObjectUtils', () => {
       it('should flatten Error objects with non-enumerable properties', () => {
         const error = new Error('Test error');
         error.customProp = 'custom';
-        
+
         const input = { error };
         const result = flattenObject(input);
-        
+
         expect(result).to.have.property('error.message', 'Test error');
         expect(result).to.have.property('error.customProp', 'custom');
         expect(result).to.have.property('error.stack');
@@ -275,9 +233,9 @@ describe('ObjectUtils', () => {
             message: 'Something went wrong',
           },
         };
-        
+
         const result = flattenObject(input);
-        
+
         expect(result).to.have.property('exception.message', 'Something went wrong');
         expect(result).to.have.property('exception.cause.message', 'Nested error');
         expect(result).to.have.property('exception.cause.stack');
@@ -303,9 +261,9 @@ describe('ObjectUtils', () => {
             version: '1.0.0',
           },
         };
-        
+
         const result = flattenObject(input);
-        
+
         expect(result).to.have.property('user.name', 'John');
         expect(result).to.have.property('user.age', 30);
         expect(result).to.have.property('user.active', true);
@@ -322,11 +280,9 @@ describe('ObjectUtils', () => {
       it('should handle empty objects', () => {
         const input = {
           empty: {},
-          nested: {
-            empty: {},
-          },
+          nested: { empty: {} },
         };
-        
+
         const result = flattenObject(input);
         expect(result).to.deep.equal({});
       });
@@ -339,7 +295,7 @@ describe('ObjectUtils', () => {
             func: () => {},
           },
         };
-        
+
         const result = flattenObject(input, {
           separator: '|',
           prefix: 'root',
@@ -347,13 +303,13 @@ describe('ObjectUtils', () => {
           includeArrays: false,
           excludeTypes: ['function', 'number'],
         });
-        
+
         const expected = {
           'root|data|items': '[Array(3)]',
           'root|data|nullValue': null,
           'root|data|func': '[function]',
         };
-        
+
         expect(result).to.deep.equal(expected);
       });
     });
@@ -364,7 +320,7 @@ describe('ObjectUtils', () => {
         for (let i = 0; i < 5; i++) {
           input = { level: input };
         }
-        
+
         const result = flattenObject(input, { maxDepth: 10 });
         expect(result).to.have.property('level.level.level.level.level.value', 'end');
       });
@@ -377,7 +333,7 @@ describe('ObjectUtils', () => {
             10: 'tenth',
           },
         };
-        
+
         const result = flattenObject(input);
         expect(result).to.deep.equal({
           'data.0': 'first',
@@ -392,7 +348,7 @@ describe('ObjectUtils', () => {
           'key.with.dots': 'value2',
           'key with spaces': 'value3',
         };
-        
+
         const result = flattenObject(input);
         expect(result).to.deep.equal({
           'key-with-dashes': 'value1',
@@ -404,7 +360,7 @@ describe('ObjectUtils', () => {
       it('should handle Date objects', () => {
         const date = new Date('2023-01-01');
         const input = { timestamp: date };
-        
+
         const result = flattenObject(input);
         // Date objects have no own enumerable properties, so they become empty objects
         expect(result).to.deep.equal({});
@@ -413,11 +369,11 @@ describe('ObjectUtils', () => {
       it('should handle RegExp objects', () => {
         const regex = /test/g;
         const input = { pattern: regex };
-        
+
         const result = flattenObject(input);
         // RegExp objects have 'lastIndex' but it's non-enumerable, so they become empty objects
         expect(result).to.deep.equal({});
       });
     });
   });
-}); 
+});
