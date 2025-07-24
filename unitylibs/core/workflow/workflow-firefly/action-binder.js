@@ -54,7 +54,8 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions?.errorToastEl) return;
-    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent;
+    const lang = document.querySelector('html').getAttribute('lang');
+    const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
     const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
     promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
@@ -237,8 +238,8 @@ export default class ActionBinder {
 
   getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
-  validateInput() {
-    if (this.inputField.value.length > 750) {
+  validateInput(query) {
+    if (query.length > 750) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
     }
@@ -271,12 +272,12 @@ export default class ActionBinder {
         if (key && value) queryParams[key] = value;
       });
     }
-    if (!this.query) this.query = this.inputField.value.trim();
+    this.query = this.inputField.value.trim();
     const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
     const action = (this.id ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
-    const validation = this.validateInput();
+    const validation = this.validateInput(this.query);
     if (!validation.isValid) {
       this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
       return;
@@ -300,6 +301,7 @@ export default class ActionBinder {
       this.resetDropdown();
       if (url) window.location.href = url;
     } catch (err) {
+      this.query = '';
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
       this.logAnalytics('generate', {
         ...eventData,
