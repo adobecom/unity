@@ -1,15 +1,15 @@
 /* eslint-disable class-methods-use-this */
 
-import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
+import { createTag, getConfig, unityConfig, getUnityLibs } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
-  constructor(target, el, workflowCfg, spriteCon) {
+  constructor(target, el, workflowCfg) {
     this.el = el;
     this.target = target;
     this.workflowCfg = workflowCfg;
     this.widget = null;
     this.actionMap = {};
-    this.spriteCon = spriteCon;
+    this.spriteCon = null;
     this.prompts = null;
     this.selectedVerbType = '';
     this.selectedVerbText = '';
@@ -19,13 +19,29 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
   }
 
+  async loadSprite() {
+    if (this.spriteCon) return;
+    try {
+      const spriteResponse = await fetch(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/sprite.svg`);
+      this.spriteCon = await spriteResponse.text();
+    } catch (error) {
+      window.lana?.log(`Message: Error loading sprite, Error: ${error}`, this.lanaOptions);
+    }
+  }
+
   async initWidget() {
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
     this.widget = widget;
-    unitySprite.innerHTML = this.spriteCon;
-    this.widgetWrap.append(unitySprite);
+
+    // Load sprite on-demand
+    await this.loadSprite();
+    if (this.spriteCon) {
+      unitySprite.innerHTML = this.spriteCon;
+      this.widgetWrap.append(unitySprite);
+    }
+
     this.workflowCfg.placeholder = this.popPlaceholders();
     const hasPromptPlaceholder = !!this.el.querySelector('.icon-placeholder-prompt');
     const hasSuggestionsPlaceholder = !!this.el.querySelector('.icon-placeholder-suggestions');
