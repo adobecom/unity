@@ -200,6 +200,7 @@ export default class ActionBinder {
     'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
+    'summarize-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -210,6 +211,7 @@ export default class ActionBinder {
     pre_upload_error_fetch_redirect_url: -53,
     pre_upload_error_fetching_access_token: -54,
     pre_upload_error_create_asset: -55,
+    pre_upload_error_missing_verb_config: -56,
     validation_error_validate_files: -100,
     validation_error_unsupported_type: -101,
     validation_error_empty_file: -102,
@@ -733,6 +735,10 @@ export default class ActionBinder {
     window.addEventListener('DCUnity:RedirectReady', async () => {
       await this.continueInApp();
     });
+    if (!this.workflowCfg.enabledFeatures?.length || !ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]) {
+      await this.dispatchErrorToast('error_generic', 500, 'Invalid or missing verb configuration on Unity', false, true, { code: 'pre_upload_error_missing_verb_config' });
+      return;
+    }
     const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
     switch (value) {
       case 'upload':
