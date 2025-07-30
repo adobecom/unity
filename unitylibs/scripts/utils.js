@@ -80,10 +80,11 @@ async function getImsToken() {
     }
     return { token: accessToken, error: null };
   } catch (error) {
+    const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
     return {
       token: null,
       error: {
-        message: `Error getting IMS access token: ${JSON.stringify(error)}`,
+        message: `Error getting IMS access token: ${flattenObject(error)}`,
         type: 'token_error',
       },
     };

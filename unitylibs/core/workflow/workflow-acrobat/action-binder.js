@@ -221,7 +221,6 @@ export default class ActionBinder {
     validation_error_file_too_large_multi: -202,
     validation_error_multiple_invalid_files: -203,
     validation_error_max_num_files: -204,
-    validation_warn_validate_files: -205,
     validation_error_file_same_type_multi: -206,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
@@ -237,6 +236,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload_exception: -601,
     pre_upload_warn_renamed_invalid_file_name: -602,
     upload_warn_delete_asset: -603,
+    validation_warn_validate_files: -604
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -394,7 +394,7 @@ export default class ActionBinder {
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode,
-            desc: errorMetaData.desc || message || undefined,
+            desc: errorMetaData.desc || message || info ||undefined,
           },
           sendToSplunk,
         },
