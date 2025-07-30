@@ -532,9 +532,8 @@ export default class ActionBinder {
         this.redirectUrl = response.url;
       })
       .catch(async (e) => {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-        await this.transitionScreen.showSplashScreen();
+        await this.initializeTransitionScreen();
+        if (this.transitionScreen) await this.transitionScreen.showSplashScreen();
         await this.dispatchErrorToast('pre_upload_error_fetch_redirect_url', e.status || 500, `Exception thrown when retrieving redirect URL. Message: ${e.message}, Options: ${JSON.stringify(cOpts)}`, false, e.showError, {
           code: 'pre_upload_error_fetch_redirect_url',
           subCode: e.status,
@@ -661,9 +660,8 @@ export default class ActionBinder {
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
+    await this.initializeTransitionScreen();
+    if (this.transitionScreen) this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
@@ -671,7 +669,7 @@ export default class ActionBinder {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
     } catch (e) {
-      await this.transitionScreen.showSplashScreen();
+      if (this.transitionScreen) await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
         code: 'upload_error_redirect_to_app',
         subCode: e.status,
@@ -680,9 +678,15 @@ export default class ActionBinder {
     }
   }
 
-  async cancelAcrobatOperation() {
+  async initializeTransitionScreen() {
+    if (this.transitionScreen) return;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT,this.workflowCfg);
+    await this.transitionScreen.delayedSplashLoader();
+  }
+
+  async cancelAcrobatOperation() {
+    await this.initializeTransitionScreen();
     await this.transitionScreen.showSplashScreen();
     this.redirectUrl = '';
     this.filesData = this.filesData || {};
@@ -712,6 +716,7 @@ export default class ActionBinder {
     window.addEventListener('DCUnity:RedirectReady', async () => {
       await this.continueInApp();
     });
+    await this.initializeTransitionScreen();
     const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
     switch (value) {
       case 'upload':
@@ -782,11 +787,6 @@ export default class ActionBinder {
         default:
           break;
       }
-    }
-    if (b === this.block) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-      await this.transitionScreen.delayedSplashLoader();
     }
   }
 }
