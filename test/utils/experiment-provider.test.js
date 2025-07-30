@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { expect } from '@esm-bundle/chai';
-import getExperimentData from '../../unitylibs/utils/experiment-provider.js';
+import { getExperimentData, getDecisionScopesForVerb } from '../../unitylibs/utils/experiment-provider.js';
 
 describe('getExperimentData', () => {
   // Helper function to setup mock with result and error
@@ -36,7 +36,7 @@ describe('getExperimentData', () => {
   const testErrorScenario = async (expectedErrorMessage, mockSetup) => {
     mockSetup();
     try {
-      await getExperimentData();
+      await getExperimentData(['ACOM_UNITY_ACROBAT_EDITPDF_POC']);
       expect.fail('Should have rejected');
     } catch (error) {
       expect(error.message).to.equal(expectedErrorMessage);
@@ -50,6 +50,15 @@ describe('getExperimentData', () => {
 
   afterEach(() => {
     delete window._satellite;
+  });
+
+  it('should reject when no decision scopes provided', async () => {
+    try {
+      await getExperimentData([]);
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('No decision scopes provided for experiment data fetch');
+    }
   });
 
   it('should reject when target fetch fails', async () => {
@@ -67,7 +76,7 @@ describe('getExperimentData', () => {
 
     setupMock(createMockResult(mockTargetData));
 
-    const result = await getExperimentData();
+    const result = await getExperimentData(['ACOM_UNITY_ACROBAT_EDITPDF_POC']);
     expect(result).to.deep.equal(mockTargetData);
   });
 
@@ -111,5 +120,17 @@ describe('getExperimentData', () => {
       'Target proposition returned but no valid data found in response structure',
       () => setupMock(undefined),
     );
+  });
+});
+
+describe('getDecisionScopesForVerb', () => {
+  it('should return decision scopes for known verb', () => {
+    const result = getDecisionScopesForVerb('add-comment');
+    expect(result).to.deep.equal(['ACOM_UNITY_ACROBAT_EDITPDF_POC']);
+  });
+
+  it('should return empty array for unknown verb', () => {
+    const result = getDecisionScopesForVerb('unknown-verb');
+    expect(result).to.deep.equal([]);
   });
 });

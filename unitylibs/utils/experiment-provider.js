@@ -1,6 +1,15 @@
 /* eslint-disable no-underscore-dangle */
-export default async function getExperimentData() {
-  const decisionScopes = ['ACOM_UNITY_ACROBAT_EDITPDF_POC'];
+const VERB_DECISION_SCOPE_MAP = { 'add-comment': ['ACOM_UNITY_ACROBAT_EDITPDF_POC'] };
+
+export function getDecisionScopesForVerb(verb) {
+  return VERB_DECISION_SCOPE_MAP[verb] || [];
+}
+
+export async function getExperimentData(decisionScopes) {
+  if (!decisionScopes || decisionScopes.length === 0) {
+    throw new Error('No decision scopes provided for experiment data fetch');
+  }
+
   return new Promise((resolve, reject) => {
     try {
       window._satellite.track('propositionFetch', {
