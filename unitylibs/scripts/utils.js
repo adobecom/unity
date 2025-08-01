@@ -1,4 +1,4 @@
-import flattenObject from "../utils/ObjectUtils";
+import flattenObject from '../utils/ObjectUtils';
 
 export const [setLibs, getLibs] = (() => {
   let libs;

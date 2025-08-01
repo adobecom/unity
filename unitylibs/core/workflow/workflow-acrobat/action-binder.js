@@ -238,7 +238,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload_exception: -601,
     pre_upload_warn_renamed_invalid_file_name: -602,
     upload_warn_delete_asset: -603,
-    validation_warn_validate_files: -604
+    validation_warn_validate_files: -604,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
