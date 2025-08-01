@@ -542,7 +542,7 @@ export default class UploadHandler {
         });
       }
       if (failedFiles.size === files.length) {
-        await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`, false, true, { code: 'upload_error_chunk_upload', desc: `${failedFiles}` });
+        await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`, false, true, { code: 'upload_error_chunk_upload', desc: flattenObject([...failedFiles])});
         return;
       }
       const uploadedAssets = assetDataArray.filter((_, index) => !(failedFiles && [...failedFiles].some((failed) => failed.fileIndex === index)));

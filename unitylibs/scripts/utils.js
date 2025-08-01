@@ -1,3 +1,5 @@
+import flattenObject from "../utils/ObjectUtils";
+
 export const [setLibs, getLibs] = (() => {
   let libs;
   return [
@@ -83,7 +85,7 @@ async function getImsToken() {
     return {
       token: null,
       error: {
-        message: `Error getting IMS access token: ${JSON.stringify(error)}`,
+        message: `Error getting IMS access token: ${flattenObject(error)}`,
         type: 'token_error',
       },
     };
