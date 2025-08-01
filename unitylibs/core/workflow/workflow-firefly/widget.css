@@ -64,7 +64,7 @@
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text {
-  width: auto;
+  width: 100%;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text p {
@@ -526,6 +526,10 @@
   width: 144px;
   height: 70px;
   justify-content: flex-start;
+}
+
+[lang='ja-JP'] .unity-enabled .interactive-area .verbs-container {
+  min-width: 158px;
 }
 
 .unity-enabled .interactive-area .verbs-container .menu-icon {
