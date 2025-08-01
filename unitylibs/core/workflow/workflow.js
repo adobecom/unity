@@ -135,14 +135,8 @@ class WfInitiator {
       ],
       'workflow-ai': sharedWfRes,
       'workflow-firefly': sharedWfRes,
-      'workflow-acrobat': [
-        ...sharedWfRes,
-        `${getUnityLibs()}/scripts/transition-screen.js`,
-      ],
-      'workflow-upload': [
-        ...sharedWfRes,
-        `${getUnityLibs()}/scripts/transition-screen.js`,
-      ],
+      'workflow-acrobat': sharedWfRes,
+      'workflow-upload': sharedWfRes,
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,

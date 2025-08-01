@@ -239,6 +239,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload_exception: -601,
     pre_upload_warn_renamed_invalid_file_name: -602,
     upload_warn_delete_asset: -603,
+    warn_fetch_experiment: -604,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -272,6 +273,7 @@ export default class ActionBinder {
     upload_warn_chunk_upload: 'verb_upload_warn_chunk_upload',
     pre_upload_warn_renamed_invalid_file_name: 'verb_warn_renamed_invalid_file_name',
     warn_delete_asset: 'verb_upload_warn_delete_asset',
+    warn_fetch_experiment: 'verb_warn_fetch_experiment',
   };
 
   constructor(unityEl, workflowCfg, wfblock, canvasArea, actionMap = {}) {
@@ -367,7 +369,6 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
         `${getUnityLibs()}/core/styles/splash-screen.css`,
-        `${getUnityLibs()}/scripts/transition-screen.js`,
       );
     }
     await priorityLoad(parr);
@@ -533,21 +534,10 @@ export default class ActionBinder {
     return { isValid: true, validFiles };
   }
 
-  async lazyLoadTransitionScreen() {
-    if (!this.transitionScreen) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-      // Call delayedSplashLoader if this is the first time loading
-      if (this.workflowCfg.targetCfg.showSplashScreen) {
-        await this.transitionScreen.delayedSplashLoader();
-      }
-    }
-    return this.transitionScreen;
-  }
-
   async showTransitionScreen() {
-    const transitionScreen = await this.lazyLoadTransitionScreen();
-    await transitionScreen.showSplashScreen();
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    await this.transitionScreen.showSplashScreen();
   }
 
   async getRedirectUrl(cOpts) {
@@ -698,8 +688,9 @@ export default class ActionBinder {
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
-    const transitionScreen = await this.lazyLoadTransitionScreen();
-    transitionScreen.updateProgressBar(transitionScreen.splashScreenEl, 100);
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
@@ -707,7 +698,7 @@ export default class ActionBinder {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
     } catch (e) {
-      await transitionScreen.showSplashScreen();
+      await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
         code: 'upload_error_redirect_to_app',
         subCode: e.status,
@@ -823,5 +814,6 @@ export default class ActionBinder {
           break;
       }
     }
+    // Transition screen will be loaded when needed (on file upload or error)
   }
 }
