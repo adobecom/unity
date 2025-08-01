@@ -485,6 +485,14 @@
   margin-right: 5px;
 }
 
+[lang="ja-JP"] .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-text {
+  overflow-wrap: normal !important;
+}
+
+[lang="ja-JP"] .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con .legal-text {
+  line-height: var(--type-detail-xs-lh);
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con {
   margin-left: auto;
   display: flex;
