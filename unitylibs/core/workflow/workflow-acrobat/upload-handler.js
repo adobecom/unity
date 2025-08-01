@@ -639,8 +639,12 @@ export default class UploadHandler {
   }
 
   async initSplashScreen() {
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+    if (!this.actionBinder.transitionScreen) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+    } else {
+      this.transitionScreen = this.actionBinder.transitionScreen;
+    }
   }
 
   async showSplashScreen(displayOn = false) {
