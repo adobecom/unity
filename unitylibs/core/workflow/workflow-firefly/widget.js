@@ -135,7 +135,7 @@ export default class UnityWidget {
       'aria-controls': 'prompt-menu',
       'aria-label': `${selectedVerbType} prompt: ${inputPlaceHolder}`,
       'data-selected-verb': selectedVerbType,
-    }, `<img src="${href}" alt="" />${selectedVerbType}`);
+    }, `<img src="${href}" alt="" />${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedVerbText = selectedVerb?.textContent.trim();
