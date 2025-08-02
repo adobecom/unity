@@ -28,8 +28,6 @@ describe('UploadHandler', () => {
       apiEndPoint: 'https://test-api.adobe.com',
     };
 
-    window.getUnityLibs = () => '/Users/rosahu/Documents/unity/unitylibs';
-
     window.import = function mockImport(specifier) {
       if (specifier && typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
         return Promise.resolve({
@@ -51,11 +49,14 @@ describe('UploadHandler', () => {
   });
 
   beforeEach(() => {
-    window.getUnityLibs = sinon.stub().returns('/Users/rosahu/Documents/unity/unitylibs');
+    window.getUnityLibs = sinon.stub().returns('../../../../unitylibs');
     window.unityConfig = {
       surfaceId: 'test-surface',
       apiEndPoint: 'https://test-api.adobe.com',
     };
+
+    // Stub importFlattenObject globally to avoid import issues
+    window.importFlattenObject = sinon.stub().resolves(() => 'mocked-flatten-result');
 
     mockTransitionScreen = {
       showSplashScreen: sinon.stub().resolves(),
@@ -119,6 +120,7 @@ describe('UploadHandler', () => {
 
   afterEach(() => {
     sinon.restore();
+    delete window.importFlattenObject;
   });
 
   after(() => {
@@ -695,8 +697,10 @@ describe('UploadHandler', () => {
         fileTypeArray: ['application/pdf'],
       });
       uploadHandler.chunkPdf = sinon.stub().resolves({ failedFiles: new Set([0]), attemptMap: new Map() });
+
       const failingFiles = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
       await uploadHandler.uploadMultiFile(failingFiles, {});
+
       expect(mockActionBinder.dispatchErrorToast.calledWith('upload_error_chunk_upload')).to.be.true;
     });
 
@@ -804,7 +808,6 @@ describe('UploadHandler', () => {
         { id: 'asset2' },
       ];
       accessToken = 'test-token';
-      window.getGuestAccessToken = sinon.stub().resolves(accessToken);
       mockServiceHandler.deleteCallToService = sinon.stub().resolves();
     });
 

@@ -54,12 +54,18 @@ describe('Headers and Token', () => {
   let adobeIMSStub;
 
   beforeEach(() => {
+    // Setup required global stubs
+    window.getUnityLibs = sinon.stub().returns('../../unitylibs');
+    window.importFlattenObject = sinon.stub().resolves(() => 'mocked-flatten-result');
+
     window.adobeIMS = { getAccessToken: () => {}, refreshToken: () => {} };
     adobeIMSStub = sinon.stub(window.adobeIMS, 'getAccessToken');
   });
 
   afterEach(() => {
     adobeIMSStub.restore();
+    delete window.importFlattenObject;
+    delete window.getUnityLibs;
   });
 
   it('Should return headers with guest access token', async () => {

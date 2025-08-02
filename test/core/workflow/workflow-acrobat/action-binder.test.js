@@ -12,6 +12,12 @@ describe('ActionBinder', () => {
   let mockGetHeaders;
 
   beforeEach(() => {
+    // Setup required global stubs
+    window.getUnityLibs = sinon.stub().returns('../../../../unitylibs');
+
+    // Stub importFlattenObject globally to avoid import issues
+    window.importFlattenObject = sinon.stub().resolves(() => 'mocked-flatten-result');
+
     // Mock the getHeaders function
     mockGetHeaders = sinon.stub().resolves({ 'Content-Type': 'application/json', Authorization: 'mock-token', 'x-api-key': 'test-api-key' });
 
@@ -54,6 +60,8 @@ describe('ActionBinder', () => {
   afterEach(() => {
     sinon.restore();
     delete window.isGuestUser;
+    delete window.importFlattenObject;
+    delete window.getUnityLibs;
   });
 
   describe('Constructor', () => {

@@ -1,5 +1,3 @@
-import flattenObject from '../utils/ObjectUtils';
-
 export const [setLibs, getLibs] = (() => {
   let libs;
   return [
@@ -59,6 +57,14 @@ async function attemptTokenRefresh() {
   return refreshResult;
 }
 
+export async function importFlattenObject() {
+  if (window.importFlattenObject && window.importFlattenObject !== importFlattenObject) {
+    return window.importFlattenObject();
+  }
+  const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
+  return flattenObject;
+}
+
 async function getImsToken() {
   const RETRY_WAIT = 2000;
   try {
@@ -70,7 +76,7 @@ async function getImsToken() {
       await new Promise((resolve) => { setTimeout(resolve, RETRY_WAIT); });
       const retryAttempt = await attemptTokenRefresh();
       if (!retryAttempt.error) return retryAttempt;
-      const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
+      const flattenObject = await importFlattenObject();
       return {
         token: null,
         error: {
@@ -82,6 +88,7 @@ async function getImsToken() {
     }
     return { token: accessToken, error: null };
   } catch (error) {
+    const flattenObject = await importFlattenObject();
     return {
       token: null,
       error: {
