@@ -58,9 +58,6 @@ async function attemptTokenRefresh() {
 }
 
 export async function getFlatObject() {
-  if (window.getFlatObject && window.getFlatObject !== getFlatObject) {
-    return window.getFlatObject();
-  }
   const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
   return flattenObject;
 }
