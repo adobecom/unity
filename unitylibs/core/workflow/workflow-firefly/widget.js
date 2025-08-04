@@ -345,10 +345,7 @@ export default class UnityWidget {
   }
 
   async updateDropdownForVerb(verb) {
-    if (!this.hasPromptSuggestions) return;
-    const dropdown = this.widget.querySelector('#prompt-dropdown');
-    if (!dropdown) return;
-    
+    if (!this.hasPromptSuggestions) return;    
     if (verb === 'vector') {
       const dropdownContainer = this.widget.querySelector('.prompt-dropdown-container');
       if (dropdownContainer) {
@@ -358,12 +355,20 @@ export default class UnityWidget {
       }
       return;
     }
-    const dropdownContainer = this.widget.querySelector('.prompt-dropdown-container');
-    if (dropdownContainer) {
+    let dropdownContainer = this.widget.querySelector('.prompt-dropdown-container');
+    if (!dropdownContainer) {
+      dropdownContainer = await this.genDropdown(this.workflowCfg.placeholder);
+      if (dropdownContainer) {
+        const comboboxContainer = this.widget.querySelector('.autocomplete');
+        comboboxContainer.append(dropdownContainer);
+      }
+    } else {
       dropdownContainer.classList.remove('hidden');
       dropdownContainer.removeAttribute('inert');
       dropdownContainer.setAttribute('aria-hidden', 'false');
     }    
+    const dropdown = this.widget.querySelector('#prompt-dropdown');
+    if (!dropdown) return;    
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
