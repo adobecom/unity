@@ -363,7 +363,6 @@ export default class UnityWidget {
         comboboxContainer.append(dropdownContainer);
       }
     } else {
-      dropdownContainer.classList.remove('hidden');
       dropdownContainer.removeAttribute('inert');
       dropdownContainer.setAttribute('aria-hidden', 'false');
     }    
