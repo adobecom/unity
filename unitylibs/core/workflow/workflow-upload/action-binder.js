@@ -360,7 +360,7 @@ export default class ActionBinder {
       try {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
-        await this.transitionScreen.delayedSplashLoader();
+        await this.transitionScreen.loadSplashFragment();
       } catch (error) {
         window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
       }
