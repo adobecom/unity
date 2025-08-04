@@ -378,7 +378,10 @@ export default class ActionBinder {
     return Array.from(this.block.querySelectorAll(selector));
   }
 
-  isDropdownVisible = () => !this.dropdown?.classList.contains('hidden');
+  isDropdownVisible = () => {
+    const dropdown = this.block.querySelector('.drop') || this.dropdown;
+    return dropdown ? !dropdown.classList.contains('hidden') : false;
+  };
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
@@ -448,17 +451,23 @@ export default class ActionBinder {
   }
 
   showDropdown() {
-    this.dropdown?.classList.remove('hidden');
-    this.dropdown?.removeAttribute('inert');
-    this.dropdown?.removeAttribute('aria-hidden');
+    const dropdown = this.block.querySelector('.drop') || this.dropdown;
+    if (dropdown) {
+      dropdown.classList.remove('hidden');
+      dropdown.removeAttribute('inert');
+      dropdown.removeAttribute('aria-hidden');
+      this.dropdown = dropdown;
+    }
     document.addEventListener('click', this.boundOutsideClickHandler, true);
   }
 
   hideDropdown() {
-    if (this.isDropdownVisible()) {
-      this.dropdown?.classList.add('hidden');
-      this.dropdown?.setAttribute('inert', '');
-      this.dropdown?.setAttribute('aria-hidden', 'true');
+    const dropdown = this.block.querySelector('.drop') || this.dropdown;
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+      dropdown.setAttribute('inert', '');
+      dropdown.setAttribute('aria-hidden', 'true');
+      this.dropdown = dropdown;
       document.removeEventListener('click', this.boundOutsideClickHandler, true);
     }
   }
