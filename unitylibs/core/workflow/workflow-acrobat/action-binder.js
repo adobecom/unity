@@ -721,6 +721,15 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    if (!this.transitionScreen) {
+      try {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+        await this.transitionScreen.loadSplashFragment();
+      } catch (error) {
+        window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
+      }
+    }
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       if (this.tokenError) {
@@ -809,11 +818,6 @@ export default class ActionBinder {
         default:
           break;
       }
-    }
-    if (b === this.block) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-      await this.transitionScreen.delayedSplashLoader();
     }
   }
 }
