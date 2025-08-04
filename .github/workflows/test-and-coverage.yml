@@ -3,10 +3,6 @@ name: Test and Coverage
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - '**.js'
-      - 'test/**'
-      - 'unitylibs/**'
   push:
     branches: [ main, stage ]
 
@@ -31,13 +27,44 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         
+    - name: Check for relevant files
+      id: relevant-files
+      run: |
+        # Get list of changed files that are relevant for testing
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} 2>/dev/null || echo "")
+        
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "No files changed (likely a push to main/stage)"
+          echo "has_relevant_files=true" >> $GITHUB_OUTPUT
+        else
+          # Check if any changed files are relevant for testing
+          RELEVANT_FILES=$(echo "$CHANGED_FILES" | grep -E '\.(js|jsx|ts|tsx)$|^test/|^unitylibs/' || true)
+          
+          if [ -z "$RELEVANT_FILES" ]; then
+            echo "No relevant files changed for testing"
+            echo "has_relevant_files=false" >> $GITHUB_OUTPUT
+          else
+            echo "Relevant files changed for testing:"
+            echo "$RELEVANT_FILES"
+            echo "has_relevant_files=true" >> $GITHUB_OUTPUT
+          fi
+        fi
+        
     - name: Install dependencies
       run: npm ci
       
     - name: Run tests with coverage check
+      if: steps.relevant-files.outputs.has_relevant_files == 'true'
       run: npm run test:coverage
       
+    - name: Skip tests - no relevant files changed
+      if: steps.relevant-files.outputs.has_relevant_files == 'false'
+      run: |
+        echo "✅ No relevant files changed in this PR. Unit test check passed."
+        echo "This PR contains only files that don't require unit testing."
+      
     - name: Upload coverage reports to Codecov
+      if: steps.relevant-files.outputs.has_relevant_files == 'true'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage/lcov.info
