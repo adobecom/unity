@@ -451,16 +451,26 @@ export default class ActionBinder {
     // Check if current verb type should show prompt suggestions
     const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg.verbsWithoutPromptSuggestions || [];
     const currentVerbType = this.getSelectedVerbType();
-    
+
     if (verbsWithoutPromptSuggestions.includes(currentVerbType)) {
       // Don't show dropdown for excluded verbs
       return;
     }
-    
+
+    // Load prompts on-demand when input is focused
+    this.loadPromptsOnDemand(currentVerbType);
+
     this.dropdown?.classList.remove('hidden');
     this.dropdown?.removeAttribute('inert');
     this.dropdown?.removeAttribute('aria-hidden');
     document.addEventListener('click', this.boundOutsideClickHandler, true);
+  }
+
+  async loadPromptsOnDemand(verbType) {
+    const widgetWrap = this.unityEl.querySelector('.ex-unity-wrap');
+    const widgetInstance = widgetWrap?.widgetInstance;
+    if (!widgetInstance) return;
+    await widgetInstance.updateDropdownForVerb(verbType);
   }
 
   hideDropdown() {
