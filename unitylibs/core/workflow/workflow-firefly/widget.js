@@ -32,7 +32,14 @@ export default class UnityWidget {
     this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
     let dropdown = null;
-    if (this.hasPromptSuggestions && this.selectedVerbType !== 'vector') dropdown = await this.genDropdown(this.workflowCfg.placeholder);
+    if (this.hasPromptSuggestions) {
+      dropdown = await this.genDropdown(this.workflowCfg.placeholder);
+      if (this.selectedVerbType === 'vector' && dropdown) {
+        dropdown.classList.add('hidden');
+        dropdown.setAttribute('inert', '');
+        dropdown.setAttribute('aria-hidden', 'true');
+      }
+    }
     const comboboxContainer = createTag('div', { class: 'autocomplete' });
     comboboxContainer.append(inputWrapper);
     if (dropdown) comboboxContainer.append(dropdown);
@@ -345,9 +352,11 @@ export default class UnityWidget {
   }
 
   async updateDropdownForVerb(verb) {
-    if (!this.hasPromptSuggestions) return;    
+    if (!this.hasPromptSuggestions) return;
+    
+    const dropdownContainer = this.widget.querySelector('.prompt-dropdown-container');
+    
     if (verb === 'vector') {
-      const dropdownContainer = this.widget.querySelector('.prompt-dropdown-container');
       if (dropdownContainer) {
         dropdownContainer.classList.add('hidden');
         dropdownContainer.setAttribute('inert', '');
@@ -355,14 +364,15 @@ export default class UnityWidget {
       }
       return;
     }
-    let dropdownContainer = this.widget.querySelector('.prompt-dropdown-container');
+    
     if (!dropdownContainer) {
-      dropdownContainer = await this.genDropdown(this.workflowCfg.placeholder);
-      if (dropdownContainer) {
+      const newDropdownContainer = await this.genDropdown(this.workflowCfg.placeholder);
+      if (newDropdownContainer) {
         const comboboxContainer = this.widget.querySelector('.autocomplete');
-        comboboxContainer.append(dropdownContainer);
+        comboboxContainer.append(newDropdownContainer);
       }
     } else {
+      dropdownContainer.classList.remove('hidden');
       dropdownContainer.removeAttribute('inert');
       dropdownContainer.setAttribute('aria-hidden', 'false');
     }    
