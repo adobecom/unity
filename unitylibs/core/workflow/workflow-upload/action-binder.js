@@ -426,8 +426,9 @@ export default class ActionBinder {
       }
     }
 
-    // Load TransitionScreen after a delay to allow LCP to render first
-    this.loadTransitionScreenDelayed();
+    if (b === this.block) {
+      this.loadTransitionScreenDelayed();
+    }
 
     window.addEventListener('pageshow', (event) => {
       const navigationEntries = window.performance.getEntriesByType('navigation');
@@ -446,8 +447,7 @@ export default class ActionBinder {
   }
 
   async loadTransitionScreenDelayed() {
-    // Delay loading by 3 seconds to allow LCP component to render
-    await this.delay(3000);
+    await this.delay(2000);
     if (!this.transitionScreen) {
       try {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
