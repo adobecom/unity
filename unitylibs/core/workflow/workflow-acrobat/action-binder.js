@@ -200,7 +200,7 @@ export default class ActionBinder {
     'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
-    'summarize-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
+    'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
