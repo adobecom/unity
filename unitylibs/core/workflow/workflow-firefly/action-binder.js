@@ -467,7 +467,7 @@ export default class ActionBinder {
   }
 
   async loadPromptsOnDemand(verbType) {
-    const widgetWrap = this.unityEl.querySelector('.ex-unity-wrap');
+    const widgetWrap = this.canvasArea.querySelector('.ex-unity-wrap');
     const widgetInstance = widgetWrap?.widgetInstance;
     if (!widgetInstance) return;
     await widgetInstance.updateDropdownForVerb(verbType);
