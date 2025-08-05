@@ -39,6 +39,7 @@ export default class UnityWidget {
     this.widget.append(comboboxContainer);
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
+    this.widgetWrap.widgetInstance = this;
     return this.workflowCfg.targetCfg.actionMap;
   }
 
@@ -259,12 +260,8 @@ export default class UnityWidget {
     const titleCon = createTag('div', { class: 'drop-title-con' });
     const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
     titleCon.append(title);
-    const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg.verbsWithoutPromptSuggestions || [];
-    if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) {
-      const prompts = await this.getPrompt(this.selectedVerbType);
-      const limited = this.getLimitedDisplayPrompts(prompts);
-      this.addPromptItemsToDropdown(dd, limited, ph);
-    }    
+
+    // Don't load prompts during initialization - they will be loaded on-demand when input is focused
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
     return promptDropdownContainer;
   }
@@ -354,7 +351,7 @@ export default class UnityWidget {
     if (!dropdown) return;
     if (verbsWithoutPromptSuggestions.includes(verb)) {
       return;
-    }    
+    }
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
