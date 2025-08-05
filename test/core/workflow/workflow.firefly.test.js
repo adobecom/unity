@@ -633,4 +633,31 @@ describe('Firefly Workflow Tests', () => {
       }).to.not.throw();
     });
   });
+
+  describe('verbsWithoutPromptSuggestions configuration', () => {
+    it('should hide dropdown when excluded verb is selected', () => {
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widgetWrap = document.createElement('div');
+      testActionBinder.widgetWrap.setAttribute('data-selected-verb', 'vector');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+      testActionBinder.getSelectedVerbType = () => 'vector';
+      testActionBinder.showDropdown();
+      expect(testActionBinder.dropdown.classList.contains('hidden')).to.be.true;
+    });
+
+    it('should show dropdown when non-excluded verb is selected', () => {
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widgetWrap = document.createElement('div');
+      testActionBinder.widgetWrap.setAttribute('data-selected-verb', 'image');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+      testActionBinder.getSelectedVerbType = () => 'image';
+      testActionBinder.showDropdown();
+      expect(testActionBinder.dropdown.classList.contains('hidden')).to.be.false;
+    });
+  });
 });
