@@ -11,9 +11,9 @@ export default class UploadHandler {
   }
 
   static UPLOAD_LIMITS = {
-    HIGH_END: { files: 3, chunks: 10 },
-    MID_RANGE: { files: 3, chunks: 10 },
-    LOW_END: { files: 2, chunks: 6 },
+    HIGH_END: { files: 10, chunks: 10 },
+    MID_RANGE: { files: 5, chunks: 10 },
+    LOW_END: { files: 3, chunks: 6 },
   };
 
   async createAsset(file, multifile = false, workflowId = null) {
@@ -134,16 +134,34 @@ export default class UploadHandler {
     return 'MID_RANGE';
   }
 
-  async executeInBatches(items, batchSize, processFn) {
+  async executeInBatches(items, maxConcurrent, processFn) {
     const executing = new Set();
-    for (const item of items) {
-      const p = processFn(item).then(() => executing.delete(p)).catch(() => {
-        executing.delete(p);
-      });
-      executing.add(p);
-      if (executing.size >= batchSize) await Promise.race(executing);
+    const results = [];
+    let nextIndex = 0;
+    while (nextIndex < items.length || executing.size > 0) {
+      while (executing.size < maxConcurrent && nextIndex < items.length) {
+        const itemIndex = nextIndex;
+        nextIndex += 1;
+        const item = items[itemIndex];
+        const promise = processFn(item, itemIndex)
+          .then((result) => {
+            executing.delete(promise);
+            results[itemIndex] = result;
+            return result;
+          })
+          .catch((error) => {
+            executing.delete(promise);
+            results[itemIndex] = { error };
+            return { error };
+          });
+        executing.add(promise);
+      }
+      if (executing.size > 0) {
+        await Promise.race(executing);
+      }
     }
-    await Promise.all(executing);
+
+    return results;
   }
 
   async batchUpload(tasks, batchSize) {
