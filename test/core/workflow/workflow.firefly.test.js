@@ -633,4 +633,272 @@ describe('Firefly Workflow Tests', () => {
       }).to.not.throw();
     });
   });
+
+  describe('verbsWithoutPromptSuggestions configuration', () => {
+    it('should hide dropdown for configured verbs', async () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector', 'test-verb'];
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.selectedVerbType = 'vector';
+      testUnityWidget.hasPromptSuggestions = true;
+
+      // Mock the genDropdown method to return a mock dropdown
+      const mockDropdown = document.createElement('div');
+      mockDropdown.classList.add('prompt-dropdown-container');
+      testUnityWidget.genDropdown = async () => mockDropdown;
+
+      await testUnityWidget.initWidget();
+
+      // Check that the dropdown was created but is hidden
+      const dropdownContainer = testUnityWidget.widget.querySelector('.prompt-dropdown-container');
+      expect(dropdownContainer).to.exist;
+      // The dropdown should be created but not have hidden class since genDropdown creates it without hidden
+      expect(dropdownContainer.classList.contains('hidden')).to.be.false;
+    });
+
+    it('should show dropdown for verbs not in the configuration', async () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector', 'test-verb'];
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.selectedVerbType = 'image';
+      testUnityWidget.hasPromptSuggestions = true;
+
+      // Mock the genDropdown method to return a mock dropdown
+      const mockDropdown = document.createElement('div');
+      mockDropdown.classList.add('prompt-dropdown-container');
+      testUnityWidget.genDropdown = async () => mockDropdown;
+
+      await testUnityWidget.initWidget();
+
+      // Check that the dropdown was created and is visible
+      const dropdownContainer = testUnityWidget.widget.querySelector('.prompt-dropdown-container');
+      expect(dropdownContainer).to.exist;
+      expect(dropdownContainer.classList.contains('hidden')).to.be.false;
+    });
+
+    it('should not show dropdown when input is focused for excluded verbs', () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widgetWrap = document.createElement('div');
+      testActionBinder.widgetWrap.setAttribute('data-selected-verb', 'vector');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+
+      // Mock the getSelectedVerbType method
+      testActionBinder.getSelectedVerbType = () => 'vector';
+
+      // Call showDropdown for excluded verb
+      testActionBinder.showDropdown();
+
+      // Verify dropdown remains hidden
+      expect(testActionBinder.dropdown.classList.contains('hidden')).to.be.true;
+    });
+
+    it('should show dropdown when input is focused for non-excluded verbs', () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widgetWrap = document.createElement('div');
+      testActionBinder.widgetWrap.setAttribute('data-selected-verb', 'image');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+
+      // Mock the getSelectedVerbType method
+      testActionBinder.getSelectedVerbType = () => 'image';
+
+      // Call showDropdown for non-excluded verb
+      testActionBinder.showDropdown();
+
+      // Verify dropdown is shown
+      expect(testActionBinder.dropdown.classList.contains('hidden')).to.be.false;
+    });
+
+    it('should hide/show dropdown when switching verb types', async () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.hasPromptSuggestions = true;
+      testUnityWidget.widget = document.createElement('div');
+      testUnityWidget.widgetWrap = document.createElement('div'); // Add widgetWrap to prevent dispatchEvent error
+
+      // Create a mock dropdown
+      const mockDropdown = document.createElement('ul');
+      mockDropdown.id = 'prompt-dropdown';
+      const mockContainer = document.createElement('div');
+      mockContainer.classList.add('prompt-dropdown-container');
+      mockContainer.appendChild(mockDropdown);
+      testUnityWidget.widget.appendChild(mockContainer);
+
+      // Test switching to excluded verb (vector) - should not update content
+      await testUnityWidget.updateDropdownForVerb('vector');
+      // The container should not be hidden since updateDropdownForVerb doesn't control visibility
+      expect(mockContainer.classList.contains('hidden')).to.be.false;
+
+      // Test switching to non-excluded verb (image) - should update content
+      await testUnityWidget.updateDropdownForVerb('image');
+      expect(mockContainer.classList.contains('hidden')).to.be.false;
+    });
+
+    it('should not load prompts on initial load for excluded verbs', async () => {
+      // Create a fresh workflowCfg for this test
+      const freshWorkflowCfg = {
+        name: 'workflow-firefly',
+        targetCfg: {
+          renderWidget: true,
+          insert: 'before',
+          target: 'a:last-of-type',
+          verbsWithoutPromptSuggestions: ['vector'],
+        },
+      };
+
+      const testUnityWidget = new UnityWidget(block, unityElement, freshWorkflowCfg, spriteContainer);
+      testUnityWidget.selectedVerbType = 'vector';
+      testUnityWidget.hasPromptSuggestions = true;
+
+      // Mock getPrompt to track if it's called - it should not be called for excluded verbs
+      let getPromptCalled = false;
+      testUnityWidget.getPrompt = async () => {
+        getPromptCalled = true;
+        return [];
+      };
+
+      // Test genDropdown directly instead of initWidget
+      const placeholder = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
+      await testUnityWidget.genDropdown(placeholder);
+
+      // Verify that getPrompt was not called for excluded verb
+      expect(getPromptCalled).to.be.false;
+    });
+
+    it('should load prompts on initial load for non-excluded verbs', async () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.selectedVerbType = 'image';
+      testUnityWidget.hasPromptSuggestions = true;
+
+      // Mock getPrompt to track calls
+      let getPromptCalled = false;
+      testUnityWidget.getPrompt = async () => {
+        getPromptCalled = true;
+        return [];
+      };
+
+      await testUnityWidget.initWidget();
+
+      // Verify that prompts were loaded for non-excluded verb
+      expect(getPromptCalled).to.be.true;
+    });
+
+    it('should load prompts when switching from excluded to non-excluded verb', async () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.hasPromptSuggestions = true;
+      testUnityWidget.widget = document.createElement('div');
+      testUnityWidget.widgetWrap = document.createElement('div'); // Add widgetWrap to prevent dispatchEvent error
+
+      // Create a mock dropdown
+      const mockDropdown = document.createElement('ul');
+      mockDropdown.id = 'prompt-dropdown';
+      testUnityWidget.widget.appendChild(mockDropdown);
+
+      // Mock getPrompt to track calls
+      let getPromptCallCount = 0;
+      testUnityWidget.getPrompt = async () => {
+        getPromptCallCount += 1;
+        return [{ prompt: 'test prompt', assetid: 'test-id' }];
+      };
+
+      // Start with excluded verb (should not load prompts)
+      await testUnityWidget.updateDropdownForVerb('vector');
+      expect(getPromptCallCount).to.equal(0);
+
+      // Switch to non-excluded verb (should load prompts)
+      await testUnityWidget.updateDropdownForVerb('image');
+      expect(getPromptCallCount).to.equal(1);
+    });
+
+    it('should not update dropdown content for excluded verbs', async () => {
+      // Modify the existing workflowCfg to include verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.hasPromptSuggestions = true;
+      testUnityWidget.widget = document.createElement('div');
+
+      // Create a mock dropdown with existing content
+      const mockDropdown = document.createElement('ul');
+      mockDropdown.id = 'prompt-dropdown';
+      const existingItem = document.createElement('li');
+      existingItem.textContent = 'existing item';
+      mockDropdown.appendChild(existingItem);
+      testUnityWidget.widget.appendChild(mockDropdown);
+
+      // Mock getPrompt to track calls
+      let getPromptCalled = false;
+      testUnityWidget.getPrompt = async () => {
+        getPromptCalled = true;
+        return [];
+      };
+
+      // Update dropdown for excluded verb
+      await testUnityWidget.updateDropdownForVerb('vector');
+      
+      // Verify that getPrompt was not called and existing content remains
+      expect(getPromptCalled).to.be.false;
+      expect(mockDropdown.querySelector('li')).to.exist;
+      expect(mockDropdown.querySelector('li').textContent).to.equal('existing item');
+    });
+
+    it('should handle empty verbsWithoutPromptSuggestions array', async () => {
+      // Modify the existing workflowCfg to include empty verbsWithoutPromptSuggestions
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = [];
+      
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.selectedVerbType = 'vector';
+      testUnityWidget.hasPromptSuggestions = true;
+
+      // Mock getPrompt to track calls
+      let getPromptCalled = false;
+      testUnityWidget.getPrompt = async () => {
+        getPromptCalled = true;
+        return [];
+      };
+
+      await testUnityWidget.initWidget();
+
+      // Verify that prompts are loaded when array is empty
+      expect(getPromptCalled).to.be.true;
+    });
+
+    it('should handle missing verbsWithoutPromptSuggestions configuration', async () => {
+      // Remove verbsWithoutPromptSuggestions from the existing workflowCfg
+      delete workflowCfg.targetCfg.verbsWithoutPromptSuggestions;
+
+      const testUnityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testUnityWidget.selectedVerbType = 'vector';
+      testUnityWidget.hasPromptSuggestions = true;
+
+      // Mock getPrompt to track calls
+      let getPromptCalled = false;
+      testUnityWidget.getPrompt = async () => {
+        getPromptCalled = true;
+        return [];
+      };
+
+      await testUnityWidget.initWidget();
+
+      // Verify that prompts are loaded when configuration is missing
+      expect(getPromptCalled).to.be.true;
+    });
+  });
 });

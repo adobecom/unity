@@ -354,7 +354,7 @@ export default class UnityWidget {
     if (!dropdown) return;
     if (verbsWithoutPromptSuggestions.includes(verb)) {
       return;
-    }    
+    }
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
