@@ -129,9 +129,9 @@ describe('UploadHandler', () => {
 
   describe('Constructor', () => {
     it('should use correct upload limits', () => {
-      expect(UploadHandler.UPLOAD_LIMITS.HIGH_END).to.deep.equal({ files: 3, chunks: 10 });
-      expect(UploadHandler.UPLOAD_LIMITS.MID_RANGE).to.deep.equal({ files: 3, chunks: 10 });
-      expect(UploadHandler.UPLOAD_LIMITS.LOW_END).to.deep.equal({ files: 2, chunks: 6 });
+      expect(UploadHandler.UPLOAD_LIMITS.HIGH_END).to.deep.equal({ files: 10, chunks: 10 });
+      expect(UploadHandler.UPLOAD_LIMITS.MID_RANGE).to.deep.equal({ files: 5, chunks: 10 });
+      expect(UploadHandler.UPLOAD_LIMITS.LOW_END).to.deep.equal({ files: 3, chunks: 6 });
     });
   });
 
