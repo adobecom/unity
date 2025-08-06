@@ -279,6 +279,13 @@
   top: 1px;
 }
 
+.unity-enabled .interactive-area .verb-list .verb-link img {
+  width: 22px;
+  height: 22px;
+  opacity: 0;
+  animation: fade-in .5s ease-out forwards;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
   width: 24px;
   height: 24px;

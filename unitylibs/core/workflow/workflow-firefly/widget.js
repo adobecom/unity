@@ -183,7 +183,7 @@ export default class UnityWidget {
         href: '#',
         class: 'verb-link',
         'data-verb-type': verbType,
-      }, `<img src="${icon}" alt="" />${name}`);
+      }, `<img loading="lazy" src="${icon}" alt="" />${name}`);
       if (idx === 0) {
         item.classList.add('selected');
         item.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
