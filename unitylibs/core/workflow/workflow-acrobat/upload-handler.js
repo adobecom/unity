@@ -136,8 +136,8 @@ export default class UploadHandler {
 
   async executeInBatches(items, maxConcurrent, processFn) {
     const executing = new Set();
-    for (const [index, item] of items.entries()) {
-      const promise = processFn(item, index)
+    for (const item of items) {
+      const promise = processFn(item)
         .then(() => { executing.delete(promise); })
         .catch(() => { executing.delete(promise); });
       executing.add(promise);
