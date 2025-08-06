@@ -135,29 +135,17 @@ export default class UploadHandler {
   }
 
   async executeInBatches(items, maxConcurrent, processFn) {
-    const results = [];
     const executing = new Set();
     for (const [index, item] of items.entries()) {
       const promise = processFn(item, index)
-        .then((result) => {
-          results[index] = result;
-          executing.delete(promise);
-          return result;
-        })
-        .catch((error) => {
-          results[index] = { error };
-          executing.delete(promise);
-          return { error };
-        });
+        .then(() => { executing.delete(promise); })
+        .catch(() => { executing.delete(promise); });
       executing.add(promise);
-      if (executing.size >= maxConcurrent) {
-        await Promise.any(executing);
-      }
+      if (executing.size >= maxConcurrent) await Promise.any(executing);
     }
     if (executing.size > 0) {
       await Promise.all(executing);
     }
-    return results;
   }
 
   async batchUpload(tasks, batchSize) {
