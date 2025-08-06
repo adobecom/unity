@@ -10,9 +10,7 @@ import {
   createTag,
   defineDeviceByScreenSize,
   getLibs,
-  getHeaders,
   getLocale,
-  sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
@@ -42,17 +40,13 @@ class ServiceHandler {
   async postCallToService(api, options, unityProduct, unityAction) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': unityProduct,
-        'x-unity-action': unityAction,
-      }),
+      headers: { 'Content-Type': 'application/json', 'x-api-key': unityConfig.apiKey },
       ...options,
     };
     return this.fetchFromService(api, postOpts);
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
-    sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions?.errorToastEl) return;
     const lang = document.querySelector('html').getAttribute('lang');
     const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
@@ -69,6 +63,8 @@ class ServiceHandler {
     window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
   }
 }
+
+
 
 export default class ActionBinder {
   boundHandleKeyDown = this.handleKeyDown.bind(this);
@@ -161,17 +157,6 @@ export default class ActionBinder {
     const element = this.block.querySelector(selector);
     if (!element) window.lana?.log(`Element with selector "${selector}" not found.`, this.lanaOptions);
     return element;
-  }
-
-  async initActionListeners() {
-    Object.entries(this.actions).forEach(([selector, actionsList]) => {
-      this.block.querySelectorAll(selector).forEach((el) => {
-        if (!el.hasAttribute('data-event-bound')) {
-          this.addEventListeners(el, actionsList);
-          el.setAttribute('data-event-bound', 'true');
-        }
-      });
-    });
   }
 
   async loadServiceHandler() {

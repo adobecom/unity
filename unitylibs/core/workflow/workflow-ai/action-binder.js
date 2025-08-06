@@ -1,7 +1,6 @@
 import {
   unityConfig,
   createTag,
-  getUnityLibs,
   sendAnalyticsEvent,
   defineDeviceByScreenSize,
 } from '../../../scripts/utils.js';
@@ -68,22 +67,8 @@ export default class ActionBinder {
     return element;
   }
 
-  async initActionListeners() {
-    Object.entries(this.actions).forEach(([selector, actionsList]) => {
-      const elements = this.block.querySelectorAll(selector);
-      elements.forEach((el) => {
-        if (!el.hasAttribute('data-event-bound')) {
-          this.addEventListeners(el, actionsList);
-          el.setAttribute('data-event-bound', 'true');
-        }
-      });
-    });
-  }
-
   async loadServiceHandler() {
-    const { default: ServiceHandler } = await import(
-      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/service-handler.js`
-    );
+    const { default: ServiceHandler } = await import('./service-handler.js');
     this.serviceHandler = new ServiceHandler(
       this.workflowCfg.targetCfg.renderWidget,
       this.canvasArea,

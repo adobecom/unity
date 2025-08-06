@@ -177,8 +177,10 @@ class WfInitiator {
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
-    const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    await new ActionBinder(
+    // Use workflow-specific action-binder-core for all workflows
+    const corePath = `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder-core.js`;
+    const { default: ActionBinderCore } = await import(corePath);
+    await new ActionBinderCore(
       this.el,
       this.workflowCfg,
       this.targetBlock,
