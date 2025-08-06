@@ -2,8 +2,6 @@ name: Lint
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - '**.js'
 
 jobs:
   run-lint:
@@ -19,9 +17,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check for changed JavaScript files
+        id: changed-files
+        run: |
+          # Get list of changed JavaScript files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -E '\.(js|jsx|ts|tsx)$' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No JavaScript files changed"
+            echo "has_js_files=false" >> $GITHUB_OUTPUT
+          else
+            echo "JavaScript files changed:"
+            echo "$CHANGED_FILES"
+            echo "has_js_files=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run eslint on changed files
+        if: steps.changed-files.outputs.has_js_files == 'true'
         uses: tj-actions/eslint-changed-files@v25
         with:
           config_path: ".eslintrc.cjs"
           # ignore_path: "/path/to/.eslintignore"
           # extra_args: "--max-warnings=0"
+
+      - name: Skip eslint - no JavaScript files changed
+        if: steps.changed-files.outputs.has_js_files == 'false'
+        run: |
+          echo "✅ No JavaScript files changed in this PR. ESLint check passed."
+          echo "This PR contains only non-JavaScript files or no files that require linting."
