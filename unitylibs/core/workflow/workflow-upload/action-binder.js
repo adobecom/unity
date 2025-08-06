@@ -356,6 +356,16 @@ export default class ActionBinder {
   }
 
   async photoshopActionMaps(value, files) {
+    if (!this.transitionScreen) {
+      try {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+        await this.transitionScreen.loadSplashFragment();
+      } catch (error) {
+        window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
+      }
+    }
+
     await this.handlePreloads();
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     switch (value) {
@@ -425,10 +435,6 @@ export default class ActionBinder {
         });
       }
     }
-
-    // Load TransitionScreen after a delay to allow LCP to render first
-    this.loadTransitionScreenDelayed();
-
     window.addEventListener('pageshow', (event) => {
       const navigationEntries = window.performance.getEntriesByType('navigation');
       const historyTraversal = event.persisted
@@ -439,24 +445,6 @@ export default class ActionBinder {
         window.location.reload();
       }
     });
-  }
-
-  delay(ms) {
-    return new Promise((res) => { setTimeout(() => { res(); }, ms); });
-  }
-
-  async loadTransitionScreenDelayed() {
-    // Delay loading by 3 seconds to allow LCP component to render
-    await this.delay(3000);
-    if (!this.transitionScreen) {
-      try {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
-        await this.transitionScreen.delayedSplashLoader();
-      } catch (error) {
-        window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
-      }
-    }
   }
 
   preventDefault(e) {
