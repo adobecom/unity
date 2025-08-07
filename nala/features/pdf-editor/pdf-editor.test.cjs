@@ -77,5 +77,6 @@ test.describe('Unity PDF Editor test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });

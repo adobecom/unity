@@ -77,5 +77,6 @@ test.describe('Unity PDF to Excel test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });

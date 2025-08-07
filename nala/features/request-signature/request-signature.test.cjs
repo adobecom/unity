@@ -76,5 +76,6 @@ test.describe('Unity Request Signature Verb test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });

@@ -77,5 +77,6 @@ test.describe('Unity JPG to PDF test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });

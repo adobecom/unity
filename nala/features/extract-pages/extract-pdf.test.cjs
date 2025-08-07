@@ -77,5 +77,6 @@ test.describe('Unity Rearrange PDF test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });
