@@ -8,7 +8,7 @@ module.exports = {
       data: {
         verbTitle: 'Adobe Acrobat',
         verbHeading: 'Edit a PDF',
-        verbCopy: 'Make changes fast with Acrobat’s free online PDF editor. Edit text, add comments, fill & sign. Easy to use and secure.',
+        verbCopy: 'Make changes fast with Acrobat’s free online PDF editor. Add text, comments, and fill & sign. Easy to use and secure.',
       },
       tags: '@pdf-editor @smoke @regression @unity',
     },
