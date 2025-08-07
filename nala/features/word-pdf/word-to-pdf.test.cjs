@@ -36,13 +36,15 @@ test.describe('Unity WORD to PDF test suite', () => {
       await expect(await wordToPdf.verbCopy).toContainText(data.verbCopy);
     });
 
-    await test.step('step-3: Upload a sample PDF file', async () => {
-      // upload and wait for some page change indicator (like a new element or URL change)
-      const fileInput = page.locator('input[type="file"]#file-upload');      // Wait for page to load
-      await page.waitForLoadState('networkidle');
-await fileInput.setInputFiles(excelFilePath);      // Wait for page to load
-      await page.waitForLoadState('networkidle');
-// Verify the URL parameters
+    await test.step('step-3: Upload a sample PDF file', async () => {      // Wait for file input to be ready and upload file
+      const fileInput = page.locator('input[type="file"]#file-upload');
+      await fileInput.waitFor({ state: 'attached' });
+      await fileInput.setInputFiles(wordFilePath);
+
+      // Wait for navigation to complete after file upload
+      await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
+
+      // Verify the URL parameters
       const currentUrl = page.url();
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
