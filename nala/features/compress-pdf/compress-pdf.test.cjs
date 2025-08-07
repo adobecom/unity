@@ -40,13 +40,17 @@ test.describe('Unity Compress PDF test suite', () => {
       // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
       await fileInput.waitFor({ state: 'attached' });
-      await fileInput.setInputFiles(pdfFilePath);      // Wait for navigation to complete after file upload
+      await fileInput.setInputFiles(pdfFilePath);
+
+      // Wait for navigation to complete after file upload
       try {
         await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
       } catch (error) {
         // Fallback: wait for any URL change or timeout
         await page.waitForURL((url) => url !== page.url(), { timeout: 20000 });
-      }      // Verify the URL parameters
+      }
+
+      // Verify the URL parameters
       const currentUrl = page.url();
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
@@ -59,7 +63,7 @@ test.describe('Unity Compress PDF test suite', () => {
       
       if (xApiClientId === 'unity') {
         expect(xApiClientId).toBe('unity');
-        expect(xApiClientLocation).toBe('number-pages');
+        expect(xApiClientLocation).toBe('compress-pdf');
         expect(user).toBe('frictionless_new_user');
         expect(attempts).toBe('1st');
       } else {
@@ -73,5 +77,6 @@ test.describe('Unity Compress PDF test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });

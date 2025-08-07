@@ -48,7 +48,9 @@ test.describe('Unity Add PDF page number test suite', () => {
       } catch (error) {
         // Fallback: wait for any URL change or timeout
         await page.waitForURL((url) => url !== page.url(), { timeout: 20000 });
-      }      // Verify the URL parameters
+      }
+
+      // Verify the URL parameters
       const currentUrl = page.url();
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
@@ -75,5 +77,6 @@ test.describe('Unity Add PDF page number test suite', () => {
         user,
         attempts,
       });
+    });
   });
 });
