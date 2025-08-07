@@ -212,6 +212,7 @@ export default class ActionBinder {
     pre_upload_error_fetching_access_token: -54,
     pre_upload_error_create_asset: -55,
     pre_upload_error_missing_verb_config: -56,
+    pre_upload_error_transition_screen: -57,
     validation_error_validate_files: -100,
     validation_error_unsupported_type: -101,
     validation_error_empty_file: -102,
@@ -721,6 +722,16 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    if (!this.transitionScreen) {
+      try {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+        await this.transitionScreen.loadSplashFragment();
+      } catch (error) {
+        await this.dispatchErrorToast('pre_upload_error_transition_screen', null, `Error loading transition screen, Error: ${error}`, false, true, { code: 'pre_upload_error_transition_screen' });
+        return;
+      }
+    }
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       if (this.tokenError) {
@@ -809,11 +820,6 @@ export default class ActionBinder {
         default:
           break;
       }
-    }
-    if (b === this.block) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-      await this.transitionScreen.delayedSplashLoader();
     }
   }
 }
