@@ -28,7 +28,6 @@ describe('Firefly Workflow Tests', () => {
     actionMap = {
       '.gen-btn': [{ actionType: 'generate' }],
       '.drop-item': [{ actionType: 'setPromptValue' }],
-      '.close-btn': [{ actionType: 'closeDropdown' }],
       '.inp-field': [{ actionType: 'autocomplete' }],
     };
 
@@ -151,7 +150,7 @@ describe('Firefly Workflow Tests', () => {
   it('should handle Tab key navigation in dropdown', () => {
     const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
     const shiftEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, shiftKey: true });
-    const focusableElements = Array.from(document.querySelectorAll('.inp-field, .gen-btn, .drop-item, .close-btn'));
+    const focusableElements = Array.from(document.querySelectorAll('.inp-field, .gen-btn, .drop-item'));
     const dropItems = [document.querySelector('.drop-item')];
     focusableElements[0].focus();
     const currentIndex = focusableElements.indexOf(document.activeElement);
