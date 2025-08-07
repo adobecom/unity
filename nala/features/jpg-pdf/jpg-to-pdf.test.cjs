@@ -38,12 +38,11 @@ test.describe('Unity JPG to PDF test suite', () => {
 
     await test.step('step-3: Upload a sample PDF file', async () => {
       // upload and wait for some page change indicator (like a new element or URL change)
-      const fileInput = page.locator('input[type="file"]#file-upload');
-      await page.waitForTimeout(10000);
-      await fileInput.setInputFiles(jpgFilePath);
-      await page.waitForTimeout(10000);
-
-      // Verify the URL parameters
+      const fileInput = page.locator('input[type="file"]#file-upload');      // Wait for page to load
+      await page.waitForLoadState('networkidle');
+await fileInput.setInputFiles(jpgFilePath);      // Wait for page to load
+      await page.waitForLoadState('networkidle');
+// Verify the URL parameters
       const currentUrl = page.url();
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
