@@ -1414,6 +1414,10 @@ describe('ActionBinder', () => {
       });
 
       it('should handle interrupt case', async () => {
+        // Mock transition screen to avoid early return
+        actionBinder.transitionScreen = { test: 'existing' };
+        actionBinder.handlePreloads = sinon.stub().resolves();
+        
         const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
         await actionBinder.acrobatActionMaps('interrupt');
         expect(spy.called).to.be.true;
@@ -1421,6 +1425,10 @@ describe('ActionBinder', () => {
       });
 
       it('should handle interrupt case with files and event', async () => {
+        // Mock transition screen to avoid early return
+        actionBinder.transitionScreen = { test: 'existing' };
+        actionBinder.handlePreloads = sinon.stub().resolves();
+        
         const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
         const files = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
@@ -1430,6 +1438,9 @@ describe('ActionBinder', () => {
 
       describe('enabledFeatures validation', () => {
         it('should dispatch error when enabledFeatures is null', async () => {
+          // Mock transition screen to avoid early return
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
           actionBinder.workflowCfg.enabledFeatures = null;
 
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
@@ -1445,6 +1456,9 @@ describe('ActionBinder', () => {
         });
 
         it('should dispatch error when enabledFeatures is undefined', async () => {
+          // Mock transition screen to avoid early return
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
           actionBinder.workflowCfg.enabledFeatures = undefined;
 
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
@@ -1460,6 +1474,9 @@ describe('ActionBinder', () => {
         });
 
         it('should dispatch error when enabledFeatures is empty array', async () => {
+          // Mock transition screen to avoid early return
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
           actionBinder.workflowCfg.enabledFeatures = [];
 
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
@@ -1475,6 +1492,9 @@ describe('ActionBinder', () => {
         });
 
         it('should dispatch error when enabledFeatures[0] is falsy', async () => {
+          // Mock transition screen to avoid early return
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
           actionBinder.workflowCfg.enabledFeatures = [null];
 
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
@@ -1490,6 +1510,9 @@ describe('ActionBinder', () => {
         });
 
         it('should dispatch error when enabledFeatures[0] is not in LIMITS_MAP', async () => {
+          // Mock transition screen to avoid early return
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
           actionBinder.workflowCfg.enabledFeatures = ['invalid-feature'];
 
           await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
