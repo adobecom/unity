@@ -14,7 +14,7 @@ const config = {
   outputDir: './test-results',
   globalSetup: './nala/utils/global.setup.cjs',
   /* Maximum time one test can run for. */
-  timeout: 20 * 1000, // Reduced from 30s to 20s
+  timeout: 20 * 1000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
@@ -30,7 +30,7 @@ const config = {
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
   /* Optimize workers for parallel execution */
-  workers: process.env.CI ? 4 : 6, // Increased from 1 to 4 (CI) and 6 (local)
+  workers: process.env.CI ? 4 : 6,
   /* Reporter to use. */
   reporter: process.env.CI
     ? [['github'], ['list'], ['./nala/utils/base-reporter.cjs']]
@@ -42,7 +42,7 @@ const config = {
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
-    actionTimeout: 30000, // Reduced from 60s to 30s
+    actionTimeout: 30000,
 
     trace: 'on-first-retry',
     baseURL:

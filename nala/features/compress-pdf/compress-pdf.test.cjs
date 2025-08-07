@@ -36,7 +36,8 @@ test.describe('Unity Compress PDF test suite', () => {
       await expect(await compressPdf.verbCopy).toContainText(data.verbCopy);
     });
 
-    await test.step('step-3: Upload a sample PDF file', async () => {      // Wait for file input to be ready and upload file
+    await test.step('step-3: Upload a sample PDF file', async () => {
+      // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
       await fileInput.waitFor({ state: 'attached' });
       await fileInput.setInputFiles(pdfFilePath);
