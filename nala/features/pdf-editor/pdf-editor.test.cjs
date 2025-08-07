@@ -39,7 +39,7 @@ test.describe('Unity PDF Editor test suite', () => {
     await test.step('step-3: Upload a sample PDF file', async () => {
       // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
-      await fileInput.waitFor({ state: 'visible' });
+      await fileInput.waitFor({ state: 'attached' });
       await fileInput.setInputFiles(pdfFilePath);
 
       // Wait for navigation to complete after file upload
