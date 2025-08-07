@@ -439,6 +439,9 @@ export default class ActionBinder {
         });
       }
     }
+    if (b === this.block) {
+      this.loadTransitionScreen();
+    }
     window.addEventListener('pageshow', (event) => {
       const navigationEntries = window.performance.getEntriesByType('navigation');
       const historyTraversal = event.persisted
@@ -449,9 +452,6 @@ export default class ActionBinder {
         window.location.reload();
       }
     });
-    if (b === this.block) {
-      this.loadTransitionScreen();
-    }
   }
 
   preventDefault(e) {
