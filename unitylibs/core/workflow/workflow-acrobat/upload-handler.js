@@ -10,11 +10,9 @@ export default class UploadHandler {
     this.serviceHandler = serviceHandler;
   }
 
-  static UPLOAD_LIMITS = {
-    HIGH_END: { files: 10, chunks: 10 },
-    MID_RANGE: { files: 5, chunks: 10 },
-    LOW_END: { files: 3, chunks: 6 },
-  };
+  getUploadLimits() {
+    return this.actionBinder.workflowCfg.targetCfg.uploadLimits;
+  }
 
   async createAsset(file, multifile = false, workflowId = null) {
     let assetData = null;
@@ -334,12 +332,13 @@ export default class UploadHandler {
 
   getConcurrentLimits() {
     const deviceType = this.getDeviceType();
+    const limits = this.getUploadLimits();
     if (!this.actionBinder.MULTI_FILE) {
-      return { maxConcurrentChunks: UploadHandler.UPLOAD_LIMITS[deviceType].chunks };
+      return { maxConcurrentChunks: limits[deviceType].chunks };
     }
     return {
-      maxConcurrentFiles: UploadHandler.UPLOAD_LIMITS[deviceType].files,
-      maxConcurrentChunks: UploadHandler.UPLOAD_LIMITS[deviceType].chunks,
+      maxConcurrentFiles: limits[deviceType].files,
+      maxConcurrentChunks: limits[deviceType].chunks,
     };
   }
 
