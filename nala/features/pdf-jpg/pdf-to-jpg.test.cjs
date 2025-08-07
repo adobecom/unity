@@ -41,7 +41,6 @@ test.describe('Unity PDF to JPG test suite', () => {
       const fileInput = page.locator('input[type="file"]#file-upload');
       await fileInput.waitFor({ state: 'attached' });
       await fileInput.setInputFiles(pdfFilePath);
-
       // Wait for navigation to complete after file upload
       try {
         await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
