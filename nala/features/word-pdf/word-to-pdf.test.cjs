@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { features } from './word-to-pdf.spec.cjs';
 import WordToPdf from './word-to-pdf.page.cjs';
 
-const excelFilePath = path.resolve(__dirname, '../../assets/1-WORD-word-pdf.doc');
+const wordFilePath = path.resolve(__dirname, '../../assets/1-WORD-word-pdf.doc');
 
 let wordToPdf;
 
@@ -37,11 +37,13 @@ test.describe('Unity WORD to PDF test suite', () => {
     });
 
     await test.step('step-3: Upload a sample PDF file', async () => {
-      // upload and wait for some page change indicator (like a new element or URL change)
+      // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
-      await page.waitForTimeout(10000);
-      await fileInput.setInputFiles(excelFilePath);
-      await page.waitForTimeout(10000);
+      await fileInput.waitFor({ state: 'attached' });
+      await fileInput.setInputFiles(wordFilePath);
+
+      // Wait for navigation to complete after file upload
+      await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
 
       // Verify the URL parameters
       const currentUrl = page.url();
