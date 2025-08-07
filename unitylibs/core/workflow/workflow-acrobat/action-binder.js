@@ -706,6 +706,12 @@ export default class ActionBinder {
     }
   }
 
+  async loadSplashScreen() {
+    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+    this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    await this.transitionScreen.loadSplashFragment();
+  }
+
   async cancelAcrobatOperation() {
     await this.showTransitionScreen();
     this.redirectUrl = '';
@@ -724,9 +730,7 @@ export default class ActionBinder {
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
     if (!this.transitionScreen) {
       try {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-        await this.transitionScreen.loadSplashFragment();
+        await this.loadSplashScreen();
       } catch (error) {
         await this.dispatchErrorToast('pre_upload_error_transition_screen', null, `Error loading transition screen, Error: ${error}`, false, true, { code: 'pre_upload_error_transition_screen' });
         return;
