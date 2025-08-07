@@ -40,7 +40,7 @@ test.describe('Unity PNG to PDF test suite', () => {
       // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
       await fileInput.waitFor({ state: 'attached' });
-      await fileInput.setInputFiles(pdfFilePath);
+      await fileInput.setInputFiles(pngFilePath);
 
       // Wait for navigation to complete after file upload
       try {

@@ -40,7 +40,7 @@ test.describe('Unity PPT to PDF test suite', () => {
       // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
       await fileInput.waitFor({ state: 'attached' });
-      await fileInput.setInputFiles(pdfFilePath);
+      await fileInput.setInputFiles(pptFilePath);
 
       // Wait for navigation to complete after file upload
       try {
