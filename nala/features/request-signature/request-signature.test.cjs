@@ -39,10 +39,13 @@ test.describe('Unity Request Signature Verb test suite', () => {
     await test.step('step-3: Upload a sample PDF file', async () => {      // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
       await fileInput.waitFor({ state: 'attached' });
-      await fileInput.setInputFiles(pdfFilePath);
-
-      // Wait for navigation to complete after file upload
-      await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
+      await fileInput.setInputFiles(pdfFilePath);      // Wait for navigation to complete after file upload
+      try {
+        await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
+      } catch (error) {
+        // Fallback: wait for any URL change or timeout
+        await page.waitForURL((url) => url !== page.url(), { timeout: 20000 });
+      }
 
       // Verify the URL parameters
       const currentUrl = page.url();

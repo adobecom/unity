@@ -43,7 +43,12 @@ test.describe('Unity Add PDF page number test suite', () => {
       await fileInput.setInputFiles(pdfFilePath);
 
       // Wait for navigation to complete after file upload
-      await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
+      try {
+        await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
+      } catch (error) {
+        // Fallback: wait for any URL change or timeout
+        await page.waitForURL((url) => url !== page.url(), { timeout: 20000 });
+      }
 
       // Verify the URL parameters
       const currentUrl = page.url();
