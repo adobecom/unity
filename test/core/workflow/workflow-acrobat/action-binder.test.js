@@ -11,6 +11,28 @@ describe('ActionBinder', () => {
   let mockServiceHandler;
   let mockGetHeaders;
 
+  before(async () => {
+    const originalImport = window.import;
+
+    window.import = function mockImport(specifier) {
+      if (specifier && typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
+        return Promise.resolve({
+          default: function TransitionScreen() {
+            this.delayedSplashLoader = () => Promise.resolve();
+            this.loadSplashFragment = () => Promise.resolve();
+            this.showSplashScreen = () => Promise.resolve();
+            this.updateProgressBar = () => Promise.resolve();
+            return this;
+          },
+        });
+      }
+      if (originalImport) {
+        return originalImport(specifier);
+      }
+      return Promise.resolve({ default: () => {} });
+    };
+  });
+
   beforeEach(() => {
     // Setup required global stubs
     window.getUnityLibs = sinon.stub().returns('../../../../unitylibs');
@@ -23,6 +45,9 @@ describe('ActionBinder', () => {
 
     // Mock the global getHeaders function
     window.getHeaders = mockGetHeaders;
+
+    // Mock getUnityLibs function
+    window.getUnityLibs = sinon.stub().returns('/unitylibs');
 
     mockWorkflowCfg = {
       productName: 'test-product',
@@ -55,6 +80,9 @@ describe('ActionBinder', () => {
 
     actionBinder = new ActionBinder(mockUnityEl, mockWorkflowCfg, mockWfblock, mockCanvasArea);
     mockServiceHandler = actionBinder.serviceHandler;
+
+    // Stub the loadTransitionScreen method to avoid module import issues
+    sinon.stub(actionBinder, 'loadTransitionScreen').resolves();
   });
 
   afterEach(() => {
