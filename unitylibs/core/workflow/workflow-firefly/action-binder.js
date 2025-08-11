@@ -448,6 +448,9 @@ export default class ActionBinder {
   }
 
   showDropdown() {
+    const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
+    const currentVerbType = this.getSelectedVerbType();
+    if (verbsWithoutPromptSuggestions.includes(currentVerbType)) return;
     this.dropdown?.classList.remove('hidden');
     this.dropdown?.removeAttribute('inert');
     this.dropdown?.removeAttribute('aria-hidden');
