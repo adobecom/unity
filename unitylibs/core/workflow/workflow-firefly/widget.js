@@ -108,7 +108,9 @@ export default class UnityWidget {
       selectedElement.setAttribute('aria-label', `${this.selectedVerbText} prompt: ${inputPlaceHolder}`);
       selectedElement.focus();
       link.parentElement.setAttribute('aria-label', `${this.selectedVerbText} prompt selected:  ${inputPlaceHolder}`);
-      this.updateDropdownForVerb(this.selectedVerbType);
+      const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
+      if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
+      else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
