@@ -55,8 +55,8 @@ describe('UploadHandler', () => {
       apiEndPoint: 'https://test-api.adobe.com',
     };
 
-    // Stub importFlattenObject globally to avoid import issues
-    window.importFlattenObject = sinon.stub().resolves(() => 'mocked-flatten-result');
+    // Stub getFlatObject globally to avoid import issues
+    window.getFlatObject = sinon.stub().resolves(() => 'mocked-flatten-result');
 
     mockTransitionScreen = {
       showSplashScreen: sinon.stub().resolves(),
@@ -120,7 +120,7 @@ describe('UploadHandler', () => {
 
   afterEach(() => {
     sinon.restore();
-    delete window.importFlattenObject;
+    delete window.getFlatObject;
   });
 
   after(() => {

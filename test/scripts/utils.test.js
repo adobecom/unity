@@ -56,7 +56,7 @@ describe('Headers and Token', () => {
   beforeEach(() => {
     // Setup required global stubs
     window.getUnityLibs = sinon.stub().returns('../../unitylibs');
-    window.importFlattenObject = sinon.stub().resolves(() => 'mocked-flatten-result');
+    window.getFlatObject = sinon.stub().resolves(() => 'mocked-flatten-result');
 
     window.adobeIMS = { getAccessToken: () => {}, refreshToken: () => {} };
     adobeIMSStub = sinon.stub(window.adobeIMS, 'getAccessToken');
@@ -64,7 +64,7 @@ describe('Headers and Token', () => {
 
   afterEach(() => {
     adobeIMSStub.restore();
-    delete window.importFlattenObject;
+    delete window.getFlatObject;
     delete window.getUnityLibs;
   });
 

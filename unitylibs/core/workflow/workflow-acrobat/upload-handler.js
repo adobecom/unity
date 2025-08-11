@@ -2,7 +2,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig, getUnityLibs, getGuestAccessToken, importFlattenObject } from '../../../scripts/utils.js';
+import { unityConfig, getUnityLibs, getGuestAccessToken, getFlatObject } from '../../../scripts/utils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -542,7 +542,7 @@ export default class UploadHandler {
         });
       }
       if (failedFiles.size === files.length) {
-        const flattenObject = await importFlattenObject();
+        const flattenObject = await getFlatObject();
         await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for all ${files.length} files; Workflow: ${workflowId}, Assets: ${assetDataArray.map((a) => a.id).join(', ')}; File types: ${fileTypeArray.join(', ')}`, false, true, { code: 'upload_error_chunk_upload', desc: flattenObject([...failedFiles]) });
         return;
       }
