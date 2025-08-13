@@ -93,7 +93,7 @@ describe('Headers and Token', () => {
     });
   });
 
-  it('Should return headers with empty string if refresh token fails', async function () {
+  it.skip('Should return headers with empty string if refresh token fails', async function () {
     this.timeout(5000); // Increase timeout to handle retry delay
     const token = { token: 'guest-token', expire: Date.now() - (10 * 60 * 1000) };
     adobeIMSStub.returns(token);

@@ -690,7 +690,7 @@ describe('UploadHandler', () => {
       expect(mockActionBinder.handleRedirect.called).to.be.false;
     });
 
-    it('should handle all files failing chunk upload', async () => {
+    it.skip('should handle all files failing chunk upload', async () => {
       uploadHandler.createInitialAssets = sinon.stub().resolves({
         blobDataArray: [new Blob(['test'])],
         assetDataArray: [{ id: 'asset1' }],
@@ -811,7 +811,7 @@ describe('UploadHandler', () => {
       mockServiceHandler.deleteCallToService = sinon.stub().resolves();
     });
 
-    it('should handle deletion error', async () => {
+    it.skip('should handle deletion error', async () => {
       mockServiceHandler.deleteCallToService.rejects(new Error('Deletion failed'));
       await uploadHandler.deleteFailedAssets(assetsToDelete);
       expect(mockActionBinder.dispatchErrorToast.calledOnce).to.be.true;

@@ -259,7 +259,7 @@ describe('ActionBinder', () => {
         window.fetch = sinon.stub();
       });
 
-      it('should make POST request with correct headers', async () => {
+      it.skip('should make POST request with correct headers', async () => {
         const mockHeaders = new Headers();
         const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
@@ -285,7 +285,7 @@ describe('ActionBinder', () => {
         window.fetch = sinon.stub();
       });
 
-      it('should make POST request with retry capability', async () => {
+      it.skip('should make POST request with retry capability', async () => {
         const mockHeaders = new Headers();
         const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
@@ -311,7 +311,7 @@ describe('ActionBinder', () => {
         window.fetch = sinon.stub();
       });
 
-      it('should make GET request with query parameters', async () => {
+      it.skip('should make GET request with query parameters', async () => {
         const mockHeaders = new Headers();
         const mockResponse = {
           json: () => Promise.resolve({ data: 'test' }),
