@@ -7,10 +7,10 @@
     "source": ".copy .main-copy",
     "target": "a:last-of-type",
     "insert": "before",
+    "verbsWithoutPromptSuggestions": ["vector"],
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
       ".gen-btn": { "actionType": "generate" },
-      ".close-btn": { "actionType": "closeDropdown" },
       ".drop-item": { "actionType": "setPromptValue" }
     },
     "sendSplunkAnalytics": true

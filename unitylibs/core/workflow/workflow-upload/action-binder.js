@@ -355,17 +355,21 @@ export default class ActionBinder {
     await this.continueInApp(this.assetId);
   }
 
-  async photoshopActionMaps(value, files) {
+  async loadTransitionScreen() {
     if (!this.transitionScreen) {
       try {
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
-        await this.transitionScreen.loadSplashFragment();
+        await this.transitionScreen.delayedSplashLoader();
       } catch (error) {
         window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
+        throw error;
       }
     }
+  }
 
+  async photoshopActionMaps(value, files) {
+    await this.loadTransitionScreen();
     await this.handlePreloads();
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     switch (value) {
@@ -434,6 +438,9 @@ export default class ActionBinder {
           }
         });
       }
+    }
+    if (b === this.block) {
+      this.loadTransitionScreen();
     }
     window.addEventListener('pageshow', (event) => {
       const navigationEntries = window.performance.getEntriesByType('navigation');
