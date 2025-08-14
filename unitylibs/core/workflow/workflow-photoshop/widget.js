@@ -414,9 +414,11 @@ export default class UnityWidget {
       const { value } = actionSliderInput;
       const centerOffset = (value - minVal) / (maxVal - minVal);
       const isRtl = document.dir === 'rtl';
-      const moveCircle = isRtl ? 97 - (centerOffset * 94) : 3 + centerOffset * 94;
-      actionSliderCircle.style[isRtl ? 'right' : 'left'] = `${moveCircle}%`;
-      actionSliderCircle.style[isRtl ? 'left' : 'right'] = '';
+      const moveCircle = isRtl ? 97 - (centerOffset * 94) + 3 : 3 + centerOffset * 94;
+      actionSliderCircle.style.left = `${moveCircle}%`;
+      actionSliderCircle.style.right = '';
+      /*actionSliderCircle.style[isRtl ? 'right' : 'left'] = `${moveCircle}%`;
+      actionSliderCircle.style[isRtl ? 'left' : 'right'] = '';*/
     });
     actionSliderInput.addEventListener('change', () => {
       actionSliderCircle.click();
