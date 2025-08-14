@@ -410,6 +410,7 @@ export default class UnityWidget {
         target: this.target.querySelector('img'),
       },
     ];
+    const isRtl = document.dir === 'rtl';
     actionSliderInput.addEventListener('input', () => {
       const { value } = actionSliderInput;
       const centerOffset = (value - minVal) / (maxVal - minVal);
