@@ -410,11 +410,12 @@ export default class UnityWidget {
         target: this.target.querySelector('img'),
       },
     ];
-    const isRtl = document.dir === 'rtl';
     actionSliderInput.addEventListener('input', () => {
       const { value } = actionSliderInput;
       const centerOffset = (value - minVal) / (maxVal - minVal);
-      const moveCircle = isRtl ? 97 - (centerOffset * 94) + 3 : 3 + centerOffset * 94;
+      const isRtl = document.dir === 'rtl';
+      //const moveCircle = isRtl ? 97 - (centerOffset * 94) + 3 : 3 + centerOffset * 94;
+      const moveCircle = 3 + centerOffset * 94;
       actionSliderCircle.style[isRtl ? 'right' : 'left'] = `${moveCircle}%`;
       actionSliderCircle.style[isRtl ? 'left' : 'right'] = '';
     });
