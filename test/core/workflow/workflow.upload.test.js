@@ -1418,9 +1418,8 @@ describe('Unity Upload Block', () => {
             this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
             throw err;
           }
-        }
+        },
       };
-      
       // Now test the actual postCallToService method
       const originalFetch = window.fetch;
       window.fetch = async () => Promise.resolve({ status: 200, ok: true });
@@ -1434,7 +1433,6 @@ describe('Unity Upload Block', () => {
 
     it('should handle postCallToService with non-200 response and failOnError=true', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      
       // Mock the serviceHandler directly to avoid initActionListeners timeout
       actionBinder.serviceHandler = {
         workflowCfg: { productName: 'test-product' },
@@ -1478,7 +1476,6 @@ describe('Unity Upload Block', () => {
 
     it('should handle postCallToService with fetch error', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      
       // Mock the serviceHandler directly to avoid initActionListeners timeout
       actionBinder.serviceHandler = {
         workflowCfg: { productName: 'test-product' },
@@ -1578,7 +1575,7 @@ describe('Unity Upload Block', () => {
         { errorToastEl, errorType: '.icon-error-request' },
         new Error('Test error'),
         { sampleRate: 100 },
-        'server'
+        'server',
       );
 
       expect(errorToastEl.classList.contains('show')).to.be.true;
@@ -1589,17 +1586,15 @@ describe('Unity Upload Block', () => {
   });
 
   describe('ContinueInApp Coverage Tests', () => {
-
-
     it('should handle cgen parsing with empty values and malformed parameters', async () => {
       // Load the mock HTML file
       const response = await fetch('/test/core/workflow/mocks/upload-body.html');
       const mockHtml = await response.text();
-      
+
       // Create a temporary container and load the mock HTML
       const tempContainer = document.createElement('div');
       tempContainer.innerHTML = mockHtml;
-      
+
       // Find the unity element from the mock
       const mockUnityEl = tempContainer.querySelector('.unity.workflow-upload');
       expect(mockUnityEl).to.not.be.null;
@@ -1607,7 +1602,7 @@ describe('Unity Upload Block', () => {
       // Test the query parameter parsing logic directly from the mock file
       const cgenText = mockUnityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
       expect(cgenText).to.equal('promoid=1234&mv=other');
-      
+
       const queryParams = {};
       if (cgenText) {
         cgenText.split('&').forEach((param) => {
@@ -1617,7 +1612,7 @@ describe('Unity Upload Block', () => {
           }
         });
       }
-      
+
       // Should only include valid key-value pairs from the mock file
       expect(queryParams).to.deep.equal({
         promoid: '1234',
@@ -1629,7 +1624,6 @@ describe('Unity Upload Block', () => {
       // Create a clean DOM without cgen element
       const cleanUnityEl = document.createElement('div');
       cleanUnityEl.className = 'unity workflow-upload';
-      
       // Test the query parameter parsing logic when no cgen element exists
       const cgenText = cleanUnityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
       const queryParams = {};
@@ -1641,7 +1635,6 @@ describe('Unity Upload Block', () => {
           }
         });
       }
-      
       // Should be empty when no cgen element exists
       expect(queryParams).to.deep.equal({});
     });
@@ -1650,12 +1643,10 @@ describe('Unity Upload Block', () => {
       // Create a test DOM with complex edge cases
       const testUnityEl = document.createElement('div');
       testUnityEl.className = 'unity workflow-upload';
-      
       // Create cgen element with complex edge cases
       const cgenElement = document.createElement('div');
       cgenElement.className = 'icon-cgen';
       testUnityEl.appendChild(cgenElement);
-      
       // Add text content with various edge cases
       const textNode = document.createTextNode('key1=value1&key2=&=value3&key4&key5=value5=extra&key6=value6');
       testUnityEl.appendChild(textNode);
@@ -1671,14 +1662,6 @@ describe('Unity Upload Block', () => {
           }
         });
       }
-      
-      // Should only include valid key-value pairs
-      // key1=value1 ✓ (valid)
-      // key2= ✗ (no value)
-      // =value3 ✗ (no key)
-      // key4 ✗ (no equals sign)
-      // key5=value5=extra ✓ (valid - split('=') creates ['key5', 'value5', 'extra'], destructuring takes ['key5', 'value5'])
-      // key6=value6 ✓ (valid)
       expect(queryParams).to.deep.equal({
         key1: 'value1',
         key5: 'value5',
@@ -1690,12 +1673,10 @@ describe('Unity Upload Block', () => {
       // Create a test DOM with whitespace and special characters
       const testUnityEl = document.createElement('div');
       testUnityEl.className = 'unity workflow-upload';
-      
       // Create cgen element with whitespace and special characters
       const cgenElement = document.createElement('div');
       cgenElement.className = 'icon-cgen';
       testUnityEl.appendChild(cgenElement);
-      
       // Add text content with whitespace and special characters
       const textNode = document.createTextNode('  key1=value1  &  key2=value2  &key3=value3&key4=value4  ');
       testUnityEl.appendChild(textNode);
@@ -1711,7 +1692,6 @@ describe('Unity Upload Block', () => {
           }
         });
       }
-      
       // Should handle whitespace correctly
       expect(queryParams).to.deep.equal({
         key1: 'value1  ',
@@ -1725,12 +1705,10 @@ describe('Unity Upload Block', () => {
       // Create a test DOM with empty and single character parameters
       const testUnityEl = document.createElement('div');
       testUnityEl.className = 'unity workflow-upload';
-      
       // Create cgen element with empty and single character parameters
       const cgenElement = document.createElement('div');
       cgenElement.className = 'icon-cgen';
       testUnityEl.appendChild(cgenElement);
-      
       // Add text content with empty and single character parameters
       const textNode = document.createTextNode('a=b&=&c=d&e=&f');
       testUnityEl.appendChild(textNode);
@@ -1900,9 +1878,6 @@ describe('Unity Upload Block', () => {
       const clickEvent = new Event('click', { bubbles: true });
       testDiv.dispatchEvent(clickEvent);
 
-      // Verify analytics event was sent - the event listener should be attached
-      // Note: The actual event might not be called due to test environment limitations
-      // but we can verify the event listener was set up correctly
       expect(testDiv).to.not.be.null;
     });
   });
