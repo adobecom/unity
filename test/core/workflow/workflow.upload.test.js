@@ -1520,14 +1520,14 @@ describe('Unity Upload Block', () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
       // Create ServiceHandler directly
       class ServiceHandler {
-        constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}) {
+        constructor(renderWidget = false, canvasArea = null, unityElement = null, workflowConfig = {}) {
           this.renderWidget = renderWidget;
           this.canvasArea = canvasArea;
-          this.unityEl = unityEl;
-          this.workflowCfg = workflowCfg;
+          this.unityEl = unityElement;
+          this.workflowCfg = workflowConfig;
         }
 
-        showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
+        showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') { // eslint-disable-line no-unused-vars
           if (!errorCallbackOptions.errorToastEl) return;
           const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
           this.canvasArea.forEach((element) => {
@@ -1579,8 +1579,6 @@ describe('Unity Upload Block', () => {
       );
 
       expect(errorToastEl.classList.contains('show')).to.be.true;
-      // The actual message comes from the DOM element, not the parameter
-      // The actual message comes from the DOM element, not the parameter
       expect(p.textContent).to.equal('Unable to process the request.');
     });
   });
@@ -1873,7 +1871,8 @@ describe('Unity Upload Block', () => {
       window.sendAnalyticsEvent.reset();
 
       // Wait a bit for event listeners to be attached
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // eslint-disable-next-line no-promise-executor-return
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const clickEvent = new Event('click', { bubbles: true });
       testDiv.dispatchEvent(clickEvent);
