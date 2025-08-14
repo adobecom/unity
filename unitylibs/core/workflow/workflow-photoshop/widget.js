@@ -414,7 +414,7 @@ export default class UnityWidget {
       const { value } = actionSliderInput;
       const centerOffset = (value - minVal) / (maxVal - minVal);
       const isRtl = document.dir === 'rtl';
-      const moveCircle = isRtl ? 97 - (centerOffset * 94) : 3 + centerOffset * 94;
+      const moveCircle = isRtl ? centerOffset * 94 - 4 : 3 + centerOffset * 94;
       //const moveCircle = isRtl ? 97 - (centerOffset * 94) + 3 : 3 + centerOffset * 94;
       //const moveCircle = 3 + centerOffset * 94;
       actionSliderCircle.style[isRtl ? 'right' : 'left'] = `${moveCircle}%`;
