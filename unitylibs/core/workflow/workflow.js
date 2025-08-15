@@ -262,19 +262,8 @@ class WfInitiator {
 }
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
-  const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
-  switch (uv) {
-    case 'v1':
-      // Deprecated
-      el.remove();
-      break;
-    case 'v2':
-      await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
-      break;
-    default:
-      break;
-  }
+  await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
 }
