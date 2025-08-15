@@ -569,7 +569,6 @@
   box-shadow: 0 0 10px #0000001c;
   border-radius: 10px;
   color: #292929;
-  display: none;
   margin: 8px 0 0;
   min-width: 110px;
   animation: move-up .3s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;

@@ -61,6 +61,7 @@ export default class UnityWidget {
     });
     menuContainer.classList.toggle('show-menu');
     selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
+    if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
   }
 
   hidePromptDropdown() {
@@ -145,6 +146,7 @@ export default class UnityWidget {
     }
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
+    verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
       const menuContainer = selectedElement.parentElement;
