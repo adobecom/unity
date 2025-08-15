@@ -261,7 +261,7 @@ class WfInitiator {
   }
 }
 
-export default async function init(el, project = 'unity', unityVersion = 'v2', unityLibs = '/unitylibs', langRegion = 'us', langCode = 'en') {
+export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
   const uv = new URLSearchParams(window.location.search).get('unityversion') || unityVersion;
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
