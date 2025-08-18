@@ -61,14 +61,35 @@ test.describe('Unity Split PDF test suite', () => {
       const user = urlObj.searchParams.get('user');
       const attempts = urlObj.searchParams.get('attempts');
       
+      // Validate URL parameters - fail if critical parameters are missing
       if (xApiClientId === 'unity') {
+        // Production flow - validate all parameters
         expect(xApiClientId).toBe('unity');
         expect(xApiClientLocation).toBe('split-pdf');
         expect(user).toBe('frictionless_new_user');
         expect(attempts).toBe('1st');
+        console.log('✅ URL parameters validated successfully');
+      } else if (xApiClientId === null && xApiClientLocation === null) {
+        // Test environment - validate that we're at least on a different test page
+        const currentPath = urlObj.pathname;
+        const expectedPath = '/drafts/nala/acrobat/online/test/split-pdf';
+
+        if (currentPath === expectedPath) {
+          // Still on the same page - this indicates a real issue
+          throw new Error(`File upload did not trigger navigation. Expected to leave page: ${expectedPath}, but still on: ${currentPath}`);
+        } else if (currentPath.includes('/drafts/nala/acrobat/online/test/')) {
+          // Navigated to another test page - this is acceptable in test environment
+          console.log('⚠️  Test environment: Navigated to different test page instead of production URL');
+          console.log('   This is acceptable for test environment but should be validated in production');
+          console.log('   Current page:', currentPath);
+          console.log('   Expected production redirect would include: x_api_client_id=unity');
+        } else {
+          // Unexpected navigation - fail the test
+          throw new Error(`Unexpected navigation. Expected production URL with x_api_client_id=unity or test page navigation, but got: ${currentPath}`);
+        }
       } else {
-        console.log('⚠️  Expected URL parameters not found, but navigation completed successfully');
-        console.log('   This may indicate a different redirect flow or URL structure');
+        // Partial parameters - this is suspicious and should fail
+        throw new Error(`Incomplete URL parameters. Expected x_api_client_id=unity or null, but got: ${xApiClientId}. Expected x_api_client_location=${getExpectedLocation(filePath)} or null, but got: ${xApiClientLocation}`);
       }
       
       console.log({
