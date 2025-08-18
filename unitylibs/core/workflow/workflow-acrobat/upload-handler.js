@@ -10,11 +10,9 @@ export default class UploadHandler {
     this.serviceHandler = serviceHandler;
   }
 
-  static UPLOAD_LIMITS = {
-    HIGH_END: { files: 3, chunks: 10 },
-    MID_RANGE: { files: 3, chunks: 10 },
-    LOW_END: { files: 2, chunks: 6 },
-  };
+  getUploadLimits() {
+    return this.actionBinder.workflowCfg.targetCfg.uploadLimits;
+  }
 
   async createAsset(file, multifile = false, workflowId = null) {
     let assetData = null;
@@ -134,16 +132,18 @@ export default class UploadHandler {
     return 'MID_RANGE';
   }
 
-  async executeInBatches(items, batchSize, processFn) {
+  async executeInBatches(items, maxConcurrent, processFn) {
     const executing = new Set();
     for (const item of items) {
-      const p = processFn(item).then(() => executing.delete(p)).catch(() => {
-        executing.delete(p);
-      });
-      executing.add(p);
-      if (executing.size >= batchSize) await Promise.race(executing);
+      const promise = processFn(item)
+        .then(() => { executing.delete(promise); })
+        .catch(() => { executing.delete(promise); });
+      executing.add(promise);
+      if (executing.size >= maxConcurrent) await Promise.any(executing);
     }
-    await Promise.all(executing);
+    if (executing.size > 0) {
+      await Promise.all(executing);
+    }
   }
 
   async batchUpload(tasks, batchSize) {
@@ -332,12 +332,13 @@ export default class UploadHandler {
 
   getConcurrentLimits() {
     const deviceType = this.getDeviceType();
+    const limits = this.getUploadLimits();
     if (!this.actionBinder.MULTI_FILE) {
-      return { maxConcurrentChunks: UploadHandler.UPLOAD_LIMITS[deviceType].chunks };
+      return { maxConcurrentChunks: limits[deviceType].chunks };
     }
     return {
-      maxConcurrentFiles: UploadHandler.UPLOAD_LIMITS[deviceType].files,
-      maxConcurrentChunks: UploadHandler.UPLOAD_LIMITS[deviceType].chunks,
+      maxConcurrentFiles: limits[deviceType].files,
+      maxConcurrentChunks: limits[deviceType].chunks,
     };
   }
 

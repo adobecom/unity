@@ -13,7 +13,11 @@
       ".verb-wrapper": "upload",
       "#file-upload": "upload"
     },
-    
+    "uploadLimits": {
+      "HIGH_END": { "files": 10, "chunks": 10 },
+      "MID_RANGE": { "files": 5, "chunks": 10 },
+      "LOW_END": { "files": 3, "chunks": 6 }
+    },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
