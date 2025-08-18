@@ -40,7 +40,7 @@ test.describe('Unity Remove Background test suite', () => {
     await test.step('step-3: Upload a sample Image file', async () => {
       // upload and wait for some page change indicator (like a new element or URL change)
       const fileInput = page.locator('input[type="file"]#file-upload').nth(2);
-      await page.waitForTimeout(10000);
+      await page.waitForLoadState('networkidle');
       await fileInput.setInputFiles(imageFilePath);
     });
   });
