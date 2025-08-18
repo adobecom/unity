@@ -57,6 +57,11 @@ async function attemptTokenRefresh() {
   return refreshResult;
 }
 
+export async function getFlatObject() {
+  const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
+  return flattenObject;
+}
+
 async function getImsToken() {
   const RETRY_WAIT = 2000;
   try {
@@ -68,7 +73,7 @@ async function getImsToken() {
       await new Promise((resolve) => { setTimeout(resolve, RETRY_WAIT); });
       const retryAttempt = await attemptTokenRefresh();
       if (!retryAttempt.error) return retryAttempt;
-      const { default: flattenObject } = await import(`${getUnityLibs()}/utils/ObjectUtils.js`);
+      const flattenObject = await getFlatObject();
       return {
         token: null,
         error: {
@@ -80,10 +85,11 @@ async function getImsToken() {
     }
     return { token: accessToken, error: null };
   } catch (error) {
+    const flattenObject = await getFlatObject();
     return {
       token: null,
       error: {
-        message: `Error getting IMS access token: ${JSON.stringify(error)}`,
+        message: `Error getting IMS access token: ${flattenObject(error)}`,
         type: 'token_error',
       },
     };
