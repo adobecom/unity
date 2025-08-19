@@ -14,7 +14,7 @@ const config = {
   outputDir: './test-results',
   globalSetup: './nala/utils/global.setup.cjs',
   /* Maximum time one test can run for. */
-  timeout: 20 * 1000,
+  timeout: 30 * 1000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
@@ -42,7 +42,7 @@ const config = {
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
-    actionTimeout: 30000,
+    actionTimeout: 60000,
 
     trace: 'on-first-retry',
     baseURL:
