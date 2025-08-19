@@ -26,13 +26,11 @@ export default class TransitionScreen {
     const textProgressBar = Array.from(pTags).find(p => p.textContent.includes('[[progress-bar]]'));
     
     if (textProgressBar) {
-      // Handle text progress bar - create a text node from the content
+      // Handle text progress bar - return the p tag element for cleanup
       const textContent = textProgressBar.textContent.replace('[[progress-bar]]', '').trim();
       this.progressText = textContent;
       if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
-      // Create a text node for consistency
-      const textNode = document.createTextNode(textContent);
-      return [textNode];
+      return [textProgressBar];
     } else {
       // Handle icon progress bar (existing functionality)
       const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
@@ -220,10 +218,15 @@ export default class TransitionScreen {
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
+      // Check for progress bars before modifying text
+      const hasIconProgressBar = this.splashScreenEl.querySelector('.icon-progress-bar');
+      const hasTextProgressBar = Array.from(this.splashScreenEl.querySelectorAll('p')).some(p => p.textContent.includes('[[progress-bar]]'));
+      
       const textNodes = this.setProgressTextFromDOM();
       textNodes.forEach((node) => { node.textContent = ''; });
-      if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
-      if (Array.from(this.splashScreenEl.querySelectorAll('p')).some(p => p.textContent.includes('[[progress-bar]]'))) await this.handleTextProgressBar();
+      
+      if (hasIconProgressBar) await this.handleSplashProgressBar();
+      if (hasTextProgressBar) await this.handleTextProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
       this.splashScreenEl.setAttribute('aria-label', this.headingElements[2].innerText);
