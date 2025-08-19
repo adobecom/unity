@@ -37,11 +37,18 @@ test.describe('Unity Delete PDF test suite', () => {
     });
 
     await test.step('step-3: Upload a sample PDF file', async () => {
-      // upload and wait for some page change indicator (like a new element or URL change)
+      // Wait for file input to be ready and upload file
       const fileInput = page.locator('input[type="file"]#file-upload');
-      await page.waitForTimeout(10000);
+      await fileInput.waitFor({ state: 'attached' });
       await fileInput.setInputFiles(pdfFilePath);
-      await page.waitForTimeout(10000);
+
+      // Wait for navigation to complete after file upload
+      try {
+        await page.waitForURL((url) => url.searchParams.has('x_api_client_id'), { timeout: 15000 });
+      } catch (error) {
+        // Fallback: wait for any URL change or timeout
+        await page.waitForURL((url) => url !== page.url(), { timeout: 20000 });
+      }
 
       // Verify the URL parameters
       const currentUrl = page.url();
