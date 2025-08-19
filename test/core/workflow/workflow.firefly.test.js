@@ -28,7 +28,6 @@ describe('Firefly Workflow Tests', () => {
     actionMap = {
       '.gen-btn': [{ actionType: 'generate' }],
       '.drop-item': [{ actionType: 'setPromptValue' }],
-      '.close-btn': [{ actionType: 'closeDropdown' }],
       '.inp-field': [{ actionType: 'autocomplete' }],
     };
 
@@ -151,7 +150,7 @@ describe('Firefly Workflow Tests', () => {
   it('should handle Tab key navigation in dropdown', () => {
     const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
     const shiftEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, shiftKey: true });
-    const focusableElements = Array.from(document.querySelectorAll('.inp-field, .gen-btn, .drop-item, .close-btn'));
+    const focusableElements = Array.from(document.querySelectorAll('.inp-field, .gen-btn, .drop-item'));
     const dropItems = [document.querySelector('.drop-item')];
     focusableElements[0].focus();
     const currentIndex = focusableElements.indexOf(document.activeElement);
@@ -631,6 +630,274 @@ describe('Firefly Workflow Tests', () => {
       expect(() => {
         serviceHandler.showErrorToast(errorCallbackOptions, 'Test error');
       }).to.not.throw();
+    });
+  });
+
+  describe('verbsWithoutPromptSuggestions configuration', () => {
+    it('should hide dropdown when excluded verb is selected', () => {
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widgetWrap = document.createElement('div');
+      testActionBinder.widgetWrap.setAttribute('data-selected-verb', 'vector');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+      testActionBinder.getSelectedVerbType = () => 'vector';
+      testActionBinder.showDropdown();
+      expect(testActionBinder.dropdown.classList.contains('hidden')).to.be.true;
+    });
+
+    it('should show dropdown when non-excluded verb is selected', () => {
+      workflowCfg.targetCfg.verbsWithoutPromptSuggestions = ['vector'];
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widgetWrap = document.createElement('div');
+      testActionBinder.widgetWrap.setAttribute('data-selected-verb', 'image');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+      testActionBinder.getSelectedVerbType = () => 'image';
+      testActionBinder.showDropdown();
+      expect(testActionBinder.dropdown.classList.contains('hidden')).to.be.false;
+    });
+  });
+
+  describe('UnityWidget additional methods', () => {
+    it('should hide prompt dropdown correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.widget = document.createElement('div');
+      const dropdown = document.createElement('div');
+      dropdown.classList.add('drop');
+      testWidget.widget.appendChild(dropdown);
+      testWidget.hidePromptDropdown();
+      expect(dropdown.classList.contains('hidden')).to.be.true;
+      expect(dropdown.getAttribute('inert')).to.equal('');
+      expect(dropdown.getAttribute('aria-hidden')).to.equal('true');
+    });
+
+    it('should update analytics correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.promptItems = [
+        document.createElement('li'),
+        document.createElement('li'),
+      ];
+      testWidget.genBtn = document.createElement('button');
+      testWidget.promptItems[0].setAttribute('aria-label', 'test prompt 1');
+      testWidget.promptItems[1].setAttribute('aria-label', 'test prompt 2');
+      testWidget.genBtn.setAttribute('daa-ll', 'old-label');
+      testWidget.updateAnalytics('image');
+      expect(testWidget.promptItems[0].getAttribute('daa-ll')).to.include('image');
+      expect(testWidget.promptItems[1].getAttribute('daa-ll')).to.include('image');
+      expect(testWidget.genBtn.getAttribute('daa-ll')).to.equal('Generate--image');
+    });
+
+    it('should get limited display prompts correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const prompts = [
+        { prompt: 'Short prompt', assetid: '1' },
+        { prompt: 'This is a very long prompt that should be truncated when it exceeds the character limit of 105 characters and should show ellipsis at the end', assetid: '2' },
+        { prompt: 'Medium length prompt', assetid: '3' },
+        { prompt: 'Another prompt', assetid: '4' },
+      ];
+      const limited = testWidget.getLimitedDisplayPrompts(prompts);
+      expect(limited).to.have.length(3);
+      expect(limited[0]).to.have.property('prompt');
+      expect(limited[0]).to.have.property('assetid');
+      expect(limited[0]).to.have.property('displayPrompt');
+      const longPrompt = limited.find((item) => item.prompt.includes('very long prompt'));
+      if (longPrompt) {
+        expect(longPrompt.displayPrompt).to.include('…');
+        expect(longPrompt.displayPrompt.length).to.be.lessThan(110);
+      }
+    });
+
+    it('should add prompt items to dropdown correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.selectedVerbType = 'image';
+      const dropdown = document.createElement('ul');
+      const prompts = [
+        { prompt: 'Test prompt 1', assetid: '1', displayPrompt: 'Test prompt 1' },
+        { prompt: 'Test prompt 2', assetid: '2', displayPrompt: 'Test prompt 2' },
+      ];
+      const placeholder = {
+        'placeholder-prompt': 'Prompt',
+        'placeholder-suggestions': 'Suggestions',
+      };
+      testWidget.addPromptItemsToDropdown(dropdown, prompts, placeholder);
+      const items = dropdown.querySelectorAll('.drop-item');
+      expect(items).to.have.length(2);
+      expect(items[0].getAttribute('aria-label')).to.equal('Test prompt 1');
+      expect(items[1].getAttribute('aria-label')).to.equal('Test prompt 2');
+      expect(items[0].getAttribute('daa-ll')).to.include('image');
+    });
+
+    it('should create footer correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const tipLi = document.createElement('li');
+      tipLi.innerHTML = '<span class="icon-tip"></span>Test tip text';
+      const legalLi = document.createElement('li');
+      legalLi.innerHTML = '<span class="icon-legal"></span><a href="/legal">Legal</a>';
+      unityElement.appendChild(tipLi);
+      unityElement.appendChild(legalLi);
+      const placeholder = {
+        'placeholder-tip': 'Tip',
+        'placeholder-legal': 'Legal',
+      };
+      const footer = testWidget.createFooter(placeholder);
+      expect(footer.querySelector('.tip-con')).to.exist;
+      expect(footer.querySelector('.legal-con')).to.exist;
+      expect(footer.querySelector('.tip-text').textContent).to.include('Tip:');
+      expect(footer.querySelector('.legal-text')).to.exist;
+      unityElement.removeChild(tipLi);
+      unityElement.removeChild(legalLi);
+    });
+
+    it('should create action button correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.selectedVerbType = 'image';
+      testWidget.selectedVerbText = 'Image';
+      const cfg = document.createElement('div');
+      cfg.innerHTML = '<img src="test.svg" alt="Generate" />Generate\nContent';
+      const button = testWidget.createActBtn(cfg, 'gen-btn');
+      expect(button).to.exist;
+      expect(button.classList.contains('unity-act-btn')).to.be.true;
+      expect(button.classList.contains('gen-btn')).to.be.true;
+      expect(button.getAttribute('daa-ll')).to.equal('Generate--image');
+      expect(button.getAttribute('aria-label')).to.include('Generate');
+      expect(button.querySelector('.btn-ico')).to.exist;
+      expect(button.querySelector('.btn-txt')).to.exist;
+    });
+
+    it('should add widget to DOM correctly', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.widget = document.createElement('div');
+      testWidget.widgetWrap = document.createElement('div');
+      const copy = document.createElement('div');
+      copy.innerHTML = '<a href="#">Target Link</a>';
+      testWidget.target.appendChild(copy);
+      testWidget.addWidget();
+      expect(testWidget.target.querySelector('.ex-unity-wrap')).to.exist;
+    });
+
+    it('should get prompt correctly', async () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.hasPromptSuggestions = true;
+      testWidget.prompts = {
+        image: [
+          { prompt: 'Test image prompt', assetid: '1' },
+          { prompt: '', assetid: '2' },
+          { prompt: '   ', assetid: '3' },
+        ],
+      };
+      const prompts = await testWidget.getPrompt('image');
+      expect(prompts).to.have.length(1);
+      expect(prompts[0].prompt).to.equal('Test image prompt');
+    });
+  });
+
+  describe('ActionBinder additional methods', () => {
+    it('should validate input correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.serviceHandler = { showErrorToast: sinon.spy() };
+      const emptyResult = testActionBinder.validateInput('');
+      expect(emptyResult.isValid).to.be.true;
+      const whitespaceResult = testActionBinder.validateInput('   ');
+      expect(whitespaceResult.isValid).to.be.true;
+      const validResult = testActionBinder.validateInput('valid input');
+      expect(validResult.isValid).to.be.true;
+      const longResult = testActionBinder.validateInput('a'.repeat(751));
+      expect(longResult.isValid).to.be.false;
+    });
+
+    it('should set prompt correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.inputField = document.createElement('input');
+      const promptElement = document.createElement('li');
+      promptElement.setAttribute('aria-label', 'Test prompt');
+      promptElement.setAttribute('id', 'test-id');
+      testActionBinder.setPrompt(promptElement);
+      expect(testActionBinder.query).to.equal('Test prompt');
+      expect(testActionBinder.id).to.equal('test-id');
+    });
+
+    it('should get dropdown items correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.dropdown = document.createElement('div');
+      const item1 = document.createElement('li');
+      item1.classList.add('drop-item');
+      const item2 = document.createElement('li');
+      item2.classList.add('drop-item');
+      testActionBinder.dropdown.appendChild(item1);
+      testActionBinder.dropdown.appendChild(item2);
+      const items = testActionBinder.getDropdownItems();
+      expect(items).to.have.length(2);
+      expect(items[0]).to.equal(item1);
+      expect(items[1]).to.equal(item2);
+    });
+
+    it('should check dropdown visibility correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.dropdown.classList.add('hidden');
+      expect(testActionBinder.isDropdownVisible()).to.be.false;
+      testActionBinder.dropdown.classList.remove('hidden');
+      expect(testActionBinder.isDropdownVisible()).to.be.true;
+    });
+
+    it('should handle outside click correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.widget = document.createElement('div');
+      testActionBinder.dropdown = document.createElement('div');
+      testActionBinder.hideDropdown = sinon.spy();
+      const outsideEvent = { target: document.createElement('div') };
+      testActionBinder.handleOutsideClick(outsideEvent);
+      expect(testActionBinder.hideDropdown.called).to.be.true;
+      const insideEvent = { target: testActionBinder.widget };
+      testActionBinder.handleOutsideClick(insideEvent);
+      expect(testActionBinder.hideDropdown.callCount).to.equal(1);
+    });
+
+    it('should reset dropdown correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      testActionBinder.inputField = document.createElement('input');
+      testActionBinder.inputField.value = 'test value';
+      testActionBinder.query = 'test query';
+      testActionBinder.hideDropdown = sinon.spy();
+      testActionBinder.resetDropdown();
+      expect(testActionBinder.inputField.value).to.equal('test value');
+      expect(testActionBinder.query).to.equal('test query');
+      expect(testActionBinder.hideDropdown.called).to.be.true;
+    });
+
+    it('should move focus with arrow keys correctly', () => {
+      const testActionBinder = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      const dropItems = [
+        document.createElement('li'),
+        document.createElement('li'),
+        document.createElement('li'),
+      ];
+      testActionBinder.moveFocusWithArrow(dropItems, 'down');
+      testActionBinder.moveFocusWithArrow(dropItems, 'up');
+    });
+  });
+
+  describe('Error handling and edge cases', () => {
+    it('should handle missing dropdown gracefully', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.widget = document.createElement('div');
+      expect(() => testWidget.hidePromptDropdown()).to.not.throw();
+    });
+
+    it('should handle empty prompt data gracefully', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const promptMap = testWidget.createPromptMap([]);
+      expect(promptMap).to.be.an('object');
+      expect(Object.keys(promptMap)).to.have.length(0);
+    });
+
+    it('should handle null/undefined data in createPromptMap', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const promptMap = testWidget.createPromptMap(null);
+      expect(promptMap).to.be.an('object');
+      expect(Object.keys(promptMap)).to.have.length(0);
     });
   });
 });
