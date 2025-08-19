@@ -21,25 +21,26 @@ export default class TransitionScreen {
   }
 
   setProgressTextFromDOM() {
-    // Get text nodes from icon-area (existing functionality)
-    const iconTextNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
-      .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
-    
-    // Get text from p tags containing [[progress-bar]]
+    // Check for text progress bars first
     const pTags = this.splashScreenEl.querySelectorAll('p');
-    const textProgressNodes = Array.from(pTags)
-      .filter(p => p.textContent.includes('[[progress-bar]]'))
-      .map(p => {
-        const textContent = p.textContent.replace('[[progress-bar]]', '').trim();
-        return textContent ? { textContent } : null;
-      })
-      .filter(node => node !== null);
+    const textProgressBar = Array.from(pTags).find(p => p.textContent.includes('[[progress-bar]]'));
     
-    // Combine both sources of progress text
-    const allTextNodes = [...iconTextNodes, ...textProgressNodes];
-    this.progressText = allTextNodes.map((node) => node.textContent.trim()).join(' ');
-    if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
-    return allTextNodes;
+    if (textProgressBar) {
+      // Handle text progress bar - create a text node from the content
+      const textContent = textProgressBar.textContent.replace('[[progress-bar]]', '').trim();
+      this.progressText = textContent;
+      if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
+      // Create a text node for consistency
+      const textNode = document.createTextNode(textContent);
+      return [textNode];
+    } else {
+      // Handle icon progress bar (existing functionality)
+      const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
+        .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+      this.progressText = textNodes.map((node) => node.textContent.trim()).join(' ');
+      if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
+      return textNodes;
+    }
   }
 
   updateProgressBar(layer, percentage) {
