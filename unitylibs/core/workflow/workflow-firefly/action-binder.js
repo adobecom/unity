@@ -121,19 +121,15 @@ export default class ActionBinder {
 
   async createErrorToast() {
     try {
-      const [alertImg, closeImg] = await Promise.all([
-        fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
-        fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
-      ]);
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
+      const alertImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/alert.svg` });
+      const closeImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/close.svg` });
       const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
       const alertIcon = createTag('div', { class: 'alert-icon' });
-      alertIcon.innerHTML = alertImg;
-      alertIcon.append(alertText);
+      alertIcon.append(alertImg, alertText);
       const alertClose = createTag('a', { class: 'alert-close', href: '#' });
-      alertClose.innerHTML = closeImg;
-      alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
+      alertClose.append(closeImg, createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
       const alertContent = createTag('div', { class: 'alert-content' });
       alertContent.append(alertIcon, alertClose);
       const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
