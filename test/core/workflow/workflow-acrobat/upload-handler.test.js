@@ -74,6 +74,11 @@ describe('UploadHandler', () => {
           nonpdfMfuFeedbackScreenTypeNonpdf: [],
           mfuUploadAllowed: [],
           mfuUploadOnlyPdfAllowed: [],
+          uploadLimits: {
+            HIGH_END: { files: 10, chunks: 10 },
+            MID_RANGE: { files: 5, chunks: 10 },
+            LOW_END: { files: 3, chunks: 6 },
+          },
         },
       },
       acrobatApiConfig: {
@@ -130,10 +135,18 @@ describe('UploadHandler', () => {
   });
 
   describe('Constructor', () => {
-    it('should use correct upload limits', () => {
-      expect(UploadHandler.UPLOAD_LIMITS.HIGH_END).to.deep.equal({ files: 3, chunks: 10 });
-      expect(UploadHandler.UPLOAD_LIMITS.MID_RANGE).to.deep.equal({ files: 3, chunks: 10 });
-      expect(UploadHandler.UPLOAD_LIMITS.LOW_END).to.deep.equal({ files: 2, chunks: 6 });
+    it('should use correct upload limits from config', () => {
+      // Set up config limits in the mock
+      mockActionBinder.workflowCfg.targetCfg.uploadLimits = {
+        HIGH_END: { files: 10, chunks: 10 },
+        MID_RANGE: { files: 5, chunks: 10 },
+        LOW_END: { files: 3, chunks: 6 },
+      };
+
+      const limits = uploadHandler.getUploadLimits();
+      expect(limits.HIGH_END).to.deep.equal({ files: 10, chunks: 10 });
+      expect(limits.MID_RANGE).to.deep.equal({ files: 5, chunks: 10 });
+      expect(limits.LOW_END).to.deep.equal({ files: 3, chunks: 6 });
     });
   });
 
