@@ -13,7 +13,7 @@
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
+      "fragmentLink": "/fragments/rclayton/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
