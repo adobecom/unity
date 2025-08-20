@@ -372,7 +372,7 @@ export default class ActionBinder {
         const decisionScopes = getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
         this.experimentData = await getExperimentData(decisionScopes);
       } catch (error) {
-        await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, false, true, {
+        await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
           code: 'warn_fetch_experiment',
           desc: error.message,
         });
