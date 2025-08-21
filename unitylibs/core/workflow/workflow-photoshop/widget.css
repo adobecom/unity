@@ -87,6 +87,10 @@
   transform: translate(-50%, -50%);
 }
 
+[dir="rtl"] .unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-circle {
+  transform: translate(50%, -50%);
+}
+
 .unity-enabled .interactive-area .unity-option-area .adjustment-options-tray .adjustment-circle .analytics-content {
   display: none;
 }
