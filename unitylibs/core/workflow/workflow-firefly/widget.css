@@ -316,6 +316,14 @@
   line-height: normal;
 }
 
+/* Fix for Japanese locale - ensure generate button stays on first line like English */
+@media (max-width: 1024px) {
+  [lang="ja-JP"] .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop {
   background: linear-gradient(0deg, rgba(255 255 255 / 100%) 0%, rgba(255 255 255 / 100%) 100%), linear-gradient(89deg, rgba(255 255 255 / 80%) 1.01%, rgba(255 255 255 / 20%) 111.14%);
   box-shadow: 0 2px 8px 0 rgba(0 0 0 / 16%);
