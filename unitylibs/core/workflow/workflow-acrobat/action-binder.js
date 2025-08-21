@@ -4,6 +4,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
+
 import {
   unityConfig,
   getUnityLibs,
@@ -194,8 +195,8 @@ export default class ActionBinder {
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'jpg-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'png-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'combine-pdf': ['hybrid', 'page-limit-500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
-    'rotate-pages': ['hybrid', 'page-limit-500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'combine-pdf': ['hybrid', 'page-limit-500', 'cumulative-page-limit-1500', 'allowed-filetypes-all', 'max-filesize-100-mb', 'max-numfiles-100'],
+    'rotate-pages': ['hybrid', 'page-limit-500', 'cumulative-page-limit-1500', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'max-numfiles-100'],
     'protect-pdf': ['single'],
     'ocr-pdf': ['hybrid', 'allowed-filetypes-pdf-word-excel-ppt-img-txt', 'page-limit-100', 'max-filesize-100-mb'],
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
@@ -230,6 +231,7 @@ export default class ActionBinder {
     upload_validation_error_verify_page_count: -302,
     upload_validation_error_max_page_count_multi: -303,
     upload_validation_error_duplicate_asset: -304,
+    upload_validation_error_cumulative_page_count: -305,
     upload_error_max_quota_exceeded: -400,
     upload_error_no_storage_provision: -401,
     upload_error_chunk_upload: -402,
@@ -265,6 +267,7 @@ export default class ActionBinder {
     upload_validation_error_verify_page_count: 'verb_upload_error_verify_page_count',
     upload_validation_error_max_page_count_multi: 'verb_upload_error_max_page_count_multi',
     upload_validation_error_duplicate_asset: 'verb_upload_error_duplicate_asset',
+    upload_validation_error_cumulative_page_count: 'verb_upload_error_cumulative_page_count',
     upload_error_max_quota_exceeded: 'verb_upload_error_max_quota_exceeded',
     upload_error_no_storage_provision: 'verb_upload_error_no_storage_provision',
     upload_error_chunk_upload: 'verb_upload_error_chunk_upload',
