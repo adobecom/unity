@@ -35,7 +35,9 @@ class ServiceHandler {
   async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const mergedOptions = { ...options, signal: controller.signal };
+    const passedSignal = options.signal || controller.signal;
+    const mergedOptions = { ...options, signal: passedSignal };
+    //const mergedOptions = { ...options, signal: controller.signal };
     try {
       const response = await fetch(url, mergedOptions);
       clearTimeout(timeout);
@@ -51,11 +53,8 @@ class ServiceHandler {
     }
   }
 
-  async fetchFromService(url, options, canRetry = true) {
-    try {
-      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
-      const response = await this.fetchWithTimeout(url, options, 60000);
-      const contentLength = response.headers.get('Content-Length');
+  async afterFetchFromService(response, canRetry) {
+    const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
       if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
         await new Promise((resolve) => {
@@ -81,8 +80,10 @@ class ServiceHandler {
       }
       if (contentLength === '0') return {};
       return response.json();
-    } catch (e) {
-      this.handleAbortedRequest(url, options);
+  }
+
+  async errorAfterFetchFromService(url, options, e) {
+    this.handleAbortedRequest(url, options);
       if (e instanceof TypeError) {
         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
         error.status = 0;
@@ -94,27 +95,132 @@ class ServiceHandler {
       }
       throw e;
     }
+
+  async fetchFromService(url, options, canRetry = true, afterFetch, onError) {
+    try {
+      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
+      const response = await this.fetchWithTimeout(url, options, 60000);
+      if (afterFetch) return await afterFetch(response);
+      else return await this.afterFetchFromService(response, canRetry);
+    } catch (e) {
+      if (onError) await onError(e);
+      else await this.errorAfterFetchFromService(url, options, e);
+    }
   }
 
-  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
-    let timeLapsed = 0;
-    while (timeLapsed < maxRetryDelay) {
-      this.handleAbortedRequest(url, options);
-      const response = await this.fetchFromService(url, options, true);
-      if (response.status === 202) {
-        const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
-        await new Promise((resolve) => {
-          setTimeout(resolve, retryDelay * 1000);
-        });
-        timeLapsed += retryDelay;
-      } else {
-        return response;
+  async fetchFromServiceWithRetry(retryMechanism, url, options, afterFetch, onError) {
+    if ( retryMechanism.type === 'server-polling') {
+      let timeLapsed = 0;
+      const maxRetryDelay = retryMechanism.retryParams?.maxRetryDelay || 300;
+      while (timeLapsed < maxRetryDelay) {
+        this.handleAbortedRequest(url, options);
+        const response = await this.fetchFromService(url, options, false);
+        if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) {
+          const retryDelay = parseInt(response.headers.get('retry-after'), 10) || retryMechanism.retryParams?.defaultRetryDelay || 5;
+          await new Promise((resolve) => {
+            setTimeout(resolve, retryDelay * 1000);
+          });
+          timeLapsed += retryDelay;
+        } else {
+          return afterFetch ? await afterFetch(response) : response;
+        }
       }
+      const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
+      timeoutError.status = 504;
+      throw timeoutError;
+
+      // let intervalId;
+      // let timeoutId;
+      // let requestInProgress = false;
+      // let metadataExists = false;
+      // const intervalDuration = 500;
+      // const totalDuration = 5000;
+      // let metadata = {};
+
+      // intervalId = setInterval(async () => {
+      //   if (requestInProgress) return;
+      //   requestInProgress = true;
+      //   metadata = await this.fetchFromService(url, options, false);
+      //   requestInProgress = false;
+      //   if (metadata?.numPages !== undefined) {
+      //     clearInterval(intervalId);
+      //     clearTimeout(timeoutId);
+      //     metadataExists = true;
+      //     await afterFetch();
+      //   }
+      // }, intervalDuration);
+      // timeoutId = setTimeout(async () => {
+      //   clearInterval(intervalId);
+      //   if (!metadataExists) retryMechanism.retryParams?.resolve(false);
+      //   else await afterFetch();
+      // }, totalDuration);
     }
-    const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-    timeoutError.status = 504;
-    throw timeoutError;
+    else if (retryMechanism.type === 'exponential') {
+      const maxRetries = retryMechanism.retryParams?.maxRetries || 4;
+      const retryDelay = retryMechanism.retryParams?.retryDelay || 1000;
+      const maxRetryDelay = retryMechanism.retryParams?.maxRetryDelay || 300;
+      let error = null;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const afterFetchWithAttempt = afterFetch ? (response) => afterFetch(response, attempt) : null;
+          const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
+          const result = await this.fetchFromService(url, options, false, afterFetchWithAttempt, onErrorWithAttempt);
+          return { result, attempt }; 
+        } catch (err) {
+         // if (err.name === 'AbortError') throw err;
+          error = err;
+        }
+        if (attempt < maxRetries) {
+          const delay = retryDelay;
+          await new Promise((resolve) => { setTimeout(resolve, delay); });
+          retryDelay *= 2;
+        }
+      }
+      if (error) error.message += ', Max retry delay exceeded during upload';
+      else error = new Error('Max retry delay exceeded during upload');
+      throw error;
+    }
+    // } else {
+    //   let timeLapsed = 0;
+    //   const maxRetryDelay = retryMechanism.maxRetryDelay || 300;
+    //   while (timeLapsed < maxRetryDelay) {
+    //     this.handleAbortedRequest(url, options);
+    //     const response = await this.fetchFromService(url, options, true, afterFetch, onError);
+    //     if (response.status === 202) {
+    //       const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
+    //       await new Promise((resolve) => {
+    //         setTimeout(resolve, retryDelay * 1000);
+    //       });
+    //       timeLapsed += retryDelay;
+    //     } else {
+    //       return response;
+    //     }
+    //   }
+    //   const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
+    //   timeoutError.status = 504;
+    //   throw timeoutError;
+    // }
   }
+
+  // async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
+  //   let timeLapsed = 0;
+  //   while (timeLapsed < maxRetryDelay) {
+  //     this.handleAbortedRequest(url, options);
+  //     const response = await this.fetchFromService(url, options, true);
+  //     if (response.status === 202) {
+  //       const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
+  //       await new Promise((resolve) => {
+  //         setTimeout(resolve, retryDelay * 1000);
+  //       });
+  //       timeLapsed += retryDelay;
+  //     } else {
+  //       return response;
+  //     }
+  //   }
+  //   const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
+  //   timeoutError.status = 504;
+  //   throw timeoutError;
+  // }
 
   async postCallToService(api, options, additionalHeaders = {}) {
     const postOpts = {

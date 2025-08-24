@@ -2,7 +2,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig, getUnityLibs, getGuestAccessToken, getFlatObject } from '../../../scripts/utils.js';
+import { unityConfig, getUnityLibs, getGuestAccessToken, getFlatObject, getApiCallOptions } from '../../../scripts/utils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -46,82 +46,52 @@ export default class UploadHandler {
     return blob;
   }
 
-  async uploadFileToUnityWithRetry(url, blobData, fileType, assetId, signal, chunkNumber = 0) {
-    let retryDelay = 1000;
-    const maxRetries = 4;
-    let error = null;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const response = await this.uploadFileToUnity(url, blobData, fileType, assetId, signal, chunkNumber);
-        if (response.ok) {
-          this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
-            chunkUploadAttempt: attempt,
-            assetId,
-            chunkNumber,
-            size: `${blobData.size}`,
-            type: `${fileType}`,
-          });
-          return { response, attempt };
-        }
-      } catch (err) {
-        if (err.name === 'AbortError') throw err;
-        error = err;
-      }
-      if (attempt < maxRetries) {
-        const delay = retryDelay;
-        await new Promise((resolve) => { setTimeout(resolve, delay); });
-        retryDelay *= 2;
-      }
+  async afterUploadFileToUnity(assetId, blobData, chunkNumber, fileType, response, attempt) {
+    if (response.ok) {
+      this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
+        chunkUploadAttempt: attempt,
+        assetId,
+        chunkNumber,
+        size: `${blobData.size}`,
+        type: `${fileType}`,
+      });
+      return { response, attempt };
     }
-    if (error) error.message += ', Max retry delay exceeded during upload';
-    else error = new Error('Max retry delay exceeded during upload');
+   
+    const error = new Error(response.statusText || 'Upload request failed');
+    error.status = response.status;
+    await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true, true, {
+      code: 'upload_warn_chunk_upload',
+      subCode: chunkNumber,
+      desc: `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes; status: ${response.status}`,
+    });
     throw error;
+    
   }
 
-  async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal, chunkNumber = 'unknown') {
-    const uploadOptions = {
-      method: 'PUT',
-      headers: { 'Content-Type': fileType },
-      body: blobData,
-      signal,
-    };
-    try {
-      const response = await fetch(storageUrl, uploadOptions);
-      if (!response.ok) {
-        const error = new Error(response.statusText || 'Upload request failed');
-        error.status = response.status;
-        await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true, true, {
-          code: 'upload_warn_chunk_upload',
-          subCode: chunkNumber,
-          desc: `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes; status: ${response.status}`,
-        });
-        throw error;
-      }
-      return response;
-    } catch (e) {
-      if (e.name === 'AbortError') throw e;
-      else if (e instanceof TypeError) {
-        const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
-        await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
-          code: 'upload_warn_chunk_upload',
-          subCode: chunkNumber,
-          desc: `Exception raised when uploading chunk to storage; ${errorMessage}; status: ${e.status}`,
-        });
-      } else if (['Timeout'].includes(e.name)) {
-        await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
-          code: 'upload_warn_chunk_upload',
-          subCode: chunkNumber,
-          desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
-        });
-      } else {
-        await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', e.status || 500, `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes`, true, true, {
-          code: 'upload_warn_chunk_upload',
-          subCode: chunkNumber,
-          desc: `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
-        });
-      }
-      throw e;
+  async errorAfterUploadFileToUnity(assetId, blobData, chunkNumber, e) {
+    if (e.name === 'AbortError') throw e;
+    else if (e instanceof TypeError) {
+      const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
+      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
+        code: 'upload_warn_chunk_upload',
+        subCode: chunkNumber,
+        desc: `Exception raised when uploading chunk to storage; ${errorMessage}; status: ${e.status}`,
+      });
+    } else if (['Timeout'].includes(e.name)) {
+      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
+        code: 'upload_warn_chunk_upload',
+        subCode: chunkNumber,
+        desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
+      });
+    } else {
+      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', e.status || 500, `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes`, true, true, {
+        code: 'upload_warn_chunk_upload',
+        subCode: chunkNumber,
+        desc: `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
+      });
     }
+    throw e;
   }
 
   getDeviceType() {
@@ -172,7 +142,22 @@ export default class UploadHandler {
           const urlObj = new URL(url.href);
           const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
           try {
-            const { attempt } = await this.uploadFileToUnityWithRetry(url.href, chunk, fileType, assetData.id, signal, parseInt(chunkNumber, 10));
+            const retryMechanism = {
+              type: 'exponential',
+              retryParams: {
+                maxRetries: 4,
+                retryDelay: 1000,
+                maxRetryDelay: 300,
+              },
+            };
+            const uploadOptions = {
+              method: 'PUT',
+              headers: { 'Content-Type': fileType },
+              body: chunk,
+              signal,
+            };
+            const chunkNumberInt = parseInt(chunkNumber, 10);
+            const { attempt } = await this.serviceHandler.fetchFromServiceWithRetry(retryMechanism, url.href, uploadOptions, this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType), this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt));
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
           } catch (err) {
@@ -195,10 +180,21 @@ export default class UploadHandler {
         targetProduct: this.actionBinder.workflowCfg.productName,
         assetId: assetData.id,
       };
-      const finalizeJson = await this.serviceHandler.postCallToServiceWithRetry(
-        this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-        { body: JSON.stringify(finalAssetData), signal },
-        this.actionBinder.getAdditionalHeaders() || {},
+      // const finalizeJson = await this.serviceHandler.postCallToServiceWithRetry(
+      //   this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
+      //   { body: JSON.stringify(finalAssetData), signal },
+      //   this.actionBinder.getAdditionalHeaders() || {},
+      // );
+      const finalizeOpts = await getApiCallOptions(
+        'POST', 
+        unityConfig.apiKey, 
+        this.actionBinder.getAdditionalHeaders() || {}, 
+        { body: JSON.stringify(finalAssetData), signal }
+      );
+      const finalizeJson = await this.serviceHandler.fetchFromServiceWithRetry(
+        { type: 'exponential' }, 
+        this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset, 
+        finalizeOpts
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -240,57 +236,65 @@ export default class UploadHandler {
 
   async checkPageNumCount(assetData, isMultiFile = false) {
     try {
-      const intervalDuration = 500;
-      const totalDuration = 5000;
-      let metadata = {};
-      let intervalId;
-      let timeoutId;
-      let requestInProgress = false;
-      let metadataExists = false;
-      return new Promise((resolve) => {
-        const handleMetadata = async () => {
-          if (this.actionBinder?.limits?.pageLimit?.maxNumPages
-            && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
-          ) {
-            if (!isMultiFile) {
-              await this.showSplashScreen();
-              await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
-            }
-            resolve(true);
-            return;
-          }
-          if (this.actionBinder?.limits?.pageLimit?.minNumPages
-            && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
-          ) {
+      const handleMetadata = async (metadata) => {
+        if (this.actionBinder?.limits?.pageLimit?.maxNumPages
+          && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
+        ) {
+          if (!isMultiFile) {
             await this.showSplashScreen();
-            await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-            resolve(true);
-            return;
+            await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
           }
-          resolve(false);
-        };
-        intervalId = setInterval(async () => {
-          if (requestInProgress) return;
-          requestInProgress = true;
-          metadata = await this.serviceHandler.getCallToService(
-            this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata,
-            { id: assetData.id },
-            this.actionBinder.getAdditionalHeaders() || {},
-          );
-          requestInProgress = false;
-          if (metadata?.numPages !== undefined) {
-            clearInterval(intervalId);
-            clearTimeout(timeoutId);
-            metadataExists = true;
-            await handleMetadata();
-          }
-        }, intervalDuration);
-        timeoutId = setTimeout(async () => {
-          clearInterval(intervalId);
-          if (!metadataExists) resolve(false);
-          else await handleMetadata();
-        }, totalDuration);
-      });
+          return true;
+        }
+        if (this.actionBinder?.limits?.pageLimit?.minNumPages
+          && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
+        ) {
+          await this.showSplashScreen();
+          await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
+          return true; 
+        }
+        return false;
+      };
+      
+      const queryString = new URLSearchParams({ id: assetData.id }).toString();
+      const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
+      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
+      return await this.serviceHandler.fetchFromServiceWithRetry({ type: 'server-polling' }, url, getOpts, handleMetadata, () => {});
+
+       //const intervalDuration = 500;
+      // // const totalDuration = 5000;
+      // let metadata = {};
+      // // let intervalId;
+      // // let timeoutId;
+      // // let requestInProgress = false;
+      // // let metadataExists = false;
+      // return new Promise(async (resolve) => {
+      //   const handleMetadata = async (metadata) => {
+      //     if (this.actionBinder?.limits?.pageLimit?.maxNumPages
+      //       && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
+      //     ) {
+      //       if (!isMultiFile) {
+      //         await this.showSplashScreen();
+      //         await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
+      //       }
+      //       resolve(true);
+      //       return;
+      //     }
+      //     if (this.actionBinder?.limits?.pageLimit?.minNumPages
+      //       && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
+      //     ) {
+      //       await this.showSplashScreen();
+      //       await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
+      //       resolve(true);
+      //       return;
+      //     }
+      //     resolve(false);
+      //   };
+      //   const queryString = new URLSearchParams({ id: assetData.id }).toString();
+      //   const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
+      //   const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
+      //   metadata = await this.serviceHandler.fetchFromServiceWithRetry({ type: 'server-polling', retryParams: { resolve } }, url, getOpts, handleMetadata, () => {});
+    
     } catch (e) {
       await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
