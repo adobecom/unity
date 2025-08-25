@@ -1,6 +1,6 @@
 import path from 'path';
 import { expect, test } from '@playwright/test';
-import { features } from './unitywidget.spac.cjs';
+import { features } from './unitywidget.spec.cjs';
 import UnityWidget from './unitywidget.page.cjs';
 
 const imageFilePath = path.resolve(__dirname, '../../../assets/guddy.png');
