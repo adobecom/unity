@@ -10,6 +10,7 @@ import {
   priorityLoad,
   isGuestUser,
   getHeaders,
+  getApiCallOptions
 } from '../../../scripts/utils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
@@ -22,6 +23,30 @@ const DOS_SPECIAL_NAMES = new Set([
 const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
+
+export const RETRY_CONFIG = {
+  exponential: {
+    type: 'exponential',
+    retryParams: {
+      maxRetries: 4,
+      retryDelay: 1000
+    },
+  },
+  finalizePolling: {
+    type: 'server-polling',
+    retryParams: {
+      maxRetryDelay: 300,
+      defaultRetryDelay: 5,
+    },
+  },
+  metadataPolling: {
+    type: 'server-polling',
+    retryParams: {
+      maxRetryDelay: 5000,
+      defaultRetryDelay: 500,
+    }
+  }
+};
 
 class ServiceHandler {
   handleAbortedRequest(url, options) {
@@ -53,33 +78,27 @@ class ServiceHandler {
     }
   }
 
-  async afterFetchFromService(response, canRetry) {
+  async afterFetchFromService(response) {
     const contentLength = response.headers.get('Content-Length');
-      if (response.status === 202) return { status: 202, headers: response.headers };
-      if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 1000);
-        });
-        return this.fetchFromService(url, options, false);
-      }
-      if (response.status !== 200) {
-        let errorMessage = `Error fetching from service. URL: ${url}`;
-        if (contentLength !== '0') {
-          try {
-            const responseJson = await response.json();
-            ['quotaexceeded', 'notentitled'].forEach((errorType) => {
-              if (responseJson.reason?.includes(errorType)) errorMessage = errorType;
-            });
-          } catch {
-            errorMessage = `Failed to parse JSON response. URL: ${url}`;
-          }
+    if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) return { status: response.status, headers: response.headers };
+    if (response.status !== 200) {
+      let errorMessage = `Error fetching from service. URL: ${url}`;
+      if (contentLength !== '0') {
+        try {
+          const responseJson = await response.json();
+          ['quotaexceeded', 'notentitled'].forEach((errorType) => {
+            if (responseJson.reason?.includes(errorType)) errorMessage = errorType;
+          });
+        } catch {
+          errorMessage = `Failed to parse JSON response. URL: ${url}`;
         }
-        const error = new Error(errorMessage);
-        error.status = response.status;
-        throw error;
       }
-      if (contentLength === '0') return {};
-      return response.json();
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      throw error;
+    }
+    if (contentLength === '0') return {};
+    return response.json();
   }
 
   async errorAfterFetchFromService(url, options, e) {
@@ -96,19 +115,19 @@ class ServiceHandler {
       throw e;
     }
 
-  async fetchFromService(url, options, canRetry = true, afterFetch, onError) {
+  async fetchFromService(url, options, afterFetch, onError) {
     try {
       if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
       const response = await this.fetchWithTimeout(url, options, 60000);
       if (afterFetch) return await afterFetch(response);
-      else return await this.afterFetchFromService(response, canRetry);
+      else return await this.afterFetchFromService(response);
     } catch (e) {
       if (onError) await onError(e);
       else await this.errorAfterFetchFromService(url, options, e);
     }
   }
 
-  async fetchFromServiceWithRetry(retryMechanism, url, options, afterFetch, onError) {
+  async fetchFromServiceWithRetry(url, options, retryMechanism, afterFetch, onError) {
     if ( retryMechanism.type === 'server-polling') {
       let timeLapsed = 0;
       const maxRetryDelay = retryMechanism.retryParams?.maxRetryDelay || 300;
@@ -128,44 +147,18 @@ class ServiceHandler {
       const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
       timeoutError.status = 504;
       throw timeoutError;
-
-      // let intervalId;
-      // let timeoutId;
-      // let requestInProgress = false;
-      // let metadataExists = false;
-      // const intervalDuration = 500;
-      // const totalDuration = 5000;
-      // let metadata = {};
-
-      // intervalId = setInterval(async () => {
-      //   if (requestInProgress) return;
-      //   requestInProgress = true;
-      //   metadata = await this.fetchFromService(url, options, false);
-      //   requestInProgress = false;
-      //   if (metadata?.numPages !== undefined) {
-      //     clearInterval(intervalId);
-      //     clearTimeout(timeoutId);
-      //     metadataExists = true;
-      //     await afterFetch();
-      //   }
-      // }, intervalDuration);
-      // timeoutId = setTimeout(async () => {
-      //   clearInterval(intervalId);
-      //   if (!metadataExists) retryMechanism.retryParams?.resolve(false);
-      //   else await afterFetch();
-      // }, totalDuration);
     }
     else if (retryMechanism.type === 'exponential') {
       const maxRetries = retryMechanism.retryParams?.maxRetries || 4;
       const retryDelay = retryMechanism.retryParams?.retryDelay || 1000;
-      const maxRetryDelay = retryMechanism.retryParams?.maxRetryDelay || 300;
       let error = null;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           const afterFetchWithAttempt = afterFetch ? (response) => afterFetch(response, attempt) : null;
           const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
-          const result = await this.fetchFromService(url, options, false, afterFetchWithAttempt, onErrorWithAttempt);
-          return { result, attempt }; 
+          const response = await this.fetchFromService(url, options, false, afterFetchWithAttempt, onErrorWithAttempt);
+          if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) continue;
+          return { response, attempt };
         } catch (err) {
          // if (err.name === 'AbortError') throw err;
           error = err;
@@ -180,74 +173,6 @@ class ServiceHandler {
       else error = new Error('Max retry delay exceeded during upload');
       throw error;
     }
-    // } else {
-    //   let timeLapsed = 0;
-    //   const maxRetryDelay = retryMechanism.maxRetryDelay || 300;
-    //   while (timeLapsed < maxRetryDelay) {
-    //     this.handleAbortedRequest(url, options);
-    //     const response = await this.fetchFromService(url, options, true, afterFetch, onError);
-    //     if (response.status === 202) {
-    //       const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
-    //       await new Promise((resolve) => {
-    //         setTimeout(resolve, retryDelay * 1000);
-    //       });
-    //       timeLapsed += retryDelay;
-    //     } else {
-    //       return response;
-    //     }
-    //   }
-    //   const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-    //   timeoutError.status = 504;
-    //   throw timeoutError;
-    // }
-  }
-
-  // async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
-  //   let timeLapsed = 0;
-  //   while (timeLapsed < maxRetryDelay) {
-  //     this.handleAbortedRequest(url, options);
-  //     const response = await this.fetchFromService(url, options, true);
-  //     if (response.status === 202) {
-  //       const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
-  //       await new Promise((resolve) => {
-  //         setTimeout(resolve, retryDelay * 1000);
-  //       });
-  //       timeLapsed += retryDelay;
-  //     } else {
-  //       return response;
-  //     }
-  //   }
-  //   const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-  //   timeoutError.status = 504;
-  //   throw timeoutError;
-  // }
-
-  async postCallToService(api, options, additionalHeaders = {}) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
-      ...options,
-    };
-    return this.fetchFromService(api, postOpts);
-  }
-
-  async postCallToServiceWithRetry(api, options, additionalHeaders = {}) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
-      ...options,
-    };
-    return this.fetchFromServiceWithRetry(api, postOpts);
-  }
-
-  async getCallToService(api, params, additionalHeaders = {}) {
-    const getOpts = {
-      method: 'GET',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
-    };
-    const queryString = new URLSearchParams(params).toString();
-    const url = `${api}?${queryString}`;
-    return this.fetchFromService(url, getOpts);
   }
 
   async deleteCallToService(url, accessToken, additionalHeaders = {}) {
@@ -646,16 +571,17 @@ export default class ActionBinder {
   }
 
   async getRedirectUrl(cOpts) {
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
-      this.serviceHandler.postCallToService(
+      this.serviceHandler.fetchFromServiceWithRetry(
         this.acrobatApiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(cOpts) },
-        this.getAdditionalHeaders(),
+        postOpts,
+        RETRY_CONFIG.exponential
       ),
     );
     await Promise.all(this.promiseStack)
       .then(async (resArr) => {
-        const response = resArr[resArr.length - 1];
+        const { response } = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
         this.redirectUrl = response.url;
       })

@@ -3,6 +3,7 @@
 /* eslint-disable no-restricted-syntax */
 
 import { unityConfig, getUnityLibs, getGuestAccessToken, getFlatObject, getApiCallOptions } from '../../../scripts/utils.js';
+import { RETRY_CONFIG } from './action-binder.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -25,12 +26,13 @@ export default class UploadHandler {
       ...(multifile && { multifile }),
       ...(workflowId && { workflowId }),
     };
-    assetData = await this.serviceHandler.postCallToService(
+    const getOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(data) });
+    const { response } = await this.serviceHandler.fetchFromServiceWithRetry(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
-      { body: JSON.stringify(data) },
-      this.actionBinder.getAdditionalHeaders() || {},
+      getOpts,
+      RETRY_CONFIG.exponential
     );
-    return assetData;
+    return response;
   }
 
   async getBlobData(file) {
@@ -142,22 +144,15 @@ export default class UploadHandler {
           const urlObj = new URL(url.href);
           const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
           try {
-            const retryMechanism = {
-              type: 'exponential',
-              retryParams: {
-                maxRetries: 4,
-                retryDelay: 1000,
-                maxRetryDelay: 300,
-              },
-            };
-            const uploadOptions = {
+            const retryMechanism = RETRY_CONFIG.exponential;
+            const putOpts = {
               method: 'PUT',
               headers: { 'Content-Type': fileType },
               body: chunk,
               signal,
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
-            const { attempt } = await this.serviceHandler.fetchFromServiceWithRetry(retryMechanism, url.href, uploadOptions, this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType), this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt));
+            const { attempt } = await this.serviceHandler.fetchFromServiceWithRetry(url.href, putOpts, retryMechanism,this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType), this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt));
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
           } catch (err) {
@@ -180,11 +175,6 @@ export default class UploadHandler {
         targetProduct: this.actionBinder.workflowCfg.productName,
         assetId: assetData.id,
       };
-      // const finalizeJson = await this.serviceHandler.postCallToServiceWithRetry(
-      //   this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-      //   { body: JSON.stringify(finalAssetData), signal },
-      //   this.actionBinder.getAdditionalHeaders() || {},
-      // );
       const finalizeOpts = await getApiCallOptions(
         'POST', 
         unityConfig.apiKey, 
@@ -192,9 +182,9 @@ export default class UploadHandler {
         { body: JSON.stringify(finalAssetData), signal }
       );
       const finalizeJson = await this.serviceHandler.fetchFromServiceWithRetry(
-        { type: 'exponential' }, 
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset, 
-        finalizeOpts
+        finalizeOpts,
+        RETRY_CONFIG.finalizePolling
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -259,42 +249,7 @@ export default class UploadHandler {
       const queryString = new URLSearchParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
-      return await this.serviceHandler.fetchFromServiceWithRetry({ type: 'server-polling' }, url, getOpts, handleMetadata, () => {});
-
-       //const intervalDuration = 500;
-      // // const totalDuration = 5000;
-      // let metadata = {};
-      // // let intervalId;
-      // // let timeoutId;
-      // // let requestInProgress = false;
-      // // let metadataExists = false;
-      // return new Promise(async (resolve) => {
-      //   const handleMetadata = async (metadata) => {
-      //     if (this.actionBinder?.limits?.pageLimit?.maxNumPages
-      //       && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
-      //     ) {
-      //       if (!isMultiFile) {
-      //         await this.showSplashScreen();
-      //         await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
-      //       }
-      //       resolve(true);
-      //       return;
-      //     }
-      //     if (this.actionBinder?.limits?.pageLimit?.minNumPages
-      //       && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
-      //     ) {
-      //       await this.showSplashScreen();
-      //       await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-      //       resolve(true);
-      //       return;
-      //     }
-      //     resolve(false);
-      //   };
-      //   const queryString = new URLSearchParams({ id: assetData.id }).toString();
-      //   const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
-      //   const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
-      //   metadata = await this.serviceHandler.fetchFromServiceWithRetry({ type: 'server-polling', retryParams: { resolve } }, url, getOpts, handleMetadata, () => {});
-    
+      return await this.serviceHandler.fetchFromServiceWithRetry(url, getOpts, RETRY_CONFIG.metadataPolling, handleMetadata, () => {});
     } catch (e) {
       await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
