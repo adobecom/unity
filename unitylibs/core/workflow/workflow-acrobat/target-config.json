@@ -13,12 +13,17 @@
       ".verb-wrapper": "upload",
       "#file-upload": "upload"
     },
-    
+    "uploadLimits": {
+      "HIGH_END": { "files": 10, "chunks": 10 },
+      "MID_RANGE": { "files": 5, "chunks": 10 },
+      "LOW_END": { "files": 3, "chunks": 6 }
+    },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
     "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
     "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
-    "mfuUploadOnlyPdfAllowed": ["combine-pdf"]
+    "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
+    "experimentationOn": ["add-comment"]
   }
 }
