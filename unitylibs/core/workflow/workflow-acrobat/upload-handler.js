@@ -3,12 +3,12 @@
 /* eslint-disable no-restricted-syntax */
 
 import { unityConfig, getUnityLibs, getGuestAccessToken, getFlatObject, getApiCallOptions } from '../../../scripts/utils.js';
-import { RETRY_CONFIG } from './action-binder.js';
+import { RETRY_CONFIG } from '../../../utils/httpUtils.js';
 
 export default class UploadHandler {
-  constructor(actionBinder, serviceHandler) {
+  constructor(actionBinder, httpUtils) {
     this.actionBinder = actionBinder;
-    this.serviceHandler = serviceHandler;
+    this.httpUtils = httpUtils;
   }
 
   getUploadLimits() {
@@ -27,10 +27,9 @@ export default class UploadHandler {
       ...(workflowId && { workflowId }),
     };
     const getOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(data) });
-    const { response } = await this.serviceHandler.fetchFromServiceWithRetry(
+    const { response } = await this.httpUtils.fetchFromServiceWithExponentialRetry(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
-      getOpts,
-      RETRY_CONFIG.exponential
+      getOpts
     );
     return response;
   }
@@ -144,7 +143,6 @@ export default class UploadHandler {
           const urlObj = new URL(url.href);
           const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
           try {
-            const retryMechanism = RETRY_CONFIG.exponential;
             const putOpts = {
               method: 'PUT',
               headers: { 'Content-Type': fileType },
@@ -152,7 +150,13 @@ export default class UploadHandler {
               signal,
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
-            const { attempt } = await this.serviceHandler.fetchFromServiceWithRetry(url.href, putOpts, retryMechanism,this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType), this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt));
+            const { attempt } = await this.httpUtils.fetchFromServiceWithExponentialRetry(
+              url.href,
+              putOpts,
+              RETRY_CONFIG.default,
+              this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType),
+              this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt)
+            );
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
           } catch (err) {
@@ -181,7 +185,7 @@ export default class UploadHandler {
         this.actionBinder.getAdditionalHeaders() || {}, 
         { body: JSON.stringify(finalAssetData), signal }
       );
-      const finalizeJson = await this.serviceHandler.fetchFromServiceWithRetry(
+      const finalizeJson = await this.httpUtils.fetchFromServiceWithServerPollingRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset, 
         finalizeOpts,
         RETRY_CONFIG.finalizePolling
@@ -249,7 +253,15 @@ export default class UploadHandler {
       const queryString = new URLSearchParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
-      return await this.serviceHandler.fetchFromServiceWithRetry(url, getOpts, RETRY_CONFIG.metadataPolling, handleMetadata, () => {});
+      
+      const modifiedRetryConfig = {...RETRY_CONFIG.metadataPolling}
+      modifiedRetryConfig.extraRetryCheck = async(response) => {
+        const {status} = response;
+        const {numPages} = await response.json();
+        if (status === 200 && !numPages) return true;
+        return false;
+      }
+      return await this.httpUtils.fetchFromServiceWithServerPollingRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
     } catch (e) {
       await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
@@ -589,7 +601,7 @@ export default class UploadHandler {
     try {
       await Promise.all(assetsToDelete.map((asset) => {
         const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
-        return this.actionBinder.serviceHandler.deleteCallToService(url, accessToken, this.actionBinder.getAdditionalHeaders() || {});
+        return this.httpUtils.deleteCallToService(url, accessToken, this.actionBinder.getAdditionalHeaders() || {});
       }));
     } catch (error) {
       await this.actionBinder.dispatchErrorToast('upload_warn_delete_asset', 0, 'Failed to delete one or all assets', true, true, {

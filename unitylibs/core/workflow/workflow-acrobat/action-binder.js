@@ -12,6 +12,7 @@ import {
   getHeaders,
   getApiCallOptions
 } from '../../../scripts/utils.js';
+import HttpUtils from '../../../utils/httpUtils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
@@ -24,169 +25,96 @@ const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
-export const RETRY_CONFIG = {
-  exponential: {
-    type: 'exponential',
-    retryParams: {
-      maxRetries: 4,
-      retryDelay: 1000
-    },
-  },
-  finalizePolling: {
-    type: 'server-polling',
-    retryParams: {
-      maxRetryDelay: 300,
-      defaultRetryDelay: 5,
-    },
-  },
-  metadataPolling: {
-    type: 'server-polling',
-    retryParams: {
-      maxRetryDelay: 5000,
-      defaultRetryDelay: 500,
-    }
-  }
-};
+// class ServiceHandler {
+//   handleAbortedRequest(url, options) {
+//     if (!(options?.signal?.aborted)) return;
+//     const error = new Error(`Request to ${url} aborted by user.`);
+//     error.name = 'AbortError';
+//     error.status = 0;
+//     throw error;
+//   }
 
-class ServiceHandler {
-  handleAbortedRequest(url, options) {
-    if (!(options?.signal?.aborted)) return;
-    const error = new Error(`Request to ${url} aborted by user.`);
-    error.name = 'AbortError';
-    error.status = 0;
-    throw error;
-  }
+//   async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+//     const controller = new AbortController();
+//     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+//     const passedSignal = options.signal || controller.signal;
+//     const mergedOptions = { ...options, signal: passedSignal };
+//     try {
+//       const response = await fetch(url, mergedOptions);
+//       clearTimeout(timeout);
+//       return response;
+//     } catch (e) {
+//       clearTimeout(timeout);
+//       if (e.name === 'AbortError') {
+//         const error = new Error(`Request timed out after ${timeoutMs}ms`);
+//         error.name = 'TimeoutError';
+//         throw error;
+//       }
+//       throw e;
+//     }
+//   }
 
-  async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const passedSignal = options.signal || controller.signal;
-    const mergedOptions = { ...options, signal: passedSignal };
-    //const mergedOptions = { ...options, signal: controller.signal };
-    try {
-      const response = await fetch(url, mergedOptions);
-      clearTimeout(timeout);
-      return response;
-    } catch (e) {
-      clearTimeout(timeout);
-      if (e.name === 'AbortError') {
-        const error = new Error(`Request timed out after ${timeoutMs}ms`);
-        error.name = 'TimeoutError';
-        throw error;
-      }
-      throw e;
-    }
-  }
+//   async afterFetchFromService(response) {
+//     const contentLength = response.headers.get('Content-Length');
+//     if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) return { status: response.status, headers: response.headers };
+//     if (response.status !== 200) {
+//       let errorMessage = `Error fetching from service. URL: ${url}`;
+//       if (contentLength !== '0') {
+//         try {
+//           const responseJson = await response.json();
+//           ['quotaexceeded', 'notentitled'].forEach((errorType) => {
+//             if (responseJson.reason?.includes(errorType)) errorMessage = errorType;
+//           });
+//         } catch {
+//           errorMessage = `Failed to parse JSON response. URL: ${url}`;
+//         }
+//       }
+//       const error = new Error(errorMessage);
+//       error.status = response.status;
+//       throw error;
+//     }
+//     if (contentLength === '0') return {};
+//     return response.json();
+//   }
 
-  async afterFetchFromService(response) {
-    const contentLength = response.headers.get('Content-Length');
-    if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) return { status: response.status, headers: response.headers };
-    if (response.status !== 200) {
-      let errorMessage = `Error fetching from service. URL: ${url}`;
-      if (contentLength !== '0') {
-        try {
-          const responseJson = await response.json();
-          ['quotaexceeded', 'notentitled'].forEach((errorType) => {
-            if (responseJson.reason?.includes(errorType)) errorMessage = errorType;
-          });
-        } catch {
-          errorMessage = `Failed to parse JSON response. URL: ${url}`;
-        }
-      }
-      const error = new Error(errorMessage);
-      error.status = response.status;
-      throw error;
-    }
-    if (contentLength === '0') return {};
-    return response.json();
-  }
+//   async errorAfterFetchFromService(url, options, e) {
+//     this.handleAbortedRequest(url, options);
+//       if (e instanceof TypeError) {
+//         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
+//         error.status = 0;
+//         throw error;
+//       } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+//         const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
+//         error.status = 504;
+//         throw error;
+//       }
+//       throw e;
+//     }
 
-  async errorAfterFetchFromService(url, options, e) {
-    this.handleAbortedRequest(url, options);
-      if (e instanceof TypeError) {
-        const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
-        error.status = 0;
-        throw error;
-      } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
-        error.status = 504;
-        throw error;
-      }
-      throw e;
-    }
+//   async fetchFromService(url, options, afterFetch, onError) {
+//     try {
+//       if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
+//       const response = await this.fetchWithTimeout(url, options, 60000);
+//       if (afterFetch) return await afterFetch(response);
+//       else return await this.afterFetchFromService(response);
+//     } catch (e) {
+//       if (onError) await onError(e);
+//       else await this.errorAfterFetchFromService(url, options, e);
+//     }
+//   }
 
-  async fetchFromService(url, options, afterFetch, onError) {
-    try {
-      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
-      const response = await this.fetchWithTimeout(url, options, 60000);
-      if (afterFetch) return await afterFetch(response);
-      else return await this.afterFetchFromService(response);
-    } catch (e) {
-      if (onError) await onError(e);
-      else await this.errorAfterFetchFromService(url, options, e);
-    }
-  }
-
-  async fetchFromServiceWithRetry(url, options, retryMechanism, afterFetch, onError) {
-    if ( retryMechanism.type === 'server-polling') {
-      let timeLapsed = 0;
-      const maxRetryDelay = retryMechanism.retryParams?.maxRetryDelay || 300;
-      while (timeLapsed < maxRetryDelay) {
-        this.handleAbortedRequest(url, options);
-        const response = await this.fetchFromService(url, options, false);
-        if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) {
-          const retryDelay = parseInt(response.headers.get('retry-after'), 10) || retryMechanism.retryParams?.defaultRetryDelay || 5;
-          await new Promise((resolve) => {
-            setTimeout(resolve, retryDelay * 1000);
-          });
-          timeLapsed += retryDelay;
-        } else {
-          return afterFetch ? await afterFetch(response) : response;
-        }
-      }
-      const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-      timeoutError.status = 504;
-      throw timeoutError;
-    }
-    else if (retryMechanism.type === 'exponential') {
-      const maxRetries = retryMechanism.retryParams?.maxRetries || 4;
-      const retryDelay = retryMechanism.retryParams?.retryDelay || 1000;
-      let error = null;
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const afterFetchWithAttempt = afterFetch ? (response) => afterFetch(response, attempt) : null;
-          const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
-          const response = await this.fetchFromService(url, options, false, afterFetchWithAttempt, onErrorWithAttempt);
-          if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) continue;
-          return { response, attempt };
-        } catch (err) {
-         // if (err.name === 'AbortError') throw err;
-          error = err;
-        }
-        if (attempt < maxRetries) {
-          const delay = retryDelay;
-          await new Promise((resolve) => { setTimeout(resolve, delay); });
-          retryDelay *= 2;
-        }
-      }
-      if (error) error.message += ', Max retry delay exceeded during upload';
-      else error = new Error('Max retry delay exceeded during upload');
-      throw error;
-    }
-  }
-
-  async deleteCallToService(url, accessToken, additionalHeaders = {}) {
-    const options = {
-      method: 'DELETE',
-      headers: {
-        ...additionalHeaders,
-        Authorization: accessToken,
-        'x-api-key': 'unity',
-      },
-    };
-    return this.fetchFromService(url, options);
-  }
-}
+//   async deleteCallToService(url, accessToken, additionalHeaders = {}) {
+//     const options = {
+//       method: 'DELETE',
+//       headers: {
+//         ...additionalHeaders,
+//         Authorization: accessToken,
+//         'x-api-key': 'unity',
+//       },
+//     };
+//     return this.fetchFromService(url, options);
+//   }
+// }
 
 export default class ActionBinder {
   static SINGLE_FILE_ERROR_MESSAGES = {
@@ -316,7 +244,7 @@ export default class ActionBinder {
     this.limits = {};
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
-    this.serviceHandler = new ServiceHandler();
+    this.httpUtilsObj = new HttpUtils();
     this.uploadHandler = null;
     this.splashScreenEl = null;
     this.transitionScreen = null;
@@ -573,10 +501,9 @@ export default class ActionBinder {
   async getRedirectUrl(cOpts) {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
-      this.serviceHandler.fetchFromServiceWithRetry(
+      this.httpUtilsObj.fetchFromServiceWithExponentialRetry(
         this.acrobatApiConfig.connectorApiEndPoint,
         postOpts,
-        RETRY_CONFIG.exponential
       ),
     );
     await Promise.all(this.promiseStack)
@@ -638,7 +565,7 @@ export default class ActionBinder {
 
   async initUploadHandler() {
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+    this.uploadHandler = new UploadHandler(this, this.httpUtilsObj);
   }
 
   async getMimeType(file) {
