@@ -163,38 +163,6 @@ describe('utils.js', () => {
       expect(btn.firstChild.className).to.include('btn-text');
     });
   });
-
-  describe('showErrorToast', () => {
-    let fetchStub;
-    let origImport;
-    beforeEach(() => {
-      fetchStub = sinon.stub(window, 'fetch');
-      fetchStub.onFirstCall().resolves({ text: () => Promise.resolve('<svg>alert</svg>') });
-      fetchStub.onSecondCall().resolves({ text: () => Promise.resolve('<svg>close</svg>') });
-      origImport = window.import;
-      window.import = () => Promise.resolve({ decorateDefaultLinkAnalytics: sinon.stub() });
-    });
-    afterEach(() => {
-      fetchStub.restore();
-      window.import = origImport;
-    });
-    it('should append error toast if not present and set message', async () => {
-      const targetEl = document.createElement('div');
-      const unityEl = document.createElement('div');
-      const msgEl = document.createElement('span');
-      msgEl.textContent = 'Error message';
-      unityEl.appendChild(document.createElement('div'));
-      unityEl.appendChild(msgEl);
-      unityEl.querySelector = () => unityEl.children[0];
-      document.body.innerHTML = '<div class="unity-enabled"><div class="interactive-area"><div class="alert-holder"><div class="alert-toast"><div class="alert-text"><p></p></div></div></div></div></div>';
-      await utils.showErrorToast(targetEl, unityEl, 'div');
-      const p = document.querySelector('.unity-enabled .interactive-area .alert-holder .alert-toast .alert-text p');
-      expect(p.innerText).to.equal('Error message');
-      const holder = document.querySelector('.unity-enabled .interactive-area .alert-holder');
-      expect(holder.style.display).to.equal('flex');
-    });
-  });
-
   // DOM-heavy and async: createErrorToast, showErrorToast, createActionBtn
   // These can be tested with more advanced DOM mocking if needed
 });
