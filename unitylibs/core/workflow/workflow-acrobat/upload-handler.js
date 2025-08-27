@@ -3,7 +3,6 @@
 /* eslint-disable no-restricted-syntax */
 
 import { unityConfig, getUnityLibs, getGuestAccessToken, getFlatObject, getApiCallOptions } from '../../../scripts/utils.js';
-import { RETRY_CONFIG } from '../../../utils/httpUtils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, httpUtils) {
@@ -153,7 +152,7 @@ export default class UploadHandler {
             const { attempt } = await this.httpUtils.fetchFromServiceWithExponentialRetry(
               url.href,
               putOpts,
-              RETRY_CONFIG.default,
+              this.actionBinder.workflowCfg.targetCfg.retryConfig.default,
               this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType),
               this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt)
             );
@@ -188,7 +187,7 @@ export default class UploadHandler {
       const finalizeJson = await this.httpUtils.fetchFromServiceWithServerPollingRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset, 
         finalizeOpts,
-        RETRY_CONFIG.finalizePolling
+        this.actionBinder.workflowCfg.targetCfg.retryConfig.finalizePolling
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -254,7 +253,7 @@ export default class UploadHandler {
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
       
-      const modifiedRetryConfig = {...RETRY_CONFIG.metadataPolling}
+      const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.retryConfig.metadataPolling}
       modifiedRetryConfig.extraRetryCheck = async(response) => {
         const {status} = response;
         const {numPages} = await response.json();

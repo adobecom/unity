@@ -23,6 +23,26 @@
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
     "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
     "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
-    "mfuUploadOnlyPdfAllowed": ["combine-pdf"]
+    "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
+    "retryConfig": {
+      "finalizePolling": {
+        "retryParams": {
+          "maxRetryDelay": 300,
+          "defaultRetryDelay": 5
+        }
+      },
+      "metadataPolling": {
+        "retryParams": {
+          "maxRetryDelay": 5000,
+          "defaultRetryDelay": 500
+        }
+      },
+      "default": {
+        "retryParams": {
+          "maxRetries": 4,
+          "retryDelay": 1000
+        }
+      }
+    }
   }
 }

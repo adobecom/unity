@@ -1,42 +1,4 @@
-export const RETRY_CONFIG = {
-    finalizePolling: {
-      retryParams: {
-        maxRetryDelay: 300,
-        defaultRetryDelay: 5,
-      },
-    },
-    metadataPolling: {
-      retryParams: {
-        maxRetryDelay: 5000,
-        defaultRetryDelay: 500,
-      }
-    },
-    default: {
-        retryParams: {
-          maxRetries: 4,
-          retryDelay: 1000
-        },
-    },
-};
 
-export const HTTP_METHODS = {
-    GET: 'GET',
-    POST: 'POST',
-    PUT: 'PUT',
-    DELETE: 'DELETE',
-};
-
-export const HTTP_STATUS_CODES = {
-    OK: 200,
-    CREATED: 201,
-    ACCEPTED: 202,
-    NO_CONTENT: 204,
-};
-
-export const HTTP_ERROR_CODES = {
-    QUOTA_EXCEEDED: 'quotaexceeded',
-    NOT_ENTITLED: 'notentitled',
-};
 
 export default class HttpUtils {
 
@@ -123,7 +85,7 @@ export default class HttpUtils {
         }
     }
 
-    async fetchFromServiceWithExponentialRetry(url, options, retryConfig=RETRY_CONFIG.default, onSuccess, onError) {
+    async fetchFromServiceWithExponentialRetry(url, options, retryConfig={ retryParams: { maxRetries: 4, retryDelay: 1000 } }, onSuccess, onError) {
         const maxRetries = retryConfig.retryParams?.maxRetries || 4;
         let retryDelay = retryConfig.retryParams?.retryDelay || 1000;
         let error = null;
