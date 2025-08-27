@@ -88,7 +88,7 @@ export default class HttpUtils {
           throw error;
         }
         if (contentLength === '0') return {};
-        return response.json();
+        return response;
       }
 
     async errorAfterFetchFromService(url, options, e) {
@@ -125,24 +125,30 @@ export default class HttpUtils {
 
     async fetchFromServiceWithExponentialRetry(url, options, retryConfig=RETRY_CONFIG.default, onSuccess, onError) {
         const maxRetries = retryConfig.retryParams?.maxRetries || 4;
-        const retryDelay = retryConfig.retryParams?.retryDelay || 1000;
+        let retryDelay = retryConfig.retryParams?.retryDelay || 1000;
         let error = null;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            const onSuccessWithAttempt = onSuccess ? (response) => onSuccess(response, attempt) : null;
-            const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
-            const response = await this.fetchFromService(url, options, onSuccessWithAttempt, onErrorWithAttempt);
-            if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) continue;
-            return { response, attempt };
-          } catch (err) {
-           // if (err.name === 'AbortError') throw err;
-            error = err;
-          }
-          if (attempt < maxRetries) {
-            const delay = retryDelay;
-            await new Promise((resolve) => { setTimeout(resolve, delay); });
-            retryDelay *= 2;
-          }
+            try {
+                const onSuccessWithAttempt = onSuccess ? (response) => onSuccess(response, attempt) : null;
+                const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
+                const response = await this.fetchFromService(url, options, onSuccessWithAttempt, onErrorWithAttempt);
+                if ((response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) && attempt < maxRetries) {
+                    const delay = retryDelay;
+                    await new Promise((resolve) => { setTimeout(resolve, delay); });
+                    retryDelay *= 2;
+                    continue;
+                };
+                let responseData;
+                try {
+                    responseData = await response.json();
+                } catch {
+                    responseData = response;
+                }
+                return { response: responseData, attempt };
+            } catch (err) {
+                // if (err.name === 'AbortError') throw err;
+                error = err;
+            }
         }
         if (error) error.message += ', Max retry delay exceeded during upload';
         else error = new Error('Max retry delay exceeded during upload');

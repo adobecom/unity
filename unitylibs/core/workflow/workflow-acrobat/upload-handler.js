@@ -56,7 +56,7 @@ export default class UploadHandler {
         size: `${blobData.size}`,
         type: `${fileType}`,
       });
-      return { response, attempt };
+      return response;
     }
    
     const error = new Error(response.statusText || 'Upload request failed');
@@ -570,16 +570,6 @@ export default class UploadHandler {
       },
     };
     return this.actionBinder.handleRedirect(cOpts, filesData);
-  }
-
-  async uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, maxConcurrentChunks) {
-    const uploadResult = await this.chunkPdf(
-      assetDataArray,
-      blobDataArray,
-      fileTypeArray,
-      maxConcurrentChunks,
-    );
-    return assetDataArray.filter((_, index) => !uploadResult.has(index));
   }
 
   async processUploadedAssets(uploadedAssets) {
