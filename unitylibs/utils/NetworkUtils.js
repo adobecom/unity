@@ -1,4 +1,4 @@
-export default class HttpUtils {
+export default class NetworkUtils {
 
     handleAbortedRequest(url, options) {
         if (!(options?.signal?.aborted)) return;

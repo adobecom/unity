@@ -11,7 +11,7 @@ import {
   isGuestUser,
   getApiCallOptions
 } from '../../../scripts/utils.js';
-import HttpUtils from '../../../utils/httpUtils.js';
+import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
@@ -152,7 +152,7 @@ export default class ActionBinder {
     this.limits = {};
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
-    this.httpUtils = new HttpUtils();
+    this.networkUtils = new NetworkUtils();
     this.uploadHandler = null;
     this.splashScreenEl = null;
     this.transitionScreen = null;
@@ -409,7 +409,7 @@ export default class ActionBinder {
   async getRedirectUrl(cOpts) {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
-      this.httpUtils.fetchFromServiceWithRetry(
+      this.networkUtils.fetchFromServiceWithRetry(
         this.acrobatApiConfig.connectorApiEndPoint,
         postOpts,
       ),
@@ -473,7 +473,7 @@ export default class ActionBinder {
 
   async initUploadHandler() {
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.httpUtils);
+    this.uploadHandler = new UploadHandler(this, this.networkUtils);
   }
 
   async getMimeType(file) {
