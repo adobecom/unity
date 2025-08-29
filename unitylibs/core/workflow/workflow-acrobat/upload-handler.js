@@ -26,7 +26,7 @@ export default class UploadHandler {
       ...(workflowId && { workflowId }),
     };
     const getOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(data) });
-    const { response } = await this.httpUtils.fetchFromServiceWithExponentialRetry(
+    const { response } = await this.httpUtils.fetchFromServiceWithRetry(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       getOpts
     );
@@ -149,10 +149,10 @@ export default class UploadHandler {
               signal,
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
-            const { attempt } = await this.httpUtils.fetchFromServiceWithExponentialRetry(
+            const { attempt } = await this.httpUtils.fetchFromServiceWithRetry(
               url.href,
               putOpts,
-              this.actionBinder.workflowCfg.targetCfg.retryConfig.default,
+              this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default,
               this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType),
               this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt)
             );
@@ -184,10 +184,10 @@ export default class UploadHandler {
         this.actionBinder.getAdditionalHeaders() || {}, 
         { body: JSON.stringify(finalAssetData), signal }
       );
-      const finalizeJson = await this.httpUtils.fetchFromServiceWithServerPollingRetry(
+      const finalizeJson = await this.httpUtils.fetchFromServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset, 
         finalizeOpts,
-        this.actionBinder.workflowCfg.targetCfg.retryConfig.finalizePolling
+        this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -253,14 +253,17 @@ export default class UploadHandler {
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
       
-      const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.retryConfig.metadataPolling}
+      const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata}
       modifiedRetryConfig.extraRetryCheck = async(response) => {
-        const {status} = response;
-        const {numPages} = await response.json();
-        if (status === 200 && !numPages) return true;
+        try {
+          const {numPages} = await response.json();
+          if (response.status === 200 && !numPages) return true;
+        } catch {
+          return false;
+        }
         return false;
       }
-      return await this.httpUtils.fetchFromServiceWithServerPollingRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
+      return await this.httpUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
     } catch (e) {
       await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
@@ -586,11 +589,11 @@ export default class UploadHandler {
 
   async deleteFailedAssets(assetsToDelete) {
     if (assetsToDelete.length === 0) return;
-    const accessToken = await getGuestAccessToken();
     try {
-      await Promise.all(assetsToDelete.map((asset) => {
+      await Promise.all(assetsToDelete.map(async (asset) => {
         const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset}?id=${asset.id}`;
-        return this.httpUtils.deleteCallToService(url, accessToken, this.actionBinder.getAdditionalHeaders() || {});
+        const deleteOpts = await getApiCallOptions('DELETE', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
+        return this.httpUtils.fetchFromServiceWithRetry(url, deleteOpts);
       }));
     } catch (error) {
       await this.actionBinder.dispatchErrorToast('upload_warn_delete_asset', 0, 'Failed to delete one or all assets', true, true, {

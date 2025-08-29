@@ -1,5 +1,3 @@
-
-
 export default class HttpUtils {
 
     handleAbortedRequest(url, options) {
@@ -85,7 +83,15 @@ export default class HttpUtils {
         }
     }
 
-    async fetchFromServiceWithExponentialRetry(url, options, retryConfig={ retryParams: { maxRetries: 4, retryDelay: 1000 } }, onSuccess, onError) {
+    async fetchFromServiceWithRetry(url, options, retryConfig={ retryType: 'exponential', retryParams: { maxRetries: 4, retryDelay: 1000 } }, onSuccess, onError) {
+        if (retryConfig.retryType === 'exponential') {
+            return await this.fetchFromServiceWithExponentialRetry(url, options, retryConfig, onSuccess, onError);
+        } else if (retryConfig.retryType === 'polling') {
+            return await this.fetchFromServiceWithServerPollingRetry(url, options, retryConfig, onSuccess, onError);
+        }
+    }
+
+    async fetchFromServiceWithExponentialRetry(url, options, retryConfig, onSuccess, onError) {
         const maxRetries = retryConfig.retryParams?.maxRetries || 4;
         let retryDelay = retryConfig.retryParams?.retryDelay || 1000;
         let error = null;
@@ -125,7 +131,7 @@ export default class HttpUtils {
             const response = await this.fetchFromService(url, options, null, onError);
             const {status, headers} = response;
             const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(response);
-            if (status === 202 || (status >= 500 && status < 600) || status === 429 || customRetryCheckResult) {
+            if (customRetryCheckResult || status === 202 || (status >= 500 && status < 600) || status === 429) {
                 const retryDelay = parseInt(headers.get('retry-after'), 10) || retryConfig.retryParams?.defaultRetryDelay || 5;
                 await new Promise((resolve) => { setTimeout(resolve, retryDelay * 1000); });
                 timeLapsed += retryDelay;
@@ -138,15 +144,15 @@ export default class HttpUtils {
         throw timeoutError;
     }
   
-    async deleteCallToService(url, accessToken, additionalHeaders = {}) {
-      const options = {
-        method: 'DELETE',
-        headers: {
-          ...additionalHeaders,
-          Authorization: accessToken,
-          'x-api-key': 'unity',
-        },
-      };
-      return this.fetchFromServiceWithExponentialRetry(url, options);
-    }
+    // async deleteCallToService(url, accessToken, additionalHeaders = {}) {
+    //   const options = {
+    //     method: 'DELETE',
+    //     headers: {
+    //       ...additionalHeaders,
+    //       Authorization: accessToken,
+    //       'x-api-key': 'unity',
+    //     },
+    //   };
+    //   return this.fetchFromServiceWithExponentialRetry(url, options);
+    // }
   }

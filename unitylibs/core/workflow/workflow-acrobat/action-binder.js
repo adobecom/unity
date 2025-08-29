@@ -9,7 +9,6 @@ import {
   getUnityLibs,
   priorityLoad,
   isGuestUser,
-  getHeaders,
   getApiCallOptions
 } from '../../../scripts/utils.js';
 import HttpUtils from '../../../utils/httpUtils.js';
@@ -24,97 +23,6 @@ const DOS_SPECIAL_NAMES = new Set([
 const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
-
-// class ServiceHandler {
-//   handleAbortedRequest(url, options) {
-//     if (!(options?.signal?.aborted)) return;
-//     const error = new Error(`Request to ${url} aborted by user.`);
-//     error.name = 'AbortError';
-//     error.status = 0;
-//     throw error;
-//   }
-
-//   async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
-//     const controller = new AbortController();
-//     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-//     const passedSignal = options.signal || controller.signal;
-//     const mergedOptions = { ...options, signal: passedSignal };
-//     try {
-//       const response = await fetch(url, mergedOptions);
-//       clearTimeout(timeout);
-//       return response;
-//     } catch (e) {
-//       clearTimeout(timeout);
-//       if (e.name === 'AbortError') {
-//         const error = new Error(`Request timed out after ${timeoutMs}ms`);
-//         error.name = 'TimeoutError';
-//         throw error;
-//       }
-//       throw e;
-//     }
-//   }
-
-//   async afterFetchFromService(response) {
-//     const contentLength = response.headers.get('Content-Length');
-//     if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) return { status: response.status, headers: response.headers };
-//     if (response.status !== 200) {
-//       let errorMessage = `Error fetching from service. URL: ${url}`;
-//       if (contentLength !== '0') {
-//         try {
-//           const responseJson = await response.json();
-//           ['quotaexceeded', 'notentitled'].forEach((errorType) => {
-//             if (responseJson.reason?.includes(errorType)) errorMessage = errorType;
-//           });
-//         } catch {
-//           errorMessage = `Failed to parse JSON response. URL: ${url}`;
-//         }
-//       }
-//       const error = new Error(errorMessage);
-//       error.status = response.status;
-//       throw error;
-//     }
-//     if (contentLength === '0') return {};
-//     return response.json();
-//   }
-
-//   async errorAfterFetchFromService(url, options, e) {
-//     this.handleAbortedRequest(url, options);
-//       if (e instanceof TypeError) {
-//         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
-//         error.status = 0;
-//         throw error;
-//       } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-//         const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
-//         error.status = 504;
-//         throw error;
-//       }
-//       throw e;
-//     }
-
-//   async fetchFromService(url, options, afterFetch, onError) {
-//     try {
-//       if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
-//       const response = await this.fetchWithTimeout(url, options, 60000);
-//       if (afterFetch) return await afterFetch(response);
-//       else return await this.afterFetchFromService(response);
-//     } catch (e) {
-//       if (onError) await onError(e);
-//       else await this.errorAfterFetchFromService(url, options, e);
-//     }
-//   }
-
-//   async deleteCallToService(url, accessToken, additionalHeaders = {}) {
-//     const options = {
-//       method: 'DELETE',
-//       headers: {
-//         ...additionalHeaders,
-//         Authorization: accessToken,
-//         'x-api-key': 'unity',
-//       },
-//     };
-//     return this.fetchFromService(url, options);
-//   }
-// }
 
 export default class ActionBinder {
   static SINGLE_FILE_ERROR_MESSAGES = {
@@ -244,7 +152,7 @@ export default class ActionBinder {
     this.limits = {};
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
-    this.httpUtilsObj = new HttpUtils();
+    this.httpUtils = new HttpUtils();
     this.uploadHandler = null;
     this.splashScreenEl = null;
     this.transitionScreen = null;
@@ -501,7 +409,7 @@ export default class ActionBinder {
   async getRedirectUrl(cOpts) {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
-      this.httpUtilsObj.fetchFromServiceWithExponentialRetry(
+      this.httpUtils.fetchFromServiceWithRetry(
         this.acrobatApiConfig.connectorApiEndPoint,
         postOpts,
       ),
@@ -565,7 +473,7 @@ export default class ActionBinder {
 
   async initUploadHandler() {
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.httpUtilsObj);
+    this.uploadHandler = new UploadHandler(this, this.httpUtils);
   }
 
   async getMimeType(file) {
