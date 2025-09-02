@@ -413,6 +413,7 @@ export default class UploadHandler {
     let cOpts = {};
     let blobData; let assetData;
     try {
+      await this.actionBinder.ensureOptimalEndpoint();
       [blobData, assetData] = await Promise.all([
         this.getBlobData(file),
         this.createAsset(file),
@@ -570,6 +571,7 @@ export default class UploadHandler {
     const blobDataArray = [];
     const assetDataArray = [];
     const fileTypeArray = [];
+    await this.actionBinder.ensureOptimalEndpoint();
     await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
       try {
         const [blobData, assetData] = await Promise.all([

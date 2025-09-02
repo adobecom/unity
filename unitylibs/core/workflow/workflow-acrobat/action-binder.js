@@ -346,12 +346,74 @@ export default class ActionBinder {
   }
 
   getAcrobatApiConfig() {
+    console.log('getAcrobatApiConfig called');
     unityConfig.acrobatEndpoint = {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
       getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      connector: `${unityConfig.apiEndPoint}/asset/connector`,
     };
     return unityConfig;
+  }
+
+  async ensureOptimalEndpoint() {
+    // Ensure pageConfig has resolved before making API calls
+    if (this.pageConfigPromise) {
+      console.log('Waiting for pageConfig to complete before making any API calls...');
+      const startTime = performance.now();
+      await this.pageConfigPromise;
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      console.log(`PageConfig wait took ${duration.toFixed(2)}ms - API endpoints ready`);
+      // Clear promise after use
+      this.pageConfigPromise = null;
+    }
+  }
+
+  async checkandUpdatePageConfigEndpoint() {
+    const TIMEOUT_MS = 2000; // 2000ms timeout
+
+    try {
+      // Setup timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('PageConfig request timed out, using default endpoint');
+      }, TIMEOUT_MS);
+
+      const getOpts = {
+        method: 'GET',
+        headers: await getHeaders(unityConfig.apiKey, {}),
+        signal: controller.signal,
+      };
+      const url = `${unityConfig.apiEndPoint}/pageConfig`;
+      
+      const pageConfigResponse = await fetch(url, getOpts);
+      clearTimeout(timeoutId);
+      
+      if (pageConfigResponse.ok) {
+        const locationHeader = pageConfigResponse.headers.get('location');
+        if (locationHeader) {
+          const newEndpoint = `${locationHeader}/api/v1`;
+          
+          // Update config
+          unityConfig.apiEndPoint = newEndpoint;
+          this.acrobatApiConfig = this.getAcrobatApiConfig();
+          
+          console.log('PageConfig endpoint updated:', newEndpoint);
+        } else {
+          console.log('No location header found, keeping existing API endpoint');
+        }
+      } else {
+        console.warn(`PageConfig GET request returned status: ${pageConfigResponse.status}`);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.warn('PageConfig request timed out, continuing with default endpoint');
+      } else {
+        console.error('PageConfig GET request failed:', error);
+      }
+    }
   }
 
   getAdditionalHeaders() {
@@ -542,7 +604,7 @@ export default class ActionBinder {
   async getRedirectUrl(cOpts) {
     this.promiseStack.push(
       this.serviceHandler.postCallToService(
-        this.acrobatApiConfig.connectorApiEndPoint,
+        this.acrobatApiConfig.acrobatEndpoint.connector,
         { body: JSON.stringify(cOpts) },
         this.getAdditionalHeaders(),
       ),
@@ -735,6 +797,8 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    console.log('Starting pageConfig fetch during upload initiation...');
+    this.pageConfigPromise = this.checkandUpdatePageConfigEndpoint();
     await this.loadTransitionScreen();
     await this.handlePreloads();
     if (this.signedOut === undefined) {
@@ -797,6 +861,7 @@ export default class ActionBinder {
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
+    console.log('initActionListeners called');
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
