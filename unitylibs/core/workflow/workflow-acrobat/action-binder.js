@@ -687,6 +687,7 @@ export default class ActionBinder {
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
     await this.initUploadHandler();
+    await this.ensureOptimalEndpoint();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
     } else {
