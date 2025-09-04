@@ -365,8 +365,6 @@ export default class ActionBinder {
       const endTime = performance.now();
       const duration = endTime - startTime;
       console.log(`PageConfig wait took ${duration.toFixed(2)}ms - API endpoints ready`);
-      // Clear promise after use
-      this.pageConfigPromise = null;
     }
   }
 
