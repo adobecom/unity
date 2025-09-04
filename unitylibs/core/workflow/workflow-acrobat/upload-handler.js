@@ -15,7 +15,6 @@ export default class UploadHandler {
   }
 
   async createAsset(file, multifile = false, workflowId = null) {
-    let assetData = null;
     const data = {
       surfaceId: unityConfig.surfaceId,
       targetProduct: this.actionBinder.workflowCfg.productName,
@@ -30,6 +29,7 @@ export default class UploadHandler {
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       getOpts
     );
+    console.log("Asset create : ", response);
     return response;
   }
 
@@ -57,7 +57,6 @@ export default class UploadHandler {
       });
       return response;
     }
-   
     const error = new Error(response.statusText || 'Upload request failed');
     error.status = response.status;
     await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true, true, {
@@ -65,8 +64,8 @@ export default class UploadHandler {
       subCode: chunkNumber,
       desc: `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes; status: ${response.status}`,
     });
+    if (attempt < this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default.retryParams.maxRetries) return response;
     throw error;
-    
   }
 
   async errorAfterUploadFileToUnity(assetId, blobData, chunkNumber, e) {
@@ -149,10 +148,15 @@ export default class UploadHandler {
               signal,
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
+            const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default}
+            modifiedRetryConfig.extraRetryCheck = async(response) => {
+                if(!response.ok) return true;
+                return false;
+            }
             const { attempt } = await this.networkUtils.fetchFromServiceWithRetry(
               url.href,
               putOpts,
-              this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default,
+              modifiedRetryConfig,
               this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType),
               this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt)
             );
@@ -230,6 +234,7 @@ export default class UploadHandler {
   async checkPageNumCount(assetData, isMultiFile = false) {
     try {
       const handleMetadata = async (metadata) => {
+        console.log(metadata);
         if (this.actionBinder?.limits?.pageLimit?.maxNumPages
           && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
         ) {
@@ -248,19 +253,14 @@ export default class UploadHandler {
         }
         return false;
       };
-      
       const queryString = new URLSearchParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
       
       const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata}
-      modifiedRetryConfig.extraRetryCheck = async(response) => {
-        try {
-          const {numPages} = await response.json();
-          if (response.status === 200 && !numPages) return true;
-        } catch {
-          return false;
-        }
+      modifiedRetryConfig.extraRetryCheck = async(responseStatus,responseJson) => {
+        const {numPages} = responseJson;
+        if (responseStatus === 200 && !numPages) return true;
         return false;
       }
       return await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);

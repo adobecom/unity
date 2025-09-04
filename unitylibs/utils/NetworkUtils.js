@@ -28,9 +28,8 @@ export default class NetworkUtils {
         }
     }
 
-    async afterFetchFromService(response) {
+    async afterFetchFromService(url, response) {
         const contentLength = response.headers.get('Content-Length');
-        if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) return { status: response.status, headers: response.headers };
         if (response.status !== 200) {
           let errorMessage = `Error fetching from service. URL: ${url}`;
           if (contentLength !== '0') {
@@ -70,13 +69,8 @@ export default class NetworkUtils {
             if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
             const response = await this.fetchWithTimeout(url, options, 60000);
             if (onSuccess) return await onSuccess(response);
-            else return await this.afterFetchFromService(response);
-            // if (response.status !== 200) {
-            //     const error = new Error();
-            //     error.status = response.status;
-            //     throw error;
-            // }
-            // return response;
+            else if (response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) return response;
+            else return await this.afterFetchFromService(url, response);
         } catch (e) {
             if (onError) await onError(e);
             else await this.errorAfterFetchFromService(url, options, e);
@@ -94,17 +88,21 @@ export default class NetworkUtils {
     async fetchFromServiceWithExponentialRetry(url, options, retryConfig, onSuccess, onError) {
         const maxRetries = retryConfig.retryParams?.maxRetries || 4;
         let retryDelay = retryConfig.retryParams?.retryDelay || 1000;
-        let error = null;
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
+        try {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 const onSuccessWithAttempt = onSuccess ? (response) => onSuccess(response, attempt) : null;
                 const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
-                const response = await this.fetchFromService(url, options, onSuccessWithAttempt, onErrorWithAttempt);
-                if ((response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429) && attempt < maxRetries) {
+                let response = await this.fetchFromService(url, options, onSuccessWithAttempt, onErrorWithAttempt);
+                const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(response);
+                if ((customRetryCheckResult || response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429)) {
+                    if (attempt < maxRetries) {
                     const delay = retryDelay;
-                    await new Promise((resolve) => { setTimeout(resolve, delay); });
-                    retryDelay *= 2;
-                    continue;
+                        await new Promise((resolve) => { setTimeout(resolve, delay); });
+                        retryDelay *= 2;
+                        continue;
+                    } else {
+                        response = await this.afterFetchFromService(url, response);
+                    }
                 };
                 let responseData;
                 try {
@@ -113,46 +111,48 @@ export default class NetworkUtils {
                     responseData = response;
                 }
                 return { response: responseData, attempt };
-            } catch (err) {
-                // if (err.name === 'AbortError') throw err;
-                error = err;
-            }
+            } 
+        } catch (error) {
+            if (error) error.message += ', Max retry delay exceeded for URL: ' + url;
+            else error = new Error('Max retry delay exceeded for URL: ' + url);
+            throw error;
         }
-        if (error) error.message += ', Max retry delay exceeded during upload';
-        else error = new Error('Max retry delay exceeded during upload');
-        throw error;
     }
     
     async fetchFromServiceWithServerPollingRetry(url, options, retryConfig, onSuccess, onError) {
         const maxRetryDelay = retryConfig.retryParams?.maxRetryDelay || 300;
         let timeLapsed = 0;
-        while (timeLapsed < maxRetryDelay) {
-            this.handleAbortedRequest(url, options);
-            const response = await this.fetchFromService(url, options, null, onError);
-            const {status, headers} = response;
-            const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(response);
-            if (customRetryCheckResult || status === 202 || (status >= 500 && status < 600) || status === 429) {
-                const retryDelay = parseInt(headers.get('retry-after'), 10) || retryConfig.retryParams?.defaultRetryDelay || 5;
-                await new Promise((resolve) => { setTimeout(resolve, retryDelay * 1000); });
-                timeLapsed += retryDelay;
-            } else {
-                return onSuccess ? await onSuccess(response) : response;
-            }
+        let response;
+        try {
+            while (timeLapsed < maxRetryDelay) {
+                this.handleAbortedRequest(url, options);
+                response = await this.fetchFromService(url, options, null, onError);
+                const {status, headers} = response;
+                let responseJson = {};
+                if (response.body) {
+                    const contentLength = headers.get('Content-Length');
+                    if (contentLength !== '0') {
+                        try {
+                            responseJson = await response.json();
+                        } catch (e) {
+                            responseJson = {};
+                        }
+                    }
+                }
+                const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(status,responseJson);
+                if (customRetryCheckResult || status === 202 || (status >= 500 && status < 600) || status === 429) {
+                    const retryDelay = parseInt(headers.get('retry-after'), 10) || retryConfig.retryParams?.defaultRetryDelay || 5;
+                    await new Promise((resolve) => { setTimeout(resolve, retryDelay ); });
+                    timeLapsed += retryDelay;
+                } else {
+                    return onSuccess ? await onSuccess(responseJson) : response;
+                }
+            } 
+            return await this.afterFetchFromService(url, response);
+        } catch (error) {
+            if (error) error.message += ', Max retry delay exceeded for URL: ' + url;
+            else error = new Error('Max retry delay exceeded for URL: ' + url);
+            throw error;
         }
-        const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-        timeoutError.status = 504;
-        throw timeoutError;
     }
-  
-    // async deleteCallToService(url, accessToken, additionalHeaders = {}) {
-    //   const options = {
-    //     method: 'DELETE',
-    //     headers: {
-    //       ...additionalHeaders,
-    //       Authorization: accessToken,
-    //       'x-api-key': 'unity',
-    //     },
-    //   };
-    //   return this.fetchFromServiceWithExponentialRetry(url, options);
-    // }
   }

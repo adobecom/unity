@@ -28,8 +28,8 @@
       "finalizeAsset": {
         "retryType": "polling",
         "retryParams": {
-          "maxRetryDelay": 300,
-          "defaultRetryDelay": 5
+          "maxRetryDelay": 300000,
+          "defaultRetryDelay": 5000
         }
       },
       "getMetadata": {
