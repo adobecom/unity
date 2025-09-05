@@ -192,6 +192,7 @@ class WfInitiator {
           'pdf-to-excel',
           'pdf-to-ppt',
           'pdf-to-image',
+          'pdf-to-png',
           'createpdf',
           'word-to-pdf',
           'excel-to-pdf',
@@ -261,7 +262,7 @@ class WfInitiator {
   }
 }
 
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
+export default async function init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = 'us', langCode = 'en') {
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
