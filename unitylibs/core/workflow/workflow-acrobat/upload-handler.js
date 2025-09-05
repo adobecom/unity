@@ -149,10 +149,7 @@ export default class UploadHandler {
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
             const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default}
-            modifiedRetryConfig.extraRetryCheck = async(response) => {
-                if(!response.ok) return true;
-                return false;
-            }
+            modifiedRetryConfig.extraRetryCheck = async(response) => !response.ok
             const { attempt } = await this.networkUtils.fetchFromServiceWithRetry(
               url.href,
               putOpts,
@@ -258,11 +255,8 @@ export default class UploadHandler {
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
       
       const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata}
-      modifiedRetryConfig.extraRetryCheck = async(responseStatus,responseJson) => {
-        const {numPages} = responseJson;
-        if (responseStatus === 200 && !numPages) return true;
-        return false;
-      }
+      modifiedRetryConfig.extraRetryCheck = async(responseStatus, responseJson) => 
+        responseStatus === 200 && !responseJson.numPages
       return await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
     } catch (e) {
       await this.showSplashScreen();

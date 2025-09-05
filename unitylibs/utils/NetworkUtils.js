@@ -20,9 +20,9 @@ export default class NetworkUtils {
         } catch (e) {
             clearTimeout(timeout);
             if (e.name === 'AbortError') {
-            const error = new Error(`Request timed out after ${timeoutMs}ms`);
-            error.name = 'TimeoutError';
-            throw error;
+                const error = new Error(`Request timed out after ${timeoutMs}ms`);
+                error.name = 'TimeoutError';
+                throw error;
             }
             throw e;
         }
@@ -49,6 +49,15 @@ export default class NetworkUtils {
         if (contentLength === '0') return {};
         return response;
       }
+
+    async getResponseJson(response, fallbackValue = {}) {
+        if (!response.body || response.headers?.get('Content-Length') === '0') return fallbackValue;
+        try {
+            return await response.json();
+        } catch (e) {
+            return fallbackValue;
+        }
+    }
 
     async errorAfterFetchFromService(url, options, e) {
         this.handleAbortedRequest(url, options);
@@ -104,12 +113,7 @@ export default class NetworkUtils {
                         response = await this.afterFetchFromService(url, response);
                     }
                 };
-                let responseData;
-                try {
-                    responseData = await response.json();
-                } catch {
-                    responseData = response;
-                }
+                const responseData = await this.getResponseJson(response, response);
                 return { response: responseData, attempt };
             } 
         } catch (error) {
@@ -128,17 +132,7 @@ export default class NetworkUtils {
                 this.handleAbortedRequest(url, options);
                 response = await this.fetchFromService(url, options, null, onError);
                 const {status, headers} = response;
-                let responseJson = {};
-                if (response.body) {
-                    const contentLength = headers.get('Content-Length');
-                    if (contentLength !== '0') {
-                        try {
-                            responseJson = await response.json();
-                        } catch (e) {
-                            responseJson = {};
-                        }
-                    }
-                }
+                const responseJson = await this.getResponseJson(response);
                 const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(status,responseJson);
                 if (customRetryCheckResult || status === 202 || (status >= 500 && status < 600) || status === 429) {
                     const retryDelay = parseInt(headers.get('retry-after'), 10) || retryConfig.retryParams?.defaultRetryDelay || 5;
