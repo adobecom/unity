@@ -702,6 +702,28 @@ export default class UploadHandler {
   async multiFileUserUpload(files, filesData) {
     try {
       await this.showSplashScreen(true);
+      // Special-case for pdf-to-png (signed-in): mirror guest behavior
+      if (this.actionBinder.workflowCfg.enabledFeatures[0] === 'pdf-to-png') {
+        const pdfFiles = files.filter((file) => this.isPdf(file));
+        const nonPdfFiles = files.filter((file) => !this.isPdf(file));
+        if (pdfFiles.length === 1 && nonPdfFiles.length >= 1) {
+          this.actionBinder.multiFileValidationFailure = true;
+          const fileData = { type: 'mixed', size: filesData.size, count: 1, uploadType: 'mfu' };
+          await this.uploadMultiFile([pdfFiles[0]], fileData);
+          this.actionBinder.uploadTimestamp = Date.now();
+          this.actionBinder.dispatchAnalyticsEvent('uploaded', fileData);
+          return;
+        }
+        if (pdfFiles.length >= 2) {
+          await this.actionBinder.delay(3000);
+          this.actionBinder.LOADER_LIMIT = 85;
+          this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
+          const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('multifile'), filesData);
+          if (!redirectSuccess) return;
+          this.actionBinder.redirectWithoutUpload = true;
+          return;
+        }
+      }
       await this.uploadMultiFile(files, filesData);
     } catch (e) {
       await this.dispatchGenericError(`Exception raised when uploading multiple files for a signed-in user; ${e.message}, Files data: ${JSON.stringify(filesData)}`, e.showError);
