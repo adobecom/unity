@@ -653,6 +653,19 @@ export default class UploadHandler {
   async multiFileGuestUpload(files, filesData) {
     try {
       await this.showSplashScreen(true);
+      // Special-case for pdf-to-png: if exactly 1 PDF and >=1 non-PDFs, upload only the PDF
+      if (this.actionBinder.workflowCfg.enabledFeatures[0] === 'pdf-to-png') {
+        const pdfFiles = files.filter((file) => this.isPdf(file));
+        const nonPdfFiles = files.filter((file) => !this.isPdf(file));
+        if (pdfFiles.length === 1 && nonPdfFiles.length >= 1) {
+          // Ensure feedback=uploaderror is propagated on redirect
+          this.actionBinder.multiFileValidationFailure = true;
+          const fileData = { type: 'mixed', size: filesData.size, count: 1, uploadType: 'mfu' };
+          await this.uploadMultiFile([pdfFiles[0]], fileData);
+          return;
+        }
+        // For 2+ PDFs (with or without non-PDFs) fall through to default feedback redirect below
+      }
       const nonpdfMfuFeedbackScreenTypeNonpdf = this.actionBinder.workflowCfg.targetCfg.nonpdfMfuFeedbackScreenTypeNonpdf.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
       if (nonpdfMfuFeedbackScreenTypeNonpdf) {
         const allNonPdf = files.every((file) => !this.isPdf(file));
