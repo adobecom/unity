@@ -44,5 +44,15 @@ module.exports = {
       },
       tags: '@firefly @smoke @regression @unity @nopr',
     },
+    {
+      tcid: '4',
+      name: '@fireflyVectorGeneration',
+      path: '/products/firefly?georouting=off',
+      data: {
+        inputPlaceholder: 'Describe what you want to generate',
+        inputPrompt: 'Modern vector logo of a coffee cup, minimal lines, scalable.',
+      },
+      tags: '@firefly @smoke @regression @unity @nopr',
+    },
   ],
 };

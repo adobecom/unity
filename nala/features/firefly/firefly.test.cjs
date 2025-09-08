@@ -17,7 +17,7 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-1: Go to Firefly test page', async () => {
       await page.goto(`${baseURL}${features[0].path}${unityLibs}`, { waitUntil: 'load' });
-      await page.waitForLoadState('domcontentloaded');
+      await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(`${baseURL}${features[0].path}${unityLibs}`);
     });
 
@@ -26,13 +26,12 @@ test.describe('Firefly test suite', () => {
       await expect(fireflyPage.imageVerbButton).toBeVisible();
       await expect(fireflyPage.promptInput).toBeVisible();
       await expect(fireflyPage.generateImageButton).toBeVisible();
-
       const actualText = await fireflyPage.promptInput.getAttribute('placeholder');
       expect(actualText.trim()).toBe(data.inputPlaceholder);
     });
 
     await test.step('step-3: Verify prompt suggestions', async () => {
-      await fireflyPage.promptInput.fill(data.inputPrompt);
+      await fireflyPage.fillPromptAndWaitForSuggestions(data.inputPrompt);
       await expect(fireflyPage.promptSuggestions).toBeVisible();
     });
 
@@ -54,7 +53,7 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-1: Go to Firefly test page', async () => {
       await page.goto(`${baseURL}${features[1].path}${unityLibs}`, { waitUntil: 'load' });
-      await page.waitForLoadState('domcontentloaded');
+      await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(`${baseURL}${features[1].path}${unityLibs}`);
     });
 
@@ -68,7 +67,6 @@ test.describe('Firefly test suite', () => {
       await expect(fireflyPage.videoVerbButton).toBeVisible();
       await expect(fireflyPage.promptInput).toBeVisible();
       await expect(fireflyPage.generateVideoButton).toBeVisible();
-
       const actualText = await fireflyPage.promptInput.getAttribute('placeholder');
       expect(actualText.trim()).toBe(data.inputPlaceholder);
     });
@@ -96,7 +94,7 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-1: Go to Firefly test page', async () => {
       await page.goto(`${baseURL}${features[2].path}${unityLibs}`, { waitUntil: 'load' });
-      await page.waitForLoadState('domcontentloaded');
+      await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(`${baseURL}${features[2].path}${unityLibs}`);
     });
 
@@ -108,25 +106,14 @@ test.describe('Firefly test suite', () => {
     });
 
     await test.step('step-3 Generate video', async () => {
-      await fireflyPage.promptInput.fill(data.inputPrompt);
+      await fireflyPage.fillPromptForGeneration(data.inputPrompt);
       await fireflyPage.generateVideoButton.click({ noWaitAfter: true });
       await page.waitForTimeout(3000);
-
-      // Wait until the final URL is reached
-      await page.waitForURL(
-        (url) => url.hostname.includes('firefly')
-        && url.pathname.includes('/generate/video')
-        && url.searchParams.get('ff_campaign') === 'embed_generate_acom',
-        { waitUntil: 'load', timeout: 30000 },
-      );
-
-      // Verify the URL parameters
       const currentUrl = page.url();
-      console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
-      expect(urlObj.hostname).toContain('firefly');
-      expect(urlObj.pathname).toContain('/generate/video');
-      expect(urlObj.searchParams.get('ff_campaign')).toBe('embed_generate_acom');
+      expect(urlObj.hostname).toContain('firefly-stage');
+      expect(urlObj.pathname).toBe('/hub');
+      expect(currentUrl).toContain('VideoGeneration');
     });
   });
 
@@ -136,7 +123,7 @@ test.describe('Firefly test suite', () => {
     const { data } = features[3];
     await test.step('step-1: Go to Firefly test page', async () => {
       await page.goto(`${baseURL}${features[3].path}${unityLibs}`, { waitUntil: 'load' });
-      await page.waitForLoadState('domcontentloaded');
+      await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(`${baseURL}${features[3].path}${unityLibs}`);
     });
     await test.step('step-2: Verify Firefly Image Generation verb content/specs', async () => {
@@ -144,25 +131,41 @@ test.describe('Firefly test suite', () => {
       await expect(fireflyPage.imageVerbButton).toBeVisible();
     });
     await test.step('step-3 Generate image', async () => {
-      await fireflyPage.promptInput.fill(data.inputPrompt);
+      await fireflyPage.fillPromptForGeneration(data.inputPrompt);
       await fireflyPage.generateImageButton.click({ noWaitAfter: true });
       await page.waitForTimeout(3000);
-
-      // Wait until the final URL is reached
-      await page.waitForURL(
-        (url) => url.hostname.includes('firefly')
-        && url.pathname.includes('/generate/image')
-        && url.searchParams.get('ff_campaign') === 'embed_generate_acom',
-        { waitUntil: 'load', timeout: 30000 },
-      );
-
-      // Verify the URL parameters
       const currentUrl = page.url();
-      console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
-      expect(urlObj.hostname).toContain('firefly');
-      expect(urlObj.pathname).toContain('/generate/image');
-      expect(urlObj.searchParams.get('ff_campaign')).toBe('embed_generate_acom');
+      expect(urlObj.hostname).toContain('firefly-stage');
+      expect(urlObj.pathname).toBe('/hub');
+      expect(currentUrl).toContain('ImageGeneration');
+    });
+  });
+
+  // Test 4 : Firefly Vector Generation
+  test(`${features[4].name},${features[4].tags}`, async ({ page, baseURL }) => {
+    console.info(`[Test Page]: ${baseURL}${features[4].path}${unityLibs}`);
+    const { data } = features[4];
+    await test.step('step-1: Go to Firefly test page', async () => {
+      await page.goto(`${baseURL}${features[4].path}${unityLibs}`, { waitUntil: 'load' });
+      await page.waitForLoadState('networkidle');
+      await expect(page).toHaveURL(`${baseURL}${features[4].path}${unityLibs}`);
+    });
+    await test.step('step-2: Verify Firefly Vector Generation verb content/specs', async () => {
+      await expect(fireflyPage.unityWrapper).toBeVisible();
+      await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
+      await fireflyPage.vectorVerbLink.waitFor({ state: 'visible', timeout: 10000 });
+      await fireflyPage.vectorVerbLink.click({ noWaitAfter: true });
+    });
+    await test.step('step-3 Generate vector', async () => {
+      await fireflyPage.fillPromptForGeneration(data.inputPrompt);
+      await fireflyPage.generateVectorButton.click({ noWaitAfter: true });
+      await page.waitForTimeout(3000);
+      const currentUrl = page.url();
+      const urlObj = new URL(currentUrl);
+      expect(urlObj.hostname).toContain('firefly-stage');
+      expect(urlObj.pathname).toBe('/hub');
+      expect(currentUrl).toContain('VectorGeneration');
     });
   });
 });
