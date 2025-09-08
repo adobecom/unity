@@ -1,5 +1,4 @@
 export default class NetworkUtils {
-
     handleAbortedRequest(url, options) {
         if (!(options?.signal?.aborted)) return;
         const error = new Error(`Request to ${url} aborted by user.`);

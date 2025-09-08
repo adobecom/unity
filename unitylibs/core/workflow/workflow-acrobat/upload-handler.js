@@ -29,7 +29,6 @@ export default class UploadHandler {
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
       getOpts
     );
-    console.log("Asset create : ", response);
     return response;
   }
 
@@ -46,51 +45,51 @@ export default class UploadHandler {
     return blob;
   }
 
-  async afterUploadFileToUnity(assetId, blobData, chunkNumber, fileType, response, attempt) {
-    if (response.ok) {
+  async afterUploadFileToUnity(uploaduploadParams) {
+    if (uploaduploadParams.response.ok) {
       this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
-        chunkUploadAttempt: attempt,
-        assetId,
-        chunkNumber,
-        size: `${blobData.size}`,
-        type: `${fileType}`,
+        chunkUploadAttempt: uploaduploadParams.attempt,
+        assetId: uploaduploadParams.assetId,
+        chunkNumber: uploaduploadParams.chunkNumber,
+        size: `${uploaduploadParams.blobData.size}`,
+        type: `${uploaduploadParams.fileType}`,
       });
-      return response;
+      return uploaduploadParams.response;
     }
-    const error = new Error(response.statusText || 'Upload request failed');
-    error.status = response.status;
-    await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', response.status, `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes`, true, true, {
+    const error = new Error(uploaduploadParams.response.statusText || 'Upload request failed');
+    error.status = uploaduploadParams.response.status;
+    await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', uploaduploadParams.response.status, `Failed when uploading chunk to storage; ${uploaduploadParams.response.statusText}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`, true, true, {
       code: 'upload_warn_chunk_upload',
-      subCode: chunkNumber,
-      desc: `Failed when uploading chunk to storage; ${response.statusText}, ${assetId}, ${blobData.size} bytes; status: ${response.status}`,
+      subCode: uploaduploadParams.chunkNumber,
+      desc: `Failed when uploading chunk to storage; ${uploaduploadParams.response.statusText}, ${uploaduploadParams.assetId}, ${uploaduploadParams.blobData.size} bytes; status: ${uploaduploadParams.response.status}`,
     });
-    if (attempt < this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default.retryParams.maxRetries) return response;
+    if (uploadParams.attempt < this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default.retryuploadParams.maxRetries) return uploadParams.response;
     throw error;
   }
 
-  async errorAfterUploadFileToUnity(assetId, blobData, chunkNumber, e) {
-    if (e.name === 'AbortError') throw e;
-    else if (e instanceof TypeError) {
-      const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes;  Error message: ${e.message}`;
+  async errorAfterUploadFileToUnity(uploadParams) {
+    if (uploadParams.error.name === 'AbortError') throw uploadParams.error;
+    else if (uploadParams.error instanceof TypeError) {
+      const errorMessage = `Network error. Asset ID: ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes;  Error message: ${uploadParams.error.message}`;
       await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 0, `Exception raised when uploading chunk to storage; ${errorMessage}`, true, true, {
         code: 'upload_warn_chunk_upload',
-        subCode: chunkNumber,
-        desc: `Exception raised when uploading chunk to storage; ${errorMessage}; status: ${e.status}`,
+        subCode: uploadParams.chunkNumber,
+        desc: `Exception raised when uploading chunk to storage; ${errorMessage}; status: ${uploadParams.error.status}`,
       });
-    } else if (['Timeout'].includes(e.name)) {
-      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 504, `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes`, true, true, {
+    } else if (['Timeout'].includes(uploadParams.error.name)) {
+      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', 504, `Timeout when uploading chunk to storage; ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`, true, true, {
         code: 'upload_warn_chunk_upload',
-        subCode: chunkNumber,
-        desc: `Timeout when uploading chunk to storage; ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
+        subCode: uploadParams.chunkNumber,
+        desc: `Timeout when uploading chunk to storage; ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes; status: ${uploadParams.error.status}`,
       });
     } else {
-      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', e.status || 500, `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes`, true, true, {
+      await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', uploadParams.error.status || 500, `Exception raised when uploading chunk to storage; ${uploadParams.error.message}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`, true, true, {
         code: 'upload_warn_chunk_upload',
-        subCode: chunkNumber,
-        desc: `Exception raised when uploading chunk to storage; ${e.message}, ${assetId}, ${blobData.size} bytes; status: ${e.status}`,
+        subCode: uploadParams.chunkNumber,
+        desc: `Exception raised when uploading chunk to storage; ${uploadParams.error.message}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes; status: ${uploadParams.error.status}`,
       });
     }
-    throw e;
+    throw uploadParams.error;
   }
 
   getDeviceType() {
@@ -139,7 +138,7 @@ export default class UploadHandler {
         return async () => {
           if (fileUploadFailed || signal?.aborted) return;
           const urlObj = new URL(url.href);
-          const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
+          const chunkNumber = urlObj.searchuploadParams.get('partNumber') || 0;
           try {
             const putOpts = {
               method: 'PUT',
@@ -149,13 +148,26 @@ export default class UploadHandler {
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
             const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default}
-            modifiedRetryConfig.extraRetryCheck = async(response) => !response.ok
+            modifiedRetryConfig.extraRetryCheck = async(response) => !response.ok           
+            const chunkContext = {
+              assetId: assetData.id,
+              blobData: chunk,
+              chunkNumber: chunkNumberInt,
+              fileType
+            };
             const { attempt } = await this.networkUtils.fetchFromServiceWithRetry(
               url.href,
               putOpts,
               modifiedRetryConfig,
-              this.afterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt, fileType),
-              this.errorAfterUploadFileToUnity.bind(this, assetData.id, chunk, chunkNumberInt)
+              (response, attempt) => this.afterUploadFileToUnity({
+                ...chunkContext,
+                response,
+                attempt
+              }),
+              (error) => this.errorAfterUploadFileToUnity({
+                ...chunkContext,
+                error
+              })
             );
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
@@ -250,7 +262,7 @@ export default class UploadHandler {
         }
         return false;
       };
-      const queryString = new URLSearchParams({ id: assetData.id }).toString();
+      const queryString = new URLSearchuploadParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
       
