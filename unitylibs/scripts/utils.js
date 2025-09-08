@@ -221,47 +221,6 @@ export async function priorityLoad(parr) {
   return Promise.all(promiseArr);
 }
 
-async function createErrorToast() {
-  const [alertImg, closeImg] = await Promise.all([
-    fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
-    fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
-  ]);
-  const errholder = createTag('div', { class: 'alert-holder' });
-  const errdom = createTag('div', { class: 'alert-toast' });
-  const alertContent = createTag('div', { class: 'alert-content' });
-  const alertIcon = createTag('div', { class: 'alert-icon' });
-  const alertText = createTag('div', { class: 'alert-text' });
-  const p = createTag('p', {}, 'Alert Text');
-  alertText.append(p);
-  alertIcon.innerHTML = alertImg;
-  alertIcon.append(alertText);
-  const alertClose = createTag('a', { class: 'alert-close', href: '#' });
-  const alertCloseText = createTag('span', { class: 'alert-close-text' }, 'Close error toast');
-  alertClose.innerHTML = closeImg;
-  alertClose.append(alertCloseText);
-  alertContent.append(alertIcon, alertClose);
-  errdom.append(alertContent);
-  errholder.append(errdom);
-  alertClose.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.target.closest('.alert-holder').style.display = 'none';
-  });
-  const { decorateDefaultLinkAnalytics } = await import(`${miloLibs}/martech/attributes.js`);
-  decorateDefaultLinkAnalytics(errholder);
-  return errholder;
-}
-
-export async function showErrorToast(targetEl, unityEl, className) {
-  const alertHolder = targetEl.querySelector('.alert-holder');
-  if (!alertHolder) {
-    const errorToast = await createErrorToast();
-    targetEl.append(errorToast);
-  }
-  const msg = unityEl.querySelector(className)?.nextSibling.textContent;
-  document.querySelector('.unity-enabled .interactive-area .alert-holder .alert-toast .alert-text p').innerText = msg;
-  document.querySelector('.unity-enabled .interactive-area .alert-holder').style.display = 'flex';
-}
-
 export async function retryRequestUntilProductRedirect(cfg, requestFunction, retryDelay = 1000) {
   while (cfg.continueRetrying) {
     try {
