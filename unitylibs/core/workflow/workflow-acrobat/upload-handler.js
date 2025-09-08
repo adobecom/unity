@@ -45,25 +45,25 @@ export default class UploadHandler {
     return blob;
   }
 
-  async afterUploadFileToUnity(uploaduploadParams) {
-    if (uploaduploadParams.response.ok) {
+  async afterUploadFileToUnity(uploadParams) {
+    if (uploadParams.response.ok) {
       this.actionBinder.dispatchAnalyticsEvent('chunk_uploaded', {
-        chunkUploadAttempt: uploaduploadParams.attempt,
-        assetId: uploaduploadParams.assetId,
-        chunkNumber: uploaduploadParams.chunkNumber,
-        size: `${uploaduploadParams.blobData.size}`,
-        type: `${uploaduploadParams.fileType}`,
+        chunkUploadAttempt: uploadParams.attempt,
+        assetId: uploadParams.assetId,
+        chunkNumber: uploadParams.chunkNumber,
+        size: `${uploadParams.blobData.size}`,
+        type: `${uploadParams.fileType}`,
       });
-      return uploaduploadParams.response;
+      return uploadParams.response;
     }
-    const error = new Error(uploaduploadParams.response.statusText || 'Upload request failed');
-    error.status = uploaduploadParams.response.status;
-    await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', uploaduploadParams.response.status, `Failed when uploading chunk to storage; ${uploaduploadParams.response.statusText}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`, true, true, {
+    const error = new Error(uploadParams.response.statusText || 'Upload request failed');
+    error.status = uploadParams.response.status;
+    await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload', uploadParams.response.status, `Failed when uploading chunk to storage; ${uploadParams.response.statusText}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`, true, true, {
       code: 'upload_warn_chunk_upload',
-      subCode: uploaduploadParams.chunkNumber,
-      desc: `Failed when uploading chunk to storage; ${uploaduploadParams.response.statusText}, ${uploaduploadParams.assetId}, ${uploaduploadParams.blobData.size} bytes; status: ${uploaduploadParams.response.status}`,
+      subCode: uploadParams.chunkNumber,
+      desc: `Failed when uploading chunk to storage; ${uploadParams.response.statusText}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes; status: ${uploadParams.response.status}`,
     });
-    if (uploadParams.attempt < this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default.retryuploadParams.maxRetries) return uploadParams.response;
+    if (uploadParams.attempt < this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default.retryParams.maxRetries) return uploadParams.response;
     throw error;
   }
 
@@ -138,7 +138,7 @@ export default class UploadHandler {
         return async () => {
           if (fileUploadFailed || signal?.aborted) return;
           const urlObj = new URL(url.href);
-          const chunkNumber = urlObj.searchuploadParams.get('partNumber') || 0;
+          const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
           try {
             const putOpts = {
               method: 'PUT',
@@ -262,7 +262,7 @@ export default class UploadHandler {
         }
         return false;
       };
-      const queryString = new URLSearchuploadParams({ id: assetData.id }).toString();
+      const queryString = new URLSearchParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
       
