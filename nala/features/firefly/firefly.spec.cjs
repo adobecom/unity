@@ -11,7 +11,7 @@ module.exports = {
         legalLinkText: 'Adobe Generative AI Terms',
         inputPrompt: 'a beautiful landscape with mountains and a river',
       },
-      tags: '@firefly @smoke @regression @unity @nopr',
+      tags: '@firefly @smoke @regression @unity',
     },
     {
       tcid: '1',
@@ -22,7 +22,7 @@ module.exports = {
         tipDescription: 'Describe a subject, an action, a place, a mood, or a style.',
         legalLinkText: 'Adobe Generative AI Terms',
       },
-      tags: '@firefly @smoke @regression @unity @nopr',
+      tags: '@firefly @smoke @regression @unity',
     },
     {
       tcid: '2',
@@ -32,7 +32,7 @@ module.exports = {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'extreme close-up of an eye blinking, in the reflection of the eye is an entire universe, surreal lighting',
       },
-      tags: '@firefly @smoke @regression @unity @nopr',
+      tags: '@firefly @smoke @regression @unity',
     },
     {
       tcid: '3',
@@ -42,7 +42,7 @@ module.exports = {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'a beautiful landscape with mountains and a river',
       },
-      tags: '@firefly @smoke @regression @unity @nopr',
+      tags: '@firefly @smoke @regression @unity',
     },
     {
       tcid: '4',
@@ -52,7 +52,7 @@ module.exports = {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'Modern vector logo of a coffee cup, minimal lines, scalable.',
       },
-      tags: '@firefly @smoke @regression @unity @nopr',
+      tags: '@firefly @smoke @regression @unity',
     },
   ],
 };
