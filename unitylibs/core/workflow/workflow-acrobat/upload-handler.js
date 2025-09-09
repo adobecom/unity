@@ -243,7 +243,6 @@ export default class UploadHandler {
   async checkPageNumCount(assetData, isMultiFile = false) {
     try {
       const handleMetadata = async (metadata) => {
-        console.log(metadata);
         if (this.actionBinder?.limits?.pageLimit?.maxNumPages
           && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
         ) {
@@ -269,7 +268,11 @@ export default class UploadHandler {
       const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata}
       modifiedRetryConfig.extraRetryCheck = async(responseStatus, responseJson) => 
         responseStatus === 200 && !responseJson.numPages
-      return await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
+      const response = await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
+      if (response.status === 200 && response.maxRetryPassed) {
+        return false;
+      }
+      return response;
     } catch (e) {
       await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
