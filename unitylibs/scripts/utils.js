@@ -112,14 +112,6 @@ export async function isGuestUser() {
   return { isGuest: result.token?.isGuestToken, error: null };
 }
 
-export async function getApiCallOptions(method, apiKey, additionalHeaders = {}, options = {}) {
-  return {
-    method: method,
-    headers: await getHeaders(apiKey, additionalHeaders),
-    ...options,
-  };
-}
-
 export async function getHeaders(apiKey, additionalHeaders = {}) {
   const defaultHeaders = {
     'Content-Type': 'application/json',
