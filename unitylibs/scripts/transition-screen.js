@@ -21,7 +21,7 @@ export default class TransitionScreen {
   }
 
   setProgressTextFromDOM() {
-    const textNodes = Array.from(this.splashScreenEl.querySelector('[class*="progress-bar"]')?.closest('.icon-area, .progress-bar-area')?.childNodes ?? [])
+    const textNodes = Array.from(this.splashScreenEl.querySelector('.icon-area')?.childNodes ?? [])
       .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
     this.progressText = textNodes.map((node) => node.textContent.trim()).join(' ');
     if (this.progressText) TransitionScreen.lastProgressText = this.progressText;
@@ -138,7 +138,7 @@ export default class TransitionScreen {
 
   async handleSplashProgressBar() {
     const pb = TransitionScreen.createProgressBar();
-    this.splashScreenEl.querySelector('[class*="progress-bar"]').replaceWith(pb);
+    this.splashScreenEl.querySelector('.icon-progress-bar').replaceWith(pb);
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
   }
 
@@ -182,29 +182,12 @@ export default class TransitionScreen {
     }
   }
 
-  checkForProgressBar() {
-    const iconSyntax = this.splashScreenEl.querySelector('.icon-progress-bar');
-    const configPlaceholderSyntax = this.splashScreenEl.querySelectorAll('p');
-    if (iconSyntax) return iconSyntax;
-
-    const progressBarParagraph = [...configPlaceholderSyntax].find((p) => p.textContent.includes('[[progress-bar]]'));
-    if (progressBarParagraph) {
-      progressBarParagraph.classList.add('progress-bar-area');
-      progressBarParagraph.textContent = progressBarParagraph.textContent.replace('[[progress-bar]]', '').trim();
-      const progressBarElement = createTag('span', { class: 'progress-bar' });
-      progressBarParagraph.prepend(progressBarElement);
-      return progressBarParagraph;
-    }
-    return null;
-  }
-
   async showSplashScreen(displayOn = false) {
     if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
-      const loadingProgressBar = this.checkForProgressBar();
       const textNodes = this.setProgressTextFromDOM();
       textNodes.forEach((node) => { node.textContent = ''; });
-      if (loadingProgressBar) await this.handleSplashProgressBar();
+      if (this.splashScreenEl.querySelector('.icon-progress-bar')) await this.handleSplashProgressBar();
       if (this.splashScreenEl.querySelector('a.con-button[href*="#_cancel"]')) this.handleOperationCancel();
       this.headingElements = this.splashScreenEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
       this.splashScreenEl.setAttribute('aria-label', this.headingElements[2].innerText);
