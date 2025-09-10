@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-const VERB_DECISION_SCOPE_MAP = { 'add-comment': ['ACOM_UNITY_ACROBAT_EDITPDF_POC'] };
+const VERB_DECISION_SCOPE_MAP = { 'add-comment': ['acom_unity_acrobat_edit-pdf_US'] };
 
 export function getDecisionScopesForVerb(verb) {
   return VERB_DECISION_SCOPE_MAP[verb] || [];
