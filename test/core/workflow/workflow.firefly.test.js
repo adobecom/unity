@@ -1821,7 +1821,7 @@ describe('Firefly Workflow Tests', () => {
       sinon.stub(testActionBinder, 'resetDropdown');
 
       // Mock serviceHandler
-      testActionBinder.serviceHandler = { postCallToService: sinon.stub().resolves({ url: 'test-url' }) };
+      testActionBinder.serviceHandler = { postCallToService: sinon.stub().resolves({ success: true }) };
 
       const input = mockBlock.querySelector('.inp-field');
       input.value = 'test query';
