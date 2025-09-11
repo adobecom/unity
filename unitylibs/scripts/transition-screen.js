@@ -75,7 +75,7 @@ export default class TransitionScreen {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
     const productName = this.workflowCfg.productName.toLowerCase();
     const fragmentLink = this.workflowCfg.name === 'workflow-upload'
-      ? this.workflowCfg.targetCfg.upload.splashScreenConfig[`fragmentLink-${productName}`]
+      ? `${this.workflowCfg.targetCfg.upload.splashScreenConfig.fragmentLink}-${productName}`
       : this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink;
     this.splashFragmentLink = localizeLink(`${window.location.origin}${fragmentLink}`);
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
