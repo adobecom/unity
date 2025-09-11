@@ -79,7 +79,7 @@ export default class ActionBinder {
     this.splashScreenEl = null;
     this.transitionScreen = null;
     this.LOADER_LIMIT = 95;
-    this.limits = workflowCfg.targetCfg.limits;
+    this.limits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`];
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
@@ -293,7 +293,7 @@ export default class ActionBinder {
       img.onload = async () => {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
-        if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
+        if (width > this.limits.maxWidth || height > this.limits.maxHeignt) {
           this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
           this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filedimension' } });
           reject(new Error('Unable to process the file type!'));
