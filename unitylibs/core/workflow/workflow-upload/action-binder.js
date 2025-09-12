@@ -79,7 +79,9 @@ export default class ActionBinder {
     this.splashScreenEl = null;
     this.transitionScreen = null;
     this.LOADER_LIMIT = 95;
-    this.limits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`];
+    const commonLimits = workflowCfg.targetCfg.limits || {};
+    const productLimits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`] || {};
+    this.limits = { ...commonLimits, ...productLimits };
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
