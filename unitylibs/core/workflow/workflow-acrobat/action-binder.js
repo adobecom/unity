@@ -369,7 +369,7 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
       const { getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
       try {
-        const decisionScopes = getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
+        const decisionScopes = await getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
         this.experimentData = await getExperimentData(decisionScopes);
       } catch (error) {
         await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {

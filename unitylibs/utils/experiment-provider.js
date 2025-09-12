@@ -1,8 +1,16 @@
 /* eslint-disable no-underscore-dangle */
-const VERB_DECISION_SCOPE_MAP = { 'add-comment': ['acom_unity_acrobat_edit-pdf_US'] };
 
-export function getDecisionScopesForVerb(verb) {
-  return VERB_DECISION_SCOPE_MAP[verb] || [];
+export async function getDecisionScopesForVerb(verb) {
+  const region = await getRegion().catch(() => undefined);
+  return [`acom_unity_acrobat_${verb}${region ? `_${region}` : ''}`];
+}
+
+export async function getRegion() {
+  const resp = await fetch('https://geo2.adobe.com/json/', { cache: 'no-cache' });
+  if (!resp.ok) throw new Error(`Failed to resolve region: ${resp.statusText}`);
+  const { country } = await resp.json();
+  if (!country) throw new Error('Failed to resolve region: missing country');
+  return country.toLowerCase();
 }
 
 export async function getExperimentData(decisionScopes) {
@@ -26,7 +34,7 @@ export async function getExperimentData(decisionScopes) {
             window._satellite.track('propositionDisplay', TargetPropositionResult.propositions);
             resolve(targetData);
           } else {
-            reject(new Error('Target proposition returned but no valid data found in response structure'));
+            reject(new Error(`Target proposition returned but no valid data for scopes: ${Array.isArray(decisionScopes) ? decisionScopes.join(', ') : decisionScopes}`));
           }
         },
       });
