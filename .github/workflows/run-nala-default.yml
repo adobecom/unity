@@ -10,16 +10,16 @@ on:
       - stage
       - main
     types: [opened, synchronize, reopened]
-  
   workflow_dispatch:
 
 jobs:
   run-nala-tests:
-    name: Running Nala E2E UI Tests
+    name: Running Nala E2E UI Tests : (${{ matrix.browser }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [20.x]
+        browser: [chromium, firefox] # 2 parallel jobs
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -31,11 +31,11 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Set execute permission for nalarun.sh
+      - name: Set execute permission for pr.run.sh
         run: chmod +x ./nala/utils/pr.run.sh
 
-      - name: Run Nala Tests via pr.run.sh
-        run: ./nala/utils/pr.run.sh
+      - name: Run Nala Tests via pr.run.sh (${{ matrix.browser }})
+        run: ./nala/utils/pr.run.sh ${{ matrix.browser }}
         env:
           labels: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
           branch: ${{ github.event.pull_request.head.ref }}
