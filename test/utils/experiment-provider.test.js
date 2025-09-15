@@ -36,7 +36,7 @@ describe('getExperimentData', () => {
   const testErrorScenario = async (expectedErrorMessage, mockSetup) => {
     mockSetup();
     try {
-      await getExperimentData(['ACOM_UNITY_ACROBAT_EDITPDF_POC']);
+      await getExperimentData(['acom_unity_acrobat_add-comment_us']);
       expect.fail('Should have rejected');
     } catch (error) {
       expect(error.message).to.equal(expectedErrorMessage);
@@ -82,21 +82,21 @@ describe('getExperimentData', () => {
 
   it('should reject when target returns empty decisions', async () => {
     await testErrorScenario(
-      'Target proposition returned but no valid data found in response structure',
+      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
       () => setupMock(createMockResult(null, [])),
     );
   });
 
   it('should reject when target returns empty items', async () => {
     await testErrorScenario(
-      'Target proposition returned but no valid data found in response structure',
+      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
       () => setupMock({ decisions: [{ items: [] }] }),
     );
   });
 
   it('should reject when target returns invalid structure', async () => {
     await testErrorScenario(
-      'Target proposition returned but no valid data found in response structure',
+      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
       () => setupMock({ invalid: 'structure' }),
     );
   });
@@ -110,27 +110,38 @@ describe('getExperimentData', () => {
 
   it('should reject when target result is null', async () => {
     await testErrorScenario(
-      'Target proposition returned but no valid data found in response structure',
+      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
       () => setupMock(null),
     );
   });
 
   it('should reject when target result is undefined', async () => {
     await testErrorScenario(
-      'Target proposition returned but no valid data found in response structure',
+      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
       () => setupMock(undefined),
     );
   });
 });
 
 describe('getDecisionScopesForVerb', () => {
-  it('should return decision scopes for known verb', () => {
-    const result = getDecisionScopesForVerb('add-comment');
-    expect(result).to.deep.equal(['ACOM_UNITY_ACROBAT_EDITPDF_POC']);
+  let originalFetch;
+
+  beforeEach(() => {
+    originalFetch = window.fetch;
+    window.fetch = async () => ({ ok: true, json: async () => ({ country: 'US' }) });
   });
 
-  it('should return empty array for unknown verb', () => {
-    const result = getDecisionScopesForVerb('unknown-verb');
-    expect(result).to.deep.equal([]);
+  afterEach(() => {
+    window.fetch = originalFetch;
+  });
+
+  it('should return decision scopes for known verb', async () => {
+    const result = await getDecisionScopesForVerb('add-comment');
+    expect(result).to.deep.equal(['acom_unity_acrobat_add-comment_us']);
+  });
+
+  it('should return decision scopes for unknown verb using region', async () => {
+    const result = await getDecisionScopesForVerb('unknown-verb');
+    expect(result).to.deep.equal(['acom_unity_acrobat_unknown-verb_us']);
   });
 });
