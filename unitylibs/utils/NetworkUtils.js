@@ -134,7 +134,7 @@ export default class NetworkUtils {
                 const responseJson = await this.getResponseJson(response);
                 const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(status,responseJson);
                 if (customRetryCheckResult || status === 202 || (status >= 500 && status < 600) || status === 429) {
-                    const retryDelay = parseInt(headers.get('retry-after'), 10) || retryConfig.retryParams?.defaultRetryDelay || 5;
+                    const retryDelay = (parseInt(headers.get('retry-after'), 10) * 1000) || retryConfig.retryParams?.defaultRetryDelay || 5000;
                     await new Promise((resolve) => { setTimeout(resolve, retryDelay ); });
                     timeLapsed += retryDelay;
                 } else {
