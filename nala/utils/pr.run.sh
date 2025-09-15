@@ -95,9 +95,8 @@ echo "*******************************"
 
 # Navigate to the GitHub Action path and install dependencies
 cd "$GITHUB_ACTION_PATH" || exit
-# Already handled in GitHub Actions workflow:
-# npm ci
-# npx playwright install --with-deps
+npm ci
+npx playwright install --with-deps
 
 # Run Playwright tests on the specific browser project
 echo "*** Running tests on project: $BROWSER ***"
