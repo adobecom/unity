@@ -250,16 +250,16 @@ export default class UploadHandler {
             await this.showSplashScreen();
             await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
           }
-          return true;
+          return { validationFailed: true, pageCount: metadata.numPages };
         }
         if (this.actionBinder?.limits?.pageLimit?.minNumPages
           && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
         ) {
           await this.showSplashScreen();
           await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-          return true; 
+          return { validationFailed: true, pageCount: metadata.numPages }; 
         }
-        return false;
+        return { validationFailed: false, pageCount: metadata.numPages };
       };
       const queryString = new URLSearchParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
@@ -270,7 +270,7 @@ export default class UploadHandler {
         responseStatus === 200 && !responseJson.numPages
       const response = await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
       if (response.status === 200 && response.maxRetryPassed) {
-        return false;
+        return { validationFailed: false, pageCount: response.numPages };
       }
       return response;
     } catch (e) {
@@ -287,11 +287,14 @@ export default class UploadHandler {
 
   async handleValidations(assetData, isMultiFile = false) {
     let validated = true;
+    let pageCount = 0;
+
     for (const limit of Object.keys(this.actionBinder.limits)) {
       switch (limit) {
         case 'pageLimit': {
           const pageLimitRes = await this.checkPageNumCount(assetData, isMultiFile);
-          if (pageLimitRes) {
+          pageCount = pageLimitRes.pageCount;
+          if (pageLimitRes.validationFailed) {
             validated = false;
             if (!isMultiFile) {
               this.actionBinder.operations = [];
@@ -303,7 +306,7 @@ export default class UploadHandler {
           break;
       }
     }
-    return validated;
+    return { validated, pageCount };
   }
 
   async dispatchGenericError(info = null, showError = true) {
@@ -458,8 +461,10 @@ export default class UploadHandler {
     const verified = await this.verifyContent(assetData);
     if (!verified || abortSignal.aborted) return;
     if (isPdf) {
-      const validated = await this.handleValidations(assetData);
-      if (!validated) return;
+      // const validated = await this.handleValidations(assetData);
+      // if (!validated) return;
+      const validationResult = await this.handleValidations(assetData);
+      if (!validationResult.validated) return;
     }
     this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, maxRetryCount: attemptMap?.get(0) || 0 });
@@ -585,14 +590,52 @@ export default class UploadHandler {
 
   async processUploadedAssets(uploadedAssets) {
     const assetsToDelete = [];
+    const assetPageCounts = new Map();
     await this.executeInBatches(uploadedAssets, this.getConcurrentLimits().maxConcurrentFiles, async (assetData) => {
       const verified = await this.verifyContent(assetData);
       if (verified) {
-        const validated = await this.handleValidations(assetData, true);
-        if (!validated) assetsToDelete.push(assetData);
-      } else assetsToDelete.push(assetData);
+        // const validated = await this.handleValidations(assetData, true);
+        // if (!validated) assetsToDelete.push(assetData);
+        const validationResult = await this.handleValidations(assetData, true);
+        if (!validationResult.validated) {
+          assetsToDelete.push(assetData);
+        } else {
+          // Store page count for cumulative validation
+          assetPageCounts.set(assetData.id, validationResult.pageCount);
+        }
+      } else {
+        assetsToDelete.push(assetData);
+      }
     });
-    const verifiedAssets = uploadedAssets.filter((asset) => !assetsToDelete.some((deletedAsset) => deletedAsset.id === asset.id));
+    // const verifiedAssets = uploadedAssets.filter((asset) => !assetsToDelete.some((deletedAsset) => deletedAsset.id === asset.id));
+    
+    let verifiedAssets = uploadedAssets.filter((asset) => !assetsToDelete.some((deletedAsset) => deletedAsset.id === asset.id));
+
+    // Check cumulative page count for multi-file uploads if there are verified assets and cumulative limit is defined
+    if (verifiedAssets.length > 1 && this.actionBinder?.limits?.cumulativePageLimit?.maxCumulativePages) {
+      const maxCumulativePages = this.actionBinder.limits.cumulativePageLimit.maxCumulativePages;
+      let remainingAssets = [...verifiedAssets]; // Work with a copy
+
+      // Calculate initial total pages from assets that passed individual validation
+      let totalPages = remainingAssets
+        .map(asset => assetPageCounts.get(asset.id) || 0)
+        .reduce((sum, pages) => sum + pages, 0);
+
+      // If cumulative limit is exceeded, delete files one by one in order until limit is satisfied
+      while (totalPages > maxCumulativePages && remainingAssets.length > 0) {
+        // Remove the first asset (in order of occurrence)
+        const assetToRemove = remainingAssets.shift();
+        const removedPages = assetPageCounts.get(assetToRemove.id) || 0;
+        totalPages -= removedPages;
+
+        // Mark this asset for deletion
+        assetsToDelete.push(assetToRemove);
+      }
+
+      // Update verifiedAssets with the remaining assets that satisfy cumulative limit
+      verifiedAssets = remainingAssets;
+    }
+
     return { verifiedAssets, assetsToDelete };
   }
 

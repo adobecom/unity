@@ -156,5 +156,10 @@
       "image/gif",
       "image/tiff"
     ]
+  },
+  "cumulative-page-limit-1500": {
+    "cumulativePageLimit": {
+      "maxCumulativePages": 1500
+    }
   }
 }
