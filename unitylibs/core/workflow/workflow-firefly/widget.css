@@ -508,10 +508,6 @@
   justify-content: flex-start;
 }
 
-[lang='ja-JP'] .unity-enabled .interactive-area .verbs-container {
-  min-width: 158px;
-}
-
 .unity-enabled .interactive-area .verbs-container .menu-icon {
   position: relative;
   top: 1px;
