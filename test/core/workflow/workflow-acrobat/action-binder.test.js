@@ -496,7 +496,7 @@ describe('ActionBinder', () => {
         expect(actionBinder.isSameFileType('pdf-to-image', 'image/png')).to.be.true;
       });
 
-      it('should not match image/tiff for pdf-to-image', () => {
+      it('should match image/tiff for pdf-to-image', () => {
         expect(actionBinder.isSameFileType('pdf-to-image', 'image/tiff')).to.be.true;
       });
 
