@@ -7,8 +7,8 @@ module.exports = {
       path: '/drafts/nala/acrobat/online/test/pdf-to-png',
       data: {
         verbTitle: 'Adobe Acrobat',
-        verbHeading: 'Convert a PDF to PNG image',
-        verbCopy: 'Drag and drop a PDF, then convert to JPG, PNG or TIFF file formats.',
+        verbHeading: 'Convert PDF to PNG',
+        verbCopy: 'Drag and drop a PDF file to use our PDF to PNG converter.',
       },
       tags: '@pdf-to-png @smoke @regression @unity',
     },
