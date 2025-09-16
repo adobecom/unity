@@ -107,15 +107,15 @@ elif [[ "$BROWSER" == "firefox" ]]; then
 elif [[ "$BROWSER" == "webkit" ]]; then
   npx playwright test --config=./playwright.config.cjs ${TAGS} ${EXCLUDE_TAGS} --project=unity-live-webkit ${REPORTER} || EXIT_STATUS=$?
 else
-  echo "❌ Unknown or missing browser argument: $BROWSER"
+  echo "missing browser argument: $BROWSER"
   exit 1
 fi
 
 # Check if tests passed or failed
 if [ $EXIT_STATUS -ne 0 ]; then
-  echo "❌ Some tests failed. Exiting with error."
+  echo "Some tests failed. Exiting with error."
   exit $EXIT_STATUS
 else
-  echo "✅ All tests passed successfully on $BROWSER."
+  echo "All tests passed successfully on $BROWSER."
 fi
 echo "*******************************"
