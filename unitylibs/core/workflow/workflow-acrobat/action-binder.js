@@ -212,13 +212,17 @@ export default class ActionBinder {
     });
   }
 
-  getAcrobatApiConfig() {
-    unityConfig.acrobatEndpoint = {
-      createAsset: `${unityConfig.apiEndPoint}/asset`,
-      finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+  getAcrobatApiConfig(newAPIEndpoint) {
+    console.log('getAcrobatApiConfig called');
+    const apiEndPoint = newAPIEndpoint || unityConfig.apiEndPoint;
+    return {
+      acrobatEndpoint: {
+        createAsset: `${apiEndPoint}/asset`,
+        finalizeAsset: `${apiEndPoint}/asset/finalize`,
+        getMetadata: `${apiEndPoint}/asset/metadata`,
+        connector: `${apiEndPoint}/asset/connector`,
+      },
     };
-    return unityConfig;
   }
 
   getAdditionalHeaders() {
@@ -410,7 +414,7 @@ export default class ActionBinder {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
       this.networkUtils.fetchFromServiceWithRetry(
-        this.acrobatApiConfig.connectorApiEndPoint,
+        this.acrobatApiConfig.acrobatEndpoint.connector,
         postOpts,
       ),
     );
@@ -492,6 +496,7 @@ export default class ActionBinder {
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
     await this.initUploadHandler();
+    await this.ensureOptimalEndpoint();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
     } else {
@@ -663,7 +668,45 @@ export default class ActionBinder {
     this.filesData.assetId = assetId;
   }
 
+  async ensureOptimalEndpoint() {
+    // Ensure pageConfig has resolved before making API calls
+    if (this.pageConfigPromise) {
+      console.log('Waiting for pageConfig to complete before making any API calls...');
+      const startTime = performance.now();
+      await this.pageConfigPromise;
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      console.log(`PageConfig wait took ${duration.toFixed(2)}ms - API endpoints ready`);
+    }
+  }
+
+  async checkandUpdatePageConfigEndpoint() {
+    console.log('Starting pageConfig fetch during upload initiation...');
+    try {
+      const TIMEOUT_MS = 5000; // 5000ms timeout
+      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
+      const url = `${unityConfig.apiEndPoint}/pageConfig`;
+      const pageConfigResponse = await this.networkUtils.fetchWithTimeout(url, getOpts, TIMEOUT_MS);
+      if (pageConfigResponse.ok) {
+        const locationHeader = pageConfigResponse.headers.get('location');
+        if (locationHeader) {
+          const newEndpoint = `${locationHeader}/api/v1`;
+          this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint);
+          console.log('PageConfig endpoint updated:', newEndpoint);
+        } else {
+          console.log('No location header found, keeping existing API endpoint');
+        }
+      } else {
+        console.warn(`PageConfig GET request returned status: ${pageConfigResponse.status}`);
+      }
+    } catch (error) {
+        console.error('PageConfig GET request failed:', error);
+      }
+    }
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
+    console.log('initActionListeners called');
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
@@ -694,6 +737,9 @@ export default class ActionBinder {
     }
     if (b === this.block) {
       this.loadTransitionScreen();
+    }
+    if (!this.pageConfigPromise) {
+      this.pageConfigPromise = this.checkandUpdatePageConfigEndpoint();
     }
   }
 }
