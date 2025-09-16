@@ -4,6 +4,7 @@ TAGS=""
 REPORTER=""
 EXCLUDE_TAGS="--grep-invert nopr"
 EXIT_STATUS=0
+BROWSER=$1
 
 echo "GITHUB_REF: $GITHUB_REF"
 echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
@@ -87,6 +88,7 @@ REPORTER=$reporter
 
 echo "Running Nala on branch: $FEATURE_BRANCH "
 echo "Tags : ${TAGS:-"No @tags or annotations on this PR"}"
+echo "Browser: ${BROWSER:-"not provided"}"
 echo "Run Command : npx playwright test ${TAGS} ${EXCLUDE_TAGS} ${REPORTER}"
 echo -e "\n"
 echo "*******************************"
@@ -96,15 +98,24 @@ cd "$GITHUB_ACTION_PATH" || exit
 npm ci
 npx playwright install --with-deps
 
-# Run Playwright tests on the specific projects using root-level playwright.config.js
-# This will be changed later
-echo "*** Running tests on specific projects ***"
-npx playwright test --config=./playwright.config.cjs ${TAGS} ${EXCLUDE_TAGS} --project=unity-live-chromium --project=unity-live-firefox ${REPORTER} || EXIT_STATUS=$?
+# Run Playwright tests on the specific browser project
+echo "*** Running tests on project: $BROWSER ***"
+if [[ "$BROWSER" == "chromium" ]]; then
+  npx playwright test --config=./playwright.config.cjs ${TAGS} ${EXCLUDE_TAGS} --project=unity-live-chromium ${REPORTER} || EXIT_STATUS=$?
+elif [[ "$BROWSER" == "firefox" ]]; then
+  npx playwright test --config=./playwright.config.cjs ${TAGS} ${EXCLUDE_TAGS} --project=unity-live-firefox ${REPORTER} || EXIT_STATUS=$?
+elif [[ "$BROWSER" == "webkit" ]]; then
+  npx playwright test --config=./playwright.config.cjs ${TAGS} ${EXCLUDE_TAGS} --project=unity-live-webkit ${REPORTER} || EXIT_STATUS=$?
+else
+  echo "missing browser argument: $BROWSER"
+  exit 1
+fi
 
 # Check if tests passed or failed
 if [ $EXIT_STATUS -ne 0 ]; then
   echo "Some tests failed. Exiting with error."
   exit $EXIT_STATUS
 else
-  echo "All tests passed successfully."
+  echo "All tests passed successfully on $BROWSER."
 fi
+echo "*******************************"
