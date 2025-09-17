@@ -114,7 +114,7 @@ export async function isGuestUser() {
 
 export async function getApiCallOptions(method, apiKey, additionalHeaders = {}, options = {}) {
   return {
-    method: method,
+    method,
     headers: await getHeaders(apiKey, additionalHeaders),
     ...options,
   };

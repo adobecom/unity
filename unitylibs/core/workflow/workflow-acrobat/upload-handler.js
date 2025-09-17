@@ -27,7 +27,7 @@ export default class UploadHandler {
     const getOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(data) });
     const { response } = await this.networkUtils.fetchFromServiceWithRetry(
       this.actionBinder.acrobatApiConfig.acrobatEndpoint.createAsset,
-      getOpts
+      getOpts,
     );
     return response;
   }
@@ -147,13 +147,13 @@ export default class UploadHandler {
               signal,
             };
             const chunkNumberInt = parseInt(chunkNumber, 10);
-            const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default}
-            modifiedRetryConfig.extraRetryCheck = async(response) => !response.ok           
+            const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default };
+            modifiedRetryConfig.extraRetryCheck = async (response) => !response.ok;
             const chunkContext = {
               assetId: assetData.id,
               blobData: chunk,
               chunkNumber: chunkNumberInt,
-              fileType
+              fileType,
             };
             const { attempt } = await this.networkUtils.fetchFromServiceWithRetry(
               url.href,
@@ -162,12 +162,12 @@ export default class UploadHandler {
               (response, attempt) => this.afterUploadFileToUnity({
                 ...chunkContext,
                 response,
-                attempt
+                attempt,
               }),
               (error) => this.errorAfterUploadFileToUnity({
                 ...chunkContext,
-                error
-              })
+                error,
+              }),
             );
             if (attempt > maxAttempts) maxAttempts = attempt;
             attemptMap.set(fileIndex, maxAttempts);
@@ -192,15 +192,15 @@ export default class UploadHandler {
         assetId: assetData.id,
       };
       const finalizeOpts = await getApiCallOptions(
-        'POST', 
-        unityConfig.apiKey, 
-        this.actionBinder.getAdditionalHeaders() || {}, 
-        { body: JSON.stringify(finalAssetData), signal }
+        'POST',
+        unityConfig.apiKey,
+        this.actionBinder.getAdditionalHeaders() || {},
+        { body: JSON.stringify(finalAssetData), signal },
       );
       const finalizeJson = await this.networkUtils.fetchFromServiceWithRetry(
-        this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset, 
+        this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         finalizeOpts,
-        this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset
+        this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset,
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -257,17 +257,16 @@ export default class UploadHandler {
         ) {
           await this.showSplashScreen();
           await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-          return true; 
+          return true;
         }
         return false;
       };
       const queryString = new URLSearchParams({ id: assetData.id }).toString();
       const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
-      
-      const modifiedRetryConfig = {...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata}
-      modifiedRetryConfig.extraRetryCheck = async(responseStatus, responseJson) => 
-        responseStatus === 200 && !responseJson.numPages
+
+      const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata };
+      modifiedRetryConfig.extraRetryCheck = async (responseStatus, responseJson) => responseStatus === 200 && !responseJson.numPages;
       const response = await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
       if (response.status === 200 && response.maxRetryPassed) {
         return false;

@@ -9,7 +9,7 @@ import {
   getUnityLibs,
   priorityLoad,
   isGuestUser,
-  getApiCallOptions
+  getApiCallOptions,
 } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
 
