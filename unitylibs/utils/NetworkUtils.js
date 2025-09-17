@@ -123,7 +123,7 @@ export default class NetworkUtils {
   }
 
   async fetchFromServiceWithServerPollingRetry(url, options, retryConfig, onSuccess, onError) {
-    const maxRetryDelay = retryConfig.retryParams?.maxRetryDelay || 30000;
+    const maxRetryDelay = retryConfig.retryParams?.maxRetryDelay || 300000;
     let timeLapsed = 0;
     let response;
     try {
