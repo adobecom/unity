@@ -43,7 +43,8 @@
         "retryType": "exponential",
         "retryParams": {
           "maxRetries": 4,
-          "retryDelay": 1000
+          "retryDelay": 1000,
+          "test": "test"
         }
       }
     }
