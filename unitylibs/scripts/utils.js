@@ -113,6 +113,7 @@ export async function isGuestUser() {
 }
 
 export async function getApiCallOptions(method, apiKey, additionalHeaders = {}, options = {}) {
+  let test = 'test';
   return {
     method: method,
     headers: await getHeaders(apiKey, additionalHeaders),
