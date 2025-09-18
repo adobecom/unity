@@ -671,7 +671,7 @@ export default class ActionBinder {
   async ensureOptimalEndpoint() {
     // Ensure pageConfig has resolved before making API calls
     if (this.pageConfigPromise) {
-      console.log('Waiting for pageConfig to complete before making any API calls..');
+      console.log('Waiting for pageConfig to complete before making any API calls');
       const startTime = performance.now();
       await this.pageConfigPromise;
       const endTime = performance.now();
