@@ -24,6 +24,29 @@
     "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
     "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
     "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
-    "experimentationOn": ["add-comment"]
+    "experimentationOn": ["add-comment"],
+    "fetchApiConfig": {
+      "finalizeAsset": {
+        "retryType": "polling",
+        "retryParams": {
+          "maxRetryDelay": 300000,
+          "defaultRetryDelay": 5000
+        }
+      },
+      "getMetadata": {
+        "retryType": "polling",
+        "retryParams": {
+          "maxRetryDelay": 5000,
+          "defaultRetryDelay": 500
+        }
+      },
+      "default": {
+        "retryType": "exponential",
+        "retryParams": {
+          "maxRetries": 4,
+          "retryDelay": 1000
+        }
+      }
+    }
   }
 }
