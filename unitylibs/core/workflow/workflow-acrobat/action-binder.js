@@ -55,6 +55,7 @@ export default class ActionBinder {
     'pdf-to-excel': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'pdf-to-ppt': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
     'pdf-to-image': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
+    'pdf-to-png': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb', 'page-limit-600'],
     createpdf: ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'word-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
@@ -325,6 +326,7 @@ export default class ActionBinder {
       'pdf-to-excel': ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
       'pdf-to-ppt': ['application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
       'pdf-to-image': ['image/jpeg', 'image/png'],
+      'pdf-to-png': ['image/jpeg', 'image/png', 'image/tiff'],
     };
     return verbToFileTypeMap[verb]?.includes(fileType) || false;
   }
