@@ -131,14 +131,13 @@ export default class UnityWidget {
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedVerbType = verbs[0]?.className.split('-')[2];
     const selectedVerb = verbs[0]?.nextElementSibling;
-    const { href } = selectedVerb;
     const selectedElement = createTag('button', {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
       'aria-label': `${selectedVerbType} prompt: ${inputPlaceHolder}`,
       'data-selected-verb': selectedVerbType,
-    }, `<img src="${href}" alt="" />${selectedVerb?.textContent.trim()}`);
+    }, `${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedVerbText = selectedVerb?.textContent.trim();
@@ -146,6 +145,7 @@ export default class UnityWidget {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
     }
+    this.widgetWrap.classList.add('verb-options');
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
     verbList.setAttribute('style', 'display: none;');
