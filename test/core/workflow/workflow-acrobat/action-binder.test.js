@@ -268,7 +268,7 @@ describe('ActionBinder', () => {
         expect(actionBinder.isSameFileType('pdf-to-word', 'application/rtf')).to.be.true;
       });
 
-      it('should match image/png for pdf-to-image', () => {
+      it('should match image/png  for pdf-to-image', () => {
         expect(actionBinder.isSameFileType('pdf-to-image', 'image/png')).to.be.true;
       });
 
