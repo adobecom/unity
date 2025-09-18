@@ -9,8 +9,9 @@ import {
   getUnityLibs,
   priorityLoad,
   isGuestUser,
-  getHeaders,
+  getApiCallOptions,
 } from '../../../scripts/utils.js';
+import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
@@ -22,140 +23,6 @@ const DOS_SPECIAL_NAMES = new Set([
 const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
-
-class ServiceHandler {
-  handleAbortedRequest(url, options) {
-    if (!(options?.signal?.aborted)) return;
-    const error = new Error(`Request to ${url} aborted by user.`);
-    error.name = 'AbortError';
-    error.status = 0;
-    throw error;
-  }
-
-  async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const mergedOptions = { ...options, signal: controller.signal };
-    try {
-      const response = await fetch(url, mergedOptions);
-      clearTimeout(timeout);
-      return response;
-    } catch (e) {
-      clearTimeout(timeout);
-      if (e.name === 'AbortError') {
-        const error = new Error(`Request timed out after ${timeoutMs}ms`);
-        error.name = 'TimeoutError';
-        throw error;
-      }
-      throw e;
-    }
-  }
-
-  async fetchFromService(url, options, canRetry = true) {
-    try {
-      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
-      const response = await this.fetchWithTimeout(url, options, 60000);
-      const contentLength = response.headers.get('Content-Length');
-      if (response.status === 202) return { status: 202, headers: response.headers };
-      if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 1000);
-        });
-        return this.fetchFromService(url, options, false);
-      }
-      if (response.status !== 200) {
-        let errorMessage = `Error fetching from service. URL: ${url}`;
-        if (contentLength !== '0') {
-          try {
-            const responseJson = await response.json();
-            ['quotaexceeded', 'notentitled'].forEach((errorType) => {
-              if (responseJson.reason?.includes(errorType)) errorMessage = errorType;
-            });
-          } catch {
-            errorMessage = `Failed to parse JSON response. URL: ${url}`;
-          }
-        }
-        const error = new Error(errorMessage);
-        error.status = response.status;
-        throw error;
-      }
-      if (contentLength === '0') return {};
-      return response.json();
-    } catch (e) {
-      this.handleAbortedRequest(url, options);
-      if (e instanceof TypeError) {
-        const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
-        error.status = 0;
-        throw error;
-      } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
-        error.status = 504;
-        throw error;
-      }
-      throw e;
-    }
-  }
-
-  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
-    let timeLapsed = 0;
-    while (timeLapsed < maxRetryDelay) {
-      this.handleAbortedRequest(url, options);
-      const response = await this.fetchFromService(url, options, true);
-      if (response.status === 202) {
-        const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
-        await new Promise((resolve) => {
-          setTimeout(resolve, retryDelay * 1000);
-        });
-        timeLapsed += retryDelay;
-      } else {
-        return response;
-      }
-    }
-    const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-    timeoutError.status = 504;
-    throw timeoutError;
-  }
-
-  async postCallToService(api, options, additionalHeaders = {}) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
-      ...options,
-    };
-    return this.fetchFromService(api, postOpts);
-  }
-
-  async postCallToServiceWithRetry(api, options, additionalHeaders = {}) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
-      ...options,
-    };
-    return this.fetchFromServiceWithRetry(api, postOpts);
-  }
-
-  async getCallToService(api, params, additionalHeaders = {}) {
-    const getOpts = {
-      method: 'GET',
-      headers: await getHeaders(unityConfig.apiKey, additionalHeaders),
-    };
-    const queryString = new URLSearchParams(params).toString();
-    const url = `${api}?${queryString}`;
-    return this.fetchFromService(url, getOpts);
-  }
-
-  async deleteCallToService(url, accessToken, additionalHeaders = {}) {
-    const options = {
-      method: 'DELETE',
-      headers: {
-        ...additionalHeaders,
-        Authorization: accessToken,
-        'x-api-key': 'unity',
-      },
-    };
-    return this.fetchFromService(url, options);
-  }
-}
 
 export default class ActionBinder {
   static SINGLE_FILE_ERROR_MESSAGES = {
@@ -285,7 +152,7 @@ export default class ActionBinder {
     this.limits = {};
     this.operations = [];
     this.acrobatApiConfig = this.getAcrobatApiConfig();
-    this.serviceHandler = new ServiceHandler();
+    this.networkUtils = new NetworkUtils();
     this.uploadHandler = null;
     this.splashScreenEl = null;
     this.transitionScreen = null;
@@ -540,16 +407,16 @@ export default class ActionBinder {
   }
 
   async getRedirectUrl(cOpts) {
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
-      this.serviceHandler.postCallToService(
+      this.networkUtils.fetchFromServiceWithRetry(
         this.acrobatApiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(cOpts) },
-        this.getAdditionalHeaders(),
+        postOpts,
       ),
     );
     await Promise.all(this.promiseStack)
       .then(async (resArr) => {
-        const response = resArr[resArr.length - 1];
+        const { response } = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
         this.redirectUrl = response.url;
       })
@@ -606,7 +473,7 @@ export default class ActionBinder {
 
   async initUploadHandler() {
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
-    this.uploadHandler = new UploadHandler(this, this.serviceHandler);
+    this.uploadHandler = new UploadHandler(this, this.networkUtils);
   }
 
   async getMimeType(file) {
