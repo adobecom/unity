@@ -224,7 +224,6 @@ export default class ActionBinder {
         finalizeAsset: `${apiEndPoint}/asset/finalize`,
         getMetadata: `${apiEndPoint}/asset/metadata`,
         connector: `${apiEndPoint}/asset/connector`,
-        pageConfig: `${apiEndPoint}/pageConfig`,
       },
     };
   }
@@ -702,25 +701,9 @@ export default class ActionBinder {
 
   async checkandUpdatePageConfigEndpoint() {
     console.log('Starting pageConfig fetch during upload initiation...');
-    try {
-      const TIMEOUT_MS = 5000; // 5000ms timeout
-      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
-      const pageConfigResponse = await this.networkUtils.fetchWithTimeout(this.acrobatApiConfig.acrobatEndpoint.pageConfig, getOpts, TIMEOUT_MS);
-      if (pageConfigResponse.ok) {
-        const locationHeader = pageConfigResponse.headers.get('location');
-        if (locationHeader) {
-          const newEndpoint = `${locationHeader}/api/v1`;
-          this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint);
-          console.log('PageConfig endpoint updated:', newEndpoint);
-        } else {
-          console.log('No location header found, keeping existing API endpoint');
-        }
-      } else {
-        console.warn(`PageConfig GET request returned status: ${pageConfigResponse.status}`);
-      }
-    } catch (error) {
-      console.error('PageConfig GET request failed:', error);
-    }
+    await this.networkUtils.checkandUpdatePageConfigEndpoint(
+      (newEndpoint) => { this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint); },
+    );
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {

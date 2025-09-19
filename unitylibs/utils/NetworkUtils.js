@@ -1,4 +1,28 @@
+import { unityConfig, getApiCallOptions } from '../scripts/utils.js';
+
 export default class NetworkUtils {
+  async checkandUpdatePageConfigEndpoint(callback) {
+    try {
+      const TIMEOUT_MS = 5000;
+      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
+      const pageConfigResponse = await this.fetchWithTimeout(unityConfig.pageConfig, getOpts, TIMEOUT_MS);
+      if (pageConfigResponse.ok) {
+        const locationHeader = pageConfigResponse.headers.get('location');
+        if (locationHeader) {
+          const newEndpoint = `${locationHeader}/api/v1`;
+          if (typeof callback === 'function') callback(newEndpoint);
+          return;
+        }
+        console.log('No location header found, keeping existing API endpoint');
+      }
+      console.log('pageConfig call failed with status:', pageConfigResponse.status);
+      return;
+    } catch (error) {
+      console.log('pageConfig call failed with error:', error);
+      return;
+    }
+  }
+
   handleAbortedRequest(url, options) {
     if (!(options?.signal?.aborted)) return;
     const error = new Error(`Request to ${url} aborted by user.`);

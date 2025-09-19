@@ -289,12 +289,14 @@ export const unityConfig = (() => {
     prod: {
       apiEndPoint: 'https://unity.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity.adobe.io/api/v1/asset/connector',
+      pageConfig: 'https://unity.adobe.io/api/v1/pageConfig',
       env: 'prod',
       ...commoncfg,
     },
     stage: {
       apiEndPoint: 'https://unity-dev.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity-stage.dev.io/api/v1/asset/connector',
+      pageConfig: 'https://unity-stage.dev.io/api/v1/pageConfig',
       env: 'stage',
       ...commoncfg,
     },
