@@ -700,8 +700,7 @@ export default class ActionBinder {
         console.warn(`PageConfig GET request returned status: ${pageConfigResponse.status}`);
       }
     } catch (error) {
-        console.error('PageConfig GET request failed:', error);
-      }
+      console.error('PageConfig GET request failed:', error);
     }
   }
 
