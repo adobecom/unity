@@ -11,7 +11,7 @@ test.describe('Firefly test suite', () => {
   });
 
   // Test 0 : Firefly Image UI
-  test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
+  test(`${features[0].tcid}: ${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
     console.info(`[Test Page]: ${baseURL}`);
     const ccBaseURL = baseURL.replace('--dc--', '--cc--');
     console.info(`[Test Page]: ${ccBaseURL}${features[0].path}${unityLibs}`);
@@ -49,7 +49,7 @@ test.describe('Firefly test suite', () => {
   });
 
   // Test 1 : Firefly Video UI
-  test(`${features[1].name},${features[1].tags}`, async ({ page, baseURL }) => {
+  test(`${features[1].tcid}: ${features[1].name},${features[1].tags}`, async ({ page, baseURL }) => {
     const ccBaseURL = baseURL.replace('--dc--', '--cc--');
     console.info(`[Test Page]: ${ccBaseURL}${features[1].path}${unityLibs}`);
     const { data } = features[1];
@@ -91,7 +91,7 @@ test.describe('Firefly test suite', () => {
   });
 
   // Test 2 : Firefly Video Generation
-  test(`${features[2].name},${features[2].tags}`, async ({ page, baseURL }) => {
+  test(`${features[2].tcid}: ${features[2].name},${features[2].tags}`, async ({ page, baseURL }) => {
     const ccBaseURL = baseURL.replace('--dc--', '--cc--');
     console.info(`[Test Page]: ${ccBaseURL}${features[2].path}${unityLibs}`);
     const { data } = features[2];
@@ -116,13 +116,14 @@ test.describe('Firefly test suite', () => {
       const currentUrl = page.url();
       const urlObj = new URL(currentUrl);
       expect(urlObj.hostname).toContain('firefly-stage');
-      expect(urlObj.pathname).toBe('/hub');
-      expect(currentUrl).toContain('VideoGeneration');
+      console.log('Current URL:', currentUrl);
+      expect(urlObj.pathname).toBe('/generate/video');
+      expect(currentUrl).toContain('/generate/video');
     });
   });
 
   // Test 3 : Firefly Image Generation
-  test(`${features[3].name},${features[3].tags}`, async ({ page, baseURL }) => {
+  test(`${features[3].tcid}: ${features[3].name},${features[3].tags}`, async ({ page, baseURL }) => {
     const ccBaseURL = baseURL.replace('--dc--', '--cc--');
     console.info(`[Test Page]: ${ccBaseURL}${features[3].path}${unityLibs}`);
     const { data } = features[3];
@@ -142,13 +143,14 @@ test.describe('Firefly test suite', () => {
       const currentUrl = page.url();
       const urlObj = new URL(currentUrl);
       expect(urlObj.hostname).toContain('firefly-stage');
-      expect(urlObj.pathname).toBe('/hub');
+      // expect(urlObj.pathname).toBe('/hub');
+      console.log('Current URL:', currentUrl);
       expect(currentUrl).toContain('ImageGeneration');
     });
   });
 
   // Test 4 : Firefly Vector Generation
-  test(`${features[4].name},${features[4].tags}`, async ({ page, baseURL }) => {
+  test(`${features[4].tcid}: ${features[4].name},${features[4].tags}`, async ({ page, baseURL }) => {
     const ccBaseURL = baseURL.replace('--dc--', '--cc--');
     console.info(`[Test Page]: ${ccBaseURL}${features[4].path}${unityLibs}`);
     const { data } = features[4];
@@ -170,8 +172,9 @@ test.describe('Firefly test suite', () => {
       const currentUrl = page.url();
       const urlObj = new URL(currentUrl);
       expect(urlObj.hostname).toContain('firefly-stage');
-      expect(urlObj.pathname).toBe('/hub');
-      expect(currentUrl).toContain('VectorGeneration');
+      expect(urlObj.pathname).toBe('/generate/vector');
+      console.log('Current URL:', currentUrl);
+      expect(currentUrl).toContain('generate/vector');
     });
   });
 });

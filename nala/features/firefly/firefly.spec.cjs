@@ -47,12 +47,12 @@ module.exports = {
     {
       tcid: '4',
       name: '@fireflyVectorGeneration',
-      path: '/drafts/nala/unity/firefly/video-ui?georouting=off',
+      path: '/drafts/nala/unity/firefly/firefly-vector?georouting=off',
       data: {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'Modern vector logo of a coffee cup, minimal lines, scalable.',
       },
-      tags: '@firefly @smoke @regression @unity',
+      tags: '@firefly-4 @smoke @regression @unity',
     },
   ],
 };
