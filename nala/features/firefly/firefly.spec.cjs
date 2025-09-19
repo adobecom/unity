@@ -3,8 +3,8 @@ module.exports = {
   features: [
     {
       tcid: '0',
-      name: '@fireflyImageUI',
-      path: '/products/firefly?georouting=off',
+      name: '@image-to-text',
+      path: '/drafts/nala/unity/firefly/text-to-image?georouting=off',
       data: {
         inputPlaceholder: 'Describe what you want to generate',
         tipDescription: 'Describe a subject, an action, a place, a mood, or a style.',
@@ -16,7 +16,7 @@ module.exports = {
     {
       tcid: '1',
       name: '@fireflyVideoUI',
-      path: '/products/firefly?georouting=off',
+      path: '/drafts/nala/unity/firefly/video-ui?georouting=off',
       data: {
         inputPlaceholder: 'Describe what you want to generate',
         tipDescription: 'Describe a subject, an action, a place, a mood, or a style.',
@@ -27,7 +27,7 @@ module.exports = {
     {
       tcid: '2',
       name: '@fireflyVideoGeneration',
-      path: '/products/firefly?georouting=off',
+      path: '/drafts/nala/unity/firefly/video-ui?georouting=off',
       data: {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'extreme close-up of an eye blinking, in the reflection of the eye is an entire universe, surreal lighting',
@@ -37,17 +37,17 @@ module.exports = {
     {
       tcid: '3',
       name: '@fireflyImageGeneration',
-      path: '/products/firefly?georouting=off',
+      path: '/drafts/nala/unity/firefly/video-ui?georouting=off',
       data: {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'a beautiful landscape with mountains and a river',
       },
-      tags: '@firefly @smoke @regression @unity',
+      tags: '@firefly-1 @smoke @regression @unity',
     },
     {
       tcid: '4',
       name: '@fireflyVectorGeneration',
-      path: '/products/firefly?georouting=off',
+      path: '/drafts/nala/unity/firefly/video-ui?georouting=off',
       data: {
         inputPlaceholder: 'Describe what you want to generate',
         inputPrompt: 'Modern vector logo of a coffee cup, minimal lines, scalable.',

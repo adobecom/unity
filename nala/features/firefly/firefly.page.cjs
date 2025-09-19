@@ -16,7 +16,8 @@ export default class FireflyPage {
     this.promptSuggestions = this.unityWrapper.locator('ul#prompt-dropdown li.drop-item').first();
     this.tipLabel = this.unityWrapper.locator('span#tip-text');
     this.tipDescription = this.unityWrapper.locator('span#tip-desc');
-    this.legalLink = this.unityWrapper.locator('a.legal-text[href*="adobe-gen-ai-user-guidelines.html"]');
+    this.legalLink = this.unityWrapper.locator('.legal-con a');
+    // this.legalLink = this.unityWrapper.locator('.legal-con a.legal-text[href*="adobe-gen-ai-user-guidelines.html"]');
   }
 
   async fillPromptAndWaitForSuggestions(text) {

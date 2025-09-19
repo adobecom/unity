@@ -12,13 +12,15 @@ test.describe('Firefly test suite', () => {
 
   // Test 0 : Firefly Image UI
   test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[0].path}${unityLibs}`);
+    console.info(`[Test Page]: ${baseURL}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[0].path}${unityLibs}`);
     const { data } = features[0];
 
     await test.step('step-1: Go to Firefly test page', async () => {
-      await page.goto(`${baseURL}${features[0].path}${unityLibs}`, { waitUntil: 'load' });
+      await page.goto(`${ccBaseURL}${features[0].path}${unityLibs}`, { waitUntil: 'load' });
       await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(`${baseURL}${features[0].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[0].path}${unityLibs}`);
     });
 
     await test.step('step-2: Verify Firefly Image verb content/specs', async () => {
@@ -48,13 +50,14 @@ test.describe('Firefly test suite', () => {
 
   // Test 1 : Firefly Video UI
   test(`${features[1].name},${features[1].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[1].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[1].path}${unityLibs}`);
     const { data } = features[1];
 
     await test.step('step-1: Go to Firefly test page', async () => {
-      await page.goto(`${baseURL}${features[1].path}${unityLibs}`, { waitUntil: 'load' });
+      await page.goto(`${ccBaseURL}${features[1].path}${unityLibs}`, { waitUntil: 'load' });
       await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(`${baseURL}${features[1].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[1].path}${unityLibs}`);
     });
 
     await test.step('step-2: Verify Firefly Video verb content/specs', async () => {
@@ -89,13 +92,14 @@ test.describe('Firefly test suite', () => {
 
   // Test 2 : Firefly Video Generation
   test(`${features[2].name},${features[2].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[2].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[2].path}${unityLibs}`);
     const { data } = features[2];
 
     await test.step('step-1: Go to Firefly test page', async () => {
-      await page.goto(`${baseURL}${features[2].path}${unityLibs}`, { waitUntil: 'load' });
+      await page.goto(`${ccBaseURL}${features[2].path}${unityLibs}`, { waitUntil: 'load' });
       await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(`${baseURL}${features[2].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[2].path}${unityLibs}`);
     });
 
     await test.step('step-2: Verify Firefly Video Generation verb content/specs', async () => {
@@ -119,12 +123,13 @@ test.describe('Firefly test suite', () => {
 
   // Test 3 : Firefly Image Generation
   test(`${features[3].name},${features[3].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[3].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[3].path}${unityLibs}`);
     const { data } = features[3];
     await test.step('step-1: Go to Firefly test page', async () => {
-      await page.goto(`${baseURL}${features[3].path}${unityLibs}`, { waitUntil: 'load' });
+      await page.goto(`${ccBaseURL}${features[3].path}${unityLibs}`, { waitUntil: 'load' });
       await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(`${baseURL}${features[3].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[3].path}${unityLibs}`);
     });
     await test.step('step-2: Verify Firefly Image Generation verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
@@ -144,12 +149,13 @@ test.describe('Firefly test suite', () => {
 
   // Test 4 : Firefly Vector Generation
   test(`${features[4].name},${features[4].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[4].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[4].path}${unityLibs}`);
     const { data } = features[4];
     await test.step('step-1: Go to Firefly test page', async () => {
-      await page.goto(`${baseURL}${features[4].path}${unityLibs}`, { waitUntil: 'load' });
+      await page.goto(`${ccBaseURL}${features[4].path}${unityLibs}`, { waitUntil: 'load' });
       await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(`${baseURL}${features[4].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[4].path}${unityLibs}`);
     });
     await test.step('step-2: Verify Firefly Vector Generation verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
