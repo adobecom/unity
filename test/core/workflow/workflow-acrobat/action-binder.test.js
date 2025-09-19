@@ -263,6 +263,30 @@ describe('ActionBinder', () => {
       it('should handle undefined file type', () => {
         expect(actionBinder.isSameFileType('compress-pdf', undefined)).to.be.false;
       });
+
+      it('should not match image/jpeg for pdf-to-word', () => {
+        expect(actionBinder.isSameFileType('pdf-to-word', 'image/jpeg')).to.be.false;
+      });
+
+      it('should match application/rtf for pdf-to-word', () => {
+        expect(actionBinder.isSameFileType('pdf-to-word', 'application/rtf')).to.be.true;
+      });
+
+      it('should match image/png  for pdf-to-image', () => {
+        expect(actionBinder.isSameFileType('pdf-to-image', 'image/png')).to.be.true;
+      });
+
+      it('should match image/tiff for pdf-to-image', () => {
+        expect(actionBinder.isSameFileType('pdf-to-image', 'image/tiff')).to.be.true;
+      });
+
+      it('should match image/jpeg for pdf-to-png', () => {
+        expect(actionBinder.isSameFileType('pdf-to-png', 'image/jpeg')).to.be.true;
+      });
+
+      it('should match image/tiff for pdf-to-png', () => {
+        expect(actionBinder.isSameFileType('pdf-to-png', 'image/tiff')).to.be.true;
+      });
     });
 
     describe('validateFiles', () => {
