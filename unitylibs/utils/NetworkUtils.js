@@ -5,7 +5,8 @@ export default class NetworkUtils {
     try {
       const TIMEOUT_MS = 5000;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
-      const pageConfigResponse = await this.fetchWithTimeout(unityConfig.pageConfig, getOpts, TIMEOUT_MS);
+      const pageConfigUrl = `${unityConfig.apiEndPoint}/pageConfig`;
+      const pageConfigResponse = await this.fetchWithTimeout(pageConfigUrl, getOpts, TIMEOUT_MS);
       if (pageConfigResponse.ok) {
         const locationHeader = pageConfigResponse.headers.get('location');
         if (locationHeader) {
@@ -14,12 +15,12 @@ export default class NetworkUtils {
           return;
         }
         console.log('No location header found, keeping existing API endpoint');
+        return;
       }
       console.log('pageConfig call failed with status:', pageConfigResponse.status);
       return;
     } catch (error) {
       console.log('pageConfig call failed with error:', error);
-      return;
     }
   }
 

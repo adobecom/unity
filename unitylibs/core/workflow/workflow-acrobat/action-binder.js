@@ -688,26 +688,18 @@ export default class ActionBinder {
   }
 
   async ensureOptimalEndpoint() {
-    // Ensure pageConfig has resolved before making API calls
     if (this.pageConfigPromise) {
-      console.log('Waiting for pageConfig to complete before making any API calls');
-      const startTime = performance.now();
       await this.pageConfigPromise;
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      console.log(`PageConfig wait took ${duration.toFixed(2)}ms - API endpoints ready`);
     }
   }
 
   async checkandUpdatePageConfigEndpoint() {
-    console.log('Starting pageConfig fetch during upload initiation...');
     await this.networkUtils.checkandUpdatePageConfigEndpoint(
       (newEndpoint) => { this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint); },
     );
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
-    console.log('initActionListeners called');
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
       if (!el) return;
