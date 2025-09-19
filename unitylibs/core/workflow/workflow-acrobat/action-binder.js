@@ -224,6 +224,7 @@ export default class ActionBinder {
         finalizeAsset: `${apiEndPoint}/asset/finalize`,
         getMetadata: `${apiEndPoint}/asset/metadata`,
         connector: `${apiEndPoint}/asset/connector`,
+        log: `${apiEndPoint}/log`,
       },
     };
   }
@@ -285,6 +286,7 @@ export default class ActionBinder {
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode || status,
             desc: errorMetaData.desc || message || info || undefined,
           },
+          logEndPoint: this.acrobatApiConfig?.acrobatEndpoint?.log,
           sendToSplunk,
         },
       },
@@ -293,7 +295,7 @@ export default class ActionBinder {
 
   async dispatchAnalyticsEvent(eventName, data = null) {
     const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
-    const detail = { event: eventName, ...(data && { data }), sendToSplunk };
+    const detail = { event: eventName, ...(data && { data }), logEndPoint: this.acrobatApiConfig?.acrobatEndpoint?.log, sendToSplunk };
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
