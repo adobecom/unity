@@ -1876,7 +1876,6 @@ describe('Unity Upload Block', () => {
 
       const clickEvent = new Event('click', { bubbles: true });
       testDiv.dispatchEvent(clickEvent);
-
       expect(testDiv).to.not.be.null;
     });
   });
