@@ -41,7 +41,7 @@ test.describe('Unity PDF Editor test suite', () => {
       const fileInput = page.locator('input[type="file"]#file-upload');
       await page.waitForTimeout(10000);
       await fileInput.setInputFiles(pdfFilePath);
-      await page.waitForTimeout(10000);
+      await page.waitForTimeout(15000);
 
       // Verify the URL parameters
       const currentUrl = page.url();
