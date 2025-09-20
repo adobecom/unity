@@ -1,29 +1,6 @@
 import { unityConfig, getApiCallOptions } from '../scripts/utils.js';
 
 export default class NetworkUtils {
-  async checkandUpdatePageConfigEndpoint(callback) {
-    try {
-      const TIMEOUT_MS = 5000;
-      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
-      const pageConfigUrl = `${unityConfig.apiEndPoint}/pageConfig`;
-      const pageConfigResponse = await this.fetchWithTimeout(pageConfigUrl, getOpts, TIMEOUT_MS);
-      if (pageConfigResponse.ok) {
-        const locationHeader = pageConfigResponse.headers.get('location');
-        if (locationHeader) {
-          const newEndpoint = `${locationHeader}/api/v1`;
-          if (typeof callback === 'function') callback(newEndpoint);
-          return;
-        }
-        console.log('No location header found, keeping existing API endpoint');
-        return;
-      }
-      console.log('pageConfig call failed with status:', pageConfigResponse.status);
-      return;
-    } catch (error) {
-      console.log('pageConfig call failed with error:', error);
-    }
-  }
-
   handleAbortedRequest(url, options) {
     if (!(options?.signal?.aborted)) return;
     const error = new Error(`Request to ${url} aborted by user.`);
@@ -174,6 +151,29 @@ export default class NetworkUtils {
       if (error) error.message += `, Max retry delay exceeded for URL: ${url}`;
       else error = new Error(`Max retry delay exceeded for URL: ${url}`);
       throw error;
+    }
+  }
+
+  async checkandUpdatePageConfigEndpoint(updateConfigCallback) {
+    try {
+      const TIMEOUT_MS = 5000;
+      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
+      const pageConfigUrl = `${unityConfig.apiEndPoint}/pageConfig`;
+      const pageConfigResponse = await this.fetchWithTimeout(pageConfigUrl, getOpts, TIMEOUT_MS);
+      if (pageConfigResponse.ok) {
+        const locationHeader = pageConfigResponse.headers.get('location');
+        if (locationHeader) {
+          const newEndpoint = `${locationHeader}/api/v1`;
+          if (typeof updateConfigCallback === 'function') updateConfigCallback(newEndpoint);
+          return;
+        }
+        console.log('No location header found, keeping existing API endpoint');
+        return;
+      }
+      console.log('pageConfig call failed with status:', pageConfigResponse.status);
+      return;
+    } catch (error) {
+      console.log('pageConfig call failed with error:', error);
     }
   }
 }

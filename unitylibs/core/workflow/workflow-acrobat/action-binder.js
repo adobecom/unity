@@ -216,7 +216,6 @@ export default class ActionBinder {
   }
 
   getAcrobatApiConfig(newAPIEndpoint) {
-    console.log('getAcrobatApiConfig called');
     const apiEndPoint = newAPIEndpoint || unityConfig.apiEndPoint;
     return {
       acrobatEndpoint: {
