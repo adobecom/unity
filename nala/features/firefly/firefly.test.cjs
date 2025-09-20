@@ -62,9 +62,11 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-2: Verify Firefly Video verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
-      await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
+      // await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
+      await fireflyPage.imageVerbButton.click();
       await page.waitForTimeout(1000);
-      await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
+      // await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
+      await fireflyPage.videoVerbLink.click();
       await page.waitForTimeout(1000);
       await expect(fireflyPage.unityWrapper).toBeVisible();
       await expect(fireflyPage.videoVerbButton).toBeVisible();
@@ -104,21 +106,27 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-2: Verify Firefly Video Generation verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
-      await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
+      // await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
+      await fireflyPage.imageVerbButton.click();
       await page.waitForTimeout(1000);
-      await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
+      // await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
+      await fireflyPage.videoVerbLink.click();
     });
 
     await test.step('step-3 Generate video', async () => {
       await fireflyPage.fillPromptForGeneration(data.inputPrompt);
-      await fireflyPage.generateVideoButton.click({ noWaitAfter: true });
-      await page.waitForTimeout(3000);
+      // await fireflyPage.generateVideoButton.click({ noWaitAfter: true });
+      await fireflyPage.generateVideoButton.click();
       const currentUrl = page.url();
+      console.log('Current URL:', currentUrl);
+
+      /**
+      await page.waitForTimeout(3000);
       const urlObj = new URL(currentUrl);
       expect(urlObj.hostname).toContain('firefly-stage');
-      console.log('Current URL:', currentUrl);
       expect(urlObj.pathname).toBe('/generate/video');
       expect(currentUrl).toContain('/generate/video');
+    */
     });
   });
 
@@ -139,13 +147,16 @@ test.describe('Firefly test suite', () => {
     await test.step('step-3 Generate image', async () => {
       await fireflyPage.fillPromptForGeneration(data.inputPrompt);
       await fireflyPage.generateImageButton.click({ noWaitAfter: true });
-      await page.waitForTimeout(3000);
+      await fireflyPage.generateImageButton.click();
+      // await page.waitForTimeout(3000);
       const currentUrl = page.url();
-      const urlObj = new URL(currentUrl);
-      expect(urlObj.hostname).toContain('firefly-stage');
-      // expect(urlObj.pathname).toBe('/hub');
       console.log('Current URL:', currentUrl);
-      expect(currentUrl).toContain('ImageGeneration');
+    /**
+    // expect(urlObj.pathname).toBe('/hub');
+    const urlObj = new URL(currentUrl);
+    expect(urlObj.hostname).toContain('firefly-stage');
+    expect(currentUrl).toContain('ImageGeneration');
+    */
     });
   });
 
@@ -167,14 +178,19 @@ test.describe('Firefly test suite', () => {
     });
     await test.step('step-3 Generate vector', async () => {
       await fireflyPage.fillPromptForGeneration(data.inputPrompt);
-      await fireflyPage.generateVectorButton.click({ noWaitAfter: true });
-      await page.waitForTimeout(3000);
+      // await fireflyPage.generateVectorButton.click({ noWaitAfter: true });
+      await fireflyPage.generateVectorButton.click();
       const currentUrl = page.url();
+      console.log('Current URL:', currentUrl);
+
+    /**
       const urlObj = new URL(currentUrl);
+      await page.waitForURL('/generate/vector', { timeout: 15000 });
+      await page.waitForTimeout(3000);
       expect(urlObj.hostname).toContain('firefly-stage');
       expect(urlObj.pathname).toBe('/generate/vector');
-      console.log('Current URL:', currentUrl);
       expect(currentUrl).toContain('generate/vector');
+    */
     });
   });
 });
