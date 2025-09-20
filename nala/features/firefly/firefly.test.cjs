@@ -62,11 +62,9 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-2: Verify Firefly Video verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
-      // await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
-      await fireflyPage.imageVerbButton.click();
+      await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
       await page.waitForTimeout(1000);
-      // await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
-      await fireflyPage.videoVerbLink.click();
+      await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
       await page.waitForTimeout(1000);
       await expect(fireflyPage.unityWrapper).toBeVisible();
       await expect(fireflyPage.videoVerbButton).toBeVisible();
@@ -106,17 +104,14 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-2: Verify Firefly Video Generation verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
-      // await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
-      await fireflyPage.imageVerbButton.click();
+      await fireflyPage.imageVerbButton.click({ noWaitAfter: true });
       await page.waitForTimeout(1000);
-      // await fireflyPage.videoVerbLink.click({ noWaitAfter: true });
       await fireflyPage.videoVerbLink.click();
     });
 
     await test.step('step-3 Generate video', async () => {
       await fireflyPage.fillPromptForGeneration(data.inputPrompt);
-      // await fireflyPage.generateVideoButton.click({ noWaitAfter: true });
-      await fireflyPage.generateVideoButton.click();
+      await fireflyPage.generateVideoButton.click({ noWaitAfter: true });
       const currentUrl = page.url();
       console.log('Current URL:', currentUrl);
 
@@ -147,7 +142,6 @@ test.describe('Firefly test suite', () => {
     await test.step('step-3 Generate image', async () => {
       await fireflyPage.fillPromptForGeneration(data.inputPrompt);
       await fireflyPage.generateImageButton.click({ noWaitAfter: true });
-      await fireflyPage.generateImageButton.click();
       // await page.waitForTimeout(3000);
       const currentUrl = page.url();
       console.log('Current URL:', currentUrl);
@@ -178,8 +172,7 @@ test.describe('Firefly test suite', () => {
     });
     await test.step('step-3 Generate vector', async () => {
       await fireflyPage.fillPromptForGeneration(data.inputPrompt);
-      // await fireflyPage.generateVectorButton.click({ noWaitAfter: true });
-      await fireflyPage.generateVectorButton.click();
+      await fireflyPage.generateVectorButton.click({ noWaitAfter: true });
       const currentUrl = page.url();
       console.log('Current URL:', currentUrl);
 
