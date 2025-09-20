@@ -167,13 +167,13 @@ export default class NetworkUtils {
           if (typeof updateConfigCallback === 'function') updateConfigCallback(newEndpoint);
           return;
         }
-        console.log('No location header found, keeping existing API endpoint');
+        console.warn('No location header found, keeping existing API endpoint');
         return;
       }
-      console.log('pageConfig call failed with status:', pageConfigResponse.status);
+      console.error('pageConfig call failed with status:', pageConfigResponse.status);
       return;
     } catch (error) {
-      console.log('pageConfig call failed with error:', error);
+      console.error('pageConfig call failed with error:', error);
     }
   }
 }
