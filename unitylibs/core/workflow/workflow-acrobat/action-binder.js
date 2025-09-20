@@ -697,6 +697,14 @@ export default class ActionBinder {
   async checkandUpdatePageConfigEndpoint() {
     await this.networkUtils.checkandUpdatePageConfigEndpoint(
       (newEndpoint) => { this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint); },
+      (failure) => {
+        const data = {
+          failureType: failure?.type,
+          status: failure?.status,
+          message: failure?.error?.message,
+        };
+        this.dispatchAnalyticsEvent('pageConfigCallFailed', data);
+      },
     );
   }
 

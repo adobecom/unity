@@ -154,7 +154,7 @@ export default class NetworkUtils {
     }
   }
 
-  async checkandUpdatePageConfigEndpoint(updateConfigCallback) {
+  async checkandUpdatePageConfigEndpoint(updateConfigCallback, onFailure) {
     try {
       const TIMEOUT_MS = 5000;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
@@ -168,12 +168,15 @@ export default class NetworkUtils {
           return;
         }
         console.warn('No location header found, keeping existing API endpoint');
+        if (typeof onFailure === 'function') onFailure({ type: 'no-location-header', status: pageConfigResponse.status });
         return;
       }
       console.error('pageConfig call failed with status:', pageConfigResponse.status);
+      if (typeof onFailure === 'function') onFailure({ type: 'non-ok-status', status: pageConfigResponse.status });
       return;
     } catch (error) {
       console.error('pageConfig call failed with error:', error);
+      if (typeof onFailure === 'function') onFailure({ type: 'network-error', error });
     }
   }
 }
