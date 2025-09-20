@@ -215,13 +215,17 @@ export default class ActionBinder {
     });
   }
 
-  getAcrobatApiConfig() {
-    unityConfig.acrobatEndpoint = {
-      createAsset: `${unityConfig.apiEndPoint}/asset`,
-      finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+  getAcrobatApiConfig(newAPIEndpoint) {
+    const apiEndPoint = newAPIEndpoint || unityConfig.apiEndPoint;
+    return {
+      acrobatEndpoint: {
+        createAsset: `${apiEndPoint}/asset`,
+        finalizeAsset: `${apiEndPoint}/asset/finalize`,
+        getMetadata: `${apiEndPoint}/asset/metadata`,
+        connector: `${apiEndPoint}/asset/connector`,
+        log: `${apiEndPoint}/log`,
+      },
     };
-    return unityConfig;
   }
 
   getAdditionalHeaders() {
@@ -281,6 +285,7 @@ export default class ActionBinder {
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode || status,
             desc: errorMetaData.desc || message || info || undefined,
           },
+          logEndPoint: this.acrobatApiConfig?.acrobatEndpoint?.log,
           sendToSplunk,
         },
       },
@@ -289,7 +294,7 @@ export default class ActionBinder {
 
   async dispatchAnalyticsEvent(eventName, data = null) {
     const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
-    const detail = { event: eventName, ...(data && { data }), sendToSplunk };
+    const detail = { event: eventName, ...(data && { data }), logEndPoint: this.acrobatApiConfig?.acrobatEndpoint?.log, sendToSplunk };
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
@@ -426,7 +431,7 @@ export default class ActionBinder {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
       this.networkUtils.fetchFromServiceWithRetry(
-        this.acrobatApiConfig.connectorApiEndPoint,
+        this.acrobatApiConfig.acrobatEndpoint.connector,
         postOpts,
       ),
     );
@@ -511,6 +516,7 @@ export default class ActionBinder {
     const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
     if (!isValid) return;
     await this.initUploadHandler();
+    await this.ensureOptimalEndpoint();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
     } else {
@@ -682,6 +688,26 @@ export default class ActionBinder {
     this.filesData.assetId = assetId;
   }
 
+  async ensureOptimalEndpoint() {
+    if (this.pageConfigPromise) {
+      await this.pageConfigPromise;
+    }
+  }
+
+  async checkandUpdatePageConfigEndpoint() {
+    await this.networkUtils.checkandUpdatePageConfigEndpoint(
+      (newEndpoint) => { this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint); },
+      (failure) => {
+        const data = {
+          failureType: failure?.type,
+          status: failure?.status,
+          message: failure?.error?.message,
+        };
+        this.dispatchAnalyticsEvent('pageConfigCallFailed', data);
+      },
+    );
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
@@ -713,6 +739,9 @@ export default class ActionBinder {
     }
     if (b === this.block) {
       this.loadTransitionScreen();
+    }
+    if (!this.pageConfigPromise) {
+      this.pageConfigPromise = this.checkandUpdatePageConfigEndpoint();
     }
   }
 }
