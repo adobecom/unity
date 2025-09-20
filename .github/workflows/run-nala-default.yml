@@ -14,7 +14,7 @@ on:
 
 jobs:
   run-nala-tests:
-    name: Running Nala E2E UI Tests * (${{ matrix.browser }} browser)
+    name: Running Nala E2E UI Tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
