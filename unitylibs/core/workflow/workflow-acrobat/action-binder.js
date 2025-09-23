@@ -234,7 +234,7 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    if ( !this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+    if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
       const { getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
       try {
         const decisionScopes = await getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
@@ -682,6 +682,27 @@ export default class ActionBinder {
     this.filesData.assetId = assetId;
   }
 
+  /**
+   * Check if upload should be disabled for the current verb
+   * @returns {boolean} - True if upload should be disabled
+   */
+  shouldDisableUpload() {
+    // Check if current verb is in verbsWithRenderWidget
+    const { verbsWithRenderWidget } = this.workflowCfg.targetCfg;
+    if (!verbsWithRenderWidget || verbsWithRenderWidget.length === 0) {
+      return false;
+    }
+
+    // Get current enabled features
+    const currentVerbs = this.workflowCfg.enabledFeatures;
+    if (!currentVerbs || currentVerbs.length === 0) {
+      return false;
+    }
+
+    // Check if any current verb is in the verbsWithRenderWidget list
+    return currentVerbs.some((verb) => verbsWithRenderWidget.includes(verb));
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
@@ -696,12 +717,22 @@ export default class ActionBinder {
         case el.nodeName === 'DIV':
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
+
+            // Check if current verb should use widget instead of upload
+            if (this.shouldDisableUpload()) {
+              return;
+            }
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
           });
           break;
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
+            // Check if current verb should use widget instead of upload
+            if (this.shouldDisableUpload()) {
+              e.target.value = '';
+              return;
+            }
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'change');
             e.target.value = '';
