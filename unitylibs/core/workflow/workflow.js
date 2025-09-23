@@ -65,12 +65,8 @@ class WfInitiator {
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
 
-    let shouldRenderWidget = this.targetConfig.renderWidget;
-    if (this.workflowCfg.name === 'workflow-acrobat'
-        && this.targetConfig.verbsWithRenderWidget
-        && this.workflowCfg.enabledFeatures.length > 0) {
-      shouldRenderWidget = this.workflowCfg.enabledFeatures.some((feature) => this.targetConfig.verbsWithRenderWidget.includes(feature));
-    }
+    // Check if renderWidget should be enabled based on enabled features (workflow-acrobat only)
+    const shouldRenderWidget = WfInitiator.shouldRenderWidget(this.targetConfig, this.workflowCfg);
     if (shouldRenderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg?.text();
@@ -145,6 +141,25 @@ class WfInitiator {
     return source ? source.srcset : pic.querySelector('img').src;
   }
 
+  /**
+   * Determines if renderWidget should be enabled based on workflow and enabled features
+   * @param {Object} targetConfig - The target configuration object
+   * @param {Object} workflowCfg - The workflow configuration object
+   * @returns {boolean} - Whether renderWidget should be enabled
+   */
+  static shouldRenderWidget(targetConfig, workflowCfg) {
+    let shouldRenderWidget = targetConfig.renderWidget;
+
+    // Apply conditional logic for workflow-acrobat only
+    if (workflowCfg.name === 'workflow-acrobat'
+        && targetConfig.verbsWithRenderWidget
+        && workflowCfg.enabledFeatures.length > 0) {
+      shouldRenderWidget = workflowCfg.enabledFeatures.some((feature) => targetConfig.verbsWithRenderWidget.includes(feature));
+    }
+
+    return shouldRenderWidget;
+  }
+
   createInteractiveArea(block, selector, targetCfg) {
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
@@ -157,7 +172,8 @@ class WfInitiator {
     if (!targetCfg.renderWidget && block.classList.contains('upload')) {
       return block.querySelectorAll(selector);
     }
-    if (!targetCfg.renderWidget) return null;
+    const shouldRenderWidget = WfInitiator.shouldRenderWidget(targetCfg, this.workflowCfg);
+    if (!shouldRenderWidget) return null;
     asset.insertAdjacentElement('beforebegin', iArea);
     iArea.append(asset);
     if (this.el.classList.contains('light')) iArea.classList.add('light');
