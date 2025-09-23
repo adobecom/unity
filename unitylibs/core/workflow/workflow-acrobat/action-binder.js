@@ -715,6 +715,13 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
+          // Disable click events that open file explorer for widget verbs
+          el.addEventListener('click', (e) => {
+            if (this.shouldDisableUpload()) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
 
@@ -727,6 +734,13 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'INPUT':
+          // Disable click events that open file explorer for widget verbs
+          el.addEventListener('click', (e) => {
+            if (this.shouldDisableUpload()) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          });
           el.addEventListener('change', async (e) => {
             // Check if current verb should use widget instead of upload
             if (this.shouldDisableUpload()) {
