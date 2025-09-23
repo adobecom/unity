@@ -1,6 +1,6 @@
 {
   "verb-widget": {
-    "selector": ".verb-wrapper",
+    "selector": ".verb-wrapper .verb-copy",
     "renderWidget": false,
     "verbsWithRenderWidget": ["compress-pdf"],
     "source": ".verb-wrapper .verb-container",
