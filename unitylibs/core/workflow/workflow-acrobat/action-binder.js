@@ -699,8 +699,9 @@ export default class ActionBinder {
       return false;
     }
 
-    // Check if any current verb is in the verbsWithRenderWidget list
-    return currentVerbs.some((verb) => verbsWithRenderWidget.includes(verb));
+    // Check if the first enabled feature is in the verbsWithRenderWidget list
+    const firstEnabledFeature = currentVerbs[0];
+    return verbsWithRenderWidget.includes(firstEnabledFeature);
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {

@@ -60,8 +60,8 @@ class WfInitiator {
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
     const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
+    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
 
@@ -153,10 +153,15 @@ class WfInitiator {
     // Apply conditional logic for workflow-acrobat only
     if (workflowCfg.name === 'workflow-acrobat'
         && targetConfig.verbsWithRenderWidget) {
-      // Check if any of the verbsWithRenderWidget are in the supported features list
-      shouldRenderWidget = targetConfig.verbsWithRenderWidget.some((verb) => workflowCfg.supportedFeatures && workflowCfg.supportedFeatures.has(verb));
+      // Check if the first enabled feature exists in verbsWithRenderWidget
+      if (workflowCfg.enabledFeatures && workflowCfg.enabledFeatures.length > 0) {
+        const firstEnabledFeature = workflowCfg.enabledFeatures[0];
+        shouldRenderWidget = targetConfig.verbsWithRenderWidget.includes(firstEnabledFeature);
+      } else {
+        // Fallback: check if any verbsWithRenderWidget are in supported features
+        shouldRenderWidget = targetConfig.verbsWithRenderWidget.some((verb) => workflowCfg.supportedFeatures && workflowCfg.supportedFeatures.has(verb));
+      }
     }
-
     return shouldRenderWidget;
   }
 
