@@ -152,8 +152,7 @@ class WfInitiator {
 
     // Apply conditional logic for workflow-acrobat only
     if (workflowCfg.name === 'workflow-acrobat'
-        && targetConfig.verbsWithRenderWidget
-        && workflowCfg.enabledFeatures.length > 0) {
+        && targetConfig.verbsWithRenderWidget) {
       shouldRenderWidget = workflowCfg.enabledFeatures.some((feature) => targetConfig.verbsWithRenderWidget.includes(feature));
     }
 
