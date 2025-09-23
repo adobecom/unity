@@ -2,8 +2,9 @@
   "verb-widget": {
     "selector": ".verb-wrapper",
     "renderWidget": false,
+    "verbsWithRenderWidget": ["compress-pdf"],
     "source": ".verb-wrapper .verb-container",
-    "target": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-copy",
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",

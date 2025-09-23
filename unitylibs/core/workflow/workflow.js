@@ -64,7 +64,14 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
-    if (this.targetConfig.renderWidget) {
+
+    let shouldRenderWidget = this.targetConfig.renderWidget;
+    if (this.workflowCfg.name === 'workflow-acrobat'
+        && this.targetConfig.verbsWithRenderWidget
+        && this.workflowCfg.enabledFeatures.length > 0) {
+      shouldRenderWidget = this.workflowCfg.enabledFeatures.some((feature) => this.targetConfig.verbsWithRenderWidget.includes(feature));
+    }
+    if (shouldRenderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
       this.actionMap = await new UnityWidget(

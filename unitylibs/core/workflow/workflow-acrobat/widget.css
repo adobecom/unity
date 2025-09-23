@@ -1,0 +1,132 @@
+/* Acrobat Unity Widget Styles */
+
+.acrobat-unity-wrap {
+  position: relative;
+  margin: var(--spacing-m) 0;
+  padding: var(--spacing-m);
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+}
+
+.acrobat-unity-widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.input-container {
+  display: flex;
+  gap: var(--spacing-s);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.acrobat-input-field {
+  flex: 1;
+  min-width: 200px;
+  padding: var(--spacing-s) var(--spacing-m);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.acrobat-input-field:focus {
+  outline: none;
+  border-color: #06c;
+  box-shadow: 0 0 0 2px rgb(0 102 204 / 20%);
+}
+
+.acrobat-input-field::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.acrobat-submit-btn {
+  padding: var(--spacing-s) var(--spacing-m);
+  background: #06c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  min-width: 80px;
+}
+
+.acrobat-submit-btn:hover {
+  background: #0052a3;
+  transform: translateY(-1px);
+}
+
+.acrobat-submit-btn:active {
+  transform: translateY(0);
+  background: #004080;
+}
+
+.acrobat-submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .input-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .acrobat-input-field {
+    min-width: auto;
+  }
+  
+  .acrobat-submit-btn {
+    width: 100%;
+  }
+}
+
+/* Unity enabled state */
+.unity-enabled .acrobat-unity-wrap {
+  animation: fade-in 0.3s ease-in-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .acrobat-unity-wrap {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #fff;
+  }
+  
+  .acrobat-input-field {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #fff;
+  }
+  
+  .acrobat-input-field::placeholder {
+    color: #aaa;
+  }
+  
+  .acrobat-input-field:focus {
+    border-color: #4a9eff;
+    box-shadow: 0 0 0 2px rgb(74 158 255 / 20%);
+  }
+}
