@@ -73,7 +73,7 @@ class WfInitiator {
     }
     if (shouldRenderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
-      const spriteContent = await spriteSvg.text();
+      const spriteContent = await spriteSvg?.text();
       this.actionMap = await new UnityWidget(
         this.interactiveArea,
         this.el,
