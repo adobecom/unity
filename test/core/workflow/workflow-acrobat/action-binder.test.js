@@ -51,7 +51,11 @@ describe('ActionBinder', () => {
     mockWorkflowCfg = {
       productName: 'test-product',
       enabledFeatures: ['test-feature'],
-      targetCfg: { sendSplunkAnalytics: true },
+      targetCfg: {
+        sendSplunkAnalytics: true,
+        experimentationOn: [],
+        showSplashScreen: false,
+      },
       errors: { 'test-error': 'Test error message' },
     };
 
@@ -764,6 +768,11 @@ describe('ActionBinder', () => {
         beforeEach(() => {
           actionBinder.getRedirectUrl = sinon.stub().resolves();
           actionBinder.redirectUrl = 'https://test-redirect-url.com';
+          actionBinder.workflowCfg.targetCfg = {
+            sendSplunkAnalytics: true,
+            experimentationOn: [],
+            showSplashScreen: false,
+          };
           localStorage.clear();
         });
 
@@ -1547,6 +1556,11 @@ describe('ActionBinder', () => {
       beforeEach(() => {
         actionBinder.workflowCfg = {
           enabledFeatures: ['compress-pdf'],
+          targetCfg: {
+            sendSplunkAnalytics: true,
+            experimentationOn: [],
+            showSplashScreen: false,
+          },
           errors: { error_generic: 'Generic error occurred' },
         };
         actionBinder.signedOut = false;
@@ -1574,6 +1588,384 @@ describe('ActionBinder', () => {
 
         localStorageStub.restore();
         actionBinder.getRedirectUrl.restore();
+      });
+    });
+
+    describe('Experiment Data Integration', () => {
+      beforeEach(() => {
+        // Mock priorityLoad
+        window.priorityLoad = sinon.stub().resolves();
+
+        // Mock getUnityLibs
+        window.getUnityLibs = sinon.stub().returns('/test/libs');
+      });
+
+      afterEach(() => {
+        delete window.priorityLoad;
+        delete window.getUnityLibs;
+      });
+
+      describe('handlePreloads with Experimentation', () => {
+        it('should load experiment data when experimentation is enabled for the feature', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {
+              experimentationOn: ['add-comment'],
+              showSplashScreen: true,
+            },
+          };
+
+          // Mock the dynamic import by stubbing the handlePreloads method
+          const mockGetExperimentData = sinon.stub().resolves({ variationId: 'test-variant' });
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithExperiment() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              this.experimentData = await mockGetExperimentData();
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          await actionBinder.handlePreloads();
+
+          expect(actionBinder.experimentData).to.deep.equal({ variationId: 'test-variant' });
+          expect(window.priorityLoad.called).to.be.true;
+        });
+
+        it('should not load experiment data when experimentation is disabled', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {
+              experimentationOn: ['other-feature'],
+              showSplashScreen: true,
+            },
+          };
+
+          // Mock the handlePreloads method
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsDisabled() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          await actionBinder.handlePreloads();
+
+          expect(actionBinder.experimentData).to.deep.equal({});
+          expect(window.priorityLoad.called).to.be.true;
+        });
+
+        it('should not load experiment data when targetCfg is missing', async () => {
+          actionBinder.workflowCfg = { enabledFeatures: ['add-comment'] };
+
+          // Mock the handlePreloads method
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsNoTargetCfg() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            if (parr.length > 0) {
+              await window.priorityLoad(parr);
+            }
+          });
+
+          await actionBinder.handlePreloads();
+
+          expect(actionBinder.experimentData).to.deep.equal({});
+          expect(window.priorityLoad.called).to.be.false;
+        });
+
+        it('should not load experiment data when experimentationOn is missing', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { showSplashScreen: true },
+          };
+
+          // Mock the handlePreloads method
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsNoExperimentationOn() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          await actionBinder.handlePreloads();
+
+          expect(actionBinder.experimentData).to.deep.equal({});
+          expect(window.priorityLoad.called).to.be.true;
+        });
+      });
+
+      describe('handleRedirect with Experiment Data', () => {
+        beforeEach(() => {
+          actionBinder.getRedirectUrl = sinon.stub().resolves();
+          actionBinder.redirectUrl = 'https://test-redirect-url.com';
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+          localStorage.clear();
+        });
+
+        it('should add variationId to payload when experiment data is available', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { experimentationOn: ['add-comment'] },
+          };
+          actionBinder.experimentData = { variationId: 'test-variant' };
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.equal('test-variant');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should not add variationId when experimentation is disabled for the feature', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { experimentationOn: ['other-feature'] },
+          };
+          actionBinder.experimentData = { variationId: 'test-variant' };
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.be.undefined;
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should not add variationId when experiment data is not available', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { experimentationOn: ['add-comment'] },
+          };
+          actionBinder.experimentData = {};
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.be.undefined;
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should not add variationId when targetCfg is missing', async () => {
+          actionBinder.workflowCfg = { enabledFeatures: ['add-comment'] };
+          actionBinder.experimentData = { variationId: 'test-variant' };
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.be.undefined;
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should not add variationId when experimentationOn is missing', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {},
+          };
+          actionBinder.experimentData = { variationId: 'test-variant' };
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.be.undefined;
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should preserve existing payload properties when adding variationId', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { experimentationOn: ['add-comment'] },
+          };
+          actionBinder.experimentData = { variationId: 'test-variant' };
+
+          const cOpts = {
+            payload: {
+              existingProp: 'value',
+              newUser: true,
+              attempts: '1st',
+            },
+          };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload).to.deep.include({
+            existingProp: 'value',
+            newUser: true,
+            attempts: '1st',
+            variationId: 'test-variant',
+          });
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+      });
+
+      describe('Integration Tests', () => {
+        it('should handle complete flow with experiment data', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {
+              experimentationOn: ['add-comment'],
+              showSplashScreen: true,
+            },
+          };
+
+          // Mock the handlePreloads method
+          const mockGetExperimentData = sinon.stub().resolves({ variationId: 'integration-test-variant' });
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsIntegration() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              this.experimentData = await mockGetExperimentData();
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          // First, load experiment data
+          await actionBinder.handlePreloads();
+          expect(actionBinder.experimentData).to.deep.equal({ variationId: 'integration-test-variant' });
+
+          // Then, use it in redirect
+          actionBinder.getRedirectUrl = sinon.stub().resolves();
+          actionBinder.redirectUrl = 'https://test-redirect-url.com';
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.equal('integration-test-variant');
+          expect(result).to.be.true;
+        });
+
+        it('should handle flow without experiment data', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {
+              experimentationOn: ['other-feature'],
+              showSplashScreen: true,
+            },
+          };
+
+          // Mock the handlePreloads method
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithoutExperiment() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              this.experimentData = { variationId: 'should-not-load' };
+            } else {
+              this.experimentData = {};
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          // Load preloads (should not load experiment data)
+          await actionBinder.handlePreloads();
+          expect(actionBinder.experimentData).to.deep.equal({});
+
+          // Use in redirect (should not add variationId)
+          actionBinder.getRedirectUrl = sinon.stub().resolves();
+          actionBinder.redirectUrl = 'https://test-redirect-url.com';
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.variationId).to.be.undefined;
+          expect(result).to.be.true;
+        });
+
+        it('should handle experiment provider exceptions and log warnings', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: {
+              experimentationOn: ['add-comment'],
+              showSplashScreen: true,
+            },
+          };
+
+          // Mock the handlePreloads method to simulate experiment provider exception
+          sinon.stub(actionBinder, 'handlePreloads').callsFake(async function mockHandlePreloadsWithException() {
+            if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+              // Simulate the experiment provider throwing an error
+              const getExperimentData = () => Promise.reject(new Error('Target proposition fetch failed: Test error'));
+              try {
+                this.experimentData = await getExperimentData();
+              } catch (error) {
+                await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
+                  code: 'warn_fetch_experiment',
+                  desc: error.message,
+                });
+                this.experimentData = {};
+              }
+            }
+            const parr = [];
+            if (this.workflowCfg.targetCfg?.showSplashScreen) {
+              parr.push(`${window.getUnityLibs()}/core/styles/splash-screen.css`);
+            }
+            await window.priorityLoad(parr);
+          });
+
+          // Mock dispatchErrorToast to verify it's called
+          const dispatchErrorToastSpy = sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+
+          // Load preloads (should catch exception and log warning)
+          await actionBinder.handlePreloads();
+
+          expect(actionBinder.experimentData).to.deep.equal({});
+          expect(dispatchErrorToastSpy.calledWith(
+            'warn_fetch_experiment',
+            null,
+            'Target proposition fetch failed: Test error',
+            true,
+            true,
+            {
+              code: 'warn_fetch_experiment',
+              desc: 'Target proposition fetch failed: Test error',
+            },
+          )).to.be.true;
+        });
       });
     });
   });
