@@ -18,12 +18,13 @@ test.describe('Unity Widget PS test suite', () => {
 
   // Test 0 : Unity Widget PS UI checks
   test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[0].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[0].path}${unityLibs}`);
 
     await test.step('step-1: Go to Unity Widget PS test page', async () => {
-      await page.goto(`${baseURL}${features[0].path}${unityLibs}`);
+      await page.goto(`${ccBaseURL}${features[0].path}${unityLibs}`);
       await page.waitForLoadState('domcontentloaded');
-      await expect(page).toHaveURL(`${baseURL}${features[0].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[0].path}${unityLibs}`);
     });
 
     await test.step('step-2: Verify Unity Widget PS verb user interface', async () => {
@@ -36,12 +37,13 @@ test.describe('Unity Widget PS test suite', () => {
   });
   // Test 1 : Unity Widget File Upload & splash screen display
   test(`${features[1].name},${features[1].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[1].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[1].path}${unityLibs}`);
 
     await test.step('check photoshop file upload', async () => {
-      await page.goto(`${baseURL}${features[1].path}${unityLibs}`);
+      await page.goto(`${ccBaseURL}${features[1].path}${unityLibs}`);
       await page.waitForLoadState('domcontentloaded');
-      await expect(page).toHaveURL(`${baseURL}${features[1].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[1].path}${unityLibs}`);
     });
     await test.step('png image file upload and splash screen display', async () => {
       const fileInput = page.locator('//input[@type="file" and @id="file-upload"]').nth(0);
@@ -53,12 +55,13 @@ test.describe('Unity Widget PS test suite', () => {
   });
   // Test 2 : Unity Widget user navigation to Photoshop Product Page
   test(`${features[2].name},${features[2].tags}`, async ({ page, baseURL }) => {
-    console.info(`[Test Page]: ${baseURL}${features[2].path}${unityLibs}`);
+    const ccBaseURL = baseURL.replace('--dc--', '--cc--');
+    console.info(`[Test Page]: ${ccBaseURL}${features[2].path}${unityLibs}`);
 
     await test.step('check user landing on PS product page post file upload', async () => {
-      await page.goto(`${baseURL}${features[2].path}${unityLibs}`);
+      await page.goto(`${ccBaseURL}${features[2].path}${unityLibs}`);
       await page.waitForLoadState('domcontentloaded');
-      await expect(page).toHaveURL(`${baseURL}${features[2].path}${unityLibs}`);
+      await expect(page).toHaveURL(`${ccBaseURL}${features[2].path}${unityLibs}`);
     });
     await test.step('png image file upload and user navigation to product page', async () => {
       const fileInput = page.locator('//input[@type="file" and @id="file-upload"]').nth(0);
