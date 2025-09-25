@@ -174,6 +174,7 @@ export default class ActionBinder {
     this.showInfoToast = false;
     this.multiFileValidationFailure = false;
     this.initialize();
+    this.experimentData = null;
   }
 
   async initialize() {
