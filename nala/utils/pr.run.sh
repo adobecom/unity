@@ -117,5 +117,6 @@ if [ $EXIT_STATUS -ne 0 ]; then
   exit $EXIT_STATUS
 else
   echo "All tests passed successfully on $BROWSER."
+  exit 0
 fi
 echo "*******************************"
