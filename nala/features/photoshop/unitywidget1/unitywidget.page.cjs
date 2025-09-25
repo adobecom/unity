@@ -10,6 +10,5 @@ export default class psUnityWidget {
     this.legelTerms = this.unityWidgetContainer.locator('//a[@daa-ll="Terms of Use-11--"]');
     this.privacyPolicy = this.unityWidgetContainer.locator('//a[@daa-ll="Privacy Policy-12--"]');
     this.splashScreen = this.unityWidgetContainer.locator('//div[@class="fragment splash -loader show" and @style="display: none"]');
-    
   }
 }
