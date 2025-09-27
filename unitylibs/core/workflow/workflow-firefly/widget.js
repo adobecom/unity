@@ -17,6 +17,7 @@ export default class UnityWidget {
     this.genBtn = null;
     this.hasPromptSuggestions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
+    this.sound = { audio: null, currentTile: null, currentUrl: '' };
   }
 
   async initWidget() {
@@ -226,16 +227,17 @@ export default class UnityWidget {
 
   getLimitedDisplayPrompts(prompts) {
     const shuffled = prompts.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3).map(({ prompt, assetid }) => ({
+    return shuffled.slice(0, 3).map(({ prompt, assetid, variations }) => ({
       prompt,
       assetid,
+      variations,
       displayPrompt: prompt.length > 105 ? `${prompt.slice(0, 105)}…` : prompt,
     }));
   }
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
     this.promptItems = [];
-    prompts.forEach(({ prompt, assetid, displayPrompt }) => {
+    prompts.forEach(({ prompt, assetid, displayPrompt, variations }, idx) => {
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -247,6 +249,17 @@ export default class UnityWidget {
       }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
       dropdown.append(item);
       this.promptItems.push(item);
+
+      // Sound: expand details with variations & Use prompt
+      if (this.selectedVerbType === 'sound') {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          // prevent ActionBinder's .drop-item listener from firing
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          this.toggleSoundDetails(dropdown, item, { prompt, variations }, idx + 1);
+        });
+      }
     });
   }
 
@@ -327,7 +340,17 @@ export default class UnityWidget {
     if (!this.hasPromptSuggestions) return [];
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
-      return (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
+      const list = (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
+      if (verb === 'sound' && list.length === 0) {
+        // Fallback defaults for sound (temporary; replace with real JSON data later)
+        const samples = this.getGeneratedSamples();
+        return [
+          { prompt: 'Crowd roaring', variations: samples },
+          { prompt: 'Cows mooing', variations: samples },
+          { prompt: 'Birds chirping', variations: samples },
+        ];
+      }
+      return list;
     } catch (e) {
       window.lana?.log(`Message: Error loading promts, Error: ${e}`, this.lanaOptions);
       return [];
@@ -339,9 +362,9 @@ export default class UnityWidget {
     if (Array.isArray(data)) {
       data.forEach((item) => {
         const itemEnv = item.env || 'prod';
-        if (item.verb && item.prompt && item.assetid && itemEnv === unityConfig.env) {
+        if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
+          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations: item.variations });
         }
       });
     }
@@ -352,10 +375,149 @@ export default class UnityWidget {
     if (!this.hasPromptSuggestions) return;
     const dropdown = this.widget.querySelector('#prompt-dropdown');
     if (!dropdown) return;
+    this.stopAnyAudio();
+    this.clearSoundDetails(dropdown);
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
+  }
+
+  // ===== Sound helpers =====
+  ensureAudio() {
+    if (!this.sound.audio) {
+      this.sound.audio = new Audio();
+    }
+  }
+
+  stopAnyAudio() {
+    if (this.sound.audio) {
+      try { this.sound.audio.pause(); } catch (e) { /* noop */ }
+    }
+    if (this.sound.currentTile) this.sound.currentTile.classList.remove('playing');
+    this.sound.currentTile = null;
+    this.sound.currentUrl = '';
+  }
+
+  clearSoundDetails(dropdown) {
+    dropdown?.querySelectorAll('.sound-details').forEach((d) => d.remove());
+  }
+
+  toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
+    // If this item is already expanded, collapse it
+    const next = item.nextElementSibling;
+    if (next && next.classList.contains('sound-details')) {
+      next.remove();
+      this.stopAnyAudio();
+      item.classList.remove('sound-expanded');
+      item.querySelector('.use-prompt-btn.inline')?.remove();
+      return;
+    }
+    // Collapse any other expanded prompt
+    this.clearSoundDetails(dropdown);
+    this.stopAnyAudio();
+    dropdown.querySelectorAll('.drop-item.sound-expanded .use-prompt-btn.inline')
+      .forEach((btn) => btn.remove());
+    dropdown.querySelectorAll('.drop-item.sound-expanded')
+      .forEach((it) => it.classList.remove('sound-expanded'));
+
+    // Add inline "Use prompt" button to this item (same line as prompt)
+    const inlineBtn = createTag('button', {
+      class: 'use-prompt-btn inline',
+      'data-prompt-index': String(promptIndex),
+      'aria-label': `Use prompt ${promptIndex}: ${promptObj.prompt}`,
+    }, 'Use prompt');
+    inlineBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const inp = this.widget.querySelector('#promptInput');
+      if (inp) inp.value = promptObj.prompt;
+      this.hidePromptDropdown();
+    });
+    item.classList.add('sound-expanded');
+    item.append(inlineBtn);
+
+    // Render variations below the item
+    const details = this.renderSoundDetails(promptObj);
+    item.after(details);
+  }
+
+  renderSoundDetails(promptObj) {
+    const details = createTag('div', { class: 'sound-details', role: 'region' });
+    const strip = createTag('div', { class: 'variation-strip' });
+    const vars = Array.isArray(promptObj.variations) && promptObj.variations.length === 4
+      ? promptObj.variations
+      : this.getGeneratedSamples();
+
+    vars.forEach((v, i) => {
+      const tile = createTag('div', { class: 'variation-tile' });
+      const label = createTag('div', { class: 'variation-label' }, v.label || `Example ${i + 1}`);
+      const audio = createTag('audio', { controls: '', preload: 'none', src: v.url, controlslist: 'nodownload noplaybackrate noremoteplayback' });
+      audio.addEventListener('play', () => {
+        // pause any other audio
+        details.querySelectorAll('audio').forEach((a) => { if (a !== audio) a.pause(); });
+        strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('playing'));
+        tile.classList.add('playing');
+      });
+      audio.addEventListener('pause', () => {
+        tile.classList.remove('playing');
+      });
+      tile.append(label, audio);
+      strip.append(tile);
+    });
+
+    details.append(strip);
+    return details;
+  }
+
+  // ===== Embedded audio helpers (data: WAV) =====
+  generateWavDataUrl(frequencyHz, durationMs, sampleRate = 8000) {
+    const numSamples = Math.max(1, Math.floor(sampleRate * (durationMs / 1000)));
+    const headerSize = 44;
+    const dataSize = numSamples * 2; // 16-bit mono
+    const buffer = new ArrayBuffer(headerSize + dataSize);
+    const view = new DataView(buffer);
+
+    const writeString = (offset, str) => {
+      for (let i = 0; i < str.length; i += 1) view.setUint8(offset + i, str.charCodeAt(i));
+    };
+
+    // RIFF/WAVE header
+    writeString(0, 'RIFF');
+    view.setUint32(4, headerSize + dataSize - 8, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true); // PCM chunk size
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, 1, true); // mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true); // byte rate
+    view.setUint16(32, 2, true); // block align
+    view.setUint16(34, 16, true); // bits per sample
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Samples
+    const amplitude = 0.5; // keep it gentle
+    for (let i = 0; i < numSamples; i += 1) {
+      const sample = Math.sin(2 * Math.PI * (frequencyHz / sampleRate) * i) * amplitude;
+      view.setInt16(headerSize + i * 2, sample * 0x7fff, true);
+    }
+
+    // To base64 data URL
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+    return `data:audio/wav;base64,${btoa(binary)}`;
+  }
+
+  getGeneratedSamples() {
+    return [
+      { url: this.generateWavDataUrl(440, 700), label: 'Variation 1' },
+      { url: this.generateWavDataUrl(523.25, 700), label: 'Variation 2' },
+      { url: this.generateWavDataUrl(659.25, 700), label: 'Variation 3' },
+      { url: this.generateWavDataUrl(784, 700), label: 'Variation 4' },
+    ];
   }
 }

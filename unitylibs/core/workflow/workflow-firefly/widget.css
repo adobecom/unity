@@ -1,3 +1,117 @@
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-suggestions-list + .sound-details,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .sound-details {
+  margin: var(--spacing-xs) 0 var(--spacing-xxs);
+  padding: var(--spacing-xs) var(--spacing-xs);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px 0 rgba(0 0 0 / 8%);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .sound-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+  margin-bottom: var(--spacing-xs);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .sound-title {
+  font-weight: 700;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .use-prompt-btn {
+  border-radius: 16px;
+  border: 2px solid #292929;
+  color: #292929;
+  font-size: var(--type-body-xs-size);
+  font-weight: 700;
+  background: #fff;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
+  display: flex;
+  gap: 10px;
+  overflow: visible; /* allow focus/playing outline to show */
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 calc(25% - 10px);
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #E1E1E1;
+  background: #fafafa;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .variation-label {
+  font-weight: 700;
+  font-size: var(--type-body-xs-size);
+  color: #292929;
+  margin-bottom: 4px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio {
+  width: 100%;
+  height: 18px;
+}
+
+/* Hide audio controls except the timeline (seek bar). Support varies by browser */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-play-button,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-volume-slider,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-mute-button,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-time-remaining-display,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-current-time-display,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-download-button,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-panel > :not(audio::-webkit-media-controls-timeline) {
+  display: none !important;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-panel {
+  padding: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing {
+  border-color: #005FCC;
+  box-shadow: 0 0 0 2px rgba(0, 95, 204, 0.25);
+  background: #fff;
+}
+
+/* Inline Use prompt button alignment in the same line as suggestion */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .use-prompt-btn.inline {
+  margin-left: auto;
+}
+
+/* Highlight expanded sound suggestion (text + icon to blue) */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
+  color: #005FCC;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded svg {
+  color: #005FCC;
+}
+
+@media screen and (max-width: 599px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile {
+    scroll-snap-align: start;
+  }
+  /* Keep sound item inline layout when expanded so the Use prompt button can align right */
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
+    display: flex;
+    align-items: center;
+  }
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded .use-prompt-btn.inline {
+    margin-left: auto;
+  }
+}
 .hero-marquee.unity-enabled {
   overflow: unset;
 }

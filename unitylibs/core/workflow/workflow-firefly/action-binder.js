@@ -181,6 +181,10 @@ export default class ActionBinder {
   addEventListeners(el, actionsList) {
     const handleClick = async (event) => {
       event.preventDefault();
+      // If sound verb is active and this is a prompt suggestion (.drop-item), do not trigger network call here.
+      const isDropItem = el.classList?.contains('drop-item');
+      const currentVerb = this.getSelectedVerbType();
+      if (isDropItem && currentVerb === 'sound') return;
       await this.execActions(actionsList, el);
     };
     switch (el.nodeName) {
