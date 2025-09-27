@@ -451,17 +451,41 @@ export default class UnityWidget {
       : this.getGeneratedSamples();
 
     vars.forEach((v, i) => {
-      const tile = createTag('div', { class: 'variation-tile' });
+      const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
       const label = createTag('div', { class: 'variation-label' }, v.label || `Example ${i + 1}`);
       const audio = createTag('audio', { controls: '', preload: 'none', src: v.url, controlslist: 'nodownload noplaybackrate noremoteplayback' });
       audio.addEventListener('play', () => {
         // pause any other audio
         details.querySelectorAll('audio').forEach((a) => { if (a !== audio) a.pause(); });
-        strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('playing'));
-        tile.classList.add('playing');
+        // clear playing and selection on siblings
+        strip.querySelectorAll('.variation-tile').forEach((t) => {
+          if (t !== tile) t.classList.remove('playing', 'selected');
+        });
+        tile.classList.add('playing', 'selected');
+        tile.setAttribute('aria-pressed', 'true');
       });
       audio.addEventListener('pause', () => {
         tile.classList.remove('playing');
+        tile.setAttribute('aria-pressed', 'false');
+      });
+      audio.addEventListener('ended', () => {
+        tile.classList.remove('playing');
+        tile.setAttribute('aria-pressed', 'false');
+      });
+      // Clicking the tile (outside the audio controls) only selects/highlights the tile
+      tile.addEventListener('click', (ev) => {
+        if (ev.target && ev.target.tagName && ev.target.tagName.toLowerCase() === 'audio') return;
+        strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
+        tile.classList.add('selected');
+        tile.focus();
+      });
+      tile.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          // keyboard select only; not auto-play
+          strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
+          tile.classList.add('selected');
+        }
       });
       tile.append(label, audio);
       strip.append(tile);

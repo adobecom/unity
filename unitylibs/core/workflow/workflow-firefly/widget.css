@@ -34,14 +34,17 @@
   display: flex;
   gap: 10px;
   overflow: visible; /* allow focus/playing outline to show */
+  flex-wrap: nowrap; /* desktop: keep in one line */
+  width: 100%;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1 1 calc(25% - 10px);
-  min-width: 0;
+  flex: 0 0 calc((100% - 30px) / 4); /* 4 tiles per row with 10px gaps */
+  width: auto;
+  box-sizing: border-box; /* include padding + border in calc width */
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid #E1E1E1;
@@ -75,7 +78,8 @@
   padding: 0;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.selected {
   border-color: #005FCC;
   box-shadow: 0 0 0 2px rgba(0, 95, 204, 0.25);
   background: #fff;
@@ -96,11 +100,14 @@
 
 @media screen and (max-width: 599px) {
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
-    overflow-x: auto;
+    overflow-x: auto; /* enable horizontal scroll with same tile size */
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
+    flex-wrap: nowrap; /* mobile: single row, scroll horizontally */
   }
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile {
+    flex: 0 0 170px; /* fixed tile size for mobile scroll */
+    width: 170px;
     scroll-snap-align: start;
   }
   /* Keep sound item inline layout when expanded so the Use prompt button can align right */
