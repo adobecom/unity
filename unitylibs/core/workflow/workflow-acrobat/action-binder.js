@@ -109,6 +109,7 @@ export default class ActionBinder {
     upload_warn_delete_asset: -603,
     validation_warn_validate_files: -604,
     warn_fetch_experiment: -605,
+    warn_page_config_call_failed: -606,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -698,12 +699,7 @@ export default class ActionBinder {
     await this.networkUtils.checkandUpdatePageConfigEndpoint(
       (newEndpoint) => { this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint); },
       (failure) => {
-        const data = {
-          failureType: failure?.type,
-          status: failure?.status,
-          message: failure?.error?.message,
-        };
-        this.dispatchAnalyticsEvent('pageConfigCallFailed', data);
+        this.dispatchErrorToast('warn_page_config_call_failed', null, null, true, true, { code: 'warn_page_config_call_failed', subCode: failure?.status, desc: failure?.type });
       },
     );
   }

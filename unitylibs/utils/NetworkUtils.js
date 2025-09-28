@@ -176,7 +176,7 @@ export default class NetworkUtils {
       return;
     } catch (error) {
       console.error('pageConfig call failed with error:', error);
-      if (typeof onFailure === 'function') onFailure({ type: 'network-error', error });
+      if (typeof onFailure === 'function') onFailure({ type: `Network-error - ${error.message}` });
     }
   }
 }
