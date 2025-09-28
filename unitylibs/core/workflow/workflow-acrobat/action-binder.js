@@ -697,7 +697,11 @@ export default class ActionBinder {
 
   async checkandUpdatePageConfigEndpoint() {
     await this.networkUtils.checkandUpdatePageConfigEndpoint(
-      (newEndpoint) => { this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint); },
+      (newEndpoint) => {
+        // send analytics event before updating the endpoint, where the pageConfig call is made.
+        this.dispatchAnalyticsEvent('pageConfigUpdated', { newEndpoint });
+        this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint);
+      },
       (failure) => {
         this.dispatchErrorToast('warn_page_config_call_failed', null, null, true, true, { code: 'warn_page_config_call_failed', subCode: failure?.status, desc: failure?.type });
       },
