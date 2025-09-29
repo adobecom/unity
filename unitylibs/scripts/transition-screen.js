@@ -95,10 +95,9 @@ export default class TransitionScreen {
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     f.append(...sections);
-    const splashScreenParent = this.workflowCfg.name === 'workflow-upload'
-      ? this.workflowCfg.targetCfg.upload.splashScreenConfig.splashScreenParent
-      : this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent;
-    const splashDiv = document.querySelector(splashScreenParent);
+    const splashDiv = document.querySelector(
+      this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
+    );
     splashDiv.append(f);
     const img = f.querySelector('img');
     if (img) loadImg(img);
@@ -204,10 +203,7 @@ export default class TransitionScreen {
   }
 
   async showSplashScreen(displayOn = false) {
-    const showSplashScreen = this.workflowCfg.name === 'workflow-upload' 
-      ? this.workflowCfg.targetCfg.upload.showSplashScreen 
-      : this.workflowCfg.targetCfg.showSplashScreen;
-    if (!this.splashScreenEl || !showSplashScreen) return;
+    if (!this.splashScreenEl || !this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl.classList.contains('decorate')) {
       const loadingProgressBar = this.checkForProgressBar();
       const textNodes = this.setProgressTextFromDOM();

@@ -295,7 +295,7 @@ export default class ActionBinder {
       img.onload = async () => {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
-        if (width > this.limits.maxWidth || height > this.limits.maxHeignt) {
+        if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
           this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
           this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filedimension' } });
           reject(new Error('Unable to process the file type!'));
