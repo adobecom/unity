@@ -154,29 +154,28 @@ export default class NetworkUtils {
     }
   }
 
-  async checkandUpdatePageConfigEndpoint(updateConfigCallback, onFailure) {
+  async fetchPageConfig(unityEndpointSuccessCb, unityEndpointFailureCb) {
     try {
       const TIMEOUT_MS = 5000;
       const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
       const pageConfigUrl = `${unityConfig.apiEndPoint}/pageConfig`;
       const pageConfigResponse = await this.fetchWithTimeout(pageConfigUrl, getOpts, TIMEOUT_MS);
       if (pageConfigResponse.ok) {
+        const responseJson = await this.getResponseJson(pageConfigResponse, {});
         const locationHeader = pageConfigResponse.headers.get('location');
         if (locationHeader) {
           const newEndpoint = `${locationHeader}/api/v1`;
-          if (typeof updateConfigCallback === 'function') updateConfigCallback(newEndpoint);
-          return;
+          if (typeof updateConfigCallback === 'function') unityEndpointSuccessCb(newEndpoint);
+          return responseJson;
         }
-        console.warn('No location header found, keeping existing API endpoint');
-        if (typeof onFailure === 'function') onFailure({ type: 'no-location-header', status: pageConfigResponse.status });
-        return;
+        if (typeof unityEndpointFailureCb === 'function') unityEndpointFailureCb({ type: 'no-location-header', status: pageConfigResponse.status });
+        return responseJson;
       }
-      console.error('pageConfig call failed with status:', pageConfigResponse.status);
-      if (typeof onFailure === 'function') onFailure({ type: 'non-ok-status', status: pageConfigResponse.status });
-      return;
+      if (typeof unityEndpointFailureCb === 'function') unityEndpointFailureCb({ type: 'non-ok-status', status: pageConfigResponse.status });
+      return await this.getResponseJson(pageConfigResponse, {});
     } catch (error) {
-      console.error('pageConfig call failed with error:', error);
-      if (typeof onFailure === 'function') onFailure({ type: `Network-error - ${error.message}` });
+      if (typeof unityEndpointFailureCb === 'function') unityEndpointFailureCb({ type: `Network-error - ${error.message}` });
+      return null;
     }
   }
 }

@@ -695,10 +695,9 @@ export default class ActionBinder {
     }
   }
 
-  async checkandUpdatePageConfigEndpoint() {
-    await this.networkUtils.checkandUpdatePageConfigEndpoint(
+  async fetchPageConfig() {
+    await this.networkUtils.fetchPageConfig(
       (newEndpoint) => {
-        // send analytics event before updating the endpoint, where the pageConfig call is made.
         this.dispatchAnalyticsEvent('pageConfigUpdated', { newEndpoint });
         this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint);
       },
@@ -741,7 +740,7 @@ export default class ActionBinder {
       this.loadTransitionScreen();
     }
     if (!this.pageConfigPromise) {
-      this.pageConfigPromise = this.checkandUpdatePageConfigEndpoint();
+      this.pageConfigPromise = this.fetchPageConfig();
     }
   }
 }
