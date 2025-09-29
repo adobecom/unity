@@ -696,7 +696,11 @@ export default class ActionBinder {
   }
 
   async fetchPageConfig() {
+    const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
+    const pageConfigUrl = `${unityConfig.apiEndPoint}/pageConfig`;
     await this.networkUtils.fetchPageConfig(
+      pageConfigUrl,
+      getOpts,
       (newEndpoint) => {
         this.dispatchAnalyticsEvent('pageConfigUpdated', { newEndpoint });
         this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint);
