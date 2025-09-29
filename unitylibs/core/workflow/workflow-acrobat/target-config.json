@@ -25,6 +25,7 @@
     "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
     "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
     "experimentationOn": ["add-comment"],
+    
     "fetchApiConfig": {
       "finalizeAsset": {
         "retryType": "polling",
