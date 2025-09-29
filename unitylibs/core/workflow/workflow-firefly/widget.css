@@ -56,6 +56,8 @@
   font-size: var(--type-body-xs-size);
   color: #292929;
   margin-bottom: 4px;
+  text-align: left;
+  align-self: flex-start;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio {
