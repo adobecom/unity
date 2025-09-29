@@ -219,6 +219,17 @@ export default class UnityWidget {
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
+    const clearSoundUI = () => {
+      const dropdownWrap = this.widget.querySelector('.prompt-dropdown-container');
+      if (!dropdownWrap) return;
+      this.resetAllSoundVariations(dropdownWrap);
+      dropdownWrap.querySelectorAll('.sound-details').forEach((d) => d.remove());
+      dropdownWrap.querySelectorAll('.drop-item.sound-expanded').forEach((el) => el.classList.remove('sound-expanded'));
+      dropdownWrap.querySelectorAll('.use-prompt-btn.inline').forEach((b) => b.remove());
+    };
+    inpField.addEventListener('focus', clearSoundUI);
+    inpField.addEventListener('click', clearSoundUI);
+    inpField.addEventListener('input', clearSoundUI);
     const verbDropdown = this.verbDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
