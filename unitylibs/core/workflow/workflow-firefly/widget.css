@@ -31,21 +31,20 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
-  display: flex;
+  display: grid; /* desktop: strict 4-column grid to avoid overflow */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  overflow: visible; /* allow focus/playing outline to show */
-  flex-wrap: nowrap; /* desktop: keep in one line */
+  overflow: visible;
   width: 100%;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 0 0 calc((100% - 30px) / 4); /* 4 tiles per row with 10px gaps */
+  gap: 4px;
   width: auto;
-  box-sizing: border-box; /* include padding + border in calc width */
-  padding: 8px 10px;
+  box-sizing: border-box;
+  padding: 6px 8px; /* reduced height */
   border-radius: 8px;
   border: 1px solid #E1E1E1;
   background: #fafafa;
@@ -55,7 +54,7 @@
   font-weight: 700;
   font-size: var(--type-body-xs-size);
   color: #292929;
-  margin-bottom: 4px;
+  margin-bottom: 0;
   text-align: left;
   align-self: flex-start;
 }
@@ -63,6 +62,47 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio {
   width: 100%;
   height: 18px;
+}
+
+/* Custom player styles */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr); /* ensure content column can shrink without clipping */
+  grid-template-rows: auto auto; /* label and slider */
+  grid-template-areas: 'btn label' 'btn slider';
+  column-gap: 8px;
+  row-gap: 2px;
+  width: 100%;
+  overflow: hidden;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .play-btn {
+  border: 1px solid #E1E1E1;
+  background: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn {
+  grid-area: btn;
+  border: 1px solid #E1E1E1;
+  background: #fff;
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn.hidden { display: none; }
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-slider {
+  grid-area: slider;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0; /* avoid default input range margins that can cause truncation */
+  display: block;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .variation-label.inline {
+  grid-area: label;
 }
 
 /* Hide audio controls except the timeline (seek bar). Support varies by browser */
@@ -102,6 +142,7 @@
 
 @media screen and (max-width: 599px) {
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
+    display: flex; /* switch from grid to flex for scrolling */
     overflow-x: auto; /* enable horizontal scroll with same tile size */
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;

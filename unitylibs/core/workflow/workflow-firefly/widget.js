@@ -71,6 +71,8 @@ export default class UnityWidget {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
+      // Stop and reset any playing audio inside the dropdown when it hides
+      this.resetAllSoundVariations(dropdown);
     }
   }
 
@@ -404,19 +406,37 @@ export default class UnityWidget {
     dropdown?.querySelectorAll('.sound-details').forEach((d) => d.remove());
   }
 
+  // Reset all variation tiles (pause audio, reset slider, hide button)
+  resetAllSoundVariations(rootEl) {
+    const root = rootEl || this.widget;
+    root.querySelectorAll('.variation-tile').forEach((t) => {
+      try { t._audio?.pause(); } catch (e) { /* noop */ }
+      if (t._audio) {
+        try { t._audio.currentTime = 0; } catch (e) { /* noop */ }
+      }
+      t.classList.remove('playing', 'selected');
+      t.setAttribute('aria-pressed', 'false');
+      const pb = t.querySelector('.pause-btn');
+      if (pb) pb.classList.add('hidden');
+      const rng = t.querySelector('.seek-slider');
+      if (rng) rng.value = '0';
+    });
+  }
+
   toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
     // If this item is already expanded, collapse it
     const next = item.nextElementSibling;
     if (next && next.classList.contains('sound-details')) {
+      // Pause and reset any audio before collapsing
+      this.resetAllSoundVariations(next);
       next.remove();
-      this.stopAnyAudio();
       item.classList.remove('sound-expanded');
       item.querySelector('.use-prompt-btn.inline')?.remove();
       return;
     }
     // Collapse any other expanded prompt
+    this.resetAllSoundVariations(dropdown);
     this.clearSoundDetails(dropdown);
-    this.stopAnyAudio();
     dropdown.querySelectorAll('.drop-item.sound-expanded .use-prompt-btn.inline')
       .forEach((btn) => btn.remove());
     dropdown.querySelectorAll('.drop-item.sound-expanded')
@@ -452,46 +472,156 @@ export default class UnityWidget {
 
     vars.forEach((v, i) => {
       const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
-      const label = createTag('div', { class: 'variation-label' }, v.label || `Example ${i + 1}`);
-      const audio = createTag('audio', { controls: '', preload: 'none', src: v.url, controlslist: 'nodownload noplaybackrate noremoteplayback' });
-      audio.addEventListener('play', () => {
-        // pause any other audio
-        details.querySelectorAll('audio').forEach((a) => { if (a !== audio) a.pause(); });
-        // clear playing and selection on siblings
+      const label = createTag('div', { class: 'variation-label inline' }, v.label || `Example ${i + 1}`);
+      const audioObj = new Audio(v.url);
+      audioObj.preload = 'metadata';
+      tile._audio = audioObj; // internal reference
+
+      const player = createTag('div', { class: 'custom-player' });
+      const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
+      const setBtnToPause = () => {
+        pauseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+        pauseBtn.dataset.state = 'pause';
+        pauseBtn.setAttribute('aria-label', `Pause ${v.label || `Example ${i + 1}`}`);
+      };
+      const setBtnToPlay = () => {
+        pauseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>';
+        pauseBtn.dataset.state = 'play';
+        pauseBtn.setAttribute('aria-label', `Play ${v.label || `Example ${i + 1}`}`);
+      };
+      setBtnToPause();
+      const slider = createTag('input', { class: 'seek-slider', type: 'range', min: '0', max: '100', step: '0.01', value: '0', 'aria-label': `Seek ${v.label || `Example ${i + 1}`}` });
+      player.append(pauseBtn, label, slider);
+
+      const pauseOthers = () => {
         strip.querySelectorAll('.variation-tile').forEach((t) => {
-          if (t !== tile) t.classList.remove('playing', 'selected');
+          if (t !== tile && t._audio) {
+            try { t._audio.pause(); } catch (e) { /* noop */ }
+            try { t._audio.currentTime = 0; } catch (e) { /* noop */ }
+          }
+          if (t !== tile) {
+            t.classList.remove('playing', 'selected');
+            t.setAttribute('aria-pressed', 'false');
+            const pb = t.querySelector('.pause-btn');
+            if (pb) pb.classList.add('hidden');
+            const rng = t.querySelector('.seek-slider');
+            if (rng) rng.value = '0';
+          }
         });
+      };
+
+      // Audio events
+      let rafId = null;
+      const startRaf = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        const tick = () => {
+          if (Number.isFinite(audioObj.duration) && audioObj.duration > 0) {
+            slider.value = String((audioObj.currentTime / audioObj.duration) * 100);
+          }
+          if (!audioObj.paused && !audioObj.ended) rafId = requestAnimationFrame(tick);
+        };
+        rafId = requestAnimationFrame(tick);
+      };
+      const stopRaf = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
+
+      audioObj.addEventListener('loadedmetadata', () => {
+        slider.value = '0';
+      });
+      audioObj.addEventListener('timeupdate', () => {
+        // keep for coarse updates; fine animation handled by rAF
+        if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
+        slider.value = String((audioObj.currentTime / audioObj.duration) * 100);
+      });
+      audioObj.addEventListener('play', () => {
+        pauseOthers();
+        strip.querySelectorAll('.variation-tile').forEach((t) => { if (t !== tile) t.classList.remove('selected'); });
         tile.classList.add('playing', 'selected');
         tile.setAttribute('aria-pressed', 'true');
+        setBtnToPause();
+        pauseBtn.classList.remove('hidden');
+        startRaf();
       });
-      audio.addEventListener('pause', () => {
+      audioObj.addEventListener('pause', () => {
         tile.classList.remove('playing');
         tile.setAttribute('aria-pressed', 'false');
+        if (tile.classList.contains('selected')) {
+          setBtnToPlay();
+          pauseBtn.classList.remove('hidden');
+        } else {
+          pauseBtn.classList.add('hidden');
+        }
+        stopRaf();
       });
-      audio.addEventListener('ended', () => {
+      audioObj.addEventListener('ended', () => {
         tile.classList.remove('playing');
         tile.setAttribute('aria-pressed', 'false');
+        pauseBtn.classList.add('hidden');
+        stopRaf();
       });
-      // Clicking the tile (outside the audio controls) only selects/highlights the tile
+
+      // Controls
+      pauseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (pauseBtn.dataset.state === 'pause') {
+          audioObj.pause();
+        } else {
+          audioObj.play().catch(() => {});
+        }
+      });
+      slider.addEventListener('input', () => {
+        if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
+        const pct = Math.min(100, Math.max(0, parseFloat(slider.value)));
+        audioObj.currentTime = (pct / 100) * audioObj.duration;
+      });
+
+      // Selecting tile and start playing
       tile.addEventListener('click', (ev) => {
-        if (ev.target && ev.target.tagName && ev.target.tagName.toLowerCase() === 'audio') return;
+        if (ev.target.closest && (ev.target.closest('.pause-btn') || ev.target.closest('.seek-slider'))) return;
         strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
         tile.classList.add('selected');
         tile.focus();
+        if (audioObj.paused) audioObj.play().catch(() => {});
       });
       tile.addEventListener('keydown', (ev) => {
         if (ev.key === 'Enter' || ev.key === ' ') {
           ev.preventDefault();
-          // keyboard select only; not auto-play
           strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
           tile.classList.add('selected');
+          if (audioObj.paused) audioObj.play().catch(() => {});
         }
       });
-      tile.append(label, audio);
+
+      tile.append(player);
       strip.append(tile);
     });
 
     details.append(strip);
+
+    // Clicking outside should reset all variations in this details block
+    const resetAll = (ev) => {
+      if (!details.contains(ev.target)) {
+        strip.querySelectorAll('.variation-tile').forEach((t) => {
+          try { t._audio?.pause(); } catch (e) { /* noop */ }
+          if (t._audio) t._audio.currentTime = 0;
+          t.classList.remove('playing', 'selected');
+          t.setAttribute('aria-pressed', 'false');
+          const pb = t.querySelector('.pause-btn');
+          if (pb) pb.classList.add('hidden');
+          const rng = t.querySelector('.seek-slider');
+          if (rng) rng.value = '0';
+        });
+      }
+    };
+    document.addEventListener('click', resetAll);
+    // Clean up listener when details removed
+    const observer = new MutationObserver(() => {
+      if (!details.isConnected) {
+        document.removeEventListener('click', resetAll);
+        observer.disconnect();
+      }
+    });
+    observer.observe(details.parentNode || document.body, { childList: true, subtree: true });
     return details;
   }
 
@@ -538,10 +668,10 @@ export default class UnityWidget {
 
   getGeneratedSamples() {
     return [
-      { url: this.generateWavDataUrl(440, 700), label: 'Variation 1' },
-      { url: this.generateWavDataUrl(523.25, 700), label: 'Variation 2' },
-      { url: this.generateWavDataUrl(659.25, 700), label: 'Variation 3' },
-      { url: this.generateWavDataUrl(784, 700), label: 'Variation 4' },
+      { url: this.generateWavDataUrl(440, 7000), label: 'Variation 1' },
+      { url: this.generateWavDataUrl(523.25, 7000), label: 'Variation 2' },
+      { url: this.generateWavDataUrl(659.25, 7000), label: 'Variation 3' },
+      { url: this.generateWavDataUrl(784, 7000), label: 'Variation 4' },
     ];
   }
 }
