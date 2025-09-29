@@ -242,20 +242,16 @@ export default class ActionBinder {
         }
       });
     }
-    const payload = {
-      locale: getLocale(),
-      desktopDevice: this.desktop,
-      additionalQueryParams: queryParams,
-    };
-    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
-      payload.workflow = this.workflowCfg.supportedFeatures.values().next().value;
-      payload.referer = window.location.href;
-    }
-
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
-      payload,
+      payload: {
+        locale: getLocale(),
+        workflow: this.workflowCfg.supportedFeatures.values().next().value,
+        referer: window.location.href,
+        desktopDevice: this.desktop,
+        additionalQueryParams: queryParams,
+      },
     };
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
