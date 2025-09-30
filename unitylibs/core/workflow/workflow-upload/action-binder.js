@@ -168,10 +168,16 @@ export default class ActionBinder {
   }
 
   async uploadAsset(file) {
+    const assetDetails = {
+      targetProduct: this.workflowCfg.productName,
+      name: file.name,
+      size: file.size,
+      format: file.type,
+    };
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.psApiConfig.psEndPoint.assetUpload,
-        { body: JSON.stringify({ targetProduct: this.workflowCfg.productName }) },
+        { body: JSON.stringify(assetDetails) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href } = resJson;
