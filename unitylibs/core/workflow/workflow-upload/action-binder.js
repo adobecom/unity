@@ -244,13 +244,13 @@ export default class ActionBinder {
     }
     const payload = {
       locale: getLocale(),
-      desktopDevice: this.desktop,
       additionalQueryParams: queryParams,
+      workflow: this.workflowCfg.supportedFeatures.values().next().value,
     };
 
-    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
-      payload.workflow = this.workflowCfg.supportedFeatures.values().next().value;
+    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {      
       payload.referer = window.location.href;
+      payload.desktopDevice = this.desktop;
     }
 
     const cOpts = {
