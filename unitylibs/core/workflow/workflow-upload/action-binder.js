@@ -254,7 +254,7 @@ export default class ActionBinder {
       workflow: this.workflowCfg.supportedFeatures.values().next().value,
     };
 
-    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {      
+    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
       payload.referer = window.location.href;
       payload.desktopDevice = this.desktop;
     }
