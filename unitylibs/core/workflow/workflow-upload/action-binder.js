@@ -237,7 +237,7 @@ export default class ActionBinder {
     }
   }
 
-  async continueInApp(assetId) {
+  async continueInApp(assetId, file) {
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
     if (cgen) {
@@ -252,6 +252,13 @@ export default class ActionBinder {
       locale: getLocale(),
       additionalQueryParams: queryParams,
       workflow: this.workflowCfg.supportedFeatures.values().next().value,
+      assetMetadata: {
+        [assetId]: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        },
+      },
     };
 
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
@@ -365,7 +372,7 @@ export default class ActionBinder {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     await this.uploadAsset(file);
-    await this.continueInApp(this.assetId);
+    await this.continueInApp(this.assetId, file);
   }
 
   async loadTransitionScreen() {
