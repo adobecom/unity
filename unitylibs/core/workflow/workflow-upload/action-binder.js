@@ -252,13 +252,7 @@ export default class ActionBinder {
       locale: getLocale(),
       additionalQueryParams: queryParams,
       workflow: this.workflowCfg.supportedFeatures.values().next().value,
-      assetMetadata: {
-        [assetId]: {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        },
-      },
+      type: file.type,
     };
 
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
