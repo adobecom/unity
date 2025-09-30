@@ -171,7 +171,7 @@ export default class ActionBinder {
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.psApiConfig.psEndPoint.assetUpload,
-        { targetProduct: this.workflowCfg.productName },
+        { body: JSON.stringify({ targetProduct: this.workflowCfg.productName }) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href } = resJson;
