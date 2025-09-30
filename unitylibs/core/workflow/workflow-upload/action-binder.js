@@ -171,7 +171,7 @@ export default class ActionBinder {
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.psApiConfig.psEndPoint.assetUpload,
-        {},
+        { targetProduct: this.workflowCfg.productName },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href } = resJson;
@@ -242,16 +242,21 @@ export default class ActionBinder {
         }
       });
     }
+    const payload = {
+      locale: getLocale(),
+      desktopDevice: this.desktop,
+      additionalQueryParams: queryParams,
+    };
+
+    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
+      payload.workflow = this.workflowCfg.supportedFeatures.values().next().value;
+      payload.referer = window.location.href;
+    }
+
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
-      payload: {
-        locale: getLocale(),
-        workflow: this.workflowCfg.supportedFeatures.values().next().value,
-        referer: window.location.href,
-        desktopDevice: this.desktop,
-        additionalQueryParams: queryParams,
-      },
+      payload,
     };
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
