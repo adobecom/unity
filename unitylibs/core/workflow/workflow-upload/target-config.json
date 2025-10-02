@@ -14,7 +14,7 @@
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"]
     },
     "limits-lightroom": {
-      "allowedFileTypes": ["image/jpeg"]
+      "allowedFileTypes": ["image/jpeg", "image/jpg"]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
