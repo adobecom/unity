@@ -491,12 +491,12 @@ export default class UnityWidget {
       const player = createTag('div', { class: 'custom-player' });
       const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
       const setBtnToPause = () => {
-        pauseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+        pauseBtn.innerHTML = '<svg width="14" height="14" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
         pauseBtn.dataset.state = 'pause';
         pauseBtn.setAttribute('aria-label', `Pause ${v.label || `Example ${i + 1}`}`);
       };
       const setBtnToPlay = () => {
-        pauseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>';
+        pauseBtn.innerHTML = '<svg width="14" height="14" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
         pauseBtn.dataset.state = 'play';
         pauseBtn.setAttribute('aria-label', `Play ${v.label || `Example ${i + 1}`}`);
       };
