@@ -51,7 +51,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .variation-label {
-  font-weight: 700;
+  font-weight: 500; /* lighter than bold */
   font-size: var(--type-body-xs-size);
   color: #292929;
   margin-bottom: 0;
@@ -67,10 +67,11 @@
 /* Custom player styles */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr); /* ensure content column can shrink without clipping */
-  grid-template-rows: auto auto; /* label and slider */
-  grid-template-areas: 'btn label' 'btn slider';
-  column-gap: 8px;
+  grid-template-columns: auto 44px 1fr; /* fixed timer width to avoid layout shift */
+  grid-template-rows: auto auto;
+  grid-template-areas: 'btn label label' 'btn time slider';
+  align-items: center;
+  column-gap: 0; /* manage gaps per-element for fine control */
   row-gap: 2px;
   width: 100%;
   overflow: hidden;
@@ -84,12 +85,20 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn {
   grid-area: btn;
-  border: 1px solid #E1E1E1;
-  background: #fff;
-  border-radius: 6px;
-  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  padding: 0 2px 0 0; /* right padding 2px */
+  margin: 0;
+  min-width: 0;
   cursor: pointer;
+  align-self: center; /* vertically center within 2-row grid area */
+  justify-self: start;
+  line-height: 0; /* remove inline spacing */
+  display: flex;
+  align-items: center;
 }
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn svg { display: block; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn.hidden { display: none; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-slider {
   grid-area: slider;
@@ -101,8 +110,47 @@
   display: block;
 }
 
+/* New progress bar + timer */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar {
+  grid-area: slider;
+  min-width: 0;
+  width: 100%;
+  height: 6px;
+  /* Blue progress rendered via background-size (layer 1), base track is layer 2 */
+  background: linear-gradient(#3B63FB, #3B63FB) left center/var(--progress, 0%) 100% no-repeat, #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  z-index: 0;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .time-el {
+  grid-area: time;
+  color: #000;
+  font-size: var(--type-body-xs-size);
+  line-height: 1;
+  width: 44px; /* match grid column width */
+  text-align: left; /* align with label start */
+  font-variant-numeric: tabular-nums; /* stable digit width to prevent jitter */
+  font-feature-settings: 'tnum' 1;
+  font-weight: 400; /* lighter timer weight */
+  margin-left: 6px; /* together with button padding → 8px total */
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar .seek-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: #3B63FB;
+  border-radius: 8px;
+  transition: width 100ms linear;
+  z-index: 1;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .variation-label.inline {
   grid-area: label;
+  margin-left: 6px; /* align label start with timer */
 }
 
 /* Hide audio controls except the timeline (seek bar). Support varies by browser */

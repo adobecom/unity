@@ -417,20 +417,24 @@ export default class UnityWidget {
     dropdown?.querySelectorAll('.sound-details').forEach((d) => d.remove());
   }
 
-  // Reset all variation tiles (pause audio, reset slider, hide button)
+  // Reset all variation tiles (pause audio, reset progress/time, hide button)
   resetAllSoundVariations(rootEl) {
     const root = rootEl || this.widget;
     root.querySelectorAll('.variation-tile').forEach((t) => {
-      try { t._audio?.pause(); } catch (e) { /* noop */ }
-      if (t._audio) {
-        try { t._audio.currentTime = 0; } catch (e) { /* noop */ }
+      try { t.audioRef?.pause(); } catch (e) { /* noop */ }
+      if (t.audioRef) {
+        try { t.audioRef.currentTime = 0; } catch (e) { /* noop */ }
       }
       t.classList.remove('playing', 'selected');
       t.setAttribute('aria-pressed', 'false');
       const pb = t.querySelector('.pause-btn');
       if (pb) pb.classList.add('hidden');
-      const rng = t.querySelector('.seek-slider');
-      if (rng) rng.value = '0';
+      const fill = t.querySelector('.seek-fill');
+      if (fill) fill.style.transform = 'scaleX(0)';
+      const bar = t.querySelector('.seek-bar');
+      if (bar) bar.setAttribute('aria-valuenow', '0');
+      const tm = t.querySelector('.time-el');
+      if (tm) tm.textContent = '0:00';
     });
   }
 
@@ -486,7 +490,7 @@ export default class UnityWidget {
       const label = createTag('div', { class: 'variation-label inline' }, v.label || `Example ${i + 1}`);
       const audioObj = new Audio(v.url);
       audioObj.preload = 'metadata';
-      tile._audio = audioObj; // internal reference
+      tile.audioRef = audioObj; // internal reference
 
       const player = createTag('div', { class: 'custom-player' });
       const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
@@ -501,47 +505,80 @@ export default class UnityWidget {
         pauseBtn.setAttribute('aria-label', `Play ${v.label || `Example ${i + 1}`}`);
       };
       setBtnToPause();
-      const slider = createTag('input', { class: 'seek-slider', type: 'range', min: '0', max: '100', step: '0.01', value: '0', 'aria-label': `Seek ${v.label || `Example ${i + 1}`}` });
-      player.append(pauseBtn, label, slider);
+      const timeEl = createTag('div', { class: 'time-el' }, '0:00');
+      const progressBar = createTag('div', {
+        class: 'seek-bar',
+        role: 'progressbar',
+        'aria-label': `Progress ${v.label || `Example ${i + 1}`}`,
+        'aria-valuemin': '0',
+        'aria-valuemax': '100',
+        'aria-valuenow': '0',
+        style: 'height:6px;border-radius:3px;overflow:hidden;flex:1;',
+      });
+      const progressFill = createTag('div', { class: 'seek-fill', style: 'height:100%;width:0%;background:#3B63FB;border-radius:3px;transition:width 100ms linear;' });
+      progressBar.append(progressFill);
+      player.append(pauseBtn, label, timeEl, progressBar);
+      // No enforced width; CSS handles compact button styles
 
       const pauseOthers = () => {
         strip.querySelectorAll('.variation-tile').forEach((t) => {
-          if (t !== tile && t._audio) {
-            try { t._audio.pause(); } catch (e) { /* noop */ }
-            try { t._audio.currentTime = 0; } catch (e) { /* noop */ }
+          if (t !== tile && t.audioRef) {
+            try { t.audioRef.pause(); } catch (e) { /* noop */ }
+            try { t.audioRef.currentTime = 0; } catch (e) { /* noop */ }
           }
           if (t !== tile) {
             t.classList.remove('playing', 'selected');
             t.setAttribute('aria-pressed', 'false');
             const pb = t.querySelector('.pause-btn');
             if (pb) pb.classList.add('hidden');
-            const rng = t.querySelector('.seek-slider');
-            if (rng) rng.value = '0';
+            const fill = t.querySelector('.seek-fill');
+            if (fill) fill.style.transform = 'scaleX(0)';
+            const bar = t.querySelector('.seek-bar');
+            if (bar) bar.setAttribute('aria-valuenow', '0');
+            const tm = t.querySelector('.time-el');
+            if (tm) tm.textContent = '0:00';
           }
         });
       };
 
       // Audio events
+      const fmtTime = (sec) => {
+        const s = Math.max(0, Math.floor(sec || 0));
+        const m = Math.floor(s / 60);
+        const r = s % 60;
+        return `${m}:${String(r).padStart(2, '0')}`;
+      };
+
       let rafId = null;
       const startRaf = () => {
         if (rafId) cancelAnimationFrame(rafId);
         const tick = () => {
           if (Number.isFinite(audioObj.duration) && audioObj.duration > 0) {
-            slider.value = String((audioObj.currentTime / audioObj.duration) * 100);
+            const pct = (audioObj.currentTime / audioObj.duration) * 100;
+            progressFill.style.width = `${pct}%`;
+            progressBar.style.setProperty('--progress', `${pct}%`);
+            progressBar.setAttribute('aria-valuenow', String(pct));
+            timeEl.textContent = fmtTime(audioObj.currentTime);
           }
           if (!audioObj.paused && !audioObj.ended) rafId = requestAnimationFrame(tick);
         };
         rafId = requestAnimationFrame(tick);
       };
       const stopRaf = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
-
       audioObj.addEventListener('loadedmetadata', () => {
-        slider.value = '0';
+        timeEl.textContent = '0:00';
+        progressFill.style.width = '0%';
+        progressBar.style.setProperty('--progress', '0%');
+        progressBar.setAttribute('aria-valuenow', '0');
       });
       audioObj.addEventListener('timeupdate', () => {
         // keep for coarse updates; fine animation handled by rAF
         if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
-        slider.value = String((audioObj.currentTime / audioObj.duration) * 100);
+        const pct = (audioObj.currentTime / audioObj.duration) * 100;
+        progressFill.style.width = `${pct}%`;
+        progressBar.style.setProperty('--progress', `${pct}%`);
+        progressBar.setAttribute('aria-valuenow', String(pct));
+        timeEl.textContent = fmtTime(audioObj.currentTime);
       });
       audioObj.addEventListener('play', () => {
         pauseOthers();
@@ -551,6 +588,7 @@ export default class UnityWidget {
         setBtnToPause();
         pauseBtn.classList.remove('hidden');
         startRaf();
+        timeEl.textContent = fmtTime(audioObj.currentTime);
       });
       audioObj.addEventListener('pause', () => {
         tile.classList.remove('playing');
@@ -567,6 +605,12 @@ export default class UnityWidget {
         tile.classList.remove('playing');
         tile.setAttribute('aria-pressed', 'false');
         pauseBtn.classList.add('hidden');
+        // Reset timer and progress when playback completes
+        try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
+        progressFill.style.width = '0%';
+        progressBar.style.setProperty('--progress', '0%');
+        progressBar.setAttribute('aria-valuenow', '0');
+        timeEl.textContent = '0:00';
         stopRaf();
       });
 
@@ -580,15 +624,11 @@ export default class UnityWidget {
           audioObj.play().catch(() => {});
         }
       });
-      slider.addEventListener('input', () => {
-        if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
-        const pct = Math.min(100, Math.max(0, parseFloat(slider.value)));
-        audioObj.currentTime = (pct / 100) * audioObj.duration;
-      });
+      // Progress bar is display-only (no seeking)
 
       // Selecting tile and start playing
       tile.addEventListener('click', (ev) => {
-        if (ev.target.closest && (ev.target.closest('.pause-btn') || ev.target.closest('.seek-slider'))) return;
+        if (ev.target.closest && (ev.target.closest('.pause-btn') || ev.target.closest('.seek-bar'))) return;
         strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
         tile.classList.add('selected');
         tile.focus();
@@ -613,14 +653,18 @@ export default class UnityWidget {
     const resetAll = (ev) => {
       if (!details.contains(ev.target)) {
         strip.querySelectorAll('.variation-tile').forEach((t) => {
-          try { t._audio?.pause(); } catch (e) { /* noop */ }
-          if (t._audio) t._audio.currentTime = 0;
+          try { t.audioRef?.pause(); } catch (e) { /* noop */ }
+          if (t.audioRef) t.audioRef.currentTime = 0;
           t.classList.remove('playing', 'selected');
           t.setAttribute('aria-pressed', 'false');
           const pb = t.querySelector('.pause-btn');
           if (pb) pb.classList.add('hidden');
-          const rng = t.querySelector('.seek-slider');
-          if (rng) rng.value = '0';
+          const fill = t.querySelector('.seek-fill');
+          if (fill) fill.style.transform = 'scaleX(0)';
+          const bar = t.querySelector('.seek-bar');
+          if (bar) bar.setAttribute('aria-valuenow', '0');
+          const tm = t.querySelector('.time-el');
+          if (tm) tm.textContent = '0:00';
         });
       }
     };
@@ -682,7 +726,7 @@ export default class UnityWidget {
       { url: this.generateWavDataUrl(440, 7000), label: 'Variation 1' },
       { url: this.generateWavDataUrl(523.25, 7000), label: 'Variation 2' },
       { url: this.generateWavDataUrl(659.25, 7000), label: 'Variation 3' },
-      { url: this.generateWavDataUrl(784, 7000), label: 'Variation 4' },
+      { url: this.generateWavDataUrl(784, 15000), label: 'Variation 4' },
     ];
   }
 }
