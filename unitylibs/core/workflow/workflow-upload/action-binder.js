@@ -143,7 +143,7 @@ export default class ActionBinder {
       constructor: blobData.constructor.name,
       size: blobData.size,
       isFile: blobData instanceof File,
-      isBlob: blobData instanceof Blob
+      isBlob: blobData instanceof Blob,
     });
 
     // For File objects, we need to ensure proper handling
@@ -217,10 +217,10 @@ export default class ActionBinder {
         { body: JSON.stringify(assetDetails) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
-      const { id, href } = resJson;
+      const { id, href, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
-      await this.uploadImgToUnity(href, id, file, file.type);
+      await this.uploadImgToUnity(uploadUrls[0].href, id, file, file.type);
       this.scanImgForSafety(this.assetId);
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
