@@ -138,19 +138,11 @@ export default class ActionBinder {
   }
 
   async uploadImgToUnity(storageUrl, id, blobData, fileType) {
-    // Ensure we have a proper Blob/File object
-    const fileBlob = blobData instanceof Blob ? blobData : new Blob([blobData], { type: fileType });
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
-      body: fileBlob,
+      body: blobData,
     };
-
-    console.log('Uploading file:', {
-      size: fileBlob.size,
-      type: fileBlob.type,
-      url: storageUrl,
-    });
     const response = await fetch(storageUrl, uploadOptions);
     if (response.status !== 200) {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
