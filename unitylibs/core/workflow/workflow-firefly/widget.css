@@ -172,9 +172,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
   position: relative;
   box-shadow: 0 0 10px #0000001c;
-  backdrop-filter: blur(10px);
-  border-top: 1px solid #fff3;
-  border-bottom: 1px solid #00000012;
+  border: 1px solid rgba(255 255 255 / 8%);
   width: 720px;
   margin: 16px 0;
 }
@@ -186,11 +184,11 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete {
-  background: #1111118a;
+  background: rgb(17 17 17 / 55%);
 }
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete {
-  background: #ffffff8a;
+  background: rgb(255 255 255 / 55%);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
@@ -272,12 +270,10 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
-  padding: 10px 0;
   flex: 1;
   font-size: var(--type-body-s-size);
   font-weight: 400;
   line-height: 20.8px;
-  margin: 0 16px;
   border: none;
   width: 100%;
   border-radius: 3px;
@@ -403,6 +399,7 @@
   height: 100%;
   top: 0;
   border-radius: 100px;
+  border: 1px solid rgba(255 255 255 / 8%);
   z-index: -1;
   left: 0;
   transform: translate(-18px, -18px);
@@ -410,19 +407,12 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete::after {
-  background: linear-gradient(0deg, rgba(1 1 1 / 15%) 0%, rgba(1 1 1 / 05%) 100%);
-  border-top: 1px solid #ffffff1a;
-  border-bottom: 1px solid #ffffff0d;
-  border-left: 1px solid #ffffff0d;
-  border-right: 1px solid #ffffff0d;
+  background: linear-gradient(180deg, rgb(0 0 0 / 4%) 0%, rgb(0 0 0 / 20%) 100%);
+  
 }
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete::after {
-  background: linear-gradient(0deg, rgba(255 255 255 / 15%) 0%, rgba(255 255 255 / 05%) 100%);
-  border-top: 1px solid #ffffff1a;
-  border-bottom: 1px solid #ffffff0d;
-  border-left: 1px solid #ffffff0d;
-  border-right: 1px solid #ffffff0d;
+  background: linear-gradient(180deg, rgb(255 255 255 / 25%) 0%, rgb(255 255 255 / 10%) 100%);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .autocomplete::after {
@@ -523,7 +513,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xxs);
-  text-align: left;
+  text-align: start;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
@@ -615,7 +605,6 @@
   display: flex;
   order: 2;
   max-width: 114px;
-  margin: 0 16px;
 }
 
 .unity-enabled .interactive-area .verbs-container .menu-icon {
@@ -668,14 +657,24 @@
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
   border-radius: 10px;
-  background: rgba(255 255 255 / 95%);
+  background: rgba(255 255 255 / 100%);
   color: #292929;
   margin: 8px 0 0;
   min-width: 110px;
   animation: move-up .2s ease forwards;
   position: absolute;
-  top: 115px;
-  left: 26px;
+  top: 95px;
+  left: 10px;
+}
+
+[lang="ja-JP"] .unity-enabled .interactive-area .verb-list,
+[lang="ko-KR"] .unity-enabled .interactive-area .verb-list {
+  margin-top: 12px;
+}
+
+[dir="rtl"] .unity-enabled .interactive-area .verb-list {
+  left: unset;
+  right: 10px;
 }
 
 .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
@@ -798,12 +797,11 @@
   }
 
   .unity-enabled .interactive-area .verb-list {
-    top: 45px;
+    top: 25px;
   }
 
   [dir="rtl"] .unity-enabled .interactive-area .verb-list {
     left: unset;
-    right: calc(var(--spacing-m) * -1);
   }
 
   .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
@@ -881,9 +879,14 @@
     width: auto;
   }
 
+  [lang="ja-JP"] .unity-enabled .interactive-area .verb-list,
+  [lang="ko-KR"] .unity-enabled .interactive-area .verb-list {
+    top: 46px;
+    margin-top: 2px;
+  }
+
   [dir="rtl"] .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
     left: unset;
-    right: calc(var(--spacing-s) * -1);
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
