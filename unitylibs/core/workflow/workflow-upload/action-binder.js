@@ -184,15 +184,10 @@ export default class ActionBinder {
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
-      
-      // Check if chunked upload is required
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
-        // Dynamically import upload-handler only when needed
         const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
-        const uploadHandler = new UploadHandler(this, this.serviceHandler);
-        
-        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize);
-        
+        const uploadHandler = new UploadHandler(this, this.serviceHandler);        
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize);        
         if (failedChunks && failedChunks.size > 0) {
           const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
           error.status = 504;
@@ -203,15 +198,10 @@ export default class ActionBinder {
           });
           throw error;
         }
-        
-        // Use retry logic for chunked uploads
         await uploadHandler.scanImgForSafetyWithRetry(this.assetId);
       } else {
-        // Fallback to regular upload
         await this.uploadImgToUnity(href, id, file, file.type);
-        
-        // Use regular call for non-chunked uploads
-        await this.scanImgForSafety(this.assetId);
+        this.scanImgForSafety(this.assetId);
       }
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);

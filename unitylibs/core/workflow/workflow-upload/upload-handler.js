@@ -2,7 +2,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 
-import { unityConfig, getUnityLibs, getHeaders } from '../../../scripts/utils.js';
+import { unityConfig, getHeaders } from '../../../scripts/utils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -53,14 +53,6 @@ export default class UploadHandler {
       }
       if (response.status !== 200) {
         let errorMessage = `Error fetching from service. URL: ${url}`;
-        if (contentLength !== '0') {
-          try {
-            const responseJson = await response.json();
-            // Note: Not checking for 'quotaexceeded' and 'notentitled' as requested
-          } catch {
-            errorMessage = `Failed to parse JSON response. URL: ${url}`;
-          }
-        }
         const error = new Error(errorMessage);
         error.status = response.status;
         throw error;
@@ -182,19 +174,14 @@ export default class UploadHandler {
   }
 
   async uploadChunksToUnity(uploadUrls, file, blockSize, signal = null) {
-    const totalChunks = Math.ceil(file.size / blockSize);
-    
+    const totalChunks = Math.ceil(file.size / blockSize);    
     if (uploadUrls.length !== totalChunks) {
       throw new Error(`Mismatch between number of chunks (${totalChunks}) and upload URLs (${uploadUrls.length})`);
     }
-
     const failedChunks = new Set();
     const attemptMap = new Map();
     let maxAttempts = 0;
-
-    // Since we have max 4 chunks, we can upload them all in parallel
-    const uploadPromises = [];
-    
+    const uploadPromises = [];    
     for (let i = 0; i < totalChunks; i++) {
       const start = i * blockSize;
       const end = Math.min(start + blockSize, file.size);
@@ -203,7 +190,6 @@ export default class UploadHandler {
       
       const uploadPromise = (async () => {
         if (signal?.aborted) return;
-        // Extract href from URL object if it's an object, otherwise use as string
         const urlString = typeof url === 'object' ? url.href : url;
         const urlObj = new URL(urlString);
         const chunkNumber = urlObj.searchParams.get('partNumber') || i;
@@ -219,9 +205,7 @@ export default class UploadHandler {
       
       uploadPromises.push(uploadPromise);
     }
-
     if (signal?.aborted) return { failedChunks, attemptMap };
-
     try {
       await Promise.all(uploadPromises);
       this.actionBinder.logAnalyticsinSplunk('Chunked Upload Completed|UnityWidget', { assetId: this.actionBinder.assetId, chunkCount: totalChunks });
@@ -229,15 +213,12 @@ export default class UploadHandler {
       this.actionBinder.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', { assetId: this.actionBinder.assetId, error: error.message, failedChunks: failedChunks.size });
       throw error;
     }
-
     return { failedChunks, attemptMap };
   }
 
   async scanImgForSafetyWithRetry(assetId) {
     const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
     const optionsBody = { body: JSON.stringify(assetData) };
-    
-    // Use retry logic for chunked uploads
     await this.postCallToServiceWithRetry(
       this.actionBinder.psApiConfig.psEndPoint.acmpCheck,
       optionsBody,
