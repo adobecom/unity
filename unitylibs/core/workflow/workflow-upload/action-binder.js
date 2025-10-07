@@ -153,6 +153,7 @@ export default class ActionBinder {
     this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
   }
 
+
   async scanImgForSafety(assetId) {
     const assetData = { assetId, targetProduct: this.workflowCfg.productName };
     const optionsBody = { body: JSON.stringify(assetData) };
@@ -180,11 +181,38 @@ export default class ActionBinder {
         { body: JSON.stringify(assetDetails) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
-      const { id, href } = resJson;
+      const { id, href, blockSize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
-      await this.uploadImgToUnity(href, id, file, file.type);
-      this.scanImgForSafety(this.assetId);
+      
+      // Check if chunked upload is required
+      if (blockSize && uploadUrls && Array.isArray(uploadUrls)) {
+        // Dynamically import upload-handler only when needed
+        const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
+        const uploadHandler = new UploadHandler(this, this.serviceHandler);
+        
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blockSize);
+        
+        if (failedChunks && failedChunks.size > 0) {
+          const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
+          error.status = 504;
+          this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', { 
+            assetId: this.assetId, 
+            failedChunks: failedChunks.size,
+            maxRetryCount: Math.max(...Array.from(attemptMap.values()))
+          });
+          throw error;
+        }
+        
+        // Use retry logic for chunked uploads
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId);
+      } else {
+        // Fallback to regular upload
+        await this.uploadImgToUnity(href, id, file, file.type);
+        
+        // Use regular call for non-chunked uploads
+        await this.scanImgForSafety(this.assetId);
+      }
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
