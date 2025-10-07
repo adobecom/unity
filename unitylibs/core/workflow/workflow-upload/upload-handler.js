@@ -11,10 +11,28 @@ export default class UploadHandler {
     this.serviceHandler = serviceHandler;
   }
 
+  logError(eventName, errorData, debugMessage) {
+    if (debugMessage) {
+      window.lana?.log(debugMessage, this.actionBinder.lanaOptions);
+    }
+    this.actionBinder.logAnalyticsinSplunk(eventName, {
+      ...errorData,
+      assetId: this.actionBinder.assetId,
+    });
+  }
+
   handleAbortedRequest(url, options) {
     if (!(options?.signal?.aborted)) return;
+    this.logError('Upload Aborted|UnityWidget', {
+      url,
+      errorData: {
+        code: 'upload-aborted',
+        desc: `Request aborted for URL: ${url}`,
+      },
+    }, `Message: Request aborted for URL: ${url}`);
     const abortError = new Error(`Request aborted for URL: ${url}`);
     abortError.name = 'AbortError';
+    abortError.status = 0;
     throw abortError;
   }
 
@@ -31,10 +49,27 @@ export default class UploadHandler {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
+        this.logError('Upload Timeout|UnityWidget', {
+          url,
+          timeout,
+          errorData: {
+            code: 'upload-timeout',
+            desc: `Request timed out after ${timeout}ms for URL: ${url}`,
+          },
+        }, `Message: Network error for URL: ${url}, Error: ${error.message}`);
         const timeoutError = new Error(`Request timed out. URL: ${url}`);
         timeoutError.name = 'TimeoutError';
+        timeoutError.status = 504;
         throw timeoutError;
       }
+      this.logError('Upload Network Error|UnityWidget', {
+        url,
+        errorType: error.name,
+        errorData: {
+          code: 'upload-network-error',
+          desc: `Network error: ${error.message} for URL: ${url}`,
+        },
+      }, `Message: Network error for URL: ${url}, Error: ${error.message}`);
       throw error;
     }
   }
@@ -52,6 +87,15 @@ export default class UploadHandler {
         return this.fetchFromService(url, options, false);
       }
       if (response.status !== 200) {
+        this.logError('Upload HTTP Error|UnityWidget', {
+          url,
+          status: response.status,
+          errorData: {
+            code: 'upload-http-error',
+            subCode: response.status,
+            desc: `HTTP ${response.status} error for URL: ${url}`,
+          },
+        }, `Message: HTTP error ${response.status} for URL: ${url}`);
         const errorMessage = `Error fetching from service. URL: ${url}`;
         const error = new Error(errorMessage);
         error.status = response.status;
@@ -62,14 +106,35 @@ export default class UploadHandler {
     } catch (e) {
       this.handleAbortedRequest(url, options);
       if (e instanceof TypeError) {
+        this.logError('Upload Service Network Error|UnityWidget', {
+          url,
+          errorData: {
+            code: 'upload-service-network-error',
+            desc: `Network error: ${e.message} for URL: ${url}`,
+          },
+        }, `Message: Service error for URL: ${url}, Error: ${e.message}`);
         const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
         error.status = 0;
         throw error;
       } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+        this.logError('Upload Service Timeout|UnityWidget', {
+          url,
+          errorData: {
+            code: 'upload-service-timeout',
+            desc: `Request timed out: ${e.message} for URL: ${url}`,
+          },
+        }, `Message: Service error for URL: ${url}, Error: ${e.message}`);
         const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
         error.status = 504;
         throw error;
       }
+      this.logError('Upload Service Error|UnityWidget', {
+        url,
+        errorData: {
+          code: 'upload-service-error',
+          desc: `Service error: ${e.message} for URL: ${url}`,
+        },
+      }, `Message: Service error for URL: ${url}, Error: ${e.message}`);
       throw e;
     }
   }
@@ -153,21 +218,66 @@ export default class UploadHandler {
     try {
       const response = await fetch(storageUrl, uploadOptions);
       if (!response.ok) {
+        this.logError('Upload Chunk Failed|UnityWidget', {
+          chunkNumber,
+          status: response.status,
+          size: blobData.size,
+          fileType,
+          errorData: {
+            code: 'upload-chunk-failed',
+            subCode: response.status,
+            desc: `Failed to upload chunk ${chunkNumber}: ${response.statusText}`,
+          },
+        }, `Message: Failed to upload chunk ${chunkNumber} to Unity, Error: ${response.status}`);
+
         const error = new Error(response.statusText || 'Upload request failed');
         error.status = response.status;
-        window.lana?.log(`Message: Failed to upload chunk ${chunkNumber} to Unity, Error: ${response.status}`, this.actionBinder.lanaOptions);
         throw error;
       }
       return response;
     } catch (e) {
-      if (e.name === 'AbortError') throw e;
-      else if (e instanceof TypeError) {
+      if (e.name === 'AbortError') {
+        this.logError('Upload Chunk Aborted|UnityWidget', {
+          chunkNumber,
+          size: blobData.size,
+          fileType,
+          errorData: {
+            code: 'upload-chunk-aborted',
+            desc: `Chunk ${chunkNumber} upload aborted`,
+          },
+        });
+        throw e;
+      } else if (e instanceof TypeError) {
         const errorMessage = `Network error. Asset ID: ${assetId}, ${blobData.size} bytes; Error message: ${e.message}`;
-        window.lana?.log(`Message: Network error during chunk upload, Error: ${errorMessage}`, this.actionBinder.lanaOptions);
+        this.logError('Upload Chunk Network Error|UnityWidget', {
+          chunkNumber,
+          size: blobData.size,
+          fileType,
+          errorData: {
+            code: 'upload-chunk-network-error',
+            desc: `Network error during chunk ${chunkNumber} upload: ${e.message}`,
+          },
+        }, `Message: Network error during chunk upload, Error: ${errorMessage}`);
       } else if (['Timeout'].includes(e.name)) {
-        window.lana?.log(`Message: Timeout when uploading chunk to Unity, Asset ID: ${assetId}, ${blobData.size} bytes`, this.actionBinder.lanaOptions);
+        this.logError('Upload Chunk Timeout|UnityWidget', {
+          chunkNumber,
+          size: blobData.size,
+          fileType,
+          errorData: {
+            code: 'upload-chunk-timeout',
+            desc: `Timeout during chunk ${chunkNumber} upload`,
+          },
+        }, `Message: Timeout when uploading chunk to Unity, Asset ID: ${assetId}, ${blobData.size} bytes`);
       } else {
-        window.lana?.log(`Message: Exception raised when uploading chunk to Unity, Error: ${e.message}, Asset ID: ${assetId}, ${blobData.size} bytes`, this.actionBinder.lanaOptions);
+        this.logError('Upload Chunk Error|UnityWidget', {
+          chunkNumber,
+          size: blobData.size,
+          fileType,
+          errorData: {
+            code: 'upload-chunk-error',
+            desc: `Exception during chunk ${chunkNumber} upload: ${e.message}`,
+          },
+        }, `Message: Exception raised when uploading chunk to Unity, Error: ${e.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
       }
       throw e;
     }
