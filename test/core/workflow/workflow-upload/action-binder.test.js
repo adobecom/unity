@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
-import { setUnityLibs } from '../../../unitylibs/scripts/utils.js';
+import { setUnityLibs, getUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 
 setUnityLibs('/unitylibs');
 
@@ -14,8 +14,8 @@ window.lana = { log: sinon.stub() };
 
 window.sendAnalyticsEvent = sinon.stub();
 
-const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js');
-document.body.innerHTML = await readFile({ path: './mocks/upload-body.html' });
+const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
+document.body.innerHTML = await readFile({ path: '../mocks/upload-body.html' });
 
 function delay(ms) {
   return new Promise((resolve) => {
@@ -87,7 +87,7 @@ describe('Unity Upload Block', () => {
     await init(unityEl);
     await delay(100);
 
-    const module = await import('../../../unitylibs/core/workflow/workflow-upload/action-binder.js');
+    const module = await import('../../../../unitylibs/core/workflow/workflow-upload/action-binder.js');
     ActionBinder = module.default;
 
     workflowCfg = {
@@ -115,7 +115,7 @@ describe('Unity Upload Block', () => {
   });
 
   beforeEach(async () => {
-    document.body.innerHTML = await readFile({ path: './mocks/upload-body.html' });
+    document.body.innerHTML = await readFile({ path: '../mocks/upload-body.html' });
     unityEl = document.querySelector('.unity.workflow-upload');
     await delay(50);
   });
