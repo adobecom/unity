@@ -1475,11 +1475,11 @@ describe('ActionBinder', () => {
       it('should return correct mime type for .ai file', async () => {
         const file = { name: 'test.ai' };
         const originalImport = window.import;
-        window.import = () => Promise.resolve({ getMimeType: () => 'application/illustrator' });
+        window.import = () => Promise.resolve({ getMimeType: () => 'application/pdf' });
 
         const result = await actionBinder.getMimeType(file);
 
-        expect(result).to.equal('application/illustrator');
+        expect(result).to.equal('application/pdf');
 
         // Restore original import
         window.import = originalImport;
