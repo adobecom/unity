@@ -680,53 +680,12 @@ export default class UnityWidget {
     return details;
   }
 
-  // ===== Embedded audio helpers (data: WAV) =====
-  generateWavDataUrl(frequencyHz, durationMs, sampleRate = 8000) {
-    const numSamples = Math.max(1, Math.floor(sampleRate * (durationMs / 1000)));
-    const headerSize = 44;
-    const dataSize = numSamples * 2; // 16-bit mono
-    const buffer = new ArrayBuffer(headerSize + dataSize);
-    const view = new DataView(buffer);
-
-    const writeString = (offset, str) => {
-      for (let i = 0; i < str.length; i += 1) view.setUint8(offset + i, str.charCodeAt(i));
-    };
-
-    // RIFF/WAVE header
-    writeString(0, 'RIFF');
-    view.setUint32(4, headerSize + dataSize - 8, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true); // PCM chunk size
-    view.setUint16(20, 1, true); // PCM format
-    view.setUint16(22, 1, true); // mono
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true); // byte rate
-    view.setUint16(32, 2, true); // block align
-    view.setUint16(34, 16, true); // bits per sample
-    writeString(36, 'data');
-    view.setUint32(40, dataSize, true);
-
-    // Samples
-    const amplitude = 0.5; // keep it gentle
-    for (let i = 0; i < numSamples; i += 1) {
-      const sample = Math.sin(2 * Math.PI * (frequencyHz / sampleRate) * i) * amplitude;
-      view.setInt16(headerSize + i * 2, sample * 0x7fff, true);
-    }
-
-    // To base64 data URL
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
-    return `data:audio/wav;base64,${btoa(binary)}`;
-  }
-
   getGeneratedSamples() {
     return [
-      { url: this.generateWavDataUrl(440, 7000), label: 'Variation 1' },
-      { url: this.generateWavDataUrl(523.25, 7000), label: 'Variation 2' },
-      { url: this.generateWavDataUrl(659.25, 7000), label: 'Variation 3' },
-      { url: this.generateWavDataUrl(784, 15000), label: 'Variation 4' },
+      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation1.wav', label: 'Variation 1' },
+      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation2.wav', label: 'Variation 2' },
+      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation3.wav', label: 'Variation 3' },
+      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation4.wav', label: 'Variation 4' },
     ];
   }
 }
