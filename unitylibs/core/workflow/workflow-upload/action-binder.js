@@ -181,17 +181,17 @@ export default class ActionBinder {
         { body: JSON.stringify(assetDetails) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
-      const { id, href, blockSize, uploadUrls } = resJson;
+      const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       
       // Check if chunked upload is required
-      if (blockSize && uploadUrls && Array.isArray(uploadUrls)) {
+      if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
         // Dynamically import upload-handler only when needed
         const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
         const uploadHandler = new UploadHandler(this, this.serviceHandler);
         
-        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blockSize);
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize);
         
         if (failedChunks && failedChunks.size > 0) {
           const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
