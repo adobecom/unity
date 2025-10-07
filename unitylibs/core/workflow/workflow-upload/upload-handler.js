@@ -203,10 +203,12 @@ export default class UploadHandler {
       
       const uploadPromise = (async () => {
         if (signal?.aborted) return;
-        const urlObj = new URL(url);
+        // Extract href from URL object if it's an object, otherwise use as string
+        const urlString = typeof url === 'object' ? url.href : url;
+        const urlObj = new URL(urlString);
         const chunkNumber = urlObj.searchParams.get('partNumber') || i;
         try {
-          const { attempt } = await this.uploadFileToUnityWithRetry(url, chunk, file.type, this.actionBinder.assetId, signal, parseInt(chunkNumber, 10));
+          const { attempt } = await this.uploadFileToUnityWithRetry(urlString, chunk, file.type, this.actionBinder.assetId, signal, parseInt(chunkNumber, 10));
           if (attempt > maxAttempts) maxAttempts = attempt;
           attemptMap.set(i, maxAttempts);
         } catch (err) {
