@@ -4,12 +4,13 @@
 /* eslint-disable no-loop-func */
 
 import { unityConfig, getHeaders } from '../../../scripts/utils.js';
+import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 export default class UploadHandler {
-  constructor(actionBinder, serviceHandler, networkUtils) {
+  constructor(actionBinder, serviceHandler) {
     this.actionBinder = actionBinder;
     this.serviceHandler = serviceHandler;
-    this.networkUtils = networkUtils;
+    this.networkUtils = new NetworkUtils();
   }
 
   logError(eventName, errorData, debugMessage) {

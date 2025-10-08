@@ -44,13 +44,7 @@ describe('UploadHandler', () => {
 
     mockServiceHandler = { showErrorToast: sinon.stub() };
 
-    const mockNetworkUtils = {
-      fetchFromServiceWithRetry: sinon.stub(),
-      fetchFromService: sinon.stub(),
-      fetchWithTimeout: sinon.stub(),
-      handleAbortedRequest: sinon.stub(),
-    };
-    uploadHandler = new UploadHandler(mockActionBinder, mockServiceHandler, mockNetworkUtils);
+    uploadHandler = new UploadHandler(mockActionBinder, mockServiceHandler);
   });
 
   describe('Constructor', () => {
