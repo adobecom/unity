@@ -272,7 +272,16 @@ export default class ActionBinder {
         if (key && value) queryParams[key] = value;
       });
     }
-    this.query = this.inputField.value.trim();
+    // Compute query: for sound, prefer one-shot override set by "Use prompt"; else fall back to input value
+    const currentVerb = this.getSelectedVerbType();
+    const genBtn = this.block.querySelector('.gen-btn');
+    const override = genBtn?.dataset?.soundPrompt;
+    if (currentVerb === 'sound' && override) {
+      this.query = override.trim();
+      try { delete genBtn.dataset.soundPrompt; } catch (e) { /* noop */ }
+    } else {
+      this.query = this.inputField.value.trim();
+    }
     const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
     const action = (this.id ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };

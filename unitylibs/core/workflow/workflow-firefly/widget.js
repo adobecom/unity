@@ -473,9 +473,13 @@ export default class UnityWidget {
     inlineBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const inp = this.widget.querySelector('#promptInput');
-      if (inp) inp.value = promptObj.prompt;
       this.hidePromptDropdown();
+      // For sound: pass suggestion as an override without mutating input, then trigger Generate
+      const btn = this.genBtn;
+      if (btn) {
+        btn.dataset.soundPrompt = promptObj.prompt;
+        btn.click();
+      }
     });
     item.classList.add('sound-expanded');
     item.append(inlineBtn);
