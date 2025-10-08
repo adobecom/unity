@@ -17,7 +17,7 @@ export function removeExtension(name) {
 export function getMimeType(fileName) {
   const extToTypeMap = {
     indd: 'application/x-indesign',
-    ai: 'application/pdf',
+    ai: 'application/illustrator',
     psd: 'image/vnd.adobe.photoshop',
     form: 'application/vnd.adobe.form.fillsign',
   };
