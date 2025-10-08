@@ -4,11 +4,13 @@
 /* eslint-disable no-loop-func */
 
 import { unityConfig, getHeaders } from '../../../scripts/utils.js';
+import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
     this.actionBinder = actionBinder;
     this.serviceHandler = serviceHandler;
+    this.networkUtils = new NetworkUtils();
   }
 
   logError(eventName, errorData, debugMessage) {
@@ -22,46 +24,24 @@ export default class UploadHandler {
   }
 
   handleAbortedRequest(url, options) {
-    if (!(options?.signal?.aborted)) return;
-    this.logError('Upload Aborted|UnityWidget', {
-      url,
-      errorData: {
-        code: 'upload-aborted',
-        desc: `Request aborted for URL: ${url}`,
-      },
-    }, `Message: Request aborted for URL: ${url}`);
-    const abortError = new Error(`Request aborted for URL: ${url}`);
-    abortError.name = 'AbortError';
-    abortError.status = 0;
-    throw abortError;
+    try {
+      this.networkUtils.handleAbortedRequest(url, options);
+    } catch (error) {
+      this.logError('Upload Aborted|UnityWidget', {
+        url,
+        errorData: {
+          code: 'upload-aborted',
+          desc: `Request aborted for URL: ${url}`,
+        },
+      }, `Message: Request aborted for URL: ${url}`);
+      throw error;
+    }
   }
 
   async fetchWithTimeout(url, options, timeout = 60000) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return response;
+      return await this.networkUtils.fetchWithTimeout(url, options, timeout);
     } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        this.logError('Upload Timeout|UnityWidget', {
-          url,
-          timeout,
-          errorData: {
-            code: 'upload-timeout',
-            desc: `Request timed out after ${timeout}ms for URL: ${url}`,
-          },
-        }, `Message: Network error for URL: ${url}, Error: ${error.message}`);
-        const timeoutError = new Error(`Request timed out. URL: ${url}`);
-        timeoutError.name = 'TimeoutError';
-        timeoutError.status = 504;
-        throw timeoutError;
-      }
       this.logError('Upload Network Error|UnityWidget', {
         url,
         errorType: error.name,
@@ -70,22 +50,15 @@ export default class UploadHandler {
           desc: `Network error: ${error.message} for URL: ${url}`,
         },
       }, `Message: Network error for URL: ${url}, Error: ${error.message}`);
+
       throw error;
     }
   }
 
-  async fetchFromService(url, options, canRetry = true) {
-    try {
-      if (!options?.signal?.aborted) this.handleAbortedRequest(url, options);
-      const response = await this.fetchWithTimeout(url, options, 60000);
+  async fetchFromService(url, options) {
+    const onSuccess = async (response) => {
       const contentLength = response.headers.get('Content-Length');
       if (response.status === 202) return { status: 202, headers: response.headers };
-      if (canRetry && ((response.status >= 500 && response.status < 600) || response.status === 429)) {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 1000);
-        });
-        return this.fetchFromService(url, options, false);
-      }
       if (response.status !== 200) {
         this.logError('Upload HTTP Error|UnityWidget', {
           url,
@@ -103,60 +76,43 @@ export default class UploadHandler {
       }
       if (contentLength === '0') return {};
       return response.json();
-    } catch (e) {
-      this.handleAbortedRequest(url, options);
-      if (e instanceof TypeError) {
-        this.logError('Upload Service Network Error|UnityWidget', {
-          url,
-          errorData: {
-            code: 'upload-service-network-error',
-            desc: `Network error: ${e.message} for URL: ${url}`,
-          },
-        }, `Message: Service error for URL: ${url}, Error: ${e.message}`);
-        const error = new Error(`Network error. URL: ${url}; Error message: ${e.message}`);
-        error.status = 0;
-        throw error;
-      } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        this.logError('Upload Service Timeout|UnityWidget', {
-          url,
-          errorData: {
-            code: 'upload-service-timeout',
-            desc: `Request timed out: ${e.message} for URL: ${url}`,
-          },
-        }, `Message: Service error for URL: ${url}, Error: ${e.message}`);
-        const error = new Error(`Request timed out. URL: ${url}; Error message: ${e.message}`);
-        error.status = 504;
-        throw error;
-      }
+    };
+
+    const onError = async (error) => {
       this.logError('Upload Service Error|UnityWidget', {
         url,
         errorData: {
           code: 'upload-service-error',
-          desc: `Service error: ${e.message} for URL: ${url}`,
+          desc: `Service error: ${error.message} for URL: ${url}`,
         },
-      }, `Message: Service error for URL: ${url}, Error: ${e.message}`);
-      throw e;
-    }
+      }, `Message: Service error for URL: ${url}, Error: ${error.message}`);
+    };
+
+    return this.networkUtils.fetchFromService(url, options, onSuccess, onError);
   }
 
   async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
-    let timeLapsed = 0;
-    while (timeLapsed < maxRetryDelay) {
-      this.handleAbortedRequest(url, options);
-      const response = await this.fetchFromService(url, options, true);
-      if (response.status === 202) {
-        const retryDelay = parseInt(response.headers.get('retry-after'), 10) || 5;
-        await new Promise((resolve) => {
-          setTimeout(resolve, retryDelay * 1000);
-        });
-        timeLapsed += retryDelay;
-      } else {
-        return response;
-      }
-    }
-    const timeoutError = new Error(`Max retry delay exceeded for URL: ${url}`);
-    timeoutError.status = 504;
-    throw timeoutError;
+    const retryConfig = {
+      retryType: 'polling',
+      retryParams: {
+        maxRetryDelay: maxRetryDelay * 1000,
+        defaultRetryDelay: 5000,
+      },
+    };
+
+    const onSuccess = (response) => response;
+
+    const onError = async (error) => {
+      this.logError('Upload Service Retry Error|UnityWidget', {
+        url,
+        errorData: {
+          code: 'upload-service-retry-error',
+          desc: `Retry error: ${error.message} for URL: ${url}`,
+        },
+      }, `Message: Service retry error for URL: ${url}, Error: ${error.message}`);
+    };
+
+    return this.networkUtils.fetchFromServiceWithRetry(url, options, retryConfig, onSuccess, onError);
   }
 
   async postCallToServiceWithRetry(api, options, errorCallbackOptions = {}) {
@@ -229,7 +185,6 @@ export default class UploadHandler {
             desc: `Failed to upload chunk ${chunkNumber}: ${response.statusText}`,
           },
         }, `Message: Failed to upload chunk ${chunkNumber} to Unity, Error: ${response.status}`);
-
         const error = new Error(response.statusText || 'Upload request failed');
         error.status = response.status;
         throw error;
