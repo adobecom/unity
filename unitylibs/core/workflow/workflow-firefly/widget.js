@@ -338,9 +338,10 @@ export default class UnityWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
+    // TODO vipulg: remove draft urls and use production urls
     const promptFile = locale.prefix && locale.prefix !== '/'
-      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
-      : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
+      ? `${baseUrl}${locale.prefix}/drafts/vipulg/prompt/firefly-prompt.json`
+      : `${baseUrl}/drafts/vipulg/prompt/firefly-prompt.json`;
     const promptRes = await fetch(promptFile);
     if (!promptRes.ok) {
       throw new Error('Failed to fetch prompts.');
@@ -354,15 +355,6 @@ export default class UnityWidget {
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
       const list = (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
-      if (verb === 'sound' && list.length === 0) {
-        // Fallback defaults for sound (temporary; replace with real JSON data later)
-        const samples = this.getGeneratedSamples();
-        return [
-          { prompt: 'Crowd roaring', variations: samples },
-          { prompt: 'Cows mooing', variations: samples },
-          { prompt: 'Birds chirping', variations: samples },
-        ];
-      }
       return list;
     } catch (e) {
       window.lana?.log(`Message: Error loading promts, Error: ${e}`, this.lanaOptions);
@@ -377,7 +369,22 @@ export default class UnityWidget {
         const itemEnv = item.env || 'prod';
         if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations: item.variations });
+          // Normalize variations: prefer item.variations; else parse delimited columns
+          let variations = Array.isArray(item.variations) ? item.variations : null;
+          if (!variations) {
+            const labelsRaw = typeof item.variationLabels === 'string' ? item.variationLabels : '';
+            const urlsRaw = typeof item.variationUrls === 'string' ? item.variationUrls : '';
+            const split = (str) => str.split('||').map((s) => s.trim()).filter((s) => s);
+            const labels = split(labelsRaw);
+            const urls = split(urlsRaw);
+            if (urls.length > 0) {
+              variations = urls.slice(0, 4).map((u, idx) => ({
+                label: labels[idx] || `Variation ${idx + 1}`,
+                url: u,
+              }));
+            }
+          }
+          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations });
         }
       });
     }
@@ -678,14 +685,5 @@ export default class UnityWidget {
     });
     observer.observe(details.parentNode || document.body, { childList: true, subtree: true });
     return details;
-  }
-
-  getGeneratedSamples() {
-    return [
-      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation1.wav', label: 'Variation 1' },
-      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation2.wav', label: 'Variation 2' },
-      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation3.wav', label: 'Variation 3' },
-      { url: 'https://dbrp22a6oshsr.cloudfront.net/static/Firefly_audio_thundering_lightning_variation4.wav', label: 'Variation 4' },
-    ];
   }
 }
