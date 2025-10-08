@@ -4,13 +4,12 @@
 /* eslint-disable no-loop-func */
 
 import { unityConfig, getHeaders } from '../../../scripts/utils.js';
-import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 export default class UploadHandler {
-  constructor(actionBinder, serviceHandler) {
+  constructor(actionBinder, serviceHandler, networkUtils) {
     this.actionBinder = actionBinder;
     this.serviceHandler = serviceHandler;
-    this.networkUtils = new NetworkUtils();
+    this.networkUtils = networkUtils;
   }
 
   logError(eventName, errorData, debugMessage) {
@@ -23,98 +22,6 @@ export default class UploadHandler {
     });
   }
 
-  handleAbortedRequest(url, options) {
-    try {
-      this.networkUtils.handleAbortedRequest(url, options);
-    } catch (error) {
-      this.logError('Upload Aborted|UnityWidget', {
-        url,
-        errorData: {
-          code: 'upload-aborted',
-          desc: `Request aborted for URL: ${url}`,
-        },
-      }, `Message: Request aborted for URL: ${url}`);
-      throw error;
-    }
-  }
-
-  async fetchWithTimeout(url, options, timeout = 60000) {
-    try {
-      return await this.networkUtils.fetchWithTimeout(url, options, timeout);
-    } catch (error) {
-      this.logError('Upload Network Error|UnityWidget', {
-        url,
-        errorType: error.name,
-        errorData: {
-          code: 'upload-network-error',
-          desc: `Network error: ${error.message} for URL: ${url}`,
-        },
-      }, `Message: Network error for URL: ${url}, Error: ${error.message}`);
-
-      throw error;
-    }
-  }
-
-  async fetchFromService(url, options) {
-    const onSuccess = async (response) => {
-      const contentLength = response.headers.get('Content-Length');
-      if (response.status === 202) return { status: 202, headers: response.headers };
-      if (response.status !== 200) {
-        this.logError('Upload HTTP Error|UnityWidget', {
-          url,
-          status: response.status,
-          errorData: {
-            code: 'upload-http-error',
-            subCode: response.status,
-            desc: `HTTP ${response.status} error for URL: ${url}`,
-          },
-        }, `Message: HTTP error ${response.status} for URL: ${url}`);
-        const errorMessage = `Error fetching from service. URL: ${url}`;
-        const error = new Error(errorMessage);
-        error.status = response.status;
-        throw error;
-      }
-      if (contentLength === '0') return {};
-      return response.json();
-    };
-
-    const onError = async (error) => {
-      this.logError('Upload Service Error|UnityWidget', {
-        url,
-        errorData: {
-          code: 'upload-service-error',
-          desc: `Service error: ${error.message} for URL: ${url}`,
-        },
-      }, `Message: Service error for URL: ${url}, Error: ${error.message}`);
-    };
-
-    return this.networkUtils.fetchFromService(url, options, onSuccess, onError);
-  }
-
-  async fetchFromServiceWithRetry(url, options, maxRetryDelay = 300) {
-    const retryConfig = {
-      retryType: 'polling',
-      retryParams: {
-        maxRetryDelay: maxRetryDelay * 1000,
-        defaultRetryDelay: 5000,
-      },
-    };
-
-    const onSuccess = (response) => response;
-
-    const onError = async (error) => {
-      this.logError('Upload Service Retry Error|UnityWidget', {
-        url,
-        errorData: {
-          code: 'upload-service-retry-error',
-          desc: `Retry error: ${error.message} for URL: ${url}`,
-        },
-      }, `Message: Service retry error for URL: ${url}, Error: ${error.message}`);
-    };
-
-    return this.networkUtils.fetchFromServiceWithRetry(url, options, retryConfig, onSuccess, onError);
-  }
-
   async postCallToServiceWithRetry(api, options, errorCallbackOptions = {}) {
     const postOpts = {
       method: 'POST',
@@ -125,7 +32,7 @@ export default class UploadHandler {
       ...options,
     };
     try {
-      return await this.fetchFromServiceWithRetry(api, postOpts);
+      return await this.networkUtils.fetchFromServiceWithRetry(api, postOpts);
     } catch (err) {
       this.serviceHandler.showErrorToast(errorCallbackOptions, err, this.actionBinder.lanaOptions);
       throw err;
