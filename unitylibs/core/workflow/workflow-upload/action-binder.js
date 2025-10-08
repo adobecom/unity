@@ -271,12 +271,10 @@ export default class ActionBinder {
       workflow: this.workflowCfg.supportedFeatures.values().next().value,
       type: file.type,
     };
-
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
       payload.referer = window.location.href;
       payload.desktopDevice = this.desktop;
     }
-
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
