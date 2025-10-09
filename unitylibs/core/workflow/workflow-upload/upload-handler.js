@@ -126,14 +126,14 @@ export default class UploadHandler {
       retryType: 'polling',
       retryParams: {
         maxRetryDelay: 300000,
-        defaultRetryDelay: 5000
-      }
-    };  
+        defaultRetryDelay: 5000,
+      },
+    };
     await this.postCallToServiceWithRetry(
       this.actionBinder.psApiConfig.psEndPoint.acmpCheck,
       optionsBody,
       { errorToastEl: this.actionBinder.errorToastEl, errorType: '.icon-error-request' },
-      retryConfig
+      retryConfig,
     );
   }
 }
