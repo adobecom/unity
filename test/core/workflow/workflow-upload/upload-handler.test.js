@@ -334,6 +334,18 @@ describe('UploadHandler', () => {
     afterEach(() => {
       window.fetch = originalFetch;
     });
+
+    it('should log chunk errors when upload fails', async () => {
+      const mockError = new Error('Network error');
+      window.fetch = sinon.stub().rejects(mockError);
+      const file = new File(['test data'], 'test.txt', { type: 'text/plain' });
+      const uploadUrls = ['http://upload1.com'];
+      const blockSize = 10;
+      const result = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blockSize);
+      expect(result.failedChunks.size).to.equal(1);
+      expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunk Upload Error|UnityWidget')).to.be.true;
+      expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunked Upload Failed|UnityWidget')).to.be.true;
+    });
   });
 
   describe('scanImgForSafetyWithRetry', () => {
