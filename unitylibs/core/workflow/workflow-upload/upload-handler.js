@@ -24,7 +24,7 @@ export default class UploadHandler {
     });
   }
 
-  async postCallToServiceWithRetry(api, options, errorCallbackOptions = {}) {
+  async postCallToServiceWithRetry(api, options, errorCallbackOptions = {}, retryConfig = null) {
     const postOpts = {
       method: 'POST',
       headers: await getHeaders(unityConfig.apiKey, {
@@ -34,7 +34,7 @@ export default class UploadHandler {
       ...options,
     };
     try {
-      return await this.networkUtils.fetchFromServiceWithRetry(api, postOpts);
+      return await this.networkUtils.fetchFromServiceWithRetry(api, postOpts, retryConfig);
     } catch (err) {
       this.serviceHandler.showErrorToast(errorCallbackOptions, err, this.actionBinder.lanaOptions);
       throw err;
@@ -122,10 +122,18 @@ export default class UploadHandler {
   async scanImgForSafetyWithRetry(assetId) {
     const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
     const optionsBody = { body: JSON.stringify(assetData) };
+    const retryConfig = {
+      retryType: 'polling',
+      retryParams: {
+        maxRetryDelay: 300000,
+        defaultRetryDelay: 5000
+      }
+    };  
     await this.postCallToServiceWithRetry(
       this.actionBinder.psApiConfig.psEndPoint.acmpCheck,
       optionsBody,
       { errorToastEl: this.actionBinder.errorToastEl, errorType: '.icon-error-request' },
+      retryConfig
     );
   }
 }
