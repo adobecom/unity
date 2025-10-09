@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
-import { setUnityLibs, getUnityLibs } from '../../../../unitylibs/scripts/utils.js';
+import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 
 setUnityLibs('/unitylibs');
 
@@ -1457,7 +1457,7 @@ describe('Unity Upload Block', () => {
             this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
             throw err;
           }
-        }
+        },
       };
 
       const originalFetch = window.fetch;
@@ -1500,7 +1500,7 @@ describe('Unity Upload Block', () => {
             this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
             throw err;
           }
-        }
+        },
       };
 
       const originalFetch = window.fetch;
