@@ -13,7 +13,8 @@
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
+      "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
+      "fragmentLink-lightroom": "/creativecloud/animation/testdoc/unity/lightroom/fragments/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
