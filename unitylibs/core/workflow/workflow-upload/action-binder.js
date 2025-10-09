@@ -79,10 +79,13 @@ export default class ActionBinder {
     this.splashScreenEl = null;
     this.transitionScreen = null;
     this.LOADER_LIMIT = 95;
-    this.limits = workflowCfg.targetCfg.limits;
+    const commonLimits = workflowCfg.targetCfg.limits || {};
+    const productLimits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`] || {};
+    this.limits = { ...commonLimits, ...productLimits };
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
-    this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
+    const productTag = workflowCfg.productName.toLowerCase() === 'lightroom' ? 'LR' : 'PS';
+    this.lanaOptions = { sampleRate: 100, tags: `Unity-${productTag}-Upload` };
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
@@ -166,17 +169,40 @@ export default class ActionBinder {
   }
 
   async uploadAsset(file) {
+    const assetDetails = {
+      targetProduct: this.workflowCfg.productName,
+      name: file.name,
+      size: file.size,
+      format: file.type,
+    };
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.psApiConfig.psEndPoint.assetUpload,
-        {},
+        { body: JSON.stringify(assetDetails) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
-      const { id, href } = resJson;
+      const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
-      await this.uploadImgToUnity(href, id, file, file.type);
-      this.scanImgForSafety(this.assetId);
+      if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
+        const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
+        const uploadHandler = new UploadHandler(this, this.serviceHandler);
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize);
+        if (failedChunks && failedChunks.size > 0) {
+          const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
+          error.status = 504;
+          this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', {
+            assetId: this.assetId,
+            failedChunks: failedChunks.size,
+            maxRetryCount: Math.max(...Array.from(attemptMap.values())),
+          });
+          throw error;
+        }
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId);
+      } else {
+        await this.uploadImgToUnity(href, id, file, file.type);
+        this.scanImgForSafety(this.assetId);
+      }
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
@@ -229,7 +255,7 @@ export default class ActionBinder {
     }
   }
 
-  async continueInApp(assetId) {
+  async continueInApp(assetId, file) {
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
     if (cgen) {
@@ -240,16 +266,20 @@ export default class ActionBinder {
         }
       });
     }
+    const payload = {
+      locale: getLocale(),
+      additionalQueryParams: queryParams,
+      workflow: this.workflowCfg.supportedFeatures.values().next().value,
+      type: file.type,
+    };
+    if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
+      payload.referer = window.location.href;
+      payload.desktopDevice = this.desktop;
+    }
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
-      payload: {
-        locale: getLocale(),
-        workflow: this.workflowCfg.supportedFeatures.values().next().value,
-        referer: window.location.href,
-        desktopDevice: this.desktop,
-        additionalQueryParams: queryParams,
-      },
+      payload,
     };
     try {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
@@ -352,7 +382,7 @@ export default class ActionBinder {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     await this.uploadAsset(file);
-    await this.continueInApp(this.assetId);
+    await this.continueInApp(this.assetId, file);
   }
 
   async loadTransitionScreen() {
