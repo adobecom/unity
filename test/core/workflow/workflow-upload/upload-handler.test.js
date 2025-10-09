@@ -65,14 +65,14 @@ describe('UploadHandler', () => {
     });
 
     it('should upload file chunk successfully', async () => {
-      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().resolves({ success: true, attempt: 1 });
+      const mockResponse = { ok: true, status: 200 };
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().resolves(mockResponse);
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
       const result = await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123');
 
       expect(uploadHandler.networkUtils.fetchFromServiceWithRetry.calledOnce).to.be.true;
-      expect(result.success).to.be.true;
-      expect(result.attempt).to.equal(1);
+      expect(result).to.equal(mockResponse);
     });
 
     it('should throw error for failed upload', async () => {
@@ -329,7 +329,7 @@ describe('UploadHandler', () => {
       const blockSize = 10;
       const result = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blockSize);
       expect(result.failedChunks.size).to.equal(1);
-      expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunk Upload Error|UnityWidget')).to.be.true;
+      expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Upload Chunk Error|UnityWidget')).to.be.true;
       expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunked Upload Failed|UnityWidget')).to.be.true;
     });
   });

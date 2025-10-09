@@ -41,7 +41,7 @@ export default class UploadHandler {
     }
   }
 
-  async uploadFileToUnity(storageUrl, blobData, fileType, signal) {
+  async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal, chunkNumber = 'unknown') {
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
@@ -55,15 +55,24 @@ export default class UploadHandler {
         retryDelay: 1000,
       },
     };
-    const onSuccess = (response, attempt) => {
+    const onSuccess = (response) => {
       if (response.ok) {
-        return { success: true, attempt };
+        return response;
       }
       const error = new Error(response.statusText || 'Upload request failed');
       error.status = response.status;
       throw error;
     };
     const onError = (error) => {
+      this.logError('Upload Chunk Error|UnityWidget', {
+        chunkNumber,
+        size: blobData.size,
+        fileType,
+        errorData: {
+          code: 'upload-chunk-error',
+          desc: `Exception during chunk ${chunkNumber} upload: ${error.message}`,
+        },
+      }, `Message: Exception raised when uploading chunk to Unity, Error: ${error.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
       throw error;
     };
     return this.networkUtils.fetchFromServiceWithRetry(storageUrl, uploadOptions, retryConfig, onSuccess, onError);
@@ -73,16 +82,6 @@ export default class UploadHandler {
     const options = {
       assetId: this.actionBinder.assetId,
       fileType: file.type,
-      onChunkError: (chunkInfo, error) => {
-        this.logError('Chunk Upload Error|UnityWidget', {
-          chunkIndex: chunkInfo.chunkIndex,
-          chunkNumber: chunkInfo.chunkNumber,
-          errorData: {
-            code: 'chunk-upload-error',
-            desc: `Chunk ${chunkInfo.chunkNumber} upload failed: ${error.message}`,
-          },
-        }, `Chunk upload failed for chunk ${chunkInfo.chunkNumber}: ${error.message}`);
-      },
     };
     const result = await createChunkUploadTasks(
       uploadUrls,
