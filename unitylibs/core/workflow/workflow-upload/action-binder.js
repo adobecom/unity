@@ -84,7 +84,8 @@ export default class ActionBinder {
     this.limits = { ...commonLimits, ...productLimits };
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
-    this.lanaOptions = { sampleRate: 100, tags: 'Unity-PS-Upload' };
+    const productTag = workflowCfg.productName.toLowerCase() === 'lightroom' ? 'LR' : 'PS';
+    this.lanaOptions = { sampleRate: 100, tags: `Unity-${productTag}-Upload` };
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
