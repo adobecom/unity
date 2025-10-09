@@ -57,6 +57,12 @@ export default class UploadHandler {
     };
     const onSuccess = (response) => {
       if (response.ok) {
+        this.actionBinder.logAnalyticsinSplunk('Chunk Uploaded|UnityWidget', {
+          assetId,
+          chunkNumber,
+          size: `${blobData.size}`,
+          type: `${fileType}`,
+        });
         return response;
       }
       const error = new Error(response.statusText || 'Upload request failed');
@@ -73,7 +79,6 @@ export default class UploadHandler {
           desc: `Exception during chunk ${chunkNumber} upload: ${error.message}`,
         },
       }, `Message: Exception raised when uploading chunk to Unity, Error: ${error.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
-      throw error;
     };
     return this.networkUtils.fetchFromServiceWithRetry(storageUrl, uploadOptions, retryConfig, onSuccess, onError);
   }
@@ -99,8 +104,6 @@ export default class UploadHandler {
         createChunkAnalyticsData('Chunked Upload Completed|UnityWidget', {
           assetId: this.actionBinder.assetId,
           chunkCount: totalChunks,
-          totalFileSize: file.size,
-          fileType: file.type,
         }),
       );
     } else {
@@ -110,7 +113,6 @@ export default class UploadHandler {
           assetId: this.actionBinder.assetId,
           error: 'One or more chunks failed',
           failedChunks: failedChunks.size,
-          totalChunks,
         }),
       );
     }
@@ -124,14 +126,14 @@ export default class UploadHandler {
       retryType: 'polling',
       retryParams: {
         maxRetryDelay: 300000,
-        defaultRetryDelay: 5000,
-      },
-    };
+        defaultRetryDelay: 5000
+      }
+    };  
     await this.postCallToServiceWithRetry(
       this.actionBinder.psApiConfig.psEndPoint.acmpCheck,
       optionsBody,
       { errorToastEl: this.actionBinder.errorToastEl, errorType: '.icon-error-request' },
-      retryConfig,
+      retryConfig
     );
   }
 }
