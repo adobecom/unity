@@ -55,9 +55,9 @@ export default class UploadHandler {
         retryDelay: 1000,
       },
     };
-    const onSuccess = (response) => {
+    const onSuccess = (response, attempt) => {
       if (response.ok) {
-        return response;
+        return { success: true, attempt };
       }
       const error = new Error(response.statusText || 'Upload request failed');
       error.status = response.status;

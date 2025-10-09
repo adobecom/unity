@@ -54,31 +54,29 @@ describe('UploadHandler', () => {
   });
 
   describe('uploadFileToUnity', () => {
-    let originalFetch;
+    let originalFetchFromServiceWithRetry;
 
     beforeEach(() => {
-      originalFetch = window.fetch;
+      originalFetchFromServiceWithRetry = uploadHandler.networkUtils.fetchFromServiceWithRetry;
     });
 
     afterEach(() => {
-      window.fetch = originalFetch;
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = originalFetchFromServiceWithRetry;
     });
 
     it('should upload file chunk successfully', async () => {
-      const mockResponse = { ok: true, status: 200 };
-      window.fetch = sinon.stub().resolves(mockResponse);
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().resolves({ success: true, attempt: 1 });
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
       const result = await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123');
 
-      expect(window.fetch.calledOnce).to.be.true;
-      expect(result.response).to.equal(mockResponse);
+      expect(uploadHandler.networkUtils.fetchFromServiceWithRetry.calledOnce).to.be.true;
+      expect(result.success).to.be.true;
       expect(result.attempt).to.equal(1);
     });
 
     it('should throw error for failed upload', async () => {
-      const mockResponse = { ok: false, status: 500, statusText: 'Server Error' };
-      window.fetch = sinon.stub().resolves(mockResponse);
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(new Error('Max retry delay exceeded'));
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
 
@@ -91,7 +89,7 @@ describe('UploadHandler', () => {
     });
 
     it('should handle network errors', async () => {
-      window.fetch = sinon.stub().rejects(new Error('Network error'));
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(new Error('Network error'));
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
 
@@ -99,11 +97,13 @@ describe('UploadHandler', () => {
         await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123');
         expect.fail('Should have thrown error');
       } catch (error) {
-        expect(error.message).to.include('Max retry delay exceeded');
+        expect(error.message).to.include('Network error');
       }
     });
 
     it('should handle abort signal', async () => {
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(new Error('Request aborted'));
+
       const signal = { aborted: true };
       const blob = new Blob(['test data'], { type: 'text/plain' });
 
@@ -111,21 +111,7 @@ describe('UploadHandler', () => {
         await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123', signal);
         expect.fail('Should have thrown error');
       } catch (error) {
-        // NetworkUtils handles abort signals and may throw different error types
-        expect(error.message).to.include('Max retry delay exceeded');
-      }
-    });
-
-    it('should handle network errors', async () => {
-      window.fetch = sinon.stub().rejects(new TypeError('Network error'));
-
-      const blob = new Blob(['test data'], { type: 'text/plain' });
-
-      try {
-        await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123');
-        expect.fail('Should have thrown error');
-      } catch (error) {
-        expect(error.message).to.include('Max retry delay exceeded');
+        expect(error.message).to.include('Request aborted');
       }
     });
   });
