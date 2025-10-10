@@ -33,7 +33,8 @@
     linear-gradient(45deg, transparent 75%, #ccc 75%),
     linear-gradient(135deg, transparent 75%, #ccc 75%);
   background-size: 25px 25px;
-  background-position: 0 0, 12.5px 0, 12.5px -12.5px, 0px 12.5px;
+  background-position: 0 0, 12.5px 0, 12.5px -12.5px, 0 12.5px;
+  position: relative;
 }
 
 .unity-enabled .interactive-area,
@@ -55,8 +56,14 @@
   color: var(--color-black);
 }
 
-.unity-enabled .interactive-area {
-  position: relative;
+/* Override for FF to fix Milo block and Unity themeing issues */
+:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area,
+:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.dark,
+:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area a,
+:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.dark a,
+:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.light a,
+:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.light {
+  color: inherit;
 }
 
 .unity-enabled .widget-refresh-button .widget-refresh-text,
