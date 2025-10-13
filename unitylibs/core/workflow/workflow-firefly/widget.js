@@ -18,6 +18,7 @@ export default class UnityWidget {
     this.hasPromptSuggestions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
+    this.durationCache = new Map();
   }
 
   async initWidget() {
@@ -554,7 +555,9 @@ export default class UnityWidget {
         pauseBtn.setAttribute('aria-label', `Play ${v.label || `Example ${i + 1}`}`);
       };
       setBtnToPlay();
-      const timeEl = createTag('div', { class: 'time-el' }, '0:00');
+      // Time label: prefer cached duration to avoid flicker, else fill later on metadata
+      const cached = this.durationCache.get(v.url);
+      const timeEl = createTag('div', { class: 'time-el' }, cached ? `${Math.floor(cached / 60)}:${String(Math.floor(cached % 60)).padStart(2,'0')}` : '0:00');
       const progressBar = createTag('div', {
         class: 'seek-bar',
         role: 'progressbar',
@@ -631,6 +634,7 @@ export default class UnityWidget {
       audioObj.addEventListener('loadedmetadata', () => {
         // Show total duration in the default (idle) state
         const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
+        if (dur > 0) this.durationCache.set(v.url, dur);
         timeEl.textContent = fmtTime(dur);
         progressFill.style.width = '0%';
         progressBar.style.setProperty('--progress', '0%');
