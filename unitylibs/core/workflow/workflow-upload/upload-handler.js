@@ -128,7 +128,7 @@ export default class UploadHandler {
       },
     };
     await this.postCallToServiceWithRetry(
-      this.actionBinder.psApiConfig.psEndPoint.acmpCheck,
+      this.actionBinder.apiConfig.endPoint.acmpCheck,
       optionsBody,
       { errorToastEl: this.actionBinder.errorToastEl, errorType: '.icon-error-request' },
       retryConfig,
