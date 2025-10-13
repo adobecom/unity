@@ -54,10 +54,14 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .variation-label {
   font-weight: 500; /* lighter than bold */
   font-size: var(--type-body-xs-size);
-  color: #292929;
+  color: #505050;
   margin-bottom: 0;
   text-align: left;
   align-self: flex-start;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile:hover .variation-label {
+  color: #292929;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio {
@@ -101,9 +105,9 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn svg { display: block; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn.hidden { display: none; }
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile:focus-within .custom-player .pause-btn { display: flex; }
-/* Always show pause button while a tile is playing */
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .custom-player .pause-btn { display: flex; }
+/* Show button only when tile is playing or paused (not on hover alone) */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .custom-player .pause-btn,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .custom-player .pause-btn { display: flex; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-slider {
   grid-area: slider;
   min-width: 0;
@@ -131,7 +135,7 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .time-el {
   grid-area: time;
-  color: #000;
+  color: #505050;
   font-size: var(--type-body-xs-size);
   line-height: 1;
   width: 44px;

@@ -66,13 +66,25 @@ export default class UnityWidget {
   }
 
   hidePromptDropdown() {
-    const dropdown = this.widget.querySelector('.drop');
+    // Target the prompt dropdown explicitly
+    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
+    // Always perform reset of variations associated with the dropdown scope
+    const scope = dropdown || this.widget;
+    this.resetAllSoundVariations(scope);
+    // Also stop any globally tracked audio objects
+    if (this.activeAudios) {
+      this.activeAudios.forEach((a) => { try { a.pause(); a.currentTime = 0; } catch (e) { /* noop */ } });
+      this.activeAudios.clear();
+    }
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
-      // Stop and reset any playing audio inside the dropdown when it hides
-      this.resetAllSoundVariations(dropdown);
+    }
+    if (dropdown) {
+      // Clean up expanded state and details to prevent orphaned audio refs
+      dropdown.querySelectorAll('.sound-details').forEach((d) => d.remove());
+      dropdown.querySelectorAll('.drop-item.sound-expanded').forEach((el) => el.classList.remove('sound-expanded'));
     }
   }
 
@@ -293,6 +305,19 @@ export default class UnityWidget {
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
+    // Clicking outside the dropdown should reset and hide suggestions (persistent handler)
+    if (!this.outsideDropdownHandler) {
+      this.outsideDropdownHandler = (ev) => {
+        const dd_con = this.widget.querySelector('.prompt-dropdown-container');
+        const wrapper = this.widget.querySelector('.autocomplete');
+        // Ignore clicks inside the autocomplete wrapper (input/prompt bar)
+        if (wrapper && wrapper.contains(ev.target)) return;
+        if (dd_con && !dd_con.classList.contains('hidden') && !dd_con.contains(ev.target)) {
+          this.hidePromptDropdown();
+        }
+      };
+      setTimeout(() => document.addEventListener('click', this.outsideDropdownHandler, true), 0);
+    }
     return promptDropdownContainer;
   }
 
@@ -440,11 +465,17 @@ export default class UnityWidget {
       if (fill) fill.style.transform = 'scaleX(0)';
       const bar = t.querySelector('.seek-bar');
       if (bar) bar.setAttribute('aria-valuenow', '0');
-          const tm = t.querySelector('.time-el');
-          if (tm) {
-            const d = t.audioRef && Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0 ? t.audioRef.duration : 0;
-            tm.textContent = fmtTime(d);
-          }
+      const tm = t.querySelector('.time-el');
+      if (tm && t.audioRef) {
+        const updateToDuration = () => {
+          const d = Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0 ? Math.floor(t.audioRef.duration) : 0;
+          const min = Math.floor(d / 60);
+          const sec = d % 60;
+          tm.textContent = `${min}:${String(sec).padStart(2, '0')}`;
+        };
+        if (Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0) updateToDuration();
+        else t.audioRef.addEventListener('loadedmetadata', updateToDuration, { once: true });
+      }
     });
   }
 
@@ -499,12 +530,15 @@ export default class UnityWidget {
       ? promptObj.variations
       : this.getGeneratedSamples();
 
+    // Ensure a global registry of audio objects for robust cleanup
+    if (!this.activeAudios) this.activeAudios = new Set();
     vars.forEach((v, i) => {
-      const tile = createTag('div', { class: 'variation-tile', 'aria-pressed': 'false' });
+      const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
       const label = createTag('div', { class: 'variation-label inline' }, v.label || `Example ${i + 1}`);
       const audioObj = new Audio(v.url);
       audioObj.preload = 'metadata';
       tile.audioRef = audioObj; // internal reference
+      this.activeAudios.add(audioObj);
 
       const player = createTag('div', { class: 'custom-player' });
       const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
@@ -533,16 +567,21 @@ export default class UnityWidget {
       const progressFill = createTag('div', { class: 'seek-fill', style: 'height:100%;width:0%;background:#3B63FB;border-radius:3px;transition:width 100ms linear;' });
       progressBar.append(progressFill);
       player.append(pauseBtn, label, timeEl, progressBar);
-      // No enforced width; CSS handles compact button styles
+      // Begin in idle layout via class (CSS handles layout)
+      tile.classList.add('is-idle');
 
       const pauseOthers = () => {
         strip.querySelectorAll('.variation-tile').forEach((t) => {
           if (t !== tile && t.audioRef) {
+            // Mark this pause as a programmatic reset so its pause handler fully idles the tile
+            t.dataset.forceIdle = '1';
             try { t.audioRef.pause(); } catch (e) { /* noop */ }
             try { t.audioRef.currentTime = 0; } catch (e) { /* noop */ }
           }
           if (t !== tile) {
-            t.classList.remove('playing', 'selected');
+            t.classList.remove('playing', 'selected', 'paused');
+            t.classList.remove('is-active');
+            t.classList.add('is-idle');
             t.setAttribute('aria-pressed', 'false');
             const pb = t.querySelector('.pause-btn');
             if (pb) pb.classList.add('hidden');
@@ -551,7 +590,16 @@ export default class UnityWidget {
             const bar = t.querySelector('.seek-bar');
             if (bar) bar.setAttribute('aria-valuenow', '0');
             const tm = t.querySelector('.time-el');
-            if (tm) tm.textContent = '0:00';
+            if (tm && t.audioRef) {
+              const updateToDuration = () => {
+                const d = Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0 ? Math.floor(t.audioRef.duration) : 0;
+                const m = Math.floor(d / 60);
+                const s = d % 60;
+                tm.textContent = `${m}:${String(s).padStart(2, '0')}`;
+              };
+              if (Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0) updateToDuration();
+              else t.audioRef.addEventListener('loadedmetadata', updateToDuration, { once: true });
+            }
           }
         });
       };
@@ -595,23 +643,50 @@ export default class UnityWidget {
         progressFill.style.width = `${pct}%`;
         progressBar.style.setProperty('--progress', `${pct}%`);
         progressBar.setAttribute('aria-valuenow', String(pct));
-        // Show elapsed while playing or paused; show total only when ended/idle
-        timeEl.textContent = audioObj.ended ? fmtTime(audioObj.duration) : fmtTime(audioObj.currentTime);
+        // Show elapsed while playing or paused; show total when idle (neither playing nor paused)
+        if (tile.classList.contains('playing') || tile.classList.contains('paused')) {
+          timeEl.textContent = fmtTime(audioObj.currentTime);
+        } else {
+          timeEl.textContent = fmtTime(audioObj.duration);
+        }
       });
       audioObj.addEventListener('play', () => {
         pauseOthers();
         strip.querySelectorAll('.variation-tile').forEach((t) => { if (t !== tile) t.classList.remove('selected'); });
+        // Ensure this tile is not treated as a programmatic reset later
+        if (tile.dataset && tile.dataset.forceIdle) delete tile.dataset.forceIdle;
         tile.classList.add('playing', 'selected');
+        tile.classList.remove('paused');
         tile.setAttribute('aria-pressed', 'true');
         setBtnToPause();
         pauseBtn.classList.remove('hidden');
         startRaf();
         timeEl.textContent = fmtTime(audioObj.currentTime);
+        // Active layout via class
+        tile.classList.remove('is-idle');
+        tile.classList.add('is-active');
       });
       audioObj.addEventListener('pause', () => {
+        // If this pause was triggered by another tile starting, fully reset to idle and exit
+        if (tile.dataset.forceIdle === '1') {
+          delete tile.dataset.forceIdle;
+          tile.classList.remove('playing', 'selected', 'paused', 'is-active');
+          tile.classList.add('is-idle');
+          pauseBtn.classList.add('hidden');
+          // Reset progress + timer to total duration
+          try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
+          progressFill.style.width = '0%';
+          progressBar.style.setProperty('--progress', '0%');
+          progressBar.setAttribute('aria-valuenow', '0');
+          const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
+          timeEl.textContent = fmtTime(dur);
+          stopRaf();
+          return;
+        }
         tile.classList.remove('playing');
+        tile.classList.add('paused');
         tile.setAttribute('aria-pressed', 'false');
-        tile.classList.remove('selected');
+        // Keep it selected/paused so UI persists
         setBtnToPlay();
         // Keep visible if hovered or focused; otherwise hide
         const hasFocus = tile.contains(document.activeElement);
@@ -622,6 +697,7 @@ export default class UnityWidget {
       });
       audioObj.addEventListener('ended', () => {
         tile.classList.remove('playing');
+        tile.classList.remove('paused');
         tile.setAttribute('aria-pressed', 'false');
         pauseBtn.classList.add('hidden');
         // Reset timer and progress when playback completes
@@ -633,6 +709,9 @@ export default class UnityWidget {
         const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
         timeEl.textContent = fmtTime(dur);
         stopRaf();
+        // Back to idle layout via class
+        tile.classList.remove('is-active', 'paused');
+        tile.classList.add('is-idle');
       });
 
       // Controls
@@ -660,26 +739,27 @@ export default class UnityWidget {
       pauseBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePlayback(); } });
       // Progress bar is display-only (no seeking)
 
-      // Show play button on hover; keep visible while playing
-      tile.addEventListener('mouseenter', () => {
-        mouseInside = true;
-        pauseBtn.classList.remove('hidden');
-        if (audioObj.paused) setBtnToPlay(); else setBtnToPause();
+      // Clicking the tile should start playback and show the pause button
+      tile.addEventListener('click', (ev) => {
+        if (ev.target.closest && ev.target.closest('.pause-btn')) return; // button handles its own
+        ev.preventDefault();
+        if (audioObj.paused) {
+          setBtnToPause();
+          pauseBtn.classList.remove('hidden');
+          audioObj.play().catch(() => {});
+        }
       });
-      tile.addEventListener('mouseleave', () => {
-        mouseInside = false;
-        if (pointerDownOnBtn) return; // do not hide while clicking
-        if (audioObj.paused && !tile.contains(document.activeElement)) pauseBtn.classList.add('hidden');
+      tile.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          if (audioObj.paused) {
+            setBtnToPause();
+            pauseBtn.classList.remove('hidden');
+            audioObj.play().catch(() => {});
+          }
+        }
       });
-      // Keyboard accessibility: reveal button when tile or its children receive focus
-      tile.addEventListener('focusin', () => {
-        pauseBtn.classList.remove('hidden');
-        if (audioObj.paused) setBtnToPlay(); else setBtnToPause();
-      });
-      tile.addEventListener('focusout', (e) => {
-        // If focus moves outside the tile and audio is paused, hide the button
-        if (!tile.contains(e.relatedTarget) && audioObj.paused && !mouseInside) pauseBtn.classList.add('hidden');
-      });
+      // Do not hide play button on mouse leave when paused
 
       tile.append(player);
       strip.append(tile);
@@ -687,37 +767,6 @@ export default class UnityWidget {
 
     details.append(strip);
 
-    // Clicking outside should reset all variations in this details block
-    const resetAll = (ev) => {
-      if (!details.contains(ev.target)) {
-        strip.querySelectorAll('.variation-tile').forEach((t) => {
-          try { t.audioRef?.pause(); } catch (e) { /* noop */ }
-          if (t.audioRef) t.audioRef.currentTime = 0;
-          t.classList.remove('playing', 'selected');
-          t.setAttribute('aria-pressed', 'false');
-          const pb = t.querySelector('.pause-btn');
-          if (pb) pb.classList.add('hidden');
-          const fill = t.querySelector('.seek-fill');
-          if (fill) fill.style.transform = 'scaleX(0)';
-          const bar = t.querySelector('.seek-bar');
-          if (bar) bar.setAttribute('aria-valuenow', '0');
-          const tm = t.querySelector('.time-el');
-          if (tm) {
-            const d = t.audioRef && Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0 ? t.audioRef.duration : 0;
-            tm.textContent = fmtTime(d);
-          }
-        });
-      }
-    };
-    document.addEventListener('click', resetAll);
-    // Clean up listener when details removed
-    const observer = new MutationObserver(() => {
-      if (!details.isConnected) {
-        document.removeEventListener('click', resetAll);
-        observer.disconnect();
-      }
-    });
-    observer.observe(details.parentNode || document.body, { childList: true, subtree: true });
     return details;
   }
 }
