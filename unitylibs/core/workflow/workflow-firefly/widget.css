@@ -89,7 +89,7 @@
   border: 0;
   background: transparent;
   border-radius: 0;
-  padding: 0 0 0 0;
+  padding: 0;
   margin: 0;
   min-width: 0;
   cursor: pointer;
@@ -101,6 +101,9 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn svg { display: block; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn.hidden { display: none; }
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile:focus-within .custom-player .pause-btn { display: flex; }
+/* Always show pause button while a tile is playing */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .custom-player .pause-btn { display: flex; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-slider {
   grid-area: slider;
   min-width: 0;

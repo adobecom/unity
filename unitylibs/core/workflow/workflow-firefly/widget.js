@@ -440,8 +440,11 @@ export default class UnityWidget {
       if (fill) fill.style.transform = 'scaleX(0)';
       const bar = t.querySelector('.seek-bar');
       if (bar) bar.setAttribute('aria-valuenow', '0');
-      const tm = t.querySelector('.time-el');
-      if (tm) tm.textContent = '0:00';
+          const tm = t.querySelector('.time-el');
+          if (tm) {
+            const d = t.audioRef && Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0 ? t.audioRef.duration : 0;
+            tm.textContent = fmtTime(d);
+          }
     });
   }
 
@@ -497,7 +500,7 @@ export default class UnityWidget {
       : this.getGeneratedSamples();
 
     vars.forEach((v, i) => {
-      const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
+      const tile = createTag('div', { class: 'variation-tile', 'aria-pressed': 'false' });
       const label = createTag('div', { class: 'variation-label inline' }, v.label || `Example ${i + 1}`);
       const audioObj = new Audio(v.url);
       audioObj.preload = 'metadata';
@@ -505,6 +508,7 @@ export default class UnityWidget {
 
       const player = createTag('div', { class: 'custom-player' });
       const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
+      let mouseInside = false;
       const setBtnToPause = () => {
         pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
         pauseBtn.dataset.state = 'pause';
@@ -515,7 +519,7 @@ export default class UnityWidget {
         pauseBtn.dataset.state = 'play';
         pauseBtn.setAttribute('aria-label', `Play ${v.label || `Example ${i + 1}`}`);
       };
-      setBtnToPause();
+      setBtnToPlay();
       const timeEl = createTag('div', { class: 'time-el' }, '0:00');
       const progressBar = createTag('div', {
         class: 'seek-bar',
@@ -577,7 +581,9 @@ export default class UnityWidget {
       };
       const stopRaf = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
       audioObj.addEventListener('loadedmetadata', () => {
-        timeEl.textContent = '0:00';
+        // Show total duration in the default (idle) state
+        const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
+        timeEl.textContent = fmtTime(dur);
         progressFill.style.width = '0%';
         progressBar.style.setProperty('--progress', '0%');
         progressBar.setAttribute('aria-valuenow', '0');
@@ -589,7 +595,8 @@ export default class UnityWidget {
         progressFill.style.width = `${pct}%`;
         progressBar.style.setProperty('--progress', `${pct}%`);
         progressBar.setAttribute('aria-valuenow', String(pct));
-        timeEl.textContent = fmtTime(audioObj.currentTime);
+        // Show elapsed while playing or paused; show total only when ended/idle
+        timeEl.textContent = audioObj.ended ? fmtTime(audioObj.duration) : fmtTime(audioObj.currentTime);
       });
       audioObj.addEventListener('play', () => {
         pauseOthers();
@@ -604,12 +611,13 @@ export default class UnityWidget {
       audioObj.addEventListener('pause', () => {
         tile.classList.remove('playing');
         tile.setAttribute('aria-pressed', 'false');
-        if (tile.classList.contains('selected')) {
-          setBtnToPlay();
-          pauseBtn.classList.remove('hidden');
-        } else {
-          pauseBtn.classList.add('hidden');
-        }
+        tile.classList.remove('selected');
+        setBtnToPlay();
+        // Keep visible if hovered or focused; otherwise hide
+        const hasFocus = tile.contains(document.activeElement);
+        if (!mouseInside && !hasFocus) pauseBtn.classList.add('hidden');
+        // On pause, show elapsed time
+        timeEl.textContent = fmtTime(audioObj.currentTime);
         stopRaf();
       });
       audioObj.addEventListener('ended', () => {
@@ -621,37 +629,56 @@ export default class UnityWidget {
         progressFill.style.width = '0%';
         progressBar.style.setProperty('--progress', '0%');
         progressBar.setAttribute('aria-valuenow', '0');
-        timeEl.textContent = '0:00';
+        // Show full duration after completion
+        const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
+        timeEl.textContent = fmtTime(dur);
         stopRaf();
       });
 
       // Controls
-      pauseBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (pauseBtn.dataset.state === 'pause') {
+      let pointerDownOnBtn = false;
+      const togglePlayback = () => {
+        const isPlaying = !audioObj.paused && !audioObj.ended;
+        if (isPlaying) {
+          setBtnToPlay();
           audioObj.pause();
         } else {
-          audioObj.play().catch(() => {});
+          setBtnToPause();
+          audioObj.play().catch(() => { setBtnToPlay(); });
         }
+      };
+      pauseBtn.addEventListener('pointerdown', (e) => {
+        pointerDownOnBtn = true;
+        e.preventDefault();
+        e.stopPropagation();
+        try { pauseBtn.setPointerCapture && pauseBtn.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+        togglePlayback();
       });
+      pauseBtn.addEventListener('pointerup', () => { pointerDownOnBtn = false; });
+      // Prevent duplicate toggle from click; pointerdown already toggles
+      pauseBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+      pauseBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePlayback(); } });
       // Progress bar is display-only (no seeking)
 
-      // Selecting tile and start playing
-      tile.addEventListener('click', (ev) => {
-        if (ev.target.closest && (ev.target.closest('.pause-btn') || ev.target.closest('.seek-bar'))) return;
-        strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
-        tile.classList.add('selected');
-        tile.focus();
-        if (audioObj.paused) audioObj.play().catch(() => {});
+      // Show play button on hover; keep visible while playing
+      tile.addEventListener('mouseenter', () => {
+        mouseInside = true;
+        pauseBtn.classList.remove('hidden');
+        if (audioObj.paused) setBtnToPlay(); else setBtnToPause();
       });
-      tile.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault();
-          strip.querySelectorAll('.variation-tile').forEach((t) => t.classList.remove('selected'));
-          tile.classList.add('selected');
-          if (audioObj.paused) audioObj.play().catch(() => {});
-        }
+      tile.addEventListener('mouseleave', () => {
+        mouseInside = false;
+        if (pointerDownOnBtn) return; // do not hide while clicking
+        if (audioObj.paused && !tile.contains(document.activeElement)) pauseBtn.classList.add('hidden');
+      });
+      // Keyboard accessibility: reveal button when tile or its children receive focus
+      tile.addEventListener('focusin', () => {
+        pauseBtn.classList.remove('hidden');
+        if (audioObj.paused) setBtnToPlay(); else setBtnToPause();
+      });
+      tile.addEventListener('focusout', (e) => {
+        // If focus moves outside the tile and audio is paused, hide the button
+        if (!tile.contains(e.relatedTarget) && audioObj.paused && !mouseInside) pauseBtn.classList.add('hidden');
       });
 
       tile.append(player);
@@ -675,7 +702,10 @@ export default class UnityWidget {
           const bar = t.querySelector('.seek-bar');
           if (bar) bar.setAttribute('aria-valuenow', '0');
           const tm = t.querySelector('.time-el');
-          if (tm) tm.textContent = '0:00';
+          if (tm) {
+            const d = t.audioRef && Number.isFinite(t.audioRef.duration) && t.audioRef.duration > 0 ? t.audioRef.duration : 0;
+            tm.textContent = fmtTime(d);
+          }
         });
       }
     };
