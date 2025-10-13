@@ -65,6 +65,19 @@
   color: #292929;
 }
 
+/* Non-idle states force dark label */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .variation-label,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .variation-label,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-active .variation-label {
+  color: #292929;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-idle .variation-label {
+  color: #505050;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-idle:hover .variation-label {
+  color: #292929;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio {
   width: 100%;
   height: 18px;
