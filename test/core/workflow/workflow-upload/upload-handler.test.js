@@ -35,7 +35,7 @@ describe('UploadHandler', () => {
         productName: 'test-product',
         supportedFeatures: { values: () => ({ next: () => ({ value: 'test-feature' }) }) },
       },
-      psApiConfig: { psEndPoint: { acmpCheck: '/api/asset/finalize' } },
+      apiConfig: { endPoint: { acmpCheck: '/api/asset/finalize' } },
       errorToastEl: document.createElement('div'),
       lanaOptions: { sampleRate: 100, tags: 'Unity-PS-Upload' },
       logAnalyticsinSplunk: sinon.stub(),
@@ -353,7 +353,7 @@ describe('UploadHandler', () => {
 
       expect(uploadHandler.postCallToServiceWithRetry.calledOnce).to.be.true;
       expect(uploadHandler.postCallToServiceWithRetry.calledWith(
-        mockActionBinder.psApiConfig.psEndPoint.acmpCheck,
+        mockActionBinder.apiConfig.endPoint.acmpCheck,
         { body: JSON.stringify({ assetId: 'test-asset-id', targetProduct: 'test-product' }) },
         { errorToastEl: mockActionBinder.errorToastEl, errorType: '.icon-error-request' },
       )).to.be.true;
