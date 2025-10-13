@@ -45,7 +45,7 @@
   gap: 4px;
   width: auto;
   box-sizing: border-box;
-  padding: 6px 8px; /* reduced height */
+  padding: 4px 4px 4px 8px; /* 4px all around, 8px left */
   border-radius: 8px;
   border: 1px solid #E1E1E1;
   background: #fafafa;
@@ -89,7 +89,7 @@
   border: 0;
   background: transparent;
   border-radius: 0;
-  padding: 0 2px 0 0; /* right padding 2px */
+  padding: 0 0 0 0;
   margin: 0;
   min-width: 0;
   cursor: pointer;
@@ -115,26 +115,29 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar {
   grid-area: slider;
   min-width: 0;
-  width: 100%;
-  height: 6px;
+  height: 4px;
+  margin-right: 4px;
+  margin-left: 2px;
   /* Blue progress rendered via background-size (layer 1), base track is layer 2 */
   background: linear-gradient(#3B63FB, #3B63FB) left center/var(--progress, 0%) 100% no-repeat, #e5e5e5;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
   z-index: 0;
+  line-height: 18px;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .time-el {
   grid-area: time;
   color: #000;
   font-size: var(--type-body-xs-size);
   line-height: 1;
-  width: 44px; /* match grid column width */
-  text-align: left; /* align with label start */
+  width: 44px;
+  text-align: left;
   font-variant-numeric: tabular-nums; /* stable digit width to prevent jitter */
   font-feature-settings: 'tnum' 1;
   font-weight: 400; /* lighter timer weight */
-  margin-left: 6px; /* together with button padding → 8px total */
+  margin-left: 8px; /* together with button padding → 8px total */
+  line-height: 18px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar .seek-fill {
@@ -151,7 +154,8 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .variation-label.inline {
   grid-area: label;
-  margin-left: 6px; /* align label start with timer */
+  margin-left: 8px; /* align label start with timer */
+  line-height: 18px;
 }
 
 /* Hide audio controls except the timeline (seek bar). Support varies by browser */
@@ -171,8 +175,7 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.selected {
-  border-color: #005FCC;
-  box-shadow: 0 0 0 2px rgba(0, 95, 204, 0.25);
+  border-color: #3b63fb;
   background: #fff;
 }
 
@@ -183,10 +186,10 @@
 
 /* Highlight expanded sound suggestion (text + icon to blue) */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
-  color: #005FCC;
+  color: #3b63fb;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded svg {
-  color: #005FCC;
+  color: #3b63fb;
 }
 
 @media screen and (max-width: 599px) {
@@ -638,7 +641,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
-  margin: 0 var(--spacing-xs) var(--spacing-xxs) var(--spacing-xs);
+  margin: 5px var(--spacing-xs) var(--spacing-xxs) var(--spacing-xs);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -646,7 +649,7 @@
   color: #292929;
   font-weight: 400;
   line-height: var(--type-body-s-lh);
-  border-top: 1px solid #E1E1E1;
+  border-top: 2px solid #E1E1E1;
   padding-top: 8px;
 }
 
