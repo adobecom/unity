@@ -29,6 +29,11 @@
   background: #fff;
   padding: 6px 12px;
   cursor: pointer;
+  height: 40px;
+  line-height: 36px; /* 40px minus 2px borders top+bottom */
+  box-sizing: border-box; /* include border/padding in fixed height */
+  display: inline-flex;
+  align-items: center;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
@@ -209,9 +214,28 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
   color: #3b63fb;
   font-weight: 700; /* bold when expanded */
+  /* behave like regular rows; don't force larger height */
+  display: flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded svg {
   color: #3b63fb;
+}
+
+/* Expanded row two-part layout: left (content) + right (button) */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded .drop-left {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  padding: 8px var(--spacing-xs); /* same padding as non-expanded */
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded .drop-right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center; /* vertically center button */
 }
 
 @media screen and (max-width: 599px) {
@@ -650,30 +674,30 @@
   color: #292929;
   font-size: var(--type-body-s-size);
   font-weight: 400;
-  line-height: 40px; /* fixed row height */
-  height: 40px;
-  padding: 0 var(--spacing-xs);
+  line-height: var(--type-body-s-lh);
+  /* remove top/bottom padding; height controlled by line-height/min-height */
+  padding: 8px var(--spacing-xs);
   display: flex;
-  align-items: center;
+  align-items: center; /* compact for single-line; multi-line will grow naturally */
   gap: var(--spacing-xxs);
   text-align: left;
+  white-space: normal; /* allow wrapping for long prompts */
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
   background-color: #e6e6e6;
 }
 
-/* Keep expanded suggestion row height fixed */
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
-  height: 40px;
-  line-height: 40px;
-}
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .use-prompt-btn.inline {
   align-self: center;
   padding-top: 0;
   padding-bottom: 0;
-  height: 40px;
-  line-height: normal;
+  height: 40px; /* fixed button height */
+  line-height: 36px; /* account for 2px borders */
+  box-sizing: border-box;
+  white-space: nowrap;
+  min-width: 140px; /* ensure full "Use prompt" text */
+  flex: 0 0 auto; /* prevent shrinking */
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
