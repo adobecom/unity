@@ -184,11 +184,11 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete {
-  background: rgb(17 17 17 / 55%);
+  background: rgb(255 255 255 / 55%);
 }
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete {
-  background: rgb(255 255 255 / 55%);
+  background: rgb(17 17 17 / 55%);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
@@ -212,23 +212,23 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:hover,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete:hover {
-  background: rgba(0 0 0 / 30%);
+  background: rgba(255 255 255 / 50%);
   transition: background 0.2s ease-in-out;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:focus-within,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete:focus-within {
-  background: rgba(0 0 0 / 40%);
-  transition: background 0.2s ease-in-out;
-}
-
-.unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete:hover {
   background: rgba(255 255 255 / 60%);
   transition: background 0.2s ease-in-out;
 }
 
+.unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete:hover {
+  background: rgba(0 0 0 / 40%);
+  transition: background 0.2s ease-in-out;
+}
+
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete:focus-within {
-  background: rgba(255 255 255 / 70%);
+  background: rgba(0 0 0 / 50%);
   transition: background 0.2s ease-in-out;
 }
 
@@ -295,12 +295,12 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
-  color: #fff;
+  color: #000;
 }
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field,
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
-  color: #000;
+  color: #fff;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
@@ -407,12 +407,12 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete::after {
-  background: linear-gradient(180deg, rgb(0 0 0 / 4%) 0%, rgb(0 0 0 / 20%) 100%);
+  background: linear-gradient(180deg, rgb(255 255 255 / 25%) 0%, rgb(255 255 255 / 10%) 100%);
   
 }
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete::after {
-  background: linear-gradient(180deg, rgb(255 255 255 / 25%) 0%, rgb(255 255 255 / 10%) 100%);
+  background: linear-gradient(180deg, rgb(0 0 0 / 4%) 0%, rgb(0 0 0 / 20%) 100%);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .autocomplete::after {
@@ -478,11 +478,11 @@
 
 .unity-enabled .interactive-area .verbs-container .menu-icon svg,
 .unity-enabled .interactive-area.dark .verbs-container .menu-icon svg {
-  filter: invert(1);
+  filter: invert(0);
 }
 
 .unity-enabled .interactive-area.light .verbs-container .menu-icon svg {
-  filter: invert(0);
+  filter: invert(1);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item svg {
@@ -640,13 +640,13 @@
 
 .unity-enabled .interactive-area .selected-verb,
 .unity-enabled .interactive-area.dark .selected-verb {
-  background: rgba(255 255 255 / 11%);
-  color: #DBDBDB;
+  background: rgba(255 255 255 / 66%);
+  color: #333;
 }
 
 .unity-enabled .interactive-area.light .selected-verb {
-  background: rgba(255 255 255 / 66%);
-  color: #333;
+  background: rgba(255 255 255 / 11%);
+  color: #DBDBDB;
 }
 
 .unity-enabled .interactive-area .selected-verb[disabled="true"] {
