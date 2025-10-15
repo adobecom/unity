@@ -257,13 +257,12 @@ export default class UnityWidget {
       prompt,
       assetid,
       variations,
-      displayPrompt: prompt.length > 105 ? `${prompt.slice(0, 105)}…` : prompt,
     }));
   }
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
     this.promptItems = [];
-    prompts.forEach(({ prompt, assetid, displayPrompt, variations }, idx) => {
+    prompts.forEach(({ prompt, assetid, variations }, idx) => {
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -272,7 +271,10 @@ export default class UnityWidget {
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
-      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
+      });
+      const iconWrap = createTag('span', { class: 'prompt-icon' }, '<svg><use xlink:href="#unity-prompt-icon"></use></svg>');
+      const text = createTag('span', { class: 'drop-text' }, prompt);
+      item.append(iconWrap, text);
       dropdown.append(item);
       this.promptItems.push(item);
 

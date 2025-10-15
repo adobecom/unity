@@ -217,8 +217,6 @@
   /* behave like regular rows; don't force larger height */
   display: flex;
   align-items: center;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded svg {
   color: #3b63fb;
@@ -672,16 +670,22 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item {
   cursor: pointer;
   color: #292929;
-  font-size: var(--type-body-s-size);
+  font-size: 16px;
   font-weight: 400;
-  line-height: var(--type-body-s-lh);
-  /* remove top/bottom padding; height controlled by line-height/min-height */
-  padding: 8px var(--spacing-xs);
+  line-height: 30px;
+  padding: 5px var(--spacing-xs);
   display: flex;
-  align-items: center; /* compact for single-line; multi-line will grow naturally */
+  align-items: center;
   gap: var(--spacing-xxs);
   text-align: left;
-  white-space: normal; /* allow wrapping for long prompts */
+  white-space: nowrap; /* always 1 line */
+  overflow: hidden;
+}
+
+/* truncate the prompt text span */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .drop-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
@@ -692,12 +696,27 @@
   align-self: center;
   padding-top: 0;
   padding-bottom: 0;
-  height: 40px; /* fixed button height */
+  height: 30px; /* fixed button height */
   line-height: 36px; /* account for 2px borders */
   box-sizing: border-box;
   white-space: nowrap;
-  min-width: 140px; /* ensure full "Use prompt" text */
   flex: 0 0 auto; /* prevent shrinking */
+}
+
+/* Prompt icon alignment */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .prompt-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .prompt-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  transform: none !important; /* cancel any translateY applied elsewhere */
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
