@@ -405,10 +405,11 @@ export default class UnityWidget {
             const split = (str) => str.split('||').map((s) => s.trim()).filter((s) => s);
             const labels = split(labelsRaw);
             const urls = split(urlsRaw);
-            if (urls.length > 0) {
-              variations = urls.slice(0, 4).map((u, idx) => ({
-                label: labels[idx] || `Variation ${idx + 1}`,
-                url: u,
+            if (labels.length > 0) {
+              const max = 4;
+              variations = labels.slice(0, max).map((lbl, idx) => ({
+                label: (lbl && lbl.trim()) || `Variation ${idx + 1}`,
+                url: urls[idx] || '',
               }));
             }
           }
@@ -529,9 +530,9 @@ export default class UnityWidget {
   renderSoundDetails(promptObj) {
     const details = createTag('div', { class: 'sound-details', role: 'region' });
     const strip = createTag('div', { class: 'variation-strip' });
-    const vars = Array.isArray(promptObj.variations) && promptObj.variations.length === 4
+    const vars = Array.isArray(promptObj.variations)
       ? promptObj.variations
-      : this.getGeneratedSamples();
+      : [];
 
     // Ensure a global registry of audio objects for robust cleanup
     if (!this.activeAudios) this.activeAudios = new Set();
