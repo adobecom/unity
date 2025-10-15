@@ -478,7 +478,7 @@ export default class ActionBinder {
   }
 
   async handleSingleFileUpload(files) {
-    this.filesData = { ...this.filesData, uploadType: 'sfu' };
+    this.filesData = { ...files, uploadType: 'sfu' };
     if (this.signedOut) await this.uploadHandler.singleFileGuestUpload(files[0], this.filesData);
     else await this.uploadHandler.singleFileUserUpload(files[0], this.filesData);
   }
@@ -486,7 +486,7 @@ export default class ActionBinder {
   async handleMultiFileUpload(files) {
     this.MULTI_FILE = true;
     this.LOADER_LIMIT = 65;
-    this.filesData = { ...this.filesData, uploadType: 'mfu' };
+    this.filesData = { ...files, uploadType: 'mfu' };
     this.dispatchAnalyticsEvent('multifile', this.filesData);
     if (this.signedOut) await this.uploadHandler.multiFileGuestUpload(files, this.filesData);
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
