@@ -8,18 +8,12 @@
       "maxNumFiles": 1,
       "maxFileSize": 40000000,
       "maxHeignt": 8000,
-      "maxWidth": 8000
-    },
-    "limits-photoshop": {
+      "maxWidth": 8000,
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"]
-    },
-    "limits-lightroom": {
-      "allowedFileTypes": ["image/jpeg", "image/jpg"]
     },
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
-      "fragmentLink-lightroom": "/drafts/ruchika/unity/lightroom/fragments/splash-page/splashscreen",
+      "fragmentLink": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
