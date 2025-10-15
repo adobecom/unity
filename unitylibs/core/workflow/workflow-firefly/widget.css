@@ -49,8 +49,11 @@
 .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
   background: none;
   transform: translateY(-100%);
-  bottom: 30%;
-  top: unset;
+  top: -10px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .alert-holder {
+  top: 0;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast {
@@ -776,11 +779,6 @@
     animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
-    transform: translateY(-80%);
-    bottom: 0;
-  }
-
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item {
     -webkit-text-size-adjust: 100%;
   }
@@ -857,6 +855,10 @@
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
+    transform: translateY(-100%);
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap.verb-options .alert-holder {
     transform: translateY(-90%);
   }
 
