@@ -24,23 +24,6 @@ export default class UploadHandler {
     });
   }
 
-  async postCallToServiceWithRetry(api, options, errorCallbackOptions = {}, retryConfig = null) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': this.actionBinder.workflowCfg?.productName,
-        'x-unity-action': this.actionBinder.workflowCfg?.supportedFeatures?.values()?.next()?.value,
-      }),
-      ...options,
-    };
-    try {
-      return await this.networkUtils.fetchFromServiceWithRetry(api, postOpts, retryConfig);
-    } catch (err) {
-      this.serviceHandler.showErrorToast(errorCallbackOptions, err, this.actionBinder.lanaOptions);
-      throw err;
-    }
-  }
-
   async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal, chunkNumber = 'unknown') {
     const uploadOptions = {
       method: 'PUT',
@@ -119,7 +102,14 @@ export default class UploadHandler {
 
   async scanImgForSafetyWithRetry(assetId) {
     const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
-    const optionsBody = { body: JSON.stringify(assetData) };
+    const postOpts = {
+      method: 'POST',
+      headers: await getHeaders(unityConfig.apiKey, {
+        'x-unity-product': this.actionBinder.workflowCfg?.productName,
+        'x-unity-action': this.actionBinder.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+      }),
+      body: JSON.stringify(assetData),
+    };
     const retryConfig = {
       retryType: 'polling',
       retryParams: {
@@ -127,10 +117,9 @@ export default class UploadHandler {
         defaultRetryDelay: 5000,
       },
     };
-    await this.postCallToServiceWithRetry(
+    return this.networkUtils.fetchFromServiceWithRetry(
       this.actionBinder.apiConfig.endPoint.acmpCheck,
-      optionsBody,
-      { errorToastEl: this.actionBinder.errorToastEl, errorType: '.icon-error-request' },
+      postOpts,
       retryConfig,
     );
   }
