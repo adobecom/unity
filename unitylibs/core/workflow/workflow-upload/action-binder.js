@@ -323,13 +323,21 @@ export default class ActionBinder {
       img.onload = async () => {
         const { naturalWidth: width, naturalHeight: height } = img;
         URL.revokeObjectURL(objectUrl);
-        if (width > this.limits.maxWidth || height > this.limits.maxHeight) {
+        const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
+        const isMinLimits = this.limits.minWidth && this.limits.minHeight;
+
+        if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
           this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
           this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filedimension' } });
           reject(new Error('Unable to process the file type!'));
+        } 
+        if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
+          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-failedmindimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
+          this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-failedmindimension' } });
+          reject(new Error('Unable to process the file type!'));
         } else {
           resolve({ width, height });
-        }
+        }  
       };
       img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
@@ -355,17 +363,17 @@ export default class ActionBinder {
     if (!files) return;
     await this.initAnalytics();
     const file = files[0];
-    if (this.limits.maxNumFiles !== files.length) {
+    if (typeof this.limits.maxNumFiles === 'number' && this.limits.maxNumFiles !== files.length) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' }, '', this.lanaOptions, 'client');
       this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filecount' } });
       return;
     }
-    if (!this.limits.allowedFileTypes.includes(file.type)) {
+    if (Array.isArray(this.limits.allowedFileTypes) && !this.limits.allowedFileTypes.includes(file.type)) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' }, '', this.lanaOptions, 'client');
       this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filetype' } });
       return;
     }
-    if (this.limits.maxFileSize < file.size) {
+    if (typeof this.limits.maxFileSize === 'number' && this.limits.maxFileSize < file.size) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' }, '', this.lanaOptions, 'client');
       this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filesize' } });
       return;
