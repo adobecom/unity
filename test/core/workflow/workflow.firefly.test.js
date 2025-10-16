@@ -1494,9 +1494,12 @@ describe('Firefly Workflow Tests', () => {
       placeholderParent.appendChild(placeholderInput);
       emptyMockEl.appendChild(placeholderParent);
       testWidget.el = emptyMockEl;
-      // The function will throw an error because it tries to destructure href from undefined
-      // This test verifies the function behavior with missing verbs
-      expect(() => testWidget.verbDropdown()).to.throw();
+      // The function should handle missing verbs gracefully and return a disabled button
+      const result = testWidget.verbDropdown();
+      expect(result).to.be.an('array');
+      expect(result).to.have.length(1);
+      expect(result[0]).to.have.property('disabled', true);
+      expect(result[0].tagName).to.equal('BUTTON');
     });
 
     it('should handle missing placeholder input gracefully', () => {
