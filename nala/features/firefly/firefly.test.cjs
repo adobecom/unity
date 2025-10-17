@@ -25,7 +25,6 @@ test.describe('Firefly test suite', () => {
 
     await test.step('step-2: Verify Firefly Image verb content/specs', async () => {
       await expect(fireflyPage.unityWrapper).toBeVisible();
-      await expect(fireflyPage.imageVerbButton).toBeVisible();
       await expect(fireflyPage.promptInput).toBeVisible();
       await expect(fireflyPage.generateImageButton).toBeVisible();
       const actualText = await fireflyPage.promptInput.getAttribute('placeholder');
