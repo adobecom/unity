@@ -6,6 +6,7 @@ describe('UploadHandler', () => {
   let uploadHandler;
   let mockActionBinder;
   let mockServiceHandler;
+  let utilsModule;
 
   before(async () => {
     window.unityConfig = {
@@ -14,10 +15,17 @@ describe('UploadHandler', () => {
       apiKey: 'test-api-key',
     };
 
-    window.getUnityLibs = sinon.stub().returns('../../../../unitylibs');
-    window.getFlatObject = sinon.stub().resolves(() => 'mocked-flatten-result');
-    window.getGuestAccessToken = sinon.stub().resolves('Bearer mock-token');
+    // Mock adobeIMS with a valid, non-expired token
+    window.adobeIMS = {
+      getAccessToken: () => ({
+        token: 'mock-token',
+        expire: Date.now() + (10 * 60 * 1000), // expires in 10 minutes
+        isGuestToken: false,
+      }),
+    };
 
+    utilsModule = await import('../../../../unitylibs/scripts/utils.js');
+    utilsModule.setUnityLibs('../../../../unitylibs');
     const module = await import('../../../../unitylibs/core/workflow/workflow-upload/upload-handler.js');
     UploadHandler = module.default;
   });
@@ -39,6 +47,10 @@ describe('UploadHandler', () => {
       errorToastEl: document.createElement('div'),
       lanaOptions: { sampleRate: 100, tags: 'Unity-PS-Upload' },
       logAnalyticsinSplunk: sinon.stub(),
+      getAdditionalHeaders: () => ({
+        'x-unity-product': 'test-product',
+        'x-unity-action': 'test-feature',
+      }),
     };
 
     mockServiceHandler = { showErrorToast: sinon.stub() };
@@ -335,69 +347,45 @@ describe('UploadHandler', () => {
   });
 
   describe('scanImgForSafetyWithRetry', () => {
-    let originalFetch;
+    let originalFetchFromServiceWithRetry;
 
     beforeEach(() => {
-      originalFetch = window.fetch;
+      originalFetchFromServiceWithRetry = uploadHandler.networkUtils.fetchFromServiceWithRetry;
     });
 
     afterEach(() => {
-      window.fetch = originalFetch;
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = originalFetchFromServiceWithRetry;
     });
 
-    it('should call postCallToServiceWithRetry for safety scan', async () => {
-      // Mock the postCallToServiceWithRetry method
-      uploadHandler.postCallToServiceWithRetry = sinon.stub().resolves({ success: true });
+    it('should call fetchFromServiceWithRetry for safety scan', async () => {
+      // Mock the fetchFromServiceWithRetry method
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().resolves({ success: true });
 
       await uploadHandler.scanImgForSafetyWithRetry('test-asset-id');
 
-      expect(uploadHandler.postCallToServiceWithRetry.calledOnce).to.be.true;
-      expect(uploadHandler.postCallToServiceWithRetry.calledWith(
-        mockActionBinder.apiConfig.endPoint.acmpCheck,
-        { body: JSON.stringify({ assetId: 'test-asset-id', targetProduct: 'test-product' }) },
-        { errorToastEl: mockActionBinder.errorToastEl, errorType: '.icon-error-request' },
-      )).to.be.true;
+      expect(uploadHandler.networkUtils.fetchFromServiceWithRetry.calledOnce).to.be.true;
+      const callArgs = uploadHandler.networkUtils.fetchFromServiceWithRetry.firstCall.args;
+      expect(callArgs[0]).to.equal(mockActionBinder.apiConfig.endPoint.acmpCheck);
+      expect(callArgs[1].method).to.equal('POST');
+      expect(callArgs[1].body).to.equal(JSON.stringify({ assetId: 'test-asset-id', targetProduct: 'test-product' }));
+      expect(callArgs[2]).to.deep.include({
+        retryType: 'polling',
+        retryParams: {
+          maxRetryDelay: 300000,
+          defaultRetryDelay: 5000,
+        },
+      });
     });
 
-    it('should handle postCallToServiceWithRetry error', async () => {
+    it('should handle fetchFromServiceWithRetry error', async () => {
       const serviceError = new Error('Service error');
-      uploadHandler.postCallToServiceWithRetry = sinon.stub().rejects(serviceError);
+      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(serviceError);
 
       try {
         await uploadHandler.scanImgForSafetyWithRetry('test-asset-id');
         expect.fail('Should have thrown error');
       } catch (error) {
         expect(error.message).to.equal('Service error');
-      }
-    });
-  });
-
-  describe('postCallToServiceWithRetry', () => {
-    let originalFetch;
-
-    beforeEach(() => {
-      originalFetch = window.fetch;
-    });
-
-    afterEach(() => {
-      window.fetch = originalFetch;
-    });
-
-    // Note: POST request test removed due to getHeaders import issues
-    // This method is tested indirectly through other integration tests
-
-    it.skip('should handle service error and show error toast', async () => {
-      // Mock getUnityLibs to return a valid path to avoid import issues
-      window.getUnityLibs = sinon.stub().returns('/test/unitylibs');
-      const serviceError = new Error('Service error');
-      uploadHandler.fetchFromServiceWithRetry = sinon.stub().rejects(serviceError);
-
-      try {
-        await uploadHandler.postCallToServiceWithRetry('/test-api', { body: 'test' });
-        expect.fail('Should have thrown error');
-      } catch (error) {
-        expect(error.message).to.equal('Service error');
-        expect(mockServiceHandler.showErrorToast.calledOnce).to.be.true;
       }
     });
   });
