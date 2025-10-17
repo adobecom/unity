@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
-import { setUnityLibs } from '../../../unitylibs/scripts/utils.js';
+import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 
 setUnityLibs('/unitylibs');
 
@@ -14,8 +14,8 @@ window.lana = { log: sinon.stub() };
 
 window.sendAnalyticsEvent = sinon.stub();
 
-const { default: init } = await import('../../../unitylibs/blocks/unity/unity.js');
-document.body.innerHTML = await readFile({ path: './mocks/upload-body.html' });
+const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
+document.body.innerHTML = await readFile({ path: '../mocks/upload-body.html' });
 
 function delay(ms) {
   return new Promise((resolve) => {
@@ -87,7 +87,7 @@ describe('Unity Upload Block', () => {
     await init(unityEl);
     await delay(100);
 
-    const module = await import('../../../unitylibs/core/workflow/workflow-upload/action-binder.js');
+    const module = await import('../../../../unitylibs/core/workflow/workflow-upload/action-binder.js');
     ActionBinder = module.default;
 
     workflowCfg = {
@@ -115,7 +115,7 @@ describe('Unity Upload Block', () => {
   });
 
   beforeEach(async () => {
-    document.body.innerHTML = await readFile({ path: './mocks/upload-body.html' });
+    document.body.innerHTML = await readFile({ path: '../mocks/upload-body.html' });
     unityEl = document.querySelector('.unity.workflow-upload');
     await delay(50);
   });
@@ -540,7 +540,7 @@ describe('Unity Upload Block', () => {
       actionBinder.continueInApp = async () => {};
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      await actionBinder.photoshopActionMaps('upload', [file]);
+      await actionBinder.executeActionMaps('upload', [file]);
 
       window.fetch = originalFetch;
       actionBinder.checkImageDimensions = originalCheckImageDimensions;
@@ -556,7 +556,7 @@ describe('Unity Upload Block', () => {
       };
 
       try {
-        await actionBinder.photoshopActionMaps('interrupt');
+        await actionBinder.executeActionMaps('interrupt');
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.be.instanceOf(Error);
@@ -566,7 +566,7 @@ describe('Unity Upload Block', () => {
     it('should handle photoshop action maps for unknown action', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
-      await actionBinder.photoshopActionMaps('unknown', []);
+      await actionBinder.executeActionMaps('unknown', []);
     });
 
     it('should initialize action listeners', async () => {
@@ -1457,7 +1457,7 @@ describe('Unity Upload Block', () => {
             this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
             throw err;
           }
-        }
+        },
       };
 
       const originalFetch = window.fetch;
@@ -1500,7 +1500,7 @@ describe('Unity Upload Block', () => {
             this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
             throw err;
           }
-        }
+        },
       };
 
       const originalFetch = window.fetch;
@@ -1843,9 +1843,9 @@ describe('Unity Upload Block', () => {
         dataTransfer,
       });
 
-      // Mock the photoshopActionMaps method
-      const originalPhotoshopActionMaps = actionBinder.photoshopActionMaps;
-      actionBinder.photoshopActionMaps = async (action, files) => {
+      // Mock the executeActionMaps method
+      const originalExecuteActionMaps = actionBinder.executeActionMaps;
+      actionBinder.executeActionMaps = async (action, files) => {
         expect(action).to.equal('upload');
         expect(files).to.have.length(1);
         expect(files[0]).to.equal(mockFile);
@@ -1853,7 +1853,7 @@ describe('Unity Upload Block', () => {
 
       testDiv.dispatchEvent(dropEvent);
 
-      actionBinder.photoshopActionMaps = originalPhotoshopActionMaps;
+      actionBinder.executeActionMaps = originalExecuteActionMaps;
     });
 
     it('should handle click event on DIV element', async () => {
