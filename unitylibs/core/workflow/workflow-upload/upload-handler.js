@@ -3,7 +3,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-loop-func */
 
-import { unityConfig, getHeaders } from '../../../scripts/utils.js';
+import { unityConfig, getApiCallOptions } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
 import { createChunkUploadTasks, createChunkAnalyticsData } from '../../../utils/chunkingUtils.js';
 
@@ -22,23 +22,6 @@ export default class UploadHandler {
       ...errorData,
       assetId: this.actionBinder.assetId,
     });
-  }
-
-  async postCallToServiceWithRetry(api, options, errorCallbackOptions = {}, retryConfig = null) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': this.actionBinder.workflowCfg?.productName,
-        'x-unity-action': this.actionBinder.workflowCfg?.supportedFeatures?.values()?.next()?.value,
-      }),
-      ...options,
-    };
-    try {
-      return await this.networkUtils.fetchFromServiceWithRetry(api, postOpts, retryConfig);
-    } catch (err) {
-      this.serviceHandler.showErrorToast(errorCallbackOptions, err, this.actionBinder.lanaOptions);
-      throw err;
-    }
   }
 
   async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal, chunkNumber = 'unknown') {
@@ -119,7 +102,7 @@ export default class UploadHandler {
 
   async scanImgForSafetyWithRetry(assetId) {
     const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
-    const optionsBody = { body: JSON.stringify(assetData) };
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(assetData) });
     const retryConfig = {
       retryType: 'polling',
       retryParams: {
@@ -127,10 +110,9 @@ export default class UploadHandler {
         defaultRetryDelay: 5000,
       },
     };
-    await this.postCallToServiceWithRetry(
-      this.actionBinder.psApiConfig.psEndPoint.acmpCheck,
-      optionsBody,
-      { errorToastEl: this.actionBinder.errorToastEl, errorType: '.icon-error-request' },
+    return this.networkUtils.fetchFromServiceWithRetry(
+      this.actionBinder.apiConfig.endPoint.acmpCheck,
+      postOpts,
       retryConfig,
     );
   }

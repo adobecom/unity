@@ -4,6 +4,8 @@
     "renderWidget": false,
     "source": ".drop-zone",
     "target": ".drop-zone",
+    "productTag-photoshop": "PS",
+    "productTag-lightroom": "LR",
     "limits": {
       "maxNumFiles": 1,
       "maxFileSize": 40000000,

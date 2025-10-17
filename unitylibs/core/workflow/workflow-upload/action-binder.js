@@ -16,20 +16,18 @@ import {
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}, getAdditionalHeaders = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
+    this.getAdditionalHeaders = getAdditionalHeaders;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': this.workflowCfg?.productName,
-        'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
-      }),
+      headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
       ...options,
     };
     try {
@@ -74,7 +72,7 @@ export default class ActionBinder {
     this.actionMap = actionMap;
     this.canvasArea = canvasArea;
     this.errorToastEl = null;
-    this.psApiConfig = this.getPsApiConfig();
+    this.apiConfig = this.getApiConfig();
     this.serviceHandler = null;
     this.splashScreenEl = null;
     this.transitionScreen = null;
@@ -84,19 +82,26 @@ export default class ActionBinder {
     this.limits = { ...commonLimits, ...productLimits };
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
-    const productTag = workflowCfg.productName.toLowerCase() === 'lightroom' ? 'LR' : 'PS';
+    const productTag = workflowCfg.targetCfg[`productTag-${workflowCfg.productName.toLowerCase()}`] || 'UNKNOWN';
     this.lanaOptions = { sampleRate: 100, tags: `Unity-${productTag}-Upload` };
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
   }
 
-  getPsApiConfig() {
-    unityConfig.psEndPoint = {
+  getApiConfig() {
+    unityConfig.endPoint = {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
       acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
     };
     return unityConfig;
+  }
+
+  getAdditionalHeaders() {
+    return {
+      'x-unity-product': this.workflowCfg?.productName,
+      'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+    };
   }
 
   async handlePreloads() {
@@ -158,7 +163,7 @@ export default class ActionBinder {
     const assetData = { assetId, targetProduct: this.workflowCfg.productName };
     const optionsBody = { body: JSON.stringify(assetData) };
     const res = await this.serviceHandler.postCallToService(
-      this.psApiConfig.psEndPoint.acmpCheck,
+      this.apiConfig.endPoint.acmpCheck,
       optionsBody,
       {},
       false,
@@ -177,7 +182,7 @@ export default class ActionBinder {
     };
     try {
       const resJson = await this.serviceHandler.postCallToService(
-        this.psApiConfig.psEndPoint.assetUpload,
+        this.apiConfig.endPoint.assetUpload,
         { body: JSON.stringify(assetDetails) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
@@ -208,6 +213,7 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
+      sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
@@ -287,7 +293,7 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       const servicePromise = this.serviceHandler.postCallToService(
-        this.psApiConfig.connectorApiEndPoint,
+        this.apiConfig.connectorApiEndPoint,
         { body: JSON.stringify(cOpts) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
@@ -305,6 +311,7 @@ export default class ActionBinder {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
+      sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
@@ -398,7 +405,7 @@ export default class ActionBinder {
     }
   }
 
-  async photoshopActionMaps(value, files) {
+  async executeActionMaps(value, files) {
     await this.loadTransitionScreen();
     await this.handlePreloads();
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
@@ -421,12 +428,13 @@ export default class ActionBinder {
       this.canvasArea,
       this.unityEl,
       this.workflowCfg,
+      this.getAdditionalHeaders.bind(this),
     );
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
           e.preventDefault();
-          await this.photoshopActionMaps(actMap[key]);
+          await this.executeActionMaps(actMap[key]);
         });
       },
       DIV: (el, key) => {
@@ -435,7 +443,7 @@ export default class ActionBinder {
           e.preventDefault();
           e.stopPropagation();
           const files = this.extractFiles(e);
-          await this.photoshopActionMaps(actMap[key], files);
+          await this.executeActionMaps(actMap[key], files);
         });
         el.addEventListener('click', () => {
           sendAnalyticsEvent(new CustomEvent('Click Drag and drop|UnityWidget'));
@@ -453,7 +461,7 @@ export default class ActionBinder {
         });
         el.addEventListener('change', async (e) => {
           const files = this.extractFiles(e);
-          await this.photoshopActionMaps(actMap[key], files);
+          await this.executeActionMaps(actMap[key], files);
           e.target.value = '';
         });
       },
