@@ -3,7 +3,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-loop-func */
 
-import { unityConfig, getHeaders } from '../../../scripts/utils.js';
+import { unityConfig, getApiCallOptions } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
 import { createChunkUploadTasks, createChunkAnalyticsData } from '../../../utils/chunkingUtils.js';
 
@@ -102,14 +102,7 @@ export default class UploadHandler {
 
   async scanImgForSafetyWithRetry(assetId) {
     const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': this.actionBinder.workflowCfg?.productName,
-        'x-unity-action': this.actionBinder.workflowCfg?.supportedFeatures?.values()?.next()?.value,
-      }),
-      body: JSON.stringify(assetData),
-    };
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(assetData) });
     const retryConfig = {
       retryType: 'polling',
       retryParams: {

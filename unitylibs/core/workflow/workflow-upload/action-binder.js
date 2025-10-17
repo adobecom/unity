@@ -16,20 +16,18 @@ import {
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}, getAdditionalHeaders = null) {
     this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
+    this.getAdditionalHeaders = getAdditionalHeaders;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
     const postOpts = {
       method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': this.workflowCfg?.productName,
-        'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
-      }),
+      headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
       ...options,
     };
     try {
@@ -97,6 +95,13 @@ export default class ActionBinder {
       acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
     };
     return unityConfig;
+  }
+
+  getAdditionalHeaders() {
+    return {
+      'x-unity-product': this.workflowCfg?.productName,
+      'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+    };
   }
 
   async handlePreloads() {
@@ -423,6 +428,7 @@ export default class ActionBinder {
       this.canvasArea,
       this.unityEl,
       this.workflowCfg,
+      this.getAdditionalHeaders.bind(this),
     );
     const actions = {
       A: (el, key) => {
