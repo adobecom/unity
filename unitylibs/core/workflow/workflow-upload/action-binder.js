@@ -246,8 +246,7 @@ export default class ActionBinder {
         const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
         const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
         alertClose.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          this.preventDefault(e);
           errholder.classList.remove('show');
           element.style.pointerEvents = 'auto';
         });
@@ -440,8 +439,7 @@ export default class ActionBinder {
       DIV: (el, key) => {
         el.addEventListener('drop', async (e) => {
           sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
-          e.preventDefault();
-          e.stopPropagation();
+          this.preventDefault(e);
           const files = this.extractFiles(e);
           await this.executeActionMaps(actMap[key], files);
         });
@@ -490,6 +488,8 @@ export default class ActionBinder {
         window.location.reload();
       }
     });
+    window.addEventListener('dragover', this.preventDefault.bind(this), false);
+    window.addEventListener('drop', this.preventDefault.bind(this), false);
   }
 
   preventDefault(e) {
