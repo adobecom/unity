@@ -335,6 +335,7 @@
   top: 1px;
 }
 
+.unity-enabled .interactive-area .selected-model img,
 .unity-enabled .interactive-area .verb-list .verb-link img {
   width: 22px;
   height: 22px;
@@ -343,6 +344,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
   width: 24px;
   height: 24px;
+  filter: brightness(0);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
@@ -364,14 +366,14 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
   border-radius: 25px;
-  background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+  background: var(--light-bg);
   border: none;
   padding: 10px 20px;
   gap: 8px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
-  color: var(--color-white);
+  color: var(--color-black);
   font-size: 19px;
   font-weight: 700;
   line-height: normal;
@@ -457,12 +459,15 @@
 }
 
 .unity-enabled .interactive-area .selected-verb .menu-icon,
+.unity-enabled .interactive-area .selected-model .menu-icon,
 .unity-enabled .interactive-area .verb-list .verb-link .selected-icon {
   font-size: 0;
 }
 
 .unity-enabled .interactive-area .selected-verb .menu-icon,
 .unity-enabled .interactive-area .selected-verb .menu-icon svg,
+.unity-enabled .interactive-area .selected-model .menu-icon,
+.unity-enabled .interactive-area .selected-model .menu-icon svg,
 .unity-enabled .interactive-area .verb-list .verb-link .selected-icon,
 .unity-enabled .interactive-area .verb-list .verb-link .selected-icon svg {
   width: 12px;
@@ -481,11 +486,14 @@
 }
 
 .unity-enabled .interactive-area .verbs-container .menu-icon svg,
-.unity-enabled .interactive-area.dark .verbs-container .menu-icon svg {
+.unity-enabled .interactive-area.dark .verbs-container .menu-icon svg,
+.unity-enabled .interactive-area .models-container .menu-icon svg,
+.unity-enabled .interactive-area.dark .models-container .menu-icon svg {
   filter: invert(0);
 }
 
-.unity-enabled .interactive-area.light .verbs-container .menu-icon svg {
+.unity-enabled .interactive-area.light .verbs-container .menu-icon svg,
+.unity-enabled .interactive-area.light .models-container .menu-icon svg {
   filter: invert(1);
 }
 
@@ -605,24 +613,38 @@
   justify-content: flex-start;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container,
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
   display: flex;
   order: 2;
   max-width: 114px;
   position: relative;
 }
 
-.unity-enabled .interactive-area .verbs-container .menu-icon {
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container,
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
+  max-width: unset;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
+  min-width: 270px;
+}
+
+.unity-enabled .interactive-area .verbs-container .menu-icon,
+.unity-enabled .interactive-area .models-container .menu-icon {
   position: relative;
   top: 1px;
   transition: transform 0.15s ease-in;
 }
 
-.unity-enabled .interactive-area .verbs-container.show-menu .menu-icon {
+.unity-enabled .interactive-area .verbs-container.show-menu .menu-icon,
+.unity-enabled .interactive-area .models-container.show-menu .menu-icon {
   transform: rotate(-180deg);
 }
 
-.unity-enabled .interactive-area .selected-verb {
+.unity-enabled .interactive-area .selected-verb,
+.unity-enabled .interactive-area .selected-model {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -631,7 +653,7 @@
   border-right: 1px solid #000;
   cursor: pointer;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   font-family: inherit;
   font-weight: 700;
   text-transform: capitalize;
@@ -640,6 +662,13 @@
   min-width: 88px;
   background: rgba(255 255 255 / 66%);
   border-radius: 8px;
+}
+
+.unity-enabled .interactive-area .selected-model {
+  font-weight: 400;
+  background: transparent;
+  font-size: 14px;
+  min-width: unset;
 }
 
 .unity-enabled .interactive-area .selected-verb,
@@ -670,6 +699,7 @@
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
 }
 
 [lang="ja-JP"] .unity-enabled .interactive-area .verb-list,
@@ -682,7 +712,8 @@
   right: 0;
 }
 
-.unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
+.unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
+.unity-enabled .interactive-area .models-container.show-menu .verb-list {
   display: block;
   animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
 }
@@ -696,9 +727,14 @@
   padding-inline-start: 25px;
   text-transform: capitalize;
   text-decoration: none;
+  text-align: start;
   position: relative;
   opacity: 0;
   animation: fade-in .5s ease forwards;
+}
+
+.unity-enabled .interactive-area .verb-list .model-link {
+  font-size: 13px;
 }
 
 .unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
@@ -768,7 +804,8 @@
     flex: 1 1 100%;
   }
 
-  .unity-enabled .interactive-area .verbs-container {
+  .unity-enabled .interactive-area .verbs-container,
+  .unity-enabled .interactive-area .models-container {
     order: 2;
   }
 
@@ -776,7 +813,8 @@
     order: 3;
   }
 
-  .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
+  .unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
+  .unity-enabled .interactive-area .models-container.show-menu .verb-list {
     animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
   }
 
@@ -847,11 +885,13 @@
     display: none;
   }
 
-  .unity-enabled .interactive-area .verbs-container {
+  .unity-enabled .interactive-area .verbs-container,
+  .unity-enabled .interactive-area .models-container {
     width: auto;
   }
 
-  [dir="rtl"] .unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
+  [dir="rtl"] .unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
+  [dir="rtl"] .unity-enabled .interactive-area .models-container.show-menu .verb-list {
     left: unset;
   }
 
@@ -879,6 +919,10 @@
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+    display: none;
+  }
+
+  .unity-enabled .interactive-area .selected-model .model-name {
     display: none;
   }
 }
