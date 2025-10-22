@@ -14,8 +14,10 @@ export default class UnityWidget {
     this.models = null;
     this.selectedVerbType = '';
     this.selectedVerbText = '';
-    this.selectedModelType = '';
+    this.selectedModelModule = '';
+    this.selectedModelId = '';
     this.selectedModelText = '';
+    this.selectedModelVersion = '';
     this.promptItems = [];
     this.genBtn = null;
     this.hasPromptSuggestions = false;
@@ -113,12 +115,15 @@ export default class UnityWidget {
       link.parentElement.classList.add('selected');
 
       if (modelList) {
-        this.selectedModelType = link.getAttribute('data-model-type');
+        this.selectedModelId = link.getAttribute('data-model-id');
+        this.selectedModelVersion = link.getAttribute('data-model-version');
+        this.selectedModelModule = link.getAttribute('data-model-module');
         this.selectedModelText = link.textContent.trim();
         const copiedNodes = link.cloneNode(true).childNodes;
         copiedNodes[0].remove();
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
-        selectedElement.dataset.selectedModel = this.selectedModelType;
+        selectedElement.dataset.selectedModelId = this.selectedModelId;
+        selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
         selectedElement.setAttribute('aria-label', `${this.selectedModelText} prompt: ${inputPlaceHolder}`);
         link.parentElement.setAttribute('aria-label', `${this.selectedModelText} prompt selected:  ${inputPlaceHolder}`);
       } else {
@@ -134,12 +139,19 @@ export default class UnityWidget {
       const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
       if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
       else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
-      if (modelList) {
-        this.widgetWrap.setAttribute('data-selected-model', this.selectedModelType);
-      } else {
-        this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
+        const oldModelContainer = this.widget.querySelector('.models-container');
+        if (!oldModelContainer) return;
+        const modelDropdown = this.modelDropdown();
+        if (modelDropdown.length > 1) {
+          const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+          newModelContainer.append(...modelDropdown);
+          oldModelContainer.replaceWith(newModelContainer);
+        }
       }
-
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+      this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
         this.genBtn.setAttribute(
@@ -151,6 +163,50 @@ export default class UnityWidget {
         );
       }
     };
+  }
+
+  createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
+    const fragment = document.createDocumentFragment();
+    items.forEach((item, idx) => {
+      const {
+        name,
+        type,
+        icon,
+        module,
+        id,
+        version,
+      } = item;
+      const listItem = createTag('li', {
+        class: 'verb-item',
+        'aria-label': `${name} prompt: ${inputPlaceHolder}`,
+      });
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
+      const link = createTag('a', {
+        href: '#',
+        class: isModelList ? 'verb-link model-link' : 'verb-link',
+        ...(!isModelList && { 'data-verb-type': type }),
+        ...(isModelList && { 'data-model-module': module }),
+        ...(isModelList && { 'data-model-id': id }),
+        ...(isModelList && { 'data-model-version': version }),
+      }, `<img loading="lazy" src="${icon}" alt="" />${name}`);
+
+      if (idx === 0) {
+        listItem.classList.add('selected');
+        listItem.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
+      }
+
+      link.prepend(selectedIcon);
+      listItem.append(link);
+      fragment.append(listItem);
+    });
+
+    listContainer.append(fragment);
+
+    listContainer.addEventListener('click', (e) => {
+      const link = e.target.closest('.verb-link');
+      if (!link) return;
+      this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
+    });
   }
 
   verbDropdown() {
@@ -201,49 +257,43 @@ export default class UnityWidget {
         selectedElement.focus();
       }
     });
-    verbs.forEach((verb, idx) => {
-      const name = verb.nextElementSibling?.textContent.trim();
-      const verbType = verb.className.split('-')[2];
-      const icon = verb.nextElementSibling?.href;
-      const item = createTag('li', {
-        class: 'verb-item',
-        'aria-label': `${name} prompt: ${inputPlaceHolder}`,
-      });
-      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
-      const link = createTag('a', {
-        href: '#',
-        class: 'verb-link',
-        'data-verb-type': verbType,
-      }, `<img loading="lazy" src="${icon}" alt="" />${name}`);
-      if (idx === 0) {
-        item.classList.add('selected');
-        item.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
-      }
-      verbs[0].classList.add('selected');
-      link.prepend(selectedIcon);
-      item.append(link);
-      verbList.append(item);
-      link.addEventListener('click', this.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, false));
-    });
+    verbs[0]?.classList.add('selected');
+
+    const verbsData = Array.from(verbs).map((verb) => ({
+      name: verb.nextElementSibling?.textContent.trim(),
+      type: verb.classList[1].split('-')[2],
+      icon: verb.nextElementSibling?.href,
+    }));
+
+    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
+
     return [selectedElement, verbList];
   }
 
   modelDropdown() {
     if (!this.hasModelOptions) return [];
+    const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
-    const selectedModelType = this.models.adobe[0].id;
-    const nameContainer = createTag('span', { class: 'model-name' }, this.models.adobe[0].name.trim());
+    const selectedModelType = models[0].id;
+    const selectedModelVersion = models[0].version;
+    const selectedModelModule = models[0].module;
+    const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
     const selectedElement = createTag('button', {
       class: 'selected-model',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
       'aria-label': `${selectedModelType} prompt: ${inputPlaceHolder}`,
-      'data-selected-model': selectedModelType,
-    }, `<img src="${this.models.adobe[0].icon}" alt="" />${nameContainer.outerHTML}`);
-    this.selectedModelType = selectedModelType;
-    this.widgetWrap.setAttribute('data-selected-model', this.selectedModelType);
-    this.selectedModelText = this.models.adobe[0].name.trim();
-
+      'data-selected-model-id': selectedModelType,
+      'data-selected-model-version': selectedModelVersion,
+      'data-selected-model-module': selectedModelModule,
+    }, `<img src="${models[0].icon}" alt="" />${nameContainer.outerHTML}`);
+    this.selectedModelModule = selectedModelModule;
+    this.selectedModelId = selectedModelType;
+    this.selectedModelVersion = selectedModelVersion;
+    this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+    this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const listItems = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
     listItems.setAttribute('style', 'display: none;');
@@ -272,29 +322,8 @@ export default class UnityWidget {
         selectedElement.focus();
       }
     });
-    this.models.adobe.forEach((verb, idx) => {
-      const name = verb.name.trim();
-      const verbType = verb.id;
-      const { icon } = verb;
-      const item = createTag('li', {
-        class: 'verb-item',
-        'aria-label': `${name} prompt: ${inputPlaceHolder}`,
-      });
-      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
-      const link = createTag('a', {
-        href: '#',
-        class: 'verb-link model-link',
-        'data-model-type': verbType,
-      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer.outerHTML}`);
-      if (idx === 0) {
-        item.classList.add('selected');
-        item.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
-      }
-      link.prepend(selectedIcon);
-      item.append(link);
-      listItems.append(item);
-      link.addEventListener('click', this.handleVerbLinkClick(link, listItems, selectedElement, menuIcon, inputPlaceHolder, true));
-    });
+
+    this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
     return [selectedElement, listItems];
   }
 
@@ -330,7 +359,6 @@ export default class UnityWidget {
       const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
       modelBtn.append(...modelDropdown);
       actionContainer.append(modelBtn);
-      // inpWrap.append(actionContainer);
     }
     return inpWrap;
   }
@@ -459,7 +487,7 @@ export default class UnityWidget {
       throw new Error('Failed to fetch models.');
     }
     const modelJson = await results.json();
-    this.models = this.createModelMap(modelJson?.content?.data);
+    this.models = modelJson?.content?.data;
   }
 
   async getModel() {
@@ -492,8 +520,8 @@ export default class UnityWidget {
     if (Array.isArray(data)) {
       data.forEach((item) => {
         if (item.type) {
-          if (!modelMap[item.type]) modelMap[item.type] = [];
-          modelMap[item.type].push({ name: item.name, id: item.id, version: item.version, icon: item.icon });
+          if (!modelMap[item.module]) modelMap[item.module] = [];
+          modelMap[item.module].push({ name: item.name, id: item.id, version: item.version, icon: item.icon });
         }
       });
     }
