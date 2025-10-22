@@ -1,4 +1,5 @@
-.hero-marquee.unity-enabled {
+.hero-marquee.unity-enabled,
+.showcase-marquee.unity-enabled {
   overflow: unset;
 }
 
