@@ -300,7 +300,7 @@ export default class UnityWidget {
   }
 
   addWidget() {
-    const interactArea = this.target.querySelector('.copy');
+    const interactArea = this.target.querySelector(this.workflowCfg.targetCfg.selector);
     const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);

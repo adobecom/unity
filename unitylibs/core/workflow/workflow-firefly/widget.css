@@ -1,4 +1,5 @@
-.hero-marquee.unity-enabled {
+.hero-marquee.unity-enabled,
+.showcase-marquee.unity-enabled {
   overflow: unset;
 }
 
@@ -25,6 +26,17 @@
 .hero-marquee.unity-enabled .interactive-area .text {
   max-width: 800px;
   margin: var(--spacing-xxl) 0 var(--spacing-m);
+}
+
+.showcase-marquee.unity-enabled .interactive-area {
+  display: inherit;
+  justify-content: center;
+  background: none;
+}
+
+.showcase-marquee.unity-enabled .text {
+  max-width: 800px;
+  margin: var(--spacing-m) 0;
 }
 
 .hero-marquee.unity-enabled .icon-area {
