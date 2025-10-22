@@ -686,7 +686,8 @@
   cursor: auto;
 } 
 
-.unity-enabled .interactive-area .verb-list {
+.unity-enabled .interactive-area .verb-list,
+.unity-enabled .interactive-area .verb-list-container  {
   padding: 18px;
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
@@ -699,7 +700,19 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  /* width: 100%; */
+}
+
+.unity-enabled .interactive-area .verb-list-container .verb-list {
+  padding: unset;
+  list-style: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  min-width: unset;
+  animation: none;
+  position: static;
 }
 
 [lang="ja-JP"] .unity-enabled .interactive-area .verb-list,
@@ -713,7 +726,8 @@
 }
 
 .unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
-.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+.unity-enabled .interactive-area .models-container.show-menu .verb-list,
+.unity-enabled .interactive-area .models-container.show-menu .verb-list-container  {
   display: block;
   animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
 }
