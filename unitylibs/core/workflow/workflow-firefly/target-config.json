@@ -14,5 +14,21 @@
       ".drop-item": { "actionType": "setPromptValue" }
     },
     "sendSplunkAnalytics": true
+  },
+    "showcase-marquee": {
+    "type": "text",
+    "selector": ".text",
+    "handler": "render",
+    "renderWidget": true,
+    "source": ".text",
+    "target": "p:last-of-type",
+    "insert": "after",
+    "verbsWithoutPromptSuggestions": ["vector"],
+    "actionMap": {
+      ".inp-field": { "actionType": "autocomplete" },
+      ".gen-btn": { "actionType": "generate" },
+      ".drop-item": { "actionType": "setPromptValue" }
+    },
+    "sendSplunkAnalytics": true
   }
 }
