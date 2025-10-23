@@ -181,10 +181,6 @@ export default class ActionBinder {
   addEventListeners(el, actionsList) {
     const handleClick = async (event) => {
       event.preventDefault();
-      // If sound verb is active and this is a prompt suggestion (.drop-item), do not trigger network call here.
-      const isDropItem = el.classList?.contains('drop-item');
-      const currentVerb = this.getSelectedVerbType();
-      if (isDropItem && currentVerb === 'sound') return;
       await this.execActions(actionsList, el);
     };
     switch (el.nodeName) {
@@ -272,7 +268,7 @@ export default class ActionBinder {
         if (key && value) queryParams[key] = value;
       });
     }
-    // Compute query: for sound, prefer one-shot override set by "Use prompt"; else fall back to input value
+    // for sound, prefer override set by "Use prompt" button; else fall back to input value
     const currentVerb = this.getSelectedVerbType();
     const genBtn = this.block.querySelector('.gen-btn');
     const override = genBtn?.dataset?.soundPrompt;
@@ -282,7 +278,7 @@ export default class ActionBinder {
     } else {
       this.query = this.inputField.value.trim();
     }
-    const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
+    const selectedVerbType = `text-to-${currentVerb}`;
     const action = (this.id ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });

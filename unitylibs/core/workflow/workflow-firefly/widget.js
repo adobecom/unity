@@ -67,25 +67,15 @@ export default class UnityWidget {
   }
 
   hidePromptDropdown() {
-    // Target the prompt dropdown explicitly
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
-    // Always perform reset of variations associated with the dropdown scope
-    const scope = dropdown || this.widget;
-    this.resetAllSoundVariations(scope);
-    // Also stop any globally tracked audio objects
-    if (this.activeAudios) {
-      this.activeAudios.forEach((a) => { try { a.pause(); a.currentTime = 0; } catch (e) { /* noop */ } });
-      this.activeAudios.clear();
-    }
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
     }
-    if (dropdown) {
-      // Clean up expanded state and details to prevent orphaned audio refs
-      dropdown.querySelectorAll('.sound-details').forEach((d) => d.remove());
-      dropdown.querySelectorAll('.drop-item.sound-expanded').forEach((el) => el.classList.remove('sound-expanded'));
+    // For sound verb, reset variations, stop audio, and clear expanded UI
+    if (this.selectedVerbType === 'sound') {
+      this.resetAllSoundVariations(dropdown || this.widget);
     }
   }
 
@@ -229,17 +219,10 @@ export default class UnityWidget {
       'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
-    const clearSoundUI = () => {
-      const dropdownWrap = this.widget.querySelector('.prompt-dropdown-container');
-      if (!dropdownWrap) return;
-      this.resetAllSoundVariations(dropdownWrap);
-      dropdownWrap.querySelectorAll('.sound-details').forEach((d) => d.remove());
-      dropdownWrap.querySelectorAll('.drop-item.sound-expanded').forEach((el) => el.classList.remove('sound-expanded'));
-      dropdownWrap.querySelectorAll('.use-prompt-btn.inline').forEach((b) => b.remove());
-    };
-    inpField.addEventListener('focus', clearSoundUI);
-    inpField.addEventListener('click', clearSoundUI);
-    inpField.addEventListener('input', clearSoundUI);
+    const dropdownEl = this.widget.querySelector('.prompt-dropdown-container');
+    inpField.addEventListener('focus', () => this.resetAllSoundVariations(dropdownEl));
+    inpField.addEventListener('click', () => this.resetAllSoundVariations(dropdownEl));
+    inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdownEl));
     const verbDropdown = this.verbDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
@@ -426,8 +409,6 @@ export default class UnityWidget {
     if (!this.hasPromptSuggestions) return;
     const dropdown = this.widget.querySelector('#prompt-dropdown');
     if (!dropdown) return;
-    this.stopAnyAudio();
-    this.clearSoundDetails(dropdown);
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
     const limited = this.getLimitedDisplayPrompts(prompts);
@@ -440,19 +421,6 @@ export default class UnityWidget {
     if (!this.sound.audio) {
       this.sound.audio = new Audio();
     }
-  }
-
-  stopAnyAudio() {
-    if (this.sound.audio) {
-      try { this.sound.audio.pause(); } catch (e) { /* noop */ }
-    }
-    if (this.sound.currentTile) this.sound.currentTile.classList.remove('playing');
-    this.sound.currentTile = null;
-    this.sound.currentUrl = '';
-  }
-
-  clearSoundDetails(dropdown) {
-    dropdown?.querySelectorAll('.sound-details').forEach((d) => d.remove());
   }
 
   // Reset all variation tiles (pause audio, reset progress/time, hide button)
@@ -483,6 +451,9 @@ export default class UnityWidget {
         else t.audioRef.addEventListener('loadedmetadata', updateToDuration, { once: true });
       }
     });
+    root.querySelectorAll('.sound-details').forEach((d) => d.remove());
+    root.querySelectorAll('.drop-item.sound-expanded').forEach((el) => el.classList.remove('sound-expanded'));
+    root.querySelectorAll('.drop-item .use-prompt-btn.inline').forEach((b) => b.remove());
   }
 
   toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
@@ -490,19 +461,11 @@ export default class UnityWidget {
     const next = item.nextElementSibling;
     if (next && next.classList.contains('sound-details')) {
       // Pause and reset any audio before collapsing
-      this.resetAllSoundVariations(next);
-      next.remove();
-      item.classList.remove('sound-expanded');
-      item.querySelector('.use-prompt-btn.inline')?.remove();
+      this.resetAllSoundVariations(dropdown);
       return;
     }
     // Collapse any other expanded prompt
     this.resetAllSoundVariations(dropdown);
-    this.clearSoundDetails(dropdown);
-    dropdown.querySelectorAll('.drop-item.sound-expanded .use-prompt-btn.inline')
-      .forEach((btn) => btn.remove());
-    dropdown.querySelectorAll('.drop-item.sound-expanded')
-      .forEach((it) => it.classList.remove('sound-expanded'));
 
     // Add inline "Use prompt" button to this item (same line as prompt)
     const inlineBtn = createTag('button', {
@@ -536,15 +499,12 @@ export default class UnityWidget {
       ? promptObj.variations
       : [];
 
-    // Ensure a global registry of audio objects for robust cleanup
-    if (!this.activeAudios) this.activeAudios = new Set();
     vars.forEach((v, i) => {
       const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
       const label = createTag('div', { class: 'variation-label inline' }, v.label || `Example ${i + 1}`);
       const audioObj = new Audio(v.url);
       audioObj.preload = 'metadata';
       tile.audioRef = audioObj; // internal reference
-      this.activeAudios.add(audioObj);
 
       const player = createTag('div', { class: 'custom-player' });
       const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
