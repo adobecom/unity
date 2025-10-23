@@ -1,3 +1,7 @@
+:root:has(.hide-video-models) .unity-enabled .interactive-area .ex-unity-wrap[data-selected-verb='video'] .models-container {
+  display: none;
+}
+
 .hero-marquee.unity-enabled,
 .showcase-marquee.unity-enabled {
   overflow: unset;
@@ -203,6 +207,7 @@
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete {
   border: 3px solid rgba(255 255 255 / 15%);
   backdrop-filter: blur(125px);
+  box-shadow: 0 100px 80px 0 rgba(0 0 0 / 21%), 0 41.778px 33.422px 0 rgba(0 0 0 / 15%), 0 22.336px 17.869px 0 rgba(0 0 0 / 13%), 0 12.522px 10.017px 0 rgba(0 0 0 / 10%), 0 6.65px 5.32px 0 rgba(0 0 0 / 8%), 0 2.767px 2.214px 0 rgba(0 0 0 / 6%);
 }
 
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete {
@@ -219,7 +224,7 @@
 }
 
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
-  padding: 20px 22px 20px 26px;
+  padding: 20px 22px 18px 26px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .autocomplete,
@@ -236,6 +241,10 @@
   flex-flow: wrap;
   gap: var(--spacing-s);
   justify-content: space-between;
+}
+
+:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .inp-wrap {
+  gap: 10px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:hover,
@@ -321,7 +330,7 @@
 
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
   font-style: normal;
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field,
@@ -745,6 +754,12 @@
   color: #DBDBDB;
 }
 
+:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .selected-verb,
+:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .selected-model {
+  border-radius: 12px;
+  min-height: 36px;
+}
+
 .unity-enabled .interactive-area .selected-verb[disabled="true"] {
   cursor: auto;
 } 
@@ -763,6 +778,10 @@
   top: 0;
   left: 0;
   z-index: 1;
+}
+
+:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .verb-list {
+  border-radius: 14px;
 }
 
 [lang="ja-JP"] .unity-enabled .interactive-area .verb-list,
