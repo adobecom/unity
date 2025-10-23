@@ -73,12 +73,24 @@ export default class UnityWidget {
     if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
   }
 
-  hidePromptDropdown() {
+  hidePromptDropdown(exceptElement = null) {
     const dropdown = this.widget.querySelector('.drop');
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
+    }
+    const modelDropdown = this.widget.querySelector('.models-container');
+    const modelButton = modelDropdown?.querySelector('.selected-model');
+    if (modelDropdown && modelDropdown.classList.contains('show-menu') && modelButton !== exceptElement) {
+      modelDropdown.classList.remove('show-menu');
+      modelButton?.setAttribute('aria-expanded', 'false');
+    }
+    const verbDropdown = this.widget.querySelector('.verbs-container');
+    const verbButton = verbDropdown?.querySelector('.selected-verb');
+    if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton !== exceptElement) {
+      verbDropdown.classList.remove('show-menu');
+      verbButton?.setAttribute('aria-expanded', 'false');
     }
   }
 
@@ -243,13 +255,13 @@ export default class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.hidePromptDropdown();
+      this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown();
+        this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
       }
       if (e.key === 'Escape' || e.code === 27) {
@@ -308,13 +320,13 @@ export default class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.hidePromptDropdown();
+      this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown();
+        this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
       }
       if (e.key === 'Escape' || e.code === 27) {
