@@ -234,6 +234,10 @@ export default class ActionBinder {
 
   getSelectedVerbType = () => this.widgetWrap.getAttribute('data-selected-verb');
 
+  getSelectedModelId = () => this.widgetWrap.getAttribute('data-selected-model-id');
+
+  getSelectedModelVersion = () => this.widgetWrap.getAttribute('data-selected-model-version');
+
   validateInput(query) {
     if (query.length > 750) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
@@ -279,10 +283,18 @@ export default class ActionBinder {
       return;
     }
     try {
+      const modelId = this.getSelectedModelId();
+      const modelVersion = this.getSelectedModelVersion();
       const payload = {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
-        payload: { workflow: selectedVerbType, locale: getLocale(), action },
+        payload: {
+          workflow: selectedVerbType,
+          ...(modelId ? { modelId } : {}),
+          ...(modelVersion ? { modelVersion } : {}),
+          locale: getLocale(),
+          action,
+        },
         ...(this.id ? { assetId: this.id } : { query: this.query }),
       };
       const { url } = await this.serviceHandler.postCallToService(
