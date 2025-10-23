@@ -283,13 +283,15 @@ export default class ActionBinder {
       return;
     }
     try {
+      const modelId = this.getSelectedModelId();
+      const modelVersion = this.getSelectedModelVersion();
       const payload = {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
         payload: {
           workflow: selectedVerbType,
-          modelId: this.getSelectedModelId(),
-          modelVersion: this.getSelectedModelVersion(),
+          ...(modelId ? { modelId } : {}),
+          ...(modelVersion ? { modelVersion } : {}),
           locale: getLocale(),
           action,
         },
