@@ -125,7 +125,6 @@ export default class UnityWidget {
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
-
       if (modelList) {
         this.selectedModelId = link.getAttribute('data-model-id');
         this.selectedModelVersion = link.getAttribute('data-model-version');
@@ -146,7 +145,6 @@ export default class UnityWidget {
         selectedElement.setAttribute('aria-label', `${this.selectedVerbText} prompt: ${inputPlaceHolder}`);
         link.parentElement.setAttribute('aria-label', `${this.selectedVerbText} prompt selected:  ${inputPlaceHolder}`);
       }
-
       selectedElement.focus();
       const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
       if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
@@ -193,6 +191,7 @@ export default class UnityWidget {
         'aria-label': `${name} prompt: ${inputPlaceHolder}`,
       });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
+      const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
       const link = createTag('a', {
         href: '#',
         class: isModelList ? 'verb-link model-link' : 'verb-link',
@@ -200,20 +199,16 @@ export default class UnityWidget {
         ...(isModelList && { 'data-model-module': module }),
         ...(isModelList && { 'data-model-id': id }),
         ...(isModelList && { 'data-model-version': version }),
-      }, `<img loading="lazy" src="${icon}" alt="" />${name}`);
-
+      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`);
       if (idx === 0) {
         listItem.classList.add('selected');
         listItem.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
       }
-
       link.prepend(selectedIcon);
       listItem.append(link);
       fragment.append(listItem);
     });
-
     listContainer.append(fragment);
-
     listContainer.addEventListener('click', (e) => {
       const link = e.target.closest('.verb-link');
       if (!link) return;
@@ -270,15 +265,12 @@ export default class UnityWidget {
       }
     });
     verbs[0]?.classList.add('selected');
-
     const verbsData = Array.from(verbs).map((verb) => ({
       name: verb.nextElementSibling?.textContent.trim(),
       type: verb.classList[1].split('-')[2],
       icon: verb.nextElementSibling?.href,
     }));
-
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-
     return [selectedElement, verbList];
   }
 
@@ -334,7 +326,6 @@ export default class UnityWidget {
         selectedElement.focus();
       }
     });
-
     this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
     return [selectedElement, listItems];
   }
@@ -357,7 +348,6 @@ export default class UnityWidget {
     const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
-
     const actionContainer = createTag('div', { class: 'action-container' });
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });

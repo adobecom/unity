@@ -691,7 +691,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
-  min-width: 250px;
+  min-width: 270px;
 }
 
 .unity-enabled .interactive-area .verbs-container .menu-icon,
@@ -975,6 +975,18 @@
     left: unset;
   }
 
+  :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .verb-list {
+    top: unset;
+    left: unset;
+  }
+
+  :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .models-container .verb-list {
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 30px;
+  }
+
   .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
     transform: translateY(-100%);
   }
@@ -1004,5 +1016,11 @@
 
   .unity-enabled .interactive-area .selected-model .model-name {
     display: none;
+  }
+
+  :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container,
+  :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+  :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
+    position: static;
   }
 }
