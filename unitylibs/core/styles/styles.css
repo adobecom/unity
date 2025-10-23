@@ -33,7 +33,8 @@
     linear-gradient(45deg, transparent 75%, #ccc 75%),
     linear-gradient(135deg, transparent 75%, #ccc 75%);
   background-size: 25px 25px;
-  background-position: 0 0, 12.5px 0, 12.5px -12.5px, 0px 12.5px;
+  background-position: 0 0, 12.5px 0, 12.5px -12.5px, 0 12.5px;
+  position: relative;
 }
 
 .unity-enabled .interactive-area,
@@ -53,10 +54,6 @@
 .unity-enabled  .interactive-area.light a,
 .unity-enabled  .interactive-area.light {
   color: var(--color-black);
-}
-
-.unity-enabled .interactive-area {
-  position: relative;
 }
 
 .unity-enabled .widget-refresh-button .widget-refresh-text,

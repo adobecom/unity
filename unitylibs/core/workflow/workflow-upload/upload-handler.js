@@ -1,0 +1,119 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable class-methods-use-this */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-loop-func */
+
+import { unityConfig, getApiCallOptions } from '../../../scripts/utils.js';
+import NetworkUtils from '../../../utils/NetworkUtils.js';
+import { createChunkUploadTasks, createChunkAnalyticsData } from '../../../utils/chunkingUtils.js';
+
+export default class UploadHandler {
+  constructor(actionBinder, serviceHandler) {
+    this.actionBinder = actionBinder;
+    this.serviceHandler = serviceHandler;
+    this.networkUtils = new NetworkUtils();
+  }
+
+  logError(eventName, errorData, debugMessage) {
+    if (debugMessage) {
+      window.lana?.log(debugMessage, this.actionBinder.lanaOptions);
+    }
+    this.actionBinder.logAnalyticsinSplunk(eventName, {
+      ...errorData,
+      assetId: this.actionBinder.assetId,
+    });
+  }
+
+  async uploadFileToUnity(storageUrl, blobData, fileType, assetId, signal, chunkNumber = 'unknown') {
+    const uploadOptions = {
+      method: 'PUT',
+      headers: { 'Content-Type': fileType },
+      body: blobData,
+      signal,
+    };
+    const retryConfig = {
+      retryType: 'exponential',
+      retryParams: {
+        maxRetries: 4,
+        retryDelay: 1000,
+      },
+    };
+    const onSuccess = (response) => {
+      if (response.ok) {
+        return response;
+      }
+      const error = new Error(response.statusText || 'Upload request failed');
+      error.status = response.status;
+      throw error;
+    };
+    const onError = (error) => {
+      this.logError('Upload Chunk Error|UnityWidget', {
+        chunkNumber,
+        size: blobData.size,
+        fileType,
+        errorData: {
+          code: 'upload-chunk-error',
+          desc: `Exception during chunk ${chunkNumber} upload: ${error.message}`,
+        },
+      }, `Message: Exception raised when uploading chunk to Unity, Error: ${error.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
+      throw error;
+    };
+    return this.networkUtils.fetchFromServiceWithRetry(storageUrl, uploadOptions, retryConfig, onSuccess, onError);
+  }
+
+  async uploadChunksToUnity(uploadUrls, file, blockSize, signal = null) {
+    const options = {
+      assetId: this.actionBinder.assetId,
+      fileType: file.type,
+    };
+    const result = await createChunkUploadTasks(
+      uploadUrls,
+      file,
+      blockSize,
+      this.uploadFileToUnity.bind(this),
+      signal,
+      options,
+    );
+    const { failedChunks, attemptMap } = result;
+    const totalChunks = Math.ceil(file.size / blockSize);
+    if (failedChunks.size === 0) {
+      this.actionBinder.logAnalyticsinSplunk(
+        'Chunked Upload Completed|UnityWidget',
+        createChunkAnalyticsData('Chunked Upload Completed|UnityWidget', {
+          assetId: this.actionBinder.assetId,
+          chunkCount: totalChunks,
+          totalFileSize: file.size,
+          fileType: file.type,
+        }),
+      );
+    } else {
+      this.actionBinder.logAnalyticsinSplunk(
+        'Chunked Upload Failed|UnityWidget',
+        createChunkAnalyticsData('Chunked Upload Failed|UnityWidget', {
+          assetId: this.actionBinder.assetId,
+          error: 'One or more chunks failed',
+          failedChunks: failedChunks.size,
+          totalChunks,
+        }),
+      );
+    }
+    return { failedChunks, attemptMap };
+  }
+
+  async scanImgForSafetyWithRetry(assetId) {
+    const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(assetData) });
+    const retryConfig = {
+      retryType: 'polling',
+      retryParams: {
+        maxRetryDelay: 300000,
+        defaultRetryDelay: 5000,
+      },
+    };
+    return this.networkUtils.fetchFromServiceWithRetry(
+      this.actionBinder.apiConfig.endPoint.acmpCheck,
+      postOpts,
+      retryConfig,
+    );
+  }
+}

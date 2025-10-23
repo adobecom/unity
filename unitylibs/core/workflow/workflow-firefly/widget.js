@@ -116,11 +116,9 @@ export default class UnityWidget {
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
-      const copiedNodes = link.cloneNode(true).childNodes;
-      copiedNodes[0].remove();
       this.selectedVerbType = link.getAttribute('data-verb-type');
       this.selectedVerbText = link.textContent.trim();
-      selectedElement.replaceChildren(...copiedNodes, menuIcon);
+      selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
       selectedElement.dataset.selectedVerb = this.selectedVerbType;
       selectedElement.setAttribute('aria-label', `${this.selectedVerbText} prompt: ${inputPlaceHolder}`);
       selectedElement.focus();
@@ -147,14 +145,13 @@ export default class UnityWidget {
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedVerbType = verbs[0]?.className.split('-')[2];
     const selectedVerb = verbs[0]?.nextElementSibling;
-    const { href } = selectedVerb;
     const selectedElement = createTag('button', {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
       'aria-label': `${selectedVerbType} prompt: ${inputPlaceHolder}`,
       'data-selected-verb': selectedVerbType,
-    }, `<img src="${href}" alt="" />${selectedVerb?.textContent.trim()}`);
+    }, `${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedVerbText = selectedVerb?.textContent.trim();
@@ -162,6 +159,7 @@ export default class UnityWidget {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
     }
+    this.widgetWrap.classList.add('verb-options');
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
     verbList.setAttribute('style', 'display: none;');
@@ -220,7 +218,6 @@ export default class UnityWidget {
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
-    const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });
     const inpField = createTag('input', {
       id: 'promptInput',
       class: 'inp-field',
@@ -246,8 +243,13 @@ export default class UnityWidget {
     const verbDropdown = this.verbDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
-    verbBtn.append(...verbDropdown);
-    inpWrap.append(verbBtn, inpField, actWrap);
+    if (verbDropdown.length > 1) {
+      const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });
+      verbBtn.append(...verbDropdown);
+      inpWrap.append(verbBtn, inpField, actWrap);
+    } else {
+      inpWrap.append(inpField, actWrap);
+    }
     return inpWrap;
   }
 
