@@ -404,32 +404,18 @@ export default class ActionBinder {
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
     if (isMenuOpen) {
-      if (isShift && isFirstElement) {
+      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
         event.preventDefault();
         const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
         if (menuButton) {
-          (openVerbMenu || openModelMenu).classList.remove('show-menu');
-          menuButton.setAttribute('aria-expanded', 'false');
-          menuButton.focus();
-        }
-        return;
-      }
-      if (!isShift && isLastElement) {
-        event.preventDefault();
-        const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
-        if (menuButton) {
-          (openVerbMenu || openModelMenu).classList.remove('show-menu');
-          menuButton.setAttribute('aria-expanded', 'false');
-          menuButton.focus();
+            (openVerbMenu || openModelMenu).classList.remove('show-menu');
+            menuButton.setAttribute('aria-expanded', 'false');
+            menuButton.focus();
         }
         return;
       }
     } else {
-      if (isShift && isFirstElement) {
-        this.hideDropdown();
-        return;
-      }
-      if (!isShift && isLastElement) {
+      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
         this.hideDropdown();
         return;
       }
