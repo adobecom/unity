@@ -382,15 +382,20 @@ export default class ActionBinder {
   getFocusElems() {
     let elmSelector = '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
-    const selector = `.inp-field, .gen-btn, ${elmSelector}`;
-    return Array.from(this.block.querySelectorAll(selector));
+    const baseSelector = `.selected-verb, .selected-model, .inp-field, .gen-btn, ${elmSelector}`;
+    const openVerbMenu = this.block.querySelector('.verbs-container.show-menu .verb-link');
+    const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
+    if (openVerbMenu || openModelMenu) {
+      const menuSelector = openVerbMenu ? '.verbs-container.show-menu .verb-link' : '.models-container.show-menu .verb-link';
+      return Array.from(this.block.querySelectorAll(menuSelector));
+    }
+    return Array.from(this.block.querySelectorAll(baseSelector));
   }
 
   isDropdownVisible = () => !this.dropdown?.classList.contains('hidden');
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
-    event.preventDefault();
     const isShift = event.shiftKey;
     const currentElement = document.activeElement;
     const isFirstElement = currentIndex === 0;
@@ -425,9 +430,7 @@ export default class ActionBinder {
         }
       }
     }
-    const nextIndex = isShift
-      ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
-      : (currentIndex + 1) % focusableElements.length;
+    const nextIndex = isShift ? currentIndex - 1 : currentIndex + 1;
     focusableElements[nextIndex].focus();
     const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
     this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
