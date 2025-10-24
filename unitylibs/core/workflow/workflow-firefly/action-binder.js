@@ -348,6 +348,7 @@ export default class ActionBinder {
     const isDropVisi = this.isDropdownVisible();
     switch (ev.key) {
       case 'Tab':
+        if (this.workflowCfg.targetCfg.disableCustomAccessibility) return;
         if (!isDropVisi) return;
         this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
