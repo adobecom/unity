@@ -393,6 +393,29 @@ export default class ActionBinder {
     event.preventDefault();
     const isShift = event.shiftKey;
     const currentElement = document.activeElement;
+    const isFirstElement = currentIndex === 0;
+    const isLastElement = currentIndex === focusableElements.length - 1;
+    const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
+    const openModelMenu = this.block.querySelector('.models-container.show-menu');
+    const isMenuOpen = openVerbMenu || openModelMenu;
+    if (isMenuOpen) {
+      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+        event.preventDefault();
+        const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
+        if (menuButton) {
+            (openVerbMenu || openModelMenu).classList.remove('show-menu');
+            menuButton.setAttribute('aria-expanded', 'false');
+            menuButton.focus();
+        }
+        return;
+      }
+    } else {
+      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+        this.hideDropdown();
+        return;
+      }
+    }
+    event.preventDefault();
     if (currentElement.classList.contains('tip-con')) {
       if (!isShift) {
         const legalText = this.block.querySelector('.legal-text');
