@@ -151,12 +151,13 @@ export default class UnityWidget {
       else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
       if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
         const oldModelContainer = this.widget.querySelector('.models-container');
-        if (!oldModelContainer) return;
-        const modelDropdown = this.modelDropdown();
-        if (modelDropdown.length > 1) {
-          const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
-          newModelContainer.append(...modelDropdown);
-          oldModelContainer.replaceWith(newModelContainer);
+        if (oldModelContainer) {
+          const modelDropdown = this.modelDropdown();
+          if (modelDropdown.length > 1) {
+            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+            newModelContainer.append(...modelDropdown);
+            oldModelContainer.replaceWith(newModelContainer);
+          }
         }
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
