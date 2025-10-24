@@ -340,31 +340,53 @@ export default class ActionBinder {
   }
 
   handleKeyDown(ev) {
-    const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'];
+    const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
     if (!validKeys.includes(ev.key)) return;
+    const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
+    const openModelMenu = this.block.querySelector('.models-container.show-menu');
+    const isMenuOpen = openVerbMenu || openModelMenu;
     const dropItems = this.getDropdownItems();
     const focusElems = this.getFocusElems(dropItems.length > 0);
     const currIdx = focusElems.indexOf(document.activeElement);
     const isDropVisi = this.isDropdownVisible();
     switch (ev.key) {
       case 'Tab':
-        if (!isDropVisi) return;
+        if (!isDropVisi && !isMenuOpen) return;
         this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
       case 'ArrowDown':
         ev.preventDefault();
-        this.moveFocusWithArrow(dropItems, 'down');
+        if (isMenuOpen) {
+          this.moveFocusInMenu(focusElems, currIdx, 'down');
+        } else {
+          this.moveFocusWithArrow(dropItems, 'down');
+        }
         break;
       case 'ArrowUp':
         ev.preventDefault();
-        this.moveFocusWithArrow(dropItems, 'up');
+        if (isMenuOpen) {
+          this.moveFocusInMenu(focusElems, currIdx, 'up');
+        } else {
+          this.moveFocusWithArrow(dropItems, 'up');
+        }
         break;
       case 'Enter':
+      case ' ':
         this.handleEnter(ev, dropItems, focusElems, currIdx);
         break;
       case 'Escape':
-        this.inputField.focus();
-        this.hideDropdown();
+        if (isMenuOpen) {
+          ev.preventDefault();
+          const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
+          if (menuButton) {
+            (openVerbMenu || openModelMenu).classList.remove('show-menu');
+            menuButton.setAttribute('aria-expanded', 'false');
+            menuButton.focus();
+          }
+        } else {
+          this.inputField.focus();
+          this.hideDropdown();
+        }
         break;
       default:
         break;
@@ -408,17 +430,15 @@ export default class ActionBinder {
         event.preventDefault();
         const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
         if (menuButton) {
-            (openVerbMenu || openModelMenu).classList.remove('show-menu');
-            menuButton.setAttribute('aria-expanded', 'false');
-            menuButton.focus();
+          (openVerbMenu || openModelMenu).classList.remove('show-menu');
+          menuButton.setAttribute('aria-expanded', 'false');
+          menuButton.focus();
         }
         return;
       }
-    } else {
-      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
-        this.hideDropdown();
-        return;
-      }
+    } else if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+      this.hideDropdown();
+      return;
     }
     event.preventDefault();
     if (currentElement.classList.contains('tip-con')) {
@@ -434,6 +454,19 @@ export default class ActionBinder {
     focusableElements[nextIndex].focus();
     const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
     this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
+  }
+
+  moveFocusInMenu(focusElems, currentIndex, direction) {
+    if (!focusElems.length) return;
+    let nextIndex;
+    if (currentIndex === -1) {
+      nextIndex = direction === 'down' ? 0 : focusElems.length - 1;
+    } else {
+      nextIndex = direction === 'down' ? currentIndex + 1 : currentIndex - 1;
+      if (nextIndex < 0) nextIndex = focusElems.length - 1;
+      if (nextIndex >= focusElems.length) nextIndex = 0;
+    }
+    focusElems[nextIndex]?.focus();
   }
 
   moveFocusWithArrow(dropItems, direction) {
