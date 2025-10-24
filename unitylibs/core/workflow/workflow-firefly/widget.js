@@ -342,7 +342,6 @@ export default class UnityWidget {
       'aria-autocomplete': 'list',
       'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
-      'aria-owns': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
     const verbDropdown = this.verbDropdown();
