@@ -30,8 +30,8 @@
   padding: 6px 12px;
   cursor: pointer;
   height: 40px;
-  line-height: 36px; /* 40px minus 2px borders top+bottom */
-  box-sizing: border-box; /* include border/padding in fixed height */
+  line-height: 36px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
 }
@@ -872,6 +872,8 @@
   box-sizing: border-box;
   white-space: nowrap;
   flex: 0 0 auto; /* prevent shrinking */
+  font-family: var(--font-family-adobe-clean);
+  font-size: 14px;
 }
 
 /* Prompt icon alignment */
