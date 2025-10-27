@@ -174,7 +174,14 @@ export default class UnityWidget {
             oldModelContainer.remove();
             this.clearSelectedModelState();
           }
-        } else if (modelDropdown.length <= 1) {
+        } else if (modelDropdown.length > 1) {
+          const actionContainer = this.widget.querySelector('.action-container');
+          if (actionContainer) {
+            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+            newModelContainer.append(...modelDropdown);
+            actionContainer.append(newModelContainer);
+          }
+        } else {
           this.clearSelectedModelState();
         }
       }
