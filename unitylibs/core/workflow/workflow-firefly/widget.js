@@ -112,6 +112,13 @@ export default class UnityWidget {
     }
   }
 
+  clearSelectedModelState() {
+    this.selectedModelId = '';
+    this.selectedModelVersion = '';
+    this.selectedModelModule = '';
+    this.selectedModelText = '';
+  }
+
   handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
     return (e) => {
       e.preventDefault();
@@ -157,18 +164,25 @@ export default class UnityWidget {
       else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
       if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
         const oldModelContainer = this.widget.querySelector('.models-container');
+        const modelDropdown = this.modelDropdown();
         if (oldModelContainer) {
-          const modelDropdown = this.modelDropdown();
           if (modelDropdown.length > 1) {
             const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
             newModelContainer.append(...modelDropdown);
             oldModelContainer.replaceWith(newModelContainer);
+          } else {
+            oldModelContainer.remove();
+            this.clearSelectedModelState();
           }
+        } else if (modelDropdown.length <= 1) {
+          this.clearSelectedModelState();
         }
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-      this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-      this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+      else this.widgetWrap.removeAttribute('data-selected-model-id');
+      if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
         this.genBtn.setAttribute(
@@ -284,6 +298,7 @@ export default class UnityWidget {
   modelDropdown() {
     if (!this.hasModelOptions) return [];
     const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
+    if (!Array.isArray(models) || models.length === 0) return [];
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedModelType = models[0].id;
     const selectedModelVersion = models[0].version;
@@ -301,9 +316,9 @@ export default class UnityWidget {
     this.selectedModelModule = selectedModelModule;
     this.selectedModelId = selectedModelType;
     this.selectedModelVersion = selectedModelVersion;
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
-    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const listItems = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
