@@ -46,7 +46,9 @@ class ServiceHandler {
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
-    sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
+    const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
+    if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
+    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -213,7 +215,6 @@ export default class ActionBinder {
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
@@ -310,7 +311,6 @@ export default class ActionBinder {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
