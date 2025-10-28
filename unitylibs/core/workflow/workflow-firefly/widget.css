@@ -83,10 +83,7 @@
   color: #292929;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio {
-  width: 100%;
-  height: 18px;
-}
+/* Removed native audio element sizing as custom player does not render <audio> in DOM */
 
 /* Custom player styles */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player {
@@ -100,13 +97,7 @@
   width: 100%;
   overflow: hidden;
 }
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .play-btn {
-  border: 1px solid #E1E1E1;
-  background: #fff;
-  border-radius: 6px;
-  padding: 2px 8px;
-  cursor: pointer;
-}
+/* Removed unused .play-btn styles; UI uses .pause-btn which toggles play/pause */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn {
   grid-area: btn;
   border: 0;
@@ -127,15 +118,7 @@
 /* Show button only when tile is playing or paused (not on hover alone) */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .custom-player .pause-btn,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .custom-player .pause-btn { display: flex; }
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-slider {
-  grid-area: slider;
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0; /* avoid default input range margins that can cause truncation */
-  display: block;
-}
+/* Removed unused .seek-slider styles; progress is rendered via .seek-bar */
 
 /* New progress bar + timer */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar {
@@ -166,17 +149,7 @@
   line-height: 18px;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar .seek-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0%;
-  background: #3B63FB;
-  border-radius: 8px;
-  transition: width 100ms linear;
-  z-index: 1;
-}
+/* Redundant; width is controlled via --progress on .seek-bar; keeping for compatibility but no extra rules needed */
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .variation-label.inline {
   grid-area: label;
@@ -184,20 +157,7 @@
   line-height: 18px;
 }
 
-/* Hide audio controls except the timeline (seek bar). Support varies by browser */
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-play-button,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-volume-slider,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-mute-button,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-time-remaining-display,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-current-time-display,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-download-button,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-panel > :not(audio::-webkit-media-controls-timeline) {
-  display: none !important;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile audio::-webkit-media-controls-panel {
-  padding: 0;
-}
+/* Removed native audio controls overrides; native controls are not used */
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.selected {
