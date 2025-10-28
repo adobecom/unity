@@ -30,19 +30,14 @@ class ServiceHandler {
       headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
       ...options,
     };
-    try {
-      const response = await fetch(api, postOpts);
-      if (failOnError && response.status !== 200) {
-        const error = new Error('Operation failed');
-        error.status = response.status;
-        throw error;
-      }
-      if (!failOnError) return response;
-      return await response.json();
-    } catch (err) {
-      this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
-      throw err;
+    const response = await fetch(api, postOpts);
+    if (failOnError && response.status !== 200) {
+      const error = new Error('Operation failed');
+      error.status = response.status;
+      throw error;
     }
+    if (!failOnError) return response;
+    return await response.json();
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -223,7 +218,7 @@ export default class ActionBinder {
         },
         assetId: this.assetId,
       });
-      throw e;
+      return false;
     }
   }
 
@@ -387,8 +382,10 @@ export default class ActionBinder {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
-    await this.uploadAsset(file);
-    await this.continueInApp(this.assetId, file);
+    const uploadSuccess = await this.uploadAsset(file);
+    if (uploadSuccess !== false) {
+      await this.continueInApp(this.assetId, file);
+    }
   }
 
   async loadTransitionScreen() {
