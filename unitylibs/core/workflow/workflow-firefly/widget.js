@@ -45,8 +45,6 @@ export default class UnityWidget {
     const hasSuggestionsPlaceholder = !!this.el.querySelector('.icon-placeholder-suggestions');
     const hasModels = !!this.el.querySelector('[class*="icon-model"]');
     this.hasModelOptions = hasModels;
-    const hasModels = !!this.el.querySelector('[class*="icon-model"]');
-    this.hasModelOptions = hasModels;
     this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
     if (this.hasModelOptions) await this.getModel();
     if (this.hasModelOptions) await this.getModel();
@@ -377,12 +375,6 @@ export default class UnityWidget {
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
     verbs[0]?.classList.add('selected');
-    const verbsData = Array.from(verbs).map((verb) => ({
-      name: verb.nextElementSibling?.textContent.trim(),
-      type: verb.classList[1].split('-')[2],
-      icon: verb.nextElementSibling?.href,
-    }));
-    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
     return [selectedElement, verbList];
   }
 
@@ -462,10 +454,8 @@ export default class UnityWidget {
     inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdown));
     const verbDropdown = this.verbDropdown();
     const modelDropdown = this.modelDropdown();
-    const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
-    const actionContainer = createTag('div', { class: 'action-container' });
     const actionContainer = createTag('div', { class: 'action-container' });
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });
