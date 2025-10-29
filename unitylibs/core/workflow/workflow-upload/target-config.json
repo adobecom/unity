@@ -21,7 +21,7 @@
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
-      "fragmentLink-lightroom": "/creativecloud/animation/testdoc/unity/lightroom/fragments/splash-page/splashscreen",
+      "fragmentLink-lightroom": "/cc-shared/fragments/unity/photoshop-lightroom/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
