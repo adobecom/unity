@@ -30,23 +30,20 @@ class ServiceHandler {
       headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
       ...options,
     };
-    try {
-      const response = await fetch(api, postOpts);
-      if (failOnError && response.status !== 200) {
-        const error = new Error('Operation failed');
-        error.status = response.status;
-        throw error;
-      }
-      if (!failOnError) return response;
-      return await response.json();
-    } catch (err) {
-      this.showErrorToast(errorCallbackOptions, err, this.lanaOptions);
-      throw err;
+    const response = await fetch(api, postOpts);
+    if (failOnError && response.status !== 200) {
+      const error = new Error('Operation failed');
+      error.status = response.status;
+      throw error;
     }
+    if (!failOnError) return response;
+    return await response.json();
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
-    sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
+    const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
+    if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
+    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget`));
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -208,12 +205,12 @@ export default class ActionBinder {
         await this.uploadImgToUnity(href, id, file, file.type);
         this.scanImgForSafety(this.assetId);
       }
+      return true;
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
@@ -222,7 +219,7 @@ export default class ActionBinder {
         },
         assetId: this.assetId,
       });
-      throw e;
+      return false;
     }
   }
 
@@ -310,7 +307,6 @@ export default class ActionBinder {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
@@ -387,8 +383,8 @@ export default class ActionBinder {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
-    await this.uploadAsset(file);
-    await this.continueInApp(this.assetId, file);
+    const uploadSuccess = await this.uploadAsset(file);
+    if (uploadSuccess) await this.continueInApp(this.assetId, file);
   }
 
   async loadTransitionScreen() {
