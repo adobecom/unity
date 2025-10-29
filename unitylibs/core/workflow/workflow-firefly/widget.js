@@ -82,7 +82,6 @@ export default class UnityWidget {
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
     }
-    // For sound verb, reset variations, stop audio, and clear expanded UI
     if (this.selectedVerbType === 'sound') {
       this.resetAllSoundVariations(dropdown);
     }
@@ -391,11 +390,6 @@ export default class UnityWidget {
       inpWrap.append(actionContainer, inpField, actWrap);
     } else {
       inpWrap.append(inpField, actWrap);
-    }
-    if (modelDropdown.length > 1) {
-      const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
-      modelBtn.append(...modelDropdown);
-      actionContainer.append(modelBtn);
     }
     if (modelDropdown.length > 1) {
       const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
