@@ -373,7 +373,7 @@ export default class UnityWidget {
       'aria-activedescendant': '',
     });
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
-    inpField.addEventListener('focus', () => this.resetAllSoundVariations(dropdown));
+    inpField.addEventListener('focus', () => this.hidePromptDropdown());
     inpField.addEventListener('click', () => this.resetAllSoundVariations(dropdown));
     inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdown));
     const verbDropdown = this.verbDropdown();
@@ -424,14 +424,27 @@ export default class UnityWidget {
       dropdown.append(item);
       this.promptItems.push(item);
 
-      // Sound: expand details with variations & Use prompt
       if (this.selectedVerbType === 'sound') {
-        item.addEventListener('click', (e) => {
+        const expand = (e) => {
           e.preventDefault();
-          // prevent ActionBinder's .drop-item listener from firing
           e.stopImmediatePropagation();
           e.stopPropagation();
           this.toggleSoundDetails(dropdown, item, { prompt, variations }, idx + 1);
+        };
+        item.addEventListener('click', expand);
+        item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') expand(e); });
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Tab' && !e.shiftKey && item.classList.contains('sound-expanded')) {
+            // If Tab originated from the Use button itself, let the button handler take over
+            if (e.target && e.target.closest && e.target.closest('.use-prompt-btn.inline')) return;
+            const useBtn = item.querySelector('.use-prompt-btn.inline');
+            if (useBtn) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              e.stopPropagation();
+              try { setTimeout(() => useBtn.focus(), 0); } catch (err) { /* noop */ }
+            }
+          }
         });
       }
     });
@@ -454,11 +467,9 @@ export default class UnityWidget {
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
-    // Clicking outside the dropdown should reset and hide suggestions (persistent handler)
     if (!this.outsideDropdownHandler) {
       this.outsideDropdownHandler = (ev) => {
         const wrapper = this.widget.querySelector('.autocomplete');
-        // Ignore clicks inside the autocomplete wrapper (input/prompt bar)
         if (wrapper && wrapper.contains(ev.target)) return;
         if (promptDropdownContainer && !promptDropdownContainer.classList.contains('hidden') && !promptDropdownContainer.contains(ev.target)) {
           this.hidePromptDropdown();
@@ -569,7 +580,6 @@ export default class UnityWidget {
         const itemEnv = item.env || 'prod';
         if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          // Normalize variations: prefer item.variations; else parse delimited columns
           let variations = Array.isArray(item.variations) ? item.variations : null;
           if (!variations) {
             const labelsRaw = typeof item.variationLabels === 'string' ? item.variationLabels : '';
@@ -673,6 +683,34 @@ export default class UnityWidget {
       if (btn) {
         btn.dataset.soundPrompt = promptObj.prompt;
         btn.click();
+      }
+    });
+    inlineBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        inlineBtn.click();
+        return;
+      }
+      if (e.key === 'Tab' && !e.shiftKey) {
+        const detailsEl = item.nextElementSibling && item.nextElementSibling.classList?.contains('sound-details')
+          ? item.nextElementSibling
+          : null;
+        const firstTile = detailsEl?.querySelector('.variation-tile');
+        if (firstTile) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          try {
+            setTimeout(() => firstTile.focus(), 0);
+          } catch (err) { /* noop */ }
+        }
+      }
+      if (e.key === 'Tab' && e.shiftKey) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        try { setTimeout(() => item.focus(), 0); } catch (err) { /* noop */ }
       }
     });
     item.classList.add('sound-expanded');
@@ -842,7 +880,47 @@ export default class UnityWidget {
       tile.addEventListener('keydown', (ev) => {
         if (ev.key === 'Enter' || ev.key === ' ') {
           ev.preventDefault();
-          playIfPaused();
+          togglePlayback();
+          return;
+        }
+        if (ev.key === 'Tab' && !ev.shiftKey) {
+          const detailsEl = tile.closest('.sound-details');
+          const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+          const idx = tiles.indexOf(tile);
+          if (idx > -1 && idx < tiles.length - 1) {
+            ev.preventDefault();
+            const nextTile = tiles[idx + 1];
+            try { setTimeout(() => nextTile.focus(), 0); } catch (e) { /* noop */ }
+            return;
+          }
+          if (detailsEl) {
+            const nextSuggestion = detailsEl.nextElementSibling && detailsEl.nextElementSibling.classList?.contains('drop-item')
+              ? detailsEl.nextElementSibling
+              : null;
+            if (nextSuggestion) {
+              ev.preventDefault();
+              try { setTimeout(() => nextSuggestion.focus(), 0); } catch (e) { /* noop */ }
+            }
+          }
+        }
+        if (ev.key === 'Tab' && ev.shiftKey) {
+          const detailsEl = tile.closest('.sound-details');
+          const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+          const idx = tiles.indexOf(tile);
+          if (idx > 0) {
+            ev.preventDefault();
+            const prevTile = tiles[idx - 1];
+            try { setTimeout(() => prevTile.focus(), 0); } catch (e) { /* noop */ }
+            return;
+          }
+          if (detailsEl) {
+            const prevRow = detailsEl.previousElementSibling;
+            const useBtn = prevRow?.querySelector('.use-prompt-btn.inline');
+            if (useBtn) {
+              ev.preventDefault();
+              try { setTimeout(() => useBtn.focus(), 0); } catch (e) { /* noop */ }
+            }
+          }
         }
       });
       tile.append(player);
