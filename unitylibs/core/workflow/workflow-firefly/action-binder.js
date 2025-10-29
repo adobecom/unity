@@ -272,7 +272,6 @@ export default class ActionBinder {
         if (key && value) queryParams[key] = value;
       });
     }
-    // for sound, prefer override set by "Use prompt" button; else fall back to input value
     const currentVerb = this.getSelectedVerbType();
     const genBtn = this.block.querySelector('.gen-btn');
     const override = genBtn?.dataset?.soundPrompt;
