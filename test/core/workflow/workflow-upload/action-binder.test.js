@@ -270,11 +270,14 @@ describe('Unity Upload Block', () => {
     it('should handle upload asset error', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
+      let showErrorToastCalled = false;
       actionBinder.serviceHandler = {
         postCallToService: async () => {
           throw new Error('Upload failed');
         },
-        showErrorToast: () => {},
+        showErrorToast: () => {
+          showErrorToastCalled = true;
+        },
       };
 
       actionBinder.transitionScreen = {
@@ -283,12 +286,10 @@ describe('Unity Upload Block', () => {
       };
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      try {
-        await actionBinder.uploadAsset(file);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.equal('Upload failed');
-      }
+      const result = await actionBinder.uploadAsset(file);
+
+      expect(result).to.equal(false);
+      expect(showErrorToastCalled).to.equal(true);
     });
 
     it('should create error toast', async () => {
