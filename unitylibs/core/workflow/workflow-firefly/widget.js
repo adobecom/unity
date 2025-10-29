@@ -12,8 +12,13 @@ export default class UnityWidget {
     this.spriteCon = spriteCon;
     this.prompts = null;
     this.models = null;
+    this.models = null;
     this.selectedVerbType = '';
     this.selectedVerbText = '';
+    this.selectedModelModule = '';
+    this.selectedModelId = '';
+    this.selectedModelText = '';
+    this.selectedModelVersion = '';
     this.selectedModelModule = '';
     this.selectedModelId = '';
     this.selectedModelText = '';
@@ -21,6 +26,7 @@ export default class UnityWidget {
     this.promptItems = [];
     this.genBtn = null;
     this.hasPromptSuggestions = false;
+    this.hasModelOptions = false;
     this.hasModelOptions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
@@ -39,7 +45,10 @@ export default class UnityWidget {
     const hasSuggestionsPlaceholder = !!this.el.querySelector('.icon-placeholder-suggestions');
     const hasModels = !!this.el.querySelector('[class*="icon-model"]');
     this.hasModelOptions = hasModels;
+    const hasModels = !!this.el.querySelector('[class*="icon-model"]');
+    this.hasModelOptions = hasModels;
     this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
+    if (this.hasModelOptions) await this.getModel();
     if (this.hasModelOptions) await this.getModel();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
     let dropdown = null;
@@ -131,6 +140,11 @@ export default class UnityWidget {
         } else {
           listLink.parentElement.setAttribute('aria-label', `${listLink.getAttribute('data-verb-type')} prompt: ${inputPlaceHolder}`);
         }
+        if (modelList) {
+          listLink.parentElement.setAttribute('aria-label', `${listLink.getAttribute('data-model-type')} prompt: ${inputPlaceHolder}`);
+        } else {
+          listLink.parentElement.setAttribute('aria-label', `${listLink.getAttribute('data-verb-type')} prompt: ${inputPlaceHolder}`);
+        }
         const text = listLink.textContent.trim();
         if (text) verbLinkTexts.push(text);
       });
@@ -138,6 +152,26 @@ export default class UnityWidget {
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
+      if (modelList) {
+        this.selectedModelId = link.getAttribute('data-model-id');
+        this.selectedModelVersion = link.getAttribute('data-model-version');
+        this.selectedModelModule = link.getAttribute('data-model-module');
+        this.selectedModelText = link.textContent.trim();
+        const copiedNodes = link.cloneNode(true).childNodes;
+        copiedNodes[0].remove();
+        selectedElement.replaceChildren(...copiedNodes, menuIcon);
+        selectedElement.dataset.selectedModelId = this.selectedModelId;
+        selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
+        selectedElement.setAttribute('aria-label', `${this.selectedModelText} prompt: ${inputPlaceHolder}`);
+        link.parentElement.setAttribute('aria-label', `${this.selectedModelText} prompt selected:  ${inputPlaceHolder}`);
+      } else {
+        this.selectedVerbType = link.getAttribute('data-verb-type');
+        this.selectedVerbText = link.textContent.trim();
+        selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
+        selectedElement.dataset.selectedVerb = this.selectedVerbType;
+        selectedElement.setAttribute('aria-label', `${this.selectedVerbText} prompt: ${inputPlaceHolder}`);
+        link.parentElement.setAttribute('aria-label', `${this.selectedVerbText} prompt selected:  ${inputPlaceHolder}`);
+      }
       if (modelList) {
         this.selectedModelId = link.getAttribute('data-model-id');
         this.selectedModelVersion = link.getAttribute('data-model-version');
@@ -244,6 +278,47 @@ export default class UnityWidget {
     });
   }
 
+  createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
+    const fragment = document.createDocumentFragment();
+    items.forEach((item, idx) => {
+      const {
+        name,
+        type,
+        icon,
+        module,
+        id,
+        version,
+      } = item;
+      const listItem = createTag('li', {
+        class: 'verb-item',
+        'aria-label': `${name} prompt: ${inputPlaceHolder}`,
+      });
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
+      const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
+      const link = createTag('a', {
+        href: '#',
+        class: isModelList ? 'verb-link model-link' : 'verb-link',
+        ...(!isModelList && { 'data-verb-type': type }),
+        ...(isModelList && { 'data-model-module': module }),
+        ...(isModelList && { 'data-model-id': id }),
+        ...(isModelList && { 'data-model-version': version }),
+      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`);
+      if (idx === 0) {
+        listItem.classList.add('selected');
+        listItem.setAttribute('aria-label', `${name} prompt selected: ${inputPlaceHolder}`);
+      }
+      link.prepend(selectedIcon);
+      listItem.append(link);
+      fragment.append(listItem);
+    });
+    listContainer.append(fragment);
+    listContainer.addEventListener('click', (e) => {
+      const link = e.target.closest('.verb-link');
+      if (!link) return;
+      this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
+    });
+  }
+
   verbDropdown() {
     const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
@@ -279,11 +354,13 @@ export default class UnityWidget {
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
+      this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        this.hidePromptDropdown(selectedElement);
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
       }
@@ -292,6 +369,13 @@ export default class UnityWidget {
         selectedElement.focus();
       }
     });
+    verbs[0]?.classList.add('selected');
+    const verbsData = Array.from(verbs).map((verb) => ({
+      name: verb.nextElementSibling?.textContent.trim(),
+      type: verb.classList[1].split('-')[2],
+      icon: verb.nextElementSibling?.href,
+    }));
+    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
     verbs[0]?.classList.add('selected');
     const verbsData = Array.from(verbs).map((verb) => ({
       name: verb.nextElementSibling?.textContent.trim(),
@@ -378,16 +462,25 @@ export default class UnityWidget {
     inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdown));
     const verbDropdown = this.verbDropdown();
     const modelDropdown = this.modelDropdown();
+    const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
+    const actionContainer = createTag('div', { class: 'action-container' });
     const actionContainer = createTag('div', { class: 'action-container' });
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });
       verbBtn.append(...verbDropdown);
       actionContainer.append(verbBtn);
       inpWrap.append(actionContainer, inpField, actWrap);
+      actionContainer.append(verbBtn);
+      inpWrap.append(actionContainer, inpField, actWrap);
     } else {
       inpWrap.append(inpField, actWrap);
+    }
+    if (modelDropdown.length > 1) {
+      const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+      modelBtn.append(...modelDropdown);
+      actionContainer.append(modelBtn);
     }
     if (modelDropdown.length > 1) {
       const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
@@ -573,6 +666,34 @@ export default class UnityWidget {
     }
   }
 
+  async loadModels() {
+    const { locale } = getConfig();
+    const { origin } = window.location;
+    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
+      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+      : origin;
+    const modelFile = locale.prefix && locale.prefix !== '/'
+      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/model-picker.json`
+      : `${baseUrl}/unity/configs/prompt/model-picker.json`;
+    const results = await fetch(modelFile);
+    if (!results.ok) {
+      throw new Error('Failed to fetch models.');
+    }
+    const modelJson = await results.json();
+    this.models = modelJson?.content?.data;
+  }
+
+  async getModel() {
+    if (!this.hasModelOptions) return [];
+    try {
+      if (!this.models || Object.keys(this.models).length === 0) await this.loadModels();
+      return this.models;
+    } catch (e) {
+      window.lana?.log(`Message: Error loading models, Error: ${e}`, this.lanaOptions);
+      return [];
+    }
+  }
+
   createPromptMap(data) {
     const promptMap = {};
     if (Array.isArray(data)) {
@@ -600,6 +721,19 @@ export default class UnityWidget {
       });
     }
     return promptMap;
+  }
+
+  createModelMap(data) {
+    const modelMap = {};
+    if (Array.isArray(data)) {
+      data.forEach((item) => {
+        if (item.type) {
+          if (!modelMap[item.module]) modelMap[item.module] = [];
+          modelMap[item.module].push({ name: item.name, id: item.id, version: item.version, icon: item.icon });
+        }
+      });
+    }
+    return modelMap;
   }
 
   createModelMap(data) {
