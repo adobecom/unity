@@ -205,6 +205,7 @@ export default class ActionBinder {
         await this.uploadImgToUnity(href, id, file, file.type);
         this.scanImgForSafety(this.assetId);
       }
+      return true;
     } catch (e) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
@@ -383,9 +384,7 @@ export default class ActionBinder {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
     await this.transitionScreen.showSplashScreen(true);
     const uploadSuccess = await this.uploadAsset(file);
-    if (uploadSuccess !== false) {
-      await this.continueInApp(this.assetId, file);
-    }
+    if (uploadSuccess) await this.continueInApp(this.assetId, file);
   }
 
   async loadTransitionScreen() {
