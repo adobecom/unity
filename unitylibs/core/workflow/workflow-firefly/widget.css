@@ -41,7 +41,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
-  display: grid; /* desktop: strict 4-column grid to avoid overflow */
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   overflow: visible;
@@ -54,7 +54,7 @@
   gap: 4px;
   width: auto;
   box-sizing: border-box;
-  padding: 4px 4px 4px 8px; /* 4px all around, 8px left */
+  padding: 4px 4px 4px 8px;
   border-radius: 8px;
   border: 1px solid #E1E1E1;
   background: #fafafa;
@@ -62,7 +62,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .variation-label {
-  font-weight: 500; /* lighter than bold */
+  font-weight: 500;
   font-size: var(--type-body-xs-size);
   color: #505050;
   margin-bottom: 0;
@@ -74,7 +74,6 @@
   color: #292929;
 }
 
-/* Non-idle states force dark label */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .variation-label,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .variation-label,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-active .variation-label {
@@ -87,19 +86,17 @@
   color: #292929;
 }
 
-/* Custom player styles */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player {
   display: grid;
-  grid-template-columns: auto 44px 1fr; /* fixed timer width to avoid layout shift */
+  grid-template-columns: auto 44px 1fr;
   grid-template-rows: auto auto;
   grid-template-areas: 'btn label label' 'btn time slider';
   align-items: center;
-  column-gap: 0; /* manage gaps per-element for fine control */
+  column-gap: 0;
   row-gap: 2px;
   width: 100%;
   overflow: hidden;
 }
-/* Removed unused .play-btn styles; UI uses .pause-btn which toggles play/pause */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn {
   grid-area: btn;
   border: 0;
@@ -109,27 +106,23 @@
   margin: 0;
   min-width: 0;
   cursor: pointer;
-  align-self: center; /* vertically center within 2-row grid area */
+  align-self: center;
   justify-self: start;
-  line-height: 0; /* remove inline spacing */
+  line-height: 0;
   display: flex;
   align-items: center;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn svg { display: block; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn.hidden { display: none; }
-/* Show button only when tile is playing or paused (not on hover alone) */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .custom-player .pause-btn,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .custom-player .pause-btn { display: flex; }
-/* Removed unused .seek-slider styles; progress is rendered via .seek-bar */
 
-/* New progress bar + timer */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .seek-bar {
   grid-area: slider;
   min-width: 0;
   height: 4px;
   margin-right: 4px;
   margin-left: 2px;
-  /* Blue progress rendered via background-size (layer 1), base track is layer 2 */
   background: linear-gradient(#3B63FB, #3B63FB) left center/var(--progress, 0%) 100% no-repeat, #e5e5e5;
   border-radius: 8px;
   overflow: hidden;
@@ -144,22 +137,18 @@
   line-height: 1;
   width: 44px;
   text-align: left;
-  font-variant-numeric: tabular-nums; /* stable digit width to prevent jitter */
+  font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
-  font-weight: 400; /* lighter timer weight */
-  margin-left: 8px; /* together with button padding → 8px total */
+  font-weight: 400;
+  margin-left: 8px;
   line-height: 18px;
 }
-
-/* Redundant; width is controlled via --progress on .seek-bar; keeping for compatibility but no extra rules needed */
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .variation-label.inline {
   grid-area: label;
-  margin-left: 8px; /* align label start with timer */
+  margin-left: 8px;
   line-height: 18px;
 }
-
-/* Removed native audio controls overrides; native controls are not used */
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.selected {
@@ -167,16 +156,13 @@
   background: #fff;
 }
 
-/* Inline Use prompt button alignment in the same line as suggestion */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .use-prompt-btn.inline {
   margin-left: auto;
 }
 
-/* Highlight expanded sound suggestion (text + icon to blue) */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
   color: #3b63fb;
-  font-weight: 700; /* bold when expanded */
-  /* behave like regular rows; don't force larger height */
+  font-weight: 700;
   display: flex;
   align-items: center;
 }
@@ -184,34 +170,32 @@
   color: #3b63fb;
 }
 
-/* Expanded row two-part layout: left (content) + right (button) */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded .drop-left {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: var(--spacing-xxs);
-  padding: 8px var(--spacing-xs); /* same padding as non-expanded */
+  padding: 8px var(--spacing-xs);
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded .drop-right {
   flex: 0 0 auto;
   display: flex;
-  align-items: center; /* vertically center button */
+  align-items: center;
 }
 
 @media screen and (max-width: 599px) {
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-strip {
-    display: flex; /* switch from grid to flex for scrolling */
-    overflow-x: auto; /* enable horizontal scroll with same tile size */
+    display: flex;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    flex-wrap: nowrap; /* mobile: single row, scroll horizontally */
+    flex-wrap: nowrap;
   }
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile {
-    flex: 0 0 170px; /* fixed tile size for mobile scroll */
+    flex: 0 0 170px;
     width: 170px;
     scroll-snap-align: start;
   }
-  /* Keep sound item inline layout when expanded so the Use prompt button can align right */
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
     display: flex;
     align-items: center;
@@ -424,18 +408,6 @@
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete {
   background: rgb(17 17 17 / 55%);
-}
-
-:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete,
-:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete {
-  border: 3px solid rgba(255 255 255 / 15%);
-  backdrop-filter: blur(125px);
-  box-shadow: 0 100px 80px 0 rgba(0 0 0 / 21%), 0 41.778px 33.422px 0 rgba(0 0 0 / 15%), 0 22.336px 17.869px 0 rgba(0 0 0 / 13%), 0 12.522px 10.017px 0 rgba(0 0 0 / 10%), 0 6.65px 5.32px 0 rgba(0 0 0 / 8%), 0 2.767px 2.214px 0 rgba(0 0 0 / 6%);
-}
-
-:root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .autocomplete {
-  border: 3px solid rgba(17 17 17 / 15%);
-  backdrop-filter: blur(125px);
 }
 
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete,
@@ -825,11 +797,10 @@
   align-items: center;
   gap: var(--spacing-xxs);
   text-align: left;
-  white-space: nowrap; /* always 1 line */
+  white-space: nowrap;
   overflow: hidden;
 }
 
-/* truncate the prompt text span */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .drop-text {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -843,16 +814,15 @@
   align-self: center;
   padding-top: 0;
   padding-bottom: 0;
-  height: 30px; /* fixed button height */
-  line-height: 36px; /* account for 2px borders */
+  height: 30px;
+  line-height: 36px;
   box-sizing: border-box;
   white-space: nowrap;
-  flex: 0 0 auto; /* prevent shrinking */
+  flex: 0 0 auto;
   font-family: var(--font-family-adobe-clean);
   font-size: 14px;
 }
 
-/* Prompt icon alignment */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .prompt-icon {
   display: inline-flex;
   align-items: center;
@@ -865,7 +835,7 @@
   display: block;
   width: 18px;
   height: 18px;
-  transform: none !important; /* cancel any translateY applied elsewhere */
+  transform: none !important;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
@@ -956,24 +926,6 @@
   order: 2;
   max-width: 114px;
   position: relative;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container,
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
-  max-width: unset;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name, 
-.unity-enabled .interactive-area.dark .ex-unity-wrap .models-container .model-name {
-  color: #000;
-}
-
-.unity-enabled .interactive-area.light .ex-unity-wrap .models-container .model-name {
-  color: #DBDBDB;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
-  min-width: 270px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container,
@@ -1272,13 +1224,6 @@
     display: none;
   }
 
-  :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
-    content: unset;
-    display: unset;
-  }
-
-  .unity-enabled .interactive-area .verbs-container,
-  .unity-enabled .interactive-area .models-container {
   :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
     content: unset;
     display: unset;
