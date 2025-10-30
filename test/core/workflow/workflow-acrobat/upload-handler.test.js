@@ -181,6 +181,18 @@ describe('UploadHandler', () => {
       expect(payload.targetProduct).to.equal('test-product');
     });
 
+    it('should transform pdf-ai to chat-pdf-pdf-ai in guest connection payload', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['pdf-ai'];
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
+      expect(payload.payload.verb).to.equal('chat-pdf-pdf-ai');
+    });
+
+    it('should not transform other verbs in guest connection payload', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['chat-pdf'];
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
+      expect(payload.payload.verb).to.equal('chat-pdf');
+    });
+
     it('should identify PDF files correctly', () => {
       expect(uploadHandler.isPdf({ type: 'application/pdf' })).to.be.true;
       expect(uploadHandler.isPdf({ type: 'image/jpeg' })).to.be.false;
