@@ -57,12 +57,18 @@
 }
 
 /* Override for FF to fix Milo block and Unity themeing issues */
-:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area,
-:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.dark,
-:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area a,
-:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.dark a,
-:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.light a,
-:root:has(.workflow-firefly) .hero-marquee.unity-enabled .interactive-area.light {
+:root:has(meta[name="theme"][content="max25"]) .hero-marquee.unity-enabled .interactive-area,
+:root:has(meta[name="theme"][content="max25"]) .hero-marquee.unity-enabled .interactive-area.dark,
+:root:has(meta[name="theme"][content="max25"]) .hero-marquee.unity-enabled .interactive-area a,
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area a,
+:root:has(meta[name="theme"][content="max25"]) .hero-marquee.unity-enabled .interactive-area.dark a,
+:root:has(meta[name="theme"][content="max25"]) .hero-marquee.unity-enabled .interactive-area.light a,
+:root:has(meta[name="theme"][content="max25"]) .hero-marquee.unity-enabled .interactive-area.light,
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area,
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.dark,
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.dark a,
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.light a,
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.light {
   color: inherit;
 }
 

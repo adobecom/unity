@@ -270,11 +270,14 @@ describe('Unity Upload Block', () => {
     it('should handle upload asset error', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
+      let showErrorToastCalled = false;
       actionBinder.serviceHandler = {
         postCallToService: async () => {
           throw new Error('Upload failed');
         },
-        showErrorToast: () => {},
+        showErrorToast: () => {
+          showErrorToastCalled = true;
+        },
       };
 
       actionBinder.transitionScreen = {
@@ -283,12 +286,10 @@ describe('Unity Upload Block', () => {
       };
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      try {
-        await actionBinder.uploadAsset(file);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.equal('Upload failed');
-      }
+      const result = await actionBinder.uploadAsset(file);
+
+      expect(result).to.equal(false);
+      expect(showErrorToastCalled).to.equal(true);
     });
 
     it('should create error toast', async () => {
@@ -540,7 +541,7 @@ describe('Unity Upload Block', () => {
       actionBinder.continueInApp = async () => {};
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      await actionBinder.photoshopActionMaps('upload', [file]);
+      await actionBinder.executeActionMaps('upload', [file]);
 
       window.fetch = originalFetch;
       actionBinder.checkImageDimensions = originalCheckImageDimensions;
@@ -556,7 +557,7 @@ describe('Unity Upload Block', () => {
       };
 
       try {
-        await actionBinder.photoshopActionMaps('interrupt');
+        await actionBinder.executeActionMaps('interrupt');
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.be.instanceOf(Error);
@@ -566,7 +567,7 @@ describe('Unity Upload Block', () => {
     it('should handle photoshop action maps for unknown action', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
-      await actionBinder.photoshopActionMaps('unknown', []);
+      await actionBinder.executeActionMaps('unknown', []);
     });
 
     it('should initialize action listeners', async () => {
@@ -1843,9 +1844,9 @@ describe('Unity Upload Block', () => {
         dataTransfer,
       });
 
-      // Mock the photoshopActionMaps method
-      const originalPhotoshopActionMaps = actionBinder.photoshopActionMaps;
-      actionBinder.photoshopActionMaps = async (action, files) => {
+      // Mock the executeActionMaps method
+      const originalExecuteActionMaps = actionBinder.executeActionMaps;
+      actionBinder.executeActionMaps = async (action, files) => {
         expect(action).to.equal('upload');
         expect(files).to.have.length(1);
         expect(files[0]).to.equal(mockFile);
@@ -1853,7 +1854,7 @@ describe('Unity Upload Block', () => {
 
       testDiv.dispatchEvent(dropEvent);
 
-      actionBinder.photoshopActionMaps = originalPhotoshopActionMaps;
+      actionBinder.executeActionMaps = originalExecuteActionMaps;
     });
 
     it('should handle click event on DIV element', async () => {

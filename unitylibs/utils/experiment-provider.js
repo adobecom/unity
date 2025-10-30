@@ -20,7 +20,6 @@ export async function getExperimentData(decisionScopes) {
 
   return new Promise((resolve, reject) => {
     try {
-      
       window._satellite.track('propositionFetch', {
         decisionScopes,
         data: {},

@@ -235,7 +235,6 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    
     if ( !this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
       const { getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
       try {
