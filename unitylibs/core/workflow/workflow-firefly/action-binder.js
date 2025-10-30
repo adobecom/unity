@@ -92,7 +92,7 @@ export default class ActionBinder {
     this.viewport = defineDeviceByScreenSize();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
-    this.widgetWrap.addEventListener('firefly-show-error-toast', (ev) => {
+    this.widgetWrap.addEventListener('firefly-audio-error', (ev) => {
       const run = async () => {
         try {
           if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();

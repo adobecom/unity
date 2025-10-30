@@ -112,7 +112,7 @@ export default class UnityWidget {
   }
 
   showPlaybackErrorToast() {
-    try { this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-show-error-toast', { detail: { error: 'audio-playback-failed' } })); } catch (e) { /* noop */ }
+    try { this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } })); } catch (e) { /* noop */ }
   }
 
   clearSelectedModelState() {
@@ -326,9 +326,9 @@ export default class UnityWidget {
     this.selectedModelModule = selectedModelModule;
     this.selectedModelId = selectedModelType;
     this.selectedModelVersion = selectedModelVersion;
-    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const listItems = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
@@ -585,21 +585,15 @@ export default class UnityWidget {
         const itemEnv = item.env || 'prod';
         if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          let variations = Array.isArray(item.variations) ? item.variations : null;
-          if (!variations) {
-            const labelsRaw = typeof item.variationLabels === 'string' ? item.variationLabels : '';
-            const urlsRaw = typeof item.variationUrls === 'string' ? item.variationUrls : '';
-            const split = (str) => str.split('||').map((s) => s.trim()).filter((s) => s);
-            const labels = split(labelsRaw);
-            const urls = split(urlsRaw);
-            if (labels.length > 0) {
-              const max = 4;
-              variations = labels.slice(0, max).map((lbl, idx) => ({
-                label: (lbl && lbl.trim()) || `Variation ${idx + 1}`,
-                url: urls[idx] || '',
-              }));
-            }
-          }
+          const labelsRaw = (this.workflowCfg?.placeholder?.['placeholder-variation-labels'] || '').trim();
+          const urlsRaw = typeof item.variationUrls === 'string' ? item.variationUrls : '';
+          const split = (str) => str.split('||').map((s) => s.trim()).filter((s) => s);
+          const labels = split(labelsRaw);
+          const urls = split(urlsRaw);
+          const variations = labels.map((lbl, idx) => ({
+            label: (lbl && lbl.trim()) || `Variation ${idx + 1}`,
+            url: urls[idx] || '',
+          }));
           promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations });
         }
       });
