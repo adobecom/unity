@@ -6,7 +6,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-suggestions-list + .sound-details,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .sound-details {
   margin: 0;
-  padding: 0 var(--spacing-xs); /* no top/bottom padding */
+  padding: 0 var(--spacing-xs);
   border-radius: 10px;
   background: #fff;
   box-shadow: none;
@@ -540,7 +540,6 @@
   font-size: 16px;
 }
 
-
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field,
@@ -1025,7 +1024,6 @@
 
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .verb-list {
   border-radius: 14px;
-  z-index: 1;
 }
 
 [lang="ja-JP"] .unity-enabled .interactive-area .verb-list,
@@ -1053,7 +1051,6 @@
   padding-inline-start: 25px;
   text-transform: capitalize;
   text-decoration: none;
-  text-align: start;
   text-align: start;
   position: relative;
   opacity: 0;

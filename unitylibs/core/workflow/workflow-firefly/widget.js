@@ -302,7 +302,6 @@ export default class UnityWidget {
       icon: verb.nextElementSibling?.href,
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    verbs[0]?.classList.add('selected');
     return [selectedElement, verbList];
   }
 
