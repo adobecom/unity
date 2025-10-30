@@ -92,6 +92,16 @@ export default class ActionBinder {
     this.viewport = defineDeviceByScreenSize();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
+    this.widgetWrap.addEventListener('firefly-show-error-toast', (ev) => {
+      const run = async () => {
+        try {
+          if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+          if (!this.serviceHandler) await this.loadServiceHandler();
+          this.serviceHandler?.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-audio-fail' }, ev?.detail?.error, this.lanaOptions, 'client');
+        } catch (e) { /* noop */ }
+      };
+      run();
+    });
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
@@ -416,17 +426,15 @@ export default class ActionBinder {
         event.preventDefault();
         const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
         if (menuButton) {
-            (openVerbMenu || openModelMenu).classList.remove('show-menu');
-            menuButton.setAttribute('aria-expanded', 'false');
-            menuButton.focus();
+          (openVerbMenu || openModelMenu).classList.remove('show-menu');
+          menuButton.setAttribute('aria-expanded', 'false');
+          menuButton.focus();
         }
         return;
       }
-    } else {
-      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
-        this.hideDropdown();
-        return;
-      }
+    } else if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+      this.hideDropdown();
+      return;
     }
     event.preventDefault();
     if (currentElement.classList.contains('tip-con')) {

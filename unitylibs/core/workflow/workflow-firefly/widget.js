@@ -111,6 +111,10 @@ export default class UnityWidget {
     }
   }
 
+  showPlaybackErrorToast() {
+    try { this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-show-error-toast', { detail: { error: 'audio-playback-failed' } })); } catch (e) { /* noop */ }
+  }
+
   clearSelectedModelState() {
     this.selectedModelId = '';
     this.selectedModelVersion = '';
@@ -855,7 +859,7 @@ export default class UnityWidget {
           audioObj.pause();
         } else {
           setBtnToPause();
-          audioObj.play().catch(() => { setBtnToPlay(); });
+          audioObj.play().catch(() => { setBtnToPlay(); this.showPlaybackErrorToast(); });
         }
       };
       const handlePressToggle = (e) => {
@@ -872,7 +876,7 @@ export default class UnityWidget {
         if (!audioObj.paused) return;
         setBtnToPause();
         pauseBtn.classList.remove('hidden');
-        audioObj.play().catch(() => {});
+        audioObj.play().catch(() => { this.showPlaybackErrorToast(); });
       };
       tile.addEventListener('click', (ev) => {
         if (ev.target.closest && ev.target.closest('.pause-btn')) return; // button handles its own
