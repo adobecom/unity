@@ -329,7 +329,7 @@ export default class UploadHandler {
       payload: {
         languageRegion: this.actionBinder.workflowCfg.langRegion,
         languageCode: this.actionBinder.workflowCfg.langCode,
-        verb: this.actionBinder.workflowCfg.enabledFeatures[0],
+        verb: this.actionBinder.workflowCfg.enabledFeatures[0] === 'pdf-ai' ? 'chat-pdf-pdf-ai' : this.actionBinder.workflowCfg.enabledFeatures[0],
         feedback,
       },
     };
