@@ -112,7 +112,10 @@ export default class UnityWidget {
   }
 
   showPlaybackErrorToast() {
-    try { this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } })); } catch (e) { /* noop */ }
+    try {
+      this.hidePromptDropdown();
+      this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
+    } catch (e) { /* noop */ }
   }
 
   clearSelectedModelState() {
@@ -888,6 +891,8 @@ export default class UnityWidget {
           const idx = tiles.indexOf(tile);
           if (idx > -1 && idx < tiles.length - 1) {
             ev.preventDefault();
+            ev.stopImmediatePropagation();
+            ev.stopPropagation();
             const nextTile = tiles[idx + 1];
             try { setTimeout(() => nextTile.focus(), 0); } catch (e) { /* noop */ }
             return;
@@ -898,6 +903,8 @@ export default class UnityWidget {
               : null;
             if (nextSuggestion) {
               ev.preventDefault();
+              ev.stopImmediatePropagation();
+              ev.stopPropagation();
               try { setTimeout(() => nextSuggestion.focus(), 0); } catch (e) { /* noop */ }
             }
           }
@@ -908,6 +915,8 @@ export default class UnityWidget {
           const idx = tiles.indexOf(tile);
           if (idx > 0) {
             ev.preventDefault();
+            ev.stopImmediatePropagation();
+            ev.stopPropagation();
             const prevTile = tiles[idx - 1];
             try { setTimeout(() => prevTile.focus(), 0); } catch (e) { /* noop */ }
             return;
@@ -917,6 +926,8 @@ export default class UnityWidget {
             const useBtn = prevRow?.querySelector('.use-prompt-btn.inline');
             if (useBtn) {
               ev.preventDefault();
+              ev.stopImmediatePropagation();
+              ev.stopPropagation();
               try { setTimeout(() => useBtn.focus(), 0); } catch (e) { /* noop */ }
             }
           }
