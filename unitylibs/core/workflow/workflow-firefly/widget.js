@@ -60,16 +60,30 @@ export default class UnityWidget {
     );
   }
 
-  showVerbMenu(selectedElement) {
+  showMenu(selectedElement) {
     const menuContainer = selectedElement.parentElement;
-    document.querySelectorAll('.verbs-container').forEach((container) => {
+    document.querySelectorAll('.verbs-container, .models-container').forEach((container) => {
       if (container !== menuContainer) {
         container.classList.remove('show-menu');
         container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
+        container.querySelector('.selected-model')?.setAttribute('aria-expanded', 'false');
+        container.querySelectorAll('.verb-link').forEach((lnk) => lnk.removeAttribute('tabindex'));
       }
     });
     menuContainer.classList.toggle('show-menu');
     selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
+    const links = menuContainer.querySelectorAll('.verb-link');
+    if (menuContainer.classList.contains('show-menu')) links.forEach((lnk) => lnk.setAttribute('tabindex', '-1'));
+    else links.forEach((lnk) => lnk.removeAttribute('tabindex'));
+    if (menuContainer.classList.contains('show-menu')) {
+      const first = links && links[0];
+      if (first) {
+        try {
+          first.setAttribute('tabindex', '0');
+          requestAnimationFrame(() => { requestAnimationFrame(() => first.focus()); });
+        } catch (e) { /* noop */ }
+      }
+    }
     if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
   }
 
@@ -92,6 +106,45 @@ export default class UnityWidget {
       verbDropdown.classList.remove('show-menu');
       verbButton?.setAttribute('aria-expanded', 'false');
     }
+  }
+
+  attachListboxNav(listEl, itemSelector = '.verb-link') {
+    listEl.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
+      e.preventDefault();
+      const items = Array.from(listEl.querySelectorAll(itemSelector));
+      if (!items.length) return;
+      const current = e.target && e.target.closest ? e.target.closest(itemSelector) : null;
+      let i = items.indexOf(current);
+      if (e.key === 'Home') i = 0;
+      else if (e.key === 'End') i = items.length - 1;
+      else if (i === -1) i = e.key === 'ArrowDown' ? 0 : items.length - 1;
+      else i = e.key === 'ArrowDown' ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
+      try { items[i].focus(); } catch (err) { /* noop */ }
+    });
+  }
+
+  attachListboxActions(listEl, triggerBtn, activateHandler) {
+    listEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const link = e.target && e.target.closest ? e.target.closest('.verb-link') : null;
+        if (!link) return;
+        e.preventDefault();
+        activateHandler(link, e);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Escape' || e.code === 27) {
+        const menuContainer = triggerBtn.parentElement;
+        if (menuContainer && menuContainer.classList.contains('show-menu')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          menuContainer.classList.remove('show-menu');
+          triggerBtn.setAttribute('aria-expanded', 'false');
+          try { triggerBtn.focus(); } catch (err) { /* noop */ }
+        }
+      }
+    });
   }
 
   updateAnalytics(verb) {
@@ -254,13 +307,17 @@ export default class UnityWidget {
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
+      this.showMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
+        this.showMenu(selectedElement);
+        return;
       }
       if (e.key === 'Escape' || e.code === 27) {
         selectedElement.parentElement.classList?.remove('show-menu');
@@ -274,6 +331,8 @@ export default class UnityWidget {
       icon: verb.nextElementSibling?.href,
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
+    this.attachListboxNav(verbList);
+    this.attachListboxActions(verbList, selectedElement, (link, ev) => this.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, false)(ev));
     return [selectedElement, verbList];
   }
 
@@ -317,13 +376,17 @@ export default class UnityWidget {
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
+      this.showMenu(selectedElement);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
+        this.showMenu(selectedElement);
+        return;
       }
       if (e.key === 'Escape' || e.code === 27) {
         selectedElement.parentElement.classList?.remove('show-menu');
@@ -331,6 +394,8 @@ export default class UnityWidget {
       }
     });
     this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
+    this.attachListboxNav(listItems);
+    this.attachListboxActions(listItems, selectedElement, (link, ev) => this.handleVerbLinkClick(link, listItems, selectedElement, menuIcon, inputPlaceHolder, true)(ev));
     return [selectedElement, listItems];
   }
 

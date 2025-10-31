@@ -383,12 +383,6 @@ export default class ActionBinder {
     let elmSelector = '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
     const baseSelector = `.selected-verb, .selected-model, .inp-field, .gen-btn, ${elmSelector}`;
-    const openVerbMenu = this.block.querySelector('.verbs-container.show-menu .verb-link');
-    const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
-    if (openVerbMenu || openModelMenu) {
-      const menuSelector = openVerbMenu ? '.verbs-container.show-menu .verb-link' : '.models-container.show-menu .verb-link';
-      return Array.from(this.block.querySelectorAll(menuSelector));
-    }
     return Array.from(this.block.querySelectorAll(baseSelector));
   }
 
@@ -408,17 +402,15 @@ export default class ActionBinder {
         event.preventDefault();
         const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
         if (menuButton) {
-            (openVerbMenu || openModelMenu).classList.remove('show-menu');
-            menuButton.setAttribute('aria-expanded', 'false');
-            menuButton.focus();
+          (openVerbMenu || openModelMenu).classList.remove('show-menu');
+          menuButton.setAttribute('aria-expanded', 'false');
+          menuButton.focus();
         }
         return;
       }
-    } else {
-      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
-        this.hideDropdown();
-        return;
-      }
+    } else if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+      this.hideDropdown();
+      return;
     }
     event.preventDefault();
     if (currentElement.classList.contains('tip-con')) {
