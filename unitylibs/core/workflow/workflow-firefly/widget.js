@@ -135,14 +135,14 @@ export default class UnityWidget {
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedModelId = this.selectedModelId;
         selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
-        selectedElement.setAttribute('aria-label', `${this.selectedModelText} prompt: ${inputPlaceHolder}`);
+        selectedElement.setAttribute('aria-label', `Select model, current: ${this.selectedModelText}`);
         link.parentElement.setAttribute('aria-label', `${this.selectedModelText} prompt selected:  ${inputPlaceHolder}`);
       } else {
         this.selectedVerbType = link.getAttribute('data-verb-type');
         this.selectedVerbText = link.textContent.trim();
         selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
-        selectedElement.setAttribute('aria-label', `${this.selectedVerbText} prompt: ${inputPlaceHolder}`);
+        selectedElement.setAttribute('aria-label', `Select verb, current: ${this.selectedVerbText}`);
         link.parentElement.setAttribute('aria-label', `${this.selectedVerbText} prompt selected:  ${inputPlaceHolder}`);
       }
       selectedElement.focus();
@@ -189,7 +189,8 @@ export default class UnityWidget {
       } = item;
       const listItem = createTag('li', {
         class: 'verb-item',
-        'aria-label': `${name} prompt: ${inputPlaceHolder}`,
+        role: 'option',
+        'aria-label': `${name}`,
       });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
@@ -226,7 +227,8 @@ export default class UnityWidget {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
-      'aria-label': `${selectedVerbType} prompt: ${inputPlaceHolder}`,
+      'aria-haspopup': 'listbox',
+      'aria-label': `Select verb, current: ${selectedVerb?.textContent.trim()}`,
       'data-selected-verb': selectedVerbType,
     }, `${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
@@ -238,7 +240,7 @@ export default class UnityWidget {
     }
     this.widgetWrap.classList.add('verb-options');
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
+    const verbList = createTag('ul', { class: 'verb-list', id: 'prompt-menu', role: 'listbox', 'aria-label': 'Verb options' });
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
@@ -287,7 +289,8 @@ export default class UnityWidget {
       class: 'selected-model',
       'aria-expanded': 'false',
       'aria-controls': 'prompt-menu',
-      'aria-label': `${selectedModelType} prompt: ${inputPlaceHolder}`,
+      'aria-haspopup': 'listbox',
+      'aria-label': `Select model, current: ${models[0].name.trim()}`,
       'data-selected-model-id': selectedModelType,
       'data-selected-model-version': selectedModelVersion,
       'data-selected-model-module': selectedModelModule,
@@ -300,7 +303,7 @@ export default class UnityWidget {
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const listItems = createTag('ul', { class: 'verb-list', id: 'prompt-menu' });
+    const listItems = createTag('ul', { class: 'verb-list', id: 'prompt-menu', role: 'listbox', 'aria-label': 'Model options' });
     listItems.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
