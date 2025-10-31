@@ -113,7 +113,6 @@ export default class UnityWidget {
 
   showPlaybackErrorToast() {
     try {
-      this.hidePromptDropdown();
       this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
     } catch (e) { /* noop */ }
   }
@@ -477,6 +476,7 @@ export default class UnityWidget {
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
     if (!this.outsideDropdownHandler) {
       this.outsideDropdownHandler = (ev) => {
+        if (this.widgetWrap && this.widgetWrap.style && this.widgetWrap.style.pointerEvents === 'none') return;
         const wrapper = this.widget.querySelector('.autocomplete');
         if (wrapper && wrapper.contains(ev.target)) return;
         if (promptDropdownContainer && !promptDropdownContainer.classList.contains('hidden') && !promptDropdownContainer.contains(ev.target)) {

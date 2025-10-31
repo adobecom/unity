@@ -57,7 +57,7 @@ class ServiceHandler {
     const lang = document.querySelector('html').getAttribute('lang');
     const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
     const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
-    promptBarEl.style.pointerEvents = 'none';
+    if (promptBarEl) promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
     if (!errorToast) return;
     const closeBtn = errorToast.querySelector('.alert-close');
@@ -148,7 +148,7 @@ export default class ActionBinder {
         e.preventDefault();
         e.stopPropagation();
         errholder.classList.remove('show');
-        promptBarEl.style.pointerEvents = 'auto';
+        if (promptBarEl) promptBarEl.style.pointerEvents = 'auto';
       });
       decorateDefaultLinkAnalytics(errholder);
       promptBarEl.prepend(errholder);
@@ -517,6 +517,7 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
+    if (this.widgetWrap && this.widgetWrap.style && this.widgetWrap.style.pointerEvents === 'none') return;
     if (!this.widget?.contains(event.target)) this.hideDropdown();
   }
 
