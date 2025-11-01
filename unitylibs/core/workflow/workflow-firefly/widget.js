@@ -23,6 +23,8 @@ export default class UnityWidget {
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
+    this.sound = { audio: null, currentTile: null, currentUrl: '' };
+    this.durationCache = new Map();
   }
 
   async initWidget() {
@@ -74,11 +76,14 @@ export default class UnityWidget {
   }
 
   hidePromptDropdown(exceptElement = null) {
-    const dropdown = this.widget.querySelector('.drop');
+    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
+    }
+    if (this.selectedVerbType === 'sound') {
+      this.resetAllSoundVariations(dropdown);
     }
     const modelDropdown = this.widget.querySelector('.models-container');
     const modelButton = modelDropdown?.querySelector('.selected-model');
@@ -104,6 +109,19 @@ export default class UnityWidget {
     if (this.genBtn) {
       this.genBtn.setAttribute('daa-ll', `Generate--${verb}`);
     }
+  }
+
+  showPlaybackErrorToast() {
+    try {
+      this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
+    } catch (e) { /* noop */ }
+  }
+
+  clearSelectedModelState() {
+    this.selectedModelId = '';
+    this.selectedModelVersion = '';
+    this.selectedModelModule = '';
+    this.selectedModelText = '';
   }
 
   handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
@@ -151,18 +169,30 @@ export default class UnityWidget {
       else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
       if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
         const oldModelContainer = this.widget.querySelector('.models-container');
+        const modelDropdown = this.modelDropdown();
         if (oldModelContainer) {
-          const modelDropdown = this.modelDropdown();
           if (modelDropdown.length > 1) {
             const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
             newModelContainer.append(...modelDropdown);
             oldModelContainer.replaceWith(newModelContainer);
+          } else {
+            oldModelContainer.remove();
+            this.clearSelectedModelState();
           }
-        }
+        } else if (modelDropdown.length > 1) {
+          const actionContainer = this.widget.querySelector('.action-container');
+          if (actionContainer) {
+            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+            newModelContainer.append(...modelDropdown);
+            actionContainer.append(newModelContainer);
+          }
+        } else this.clearSelectedModelState();
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-      this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-      this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+      else this.widgetWrap.removeAttribute('data-selected-model-id');
+      if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
         this.genBtn.setAttribute(
@@ -278,6 +308,7 @@ export default class UnityWidget {
   modelDropdown() {
     if (!this.hasModelOptions) return [];
     const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
+    if (!Array.isArray(models) || models.length === 0) return [];
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedModelType = models[0].id;
     const selectedModelVersion = models[0].version;
@@ -344,6 +375,10 @@ export default class UnityWidget {
       'aria-controls': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
+    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
+    inpField.addEventListener('focus', () => this.hidePromptDropdown());
+    inpField.addEventListener('click', () => this.resetAllSoundVariations(dropdown));
+    inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdown));
     const verbDropdown = this.verbDropdown();
     const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
@@ -352,6 +387,8 @@ export default class UnityWidget {
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Prompt options' });
       verbBtn.append(...verbDropdown);
+      actionContainer.append(verbBtn);
+      inpWrap.append(actionContainer, inpField, actWrap);
       actionContainer.append(verbBtn);
       inpWrap.append(actionContainer, inpField, actWrap);
     } else {
@@ -367,16 +404,16 @@ export default class UnityWidget {
 
   getLimitedDisplayPrompts(prompts) {
     const shuffled = prompts.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3).map(({ prompt, assetid }) => ({
+    return shuffled.slice(0, 3).map(({ prompt, assetid, variations }) => ({
       prompt,
       assetid,
-      displayPrompt: prompt.length > 105 ? `${prompt.slice(0, 105)}…` : prompt,
+      variations,
     }));
   }
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
     this.promptItems = [];
-    prompts.forEach(({ prompt, assetid, displayPrompt }) => {
+    prompts.forEach(({ prompt, assetid, variations }, idx) => {
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -385,9 +422,31 @@ export default class UnityWidget {
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
-      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
+      });
+      const iconWrap = createTag('span', { class: 'prompt-icon' }, '<svg><use xlink:href="#unity-prompt-icon"></use></svg>');
+      const text = createTag('span', { class: 'drop-text' }, prompt);
+      item.append(iconWrap, text);
       dropdown.append(item);
       this.promptItems.push(item);
+
+      if (this.selectedVerbType === 'sound') {
+        const expand = (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          this.toggleSoundDetails(dropdown, item, { prompt, variations }, idx + 1);
+        };
+        item.addEventListener('click', expand);
+        item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') expand(e); });
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Tab' && !e.shiftKey && item.classList.contains('sound-expanded')) {
+            // If Tab originated from the Use button itself, let the button handler take over
+            if (e.target && e.target.closest && e.target.closest('.use-prompt-btn.inline')) return;
+            const useBtn = item.querySelector('.use-prompt-btn.inline');
+            if (useBtn) { this.consumeEventAndFocus(e, useBtn); }
+          }
+        });
+      }
     });
   }
 
@@ -408,6 +467,17 @@ export default class UnityWidget {
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
+    if (!this.outsideDropdownHandler) {
+      this.outsideDropdownHandler = (ev) => {
+        if (this.widgetWrap && window.getComputedStyle(this.widgetWrap).pointerEvents === 'none') return;
+        const wrapper = this.widget.querySelector('.autocomplete');
+        if (wrapper && wrapper.contains(ev.target)) return;
+        if (promptDropdownContainer && !promptDropdownContainer.classList.contains('hidden') && !promptDropdownContainer.contains(ev.target)) {
+          this.hidePromptDropdown();
+        }
+      };
+      setTimeout(() => document.addEventListener('click', this.outsideDropdownHandler, true), 0);
+    }
     return promptDropdownContainer;
   }
 
@@ -453,9 +523,10 @@ export default class UnityWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
+    // TODO vipulg: remove draft urls and use production urls
     const promptFile = locale.prefix && locale.prefix !== '/'
-      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
-      : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
+      ? `${baseUrl}${locale.prefix}/drafts/vipulg/prompt/firefly-prompt.json`
+      : `${baseUrl}/drafts/vipulg/prompt/firefly-prompt.json`;
     const promptRes = await fetch(promptFile);
     if (!promptRes.ok) {
       throw new Error('Failed to fetch prompts.');
@@ -505,9 +576,18 @@ export default class UnityWidget {
     if (Array.isArray(data)) {
       data.forEach((item) => {
         const itemEnv = item.env || 'prod';
-        if (item.verb && item.prompt && item.assetid && itemEnv === unityConfig.env) {
+        if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
+          const labelsRaw = (this.workflowCfg?.placeholder?.['placeholder-variation-labels'] || '').trim();
+          const urlsRaw = typeof item.variationUrls === 'string' ? item.variationUrls : '';
+          const split = (str) => str.split('||').map((s) => s.trim()).filter((s) => s);
+          const labels = split(labelsRaw);
+          const urls = split(urlsRaw);
+          const variations = labels.map((lbl, idx) => ({
+            label: (lbl && lbl.trim()) || `Variation ${idx + 1}`,
+            url: urls[idx] || '',
+          }));
+          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations });
         }
       });
     }
@@ -536,5 +616,290 @@ export default class UnityWidget {
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
+  }
+
+  resetTileToIdle(tile) {
+    if (!tile) return;
+    const audioEl = tile.audioRef;
+    if (audioEl) {
+      tile.dataset.forceIdle = '1';
+      try { audioEl.pause(); } catch (e) { /* noop */ }
+      try { audioEl.currentTime = 0; } catch (e) { /* noop */ }
+    }
+    tile.classList.remove('playing', 'selected', 'paused', 'is-active');
+    tile.classList.add('is-idle');
+    tile.setAttribute('aria-pressed', 'false');
+    const pb = tile.querySelector('.pause-btn');
+    if (pb) pb.classList.add('hidden');
+    const fill = tile.querySelector('.seek-fill');
+    if (fill) { fill.style.width = '0%'; fill.style.transform = 'scaleX(0)'; }
+    const bar = tile.querySelector('.seek-bar');
+    if (bar) { bar.setAttribute('aria-valuenow', '0'); try { bar.style.setProperty('--progress', '0%'); } catch (e) { /* noop */ } }
+    const tm = tile.querySelector('.time-el');
+    if (tm && audioEl) {
+      const setDuration = () => { tm.textContent = this.formatTime(audioEl.duration); };
+      if (Number.isFinite(audioEl.duration) && audioEl.duration > 0) setDuration();
+      else audioEl.addEventListener('loadedmetadata', setDuration, { once: true });
+    }
+  }
+
+  consumeEventAndFocus(ev, targetEl) {
+    if (!ev) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (targetEl) {
+      try { setTimeout(() => targetEl.focus(), 0); } catch (err) { /* noop */ }
+    }
+  }
+
+  formatTime(sec) {
+    const s = Math.max(0, Math.floor(Number.isFinite(sec) ? sec : 0));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+
+  createVariationTile(v, i, strip) {
+    const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
+    const labelText = v.label || `Example ${i + 1}`;
+    const label = createTag('div', { class: 'variation-label inline' }, labelText);
+    const audioObj = new Audio(v.url);
+    audioObj.preload = 'metadata';
+    tile.audioRef = audioObj;
+    const player = createTag('div', { class: 'custom-player' });
+    const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${labelText}` });
+    const setBtnToPause = () => {
+      pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
+      pauseBtn.dataset.state = 'pause';
+      pauseBtn.setAttribute('aria-label', `Pause ${labelText}`);
+    };
+    const setBtnToPlay = () => {
+      pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
+      pauseBtn.dataset.state = 'play';
+      pauseBtn.setAttribute('aria-label', `Play ${labelText}`);
+    };
+    setBtnToPlay();
+    const cached = this.durationCache.get(v.url);
+    const timeEl = createTag('div', { class: 'time-el' }, cached ? this.formatTime(cached) : '0:00');
+    const progressBar = createTag('div', {
+      class: 'seek-bar',
+      role: 'progressbar',
+      'aria-label': `Progress ${labelText}`,
+      'aria-valuemin': '0',
+      'aria-valuemax': '100',
+      'aria-valuenow': '0',
+    });
+    const progressFill = createTag('div', { class: 'seek-fill' });
+    progressBar.append(progressFill);
+    player.append(pauseBtn, label, timeEl, progressBar);
+    tile.classList.add('is-idle');
+
+    const pauseOthers = () => {
+      strip.querySelectorAll('.variation-tile').forEach((t) => { if (t !== tile) this.resetTileToIdle(t); });
+    };
+
+    let rafId = null;
+    const startRaf = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      const tick = () => {
+        if (Number.isFinite(audioObj.duration) && audioObj.duration > 0) {
+          const pct = (audioObj.currentTime / audioObj.duration) * 100;
+          progressFill.style.width = `${pct}%`;
+          progressBar.style.setProperty('--progress', `${pct}%`);
+          progressBar.setAttribute('aria-valuenow', String(pct));
+          timeEl.textContent = this.formatTime(audioObj.currentTime);
+        }
+        if (!audioObj.paused && !audioObj.ended) rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+    };
+    const stopRaf = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
+    const resetProgress = (durSec = audioObj?.duration) => {
+      const dur = Number.isFinite(durSec) && durSec > 0 ? durSec : 0;
+      progressFill.style.width = '0%';
+      progressBar.style.setProperty('--progress', '0%');
+      progressBar.setAttribute('aria-valuenow', '0');
+      timeEl.textContent = this.formatTime(dur);
+    };
+
+    audioObj.addEventListener('loadedmetadata', () => {
+      const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
+      if (dur > 0) this.durationCache.set(v.url, dur);
+      resetProgress();
+    });
+    audioObj.addEventListener('timeupdate', () => {
+      if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
+      if (tile.classList.contains('playing')) return;
+      timeEl.textContent = this.formatTime(audioObj.duration);
+    });
+    audioObj.addEventListener('play', () => {
+      pauseOthers();
+      if (tile.dataset && tile.dataset.forceIdle) delete tile.dataset.forceIdle;
+      tile.classList.add('playing', 'selected', 'is-active');
+      tile.classList.remove('paused', 'is-idle');
+      tile.setAttribute('aria-pressed', 'true');
+      setBtnToPause();
+      pauseBtn.classList.remove('hidden');
+      startRaf();
+      timeEl.textContent = this.formatTime(audioObj.currentTime);
+    });
+    audioObj.addEventListener('pause', () => {
+      if (tile.dataset.forceIdle === '1') {
+        delete tile.dataset.forceIdle;
+        tile.classList.remove('playing', 'selected', 'paused', 'is-active');
+        tile.classList.add('is-idle');
+        pauseBtn.classList.add('hidden');
+        try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
+        resetProgress();
+        stopRaf();
+        return;
+      }
+      tile.classList.remove('playing');
+      tile.classList.add('paused');
+      tile.setAttribute('aria-pressed', 'false');
+      setBtnToPlay();
+      const hasFocus = tile.contains(document.activeElement);
+      if (!hasFocus) pauseBtn.classList.add('hidden');
+      timeEl.textContent = this.formatTime(audioObj.currentTime);
+      stopRaf();
+    });
+    audioObj.addEventListener('ended', () => {
+      tile.classList.remove('playing', 'is-active', 'paused');
+      tile.classList.add('is-idle');
+      tile.setAttribute('aria-pressed', 'false');
+      pauseBtn.classList.add('hidden');
+      try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
+      resetProgress();
+      stopRaf();
+    });
+
+    const togglePlayback = () => {
+      const isPlaying = !audioObj.paused && !audioObj.ended;
+      if (isPlaying) {
+        setBtnToPlay();
+        audioObj.pause();
+      } else {
+        setBtnToPause();
+        audioObj.play().catch(() => { setBtnToPlay(); this.showPlaybackErrorToast(); });
+      }
+    };
+    const handlePressToggle = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try { if ('pointerId' in e && pauseBtn.setPointerCapture) pauseBtn.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+      togglePlayback();
+    };
+    pauseBtn.addEventListener('pointerdown', handlePressToggle);
+    pauseBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') handlePressToggle(e); });
+    pauseBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+
+    const playIfPaused = () => {
+      if (!audioObj.paused) return;
+      setBtnToPause();
+      pauseBtn.classList.remove('hidden');
+      audioObj.play().catch(() => { this.showPlaybackErrorToast(); });
+    };
+    tile.addEventListener('click', (ev) => {
+      if (ev.target.closest && ev.target.closest('.pause-btn')) return;
+      ev.preventDefault();
+      playIfPaused();
+    });
+    tile.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        togglePlayback();
+        return;
+      }
+      if (ev.key === 'Tab' && !ev.shiftKey) {
+        const detailsEl = tile.closest('.sound-details');
+        const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+        const idx = tiles.indexOf(tile);
+        if (idx > -1 && idx < tiles.length - 1) {
+          const nextTile = tiles[idx + 1];
+          this.consumeEventAndFocus(ev, nextTile);
+          return;
+        }
+        if (detailsEl) {
+          const nextSuggestion = detailsEl.nextElementSibling && detailsEl.nextElementSibling.classList?.contains('drop-item')
+            ? detailsEl.nextElementSibling
+            : null;
+          if (nextSuggestion) { this.consumeEventAndFocus(ev, nextSuggestion); }
+        }
+      }
+      if (ev.key === 'Tab' && ev.shiftKey) {
+        const detailsEl = tile.closest('.sound-details');
+        const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+        const idx = tiles.indexOf(tile);
+        if (idx > 0) {
+          const prevTile = tiles[idx - 1];
+          this.consumeEventAndFocus(ev, prevTile);
+          return;
+        }
+        if (detailsEl) {
+          const prevRow = detailsEl.previousElementSibling;
+          const useBtn = prevRow?.querySelector('.use-prompt-btn.inline');
+          if (useBtn) { this.consumeEventAndFocus(ev, useBtn); }
+        }
+      }
+    });
+
+    tile.append(player);
+    return tile;
+  }
+
+  resetAllSoundVariations(rootEl) {
+    const root = rootEl || this.widget;
+    root.querySelectorAll('.variation-tile').forEach((t) => { this.resetTileToIdle(t); });
+    root.querySelectorAll('.sound-details').forEach((d) => d.remove());
+    root.querySelectorAll('.drop-item.sound-expanded').forEach((el) => el.classList.remove('sound-expanded'));
+    root.querySelectorAll('.drop-item .use-prompt-btn.inline').forEach((b) => b.remove());
+  }
+
+  toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
+    this.resetAllSoundVariations(dropdown);
+    const next = item.nextElementSibling;
+    if (next && next.classList.contains('sound-details')) return;
+    const inlineBtn = createTag('button', {
+      class: 'use-prompt-btn inline',
+      'data-prompt-index': String(promptIndex),
+      'aria-label': `Use prompt ${promptIndex}: ${promptObj.prompt}`,
+    }, 'Use prompt');
+    inlineBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.hidePromptDropdown();
+      const btn = this.genBtn;
+      if (btn) {
+        btn.dataset.soundPrompt = promptObj.prompt;
+        btn.click();
+      }
+    });
+    inlineBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        inlineBtn.click();
+        return;
+      }
+      if (e.key === 'Tab' && !e.shiftKey) {
+        const detailsEl = item.nextElementSibling && item.nextElementSibling.classList?.contains('sound-details')
+          ? item.nextElementSibling
+          : null;
+        const firstTile = detailsEl?.querySelector('.variation-tile');
+        if (firstTile) { this.consumeEventAndFocus(e, firstTile); }
+      }
+      if (e.key === 'Tab' && e.shiftKey) { this.consumeEventAndFocus(e, item); }
+    });
+    item.classList.add('sound-expanded');
+    item.append(inlineBtn);
+    const details = this.renderSoundDetails(promptObj);
+    item.after(details);
+  }
+
+  renderSoundDetails(promptObj) {
+    const details = createTag('div', { class: 'sound-details', role: 'region' });
+    const strip = createTag('div', { class: 'variation-strip' });
+    const vars = Array.isArray(promptObj.variations) ? promptObj.variations : [];
+    vars.forEach((v, i) => { const tile = this.createVariationTile(v, i, strip); strip.append(tile); });
+    details.append(strip);
+    return details;
   }
 }
