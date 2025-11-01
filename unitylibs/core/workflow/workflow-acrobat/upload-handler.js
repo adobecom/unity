@@ -16,8 +16,7 @@ export default class UploadHandler {
 
   getVerbForFeature() {
     const feature = this.actionBinder.workflowCfg.enabledFeatures[0];
-    if (feature === 'pdf-ai') return 'chat-pdf-pdf-ai';
-    return feature;
+    return feature === 'pdf-ai' ? 'chat-pdf-pdf-ai' : feature;
   }
 
   async createAsset(file, multifile = false, workflowId = null) {
