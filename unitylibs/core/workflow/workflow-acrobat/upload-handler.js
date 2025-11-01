@@ -14,6 +14,12 @@ export default class UploadHandler {
     return this.actionBinder.workflowCfg.targetCfg.uploadLimits;
   }
 
+  getVerbForFeature() {
+    const feature = this.actionBinder.workflowCfg.enabledFeatures[0];
+    if (feature === 'pdf-ai') return 'chat-pdf-pdf-ai';
+    return feature;
+  }
+
   async createAsset(file, multifile = false, workflowId = null) {
     const data = {
       surfaceId: unityConfig.surfaceId,
@@ -329,7 +335,7 @@ export default class UploadHandler {
       payload: {
         languageRegion: this.actionBinder.workflowCfg.langRegion,
         languageCode: this.actionBinder.workflowCfg.langCode,
-        verb: this.actionBinder.workflowCfg.enabledFeatures[0] === 'pdf-ai' ? 'chat-pdf-pdf-ai' : this.actionBinder.workflowCfg.enabledFeatures[0],
+        verb: this.getVerbForFeature(),
         feedback,
       },
     };
@@ -412,7 +418,7 @@ export default class UploadHandler {
       payload: {
         languageRegion: this.actionBinder.workflowCfg.langRegion,
         languageCode: this.actionBinder.workflowCfg.langCode,
-        verb: this.actionBinder.workflowCfg.enabledFeatures[0] === 'pdf-ai' ? 'chat-pdf-pdf-ai' : this.actionBinder.workflowCfg.enabledFeatures[0],
+        verb: this.getVerbForFeature(),
         assetMetadata: {
           [assetData.id]: {
             name: file.name,
@@ -574,7 +580,7 @@ export default class UploadHandler {
       payload: {
         languageRegion: this.actionBinder.workflowCfg.langRegion,
         languageCode: this.actionBinder.workflowCfg.langCode,
-        verb: this.actionBinder.workflowCfg.enabledFeatures[0] === 'pdf-ai' ? 'chat-pdf-pdf-ai' : this.actionBinder.workflowCfg.enabledFeatures[0],
+        verb: this.getVerbForFeature(),
         multifile: true,
         workflowId,
       },
