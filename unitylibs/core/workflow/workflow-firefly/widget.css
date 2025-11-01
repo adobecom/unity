@@ -816,6 +816,14 @@
   animation: fade-in .5s ease forwards;
 }
 
+.unity-enabled .interactive-area .verb-list .verb-item:hover,
+.unity-enabled .interactive-area .verb-list .verb-link:hover,
+.unity-enabled .interactive-area .verb-list .verb-link:focus {
+  background-color: #e6e6e6;
+  outline: none;
+  border-radius: 8px;
+}
+
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .verb-list .verb-link {
   font-size: 14px;
 }

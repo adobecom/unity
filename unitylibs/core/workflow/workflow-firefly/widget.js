@@ -110,15 +110,13 @@ export default class UnityWidget {
 
   attachListboxNav(listEl, itemSelector = '.verb-link') {
     listEl.addEventListener('keydown', (e) => {
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       e.preventDefault();
       const items = Array.from(listEl.querySelectorAll(itemSelector));
       if (!items.length) return;
       const current = e.target && e.target.closest ? e.target.closest(itemSelector) : null;
       let i = items.indexOf(current);
-      if (e.key === 'Home') i = 0;
-      else if (e.key === 'End') i = items.length - 1;
-      else if (i === -1) i = e.key === 'ArrowDown' ? 0 : items.length - 1;
+      if (i === -1) i = e.key === 'ArrowDown' ? 0 : items.length - 1;
       else i = e.key === 'ArrowDown' ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
       try { items[i].focus(); } catch (err) { /* noop */ }
     });
@@ -133,11 +131,10 @@ export default class UnityWidget {
         activateHandler(link, e);
         return;
       }
-      if (e.key === 'Tab' || e.key === 'Escape' || e.code === 27) {
+      if (e.key === 'Tab' || e.key === 'Escape') {
         const menuContainer = triggerBtn.parentElement;
         if (menuContainer && menuContainer.classList.contains('show-menu')) {
           e.preventDefault();
-          e.stopImmediatePropagation();
           e.stopPropagation();
           menuContainer.classList.remove('show-menu');
           triggerBtn.setAttribute('aria-expanded', 'false');
@@ -313,13 +310,13 @@ export default class UnityWidget {
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        e.stopImmediatePropagation();
         e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
         this.showMenu(selectedElement);
+        document.addEventListener('click', handleDocumentClick);
         return;
       }
-      if (e.key === 'Escape' || e.code === 27) {
+      if (e.key === 'Escape') {
         selectedElement.parentElement.classList?.remove('show-menu');
         selectedElement.focus();
       }
@@ -382,13 +379,13 @@ export default class UnityWidget {
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        e.stopImmediatePropagation();
         e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
         this.showMenu(selectedElement);
+        document.addEventListener('click', handleDocumentClick);
         return;
       }
-      if (e.key === 'Escape' || e.code === 27) {
+      if (e.key === 'Escape') {
         selectedElement.parentElement.classList?.remove('show-menu');
         selectedElement.focus();
       }
