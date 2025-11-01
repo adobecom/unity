@@ -21,8 +21,8 @@
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
-    "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
-    "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf"],
+    "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai"],
+    "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai"],
     "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
     "experimentationOn": ["add-comment"],
     "fetchApiConfig": {

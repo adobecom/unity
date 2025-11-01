@@ -181,6 +181,18 @@ describe('UploadHandler', () => {
       expect(payload.targetProduct).to.equal('test-product');
     });
 
+    it('should transform pdf-ai to chat-pdf-pdf-ai in guest connection payload', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['pdf-ai'];
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
+      expect(payload.payload.verb).to.equal('chat-pdf-pdf-ai');
+    });
+
+    it('should not transform other verbs in guest connection payload', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['chat-pdf'];
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
+      expect(payload.payload.verb).to.equal('chat-pdf');
+    });
+
     it('should identify PDF files correctly', () => {
       expect(uploadHandler.isPdf({ type: 'application/pdf' })).to.be.true;
       expect(uploadHandler.isPdf({ type: 'image/jpeg' })).to.be.false;
@@ -951,6 +963,52 @@ describe('UploadHandler', () => {
       expect(mockActionBinder.dispatchErrorToast.calledWith(
         'upload_error_finalize_asset',
       )).to.be.true;
+    });
+  });
+
+  describe('pdf-ai verb transformation for multi-file upload', () => {
+    it('should transform pdf-ai to chat-pdf-pdf-ai when sending to connector API for multi-file', async () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['pdf-ai'];
+      mockActionBinder.handleRedirect.resolves(true);
+
+      const filesData = { file: new File(['test'], 'test.pdf', { type: 'application/pdf' }), index: 0 };
+      const workflowId = 'test-workflow-id';
+
+      await uploadHandler.handleFileUploadRedirect('asset-123', filesData, workflowId);
+
+      expect(mockActionBinder.handleRedirect.called).to.be.true;
+      const callArgs = mockActionBinder.handleRedirect.firstCall.args[0];
+      expect(callArgs.payload.verb).to.equal('chat-pdf-pdf-ai');
+      expect(callArgs.payload.multifile).to.be.true;
+      expect(callArgs.payload.workflowId).to.equal(workflowId);
+    });
+
+    it('should not transform other verbs when sending to connector API for multi-file', async () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['chat-pdf'];
+      mockActionBinder.handleRedirect.resolves(true);
+
+      const filesData = { file: new File(['test'], 'test.pdf', { type: 'application/pdf' }), index: 0 };
+      const workflowId = 'test-workflow-id';
+
+      await uploadHandler.handleFileUploadRedirect('asset-123', filesData, workflowId);
+
+      expect(mockActionBinder.handleRedirect.called).to.be.true;
+      const callArgs = mockActionBinder.handleRedirect.firstCall.args[0];
+      expect(callArgs.payload.verb).to.equal('chat-pdf');
+      expect(callArgs.payload.multifile).to.be.true;
+    });
+
+    it('should keep pdf-ai verb unchanged in workflowCfg for multi-file', async () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['pdf-ai'];
+      mockActionBinder.handleRedirect.resolves(true);
+
+      const filesData = { file: new File(['test'], 'test.pdf', { type: 'application/pdf' }), index: 0 };
+      const workflowId = 'test-workflow-id';
+
+      await uploadHandler.handleFileUploadRedirect('asset-123', filesData, workflowId);
+
+      // Verify the original config is not modified
+      expect(mockActionBinder.workflowCfg.enabledFeatures[0]).to.equal('pdf-ai');
     });
   });
 });
