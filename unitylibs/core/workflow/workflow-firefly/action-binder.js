@@ -517,7 +517,7 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
-    if (this.widgetWrap && this.widgetWrap.style && this.widgetWrap.style.pointerEvents === 'none') return;
+    if (this.widgetWrap && window.getComputedStyle(this.widgetWrap).pointerEvents === 'none') return;
     if (!this.widget?.contains(event.target)) this.hideDropdown();
   }
 

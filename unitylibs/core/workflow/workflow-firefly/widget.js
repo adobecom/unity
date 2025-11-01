@@ -186,9 +186,7 @@ export default class UnityWidget {
             newModelContainer.append(...modelDropdown);
             actionContainer.append(newModelContainer);
           }
-        } else {
-          this.clearSelectedModelState();
-        }
+        } else this.clearSelectedModelState();
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
       if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
@@ -445,12 +443,7 @@ export default class UnityWidget {
             // If Tab originated from the Use button itself, let the button handler take over
             if (e.target && e.target.closest && e.target.closest('.use-prompt-btn.inline')) return;
             const useBtn = item.querySelector('.use-prompt-btn.inline');
-            if (useBtn) {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              e.stopPropagation();
-              try { setTimeout(() => useBtn.focus(), 0); } catch (err) { /* noop */ }
-            }
+            if (useBtn) { this.consumeEventAndFocus(e, useBtn); }
           }
         });
       }
@@ -476,7 +469,7 @@ export default class UnityWidget {
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
     if (!this.outsideDropdownHandler) {
       this.outsideDropdownHandler = (ev) => {
-        if (this.widgetWrap && this.widgetWrap.style && this.widgetWrap.style.pointerEvents === 'none') return;
+        if (this.widgetWrap && window.getComputedStyle(this.widgetWrap).pointerEvents === 'none') return;
         const wrapper = this.widget.querySelector('.autocomplete');
         if (wrapper && wrapper.contains(ev.target)) return;
         if (promptDropdownContainer && !promptDropdownContainer.classList.contains('hidden') && !promptDropdownContainer.contains(ev.target)) {
@@ -647,14 +640,212 @@ export default class UnityWidget {
     if (bar) { bar.setAttribute('aria-valuenow', '0'); try { bar.style.setProperty('--progress', '0%'); } catch (e) { /* noop */ } }
     const tm = tile.querySelector('.time-el');
     if (tm && audioEl) {
-      const fmt = (s) => {
-        const d = Math.max(0, Math.floor(Number.isFinite(s) ? s : 0));
-        return `${Math.floor(d / 60)}:${String(d % 60).padStart(2, '0')}`;
-      };
-      const setDuration = () => { tm.textContent = fmt(audioEl.duration); };
+      const setDuration = () => { tm.textContent = this.formatTime(audioEl.duration); };
       if (Number.isFinite(audioEl.duration) && audioEl.duration > 0) setDuration();
       else audioEl.addEventListener('loadedmetadata', setDuration, { once: true });
     }
+  }
+
+  consumeEventAndFocus(ev, targetEl) {
+    if (!ev) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (targetEl) {
+      try { setTimeout(() => targetEl.focus(), 0); } catch (err) { /* noop */ }
+    }
+  }
+
+  formatTime(sec) {
+    const s = Math.max(0, Math.floor(Number.isFinite(sec) ? sec : 0));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+
+  createVariationTile(v, i, strip) {
+    const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
+    const labelText = v.label || `Example ${i + 1}`;
+    const label = createTag('div', { class: 'variation-label inline' }, labelText);
+    const audioObj = new Audio(v.url);
+    audioObj.preload = 'metadata';
+    tile.audioRef = audioObj;
+    const player = createTag('div', { class: 'custom-player' });
+    const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${labelText}` });
+    const setBtnToPause = () => {
+      pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
+      pauseBtn.dataset.state = 'pause';
+      pauseBtn.setAttribute('aria-label', `Pause ${labelText}`);
+    };
+    const setBtnToPlay = () => {
+      pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
+      pauseBtn.dataset.state = 'play';
+      pauseBtn.setAttribute('aria-label', `Play ${labelText}`);
+    };
+    setBtnToPlay();
+    const cached = this.durationCache.get(v.url);
+    const timeEl = createTag('div', { class: 'time-el' }, cached ? this.formatTime(cached) : '0:00');
+    const progressBar = createTag('div', {
+      class: 'seek-bar',
+      role: 'progressbar',
+      'aria-label': `Progress ${labelText}`,
+      'aria-valuemin': '0',
+      'aria-valuemax': '100',
+      'aria-valuenow': '0',
+    });
+    const progressFill = createTag('div', { class: 'seek-fill' });
+    progressBar.append(progressFill);
+    player.append(pauseBtn, label, timeEl, progressBar);
+    tile.classList.add('is-idle');
+
+    const pauseOthers = () => {
+      strip.querySelectorAll('.variation-tile').forEach((t) => { if (t !== tile) this.resetTileToIdle(t); });
+    };
+
+    let rafId = null;
+    const startRaf = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      const tick = () => {
+        if (Number.isFinite(audioObj.duration) && audioObj.duration > 0) {
+          const pct = (audioObj.currentTime / audioObj.duration) * 100;
+          progressFill.style.width = `${pct}%`;
+          progressBar.style.setProperty('--progress', `${pct}%`);
+          progressBar.setAttribute('aria-valuenow', String(pct));
+          timeEl.textContent = this.formatTime(audioObj.currentTime);
+        }
+        if (!audioObj.paused && !audioObj.ended) rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+    };
+    const stopRaf = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
+    const resetProgress = (durSec = audioObj?.duration) => {
+      const dur = Number.isFinite(durSec) && durSec > 0 ? durSec : 0;
+      progressFill.style.width = '0%';
+      progressBar.style.setProperty('--progress', '0%');
+      progressBar.setAttribute('aria-valuenow', '0');
+      timeEl.textContent = this.formatTime(dur);
+    };
+
+    audioObj.addEventListener('loadedmetadata', () => {
+      const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
+      if (dur > 0) this.durationCache.set(v.url, dur);
+      resetProgress();
+    });
+    audioObj.addEventListener('timeupdate', () => {
+      if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
+      if (tile.classList.contains('playing')) return;
+      timeEl.textContent = this.formatTime(audioObj.duration);
+    });
+    audioObj.addEventListener('play', () => {
+      pauseOthers();
+      if (tile.dataset && tile.dataset.forceIdle) delete tile.dataset.forceIdle;
+      tile.classList.add('playing', 'selected', 'is-active');
+      tile.classList.remove('paused', 'is-idle');
+      tile.setAttribute('aria-pressed', 'true');
+      setBtnToPause();
+      pauseBtn.classList.remove('hidden');
+      startRaf();
+      timeEl.textContent = this.formatTime(audioObj.currentTime);
+    });
+    audioObj.addEventListener('pause', () => {
+      if (tile.dataset.forceIdle === '1') {
+        delete tile.dataset.forceIdle;
+        tile.classList.remove('playing', 'selected', 'paused', 'is-active');
+        tile.classList.add('is-idle');
+        pauseBtn.classList.add('hidden');
+        try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
+        resetProgress();
+        stopRaf();
+        return;
+      }
+      tile.classList.remove('playing');
+      tile.classList.add('paused');
+      tile.setAttribute('aria-pressed', 'false');
+      setBtnToPlay();
+      const hasFocus = tile.contains(document.activeElement);
+      if (!hasFocus) pauseBtn.classList.add('hidden');
+      timeEl.textContent = this.formatTime(audioObj.currentTime);
+      stopRaf();
+    });
+    audioObj.addEventListener('ended', () => {
+      tile.classList.remove('playing', 'is-active', 'paused');
+      tile.classList.add('is-idle');
+      tile.setAttribute('aria-pressed', 'false');
+      pauseBtn.classList.add('hidden');
+      try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
+      resetProgress();
+      stopRaf();
+    });
+
+    const togglePlayback = () => {
+      const isPlaying = !audioObj.paused && !audioObj.ended;
+      if (isPlaying) {
+        setBtnToPlay();
+        audioObj.pause();
+      } else {
+        setBtnToPause();
+        audioObj.play().catch(() => { setBtnToPlay(); this.showPlaybackErrorToast(); });
+      }
+    };
+    const handlePressToggle = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try { if ('pointerId' in e && pauseBtn.setPointerCapture) pauseBtn.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+      togglePlayback();
+    };
+    pauseBtn.addEventListener('pointerdown', handlePressToggle);
+    pauseBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') handlePressToggle(e); });
+    pauseBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+
+    const playIfPaused = () => {
+      if (!audioObj.paused) return;
+      setBtnToPause();
+      pauseBtn.classList.remove('hidden');
+      audioObj.play().catch(() => { this.showPlaybackErrorToast(); });
+    };
+    tile.addEventListener('click', (ev) => {
+      if (ev.target.closest && ev.target.closest('.pause-btn')) return;
+      ev.preventDefault();
+      playIfPaused();
+    });
+    tile.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        togglePlayback();
+        return;
+      }
+      if (ev.key === 'Tab' && !ev.shiftKey) {
+        const detailsEl = tile.closest('.sound-details');
+        const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+        const idx = tiles.indexOf(tile);
+        if (idx > -1 && idx < tiles.length - 1) {
+          const nextTile = tiles[idx + 1];
+          this.consumeEventAndFocus(ev, nextTile);
+          return;
+        }
+        if (detailsEl) {
+          const nextSuggestion = detailsEl.nextElementSibling && detailsEl.nextElementSibling.classList?.contains('drop-item')
+            ? detailsEl.nextElementSibling
+            : null;
+          if (nextSuggestion) { this.consumeEventAndFocus(ev, nextSuggestion); }
+        }
+      }
+      if (ev.key === 'Tab' && ev.shiftKey) {
+        const detailsEl = tile.closest('.sound-details');
+        const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+        const idx = tiles.indexOf(tile);
+        if (idx > 0) {
+          const prevTile = tiles[idx - 1];
+          this.consumeEventAndFocus(ev, prevTile);
+          return;
+        }
+        if (detailsEl) {
+          const prevRow = detailsEl.previousElementSibling;
+          const useBtn = prevRow?.querySelector('.use-prompt-btn.inline');
+          if (useBtn) { this.consumeEventAndFocus(ev, useBtn); }
+        }
+      }
+    });
+
+    tile.append(player);
+    return tile;
   }
 
   resetAllSoundVariations(rootEl) {
@@ -666,12 +857,9 @@ export default class UnityWidget {
   }
 
   toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
-    const next = item.nextElementSibling;
-    if (next && next.classList.contains('sound-details')) {
-      this.resetAllSoundVariations(dropdown);
-      return;
-    }
     this.resetAllSoundVariations(dropdown);
+    const next = item.nextElementSibling;
+    if (next && next.classList.contains('sound-details')) return;
     const inlineBtn = createTag('button', {
       class: 'use-prompt-btn inline',
       'data-prompt-index': String(promptIndex),
@@ -699,21 +887,9 @@ export default class UnityWidget {
           ? item.nextElementSibling
           : null;
         const firstTile = detailsEl?.querySelector('.variation-tile');
-        if (firstTile) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          e.stopPropagation();
-          try {
-            setTimeout(() => firstTile.focus(), 0);
-          } catch (err) { /* noop */ }
-        }
+        if (firstTile) { this.consumeEventAndFocus(e, firstTile); }
       }
-      if (e.key === 'Tab' && e.shiftKey) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-        try { setTimeout(() => item.focus(), 0); } catch (err) { /* noop */ }
-      }
+      if (e.key === 'Tab' && e.shiftKey) { this.consumeEventAndFocus(e, item); }
     });
     item.classList.add('sound-expanded');
     item.append(inlineBtn);
@@ -724,218 +900,8 @@ export default class UnityWidget {
   renderSoundDetails(promptObj) {
     const details = createTag('div', { class: 'sound-details', role: 'region' });
     const strip = createTag('div', { class: 'variation-strip' });
-    const vars = Array.isArray(promptObj.variations)
-      ? promptObj.variations
-      : [];
-    vars.forEach((v, i) => {
-      const tile = createTag('div', { class: 'variation-tile', role: 'button', tabindex: '0', 'aria-pressed': 'false' });
-      const label = createTag('div', { class: 'variation-label inline' }, v.label || `Example ${i + 1}`);
-      const audioObj = new Audio(v.url);
-      audioObj.preload = 'metadata';
-      tile.audioRef = audioObj;
-      const player = createTag('div', { class: 'custom-player' });
-      const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${v.label || `Example ${i + 1}`}` });
-      const mouseInside = false;
-      const setBtnToPause = () => {
-        pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
-        pauseBtn.dataset.state = 'pause';
-        pauseBtn.setAttribute('aria-label', `Pause ${v.label || `Example ${i + 1}`}`);
-      };
-      const setBtnToPlay = () => {
-        pauseBtn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
-        pauseBtn.dataset.state = 'play';
-        pauseBtn.setAttribute('aria-label', `Play ${v.label || `Example ${i + 1}`}`);
-      };
-      setBtnToPlay();
-      const cached = this.durationCache.get(v.url);
-      const timeEl = createTag('div', { class: 'time-el' }, cached ? `${Math.floor(cached / 60)}:${String(Math.floor(cached % 60)).padStart(2, '0')}` : '0:00');
-      const progressBar = createTag('div', {
-        class: 'seek-bar',
-        role: 'progressbar',
-        'aria-label': `Progress ${v.label || `Example ${i + 1}`}`,
-        'aria-valuemin': '0',
-        'aria-valuemax': '100',
-        'aria-valuenow': '0',
-        style: 'height:6px;border-radius:3px;overflow:hidden;flex:1;',
-      });
-      const progressFill = createTag('div', { class: 'seek-fill', style: 'height:100%;width:0%;background:#3B63FB;border-radius:3px;transition:width 100ms linear;' });
-      progressBar.append(progressFill);
-      player.append(pauseBtn, label, timeEl, progressBar);
-      tile.classList.add('is-idle');
-      const pauseOthers = () => {
-        strip.querySelectorAll('.variation-tile').forEach((t) => {
-          if (t !== tile) this.resetTileToIdle(t);
-        });
-      };
-      const fmtTime = (sec) => {
-        const s = Math.max(0, Math.floor(sec || 0));
-        const m = Math.floor(s / 60);
-        const r = s % 60;
-        return `${m}:${String(r).padStart(2, '0')}`;
-      };
-
-      let rafId = null;
-      const startRaf = () => {
-        if (rafId) cancelAnimationFrame(rafId);
-        const tick = () => {
-          if (Number.isFinite(audioObj.duration) && audioObj.duration > 0) {
-            const pct = (audioObj.currentTime / audioObj.duration) * 100;
-            progressFill.style.width = `${pct}%`;
-            progressBar.style.setProperty('--progress', `${pct}%`);
-            progressBar.setAttribute('aria-valuenow', String(pct));
-            timeEl.textContent = fmtTime(audioObj.currentTime);
-          }
-          if (!audioObj.paused && !audioObj.ended) rafId = requestAnimationFrame(tick);
-        };
-        rafId = requestAnimationFrame(tick);
-      };
-      const stopRaf = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
-      const resetProgress = (durSec = audioObj?.duration) => {
-        const dur = Number.isFinite(durSec) && durSec > 0 ? durSec : 0;
-        progressFill.style.width = '0%';
-        progressBar.style.setProperty('--progress', '0%');
-        progressBar.setAttribute('aria-valuenow', '0');
-        timeEl.textContent = fmtTime(dur);
-      };
-      audioObj.addEventListener('loadedmetadata', () => {
-        const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
-        if (dur > 0) this.durationCache.set(v.url, dur);
-        resetProgress();
-      });
-      audioObj.addEventListener('timeupdate', () => {
-        if (!Number.isFinite(audioObj.duration) || audioObj.duration === 0) return;
-        if (tile.classList.contains('playing')) return;
-        timeEl.textContent = fmtTime(audioObj.duration);
-      });
-      audioObj.addEventListener('play', () => {
-        pauseOthers();
-        if (tile.dataset && tile.dataset.forceIdle) delete tile.dataset.forceIdle;
-        tile.classList.add('playing', 'selected', 'is-active');
-        tile.classList.remove('paused', 'is-idle');
-        tile.setAttribute('aria-pressed', 'true');
-        setBtnToPause();
-        pauseBtn.classList.remove('hidden');
-        startRaf();
-        timeEl.textContent = fmtTime(audioObj.currentTime);
-      });
-      audioObj.addEventListener('pause', () => {
-        if (tile.dataset.forceIdle === '1') {
-          delete tile.dataset.forceIdle;
-          tile.classList.remove('playing', 'selected', 'paused', 'is-active');
-          tile.classList.add('is-idle');
-          pauseBtn.classList.add('hidden');
-          try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
-          resetProgress();
-          stopRaf();
-          return;
-        }
-        tile.classList.remove('playing');
-        tile.classList.add('paused');
-        tile.setAttribute('aria-pressed', 'false');
-        setBtnToPlay();
-        const hasFocus = tile.contains(document.activeElement);
-        if (!mouseInside && !hasFocus) pauseBtn.classList.add('hidden');
-        timeEl.textContent = fmtTime(audioObj.currentTime);
-        stopRaf();
-      });
-      audioObj.addEventListener('ended', () => {
-        tile.classList.remove('playing', 'is-active', 'paused');
-        tile.classList.add('is-idle');
-        tile.setAttribute('aria-pressed', 'false');
-        pauseBtn.classList.add('hidden');
-        try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
-        resetProgress();
-        stopRaf();
-      });
-
-      const togglePlayback = () => {
-        const isPlaying = !audioObj.paused && !audioObj.ended;
-        if (isPlaying) {
-          setBtnToPlay();
-          audioObj.pause();
-        } else {
-          setBtnToPause();
-          audioObj.play().catch(() => { setBtnToPlay(); this.showPlaybackErrorToast(); });
-        }
-      };
-      const handlePressToggle = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try { if ('pointerId' in e && pauseBtn.setPointerCapture) pauseBtn.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
-        togglePlayback();
-      };
-      pauseBtn.addEventListener('pointerdown', handlePressToggle);
-      pauseBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') handlePressToggle(e); });
-      pauseBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
-
-      const playIfPaused = () => {
-        if (!audioObj.paused) return;
-        setBtnToPause();
-        pauseBtn.classList.remove('hidden');
-        audioObj.play().catch(() => { this.showPlaybackErrorToast(); });
-      };
-      tile.addEventListener('click', (ev) => {
-        if (ev.target.closest && ev.target.closest('.pause-btn')) return; // button handles its own
-        ev.preventDefault();
-        playIfPaused();
-      });
-      tile.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault();
-          togglePlayback();
-          return;
-        }
-        if (ev.key === 'Tab' && !ev.shiftKey) {
-          const detailsEl = tile.closest('.sound-details');
-          const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
-          const idx = tiles.indexOf(tile);
-          if (idx > -1 && idx < tiles.length - 1) {
-            ev.preventDefault();
-            ev.stopImmediatePropagation();
-            ev.stopPropagation();
-            const nextTile = tiles[idx + 1];
-            try { setTimeout(() => nextTile.focus(), 0); } catch (e) { /* noop */ }
-            return;
-          }
-          if (detailsEl) {
-            const nextSuggestion = detailsEl.nextElementSibling && detailsEl.nextElementSibling.classList?.contains('drop-item')
-              ? detailsEl.nextElementSibling
-              : null;
-            if (nextSuggestion) {
-              ev.preventDefault();
-              ev.stopImmediatePropagation();
-              ev.stopPropagation();
-              try { setTimeout(() => nextSuggestion.focus(), 0); } catch (e) { /* noop */ }
-            }
-          }
-        }
-        if (ev.key === 'Tab' && ev.shiftKey) {
-          const detailsEl = tile.closest('.sound-details');
-          const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
-          const idx = tiles.indexOf(tile);
-          if (idx > 0) {
-            ev.preventDefault();
-            ev.stopImmediatePropagation();
-            ev.stopPropagation();
-            const prevTile = tiles[idx - 1];
-            try { setTimeout(() => prevTile.focus(), 0); } catch (e) { /* noop */ }
-            return;
-          }
-          if (detailsEl) {
-            const prevRow = detailsEl.previousElementSibling;
-            const useBtn = prevRow?.querySelector('.use-prompt-btn.inline');
-            if (useBtn) {
-              ev.preventDefault();
-              ev.stopImmediatePropagation();
-              ev.stopPropagation();
-              try { setTimeout(() => useBtn.focus(), 0); } catch (e) { /* noop */ }
-            }
-          }
-        }
-      });
-      tile.append(player);
-      strip.append(tile);
-    });
+    const vars = Array.isArray(promptObj.variations) ? promptObj.variations : [];
+    vars.forEach((v, i) => { const tile = this.createVariationTile(v, i, strip); strip.append(tile); });
     details.append(strip);
     return details;
   }
