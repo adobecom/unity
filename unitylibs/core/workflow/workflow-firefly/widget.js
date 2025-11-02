@@ -665,7 +665,7 @@ export default class UnityWidget {
     const labelText = v.label || `Example ${i + 1}`;
     const label = createTag('div', { class: 'variation-label inline' }, labelText);
     const audioObj = new Audio(v.url);
-    audioObj.preload = 'metadata';
+    audioObj.preload = 'auto';
     tile.audioRef = audioObj;
     const player = createTag('div', { class: 'custom-player' });
     const pauseBtn = createTag('button', { class: 'pause-btn hidden', 'aria-label': `Pause ${labelText}` });
@@ -855,9 +855,15 @@ export default class UnityWidget {
   }
 
   toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
-    this.resetAllSoundVariations(dropdown);
     const next = item.nextElementSibling;
-    if (next && next.classList.contains('sound-details')) return;
+    if (next && next.classList.contains('sound-details')) {
+      next.remove();
+      item.classList.remove('sound-expanded');
+      const inlineExisting = item.querySelector('.use-prompt-btn.inline');
+      if (inlineExisting) inlineExisting.remove();
+      return;
+    }
+    this.resetAllSoundVariations(dropdown);
     const inlineBtn = createTag('button', {
       class: 'use-prompt-btn inline',
       'data-prompt-index': String(promptIndex),
