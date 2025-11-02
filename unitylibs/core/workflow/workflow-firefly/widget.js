@@ -811,35 +811,33 @@ export default class UnityWidget {
         togglePlayback();
         return;
       }
-      if (ev.key === 'Tab' && !ev.shiftKey) {
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
         const detailsEl = tile.closest('.sound-details');
         const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
+        if (!tiles.length) return;
         const idx = tiles.indexOf(tile);
-        if (idx > -1 && idx < tiles.length - 1) {
-          const nextTile = tiles[idx + 1];
-          this.consumeEventAndFocus(ev, nextTile);
-          return;
-        }
+        const dir = ev.key === 'ArrowRight' ? 1 : -1;
+        const nextIdx = (idx + dir + tiles.length) % tiles.length;
+        const target = tiles[nextIdx];
+        this.consumeEventAndFocus(ev, target);
+        return;
+      }
+      if (ev.key === 'Tab' && !ev.shiftKey) {
+        const detailsEl = tile.closest('.sound-details');
         if (detailsEl) {
           const nextSuggestion = detailsEl.nextElementSibling && detailsEl.nextElementSibling.classList?.contains('drop-item')
             ? detailsEl.nextElementSibling
             : null;
-          if (nextSuggestion) { this.consumeEventAndFocus(ev, nextSuggestion); }
+          if (nextSuggestion) this.consumeEventAndFocus(ev, nextSuggestion);
         }
+        return;
       }
       if (ev.key === 'Tab' && ev.shiftKey) {
         const detailsEl = tile.closest('.sound-details');
-        const tiles = detailsEl ? Array.from(detailsEl.querySelectorAll('.variation-tile')) : [];
-        const idx = tiles.indexOf(tile);
-        if (idx > 0) {
-          const prevTile = tiles[idx - 1];
-          this.consumeEventAndFocus(ev, prevTile);
-          return;
-        }
         if (detailsEl) {
           const prevRow = detailsEl.previousElementSibling;
           const useBtn = prevRow?.querySelector('.use-prompt-btn.inline');
-          if (useBtn) { this.consumeEventAndFocus(ev, useBtn); }
+          if (useBtn) this.consumeEventAndFocus(ev, useBtn);
         }
       }
     });
