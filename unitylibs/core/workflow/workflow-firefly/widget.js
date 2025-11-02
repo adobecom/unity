@@ -857,6 +857,7 @@ export default class UnityWidget {
   toggleSoundDetails(dropdown, item, promptObj, promptIndex) {
     const next = item.nextElementSibling;
     if (next && next.classList.contains('sound-details')) {
+      next.querySelectorAll('.variation-tile').forEach((t) => { this.resetTileToIdle(t); });
       next.remove();
       item.classList.remove('sound-expanded');
       const inlineExisting = item.querySelector('.use-prompt-btn.inline');
