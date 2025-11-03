@@ -199,6 +199,38 @@ describe('UploadHandler', () => {
     });
   });
 
+  describe('getVerbForFeature', () => {
+    it('should transform pdf-ai to chat-pdf-pdf-ai', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['pdf-ai'];
+      const verb = uploadHandler.getVerbForFeature();
+      expect(verb).to.equal('chat-pdf-pdf-ai');
+    });
+
+    it('should return other verbs unchanged', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['chat-pdf'];
+      const verb = uploadHandler.getVerbForFeature();
+      expect(verb).to.equal('chat-pdf');
+    });
+
+    it('should return compress-pdf unchanged', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+      const verb = uploadHandler.getVerbForFeature();
+      expect(verb).to.equal('compress-pdf');
+    });
+
+    it('should handle empty string', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = [''];
+      const verb = uploadHandler.getVerbForFeature();
+      expect(verb).to.equal('');
+    });
+
+    it('should handle special characters in feature name', () => {
+      mockActionBinder.workflowCfg.enabledFeatures = ['pdf-to-word'];
+      const verb = uploadHandler.getVerbForFeature();
+      expect(verb).to.equal('pdf-to-word');
+    });
+  });
+
   describe('checkPageNumCount', () => {
     it('should validate normal page count', async () => {
       const assetData = { id: 'asset-123' };
