@@ -581,15 +581,19 @@ export default class UnityWidget {
         const itemEnv = item.env || 'prod';
         if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          const labelsRaw = (this.workflowCfg?.placeholder?.['placeholder-variation-labels'] || '').trim();
-          const urlsRaw = typeof item.variationUrls === 'string' ? item.variationUrls : '';
-          const split = (str) => str.split('||').map((s) => s.trim()).filter((s) => s);
-          const labels = split(labelsRaw);
-          const urls = split(urlsRaw);
-          const variations = labels.map((lbl, idx) => ({
-            label: (lbl && lbl.trim()) || `Variation ${idx + 1}`,
-            url: urls[idx] || '',
-          }));
+          let variations = [];
+          if (item.verb === 'sound') {
+            const ph = this.workflowCfg?.placeholder || {};
+            const labels = Object.keys(ph)
+              .filter((k) => k.startsWith('placeholder-variation-label-'))
+              .map((k) => ({ idx: Number.parseInt(k.split('-').pop(), 10), val: (ph[k] || '').trim() }))
+              .filter(({ idx, val }) => Number.isFinite(idx) && val)
+              .sort((a, b) => a.idx - b.idx)
+              .map(({ val }) => val);
+            const urls = (typeof item.variationUrls === 'string' ? item.variationUrls : '')
+              .split('||').map((s) => s.trim()).filter((s) => s);
+            variations = labels.map((lbl, idx) => ({ label: lbl, url: urls[idx] || '' }));
+          }
           promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations });
         }
       });
