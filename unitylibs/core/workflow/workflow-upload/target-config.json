@@ -6,6 +6,7 @@
     "target": ".drop-zone",
     "productTag-photoshop": "PS",
     "productTag-lightroom": "LR",
+    "productTag-firefly": "FF",
     "limits": {
       "maxNumFiles": 1
     },

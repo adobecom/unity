@@ -100,7 +100,7 @@ body > .splash-loader {
 		background: #FA0F00;
 }
 
-:root:has(.workflow-upload.product-photoshop, .workflow-upload.product-lightroom) .progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-fill {
+:root:has(.workflow-upload.product-photoshop, .workflow-upload.product-lightroom, .workflow-upload.product-firefly) .progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-fill {
   background: #1273E6;
 }
 
