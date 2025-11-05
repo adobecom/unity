@@ -206,6 +206,7 @@ class WfInitiator {
           'chat-pdf',
           'chat-pdf-student',
           'summarize-pdf',
+          'pdf-ai',
         ]),
       },
       'workflow-ai': {
