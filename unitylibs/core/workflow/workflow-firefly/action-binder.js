@@ -144,11 +144,15 @@ export default class ActionBinder {
       alertContent.append(alertIcon, alertClose);
       const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
       const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
-      alertClose.addEventListener('click', (e) => {
+      const closeToast = (e) => {
         e.preventDefault();
         e.stopPropagation();
         errholder.classList.remove('show');
         if (promptBarEl) promptBarEl.style.pointerEvents = 'auto';
+      };
+      alertClose.addEventListener('click', closeToast);
+      alertClose.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') closeToast(e);
       });
       decorateDefaultLinkAnalytics(errholder);
       promptBarEl.prepend(errholder);

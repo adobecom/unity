@@ -763,8 +763,7 @@ export default class UnityWidget {
       tile.classList.add('paused');
       tile.setAttribute('aria-pressed', 'false');
       setBtnToPlay();
-      const hasFocus = tile.contains(document.activeElement);
-      if (!hasFocus) pauseBtn.classList.add('hidden');
+      pauseBtn.classList.remove('hidden');
       timeEl.textContent = this.formatTime(audioObj.currentTime);
       stopRaf();
     });
