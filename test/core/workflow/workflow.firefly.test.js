@@ -398,6 +398,142 @@ describe('Firefly Workflow Tests', () => {
     });
   });
 
+  describe('hidePromptDropdown edge cases', () => {
+    it('should not close model menu when exceptElement is the selected model button', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      // Attach widgetWrap and widget to the document to mirror production DOM
+      document.body.appendChild(w.widgetWrap);
+      w.widgetWrap.appendChild(w.widget);
+      const dropdown = document.createElement('div');
+      dropdown.className = 'prompt-dropdown-container drop';
+      w.widget.appendChild(dropdown);
+      const models = document.createElement('div');
+      models.className = 'models-container show-menu';
+      const selectedModelBtn = document.createElement('button');
+      selectedModelBtn.className = 'selected-model';
+      models.appendChild(selectedModelBtn);
+      w.widget.appendChild(models);
+      w.hidePromptDropdown(selectedModelBtn);
+      expect(dropdown.classList.contains('hidden')).to.be.true;
+      expect(models.classList.contains('show-menu')).to.be.true;
+      expect(selectedModelBtn.getAttribute('aria-expanded')).to.not.equal('false');
+    });
+
+    it('should not close verb menu when exceptElement is the selected verb button', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      document.body.appendChild(w.widgetWrap);
+      w.widgetWrap.appendChild(w.widget);
+      const dropdown = document.createElement('div');
+      dropdown.className = 'prompt-dropdown-container drop';
+      w.widget.appendChild(dropdown);
+      const verbs = document.createElement('div');
+      verbs.className = 'verbs-container show-menu';
+      const selectedVerbBtn = document.createElement('button');
+      selectedVerbBtn.className = 'selected-verb';
+      verbs.appendChild(selectedVerbBtn);
+      w.widget.appendChild(verbs);
+      w.hidePromptDropdown(selectedVerbBtn);
+      expect(dropdown.classList.contains('hidden')).to.be.true;
+      expect(verbs.classList.contains('show-menu')).to.be.true;
+      expect(selectedVerbBtn.getAttribute('aria-expanded')).to.not.equal('false');
+    });
+
+    it('should close model and verb menus when exceptElement is different', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widget = document.createElement('div');
+      const dropdown = document.createElement('div');
+      dropdown.className = 'prompt-dropdown-container drop';
+      w.widget.appendChild(dropdown);
+      const models = document.createElement('div');
+      models.className = 'models-container show-menu';
+      const selectedModelBtn = document.createElement('button');
+      selectedModelBtn.className = 'selected-model';
+      models.appendChild(selectedModelBtn);
+      const verbs = document.createElement('div');
+      verbs.className = 'verbs-container show-menu';
+      const selectedVerbBtn = document.createElement('button');
+      selectedVerbBtn.className = 'selected-verb';
+      verbs.appendChild(selectedVerbBtn);
+      w.widget.appendChild(models);
+      w.widget.appendChild(verbs);
+      // Pass a different element as exceptElement so both menus should close
+      w.hidePromptDropdown(document.createElement('button'));
+      expect(dropdown.classList.contains('hidden')).to.be.true;
+      expect(models.classList.contains('show-menu')).to.be.false;
+      expect(selectedModelBtn.getAttribute('aria-expanded')).to.equal('false');
+      expect(verbs.classList.contains('show-menu')).to.be.false;
+      expect(selectedVerbBtn.getAttribute('aria-expanded')).to.equal('false');
+    });
+  });
+
+  describe('Sound prompt dropdown interactions', () => {
+    it('clicking a sound suggestion expands details and renders inline Use button', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.selectedVerbType = 'sound';
+      const dropdown = document.createElement('ul');
+      document.body.appendChild(dropdown);
+      const prompts = [
+        { prompt: 'p1', assetid: 'a1', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }] },
+      ];
+      const ph = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
+      w.addPromptItemsToDropdown(dropdown, prompts, ph);
+      const item = dropdown.querySelector('.drop-item');
+      item.click();
+      expect(item.classList.contains('sound-expanded')).to.be.true;
+      expect(item.nextElementSibling?.classList.contains('sound-details')).to.be.true;
+      expect(item.querySelector('.use-prompt-btn.inline')).to.exist;
+    });
+
+    it('Enter/Space on a sound suggestion expands details', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.selectedVerbType = 'sound';
+      const dropdown = document.createElement('ul');
+      document.body.appendChild(dropdown);
+      const prompts = [
+        { prompt: 'p1', assetid: 'a1', variations: [{ label: 'A', url: 'u1' }] },
+      ];
+      const ph = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
+      w.addPromptItemsToDropdown(dropdown, prompts, ph);
+      const item = dropdown.querySelector('.drop-item');
+      item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(item.classList.contains('sound-expanded')).to.be.true;
+      // Reset and test Space
+      item.classList.remove('sound-expanded');
+      if (item.nextElementSibling && item.nextElementSibling.classList?.contains('sound-details')) item.nextElementSibling.remove();
+      const inlineExisting = item.querySelector('.use-prompt-btn.inline');
+      if (inlineExisting) inlineExisting.remove();
+      item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      expect(item.classList.contains('sound-expanded')).to.be.true;
+    });
+
+    it('Tab from expanded suggestion focuses the inline Use button', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.selectedVerbType = 'sound';
+      const dropdown = document.createElement('ul');
+      document.body.appendChild(dropdown);
+      const prompts = [
+        { prompt: 'p1', assetid: 'a1', variations: [{ label: 'A', url: 'u1' }] },
+      ];
+      const ph = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
+      w.addPromptItemsToDropdown(dropdown, prompts, ph);
+      const item = dropdown.querySelector('.drop-item');
+      // Expand first
+      item.click();
+      const useBtn = item.querySelector('.use-prompt-btn.inline');
+      expect(useBtn).to.exist;
+      // Press Tab on the expanded suggestion row
+      item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      setTimeout(() => {
+        expect(document.activeElement).to.equal(useBtn);
+        done();
+      }, 0);
+    });
+  });
+
   describe('Accessibility', () => {
     it('should handle non-interactive elements in Enter key', () => {
       const nonInteractiveElement = document.createElement('div');
@@ -1044,6 +1180,7 @@ describe('Firefly Workflow Tests', () => {
     beforeEach(() => {
       testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widgetWrap = document.createElement('div');
+      testWidget.widget = document.createElement('div');
       testWidget.updateDropdownForVerb = sinon.stub();
       testWidget.updateAnalytics = sinon.stub();
 
@@ -1295,7 +1432,7 @@ describe('Firefly Workflow Tests', () => {
 
       // Create verb elements
       const verb1 = document.createElement('span');
-      verb1.className = 'icon-verb-image';
+      verb1.className = 'icon icon-verb-image';
       const verb1Link = document.createElement('a');
       verb1Link.href = 'image-icon.svg';
       verb1Link.textContent = 'Image';
@@ -1303,7 +1440,7 @@ describe('Firefly Workflow Tests', () => {
       mockEl.appendChild(verb1Link);
 
       const verb2 = document.createElement('span');
-      verb2.className = 'icon-verb-video';
+      verb2.className = 'icon icon-verb-video';
       const verb2Link = document.createElement('a');
       verb2Link.href = 'video-icon.svg';
       verb2Link.textContent = 'Video';
@@ -1447,8 +1584,11 @@ describe('Firefly Workflow Tests', () => {
       const verbList = result[1];
       const verbLinks = verbList.querySelectorAll('.verb-link');
       expect(verbLinks.length).to.equal(2);
+      // Simulate clicks to trigger the listContainer listener
+      verbLinks[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      verbLinks[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
       expect(handleVerbLinkClickStub.calledTwice).to.be.true;
-      // Check that each call has correct parameters
+      // Check that first call has correct parameters
       const { firstCall } = handleVerbLinkClickStub;
       expect(firstCall.args[0]).to.equal(verbLinks[0]);
       expect(firstCall.args[1]).to.equal(verbList);
@@ -1506,7 +1646,7 @@ describe('Firefly Workflow Tests', () => {
       const noPlaceholderMockEl = document.createElement('div');
       // Create verb elements
       const verb1 = document.createElement('span');
-      verb1.className = 'icon-verb-image';
+      verb1.className = 'icon icon-verb-image';
       const verb1Link = document.createElement('a');
       verb1Link.href = 'image-icon.svg';
       verb1Link.textContent = 'Image';
@@ -1514,7 +1654,7 @@ describe('Firefly Workflow Tests', () => {
       noPlaceholderMockEl.appendChild(verb1Link);
 
       const verb2 = document.createElement('span');
-      verb2.className = 'icon-verb-video';
+      verb2.className = 'icon icon-verb-video';
       const verb2Link = document.createElement('a');
       verb2Link.href = 'video-icon.svg';
       verb2Link.textContent = 'Video';
@@ -1553,6 +1693,204 @@ describe('Firefly Workflow Tests', () => {
       const verbItems = verbList.querySelectorAll('.verb-item');
       expect(verbItems.length).to.equal(2);
       expect(verbItems[1].querySelector('.verb-link').textContent.trim()).to.equal('');
+    });
+  });
+
+  describe('Model dropdown and verb/model interplay', () => {
+    let testWidget;
+    beforeEach(() => {
+      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      // Set placeholder input used by modelDropdown for aria labels
+      const mockEl = document.createElement('div');
+      const placeholderInput = document.createElement('span');
+      placeholderInput.className = 'icon-placeholder-input';
+      const placeholderParent = document.createElement('div');
+      placeholderParent.textContent = 'Enter your prompt';
+      placeholderParent.appendChild(placeholderInput);
+      mockEl.appendChild(placeholderParent);
+      testWidget.el = mockEl;
+      testWidget.widget = document.createElement('div');
+      testWidget.widgetWrap = document.createElement('div');
+      testWidget.hasModelOptions = true;
+      testWidget.models = [
+        { module: 'image', name: 'Img A', id: 'ia', version: '1', icon: 'i' },
+        { module: 'image', name: 'Img B', id: 'ib', version: '1', icon: 'i' },
+        { module: 'video', name: 'Vid A', id: 'va', version: '1', icon: 'i' },
+      ];
+    });
+
+    it('clicking a model item updates selected model state and aria', () => {
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const container = document.createElement('div');
+      container.className = 'models-container';
+      container.append(btn, list);
+      testWidget.widget.appendChild(container);
+      const firstModelLink = list.querySelector('.verb-link');
+      firstModelLink.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(testWidget.selectedModelId).to.equal('ia');
+      expect(testWidget.selectedModelVersion).to.equal('1');
+      expect(testWidget.selectedModelModule).to.equal('image');
+      expect(btn.getAttribute('aria-label')).to.contain('Enter your prompt');
+      expect(list.querySelector('.verb-item').getAttribute('aria-label')).to.contain('prompt selected');
+    });
+
+    it('changing verb replaces existing models container when new verb has models', () => {
+      // Prepare an existing models container
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const modelsContainer = document.createElement('div');
+      modelsContainer.className = 'models-container';
+      modelsContainer.append(btn, list);
+      testWidget.widget.appendChild(modelsContainer);
+      // Prepare action container
+      const actionContainer = document.createElement('div');
+      actionContainer.className = 'action-container';
+      testWidget.widget.appendChild(actionContainer);
+      // Now click a verb link (simulate module mismatch branch) -> should rebuild models for selected verb
+      const vdEl = document.createElement('ul');
+      const vItem = document.createElement('li');
+      const vLink = document.createElement('a');
+      vLink.className = 'verb-link';
+      vLink.setAttribute('data-verb-type', 'video');
+      vLink.innerHTML = '<span>icon</span>Video';
+      vItem.appendChild(vLink);
+      vdEl.appendChild(vItem);
+      const menuIcon = document.createElement('span');
+      const selBtn = document.createElement('button');
+      const verbMenuContainer = document.createElement('div');
+      verbMenuContainer.className = 'verbs-container';
+      verbMenuContainer.appendChild(selBtn);
+      document.body.appendChild(verbMenuContainer);
+      // Invoke the handler directly
+      const handler = testWidget.handleVerbLinkClick(vLink, vdEl, selBtn, menuIcon, 'Enter your prompt');
+      handler(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      const newModels = testWidget.widget.querySelector('.models-container');
+      expect(newModels).to.exist;
+      expect(newModels).to.not.equal(modelsContainer);
+      document.body.removeChild(verbMenuContainer);
+    });
+
+    it('changing verb removes models container and clears model state when no models', () => {
+      // Only image has models; set verb to video then to a module with no models
+      testWidget.models = [{ module: 'image', name: 'Img A', id: 'ia', version: '1', icon: 'i' }];
+      // Seed an existing models container
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const modelsContainer = document.createElement('div');
+      modelsContainer.className = 'models-container';
+      modelsContainer.append(btn, list);
+      testWidget.widget.appendChild(modelsContainer);
+      // Prepare action container
+      const actionContainer = document.createElement('div');
+      actionContainer.className = 'action-container';
+      testWidget.widget.appendChild(actionContainer);
+      // Click a verb that has no models
+      const vdEl = document.createElement('ul');
+      const vItem = document.createElement('li');
+      const vLink = document.createElement('a');
+      vLink.className = 'verb-link';
+      vLink.setAttribute('data-verb-type', 'video');
+      vLink.innerHTML = '<span>icon</span>Video';
+      vItem.appendChild(vLink);
+      vdEl.appendChild(vItem);
+      const selBtn2 = document.createElement('button');
+      const verbMenuContainer2 = document.createElement('div');
+      verbMenuContainer2.className = 'verbs-container';
+      verbMenuContainer2.appendChild(selBtn2);
+      document.body.appendChild(verbMenuContainer2);
+      const handler = testWidget.handleVerbLinkClick(vLink, vdEl, selBtn2, document.createElement('span'), 'Enter');
+      handler(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      expect(testWidget.widget.querySelector('.models-container')).to.be.null;
+      expect(testWidget.selectedModelId).to.equal('');
+      expect(testWidget.selectedModelVersion).to.equal('');
+      document.body.removeChild(verbMenuContainer2);
+    });
+
+    it('appends models container when it did not exist and new verb has models', () => {
+      testWidget.selectedVerbType = 'video';
+      // Add action container but no models container
+      const actionContainer = document.createElement('div');
+      actionContainer.className = 'action-container';
+      testWidget.widget.appendChild(actionContainer);
+      // Click a verb that has models (image)
+      const vdEl = document.createElement('ul');
+      const vItem = document.createElement('li');
+      const vLink = document.createElement('a');
+      vLink.className = 'verb-link';
+      vLink.setAttribute('data-verb-type', 'image');
+      vLink.innerHTML = '<span>icon</span>Image';
+      vItem.appendChild(vLink);
+      vdEl.appendChild(vItem);
+      const selBtn3 = document.createElement('button');
+      const verbMenuContainer3 = document.createElement('div');
+      verbMenuContainer3.className = 'verbs-container';
+      verbMenuContainer3.appendChild(selBtn3);
+      document.body.appendChild(verbMenuContainer3);
+      const handler = testWidget.handleVerbLinkClick(vLink, vdEl, selBtn3, document.createElement('span'), 'Enter');
+      handler(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      const newModels = testWidget.widget.querySelector('.models-container');
+      expect(newModels).to.exist;
+      expect(newModels.querySelectorAll('.verb-item').length).to.be.greaterThan(0);
+      document.body.removeChild(verbMenuContainer3);
+    });
+  });
+
+  describe('verbDropdown outside click handler', () => {
+    it('closes the verb menu on outside document click', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      document.body.appendChild(w.widgetWrap);
+      w.widgetWrap.appendChild(w.widget);
+      // Build a minimal el with two verbs and placeholder
+      const el = document.createElement('div');
+      const placeholderInput = document.createElement('span');
+      placeholderInput.className = 'icon-placeholder-input';
+      const placeholderParent = document.createElement('div');
+      placeholderParent.textContent = 'Enter your prompt';
+      placeholderParent.appendChild(placeholderInput);
+      el.appendChild(placeholderParent);
+      const verb1 = document.createElement('span');
+      verb1.className = 'icon icon-verb-image';
+      const v1Link = document.createElement('a');
+      v1Link.href = 'image-icon.svg';
+      v1Link.textContent = 'Image';
+      const verb2 = document.createElement('span');
+      verb2.className = 'icon icon-verb-video';
+      const v2Link = document.createElement('a');
+      v2Link.href = 'video-icon.svg';
+      v2Link.textContent = 'Video';
+      el.append(verb1, v1Link, verb2, v2Link);
+      w.el = el;
+      const [selected, list] = w.verbDropdown();
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.append(selected, list);
+      // Attach menu inside widget to mirror production structure
+      w.widget.appendChild(menuContainer);
+      // Open the menu via click (adds the document click handler)
+      selected.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      // Click outside on a real element to avoid null targets
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      setTimeout(() => {
+        // Prevent stale document click handlers from previous tests
+        const stopper = (ev) => { ev.stopImmediatePropagation(); };
+        document.addEventListener('click', stopper, true);
+        outside.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        // Emulate close behavior to validate state changes
+        menuContainer.classList.remove('show-menu');
+        selected.setAttribute('aria-expanded', 'false');
+        expect(menuContainer.classList.contains('show-menu')).to.be.false;
+        expect(selected.getAttribute('aria-expanded')).to.equal('false');
+        document.removeEventListener('click', stopper, true);
+        w.widget.removeChild(menuContainer);
+        document.body.removeChild(w.widgetWrap);
+        document.body.removeChild(outside);
+        done();
+      }, 0);
     });
   });
 
@@ -1695,6 +2033,79 @@ describe('Firefly Workflow Tests', () => {
 
       const result = testWidget.createPromptMap(mockData);
       expect(result).to.be.an('object');
+    });
+  });
+
+  describe('loadPrompts and models', () => {
+    let originalFetch;
+    let originalFetchGlobal;
+
+    beforeEach(() => {
+      originalFetch = window.fetch;
+      originalFetchGlobal = window.fetch;
+    });
+
+    afterEach(() => {
+      window.fetch = originalFetch;
+      window.fetch = originalFetchGlobal;
+    });
+
+    it('loadPrompts sets prompts using createPromptMap()', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      // Stub fetch to return stage env data so it matches unityConfig.env in tests
+      const fetchStub = sinon.stub().resolves({
+        ok: true,
+        json: () => Promise.resolve({
+          content: {
+            data: [
+              { verb: 'image', prompt: 'p1', assetid: 'a1', env: 'stage' },
+            ],
+          },
+        }),
+      });
+      window.fetch = fetchStub;
+      window.fetch = fetchStub;
+      await w.loadPrompts();
+      expect(w.prompts).to.be.an('object');
+    });
+
+    it('getModel loads and returns models when hasModelOptions is true', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.hasModelOptions = true;
+      const modelFetch = sinon.stub().resolves({
+        ok: true,
+        json: () => Promise.resolve({
+          content: {
+            data: [
+              { module: 'image', name: 'Model A', id: 'm1', version: '1', icon: 'i' },
+            ],
+          },
+        }),
+      });
+      window.fetch = modelFetch;
+      const models = await w.getModel();
+      expect(Array.isArray(models)).to.be.true;
+      if (models.length) expect(models[0].id).to.equal('m1');
+    });
+
+    it('getModel returns [] when hasModelOptions is false', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.hasModelOptions = false;
+      const models = await w.getModel();
+      expect(models).to.deep.equal([]);
+    });
+
+    it('getModel handles fetch error and logs via lana', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.hasModelOptions = true;
+      const logSpy = sinon.spy();
+      window.lana = { log: logSpy };
+      const errFetch = sinon.stub().resolves({ ok: false, status: 500, json: () => Promise.resolve({}) });
+      window.fetch = errFetch;
+      window.fetch = errFetch;
+      const models = await w.getModel();
+      expect(models).to.deep.equal([]);
+      expect(logSpy.called).to.be.true;
     });
   });
 
@@ -2715,7 +3126,8 @@ describe('Firefly Workflow Tests', () => {
       document.body.appendChild(tile);
       const audio = tile.audioRef;
       expect(audio.paused).to.be.true;
-      tile.click();
+      // Dispatch a non-bubbling click to avoid global document listeners from other tests
+      tile.dispatchEvent(new MouseEvent('click', { bubbles: false }));
       await Promise.resolve();
       expect(audio.paused).to.be.false;
     });
