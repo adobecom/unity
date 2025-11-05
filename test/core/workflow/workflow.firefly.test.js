@@ -2225,4 +2225,513 @@ describe('Firefly Workflow Tests', () => {
       window.sendAnalyticsEvent = originalSendAnalytics;
     });
   });
+
+  describe('Sound verb support', () => {
+    let originalAudio;
+
+    beforeEach(() => {
+      originalAudio = window.Audio;
+      function FakeAudio() {
+        const obj = {
+          paused: true,
+          ended: false,
+          duration: 10,
+          currentTime: 0,
+          eventListeners: {},
+        };
+        obj.addEventListener = function addEventListener(evt, cb) {
+          if (!this.eventListeners[evt]) this.eventListeners[evt] = [];
+          this.eventListeners[evt].push(cb);
+        };
+        obj.play = function play() {
+          this.paused = false;
+          (this.eventListeners.play || []).forEach((cb) => cb());
+          return Promise.resolve();
+        };
+        obj.pause = function pause() {
+          this.paused = true;
+          (this.eventListeners.pause || []).forEach((cb) => cb());
+        };
+        return obj;
+      }
+      window.Audio = FakeAudio;
+    });
+
+    afterEach(() => {
+      window.Audio = originalAudio;
+    });
+
+    it('should populate variations only for sound using placeholder labels and urls', () => {
+      const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
+      testWidget.workflowCfg.placeholder = {
+        'placeholder-variation-label-2': 'Var B',
+        'placeholder-variation-label-1': 'Var A',
+      };
+      const data = [
+        { verb: 'sound', prompt: 'sound prompt', assetid: '', env: 'stage', variationUrls: 'u1||u2||u3' },
+        { verb: 'image', prompt: 'img prompt', assetid: 'i1', env: 'stage', variationUrls: '' },
+        { verb: 'video', prompt: 'vid prompt', assetid: 'v1', env: 'stage', variationUrls: '' },
+      ];
+      const pm = testWidget.createPromptMap(data);
+      expect(pm.sound).to.exist;
+      expect(pm.sound[0].assetid).to.equal('');
+      expect(pm.sound[0].variations).to.deep.equal([
+        { label: 'Var A', url: 'u1' },
+        { label: 'Var B', url: 'u2' },
+      ]);
+      expect(pm.image).to.exist;
+      expect(pm.image[0].variations).to.deep.equal([]);
+      expect(pm.video).to.exist;
+      expect(pm.video[0].variations).to.deep.equal([]);
+    });
+
+    it('should keep play button visible after pausing a sound variation', () => {
+      const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
+      const promptObj = {
+        prompt: 'sound prompt',
+        variations: [{ label: 'Sample', url: 'u1' }],
+      };
+      const details = testWidget.renderSoundDetails(promptObj);
+      const tile = details.querySelector('.variation-tile');
+      const pauseBtn = tile.querySelector('.pause-btn');
+      // Simulate play then pause
+      tile.audioRef.play();
+      tile.audioRef.pause();
+      expect(pauseBtn.classList.contains('hidden')).to.be.false;
+    });
+  });
+
+  describe('Additional Widget coverage', () => {
+    it('formatTime should format seconds correctly', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      expect(w.formatTime(0)).to.equal('0:00');
+      expect(w.formatTime(5)).to.equal('0:05');
+      expect(w.formatTime(75)).to.equal('1:15');
+    });
+
+    it('clearSelectedModelState should reset model fields', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.selectedModelId = 'id';
+      w.selectedModelVersion = 'v';
+      w.selectedModelModule = 'm';
+      w.selectedModelText = 't';
+      w.clearSelectedModelState();
+      expect(w.selectedModelId).to.equal('');
+      expect(w.selectedModelVersion).to.equal('');
+      expect(w.selectedModelModule).to.equal('');
+      expect(w.selectedModelText).to.equal('');
+    });
+
+    it('showPlaybackErrorToast should dispatch firefly-audio-error', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      let fired = false;
+      w.widgetWrap.addEventListener('firefly-audio-error', () => { fired = true; });
+      w.showPlaybackErrorToast();
+      expect(fired).to.be.true;
+    });
+
+    it('createModelMap should group models by module', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const map = w.createModelMap([
+        { type: 'gen', module: 'sound', name: 'S1', id: '1', version: 'v1', icon: 'i1' },
+        { type: 'gen', module: 'image', name: 'I1', id: '2', version: 'v2', icon: 'i2' },
+        { type: 'gen', module: 'sound', name: 'S2', id: '3', version: 'v3', icon: 'i3' },
+      ]);
+      expect(map.sound).to.have.length(2);
+      expect(map.image).to.have.length(1);
+    });
+
+    it('modelDropdown should return controls when models exist for selected verb', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.hasModelOptions = true;
+      w.selectedVerbType = 'sound';
+      w.models = [
+        { module: 'sound', name: 'Model A', id: 'a', version: '1', icon: 'ia' },
+        { module: 'sound', name: 'Model B', id: 'b', version: '1', icon: 'ib' },
+        { module: 'image', name: 'Model C', id: 'c', version: '1', icon: 'ic' },
+      ];
+      // Provide required placeholder input structure
+      const mockEl = document.createElement('div');
+      const placeholderInput = document.createElement('span');
+      placeholderInput.className = 'icon-placeholder-input';
+      const phParent = document.createElement('div');
+      phParent.textContent = 'Enter';
+      phParent.appendChild(placeholderInput);
+      mockEl.appendChild(phParent);
+      w.el = mockEl;
+      w.widgetWrap = document.createElement('div');
+      const result = w.modelDropdown();
+      expect(result.length).to.equal(2);
+      const selectedEl = result[0];
+      const list = result[1];
+      expect(selectedEl.classList.contains('selected-model')).to.be.true;
+      expect(list.tagName).to.equal('UL');
+      expect(list.querySelectorAll('.verb-item').length).to.equal(2);
+    });
+
+    it('hidePromptDropdown should hide dropdown and reset sound details', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widget = document.createElement('div');
+      const container = document.createElement('div');
+      container.className = 'prompt-dropdown-container';
+      w.widget.appendChild(container);
+      const di = document.createElement('div');
+      di.className = 'drop-item sound-expanded';
+      const details = document.createElement('div');
+      details.className = 'sound-details';
+      const tile = document.createElement('div');
+      tile.className = 'variation-tile';
+      details.appendChild(tile);
+      container.appendChild(di);
+      container.appendChild(details);
+      w.selectedVerbType = 'sound';
+      w.hidePromptDropdown();
+      expect(container.classList.contains('hidden')).to.be.true;
+      expect(container.getAttribute('aria-hidden')).to.equal('true');
+      expect(w.widget.querySelector('.sound-details')).to.be.null;
+      expect(w.widget.querySelector('.drop-item.sound-expanded')).to.be.null;
+    });
+
+    it('resetAllSoundVariations should remove details and clear states', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widget = document.createElement('div');
+      const details = document.createElement('div');
+      details.className = 'sound-details';
+      const tile = document.createElement('div');
+      tile.className = 'variation-tile playing selected paused is-active';
+      details.appendChild(tile);
+      w.widget.appendChild(details);
+      w.resetAllSoundVariations();
+      expect(w.widget.querySelector('.sound-details')).to.be.null;
+    });
+
+    it('toggleSoundDetails should expand and collapse details and wire Use prompt', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      const dropdown = document.createElement('ul');
+      const item = document.createElement('li');
+      item.className = 'drop-item';
+      dropdown.appendChild(item);
+      const genBtn = document.createElement('a');
+      genBtn.className = 'gen-btn';
+      w.genBtn = genBtn;
+      const promptObj = { prompt: 'p', variations: [] };
+      w.toggleSoundDetails(dropdown, item, promptObj, 1);
+      expect(item.classList.contains('sound-expanded')).to.be.true;
+      const inlineBtn = item.querySelector('.use-prompt-btn.inline');
+      expect(inlineBtn).to.exist;
+      inlineBtn.click();
+      expect(w.genBtn.dataset.soundPrompt).to.equal('p');
+      // Collapse
+      w.toggleSoundDetails(dropdown, item, promptObj, 1);
+      expect(item.classList.contains('sound-expanded')).to.be.false;
+    });
+
+    it('consumeEventAndFocus should focus target', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const btn = document.createElement('button');
+      document.body.appendChild(btn);
+      const ev = new Event('custom');
+      w.consumeEventAndFocus(ev, btn);
+      setTimeout(() => {
+        expect(document.activeElement).to.equal(btn);
+        document.body.removeChild(btn);
+        done();
+      }, 0);
+    });
+
+    it('resetTileToIdle should reset classes and aria state', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'L', url: 'u' }, 0, strip);
+      // Simulate playing state and then reset
+      tile.classList.add('playing', 'selected', 'paused', 'is-active');
+      w.resetTileToIdle(tile);
+      expect(tile.classList.contains('is-idle')).to.be.true;
+      expect(tile.getAttribute('aria-pressed')).to.equal('false');
+      const pb = tile.querySelector('.pause-btn');
+      expect(pb.classList.contains('hidden')).to.be.true;
+    });
+  });
+
+  describe('Accessibility interactions for sound details', () => {
+    let originalAudio;
+
+    beforeEach(() => {
+      originalAudio = window.Audio;
+      function FakeAudio() {
+        const obj = { paused: true, ended: false, duration: 60, currentTime: 0, listeners: {} };
+        obj.addEventListener = function addEventListener(evt, cb) {
+          if (!this.listeners[evt]) this.listeners[evt] = [];
+          this.listeners[evt].push(cb);
+        };
+        obj.play = function play() { this.paused = false; (this.listeners.play || []).forEach((cb) => cb()); return Promise.resolve(); };
+        obj.pause = function pause() { this.paused = true; (this.listeners.pause || []).forEach((cb) => cb()); };
+        return obj;
+      }
+      window.Audio = FakeAudio;
+    });
+
+    afterEach(() => { window.Audio = originalAudio; });
+
+    it('inline Use button keydown Enter/Space triggers click and Tab moves focus to first tile', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      const dd = document.createElement('ul');
+      const item = document.createElement('li');
+      item.className = 'drop-item';
+      dd.appendChild(item);
+      // Attach to DOM so focus management works
+      document.body.appendChild(w.widgetWrap);
+      w.widgetWrap.appendChild(w.widget);
+      w.widget.appendChild(dd);
+      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }] };
+      w.genBtn = document.createElement('a');
+      w.genBtn.className = 'gen-btn';
+      w.toggleSoundDetails(dd, item, promptObj, 1);
+      const inlineBtn = item.querySelector('.use-prompt-btn.inline');
+      const clickStub = sinon.stub(inlineBtn, 'click');
+      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      // Tab to first tile
+      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      setTimeout(() => {
+        expect(clickStub.calledTwice).to.be.true;
+        const firstTile = item.nextElementSibling.querySelector('.variation-tile');
+        expect(document.activeElement).to.equal(firstTile);
+        clickStub.restore();
+        done();
+      }, 0);
+    });
+
+    it('inline Use button Shift+Tab moves focus back to item', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      const dd = document.createElement('ul');
+      const item = document.createElement('li');
+      item.className = 'drop-item';
+      item.setAttribute('tabindex', '0');
+      dd.appendChild(item);
+      document.body.appendChild(w.widgetWrap);
+      w.widgetWrap.appendChild(w.widget);
+      w.widget.appendChild(dd);
+      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }] };
+      w.genBtn = document.createElement('a');
+      w.genBtn.className = 'gen-btn';
+      w.toggleSoundDetails(dd, item, promptObj, 1);
+      const inlineBtn = item.querySelector('.use-prompt-btn.inline');
+      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+      setTimeout(() => {
+        expect(document.activeElement).to.equal(item);
+        done();
+      }, 0);
+    });
+
+    it('tile ArrowRight/ArrowLeft moves focus between tiles', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }, { label: 'C', url: 'u3' }] };
+      const details = w.renderSoundDetails(promptObj);
+      document.body.appendChild(details);
+      const tiles = Array.from(details.querySelectorAll('.variation-tile'));
+      tiles[0].focus();
+      tiles[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      setTimeout(() => {
+        expect(document.activeElement).to.equal(tiles[1]);
+        tiles[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+        setTimeout(() => {
+          expect(document.activeElement).to.equal(tiles[0]);
+          done();
+        }, 0);
+      }, 0);
+    });
+
+    it('tile Tab moves focus to next suggestion and Shift+Tab to Use button', (done) => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      w.widgetWrap = document.createElement('div');
+      w.widget = document.createElement('div');
+      const dd = document.createElement('ul');
+      const item = document.createElement('li');
+      item.className = 'drop-item';
+      dd.appendChild(item);
+      document.body.appendChild(w.widgetWrap);
+      w.widgetWrap.appendChild(w.widget);
+      w.widget.appendChild(dd);
+      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }] };
+      w.genBtn = document.createElement('a');
+      w.genBtn.className = 'gen-btn';
+      w.toggleSoundDetails(dd, item, promptObj, 1);
+      const details = item.nextElementSibling;
+      const nextSuggestion = document.createElement('li');
+      nextSuggestion.className = 'drop-item';
+      nextSuggestion.setAttribute('tabindex', '0');
+      details.after(nextSuggestion);
+      const tile = details.querySelector('.variation-tile');
+      // Tab to next suggestion
+      tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      setTimeout(() => {
+        expect(document.activeElement).to.equal(nextSuggestion);
+        // Shift+Tab back to Use button
+        tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+        setTimeout(() => {
+          const useBtn = item.querySelector('.use-prompt-btn.inline');
+          expect(document.activeElement).to.equal(useBtn);
+          done();
+        }, 0);
+      }, 0);
+    });
+
+    it('pause button keyboard toggles playback and visibility', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const details = w.renderSoundDetails({ prompt: 'p', variations: [{ label: 'A', url: 'u1' }] });
+      document.body.appendChild(details);
+      const tile = details.querySelector('.variation-tile');
+      const pauseBtn = tile.querySelector('.pause-btn');
+      // Enter to play
+      pauseBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await Promise.resolve();
+      expect(tile.audioRef.paused).to.be.false;
+      // Enter to pause
+      pauseBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(tile.audioRef.paused).to.be.true;
+      expect(pauseBtn.classList.contains('hidden')).to.be.false;
+    });
+  });
+
+  describe('ActionBinder accessibility elements', () => {
+    it('constructor should append sr-only live region', () => {
+      const ab = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
+      const sr = ab.widgetWrap.querySelector('.sr-only');
+      expect(sr).to.exist;
+      expect(sr.getAttribute('aria-live')).to.equal('polite');
+      expect(sr.getAttribute('aria-atomic')).to.equal('true');
+    });
+  });
+
+  describe('Audio internals coverage', () => {
+    let originalAudio;
+    let originalRaf;
+    let originalCaf;
+
+    beforeEach(() => {
+      originalAudio = window.Audio;
+      originalRaf = window.requestAnimationFrame;
+      originalCaf = window.cancelAnimationFrame;
+      function FakeAudio() {
+        const obj = { paused: true, ended: false, duration: 10, currentTime: 0, events: {} };
+        obj.addEventListener = function addEventListener(evt, cb) {
+          if (!this.events[evt]) this.events[evt] = [];
+          this.events[evt].push(cb);
+        };
+        obj.play = function play() { this.paused = false; (this.events.play || []).forEach((cb) => cb()); return Promise.resolve(); };
+        obj.pause = function pause() { this.paused = true; (this.events.pause || []).forEach((cb) => cb()); };
+        return obj;
+      }
+      window.Audio = FakeAudio;
+      let rafCalls = 0;
+      window.requestAnimationFrame = (cb) => { rafCalls += 1; if (rafCalls === 1) cb(); return rafCalls; };
+      window.cancelAnimationFrame = () => {};
+    });
+
+    afterEach(() => {
+      window.Audio = originalAudio;
+      window.requestAnimationFrame = originalRaf;
+      window.cancelAnimationFrame = originalCaf;
+    });
+
+    it('loadedmetadata should cache duration and reset progress', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      const audio = tile.audioRef;
+      // Fire loadedmetadata
+      (audio.events.loadedmetadata || []).forEach((cb) => cb());
+      expect(w.durationCache.get('u1')).to.equal(audio.duration);
+      const timeEl = tile.querySelector('.time-el');
+      expect(timeEl.textContent).to.equal(w.formatTime(audio.duration));
+      const fill = tile.querySelector('.seek-fill');
+      expect(fill.style.width).to.equal('0%');
+    });
+
+    it('timeupdate should set duration text when not playing', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      const audio = tile.audioRef;
+      (audio.events.timeupdate || []).forEach((cb) => cb());
+      const timeEl = tile.querySelector('.time-el');
+      expect(timeEl.textContent).to.equal(w.formatTime(audio.duration));
+    });
+
+    it('tick via RAF updates progress while playing', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      const audio = tile.audioRef;
+      audio.currentTime = Math.floor(audio.duration / 2);
+      await audio.play();
+      const fill = tile.querySelector('.seek-fill');
+      const bar = tile.querySelector('.seek-bar');
+      const expectedPct = (audio.currentTime / audio.duration) * 100;
+      expect(fill.style.width).to.equal(`${expectedPct}%`);
+      expect(Number(bar.getAttribute('aria-valuenow'))).to.equal(expectedPct);
+      const timeEl = tile.querySelector('.time-el');
+      expect(timeEl.textContent).to.equal(w.formatTime(audio.currentTime));
+    });
+
+    it('pause with forceIdle resets tile to idle state', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      const audio = tile.audioRef;
+      tile.dataset.forceIdle = '1';
+      audio.pause();
+      expect(tile.classList.contains('is-idle')).to.be.true;
+      const pb = tile.querySelector('.pause-btn');
+      expect(pb.classList.contains('hidden')).to.be.true;
+      const fill = tile.querySelector('.seek-fill');
+      expect(fill.style.width).to.equal('0%');
+    });
+
+    it('ended event resets tile state and progress', () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      const audio = tile.audioRef;
+      (audio.events.ended || []).forEach((cb) => cb());
+      expect(tile.classList.contains('is-idle')).to.be.true;
+      const pb = tile.querySelector('.pause-btn');
+      expect(pb.classList.contains('hidden')).to.be.true;
+      const fill = tile.querySelector('.seek-fill');
+      expect(fill.style.width).to.equal('0%');
+    });
+
+    it('tile click toggles playback via playIfPaused', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      document.body.appendChild(tile);
+      const audio = tile.audioRef;
+      expect(audio.paused).to.be.true;
+      tile.click();
+      await Promise.resolve();
+      expect(audio.paused).to.be.false;
+    });
+
+    it('tile keydown Enter toggles playback', async () => {
+      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const strip = document.createElement('div');
+      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
+      document.body.appendChild(tile);
+      const audio = tile.audioRef;
+      tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await Promise.resolve();
+      expect(audio.paused).to.be.false;
+      tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(audio.paused).to.be.true;
+    });
+  });
 });
