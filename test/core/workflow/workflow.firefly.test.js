@@ -295,14 +295,18 @@ describe('Firefly Workflow Tests', () => {
       expect(dropdown.classList.contains('hidden')).to.be.true;
     });
 
-    it('should not hide dropdown when clicking inside widget', () => {
+    it('should not hide dropdown when clicking inside autocomplete area', () => {
       const dropdown = document.querySelector('.drop');
       actionBinder.dropdown = dropdown;
       actionBinder.widget = document.querySelector('.ex-unity-widget');
+      // Click inside the autocomplete wrapper which UnityWidget treats as safe area
+      const auto = actionBinder.widget.querySelector('.autocomplete');
+      const inner = document.createElement('div');
+      auto.appendChild(inner);
 
       actionBinder.showDropdown();
       const insideEvent = new MouseEvent('click', { bubbles: true });
-      actionBinder.widget.dispatchEvent(insideEvent);
+      inner.dispatchEvent(insideEvent);
 
       expect(dropdown.classList.contains('hidden')).to.be.false;
     });
@@ -344,7 +348,8 @@ describe('Firefly Workflow Tests', () => {
       const limited = unityWidget.getLimitedDisplayPrompts(prompts);
 
       expect(limited.length).to.be.lessThanOrEqual(3);
-      expect(limited[0]).to.have.property('displayPrompt');
+      expect(limited[0]).to.have.property('prompt');
+      expect(limited[0]).to.have.property('assetid');
     });
 
     it('should create prompt map correctly', () => {
@@ -665,7 +670,7 @@ describe('Firefly Workflow Tests', () => {
       const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widget = document.createElement('div');
       const dropdown = document.createElement('div');
-      dropdown.classList.add('drop');
+      dropdown.classList.add('prompt-dropdown-container', 'drop');
       testWidget.widget.appendChild(dropdown);
       testWidget.hidePromptDropdown();
       expect(dropdown.classList.contains('hidden')).to.be.true;
@@ -701,12 +706,6 @@ describe('Firefly Workflow Tests', () => {
       expect(limited).to.have.length(3);
       expect(limited[0]).to.have.property('prompt');
       expect(limited[0]).to.have.property('assetid');
-      expect(limited[0]).to.have.property('displayPrompt');
-      const longPrompt = limited.find((item) => item.prompt.includes('very long prompt'));
-      if (longPrompt) {
-        expect(longPrompt.displayPrompt).to.include('…');
-        expect(longPrompt.displayPrompt.length).to.be.lessThan(110);
-      }
     });
 
     it('should add prompt items to dropdown correctly', () => {
@@ -714,8 +713,8 @@ describe('Firefly Workflow Tests', () => {
       testWidget.selectedVerbType = 'image';
       const dropdown = document.createElement('ul');
       const prompts = [
-        { prompt: 'Test prompt 1', assetid: '1', displayPrompt: 'Test prompt 1' },
-        { prompt: 'Test prompt 2', assetid: '2', displayPrompt: 'Test prompt 2' },
+        { prompt: 'Test prompt 1', assetid: '1' },
+        { prompt: 'Test prompt 2', assetid: '2' },
       ];
       const placeholder = {
         'placeholder-prompt': 'Prompt',
