@@ -59,15 +59,34 @@ export default class UnityWidget {
       'aria-label': 'Upload file',
       type: 'button',
     });
-    const plusIcon = createTag('svg', {
-      class: 'plus-icon',
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      xmlns: 'http://www.w3.org/2000/svg',
-    });
-    plusIcon.innerHTML = '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+
+    // Create SVG element properly using SVG namespace
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const plusIcon = document.createElementNS(svgNS, 'svg');
+    plusIcon.setAttribute('class', 'plus-icon');
+    plusIcon.setAttribute('width', '24');
+    plusIcon.setAttribute('height', '24');
+    plusIcon.setAttribute('viewBox', '0 0 24 24');
+    plusIcon.setAttribute('fill', 'none');
+    plusIcon.setAttribute('stroke', 'currentColor');
+    plusIcon.setAttribute('stroke-width', '2');
+    plusIcon.setAttribute('stroke-linecap', 'round');
+
+    // Create the plus sign paths
+    const verticalLine = document.createElementNS(svgNS, 'line');
+    verticalLine.setAttribute('x1', '12');
+    verticalLine.setAttribute('y1', '5');
+    verticalLine.setAttribute('x2', '12');
+    verticalLine.setAttribute('y2', '19');
+
+    const horizontalLine = document.createElementNS(svgNS, 'line');
+    horizontalLine.setAttribute('x1', '5');
+    horizontalLine.setAttribute('y1', '12');
+    horizontalLine.setAttribute('x2', '19');
+    horizontalLine.setAttribute('y2', '12');
+
+    plusIcon.appendChild(verticalLine);
+    plusIcon.appendChild(horizontalLine);
     uploadBtn.append(plusIcon);
 
     // Add click handler to open file picker
