@@ -34,6 +34,7 @@ class WfInitiator {
       ],
       'workflow-ai': sharedWfRes,
       'workflow-firefly': sharedWfRes,
+      'workflow-temp': sharedWfRes,
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -223,6 +224,11 @@ class WfInitiator {
         productName: 'Firefly',
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
+      },
+      'workflow-temp': {
+        productName: 'Temp',
+        sfList: new Set(['text-to-mage']),
+        stList: new Set(['prompt', 'generate']),
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
