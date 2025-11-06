@@ -1969,4 +1969,43 @@ describe('ActionBinder', () => {
       });
     });
   });
+
+  describe('pdf-ai verb configuration', () => {
+    it('should have correct limits configuration for pdf-ai in LIMITS_MAP', () => {
+      const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
+      expect(pdfAiLimits).to.exist;
+      expect(pdfAiLimits).to.deep.equal([
+        'hybrid',
+        'allowed-filetypes-pdf-word-ppt-txt',
+        'page-limit-600',
+        'max-numfiles-10',
+        'max-filesize-100-mb',
+      ]);
+    });
+
+    it('should configure pdf-ai as hybrid mode', () => {
+      const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
+      expect(pdfAiLimits[0]).to.equal('hybrid');
+    });
+
+    it('should have page-limit-600 for pdf-ai', () => {
+      const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
+      expect(pdfAiLimits).to.include('page-limit-600');
+    });
+
+    it('should support max-numfiles-10 for pdf-ai', () => {
+      const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
+      expect(pdfAiLimits).to.include('max-numfiles-10');
+    });
+
+    it('should have max-filesize-100-mb for pdf-ai', () => {
+      const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
+      expect(pdfAiLimits).to.include('max-filesize-100-mb');
+    });
+
+    it('should support pdf-word-ppt-txt file types for pdf-ai', () => {
+      const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
+      expect(pdfAiLimits).to.include('allowed-filetypes-pdf-word-ppt-txt');
+    });
+  });
 });

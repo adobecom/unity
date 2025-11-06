@@ -69,6 +69,7 @@ export default class ActionBinder {
     'chat-pdf': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
+    'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -235,7 +236,7 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    if ( !this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
+    if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
       const { getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
       try {
         const decisionScopes = await getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
