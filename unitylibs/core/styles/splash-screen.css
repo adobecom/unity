@@ -104,6 +104,10 @@ body > .splash-loader {
   background: #1273E6;
 }
 
+:root:has(.workflow-upload.product-firefly) .progress-holder .spectrum-ProgressBar .spectrum-ProgressBar-fill {
+  background: #8A8A8A;
+}
+
 .progress-holder .spectrum-ProgressBar--sideLabel {
 	flex-flow: column;
 }
