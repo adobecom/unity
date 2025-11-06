@@ -331,16 +331,16 @@ export default class ActionBinder {
         const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
         const isMinLimits = this.limits.minWidth && this.limits.minHeight;
         if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
-          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filedimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
-          this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filedimension' } });
+          this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
           reject(new Error('Unable to process the file type!'));
-        } 
-        if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
-          this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filemindimension' }, 'Unable to process the file type!', this.lanaOptions, 'client');
-          this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filemindimension' } });
+          return;
+        } else if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
+          this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
           reject(new Error('Unable to process the file type!'));
+          return;
         } else {
           resolve({ width, height });
+          return;
         }
       };
       img.onerror = () => {
@@ -363,23 +363,25 @@ export default class ActionBinder {
     }
   }
 
+  handleClientUploadError(errorTypeSelector, errorCode, message = '') {
+    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector }, message, this.lanaOptions, 'client');
+    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode } });
+  }
+
   async uploadImage(files) {
     if (!files) return;
     await this.initAnalytics();
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filecount' }, '', this.lanaOptions, 'client');
-      this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filecount' } });
+      this.handleClientUploadError('.icon-error-filecount', 'error-filecount', '');
       return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filetype' }, '', this.lanaOptions, 'client');
-      this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filetype' } });
+      this.handleClientUploadError('.icon-error-filetype', 'error-filetype', '');
       return;
     }
     if (this.limits.maxFileSize < file.size) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-filesize' }, '', this.lanaOptions, 'client');
-      this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: 'error-filesize' } });
+      this.handleClientUploadError('.icon-error-filesize', 'error-filesize', '');
       return;
     }
     const objectUrl = URL.createObjectURL(file);
