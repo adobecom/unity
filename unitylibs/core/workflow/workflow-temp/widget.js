@@ -11,6 +11,7 @@ export default class UnityWidget {
     this.actionMap = {};
     this.spriteCon = spriteCon;
     this.genBtn = null;
+    this.uploadedFile = null;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
   }
 
@@ -43,6 +44,15 @@ export default class UnityWidget {
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
 
+    // Create hidden file input
+    const fileInput = createTag('input', {
+      type: 'file',
+      class: 'file-input',
+      accept: 'image/*,.pdf',
+      'aria-hidden': 'true',
+      style: 'display: none;',
+    });
+
     // Create plus icon button for file upload
     const uploadBtn = createTag('button', {
       class: 'upload-btn',
@@ -60,6 +70,21 @@ export default class UnityWidget {
     plusIcon.innerHTML = '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
     uploadBtn.append(plusIcon);
 
+    // Add click handler to open file picker
+    uploadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    // Add file selection handler
+    fileInput.addEventListener('change', (e) => {
+      const { files } = e.target;
+      if (files && files.length > 0) {
+        this.handleFileUpload(files[0]);
+      }
+    });
+
     // Create input field
     const inpField = createTag('input', {
       id: 'promptInput',
@@ -74,8 +99,34 @@ export default class UnityWidget {
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
 
-    inpWrap.append(uploadBtn, inpField, actWrap);
+    inpWrap.append(fileInput, uploadBtn, inpField, actWrap);
     return inpWrap;
+  }
+
+  handleFileUpload(file) {
+    // Store the file for later use
+    this.uploadedFile = file;
+
+    // You can add visual feedback here, e.g., showing the file name
+    const inpField = this.widget.querySelector('.inp-field');
+    if (inpField) {
+      inpField.placeholder = `File selected: ${file.name}`;
+    }
+
+    // Dispatch custom event for action-binder to handle
+    this.widgetWrap.dispatchEvent(new CustomEvent('file-uploaded', { detail: { file } }));
+  }
+
+  getUploadedFile() {
+    return this.uploadedFile;
+  }
+
+  clearUploadedFile() {
+    this.uploadedFile = null;
+    const inpField = this.widget.querySelector('.inp-field');
+    if (inpField) {
+      inpField.placeholder = this.workflowCfg.placeholder['placeholder-input'] || 'Message';
+    }
   }
 
   createActBtn(cfg, cls) {

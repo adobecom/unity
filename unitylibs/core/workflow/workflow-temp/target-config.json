@@ -11,7 +11,7 @@
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
       ".gen-btn": { "actionType": "generate" },
-      ".drop-item": { "actionType": "setPromptValue" }
+      ".upload-btn": { "actionType": "upload" }
     },
     "sendSplunkAnalytics": true
   },
@@ -27,7 +27,7 @@
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
       ".gen-btn": { "actionType": "generate" },
-      ".drop-item": { "actionType": "setPromptValue" }
+      ".upload-btn": { "actionType": "upload" }
     },
     "sendSplunkAnalytics": true
   }
