@@ -118,7 +118,6 @@ export default class ActionBinder {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
-      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 0);
       const e = new Error('Operation termination requested.');
       const cancelPromise = Promise.reject(e);
       this.promiseStack.unshift(cancelPromise);
