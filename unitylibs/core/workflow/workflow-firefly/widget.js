@@ -40,7 +40,6 @@ export default class UnityWidget {
     const hasModels = !!this.el.querySelector('[class*="icon-model"]');
     this.hasModelOptions = hasModels;
     this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
-    this.hasSoundVerb = !!this.el.querySelector('.icon-verb-sound');
     if (this.hasModelOptions) await this.getModel();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
     await this.ensureSoundModuleLoaded();
@@ -56,7 +55,7 @@ export default class UnityWidget {
   }
 
   async ensureSoundModuleLoaded() {
-    if (!this.hasSoundVerb || this.selectedVerbType !== 'sound' || this.soundAugmented) return;
+    if (this.selectedVerbType !== 'sound' || this.soundAugmented) return;
     try {
       const { default: augmentSound } = await import('./sound-utils.js');
       augmentSound(this);
@@ -123,8 +122,6 @@ export default class UnityWidget {
       this.genBtn.setAttribute('daa-ll', `Generate--${verb}`);
     }
   }
-
-  /* sound-specific methods are injected lazily from sound-utils.js */
 
   clearSelectedModelState() {
     this.selectedModelId = '';
@@ -442,8 +439,6 @@ export default class UnityWidget {
       if (this.selectedVerbType === 'sound') this.addSoundSuggestionHandlers(dropdown, item, { prompt, variations }, idx + 1);
     });
   }
-
-  /* sound handlers injected */
 
   async genDropdown(ph) {
     if (!this.hasPromptSuggestions) return null;
