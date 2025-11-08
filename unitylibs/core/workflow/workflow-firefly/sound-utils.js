@@ -2,7 +2,6 @@
 import { createTag } from '../../../scripts/utils.js';
 
 export default function augmentSound(widget) {
-  // Playback error toast
   widget.showPlaybackErrorToast = function showPlaybackErrorToast() {
     try {
       this.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
