@@ -4,6 +4,7 @@ import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
 import ActionBinder from '../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
 import UnityWidget from '../../../unitylibs/core/workflow/workflow-firefly/widget.js';
+import augmentSound from '../../../unitylibs/core/workflow/workflow-firefly/sound-utils.js';
 
 describe('Firefly Workflow Tests', () => {
   let actionBinder;
@@ -16,6 +17,8 @@ describe('Firefly Workflow Tests', () => {
   let spriteContainer;
 
   before(async () => {
+    // Attach sound methods onto the widget prototype for tests
+    augmentSound(UnityWidget.prototype);
     document.body.innerHTML = await readFile({ path: './mocks/ff-body.html' });
     unityElement = document.querySelector('.unity');
     workflowCfg = {
@@ -2714,6 +2717,7 @@ describe('Firefly Workflow Tests', () => {
   describe('Additional Widget coverage', () => {
     it('formatTime should format seconds correctly', () => {
       const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      augmentSound(w);
       expect(w.formatTime(0)).to.equal('0:00');
       expect(w.formatTime(5)).to.equal('0:05');
       expect(w.formatTime(75)).to.equal('1:15');
@@ -2734,6 +2738,7 @@ describe('Firefly Workflow Tests', () => {
 
     it('showPlaybackErrorToast should dispatch firefly-audio-error', () => {
       const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      augmentSound(w);
       w.widgetWrap = document.createElement('div');
       let fired = false;
       w.widgetWrap.addEventListener('firefly-audio-error', () => { fired = true; });
