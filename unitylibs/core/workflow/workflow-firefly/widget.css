@@ -282,6 +282,7 @@
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text {
   width: 100%;
+  text-align: center;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-text p {

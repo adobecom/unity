@@ -537,14 +537,11 @@ export default class UnityWidget {
   }
 
   async loadModels() {
-    const { locale } = getConfig();
     const { origin } = window.location;
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    const modelFile = locale.prefix && locale.prefix !== '/'
-      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/model-picker.json`
-      : `${baseUrl}/unity/configs/prompt/model-picker.json`;
+    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker.json`;
     const results = await fetch(modelFile);
     if (!results.ok) {
       throw new Error('Failed to fetch models.');
