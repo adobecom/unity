@@ -322,33 +322,87 @@ export default class ActionBinder {
     }
   }
 
-  async checkImageDimensions(objectUrl) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = async () => {
-        const { naturalWidth: width, naturalHeight: height } = img;
-        URL.revokeObjectURL(objectUrl);
-        const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
-        const isMinLimits = this.limits.minWidth && this.limits.minHeight;
-        if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
-          this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
-          reject(new Error('Unable to process the file type!'));
-          return;
-        } else if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
-          this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
-          reject(new Error('Unable to process the file type!'));
-          return;
-        } else {
-          resolve({ width, height });
-          return;
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Failed to load image'));
-      };
-      img.src = objectUrl;
-    });
+  async checkImageDimensions(file) {
+      const { width, height } = await this.getImageDimensions(file);
+      const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
+      const isMinLimits = this.limits.minWidth && this.limits.minHeight;
+      if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
+        this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
+        throw new Error('Unable to process the file type!');
+      }
+      if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
+        this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
+        throw new Error('Unable to process the file type!');
+      }
+      return { width, height };
+    }
+  
+
+  async getImageDimensions(file) {
+    const buffer = await file.slice(0, 64 * 1024).arrayBuffer();
+    const view = new DataView(buffer);
+    const type = file.type || '';
+
+    const parsers = {
+      'image/png': (v) => this.parsePng(v),
+      'image/jpeg': (v) => this.parseJpeg(v),
+      'image/jpg': (v) => this.parseJpeg(v),
+      'image/webp': (v, b) => this.parseWebp(v, b),
+    };
+    const parser = parsers[type];
+    if (!parser) throw new Error(`Unsupported file type: ${type}`);
+    return parser(view, buffer);
+  }
+
+  parsePng(view) {
+    return { width: view.getUint32(16), height: view.getUint32(20) };
+  }
+
+  parseJpeg(view) {
+    let offset = 2;
+    while (offset < view.byteLength) {
+      if (view.getUint8(offset) !== 0xFF) break;
+      const marker = view.getUint8(offset + 1);
+      const length = view.getUint16(offset + 2);
+      const isSOF = (marker >= 0xC0 && marker <= 0xC3)
+        || (marker >= 0xC5 && marker <= 0xC7)
+        || (marker >= 0xC9 && marker <= 0xCB)
+        || (marker >= 0xCD && marker <= 0xCF);
+      if (isSOF) {
+        const height = view.getUint16(offset + 5);
+        const width = view.getUint16(offset + 7);
+        return { width, height };
+      }
+      offset += 2 + length;
+    }
+    throw new Error('Invalid JPEG: SOFn marker not found');
+  }
+
+  parseWebp(view, buffer) {
+    const td = new TextDecoder();
+    const riffHeader = td.decode(new Uint8Array(buffer, 0, 4));
+    if (riffHeader !== 'RIFF') throw new Error('Invalid WebP');
+    const vp8Header = td.decode(new Uint8Array(buffer, 12, 4));
+    if (vp8Header === 'VP8X') {
+      const width = 1 + view.getUint8(24) + (view.getUint8(25) << 8) + (view.getUint8(26) << 16);
+      const height = 1 + view.getUint8(27) + (view.getUint8(28) << 8) + (view.getUint8(29) << 16);
+      return { width, height };
+    }
+    if (vp8Header === 'VP8 ') {
+      const width = view.getUint16(26, true);
+      const height = view.getUint16(28, true);
+      return { width, height };
+    }
+    if (vp8Header === 'VP8L') {
+      const b0 = view.getUint8(21);
+      const b1 = view.getUint8(22);
+      const b2 = view.getUint8(23);
+      const b3 = view.getUint8(24);
+      const width = 1 + (((b1 & 0x3F) << 8) | b0);
+      const height = 1 + (((b3 & 0x0F) << 10) | (b2 << 2) | ((b1 & 0xC0) >> 6));
+      return { width, height };
+    }
+    throw new Error('Unsupported WebP variant');
   }
 
   async initAnalytics() {
@@ -384,8 +438,11 @@ export default class ActionBinder {
       this.handleClientUploadError('.icon-error-filesize', 'error-filesize', '');
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    await this.checkImageDimensions(objectUrl);
+    try { await this.checkImageDimensions(file);} 
+    catch (error) {
+      window.lana?.log(`Message: Error checking image dimensions, Error: ${error}`, this.lanaOptions);
+      return;
+    }
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     this.logAnalyticsinSplunk('Uploading Started|UnityWidget');
     if (this.workflowCfg.pswFeature) {
