@@ -298,7 +298,7 @@ export default class ActionBinder {
       this.query = this.inputField.value.trim();
     }
     const selectedVerbType = `text-to-${currentVerb}`;
-    const action = (this.id ? 'prompt-suggestion' : 'generate');
+    const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
     const validation = this.validateInput(this.query);
