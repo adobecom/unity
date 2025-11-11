@@ -71,6 +71,8 @@ class ServiceHandler {
 }
 
 export default class ActionBinder {
+  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
+
   boundHandleKeyDown = this.handleKeyDown.bind(this);
 
   boundOutsideClickHandler = this.handleOutsideClick.bind(this);
@@ -192,7 +194,7 @@ export default class ActionBinder {
         el.addEventListener('mousedown', (event) => event.preventDefault());
         el.addEventListener('click', handleClick);
         break;
-      case 'INPUT':
+      case 'TEXTAREA':
         this.addInputEvents(el);
         break;
       default:
@@ -340,31 +342,55 @@ export default class ActionBinder {
   }
 
   handleKeyDown(ev) {
-    const validKeys = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape'];
-    if (!validKeys.includes(ev.key)) return;
-    const dropItems = this.getDropdownItems();
-    const focusElems = this.getFocusElems(dropItems.length > 0);
-    const currIdx = focusElems.indexOf(document.activeElement);
-    const isDropVisi = this.isDropdownVisible();
+    if (!ActionBinder.VALID_KEYS.includes(ev.key)) return;
+    if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+    const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
+    const openModelMenu = this.block.querySelector('.models-container.show-menu');
+    const isMenuOpen = openVerbMenu || openModelMenu;
     switch (ev.key) {
-      case 'Tab':
-        if (!isDropVisi) return;
+      case 'Tab': {
+        const isDropVisi = this.isDropdownVisible();
+        if (!isDropVisi && !isMenuOpen) return;
+        const dropItems = this.getDropdownItems();
+        const focusElems = this.getFocusElems(dropItems.length > 0);
+        const currIdx = focusElems.indexOf(document.activeElement);
         this.handleTab(ev, focusElems, dropItems, currIdx);
         break;
+      }
       case 'ArrowDown':
+      case 'ArrowUp': {
         ev.preventDefault();
-        this.moveFocusWithArrow(dropItems, 'down');
+        const direction = ev.key === 'ArrowDown' ? 'down' : 'up';
+        if (isMenuOpen) {
+          const focusElems = this.getFocusElems();
+          const currIdx = focusElems.indexOf(document.activeElement);
+          this.moveFocusInMenu(focusElems, currIdx, direction);
+        } else {
+          this.moveFocusWithArrow(this.getDropdownItems(), direction);
+        }
         break;
-      case 'ArrowUp':
-        ev.preventDefault();
-        this.moveFocusWithArrow(dropItems, 'up');
-        break;
+      }
       case 'Enter':
+      case ' ': {
+        const dropItems = this.getDropdownItems();
+        const focusElems = this.getFocusElems(dropItems.length > 0);
+        const currIdx = focusElems.indexOf(document.activeElement);
         this.handleEnter(ev, dropItems, focusElems, currIdx);
         break;
+      }
       case 'Escape':
-        this.inputField.focus();
-        this.hideDropdown();
+        if (isMenuOpen) {
+          ev.preventDefault();
+          const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
+          if (menuButton) {
+            (openVerbMenu || openModelMenu).classList.remove('show-menu');
+            menuButton.setAttribute('aria-expanded', 'false');
+            menuButton.focus();
+          }
+        } else {
+          this.inputField.focus();
+          this.hideDropdown();
+        }
         break;
       default:
         break;
@@ -408,17 +434,15 @@ export default class ActionBinder {
         event.preventDefault();
         const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
         if (menuButton) {
-            (openVerbMenu || openModelMenu).classList.remove('show-menu');
-            menuButton.setAttribute('aria-expanded', 'false');
-            menuButton.focus();
+          (openVerbMenu || openModelMenu).classList.remove('show-menu');
+          menuButton.setAttribute('aria-expanded', 'false');
+          menuButton.focus();
         }
         return;
       }
-    } else {
-      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
-        this.hideDropdown();
-        return;
-      }
+    } else if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+      this.hideDropdown();
+      return;
     }
     event.preventDefault();
     if (currentElement.classList.contains('tip-con')) {
@@ -434,6 +458,19 @@ export default class ActionBinder {
     focusableElements[nextIndex].focus();
     const newActiveIndex = dropItems.indexOf(focusableElements[nextIndex]);
     this.activeIndex = newActiveIndex !== -1 ? newActiveIndex : -1;
+  }
+
+  moveFocusInMenu(focusElems, currentIndex, direction) {
+    if (!focusElems.length) return;
+    let nextIndex;
+    if (currentIndex === -1) {
+      nextIndex = direction === 'down' ? 0 : focusElems.length - 1;
+    } else {
+      nextIndex = direction === 'down' ? currentIndex + 1 : currentIndex - 1;
+      if (nextIndex < 0) nextIndex = focusElems.length - 1;
+      if (nextIndex >= focusElems.length) nextIndex = 0;
+    }
+    focusElems[nextIndex]?.focus();
   }
 
   moveFocusWithArrow(dropItems, direction) {
