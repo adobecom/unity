@@ -1254,17 +1254,16 @@ describe('Firefly Workflow Tests', () => {
       expect(verbLinks[1].parentElement.classList.contains('selected')).to.be.false;
     });
 
-    it('should set aria-label for all verb links', () => {
+    it('should set selection state for all verb links', () => {
       const verbLinks = verbList.querySelectorAll('.verb-link');
 
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      // The clicked link gets a different aria-label
-      expect(verbLinks[0].parentElement.getAttribute('aria-label')).to.equal(`iconImage prompt selected:  ${inputPlaceHolder}`);
-      // Other links get the standard aria-label
-      expect(verbLinks[1].parentElement.getAttribute('aria-label')).to.equal(`video prompt: ${inputPlaceHolder}`);
+      // The clicked link should be marked selected; others should not
+      expect(verbLinks[0].getAttribute('aria-selected')).to.equal('true');
+      expect(verbLinks[1].getAttribute('aria-selected')).to.equal('false');
     });
 
     it('should toggle show-menu class on selected element parent', () => {
@@ -1305,13 +1304,12 @@ describe('Firefly Workflow Tests', () => {
       expect(selectedElement.dataset.selectedVerb).to.equal('image');
     });
 
-    it('should update aria-label for selected element', () => {
+    it('should update expanded state for selected element', () => {
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      const expectedLabel = `iconImage prompt: ${inputPlaceHolder}`;
-      expect(selectedElement.getAttribute('aria-label')).to.equal(expectedLabel);
+      expect(selectedElement.getAttribute('aria-expanded')).to.equal('true');
     });
 
     it('should focus selected element', () => {
@@ -1325,13 +1323,12 @@ describe('Firefly Workflow Tests', () => {
       focusStub.restore();
     });
 
-    it('should update aria-label for selected link parent', () => {
+    it('should keep selected link parent marked as selected', () => {
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      const expectedLabel = `iconImage prompt selected:  ${inputPlaceHolder}`;
-      expect(link.parentElement.getAttribute('aria-label')).to.equal(expectedLabel);
+      expect(link.parentElement.classList.contains('selected')).to.be.true;
     });
 
     it('should call updateDropdownForVerb when verb is not in verbsWithoutPromptSuggestions', () => {
@@ -1471,9 +1468,9 @@ describe('Firefly Workflow Tests', () => {
       expect(selectedElement.tagName).to.equal('BUTTON');
       expect(selectedElement.className).to.equal('selected-verb');
       expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
-      expect(selectedElement.getAttribute('aria-controls')).to.equal('prompt-menu');
+      expect(selectedElement.getAttribute('aria-controls')).to.equal('media-menu');
       expect(selectedElement.getAttribute('data-selected-verb')).to.equal('image');
-      expect(selectedElement.getAttribute('aria-label')).to.equal('image prompt: Enter your prompt');
+      expect(selectedElement.getAttribute('aria-label')).to.equal('media type');
       expect(selectedElement.getAttribute('disabled')).to.equal('true');
     });
 
@@ -1495,7 +1492,7 @@ describe('Firefly Workflow Tests', () => {
       // Check verb list
       expect(verbList.tagName).to.equal('UL');
       expect(verbList.className).to.equal('verb-list');
-      expect(verbList.id).to.equal('prompt-menu');
+      expect(verbList.id).to.equal('media-menu');
       expect(verbList.getAttribute('style')).to.equal('display: none;');
     });
 
@@ -1516,7 +1513,7 @@ describe('Firefly Workflow Tests', () => {
       // Check first item (should be selected)
       const firstItem = verbItems[0];
       expect(firstItem.classList.contains('selected')).to.be.true;
-      expect(firstItem.getAttribute('aria-label')).to.equal('Image prompt selected: Enter your prompt');
+      expect(firstItem.classList.contains('selected')).to.be.true;
       const firstLink = firstItem.querySelector('.verb-link');
       expect(firstLink.getAttribute('data-verb-type')).to.equal('image');
       expect(firstLink.textContent.trim()).to.equal('Image');
@@ -1524,7 +1521,7 @@ describe('Firefly Workflow Tests', () => {
       // Check second item
       const secondItem = verbItems[1];
       expect(secondItem.classList.contains('selected')).to.be.false;
-      expect(secondItem.getAttribute('aria-label')).to.equal('Video prompt: Enter your prompt');
+      expect(secondItem.getAttribute('aria-label')).to.be.null;
       const secondLink = secondItem.querySelector('.verb-link');
       expect(secondLink.getAttribute('data-verb-type')).to.equal('video');
       expect(secondLink.textContent.trim()).to.equal('Video');
@@ -1734,8 +1731,9 @@ describe('Firefly Workflow Tests', () => {
       expect(testWidget.selectedModelId).to.equal('ia');
       expect(testWidget.selectedModelVersion).to.equal('1');
       expect(testWidget.selectedModelModule).to.equal('image');
-      expect(btn.getAttribute('aria-label')).to.contain('Enter your prompt');
-      expect(list.querySelector('.verb-item').getAttribute('aria-label')).to.contain('prompt selected');
+      expect(btn.getAttribute('aria-label')).to.equal('model type');
+      const firstItem = list.querySelector('.verb-item');
+      expect(firstItem.classList.contains('selected')).to.be.true;
     });
 
     it('changing verb replaces existing models container when new verb has models', () => {

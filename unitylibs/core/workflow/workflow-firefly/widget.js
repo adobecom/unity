@@ -492,7 +492,7 @@ export default class UnityWidget {
     if (!cfg) return null;
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
-    img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
+    if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
     const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
