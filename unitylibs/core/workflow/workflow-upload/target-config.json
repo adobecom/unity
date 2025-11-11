@@ -13,13 +13,13 @@
     "limits-photoshop": {
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
       "maxFileSize": 40000000,
-      "maxHeignt": 8000,
+      "maxHeight": 8000,
       "maxWidth": 8000
     },
     "limits-lightroom": {
       "allowedFileTypes": ["image/jpeg", "image/jpg"],
       "maxFileSize": 40000000,
-      "maxHeignt": 8000,
+      "maxHeight": 8000,
       "maxWidth": 8000
     },
     "limits-firefly": {

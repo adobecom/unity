@@ -322,33 +322,20 @@ export default class ActionBinder {
     }
   }
 
-  async checkImageDimensions(objectUrl) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = async () => {
-        const { naturalWidth: width, naturalHeight: height } = img;
-        URL.revokeObjectURL(objectUrl);
-        const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
-        const isMinLimits = this.limits.minWidth && this.limits.minHeight;
-        if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
-          this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
-          reject(new Error('Unable to process the file type!'));
-          return;
-        } else if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
-          this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
-          reject(new Error('Unable to process the file type!'));
-          return;
-        } else {
-          resolve({ width, height });
-          return;
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Failed to load image'));
-      };
-      img.src = objectUrl;
-    });
+  async checkImageDimensions(file) {
+    const { getImageDimensions } = await import(`${getUnityLibs()}/utils/FileUtils.js`);
+    const { width, height } = await getImageDimensions(file);
+    const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
+    const isMinLimits = this.limits.minWidth && this.limits.minHeight;
+    if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
+      this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
+      throw new Error('Unable to process the file type!');
+    }
+    if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
+      this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
+      throw new Error('Unable to process the file type!');
+    }
+    return { width, height };
   }
 
   async initAnalytics() {
@@ -384,8 +371,10 @@ export default class ActionBinder {
       this.handleClientUploadError('.icon-error-filesize', 'error-filesize', '');
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    await this.checkImageDimensions(objectUrl);
+    try { await this.checkImageDimensions(file); } catch (error) {
+      window.lana?.log(`Message: Error checking image dimensions, Error: ${error}`, this.lanaOptions);
+      return;
+    }
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     this.logAnalyticsinSplunk('Uploading Started|UnityWidget');
     if (this.workflowCfg.pswFeature) {
