@@ -241,12 +241,11 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .inp-wrap {
   flex-flow: wrap;
-  gap: var(--spacing-s);
   justify-content: space-between;
 }
 
 :root:has(meta[name="theme"][content="max25"]) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .inp-wrap {
-  gap: 10px;
+  gap: 5px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:hover,
@@ -315,10 +314,12 @@
   line-height: 20.8px;
   border: none;
   width: 100%;
+  height: 46px;
   border-radius: 3px;
   font-family: inherit;
   outline: none;
   background: linear-gradient(rgba(255 255 255 / 0%), rgba(55 255 255 / 0%));
+  resize: none;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .inp-wrap .inp-field {
@@ -349,10 +350,6 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
   display: flex;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .inp-wrap .act-wrap {
-  order: 3;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn {
@@ -682,7 +679,6 @@
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
   display: flex;
-  order: 2;
   max-width: 114px;
   position: relative;
 }
@@ -896,17 +892,7 @@
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
-    order: 1;
     flex: 1 1 100%;
-  }
-
-  .unity-enabled .interactive-area .verbs-container,
-  .unity-enabled .interactive-area .models-container {
-    order: 2;
-  }
-
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
-    order: 3;
   }
 
   .unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
