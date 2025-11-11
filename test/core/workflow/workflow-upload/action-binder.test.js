@@ -345,24 +345,65 @@ describe('Unity Upload Block', () => {
         canvas.toBlob(resolve);
       });
       const objectUrl = URL.createObjectURL(blob);
+    });
+
+    it('should handle checkImageDimensions with dimensions exceeding limits using image file', async () => {
+      const testWorkflowCfg = {
+        productName: 'test-product',
+        targetCfg: {
+          limits: {
+            maxNumFiles: 1,
+            maxFileSize: 40000000,
+            maxHeight: 100,
+            maxWidth: 100,
+            allowedFileTypes: ['image/png', 'image/jpeg', 'image/jpg'],
+          },
+        },
+      };
+      const actionBinder = new ActionBinder(unityEl, testWorkflowCfg, unityEl, [unityEl]);
+      actionBinder.serviceHandler = { showErrorToast: () => {} };
+
+      const width = 200;
+      const height = 200;
+      const buffer = new ArrayBuffer(32);
+      const view = new DataView(buffer);
+      view.setUint32(16, width);
+      view.setUint32(20, height);
+      const file = new File([buffer], 'large.png', { type: 'image/png' });
 
       try {
-        await actionBinder.checkImageDimensions(objectUrl);
+        await actionBinder.checkImageDimensions(file);
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error.message).to.equal('Unable to process the file type!');
       }
     });
 
-    it('should handle image load error', async () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+    it('should handle checkImageDimensions with valid dimensions using image file', async () => {
+      const testWorkflowCfg = {
+        productName: 'test-product',
+        targetCfg: {
+          limits: {
+            maxNumFiles: 1,
+            maxFileSize: 40000000,
+            maxHeight: 8000,
+            maxWidth: 8000,
+            allowedFileTypes: ['image/png', 'image/jpeg', 'image/jpg'],
+          },
+        },
+      };
+      const actionBinder = new ActionBinder(unityEl, testWorkflowCfg, unityEl, [unityEl]);
 
-      try {
-        await actionBinder.checkImageDimensions('invalid-url');
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.equal('Failed to load image');
-      }
+      const width = 100;
+      const height = 100;
+      const buffer = new ArrayBuffer(32);
+      const view = new DataView(buffer);
+      view.setUint32(16, width);
+      view.setUint32(20, height);
+      const file = new File([buffer], 'valid.png', { type: 'image/png' });
+
+      const result = await actionBinder.checkImageDimensions(file);
+      expect(result).to.deep.equal({ width, height });
     });
 
     it('should initialize analytics', async () => {
@@ -858,29 +899,8 @@ describe('Unity Upload Block', () => {
         canvas.toBlob(resolve, 'image/jpeg');
       });
       const objectUrl = URL.createObjectURL(blob);
-
-      try {
-        await actionBinder.checkImageDimensions(objectUrl);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.equal('Unable to process the file type!');
-      }
     });
 
-    it('should handle checkImageDimensions with valid dimensions', async () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 100;
-      canvas.height = 100;
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob(resolve, 'image/jpeg');
-      });
-      const objectUrl = URL.createObjectURL(blob);
-
-      const result = await actionBinder.checkImageDimensions(objectUrl);
-      expect(result).to.deep.equal({ width: 100, height: 100 });
-    });
 
     it('should handle continueInApp with query parameters parsing', async () => {
       const testWorkflowCfg = {
