@@ -194,7 +194,7 @@ export default class ActionBinder {
         el.addEventListener('mousedown', (event) => event.preventDefault());
         el.addEventListener('click', handleClick);
         break;
-      case 'INPUT':
+      case 'TEXTAREA':
         this.addInputEvents(el);
         break;
       default:

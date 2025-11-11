@@ -60,9 +60,12 @@ export default class TransitionScreen {
     const newDelay = Math.min(delay + 100, 2000);
     const newI = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    const currentValue = parseInt(progressBar?.getAttribute('value'), 10);
-    if (currentValue === 100 || (!initialize && currentValue >= this.LOADER_LIMIT)) return;
     if (initialize) this.updateProgressBar(s, 0);
+    else {
+      const currentValue = parseInt(progressBar?.getAttribute('value'), 10);
+      if (currentValue === 100 || currentValue >= this.LOADER_LIMIT) return;
+    }
+
     setTimeout(() => {
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       if (v === 100) return;
