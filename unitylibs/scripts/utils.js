@@ -292,10 +292,9 @@ export const unityConfig = (() => {
       env: 'prod',
       ...commoncfg,
     },
-    // TODO: vipulg - change to stage.adobe.io
     stage: {
-      apiEndPoint: 'https://unity-dev.adobe.io/api/v1',
-      connectorApiEndPoint: 'https://unity-dev.adobe.io/api/v1/asset/connector',
+      apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
+      connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
       env: 'stage',
       ...commoncfg,
     },

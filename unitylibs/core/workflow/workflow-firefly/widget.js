@@ -515,10 +515,9 @@ export default class UnityWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    // TODO vipulg: remove draft urls and use production urls
     const promptFile = locale.prefix && locale.prefix !== '/'
-      ? `${baseUrl}${locale.prefix}/drafts/vipulg/prompt/firefly-prompt.json`
-      : `${baseUrl}/drafts/vipulg/prompt/firefly-prompt.json`;
+      ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
+      : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
     const promptRes = await fetch(promptFile);
     if (!promptRes.ok) {
       throw new Error('Failed to fetch prompts.');
