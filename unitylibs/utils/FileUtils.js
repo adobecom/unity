@@ -25,7 +25,7 @@ export function getMimeType(fileName) {
 }
 
 export async function getImageDimensions(file) {
-  const buffer = await file.slice(0, 64 * 1024).arrayBuffer();
+  const buffer = await file.slice(0, 256 * 1024).arrayBuffer();
   const view = new DataView(buffer);
   const type = file.type || '';
   const parsers = {
