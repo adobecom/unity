@@ -24,7 +24,7 @@
     },
     "limits-firefly": {
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/webp"],
-      "maxFileSize": 500000000,
+      "maxFileSize": 512000000,
       "minHeight": 512,
       "minWidth": 512
     },
