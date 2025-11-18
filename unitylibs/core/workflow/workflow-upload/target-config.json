@@ -24,7 +24,7 @@
     },
     "limits-firefly": {
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/webp"],
-      "maxFileSize": 512000000,
+      "maxFileSize": 100000000,
       "minHeight": 512,
       "minWidth": 512
     },
@@ -32,7 +32,7 @@
     "splashScreenConfig": {
       "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
       "fragmentLink-lightroom": "/cc-shared/fragments/products/photoshop-lightroom/unity/splash-page/splashscreen",
-      "fragmentLink-firefly": "/drafts/arushi/firefly/fragments/splashscreen",
+      "fragmentLink-firefly": "/cc-shared/fragments/products/firefly/unity/splash-page",
       "splashScreenParent": "body"
     },
     "actionMap": {
