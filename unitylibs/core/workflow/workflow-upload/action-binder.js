@@ -351,7 +351,7 @@ export default class ActionBinder {
   }
 
   handleClientUploadError(errorTypeSelector, errorCode, fileMetaData = {}, message = '') {
-    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector, errorCode: errorCode || undefined, fileMetaData: fileMetaData || undefined }, message, this.lanaOptions, 'client');
+    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector, errorCode: errorCode, fileMetaData }, message, this.lanaOptions, 'client');
     this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode, fileMetaData } });
   }
 
