@@ -11,7 +11,7 @@ export default class FireflyPage {
     this.vectorVerbLink = this.unityWrapper.locator('a.verb-link[data-verb-type="vector"]');
     this.videoVerbLink = this.unityWrapper.locator('a.verb-link[data-verb-type="video"]');
     this.generateVideoButton = this.unityWrapper.locator('a.gen-btn[aria-label="Generate video"]');
-    this.promptInput = this.unityWrapper.locator('input#promptInput');
+    this.promptInput = this.unityWrapper.locator('textarea#promptInput');
     this.promptDropdown = this.unityWrapper.locator('ul#prompt-dropdown');
     this.promptSuggestions = this.unityWrapper.locator('ul#prompt-dropdown li.drop-item').first();
     this.tipLabel = this.unityWrapper.locator('span#tip-text');
