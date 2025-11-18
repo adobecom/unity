@@ -361,7 +361,8 @@ describe('Unity Upload Block', () => {
         },
       };
       const actionBinder = new ActionBinder(unityEl, testWorkflowCfg, unityEl, [unityEl]);
-      actionBinder.serviceHandler = { showErrorToast: () => {} };
+      const showErrorToast = sinon.spy();
+      actionBinder.serviceHandler = { showErrorToast };
 
       const width = 200;
       const height = 200;
@@ -376,6 +377,9 @@ describe('Unity Upload Block', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error.message).to.equal('Unable to process the file type!');
+        expect(showErrorToast.calledOnce).to.be.true;
+        const args = showErrorToast.getCall(0).args[0];
+        expect(args).to.have.property('fileMetaData', '200x200');
       }
     });
 
