@@ -4,7 +4,6 @@ import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
 import ActionBinder from '../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
 import UnityWidget from '../../../unitylibs/core/workflow/workflow-firefly/widget.js';
-import augmentSound from '../../../unitylibs/core/workflow/workflow-firefly/sound-utils.js';
 
 describe('Firefly Workflow Tests', () => {
   let actionBinder;
@@ -17,8 +16,6 @@ describe('Firefly Workflow Tests', () => {
   let spriteContainer;
 
   before(async () => {
-    // Attach sound methods onto the widget prototype for tests
-    augmentSound(UnityWidget.prototype);
     document.body.innerHTML = await readFile({ path: './mocks/ff-body.html' });
     unityElement = document.querySelector('.unity');
     workflowCfg = {
@@ -298,18 +295,14 @@ describe('Firefly Workflow Tests', () => {
       expect(dropdown.classList.contains('hidden')).to.be.true;
     });
 
-    it('should not hide dropdown when clicking inside autocomplete area', () => {
+    it('should not hide dropdown when clicking inside widget', () => {
       const dropdown = document.querySelector('.drop');
       actionBinder.dropdown = dropdown;
       actionBinder.widget = document.querySelector('.ex-unity-widget');
-      // Click inside the autocomplete wrapper which UnityWidget treats as safe area
-      const auto = actionBinder.widget.querySelector('.autocomplete');
-      const inner = document.createElement('div');
-      auto.appendChild(inner);
 
       actionBinder.showDropdown();
       const insideEvent = new MouseEvent('click', { bubbles: true });
-      inner.dispatchEvent(insideEvent);
+      actionBinder.widget.dispatchEvent(insideEvent);
 
       expect(dropdown.classList.contains('hidden')).to.be.false;
     });
@@ -351,8 +344,7 @@ describe('Firefly Workflow Tests', () => {
       const limited = unityWidget.getLimitedDisplayPrompts(prompts);
 
       expect(limited.length).to.be.lessThanOrEqual(3);
-      expect(limited[0]).to.have.property('prompt');
-      expect(limited[0]).to.have.property('assetid');
+      expect(limited[0]).to.have.property('displayPrompt');
     });
 
     it('should create prompt map correctly', () => {
@@ -398,142 +390,6 @@ describe('Firefly Workflow Tests', () => {
       const filteredPrompts = data.filter((item) => item.prompt && item.prompt.trim() !== '');
       expect(filteredPrompts).to.have.length(1);
       expect(filteredPrompts[0].prompt).to.equal('valid prompt');
-    });
-  });
-
-  describe('hidePromptDropdown edge cases', () => {
-    it('should not close model menu when exceptElement is the selected model button', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      // Attach widgetWrap and widget to the document to mirror production DOM
-      document.body.appendChild(w.widgetWrap);
-      w.widgetWrap.appendChild(w.widget);
-      const dropdown = document.createElement('div');
-      dropdown.className = 'prompt-dropdown-container drop';
-      w.widget.appendChild(dropdown);
-      const models = document.createElement('div');
-      models.className = 'models-container show-menu';
-      const selectedModelBtn = document.createElement('button');
-      selectedModelBtn.className = 'selected-model';
-      models.appendChild(selectedModelBtn);
-      w.widget.appendChild(models);
-      w.hidePromptDropdown(selectedModelBtn);
-      expect(dropdown.classList.contains('hidden')).to.be.true;
-      expect(models.classList.contains('show-menu')).to.be.true;
-      expect(selectedModelBtn.getAttribute('aria-expanded')).to.not.equal('false');
-    });
-
-    it('should not close verb menu when exceptElement is the selected verb button', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      document.body.appendChild(w.widgetWrap);
-      w.widgetWrap.appendChild(w.widget);
-      const dropdown = document.createElement('div');
-      dropdown.className = 'prompt-dropdown-container drop';
-      w.widget.appendChild(dropdown);
-      const verbs = document.createElement('div');
-      verbs.className = 'verbs-container show-menu';
-      const selectedVerbBtn = document.createElement('button');
-      selectedVerbBtn.className = 'selected-verb';
-      verbs.appendChild(selectedVerbBtn);
-      w.widget.appendChild(verbs);
-      w.hidePromptDropdown(selectedVerbBtn);
-      expect(dropdown.classList.contains('hidden')).to.be.true;
-      expect(verbs.classList.contains('show-menu')).to.be.true;
-      expect(selectedVerbBtn.getAttribute('aria-expanded')).to.not.equal('false');
-    });
-
-    it('should close model and verb menus when exceptElement is different', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widget = document.createElement('div');
-      const dropdown = document.createElement('div');
-      dropdown.className = 'prompt-dropdown-container drop';
-      w.widget.appendChild(dropdown);
-      const models = document.createElement('div');
-      models.className = 'models-container show-menu';
-      const selectedModelBtn = document.createElement('button');
-      selectedModelBtn.className = 'selected-model';
-      models.appendChild(selectedModelBtn);
-      const verbs = document.createElement('div');
-      verbs.className = 'verbs-container show-menu';
-      const selectedVerbBtn = document.createElement('button');
-      selectedVerbBtn.className = 'selected-verb';
-      verbs.appendChild(selectedVerbBtn);
-      w.widget.appendChild(models);
-      w.widget.appendChild(verbs);
-      // Pass a different element as exceptElement so both menus should close
-      w.hidePromptDropdown(document.createElement('button'));
-      expect(dropdown.classList.contains('hidden')).to.be.true;
-      expect(models.classList.contains('show-menu')).to.be.false;
-      expect(selectedModelBtn.getAttribute('aria-expanded')).to.equal('false');
-      expect(verbs.classList.contains('show-menu')).to.be.false;
-      expect(selectedVerbBtn.getAttribute('aria-expanded')).to.equal('false');
-    });
-  });
-
-  describe('Sound prompt dropdown interactions', () => {
-    it('clicking a sound suggestion expands details and renders inline Use button', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.selectedVerbType = 'sound';
-      const dropdown = document.createElement('ul');
-      document.body.appendChild(dropdown);
-      const prompts = [
-        { prompt: 'p1', assetid: 'a1', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }] },
-      ];
-      const ph = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
-      w.addPromptItemsToDropdown(dropdown, prompts, ph);
-      const item = dropdown.querySelector('.drop-item');
-      item.click();
-      expect(item.classList.contains('sound-expanded')).to.be.true;
-      expect(item.nextElementSibling?.classList.contains('sound-details')).to.be.true;
-      expect(item.querySelector('.use-prompt-btn.inline')).to.exist;
-    });
-
-    it('Enter/Space on a sound suggestion expands details', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.selectedVerbType = 'sound';
-      const dropdown = document.createElement('ul');
-      document.body.appendChild(dropdown);
-      const prompts = [
-        { prompt: 'p1', assetid: 'a1', variations: [{ label: 'A', url: 'u1' }] },
-      ];
-      const ph = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
-      w.addPromptItemsToDropdown(dropdown, prompts, ph);
-      const item = dropdown.querySelector('.drop-item');
-      item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      expect(item.classList.contains('sound-expanded')).to.be.true;
-      // Reset and test Space
-      item.classList.remove('sound-expanded');
-      if (item.nextElementSibling && item.nextElementSibling.classList?.contains('sound-details')) item.nextElementSibling.remove();
-      const inlineExisting = item.querySelector('.use-prompt-btn.inline');
-      if (inlineExisting) inlineExisting.remove();
-      item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      expect(item.classList.contains('sound-expanded')).to.be.true;
-    });
-
-    it('Tab from expanded suggestion focuses the inline Use button', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.selectedVerbType = 'sound';
-      const dropdown = document.createElement('ul');
-      document.body.appendChild(dropdown);
-      const prompts = [
-        { prompt: 'p1', assetid: 'a1', variations: [{ label: 'A', url: 'u1' }] },
-      ];
-      const ph = { 'placeholder-prompt': 'Prompt', 'placeholder-suggestions': 'Suggestions' };
-      w.addPromptItemsToDropdown(dropdown, prompts, ph);
-      const item = dropdown.querySelector('.drop-item');
-      // Expand first
-      item.click();
-      const useBtn = item.querySelector('.use-prompt-btn.inline');
-      expect(useBtn).to.exist;
-      // Press Tab on the expanded suggestion row
-      item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
-      setTimeout(() => {
-        expect(document.activeElement).to.equal(useBtn);
-        done();
-      }, 0);
     });
   });
 
@@ -809,7 +665,7 @@ describe('Firefly Workflow Tests', () => {
       const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widget = document.createElement('div');
       const dropdown = document.createElement('div');
-      dropdown.classList.add('prompt-dropdown-container', 'drop');
+      dropdown.classList.add('drop');
       testWidget.widget.appendChild(dropdown);
       testWidget.hidePromptDropdown();
       expect(dropdown.classList.contains('hidden')).to.be.true;
@@ -845,6 +701,12 @@ describe('Firefly Workflow Tests', () => {
       expect(limited).to.have.length(3);
       expect(limited[0]).to.have.property('prompt');
       expect(limited[0]).to.have.property('assetid');
+      expect(limited[0]).to.have.property('displayPrompt');
+      const longPrompt = limited.find((item) => item.prompt.includes('very long prompt'));
+      if (longPrompt) {
+        expect(longPrompt.displayPrompt).to.include('…');
+        expect(longPrompt.displayPrompt.length).to.be.lessThan(110);
+      }
     });
 
     it('should add prompt items to dropdown correctly', () => {
@@ -852,8 +714,8 @@ describe('Firefly Workflow Tests', () => {
       testWidget.selectedVerbType = 'image';
       const dropdown = document.createElement('ul');
       const prompts = [
-        { prompt: 'Test prompt 1', assetid: '1' },
-        { prompt: 'Test prompt 2', assetid: '2' },
+        { prompt: 'Test prompt 1', assetid: '1', displayPrompt: 'Test prompt 1' },
+        { prompt: 'Test prompt 2', assetid: '2', displayPrompt: 'Test prompt 2' },
       ];
       const placeholder = {
         'placeholder-prompt': 'Prompt',
@@ -1183,7 +1045,6 @@ describe('Firefly Workflow Tests', () => {
     beforeEach(() => {
       testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widgetWrap = document.createElement('div');
-      testWidget.widget = document.createElement('div');
       testWidget.updateDropdownForVerb = sinon.stub();
       testWidget.updateAnalytics = sinon.stub();
 
@@ -1254,16 +1115,17 @@ describe('Firefly Workflow Tests', () => {
       expect(verbLinks[1].parentElement.classList.contains('selected')).to.be.false;
     });
 
-    it('should set selection state for all verb links', () => {
+    it('should set aria-label for all verb links', () => {
       const verbLinks = verbList.querySelectorAll('.verb-link');
 
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      // The clicked link should be marked selected; others should not
-      expect(verbLinks[0].getAttribute('aria-selected')).to.equal('true');
-      expect(verbLinks[1].getAttribute('aria-selected')).to.equal('false');
+      // The clicked link gets a different aria-label
+      expect(verbLinks[0].parentElement.getAttribute('aria-label')).to.equal(`iconImage prompt selected:  ${inputPlaceHolder}`);
+      // Other links get the standard aria-label
+      expect(verbLinks[1].parentElement.getAttribute('aria-label')).to.equal(`video prompt: ${inputPlaceHolder}`);
     });
 
     it('should toggle show-menu class on selected element parent', () => {
@@ -1304,12 +1166,13 @@ describe('Firefly Workflow Tests', () => {
       expect(selectedElement.dataset.selectedVerb).to.equal('image');
     });
 
-    it('should update expanded state for selected element', () => {
+    it('should update aria-label for selected element', () => {
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      expect(selectedElement.getAttribute('aria-expanded')).to.equal('true');
+      const expectedLabel = `iconImage prompt: ${inputPlaceHolder}`;
+      expect(selectedElement.getAttribute('aria-label')).to.equal(expectedLabel);
     });
 
     it('should focus selected element', () => {
@@ -1323,12 +1186,13 @@ describe('Firefly Workflow Tests', () => {
       focusStub.restore();
     });
 
-    it('should keep selected link parent marked as selected', () => {
+    it('should update aria-label for selected link parent', () => {
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      expect(link.parentElement.classList.contains('selected')).to.be.true;
+      const expectedLabel = `iconImage prompt selected:  ${inputPlaceHolder}`;
+      expect(link.parentElement.getAttribute('aria-label')).to.equal(expectedLabel);
     });
 
     it('should call updateDropdownForVerb when verb is not in verbsWithoutPromptSuggestions', () => {
@@ -1432,7 +1296,7 @@ describe('Firefly Workflow Tests', () => {
 
       // Create verb elements
       const verb1 = document.createElement('span');
-      verb1.className = 'icon icon-verb-image';
+      verb1.className = 'icon-verb-image';
       const verb1Link = document.createElement('a');
       verb1Link.href = 'image-icon.svg';
       verb1Link.textContent = 'Image';
@@ -1440,7 +1304,7 @@ describe('Firefly Workflow Tests', () => {
       mockEl.appendChild(verb1Link);
 
       const verb2 = document.createElement('span');
-      verb2.className = 'icon icon-verb-video';
+      verb2.className = 'icon-verb-video';
       const verb2Link = document.createElement('a');
       verb2Link.href = 'video-icon.svg';
       verb2Link.textContent = 'Video';
@@ -1468,9 +1332,9 @@ describe('Firefly Workflow Tests', () => {
       expect(selectedElement.tagName).to.equal('BUTTON');
       expect(selectedElement.className).to.equal('selected-verb');
       expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
-      expect(selectedElement.getAttribute('aria-controls')).to.equal('media-menu');
+      expect(selectedElement.getAttribute('aria-controls')).to.equal('prompt-menu');
       expect(selectedElement.getAttribute('data-selected-verb')).to.equal('image');
-      expect(selectedElement.getAttribute('aria-label')).to.equal('media type');
+      expect(selectedElement.getAttribute('aria-label')).to.equal('image prompt: Enter your prompt');
       expect(selectedElement.getAttribute('disabled')).to.equal('true');
     });
 
@@ -1492,7 +1356,7 @@ describe('Firefly Workflow Tests', () => {
       // Check verb list
       expect(verbList.tagName).to.equal('UL');
       expect(verbList.className).to.equal('verb-list');
-      expect(verbList.id).to.equal('media-menu');
+      expect(verbList.id).to.equal('prompt-menu');
       expect(verbList.getAttribute('style')).to.equal('display: none;');
     });
 
@@ -1513,7 +1377,7 @@ describe('Firefly Workflow Tests', () => {
       // Check first item (should be selected)
       const firstItem = verbItems[0];
       expect(firstItem.classList.contains('selected')).to.be.true;
-      expect(firstItem.classList.contains('selected')).to.be.true;
+      expect(firstItem.getAttribute('aria-label')).to.equal('Image prompt selected: Enter your prompt');
       const firstLink = firstItem.querySelector('.verb-link');
       expect(firstLink.getAttribute('data-verb-type')).to.equal('image');
       expect(firstLink.textContent.trim()).to.equal('Image');
@@ -1521,7 +1385,7 @@ describe('Firefly Workflow Tests', () => {
       // Check second item
       const secondItem = verbItems[1];
       expect(secondItem.classList.contains('selected')).to.be.false;
-      expect(secondItem.getAttribute('aria-label')).to.be.null;
+      expect(secondItem.getAttribute('aria-label')).to.equal('Video prompt: Enter your prompt');
       const secondLink = secondItem.querySelector('.verb-link');
       expect(secondLink.getAttribute('data-verb-type')).to.equal('video');
       expect(secondLink.textContent.trim()).to.equal('Video');
@@ -1584,11 +1448,8 @@ describe('Firefly Workflow Tests', () => {
       const verbList = result[1];
       const verbLinks = verbList.querySelectorAll('.verb-link');
       expect(verbLinks.length).to.equal(2);
-      // Simulate clicks to trigger the listContainer listener
-      verbLinks[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      verbLinks[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
       expect(handleVerbLinkClickStub.calledTwice).to.be.true;
-      // Check that first call has correct parameters
+      // Check that each call has correct parameters
       const { firstCall } = handleVerbLinkClickStub;
       expect(firstCall.args[0]).to.equal(verbLinks[0]);
       expect(firstCall.args[1]).to.equal(verbList);
@@ -1646,7 +1507,7 @@ describe('Firefly Workflow Tests', () => {
       const noPlaceholderMockEl = document.createElement('div');
       // Create verb elements
       const verb1 = document.createElement('span');
-      verb1.className = 'icon icon-verb-image';
+      verb1.className = 'icon-verb-image';
       const verb1Link = document.createElement('a');
       verb1Link.href = 'image-icon.svg';
       verb1Link.textContent = 'Image';
@@ -1654,7 +1515,7 @@ describe('Firefly Workflow Tests', () => {
       noPlaceholderMockEl.appendChild(verb1Link);
 
       const verb2 = document.createElement('span');
-      verb2.className = 'icon icon-verb-video';
+      verb2.className = 'icon-verb-video';
       const verb2Link = document.createElement('a');
       verb2Link.href = 'video-icon.svg';
       verb2Link.textContent = 'Video';
@@ -1693,205 +1554,6 @@ describe('Firefly Workflow Tests', () => {
       const verbItems = verbList.querySelectorAll('.verb-item');
       expect(verbItems.length).to.equal(2);
       expect(verbItems[1].querySelector('.verb-link').textContent.trim()).to.equal('');
-    });
-  });
-
-  describe('Model dropdown and verb/model interplay', () => {
-    let testWidget;
-    beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      // Set placeholder input used by modelDropdown for aria labels
-      const mockEl = document.createElement('div');
-      const placeholderInput = document.createElement('span');
-      placeholderInput.className = 'icon-placeholder-input';
-      const placeholderParent = document.createElement('div');
-      placeholderParent.textContent = 'Enter your prompt';
-      placeholderParent.appendChild(placeholderInput);
-      mockEl.appendChild(placeholderParent);
-      testWidget.el = mockEl;
-      testWidget.widget = document.createElement('div');
-      testWidget.widgetWrap = document.createElement('div');
-      testWidget.hasModelOptions = true;
-      testWidget.models = [
-        { module: 'image', name: 'Img A', id: 'ia', version: '1', icon: 'i' },
-        { module: 'image', name: 'Img B', id: 'ib', version: '1', icon: 'i' },
-        { module: 'video', name: 'Vid A', id: 'va', version: '1', icon: 'i' },
-      ];
-    });
-
-    it('clicking a model item updates selected model state and aria', () => {
-      testWidget.selectedVerbType = 'image';
-      const [btn, list] = testWidget.modelDropdown();
-      const container = document.createElement('div');
-      container.className = 'models-container';
-      container.append(btn, list);
-      testWidget.widget.appendChild(container);
-      const firstModelLink = list.querySelector('.verb-link');
-      firstModelLink.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(testWidget.selectedModelId).to.equal('ia');
-      expect(testWidget.selectedModelVersion).to.equal('1');
-      expect(testWidget.selectedModelModule).to.equal('image');
-      expect(btn.getAttribute('aria-label')).to.equal('model type');
-      const firstItem = list.querySelector('.verb-item');
-      expect(firstItem.classList.contains('selected')).to.be.true;
-    });
-
-    it('changing verb replaces existing models container when new verb has models', () => {
-      // Prepare an existing models container
-      testWidget.selectedVerbType = 'image';
-      const [btn, list] = testWidget.modelDropdown();
-      const modelsContainer = document.createElement('div');
-      modelsContainer.className = 'models-container';
-      modelsContainer.append(btn, list);
-      testWidget.widget.appendChild(modelsContainer);
-      // Prepare action container
-      const actionContainer = document.createElement('div');
-      actionContainer.className = 'action-container';
-      testWidget.widget.appendChild(actionContainer);
-      // Now click a verb link (simulate module mismatch branch) -> should rebuild models for selected verb
-      const vdEl = document.createElement('ul');
-      const vItem = document.createElement('li');
-      const vLink = document.createElement('a');
-      vLink.className = 'verb-link';
-      vLink.setAttribute('data-verb-type', 'video');
-      vLink.innerHTML = '<span>icon</span>Video';
-      vItem.appendChild(vLink);
-      vdEl.appendChild(vItem);
-      const menuIcon = document.createElement('span');
-      const selBtn = document.createElement('button');
-      const verbMenuContainer = document.createElement('div');
-      verbMenuContainer.className = 'verbs-container';
-      verbMenuContainer.appendChild(selBtn);
-      document.body.appendChild(verbMenuContainer);
-      // Invoke the handler directly
-      const handler = testWidget.handleVerbLinkClick(vLink, vdEl, selBtn, menuIcon, 'Enter your prompt');
-      handler(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      const newModels = testWidget.widget.querySelector('.models-container');
-      expect(newModels).to.exist;
-      expect(newModels).to.not.equal(modelsContainer);
-      document.body.removeChild(verbMenuContainer);
-    });
-
-    it('changing verb removes models container and clears model state when no models', () => {
-      // Only image has models; set verb to video then to a module with no models
-      testWidget.models = [{ module: 'image', name: 'Img A', id: 'ia', version: '1', icon: 'i' }];
-      // Seed an existing models container
-      testWidget.selectedVerbType = 'image';
-      const [btn, list] = testWidget.modelDropdown();
-      const modelsContainer = document.createElement('div');
-      modelsContainer.className = 'models-container';
-      modelsContainer.append(btn, list);
-      testWidget.widget.appendChild(modelsContainer);
-      // Prepare action container
-      const actionContainer = document.createElement('div');
-      actionContainer.className = 'action-container';
-      testWidget.widget.appendChild(actionContainer);
-      // Click a verb that has no models
-      const vdEl = document.createElement('ul');
-      const vItem = document.createElement('li');
-      const vLink = document.createElement('a');
-      vLink.className = 'verb-link';
-      vLink.setAttribute('data-verb-type', 'video');
-      vLink.innerHTML = '<span>icon</span>Video';
-      vItem.appendChild(vLink);
-      vdEl.appendChild(vItem);
-      const selBtn2 = document.createElement('button');
-      const verbMenuContainer2 = document.createElement('div');
-      verbMenuContainer2.className = 'verbs-container';
-      verbMenuContainer2.appendChild(selBtn2);
-      document.body.appendChild(verbMenuContainer2);
-      const handler = testWidget.handleVerbLinkClick(vLink, vdEl, selBtn2, document.createElement('span'), 'Enter');
-      handler(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      expect(testWidget.widget.querySelector('.models-container')).to.be.null;
-      expect(testWidget.selectedModelId).to.equal('');
-      expect(testWidget.selectedModelVersion).to.equal('');
-      document.body.removeChild(verbMenuContainer2);
-    });
-
-    it('appends models container when it did not exist and new verb has models', () => {
-      testWidget.selectedVerbType = 'video';
-      // Add action container but no models container
-      const actionContainer = document.createElement('div');
-      actionContainer.className = 'action-container';
-      testWidget.widget.appendChild(actionContainer);
-      // Click a verb that has models (image)
-      const vdEl = document.createElement('ul');
-      const vItem = document.createElement('li');
-      const vLink = document.createElement('a');
-      vLink.className = 'verb-link';
-      vLink.setAttribute('data-verb-type', 'image');
-      vLink.innerHTML = '<span>icon</span>Image';
-      vItem.appendChild(vLink);
-      vdEl.appendChild(vItem);
-      const selBtn3 = document.createElement('button');
-      const verbMenuContainer3 = document.createElement('div');
-      verbMenuContainer3.className = 'verbs-container';
-      verbMenuContainer3.appendChild(selBtn3);
-      document.body.appendChild(verbMenuContainer3);
-      const handler = testWidget.handleVerbLinkClick(vLink, vdEl, selBtn3, document.createElement('span'), 'Enter');
-      handler(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      const newModels = testWidget.widget.querySelector('.models-container');
-      expect(newModels).to.exist;
-      expect(newModels.querySelectorAll('.verb-item').length).to.be.greaterThan(0);
-      document.body.removeChild(verbMenuContainer3);
-    });
-  });
-
-  describe('verbDropdown outside click handler', () => {
-    it('closes the verb menu on outside document click', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      document.body.appendChild(w.widgetWrap);
-      w.widgetWrap.appendChild(w.widget);
-      // Build a minimal el with two verbs and placeholder
-      const el = document.createElement('div');
-      const placeholderInput = document.createElement('span');
-      placeholderInput.className = 'icon-placeholder-input';
-      const placeholderParent = document.createElement('div');
-      placeholderParent.textContent = 'Enter your prompt';
-      placeholderParent.appendChild(placeholderInput);
-      el.appendChild(placeholderParent);
-      const verb1 = document.createElement('span');
-      verb1.className = 'icon icon-verb-image';
-      const v1Link = document.createElement('a');
-      v1Link.href = 'image-icon.svg';
-      v1Link.textContent = 'Image';
-      const verb2 = document.createElement('span');
-      verb2.className = 'icon icon-verb-video';
-      const v2Link = document.createElement('a');
-      v2Link.href = 'video-icon.svg';
-      v2Link.textContent = 'Video';
-      el.append(verb1, v1Link, verb2, v2Link);
-      w.el = el;
-      const [selected, list] = w.verbDropdown();
-      const menuContainer = document.createElement('div');
-      menuContainer.className = 'verbs-container';
-      menuContainer.append(selected, list);
-      // Attach menu inside widget to mirror production structure
-      w.widget.appendChild(menuContainer);
-      // Open the menu via click (adds the document click handler)
-      selected.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      // Click outside on a real element to avoid null targets
-      const outside = document.createElement('div');
-      document.body.appendChild(outside);
-      setTimeout(() => {
-        // Prevent stale document click handlers from previous tests
-        const stopper = (ev) => { ev.stopImmediatePropagation(); };
-        document.addEventListener('click', stopper, true);
-        outside.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        // Emulate close behavior to validate state changes
-        menuContainer.classList.remove('show-menu');
-        selected.setAttribute('aria-expanded', 'false');
-        expect(menuContainer.classList.contains('show-menu')).to.be.false;
-        expect(selected.getAttribute('aria-expanded')).to.equal('false');
-        document.removeEventListener('click', stopper, true);
-        w.widget.removeChild(menuContainer);
-        document.body.removeChild(w.widgetWrap);
-        document.body.removeChild(outside);
-        done();
-      }, 0);
     });
   });
 
@@ -2034,79 +1696,6 @@ describe('Firefly Workflow Tests', () => {
 
       const result = testWidget.createPromptMap(mockData);
       expect(result).to.be.an('object');
-    });
-  });
-
-  describe('loadPrompts and models', () => {
-    let originalFetch;
-    let originalFetchGlobal;
-
-    beforeEach(() => {
-      originalFetch = window.fetch;
-      originalFetchGlobal = window.fetch;
-    });
-
-    afterEach(() => {
-      window.fetch = originalFetch;
-      window.fetch = originalFetchGlobal;
-    });
-
-    it('loadPrompts sets prompts using createPromptMap()', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      // Stub fetch to return stage env data so it matches unityConfig.env in tests
-      const fetchStub = sinon.stub().resolves({
-        ok: true,
-        json: () => Promise.resolve({
-          content: {
-            data: [
-              { verb: 'image', prompt: 'p1', assetid: 'a1', env: 'stage' },
-            ],
-          },
-        }),
-      });
-      window.fetch = fetchStub;
-      window.fetch = fetchStub;
-      await w.loadPrompts();
-      expect(w.prompts).to.be.an('object');
-    });
-
-    it('getModel loads and returns models when hasModelOptions is true', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.hasModelOptions = true;
-      const modelFetch = sinon.stub().resolves({
-        ok: true,
-        json: () => Promise.resolve({
-          content: {
-            data: [
-              { module: 'image', name: 'Model A', id: 'm1', version: '1', icon: 'i' },
-            ],
-          },
-        }),
-      });
-      window.fetch = modelFetch;
-      const models = await w.getModel();
-      expect(Array.isArray(models)).to.be.true;
-      if (models.length) expect(models[0].id).to.equal('m1');
-    });
-
-    it('getModel returns [] when hasModelOptions is false', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.hasModelOptions = false;
-      const models = await w.getModel();
-      expect(models).to.deep.equal([]);
-    });
-
-    it('getModel handles fetch error and logs via lana', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.hasModelOptions = true;
-      const logSpy = sinon.spy();
-      window.lana = { log: logSpy };
-      const errFetch = sinon.stub().resolves({ ok: false, status: 500, json: () => Promise.resolve({}) });
-      window.fetch = errFetch;
-      window.fetch = errFetch;
-      const models = await w.getModel();
-      expect(models).to.deep.equal([]);
-      expect(logSpy.called).to.be.true;
     });
   });
 
@@ -2634,518 +2223,6 @@ describe('Firefly Workflow Tests', () => {
       expect(sendAnalyticsStub.calledOnce).to.be.true;
       expect(alertText.innerText).to.equal('Japanese error message');
       window.sendAnalyticsEvent = originalSendAnalytics;
-    });
-  });
-
-  describe('Sound verb support', () => {
-    let originalAudio;
-
-    beforeEach(() => {
-      originalAudio = window.Audio;
-      function FakeAudio() {
-        const obj = {
-          paused: true,
-          ended: false,
-          duration: 10,
-          currentTime: 0,
-          eventListeners: {},
-        };
-        obj.addEventListener = function addEventListener(evt, cb) {
-          if (!this.eventListeners[evt]) this.eventListeners[evt] = [];
-          this.eventListeners[evt].push(cb);
-        };
-        obj.play = function play() {
-          this.paused = false;
-          (this.eventListeners.play || []).forEach((cb) => cb());
-          return Promise.resolve();
-        };
-        obj.pause = function pause() {
-          this.paused = true;
-          (this.eventListeners.pause || []).forEach((cb) => cb());
-        };
-        return obj;
-      }
-      window.Audio = FakeAudio;
-    });
-
-    afterEach(() => {
-      window.Audio = originalAudio;
-    });
-
-    it('should populate variations only for sound using placeholder labels and urls', () => {
-      const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
-      testWidget.workflowCfg.placeholder = {
-        'placeholder-variation-label-2': 'Var B',
-        'placeholder-variation-label-1': 'Var A',
-      };
-      const data = [
-        { verb: 'sound', prompt: 'sound prompt', assetid: '', env: 'stage', variationUrls: 'u1||u2||u3' },
-        { verb: 'image', prompt: 'img prompt', assetid: 'i1', env: 'stage', variationUrls: '' },
-        { verb: 'video', prompt: 'vid prompt', assetid: 'v1', env: 'stage', variationUrls: '' },
-      ];
-      const pm = testWidget.createPromptMap(data);
-      expect(pm.sound).to.exist;
-      expect(pm.sound[0].assetid).to.equal('');
-      expect(pm.sound[0].variations).to.deep.equal([
-        { label: 'Var A', url: 'u1' },
-        { label: 'Var B', url: 'u2' },
-      ]);
-      expect(pm.image).to.exist;
-      expect(pm.image[0].variations).to.deep.equal([]);
-      expect(pm.video).to.exist;
-      expect(pm.video[0].variations).to.deep.equal([]);
-    });
-
-    it('should keep play button visible after pausing a sound variation', () => {
-      const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
-      const promptObj = {
-        prompt: 'sound prompt',
-        variations: [{ label: 'Sample', url: 'u1' }],
-      };
-      const details = testWidget.renderSoundDetails(promptObj);
-      const tile = details.querySelector('.variation-tile');
-      const pauseBtn = tile.querySelector('.pause-btn');
-      // Simulate play then pause
-      tile.audioRef.play();
-      tile.audioRef.pause();
-      expect(pauseBtn.classList.contains('hidden')).to.be.false;
-    });
-  });
-
-  describe('Additional Widget coverage', () => {
-    it('formatTime should format seconds correctly', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      augmentSound(w);
-      expect(w.formatTime(0)).to.equal('0:00');
-      expect(w.formatTime(5)).to.equal('0:05');
-      expect(w.formatTime(75)).to.equal('1:15');
-    });
-
-    it('clearSelectedModelState should reset model fields', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.selectedModelId = 'id';
-      w.selectedModelVersion = 'v';
-      w.selectedModelModule = 'm';
-      w.selectedModelText = 't';
-      w.clearSelectedModelState();
-      expect(w.selectedModelId).to.equal('');
-      expect(w.selectedModelVersion).to.equal('');
-      expect(w.selectedModelModule).to.equal('');
-      expect(w.selectedModelText).to.equal('');
-    });
-
-    it('showPlaybackErrorToast should dispatch firefly-audio-error', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      augmentSound(w);
-      w.widgetWrap = document.createElement('div');
-      let fired = false;
-      w.widgetWrap.addEventListener('firefly-audio-error', () => { fired = true; });
-      w.showPlaybackErrorToast();
-      expect(fired).to.be.true;
-    });
-
-    it('createModelMap should group models by module', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const map = w.createModelMap([
-        { type: 'gen', module: 'sound', name: 'S1', id: '1', version: 'v1', icon: 'i1' },
-        { type: 'gen', module: 'image', name: 'I1', id: '2', version: 'v2', icon: 'i2' },
-        { type: 'gen', module: 'sound', name: 'S2', id: '3', version: 'v3', icon: 'i3' },
-      ]);
-      expect(map.sound).to.have.length(2);
-      expect(map.image).to.have.length(1);
-    });
-
-    it('modelDropdown should return controls when models exist for selected verb', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.hasModelOptions = true;
-      w.selectedVerbType = 'sound';
-      w.models = [
-        { module: 'sound', name: 'Model A', id: 'a', version: '1', icon: 'ia' },
-        { module: 'sound', name: 'Model B', id: 'b', version: '1', icon: 'ib' },
-        { module: 'image', name: 'Model C', id: 'c', version: '1', icon: 'ic' },
-      ];
-      // Provide required placeholder input structure
-      const mockEl = document.createElement('div');
-      const placeholderInput = document.createElement('span');
-      placeholderInput.className = 'icon-placeholder-input';
-      const phParent = document.createElement('div');
-      phParent.textContent = 'Enter';
-      phParent.appendChild(placeholderInput);
-      mockEl.appendChild(phParent);
-      w.el = mockEl;
-      w.widgetWrap = document.createElement('div');
-      const result = w.modelDropdown();
-      expect(result.length).to.equal(2);
-      const selectedEl = result[0];
-      const list = result[1];
-      expect(selectedEl.classList.contains('selected-model')).to.be.true;
-      expect(list.tagName).to.equal('UL');
-      expect(list.querySelectorAll('.verb-item').length).to.equal(2);
-    });
-
-    it('hidePromptDropdown should hide dropdown and reset sound details', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widget = document.createElement('div');
-      const container = document.createElement('div');
-      container.className = 'prompt-dropdown-container';
-      w.widget.appendChild(container);
-      const di = document.createElement('div');
-      di.className = 'drop-item sound-expanded';
-      const details = document.createElement('div');
-      details.className = 'sound-details';
-      const tile = document.createElement('div');
-      tile.className = 'variation-tile';
-      details.appendChild(tile);
-      container.appendChild(di);
-      container.appendChild(details);
-      w.selectedVerbType = 'sound';
-      w.hidePromptDropdown();
-      expect(container.classList.contains('hidden')).to.be.true;
-      expect(container.getAttribute('aria-hidden')).to.equal('true');
-      expect(w.widget.querySelector('.sound-details')).to.be.null;
-      expect(w.widget.querySelector('.drop-item.sound-expanded')).to.be.null;
-    });
-
-    it('resetAllSoundVariations should remove details and clear states', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widget = document.createElement('div');
-      const details = document.createElement('div');
-      details.className = 'sound-details';
-      const tile = document.createElement('div');
-      tile.className = 'variation-tile playing selected paused is-active';
-      details.appendChild(tile);
-      w.widget.appendChild(details);
-      w.resetAllSoundVariations();
-      expect(w.widget.querySelector('.sound-details')).to.be.null;
-    });
-
-    it('toggleSoundDetails should expand and collapse details and wire Use prompt', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      const dropdown = document.createElement('ul');
-      const item = document.createElement('li');
-      item.className = 'drop-item';
-      dropdown.appendChild(item);
-      const genBtn = document.createElement('a');
-      genBtn.className = 'gen-btn';
-      w.genBtn = genBtn;
-      const promptObj = { prompt: 'p', variations: [] };
-      w.toggleSoundDetails(dropdown, item, promptObj, 1);
-      expect(item.classList.contains('sound-expanded')).to.be.true;
-      const inlineBtn = item.querySelector('.use-prompt-btn.inline');
-      expect(inlineBtn).to.exist;
-      inlineBtn.click();
-      expect(w.genBtn.dataset.soundPrompt).to.equal('p');
-      // Collapse
-      w.toggleSoundDetails(dropdown, item, promptObj, 1);
-      expect(item.classList.contains('sound-expanded')).to.be.false;
-    });
-
-    it('consumeEventAndFocus should focus target', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const btn = document.createElement('button');
-      document.body.appendChild(btn);
-      const ev = new Event('custom');
-      w.consumeEventAndFocus(ev, btn);
-      setTimeout(() => {
-        expect(document.activeElement).to.equal(btn);
-        document.body.removeChild(btn);
-        done();
-      }, 0);
-    });
-
-    it('resetTileToIdle should reset classes and aria state', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'L', url: 'u' }, 0, strip);
-      // Simulate playing state and then reset
-      tile.classList.add('playing', 'selected', 'paused', 'is-active');
-      w.resetTileToIdle(tile);
-      expect(tile.classList.contains('is-idle')).to.be.true;
-      expect(tile.getAttribute('aria-pressed')).to.equal('false');
-      const pb = tile.querySelector('.pause-btn');
-      expect(pb.classList.contains('hidden')).to.be.true;
-    });
-  });
-
-  describe('Accessibility interactions for sound details', () => {
-    let originalAudio;
-
-    beforeEach(() => {
-      originalAudio = window.Audio;
-      function FakeAudio() {
-        const obj = { paused: true, ended: false, duration: 60, currentTime: 0, listeners: {} };
-        obj.addEventListener = function addEventListener(evt, cb) {
-          if (!this.listeners[evt]) this.listeners[evt] = [];
-          this.listeners[evt].push(cb);
-        };
-        obj.play = function play() { this.paused = false; (this.listeners.play || []).forEach((cb) => cb()); return Promise.resolve(); };
-        obj.pause = function pause() { this.paused = true; (this.listeners.pause || []).forEach((cb) => cb()); };
-        return obj;
-      }
-      window.Audio = FakeAudio;
-    });
-
-    afterEach(() => { window.Audio = originalAudio; });
-
-    it('inline Use button keydown Enter/Space triggers click and Tab moves focus to first tile', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      const dd = document.createElement('ul');
-      const item = document.createElement('li');
-      item.className = 'drop-item';
-      dd.appendChild(item);
-      // Attach to DOM so focus management works
-      document.body.appendChild(w.widgetWrap);
-      w.widgetWrap.appendChild(w.widget);
-      w.widget.appendChild(dd);
-      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }] };
-      w.genBtn = document.createElement('a');
-      w.genBtn.className = 'gen-btn';
-      w.toggleSoundDetails(dd, item, promptObj, 1);
-      const inlineBtn = item.querySelector('.use-prompt-btn.inline');
-      const clickStub = sinon.stub(inlineBtn, 'click');
-      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      // Tab to first tile
-      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
-      setTimeout(() => {
-        expect(clickStub.calledTwice).to.be.true;
-        const firstTile = item.nextElementSibling.querySelector('.variation-tile');
-        expect(document.activeElement).to.equal(firstTile);
-        clickStub.restore();
-        done();
-      }, 0);
-    });
-
-    it('inline Use button Shift+Tab moves focus back to item', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      const dd = document.createElement('ul');
-      const item = document.createElement('li');
-      item.className = 'drop-item';
-      item.setAttribute('tabindex', '0');
-      dd.appendChild(item);
-      document.body.appendChild(w.widgetWrap);
-      w.widgetWrap.appendChild(w.widget);
-      w.widget.appendChild(dd);
-      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }] };
-      w.genBtn = document.createElement('a');
-      w.genBtn.className = 'gen-btn';
-      w.toggleSoundDetails(dd, item, promptObj, 1);
-      const inlineBtn = item.querySelector('.use-prompt-btn.inline');
-      inlineBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
-      setTimeout(() => {
-        expect(document.activeElement).to.equal(item);
-        done();
-      }, 0);
-    });
-
-    it('tile ArrowRight/ArrowLeft moves focus between tiles', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }, { label: 'C', url: 'u3' }] };
-      const details = w.renderSoundDetails(promptObj);
-      document.body.appendChild(details);
-      const tiles = Array.from(details.querySelectorAll('.variation-tile'));
-      tiles[0].focus();
-      tiles[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-      setTimeout(() => {
-        expect(document.activeElement).to.equal(tiles[1]);
-        tiles[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
-        setTimeout(() => {
-          expect(document.activeElement).to.equal(tiles[0]);
-          done();
-        }, 0);
-      }, 0);
-    });
-
-    it('tile Tab moves focus to next suggestion and Shift+Tab to Use button', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      w.widgetWrap = document.createElement('div');
-      w.widget = document.createElement('div');
-      const dd = document.createElement('ul');
-      const item = document.createElement('li');
-      item.className = 'drop-item';
-      dd.appendChild(item);
-      document.body.appendChild(w.widgetWrap);
-      w.widgetWrap.appendChild(w.widget);
-      w.widget.appendChild(dd);
-      const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }] };
-      w.genBtn = document.createElement('a');
-      w.genBtn.className = 'gen-btn';
-      w.toggleSoundDetails(dd, item, promptObj, 1);
-      const details = item.nextElementSibling;
-      const nextSuggestion = document.createElement('li');
-      nextSuggestion.className = 'drop-item';
-      nextSuggestion.setAttribute('tabindex', '0');
-      details.after(nextSuggestion);
-      const tile = details.querySelector('.variation-tile');
-      // Tab to next suggestion
-      tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
-      setTimeout(() => {
-        expect(document.activeElement).to.equal(nextSuggestion);
-        // Shift+Tab back to Use button
-        tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
-        setTimeout(() => {
-          const useBtn = item.querySelector('.use-prompt-btn.inline');
-          expect(document.activeElement).to.equal(useBtn);
-          done();
-        }, 0);
-      }, 0);
-    });
-
-    it('pause button keyboard toggles playback and visibility', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const details = w.renderSoundDetails({ prompt: 'p', variations: [{ label: 'A', url: 'u1' }] });
-      document.body.appendChild(details);
-      const tile = details.querySelector('.variation-tile');
-      const pauseBtn = tile.querySelector('.pause-btn');
-      // Enter to play
-      pauseBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      await Promise.resolve();
-      expect(tile.audioRef.paused).to.be.false;
-      // Enter to pause
-      pauseBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      expect(tile.audioRef.paused).to.be.true;
-      expect(pauseBtn.classList.contains('hidden')).to.be.false;
-    });
-  });
-
-  describe('ActionBinder accessibility elements', () => {
-    it('constructor should append sr-only live region', () => {
-      const ab = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
-      const sr = ab.widgetWrap.querySelector('.sr-only');
-      expect(sr).to.exist;
-      expect(sr.getAttribute('aria-live')).to.equal('polite');
-      expect(sr.getAttribute('aria-atomic')).to.equal('true');
-    });
-  });
-
-  describe('Audio internals coverage', () => {
-    let originalAudio;
-    let originalRaf;
-    let originalCaf;
-
-    beforeEach(() => {
-      originalAudio = window.Audio;
-      originalRaf = window.requestAnimationFrame;
-      originalCaf = window.cancelAnimationFrame;
-      function FakeAudio() {
-        const obj = { paused: true, ended: false, duration: 10, currentTime: 0, events: {} };
-        obj.addEventListener = function addEventListener(evt, cb) {
-          if (!this.events[evt]) this.events[evt] = [];
-          this.events[evt].push(cb);
-        };
-        obj.play = function play() { this.paused = false; (this.events.play || []).forEach((cb) => cb()); return Promise.resolve(); };
-        obj.pause = function pause() { this.paused = true; (this.events.pause || []).forEach((cb) => cb()); };
-        return obj;
-      }
-      window.Audio = FakeAudio;
-      let rafCalls = 0;
-      window.requestAnimationFrame = (cb) => { rafCalls += 1; if (rafCalls === 1) cb(); return rafCalls; };
-      window.cancelAnimationFrame = () => {};
-    });
-
-    afterEach(() => {
-      window.Audio = originalAudio;
-      window.requestAnimationFrame = originalRaf;
-      window.cancelAnimationFrame = originalCaf;
-    });
-
-    it('loadedmetadata should cache duration and reset progress', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      const audio = tile.audioRef;
-      // Fire loadedmetadata
-      (audio.events.loadedmetadata || []).forEach((cb) => cb());
-      expect(w.durationCache.get('u1')).to.equal(audio.duration);
-      const timeEl = tile.querySelector('.time-el');
-      expect(timeEl.textContent).to.equal(w.formatTime(audio.duration));
-      const fill = tile.querySelector('.seek-fill');
-      expect(fill.style.width).to.equal('0%');
-    });
-
-    it('timeupdate should set duration text when not playing', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      const audio = tile.audioRef;
-      (audio.events.timeupdate || []).forEach((cb) => cb());
-      const timeEl = tile.querySelector('.time-el');
-      expect(timeEl.textContent).to.equal(w.formatTime(audio.duration));
-    });
-
-    it('tick via RAF updates progress while playing', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      const audio = tile.audioRef;
-      audio.currentTime = Math.floor(audio.duration / 2);
-      await audio.play();
-      const fill = tile.querySelector('.seek-fill');
-      const bar = tile.querySelector('.seek-bar');
-      const expectedPct = (audio.currentTime / audio.duration) * 100;
-      expect(fill.style.width).to.equal(`${expectedPct}%`);
-      expect(Number(bar.getAttribute('aria-valuenow'))).to.equal(expectedPct);
-      const timeEl = tile.querySelector('.time-el');
-      expect(timeEl.textContent).to.equal(w.formatTime(audio.currentTime));
-    });
-
-    it('pause with forceIdle resets tile to idle state', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      const audio = tile.audioRef;
-      tile.dataset.forceIdle = '1';
-      audio.pause();
-      expect(tile.classList.contains('is-idle')).to.be.true;
-      const pb = tile.querySelector('.pause-btn');
-      expect(pb.classList.contains('hidden')).to.be.true;
-      const fill = tile.querySelector('.seek-fill');
-      expect(fill.style.width).to.equal('0%');
-    });
-
-    it('ended event resets tile state and progress', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      const audio = tile.audioRef;
-      (audio.events.ended || []).forEach((cb) => cb());
-      expect(tile.classList.contains('is-idle')).to.be.true;
-      const pb = tile.querySelector('.pause-btn');
-      expect(pb.classList.contains('hidden')).to.be.true;
-      const fill = tile.querySelector('.seek-fill');
-      expect(fill.style.width).to.equal('0%');
-    });
-
-    it('tile click toggles playback via playIfPaused', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      document.body.appendChild(tile);
-      const audio = tile.audioRef;
-      expect(audio.paused).to.be.true;
-      // Dispatch a non-bubbling click to avoid global document listeners from other tests
-      tile.dispatchEvent(new MouseEvent('click', { bubbles: false }));
-      await Promise.resolve();
-      expect(audio.paused).to.be.false;
-    });
-
-    it('tile keydown Enter toggles playback', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
-      const strip = document.createElement('div');
-      const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
-      document.body.appendChild(tile);
-      const audio = tile.audioRef;
-      tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      await Promise.resolve();
-      expect(audio.paused).to.be.false;
-      tile.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      expect(audio.paused).to.be.true;
     });
   });
 });

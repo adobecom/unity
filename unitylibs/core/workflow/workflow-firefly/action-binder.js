@@ -57,7 +57,7 @@ class ServiceHandler {
     const lang = document.querySelector('html').getAttribute('lang');
     const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
     const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
-    if (promptBarEl) promptBarEl.style.pointerEvents = 'none';
+    promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
     if (!errorToast) return;
     const closeBtn = errorToast.querySelector('.alert-close');
@@ -94,16 +94,6 @@ export default class ActionBinder {
     this.viewport = defineDeviceByScreenSize();
     this.widgetWrap = this.getElement('.ex-unity-wrap');
     this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
-    this.widgetWrap.addEventListener('firefly-audio-error', (ev) => {
-      const run = async () => {
-        try {
-          if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
-          if (!this.serviceHandler) await this.loadServiceHandler();
-          this.serviceHandler?.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-audio-fail' }, ev?.detail?.error, this.lanaOptions, 'client');
-        } catch (e) { /* noop */ }
-      };
-      run();
-    });
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
@@ -146,15 +136,11 @@ export default class ActionBinder {
       alertContent.append(alertIcon, alertClose);
       const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
       const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
-      const closeToast = (e) => {
+      alertClose.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         errholder.classList.remove('show');
-        if (promptBarEl) promptBarEl.style.pointerEvents = 'auto';
-      };
-      alertClose.addEventListener('click', closeToast);
-      alertClose.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') closeToast(e);
+        promptBarEl.style.pointerEvents = 'auto';
       });
       decorateDefaultLinkAnalytics(errholder);
       promptBarEl.prepend(errholder);
@@ -288,17 +274,9 @@ export default class ActionBinder {
         if (key && value) queryParams[key] = value;
       });
     }
-    const currentVerb = this.getSelectedVerbType();
-    const genBtn = this.block.querySelector('.gen-btn');
-    const override = genBtn?.dataset?.soundPrompt;
-    if (currentVerb === 'sound' && override) {
-      this.query = override.trim();
-      try { delete genBtn.dataset.soundPrompt; } catch (e) { /* noop */ }
-    } else {
-      this.query = this.inputField.value.trim();
-    }
-    const selectedVerbType = `text-to-${currentVerb}`;
-    const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
+    this.query = this.inputField.value.trim();
+    const selectedVerbType = `text-to-${this.getSelectedVerbType()}`;
+    const action = (this.id ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
     const validation = this.validateInput(this.query);
@@ -560,7 +538,6 @@ export default class ActionBinder {
   }
 
   handleOutsideClick(event) {
-    if (this.widgetWrap && window.getComputedStyle(this.widgetWrap).pointerEvents === 'none') return;
     if (!this.widget?.contains(event.target)) this.hideDropdown();
   }
 
