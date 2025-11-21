@@ -5,7 +5,7 @@
     "handler": "render",
     "renderWidget": true,
     "source": ".copy .main-copy",
-    "target": "a:last-of-type",
+    "target": ".row-supplemental a",
     "insert": "before",
     "verbsWithoutPromptSuggestions": ["vector"],
     "actionMap": {
@@ -15,7 +15,7 @@
     },
     "sendSplunkAnalytics": true
   },
-      "showcase-marquee": {
+  "showcase-marquee": {
     "type": "text",
     "selector": ".text",
     "handler": "render",

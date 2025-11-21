@@ -23,6 +23,8 @@ export default class UnityWidget {
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
+    this.sound = { audio: null, currentTile: null, currentUrl: '' };
+    this.durationCache = new Map();
   }
 
   async initWidget() {
@@ -40,6 +42,7 @@ export default class UnityWidget {
     this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
     if (this.hasModelOptions) await this.getModel();
     const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
+    await this.ensureSoundModuleLoaded();
     let dropdown = null;
     if (this.hasPromptSuggestions) dropdown = await this.genDropdown(this.workflowCfg.placeholder);
     const comboboxContainer = createTag('div', { class: 'autocomplete' });
@@ -49,6 +52,17 @@ export default class UnityWidget {
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  async ensureSoundModuleLoaded() {
+    if (this.selectedVerbType !== 'sound' || this.soundAugmented) return;
+    try {
+      const { default: augmentSound } = await import('./sound-utils.js');
+      augmentSound(this);
+      this.soundAugmented = true;
+    } catch (e) {
+      window.lana?.log(`Message: Error loading sound module, Error: ${e}`, this.lanaOptions);
+    }
   }
 
   popPlaceholders() {
@@ -74,11 +88,14 @@ export default class UnityWidget {
   }
 
   hidePromptDropdown(exceptElement = null) {
-    const dropdown = this.widget.querySelector('.drop');
+    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
     if (dropdown && !dropdown.classList.contains('hidden')) {
       dropdown.classList.add('hidden');
       dropdown.setAttribute('inert', '');
       dropdown.setAttribute('aria-hidden', 'true');
+    }
+    if (this.selectedVerbType === 'sound') {
+      this.resetAllSoundVariations?.(dropdown);
     }
     const modelDropdown = this.widget.querySelector('.models-container');
     const modelButton = modelDropdown?.querySelector('.selected-model');
@@ -104,6 +121,13 @@ export default class UnityWidget {
     if (this.genBtn) {
       this.genBtn.setAttribute('daa-ll', `Generate--${verb}`);
     }
+  }
+
+  clearSelectedModelState() {
+    this.selectedModelId = '';
+    this.selectedModelVersion = '';
+    this.selectedModelModule = '';
+    this.selectedModelText = '';
   }
 
   handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
@@ -139,23 +163,36 @@ export default class UnityWidget {
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
       }
       selectedElement.focus();
+      this.ensureSoundModuleLoaded();
       const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
       if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
       else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
       if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
         const oldModelContainer = this.widget.querySelector('.models-container');
+        const modelDropdown = this.modelDropdown();
         if (oldModelContainer) {
-          const modelDropdown = this.modelDropdown();
           if (modelDropdown.length > 1) {
             const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
             newModelContainer.append(...modelDropdown);
             oldModelContainer.replaceWith(newModelContainer);
+          } else {
+            oldModelContainer.remove();
+            this.clearSelectedModelState();
           }
-        }
+        } else if (modelDropdown.length > 1) {
+          const actionContainer = this.widget.querySelector('.action-container');
+          if (actionContainer) {
+            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+            newModelContainer.append(...modelDropdown);
+            actionContainer.append(newModelContainer);
+          }
+        } else this.clearSelectedModelState();
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-      this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-      this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+      else this.widgetWrap.removeAttribute('data-selected-model-id');
+      if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
         const img = this.genBtn.querySelector('img[src*=".svg"]');
@@ -278,6 +315,7 @@ export default class UnityWidget {
   modelDropdown() {
     if (!this.hasModelOptions) return [];
     const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
+    if (!Array.isArray(models) || models.length === 0) return [];
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedModelType = models[0].id;
     const selectedModelVersion = models[0].version;
@@ -347,6 +385,10 @@ export default class UnityWidget {
       'aria-controls': 'prompt-dropdown',
       'aria-activedescendant': '',
     });
+    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
+    inpField.addEventListener('focus', () => this.hidePromptDropdown());
+    inpField.addEventListener('click', () => this.resetAllSoundVariations(dropdown));
+    inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdown));
     const verbDropdown = this.verbDropdown();
     const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
@@ -370,16 +412,16 @@ export default class UnityWidget {
 
   getLimitedDisplayPrompts(prompts) {
     const shuffled = prompts.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3).map(({ prompt, assetid }) => ({
+    return shuffled.slice(0, 3).map(({ prompt, assetid, variations }) => ({
       prompt,
       assetid,
-      displayPrompt: prompt.length > 105 ? `${prompt.slice(0, 105)}…` : prompt,
+      variations,
     }));
   }
 
   addPromptItemsToDropdown(dropdown, prompts, placeholder) {
     this.promptItems = [];
-    prompts.forEach(({ prompt, assetid, displayPrompt }) => {
+    prompts.forEach(({ prompt, assetid, variations }, idx) => {
       const item = createTag('li', {
         id: assetid,
         class: 'drop-item',
@@ -388,9 +430,14 @@ export default class UnityWidget {
         'aria-label': prompt,
         'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
         'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
-      }, `<svg><use xlink:href="#unity-prompt-icon"></use></svg> ${displayPrompt}`);
+      });
+      const iconWrap = createTag('span', { class: 'prompt-icon' }, '<svg><use xlink:href="#unity-prompt-icon"></use></svg>');
+      const text = createTag('span', { class: 'drop-text' }, prompt);
+      item.append(iconWrap, text);
       dropdown.append(item);
       this.promptItems.push(item);
+
+      if (this.selectedVerbType === 'sound') this.addSoundSuggestionHandlers(dropdown, item, { prompt, variations }, idx + 1);
     });
   }
 
@@ -411,6 +458,17 @@ export default class UnityWidget {
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dd, limited, ph);
     promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
+    if (!this.outsideDropdownHandler) {
+      this.outsideDropdownHandler = (ev) => {
+        if (this.widgetWrap && window.getComputedStyle(this.widgetWrap).pointerEvents === 'none') return;
+        const wrapper = this.widget.querySelector('.autocomplete');
+        if (wrapper && wrapper.contains(ev.target)) return;
+        if (promptDropdownContainer && !promptDropdownContainer.classList.contains('hidden') && !promptDropdownContainer.contains(ev.target)) {
+          this.hidePromptDropdown();
+        }
+      };
+      setTimeout(() => document.addEventListener('click', this.outsideDropdownHandler, true), 0);
+    }
     return promptDropdownContainer;
   }
 
@@ -434,7 +492,7 @@ export default class UnityWidget {
     if (!cfg) return null;
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
-    img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
+    if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
     const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
@@ -509,9 +567,22 @@ export default class UnityWidget {
     if (Array.isArray(data)) {
       data.forEach((item) => {
         const itemEnv = item.env || 'prod';
-        if (item.verb && item.prompt && item.assetid && itemEnv === unityConfig.env) {
+        if (item.verb && item.prompt && itemEnv === unityConfig.env) {
           if (!promptMap[item.verb]) promptMap[item.verb] = [];
-          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid });
+          let variations = [];
+          if (item.verb === 'sound') {
+            const ph = this.workflowCfg?.placeholder || {};
+            const labels = Object.keys(ph)
+              .filter((k) => k.startsWith('placeholder-variation-label-'))
+              .map((k) => ({ idx: Number.parseInt(k.split('-').pop(), 10), val: (ph[k] || '').trim() }))
+              .filter(({ idx, val }) => Number.isFinite(idx) && val)
+              .sort((a, b) => a.idx - b.idx)
+              .map(({ val }) => val);
+            const urls = (typeof item.variationUrls === 'string' ? item.variationUrls : '')
+              .split('||').map((s) => s.trim()).filter((s) => s);
+            variations = labels.map((lbl, idx) => ({ label: lbl, url: urls[idx] || '' }));
+          }
+          promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations });
         }
       });
     }
@@ -533,6 +604,7 @@ export default class UnityWidget {
 
   async updateDropdownForVerb(verb) {
     if (!this.hasPromptSuggestions) return;
+    await this.ensureSoundModuleLoaded();
     const dropdown = this.widget.querySelector('#prompt-dropdown');
     if (!dropdown) return;
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
