@@ -43,7 +43,7 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
     if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
-    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${errorCallbackOptions.fileMetaData || ''}`));
+    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -359,7 +359,6 @@ export default class ActionBinder {
 
   async uploadImage(files) {
     if (!files) return;
-    await this.initAnalytics();
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
       this.handleClientUploadError('.icon-error-filecount', 'error-filecount');
@@ -428,6 +427,7 @@ export default class ActionBinder {
       this.workflowCfg,
       this.getAdditionalHeaders.bind(this),
     );
+    await this.initAnalytics();
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
