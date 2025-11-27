@@ -180,16 +180,10 @@ export default function augmentSound(widget) {
     pauseBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') handlePressToggle(e); });
     pauseBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
 
-    const playIfPaused = () => {
-      if (!audioObj.paused) return;
-      setBtnToPause();
-      pauseBtn.classList.remove('hidden');
-      audioObj.play().catch(() => { this.showPlaybackErrorToast(); });
-    };
     tile.addEventListener('click', (ev) => {
       if (ev.target.closest && ev.target.closest('.pause-btn')) return;
       ev.preventDefault();
-      playIfPaused();
+      togglePlayback();
     });
     tile.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' || ev.key === ' ') {
