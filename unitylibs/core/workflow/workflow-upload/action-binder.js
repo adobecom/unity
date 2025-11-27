@@ -43,7 +43,7 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
     if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
-    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${errorCallbackOptions.fileMetaData || ''}`));
+    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -84,6 +84,7 @@ export default class ActionBinder {
     this.desktop = false;
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
+    this.filesData = {};
   }
 
   getApiConfig() {
@@ -327,12 +328,13 @@ export default class ActionBinder {
     const { width, height } = await getImageDimensions(file);
     const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
     const isMinLimits = this.limits.minWidth && this.limits.minHeight;
+    this.filesData = { ...this.filesData, width, height };
     if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
-      this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', `${width}x${height}`, 'Unable to process the file type!');
+      this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
       throw new Error('Unable to process the file type!');
     }
     if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
-      this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', `${width}x${height}`, 'Unable to process the file type!');
+      this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
       throw new Error('Unable to process the file type!');
     }
     return { width, height };
@@ -350,25 +352,24 @@ export default class ActionBinder {
     }
   }
 
-  handleClientUploadError(errorTypeSelector, errorCode, fileMetaData = {}, message = '') {
-    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector, errorCode: errorCode, fileMetaData }, message, this.lanaOptions, 'client');
-    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode, fileMetaData } });
+  handleClientUploadError(errorTypeSelector, errorCode, message = '') {
+    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector, errorCode: errorCode, fileMetaData: this.filesData }, message, this.lanaOptions, 'client');
+    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode }, fileMetaData: this.filesData, action: 'upload' });
   }
 
   async uploadImage(files) {
     if (!files) return;
-    await this.initAnalytics();
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
-      this.handleClientUploadError('.icon-error-filecount', 'error-filecount', files.length, '');
+      this.handleClientUploadError('.icon-error-filecount', 'error-filecount');
       return;
     }
     if (!this.limits.allowedFileTypes.includes(file.type)) {
-      this.handleClientUploadError('.icon-error-filetype', 'error-filetype', file.type, '');
+      this.handleClientUploadError('.icon-error-filetype', 'error-filetype');
       return;
     }
     if (this.limits.maxFileSize < file.size) {
-      this.handleClientUploadError('.icon-error-filesize', 'error-filesize', file.size, '');
+      this.handleClientUploadError('.icon-error-filesize', 'error-filesize');
       return;
     }
     try { await this.checkImageDimensions(file); } catch (error) {
@@ -426,6 +427,7 @@ export default class ActionBinder {
       this.workflowCfg,
       this.getAdditionalHeaders.bind(this),
     );
+    await this.initAnalytics();
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
@@ -438,6 +440,8 @@ export default class ActionBinder {
           sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
           this.preventDefault(e);
           const files = this.extractFiles(e);
+          this.filesData = { count: files.length, size: files[0].size, type: files[0].type };
+          this.logAnalyticsinSplunk('Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
           await this.executeActionMaps(actMap[key], files);
         });
         el.addEventListener('click', () => {
@@ -456,6 +460,8 @@ export default class ActionBinder {
         });
         el.addEventListener('change', async (e) => {
           const files = this.extractFiles(e);
+          this.filesData = { count: files.length, size: files[0].size, type: files[0].type };
+          this.logAnalyticsinSplunk('Click Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
           await this.executeActionMaps(actMap[key], files);
           e.target.value = '';
         });

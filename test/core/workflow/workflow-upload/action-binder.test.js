@@ -379,7 +379,7 @@ describe('Unity Upload Block', () => {
         expect(error.message).to.equal('Unable to process the file type!');
         expect(showErrorToast.calledOnce).to.be.true;
         const args = showErrorToast.getCall(0).args[0];
-        expect(args).to.have.property('fileMetaData', '200x200');
+        expect(args.fileMetaData).to.deep.include({ width: 200, height: 200 });
       }
     });
 
