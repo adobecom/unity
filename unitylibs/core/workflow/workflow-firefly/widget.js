@@ -387,8 +387,8 @@ export default class UnityWidget {
     });
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
     inpField.addEventListener('focus', () => this.hidePromptDropdown());
-    inpField.addEventListener('click', () => this.resetAllSoundVariations(dropdown));
-    inpField.addEventListener('input', () => this.resetAllSoundVariations(dropdown));
+    inpField.addEventListener('click', () => this.resetAllSoundVariations?.(dropdown));
+    inpField.addEventListener('input', () => this.resetAllSoundVariations?.(dropdown));
     const verbDropdown = this.verbDropdown();
     const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
