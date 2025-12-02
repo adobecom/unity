@@ -9,7 +9,7 @@ function getSessionID() {
 
 function createPayloadForSplunk(metaData) {
   const {
-    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep,
+    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData
   } = metaData;
   return {
     event: {
@@ -20,7 +20,7 @@ function createPayloadForSplunk(metaData) {
       ...(statusCode !== undefined && { statusCode }),
       ...(workflowStep && { workflowStep }),
     },
-    content: { ...(assetId && { assetId }) },
+    content: { ...(assetId && { assetId }), ...(fileMetaData && { fileMetaData }) },
     source: {
       user_agent: navigator.userAgent,
       lang: document.documentElement.lang,
