@@ -8,6 +8,7 @@ export default class UnityWidget {
     this.widget = null;
     this.actionMap = {};
     this.spriteCon = spriteCon;
+    this.promptBarApp = null;
   }
 
   async initWidget() {
@@ -19,14 +20,145 @@ export default class UnityWidget {
     this.widgetWrap.append(unitySprite);
     this.createBg();
     this.workflowCfg.placeholder = this.popPlaceholders();
-    const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    const dropdown = this.genDropdown(this.workflowCfg.placeholder);
-    const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
-    comboboxContainer.append(inputWrapper, dropdown);
-    this.widget.append(comboboxContainer);
+
+    // Use Firefly prompt-bar-app (enabled by default for now)
+    if (true) { // TODO: replace with this.workflowCfg.targetCfg.useFireflyPromptBar
+      await this.initPromptBarApp();
+    } else {
+      const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
+      const dropdown = this.genDropdown(this.workflowCfg.placeholder);
+      const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
+      comboboxContainer.append(inputWrapper, dropdown);
+      this.widget.append(comboboxContainer);
+    }
+
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  async initPromptBarApp() {
+    try {
+      // Dynamically import the prompt-bar-app component
+      await import('@firefly/platform/applications/prompt-bar-app/index.js');
+
+      // Create the prompt-bar-app element
+      const promptBarContainer = createTag('div', { class: 'firefly-prompt-bar-container' });
+      this.promptBarApp = document.createElement('firefly-prompt-bar-app');
+
+      // Configure the prompt bar
+      this.promptBarApp.environment = {
+        localeCode: document.documentElement.lang || 'en-US',
+        imsClientId: this.workflowCfg.targetCfg.imsClientId || window.adobeid?.client_id,
+      };
+
+      if (this.workflowCfg.targetCfg.fireflyFeatures) {
+        this.promptBarApp.features = this.workflowCfg.targetCfg.fireflyFeatures;
+      }
+
+      if (this.workflowCfg.targetCfg.fireflySettingsConfig) {
+        this.promptBarApp.settingsConfig = this.workflowCfg.targetCfg.fireflySettingsConfig;
+      }
+
+      // Set up event listeners
+      this.setupPromptBarEvents();
+
+      promptBarContainer.append(this.promptBarApp);
+      this.widget.append(promptBarContainer);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to load Firefly prompt-bar-app:', error);
+      // Fallback to default input
+      const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
+      const dropdown = this.genDropdown(this.workflowCfg.placeholder);
+      const comboboxContainer = createTag('div', { class: 'autocomplete', role: 'combobox' });
+      comboboxContainer.append(inputWrapper, dropdown);
+      this.widget.append(comboboxContainer);
+    }
+  }
+
+  setupPromptBarEvents() {
+    if (!this.promptBarApp) return;
+
+    // Handle generate event
+    this.promptBarApp.addEventListener('prompt-bar-app-generate', (e) => {
+      const { applicationId, prompt, settings, values } = e.detail;
+      this.handlePromptBarGenerate({ applicationId, prompt, settings, values });
+    });
+
+    // Handle application change (image/video)
+    this.promptBarApp.addEventListener('prompt-bar-app-application-change', (e) => {
+      const { applicationId } = e.detail;
+      this.handleApplicationChange(applicationId);
+    });
+
+    // Handle more button click
+    this.promptBarApp.addEventListener('prompt-bar-app-more-button-click', (e) => {
+      const { applicationId, prompt, settings, values } = e.detail;
+      this.handleMoreButtonClick({ applicationId, prompt, settings, values });
+    });
+
+    // Handle setting interactions
+    this.promptBarApp.addEventListener('prompt-bar-app-setting-interact', (e) => {
+      const { applicationId, settingId, type, value, item } = e.detail;
+      this.handleSettingInteract({ applicationId, settingId, type, value, item });
+    });
+  }
+
+  handlePromptBarGenerate({ applicationId, prompt, settings, values }) {
+    // Dispatch custom event for parent components to handle
+    const event = new CustomEvent('unity-generate', {
+      detail: { applicationId, prompt, settings, values },
+      bubbles: true,
+      composed: true,
+    });
+    this.widget.dispatchEvent(event);
+
+    // Call action map callback if defined
+    if (this.workflowCfg.targetCfg.actionMap?.onGenerate) {
+      this.workflowCfg.targetCfg.actionMap.onGenerate({ applicationId, prompt, settings, values });
+    }
+  }
+
+  handleApplicationChange(applicationId) {
+    const event = new CustomEvent('unity-application-change', {
+      detail: { applicationId },
+      bubbles: true,
+      composed: true,
+    });
+    this.widget.dispatchEvent(event);
+
+    if (this.workflowCfg.targetCfg.actionMap?.onApplicationChange) {
+      this.workflowCfg.targetCfg.actionMap.onApplicationChange(applicationId);
+    }
+  }
+
+  handleMoreButtonClick({ applicationId, prompt, settings, values }) {
+    const event = new CustomEvent('unity-more-click', {
+      detail: { applicationId, prompt, settings, values },
+      bubbles: true,
+      composed: true,
+    });
+    this.widget.dispatchEvent(event);
+
+    if (this.workflowCfg.targetCfg.actionMap?.onMoreClick) {
+      this.workflowCfg.targetCfg.actionMap.onMoreClick({ applicationId, prompt, settings, values });
+    }
+  }
+
+  handleSettingInteract({ applicationId, settingId, type, value, item }) {
+    const event = new CustomEvent('unity-setting-interact', {
+      detail: { applicationId, settingId, type, value, item },
+      bubbles: true,
+      composed: true,
+    });
+    this.widget.dispatchEvent(event);
+
+    if (this.workflowCfg.targetCfg.actionMap?.onSettingInteract) {
+      this.workflowCfg.targetCfg.actionMap.onSettingInteract({
+        applicationId, settingId, type, value, item,
+      });
+    }
   }
 
   popPlaceholders() {

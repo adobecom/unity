@@ -52,5 +52,8 @@
     "stylelint": "14.6.0",
     "stylelint-config-prettier": "9.0.3",
     "stylelint-config-standard": "25.0.0"
+  },
+  "dependencies": {
+    "@firefly/platform": "^112.0.4"
   }
 }
