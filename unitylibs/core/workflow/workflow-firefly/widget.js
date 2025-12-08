@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
+import { PromptBarAppMainElement } from '@firefly/platform/applications/prompt-bar-app';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -65,7 +66,7 @@ export default class UnityWidget {
   async initPromptBarApp() {
     try {
       // Dynamically import the prompt-bar-app component
-      const { PromptBarAppMainElement } = await import('@firefly/platform/applications/prompt-bar-app');
+     // const { PromptBarAppMainElement } = await import('@firefly/platform/applications/prompt-bar-app');
 
       console.log('PromptBarAppMainElement', PromptBarAppMainElement);
 
