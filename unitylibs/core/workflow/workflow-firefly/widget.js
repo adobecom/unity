@@ -65,7 +65,9 @@ export default class UnityWidget {
   async initPromptBarApp() {
     try {
       // Dynamically import the prompt-bar-app component
-      await import('@firefly/platform/applications/prompt-bar-app/index.js');
+      const { PromptBarAppMainElement } = await import('@firefly/platform/applications/prompt-bar-app');
+
+      console.log('PromptBarAppMainElement', PromptBarAppMainElement);
 
       // Create the prompt-bar-app element
       const promptBarContainer = createTag('div', { class: 'firefly-prompt-bar-container' });
