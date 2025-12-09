@@ -1,6 +1,61 @@
 /* eslint-disable class-methods-use-this */
 
+/**
+ * Unity Widget - Firefly Prompt Bar Integration
+ * 
+ * This widget uses the Firefly Platform's prompt-bar-app component
+ * instead of a custom implementation.
+ */
+
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
+
+// Base path to prompt-bar assets
+const getPromptBarBasePath = () => {
+  const { origin } = window.location;
+  const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
+    ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+    : origin;
+  return `${baseUrl}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
+};
+
+// Module cache
+let promptBarModule = null;
+let promptBarLoadPromise = null;
+
+/**
+ * Load the prompt-bar component module
+ */
+async function loadPromptBarModule() {
+  if (promptBarModule) return promptBarModule;
+  if (promptBarLoadPromise) return promptBarLoadPromise;
+
+  const basePath = getPromptBarBasePath();
+
+  promptBarLoadPromise = (async () => {
+    // Load Lit runtime first
+    await import(`${basePath}/runtime.min.js`);
+    // Load the main component
+    promptBarModule = await import(`${basePath}/prompt-bar-app-lightweight.js`);
+    return promptBarModule;
+  })();
+
+  return promptBarLoadPromise;
+}
+
+/**
+ * Load locale data
+ */
+async function loadLocaleData(locale = 'en-US') {
+  const basePath = getPromptBarBasePath();
+  try {
+    const module = await import(`${basePath}/locales/${locale}.js`);
+    return module.default;
+  } catch (e) {
+    console.warn(`Locale ${locale} not found, falling back to en-US`);
+    const module = await import(`${basePath}/locales/en-US.js`);
+    return module.default;
+  }
+}
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -12,7 +67,7 @@ export default class UnityWidget {
     this.spriteCon = spriteCon;
     this.prompts = null;
     this.models = null;
-    this.selectedVerbType = '';
+    this.selectedVerbType = 'image'; // Default to image
     this.selectedVerbText = '';
     this.selectedModelModule = '';
     this.selectedModelId = '';
@@ -25,6 +80,11 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
+    
+    // Prompt bar specific
+    this.promptBarElement = null;
+    this.promptBarModule = null;
+    this.currentPrompt = '';
   }
 
   async initWidget() {
@@ -35,35 +95,422 @@ export default class UnityWidget {
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
     this.workflowCfg.placeholder = this.popPlaceholders();
+
+    // Check for features from authoring
     const hasPromptPlaceholder = !!this.el.querySelector('.icon-placeholder-prompt');
     const hasSuggestionsPlaceholder = !!this.el.querySelector('.icon-placeholder-suggestions');
     const hasModels = !!this.el.querySelector('[class*="icon-model"]');
     this.hasModelOptions = hasModels;
     this.hasPromptSuggestions = hasPromptPlaceholder && hasSuggestionsPlaceholder;
+
+    // Get verbs configuration
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    if (verbs.length > 0) {
+      this.selectedVerbType = verbs[0]?.className.split('-')[2] || 'image';
+      this.selectedVerbText = verbs[0]?.nextElementSibling?.textContent.trim() || 'Image';
+    }
+
+    // Load models if needed
     if (this.hasModelOptions) await this.getModel();
-    const inputWrapper = this.createInpWrap(this.workflowCfg.placeholder);
-    await this.ensureSoundModuleLoaded();
-    let dropdown = null;
-    if (this.hasPromptSuggestions) dropdown = await this.genDropdown(this.workflowCfg.placeholder);
-    const comboboxContainer = createTag('div', { class: 'autocomplete' });
-    comboboxContainer.append(inputWrapper);
-    if (dropdown) comboboxContainer.append(dropdown);
-    this.widget.append(comboboxContainer);
+
+    // Initialize the prompt bar component
+    await this.initPromptBar();
+
     this.addWidget();
+
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
+
     return this.workflowCfg.targetCfg.actionMap;
   }
 
-  async ensureSoundModuleLoaded() {
-    if (this.selectedVerbType !== 'sound' || this.soundAugmented) return;
+  /**
+   * Initialize the Firefly prompt bar component
+   */
+  async initPromptBar() {
     try {
-      const { default: augmentSound } = await import('./sound-utils.js');
-      augmentSound(this);
-      this.soundAugmented = true;
-    } catch (e) {
-      window.lana?.log(`Message: Error loading sound module, Error: ${e}`, this.lanaOptions);
+      // Load the prompt-bar module
+      this.promptBarModule = await loadPromptBarModule();
+      
+      const {
+        PromptAdvancedElement,
+        IMAGE_APPLICATION_KEY,
+        VIDEO_APPLICATION_KEY,
+        SOUND_FX_APPLICATION_KEY,
+      } = this.promptBarModule;
+
+      // Load localized strings
+      const { locale } = getConfig();
+      const localeCode = locale?.ietf || 'en-US';
+      const localized = await loadLocaleData(localeCode);
+
+      // Map Unity verb types to prompt-bar application keys
+      const verbToAppKey = {
+        image: IMAGE_APPLICATION_KEY,
+        video: VIDEO_APPLICATION_KEY,
+        sound: SOUND_FX_APPLICATION_KEY,
+      };
+
+      // Build application configs based on verbs
+      const applicationConfigs = this.buildApplicationConfigs(localized);
+
+      // Create the prompt-advanced element
+      this.promptBarElement = document.createElement('firefly-prompt-advanced');
+
+      // Set properties
+      this.promptBarElement.localized = localized;
+      this.promptBarElement.config = applicationConfigs;
+      this.promptBarElement.selectedApplicationId = verbToAppKey[this.selectedVerbType] || IMAGE_APPLICATION_KEY;
+      this.promptBarElement.prompt = '';
+      this.promptBarElement.selectedSettings = {};
+      this.promptBarElement.isGenerating = false;
+      this.promptBarElement.isMoreButtonLoading = false;
+      this.promptBarElement.hideMoreButton = !this.workflowCfg.targetCfg?.showMoreButton;
+
+      // Set up event listeners
+      this.setupPromptBarEvents();
+
+      // Add to widget
+      const promptBarContainer = createTag('div', { class: 'prompt-bar-container' });
+      promptBarContainer.appendChild(this.promptBarElement);
+      this.widget.appendChild(promptBarContainer);
+
+    } catch (error) {
+      console.error('Failed to initialize prompt bar:', error);
+      window.lana?.log(`Message: Error initializing prompt bar, Error: ${error}`, this.lanaOptions);
+      // Fall back to legacy widget if prompt-bar fails
+      await this.initLegacyWidget();
     }
   }
+
+  /**
+   * Build application configs for the prompt bar
+   */
+  buildApplicationConfigs(localized) {
+    const configs = [];
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const ph = this.workflowCfg.placeholder;
+
+    // Map of verb types to their configs
+    const verbConfigs = {
+      image: () => this.buildImageConfig(localized, ph),
+      video: () => this.buildVideoConfig(localized, ph),
+      sound: () => this.buildSoundConfig(localized, ph),
+    };
+
+    // Build config for each enabled verb
+    verbs.forEach((verb) => {
+      const verbType = verb.className.split('-')[2];
+      if (verbConfigs[verbType]) {
+        const config = verbConfigs[verbType]();
+        if (config) configs.push(config);
+      }
+    });
+
+    // If no verbs found, default to image
+    if (configs.length === 0) {
+      configs.push(this.buildImageConfig(localized, ph));
+    }
+
+    return configs;
+  }
+
+  /**
+   * Build image generation config
+   */
+  buildImageConfig(localized, ph) {
+    const models = this.getModelsForVerb('image');
+    
+    const modelItems = models.map((model, idx) => ({
+      id: model.id,
+      label: model.name,
+      value: {
+        id: model.id,
+        name: model.name,
+        isThirdParty: false,
+      },
+      isDefault: idx === 0,
+    }));
+
+    return {
+      id: 'image-generation',
+      name: localized?.imageGeneration?.title || 'Image',
+      icon: 'image',
+      settings: [
+        ...(modelItems.length > 0 ? [{
+          id: 'model',
+          type: 'picker',
+          label: localized?.model?.label || 'Model',
+          items: modelItems,
+          hide: modelItems.length <= 1,
+        }] : []),
+        {
+          id: 'aspect-ratio',
+          type: 'aspect-ratio',
+          label: localized?.aspectRatio?.label || 'Aspect Ratio',
+          items: [
+            { id: 'square', label: '1:1', value: { width: 1024, height: 1024 }, isDefault: true },
+            { id: 'landscape', label: '16:9', value: { width: 1024, height: 576 } },
+            { id: 'portrait', label: '9:16', value: { width: 576, height: 1024 } },
+            { id: 'widescreen', label: '4:3', value: { width: 1024, height: 768 } },
+          ],
+        },
+      ],
+      placeholder: ph['placeholder-input'] || localized?.prompt?.placeholder || 'Describe the image you want to create...',
+    };
+  }
+
+  /**
+   * Build video generation config
+   */
+  buildVideoConfig(localized, ph) {
+    const models = this.getModelsForVerb('video');
+    
+    const modelItems = models.map((model, idx) => ({
+      id: model.id,
+      label: model.name,
+      value: {
+        id: model.id,
+        name: model.name,
+        isThirdParty: false,
+      },
+      isDefault: idx === 0,
+    }));
+
+    return {
+      id: 'video-generation',
+      name: localized?.videoGeneration?.title || 'Video',
+      icon: 'video',
+      settings: [
+        ...(modelItems.length > 0 ? [{
+          id: 'model',
+          type: 'picker',
+          label: localized?.model?.label || 'Model',
+          items: modelItems,
+          hide: modelItems.length <= 1,
+        }] : []),
+      ],
+      placeholder: ph['placeholder-input'] || localized?.prompt?.placeholder || 'Describe the video you want to create...',
+    };
+  }
+
+  /**
+   * Build sound effects config
+   */
+  buildSoundConfig(localized, ph) {
+    return {
+      id: 'sound-fx-generation',
+      name: localized?.soundFxGeneration?.title || 'Sound Effects',
+      icon: 'audio',
+      settings: [],
+      placeholder: ph['placeholder-input'] || 'Describe the sound you want to create...',
+    };
+  }
+
+  /**
+   * Get models for a specific verb type
+   */
+  getModelsForVerb(verbType) {
+    if (!this.models || !Array.isArray(this.models)) return [];
+    return this.models.filter((model) => model.module === verbType);
+  }
+
+  /**
+   * Set up event listeners for the prompt bar
+   */
+  setupPromptBarEvents() {
+    if (!this.promptBarElement) return;
+
+    const {
+      IMAGE_APPLICATION_KEY,
+      VIDEO_APPLICATION_KEY,
+      SOUND_FX_APPLICATION_KEY,
+    } = this.promptBarModule;
+
+    // Map application keys back to Unity verb types
+    const appKeyToVerb = {
+      [IMAGE_APPLICATION_KEY]: 'image',
+      [VIDEO_APPLICATION_KEY]: 'video',
+      [SOUND_FX_APPLICATION_KEY]: 'sound',
+    };
+
+    // Generate event - main action
+    this.promptBarElement.addEventListener('prompt-advanced-generate', (event) => {
+      const applicationId = this.promptBarElement.selectedApplicationId;
+      const prompt = this.promptBarElement.prompt || '';
+      const settings = this.promptBarElement.selectedSettings || {};
+
+      this.currentPrompt = prompt;
+      this.selectedVerbType = appKeyToVerb[applicationId] || 'image';
+
+      // Extract model info from settings if available
+      const modelSetting = settings[applicationId]?.model;
+      if (modelSetting?.value) {
+        this.selectedModelId = modelSetting.value.id || '';
+        this.selectedModelText = modelSetting.value.name || '';
+      }
+
+      // Update widget wrap attributes for external listeners
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      if (this.selectedModelId) {
+        this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+      }
+
+      // Dispatch Unity's custom event for action handlers
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-generate', {
+        detail: {
+          prompt,
+          verb: this.selectedVerbType,
+          applicationId,
+          settings,
+          modelId: this.selectedModelId,
+          modelVersion: this.selectedModelVersion,
+        },
+        bubbles: true,
+      }));
+
+      // Analytics tracking
+      this.trackAnalytics('generate', {
+        verb: this.selectedVerbType,
+        prompt: prompt.slice(0, 50),
+        modelId: this.selectedModelId,
+      });
+
+      console.log('Generate requested:', { applicationId, prompt, settings });
+    });
+
+    // Application change event
+    this.promptBarElement.addEventListener('prompt-advanced-application-change', (event) => {
+      const { applicationId } = event.detail;
+      this.selectedVerbType = appKeyToVerb[applicationId] || 'image';
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+
+      // Clear model selection when switching apps
+      this.selectedModelId = '';
+      this.selectedModelVersion = '';
+      this.widgetWrap.removeAttribute('data-selected-model-id');
+      this.widgetWrap.removeAttribute('data-selected-model-version');
+
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-application-change', {
+        detail: { applicationId, verb: this.selectedVerbType },
+        bubbles: true,
+      }));
+
+      this.trackAnalytics('application-change', { verb: this.selectedVerbType });
+    });
+
+    // Prompt change event
+    this.promptBarElement.addEventListener('prompt-advanced-prompt-change', (event) => {
+      const { value } = event.detail;
+      this.currentPrompt = value;
+
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-prompt-change', {
+        detail: { prompt: value },
+        bubbles: true,
+      }));
+    });
+
+    // Setting change event
+    this.promptBarElement.addEventListener('prompt-advanced-setting-change', (event) => {
+      const { settingId, item } = event.detail;
+
+      // Track model changes
+      if (settingId === 'model' && item?.value) {
+        this.selectedModelId = item.value.id || '';
+        this.selectedModelText = item.value.name || '';
+        this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+      }
+
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-setting-change', {
+        detail: event.detail,
+        bubbles: true,
+      }));
+
+      this.trackAnalytics('setting-change', { settingId });
+    });
+
+    // More button click
+    this.promptBarElement.addEventListener('prompt-advanced-more-button-click', (event) => {
+      const prompt = this.promptBarElement.prompt || '';
+
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-more-click', {
+        detail: {
+          prompt,
+          verb: this.selectedVerbType,
+          modelId: this.selectedModelId,
+        },
+        bubbles: true,
+      }));
+
+      this.trackAnalytics('more-click', { verb: this.selectedVerbType });
+    });
+
+    // Setting interaction (for analytics)
+    this.promptBarElement.addEventListener('prompt-advanced-setting-interact', (event) => {
+      const { settingId, type } = event.detail;
+      this.trackAnalytics('setting-interact', { settingId, type });
+    });
+  }
+
+  /**
+   * Track analytics events
+   */
+  trackAnalytics(action, data = {}) {
+    // Unity analytics via satellite
+    if (window._satellite) {
+      window._satellite.track(`firefly-${action}`, {
+        ...data,
+        verb: this.selectedVerbType,
+      });
+    }
+
+    // Also dispatch for any external listeners
+    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+      detail: { action, ...data },
+      bubbles: true,
+    }));
+  }
+
+  /**
+   * Legacy widget initialization (fallback)
+   */
+  async initLegacyWidget() {
+    console.warn('Falling back to legacy widget implementation');
+    // Create a simple textarea fallback
+    const inputWrapper = this.createLegacyInputWrapper();
+    this.widget.appendChild(inputWrapper);
+  }
+
+  /**
+   * Create legacy input wrapper (fallback)
+   */
+  createLegacyInputWrapper() {
+    const ph = this.workflowCfg.placeholder;
+    const inpWrap = createTag('div', { class: 'inp-wrap legacy-fallback' });
+    const inpField = createTag('textarea', {
+      id: 'promptInput',
+      class: 'inp-field',
+      placeholder: ph['placeholder-input'] || 'Enter your prompt...',
+    });
+    const genBtn = createTag('button', {
+      class: 'unity-act-btn gen-btn',
+      'aria-label': 'Generate',
+    }, 'Generate');
+
+    genBtn.addEventListener('click', () => {
+      const prompt = inpField.value;
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-generate', {
+        detail: { prompt, verb: this.selectedVerbType },
+        bubbles: true,
+      }));
+    });
+
+    inpWrap.append(inpField, genBtn);
+    return inpWrap;
+  }
+
+  // ============================================
+  // Preserved methods from original widget.js
+  // ============================================
 
   popPlaceholders() {
     return Object.fromEntries(
@@ -72,437 +519,6 @@ export default class UnityWidget {
         element.closest('li')?.innerText || '',
       ]).filter(([key]) => key),
     );
-  }
-
-  showVerbMenu(selectedElement) {
-    const menuContainer = selectedElement.parentElement;
-    document.querySelectorAll('.verbs-container').forEach((container) => {
-      if (container !== menuContainer) {
-        container.classList.remove('show-menu');
-        container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
-      }
-    });
-    menuContainer.classList.toggle('show-menu');
-    selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
-    if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
-  }
-
-  hidePromptDropdown(exceptElement = null) {
-    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
-    if (dropdown && !dropdown.classList.contains('hidden')) {
-      dropdown.classList.add('hidden');
-      dropdown.setAttribute('inert', '');
-      dropdown.setAttribute('aria-hidden', 'true');
-    }
-    if (this.selectedVerbType === 'sound') {
-      this.resetAllSoundVariations?.(dropdown);
-    }
-    const modelDropdown = this.widget.querySelector('.models-container');
-    const modelButton = modelDropdown?.querySelector('.selected-model');
-    if (modelDropdown && modelDropdown.classList.contains('show-menu') && modelButton !== exceptElement) {
-      modelDropdown.classList.remove('show-menu');
-      modelButton?.setAttribute('aria-expanded', 'false');
-    }
-    const verbDropdown = this.widget.querySelector('.verbs-container');
-    const verbButton = verbDropdown?.querySelector('.selected-verb');
-    if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton !== exceptElement) {
-      verbDropdown.classList.remove('show-menu');
-      verbButton?.setAttribute('aria-expanded', 'false');
-    }
-  }
-
-  updateAnalytics(verb) {
-    if (this.promptItems && this.promptItems.length > 0) {
-      this.promptItems.forEach((item) => {
-        const ariaLabel = item.getAttribute('aria-label') || '';
-        item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
-      });
-    }
-    if (this.genBtn) {
-      this.genBtn.setAttribute('daa-ll', `Generate--${verb}`);
-    }
-  }
-
-  clearSelectedModelState() {
-    this.selectedModelId = '';
-    this.selectedModelVersion = '';
-    this.selectedModelModule = '';
-    this.selectedModelText = '';
-  }
-
-  handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
-    return (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const verbLinkTexts = [];
-      verbList.querySelectorAll('.verb-link').forEach((listLink) => {
-        listLink.parentElement.classList.remove('selected');
-        listLink.setAttribute('aria-selected', 'false');
-        const text = listLink.textContent.trim();
-        if (text) verbLinkTexts.push(text);
-      });
-      verbLinkTexts.sort((a, b) => b.length - a.length);
-      selectedElement.parentElement.classList.toggle('show-menu');
-      selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
-      link.parentElement.classList.add('selected');
-      link.setAttribute('aria-selected', 'true');
-      if (modelList) {
-        this.selectedModelId = link.getAttribute('data-model-id');
-        this.selectedModelVersion = link.getAttribute('data-model-version');
-        this.selectedModelModule = link.getAttribute('data-model-module');
-        this.selectedModelText = link.textContent.trim();
-        const copiedNodes = link.cloneNode(true).childNodes;
-        copiedNodes[0].remove();
-        selectedElement.replaceChildren(...copiedNodes, menuIcon);
-        selectedElement.dataset.selectedModelId = this.selectedModelId;
-        selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
-      } else {
-        this.selectedVerbType = link.getAttribute('data-verb-type');
-        this.selectedVerbText = link.textContent.trim();
-        selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
-        selectedElement.dataset.selectedVerb = this.selectedVerbType;
-      }
-      selectedElement.focus();
-      this.ensureSoundModuleLoaded();
-      const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
-      if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
-      else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
-      if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
-        const oldModelContainer = this.widget.querySelector('.models-container');
-        const modelDropdown = this.modelDropdown();
-        if (oldModelContainer) {
-          if (modelDropdown.length > 1) {
-            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
-            newModelContainer.append(...modelDropdown);
-            oldModelContainer.replaceWith(newModelContainer);
-          } else {
-            oldModelContainer.remove();
-            this.clearSelectedModelState();
-          }
-        } else if (modelDropdown.length > 1) {
-          const actionContainer = this.widget.querySelector('.action-container');
-          if (actionContainer) {
-            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
-            newModelContainer.append(...modelDropdown);
-            actionContainer.append(newModelContainer);
-          }
-        } else this.clearSelectedModelState();
-      }
-      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-      if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-      else this.widgetWrap.removeAttribute('data-selected-model-id');
-      if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
-      else this.widgetWrap.removeAttribute('data-selected-model-version');
-      this.updateAnalytics(this.selectedVerbType);
-      if (this.genBtn) {
-        const img = this.genBtn.querySelector('img[src*=".svg"]');
-        this.genBtn.setAttribute(
-          'aria-label',
-          (this.genBtn.getAttribute('aria-label') || '').replace(
-            new RegExp(`\\b(${verbLinkTexts.join('|')})\\b`),
-            this.selectedVerbText,
-          ),
-        );
-        if (img) img.setAttribute('alt', `${this.genBtn.getAttribute('aria-label') || ''}`);
-      }
-    };
-  }
-
-  createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
-    const fragment = document.createDocumentFragment();
-    items.forEach((item, idx) => {
-      const {
-        name,
-        type,
-        icon,
-        module,
-        id,
-        version,
-      } = item;
-      const listItem = createTag('li', {
-        class: 'verb-item',
-        role: 'presentation',
-      });
-      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
-      const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
-      const link = createTag('a', {
-        href: '#',
-        class: isModelList ? 'verb-link model-link' : 'verb-link',
-        ...(!isModelList && { 'data-verb-type': type }),
-        ...(isModelList && { 'data-model-module': module }),
-        ...(isModelList && { 'data-model-id': id }),
-        ...(isModelList && { 'data-model-version': version }),
-        'aria-selected': 'false',
-        role: 'option',
-      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`);
-      if (idx === 0) {
-        listItem.classList.add('selected');
-        link.setAttribute('aria-selected', 'true');
-      }
-      link.prepend(selectedIcon);
-      listItem.append(link);
-      fragment.append(listItem);
-    });
-    listContainer.append(fragment);
-    listContainer.addEventListener('click', (e) => {
-      const link = e.target.closest('.verb-link');
-      if (!link) return;
-      this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
-    });
-  }
-
-  verbDropdown() {
-    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
-    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
-    const selectedVerbType = verbs[0]?.className.split('-')[2];
-    const selectedVerb = verbs[0]?.nextElementSibling;
-    const selectedElement = createTag('button', {
-      class: 'selected-verb',
-      'aria-expanded': 'false',
-      'aria-controls': 'media-menu',
-      'aria-label': 'media type',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
-      'aria-labelledby': 'listbox-label',
-      'data-selected-verb': selectedVerbType,
-    }, `${selectedVerb?.textContent.trim()}`);
-    this.selectedVerbType = selectedVerbType;
-    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-    this.selectedVerbText = selectedVerb?.textContent.trim();
-    if (verbs.length <= 1) {
-      selectedElement.setAttribute('disabled', 'true');
-      return [selectedElement];
-    }
-    this.widgetWrap.classList.add('verb-options');
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
-    verbList.setAttribute('style', 'display: none;');
-    selectedElement.append(menuIcon);
-    const handleDocumentClick = (e) => {
-      const menuContainer = selectedElement.parentElement;
-      if (!menuContainer.contains(e.target)) {
-        document.removeEventListener('click', handleDocumentClick);
-        menuContainer.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
-      }
-    };
-    selectedElement.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      document.addEventListener('click', handleDocumentClick);
-    }, true);
-    selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-      }
-      if (e.key === 'Escape' || e.code === 27) {
-        selectedElement.parentElement.classList?.remove('show-menu');
-        selectedElement.focus();
-      }
-    });
-    verbs[0]?.classList.add('selected');
-    const verbsData = Array.from(verbs).map((verb) => ({
-      name: verb.nextElementSibling?.textContent.trim(),
-      type: verb.classList[1].split('-')[2],
-      icon: verb.nextElementSibling?.href,
-    }));
-    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    return [selectedElement, verbList];
-  }
-
-  modelDropdown() {
-    if (!this.hasModelOptions) return [];
-    const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
-    if (!Array.isArray(models) || models.length === 0) return [];
-    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
-    const selectedModelType = models[0].id;
-    const selectedModelVersion = models[0].version;
-    const selectedModelModule = models[0].module;
-    const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
-    const selectedElement = createTag('button', {
-      class: 'selected-model',
-      'aria-expanded': 'false',
-      'aria-controls': 'model-menu',
-      'aria-label': 'model type',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
-      'aria-labelledby': 'listbox-label',
-      'data-selected-model-id': selectedModelType,
-      'data-selected-model-version': selectedModelVersion,
-      'data-selected-model-module': selectedModelModule,
-    }, `<img src="${models[0].icon}" alt="" />${nameContainer.outerHTML}`);
-    this.selectedModelModule = selectedModelModule;
-    this.selectedModelId = selectedModelType;
-    this.selectedModelVersion = selectedModelVersion;
-    this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-    this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
-    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-    this.selectedModelText = models[0].name.trim();
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
-    listItems.setAttribute('style', 'display: none;');
-    selectedElement.append(menuIcon);
-    const handleDocumentClick = (e) => {
-      const menuContainer = selectedElement.parentElement;
-      if (!menuContainer.contains(e.target)) {
-        document.removeEventListener('click', handleDocumentClick);
-        menuContainer.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
-      }
-    };
-    selectedElement.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      document.addEventListener('click', handleDocumentClick);
-    }, true);
-    selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-      }
-      if (e.key === 'Escape' || e.code === 27) {
-        selectedElement.parentElement.classList?.remove('show-menu');
-        selectedElement.focus();
-      }
-    });
-    this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
-    return [selectedElement, listItems];
-  }
-
-  createInpWrap(ph) {
-    const inpWrap = createTag('div', { class: 'inp-wrap' });
-    const actWrap = createTag('div', { class: 'act-wrap' });
-    const inpField = createTag('textarea', {
-      id: 'promptInput',
-      class: 'inp-field',
-      type: 'text',
-      placeholder: ph['placeholder-input'],
-      'aria-autocomplete': 'list',
-      'aria-haspopup': 'listbox',
-      'aria-controls': 'prompt-dropdown',
-      'aria-activedescendant': '',
-    });
-    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
-    inpField.addEventListener('focus', () => this.hidePromptDropdown());
-    inpField.addEventListener('click', () => this.resetAllSoundVariations?.(dropdown));
-    inpField.addEventListener('input', () => this.resetAllSoundVariations?.(dropdown));
-    const verbDropdown = this.verbDropdown();
-    const modelDropdown = this.modelDropdown();
-    const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
-    actWrap.append(genBtn);
-    const actionContainer = createTag('div', { class: 'action-container' });
-    const hasPromptLabel = this.el.querySelector('.icon-placeholder-prompt-label');
-    if (hasPromptLabel && ph['placeholder-prompt-label']) {
-      const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label' }, ph['placeholder-prompt-label']);
-      inpWrap.appendChild(promptLabel);
-    }
-    if (verbDropdown.length > 1) {
-      const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
-      verbBtn.append(...verbDropdown);
-      actionContainer.append(verbBtn);
-      inpWrap.append(inpField, actionContainer, actWrap);
-    } else {
-      inpWrap.append(inpField, actWrap);
-    }
-    if (modelDropdown.length > 1) {
-      const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
-      modelBtn.append(...modelDropdown);
-      actionContainer.append(modelBtn);
-    }
-    return inpWrap;
-  }
-
-  getLimitedDisplayPrompts(prompts) {
-    const shuffled = prompts.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3).map(({ prompt, assetid, variations }) => ({
-      prompt,
-      assetid,
-      variations,
-    }));
-  }
-
-  addPromptItemsToDropdown(dropdown, prompts, placeholder) {
-    this.promptItems = [];
-    prompts.forEach(({ prompt, assetid, variations }, idx) => {
-      const item = createTag('li', {
-        id: assetid,
-        class: 'drop-item',
-        role: 'option',
-        tabindex: '0',
-        'aria-label': prompt,
-        'aria-description': `${placeholder['placeholder-prompt']} ${placeholder['placeholder-suggestions']}`,
-        'daa-ll': `${prompt.slice(0, 20)}--${this.selectedVerbType}--Prompt suggestion`,
-      });
-      const iconWrap = createTag('span', { class: 'prompt-icon' }, '<svg><use xlink:href="#unity-prompt-icon"></use></svg>');
-      const text = createTag('span', { class: 'drop-text' }, prompt);
-      item.append(iconWrap, text);
-      dropdown.append(item);
-      this.promptItems.push(item);
-
-      if (this.selectedVerbType === 'sound') this.addSoundSuggestionHandlers(dropdown, item, { prompt, variations }, idx + 1);
-    });
-  }
-
-  async genDropdown(ph) {
-    if (!this.hasPromptSuggestions) return null;
-    const promptDropdownContainer = createTag('div', { class: 'prompt-dropdown-container drop hidden', 'aria-hidden': 'true' });
-    const dd = createTag('ul', {
-      id: 'prompt-dropdown',
-      class: 'prompt-suggestions-list',
-      'daa-lh': 'Marquee',
-      role: 'listbox',
-      'aria-labelledby': 'promptInput',
-    });
-    const titleCon = createTag('div', { class: 'drop-title-con' });
-    const title = createTag('span', { class: 'drop-title', id: 'prompt-suggestions' }, `${ph['placeholder-prompt']} ${ph['placeholder-suggestions']}`);
-    titleCon.append(title);
-    const prompts = await this.getPrompt(this.selectedVerbType);
-    const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dd, limited, ph);
-    promptDropdownContainer.append(titleCon, dd, this.createFooter(ph));
-    if (!this.outsideDropdownHandler) {
-      this.outsideDropdownHandler = (ev) => {
-        if (this.widgetWrap && window.getComputedStyle(this.widgetWrap).pointerEvents === 'none') return;
-        const wrapper = this.widget.querySelector('.autocomplete');
-        if (wrapper && wrapper.contains(ev.target)) return;
-        if (promptDropdownContainer && !promptDropdownContainer.classList.contains('hidden') && !promptDropdownContainer.contains(ev.target)) {
-          this.hidePromptDropdown();
-        }
-      };
-      setTimeout(() => document.addEventListener('click', this.outsideDropdownHandler, true), 0);
-    }
-    return promptDropdownContainer;
-  }
-
-  createFooter(ph) {
-    const footer = createTag('div', { class: 'drop-footer' });
-    const tipEl = this.el.querySelector('.icon-tip')?.closest('li');
-    const tipCon = createTag('div', { id: 'tip-content', class: 'tip-con', tabindex: '-1', role: 'note', 'aria-label': `${ph['placeholder-tip']} ${tipEl?.innerText}` }, '<svg><use xlink:href="#unity-info-icon"></use></svg>');
-    const tipText = createTag('span', { class: 'tip-text', id: 'tip-text' }, `${ph['placeholder-tip']}:`);
-    const tipDesc = createTag('span', { class: 'tip-desc', id: 'tip-desc' }, tipEl?.innerText || '');
-    tipCon.append(tipText, tipDesc);
-    const legalEl = this.el.querySelector('.icon-legal')?.closest('li');
-    const legalCon = createTag('div', { class: 'legal-con' });
-    const legalLink = legalEl?.querySelector('a');
-    const legalText = createTag('a', { href: legalLink?.href || '#', class: 'legal-text' }, legalLink?.innerText || 'Legal');
-    legalCon.append(legalText);
-    footer.append(tipCon, legalCon);
-    return footer;
-  }
-
-  createActBtn(cfg, cls) {
-    if (!cfg) return null;
-    const txt = cfg.innerText?.trim();
-    const img = cfg.querySelector('img[src*=".svg"]');
-    if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
-    if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
-    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
-    this.genBtn = btn;
-    return btn;
   }
 
   addWidget() {
@@ -537,7 +553,7 @@ export default class UnityWidget {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
       return (this.prompts?.[verb] || []).filter((item) => item.prompt && item.prompt.trim() !== '');
     } catch (e) {
-      window.lana?.log(`Message: Error loading promts, Error: ${e}`, this.lanaOptions);
+      window.lana?.log(`Message: Error loading prompts, Error: ${e}`, this.lanaOptions);
       return [];
     }
   }
@@ -594,28 +610,50 @@ export default class UnityWidget {
     return promptMap;
   }
 
-  createModelMap(data) {
-    const modelMap = {};
-    if (Array.isArray(data)) {
-      data.forEach((item) => {
-        if (item.type) {
-          if (!modelMap[item.module]) modelMap[item.module] = [];
-          modelMap[item.module].push({ name: item.name, id: item.id, version: item.version, icon: item.icon });
-        }
-      });
+  // ============================================
+  // Public API for external control
+  // ============================================
+
+  /**
+   * Set the prompt text programmatically
+   */
+  setPrompt(text) {
+    if (this.promptBarElement) {
+      this.promptBarElement.prompt = text;
+      this.currentPrompt = text;
     }
-    return modelMap;
   }
 
-  async updateDropdownForVerb(verb) {
-    if (!this.hasPromptSuggestions) return;
-    await this.ensureSoundModuleLoaded();
-    const dropdown = this.widget.querySelector('#prompt-dropdown');
-    if (!dropdown) return;
-    dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
-    const prompts = await this.getPrompt(verb);
-    const limited = this.getLimitedDisplayPrompts(prompts);
-    this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
-    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
+  /**
+   * Get the current prompt text
+   */
+  getPrompt() {
+    return this.promptBarElement?.prompt || this.currentPrompt || '';
+  }
+
+  /**
+   * Set generating state
+   */
+  setGenerating(isGenerating) {
+    if (this.promptBarElement) {
+      this.promptBarElement.isGenerating = isGenerating;
+    }
+  }
+
+  /**
+   * Set the selected application
+   */
+  setApplication(applicationId) {
+    if (this.promptBarElement) {
+      this.promptBarElement.selectedApplicationId = applicationId;
+    }
+  }
+
+  /**
+   * Get the prompt bar element for direct manipulation
+   */
+  getPromptBarElement() {
+    return this.promptBarElement;
   }
 }
+
