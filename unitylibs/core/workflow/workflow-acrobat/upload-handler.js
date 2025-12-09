@@ -465,7 +465,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
-    if (abortSignal.aborted) return;
+    if (abortSignal.aborted || !this.actionBinder.isUploading) return;
     this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, maxRetryCount: attemptMap?.get(0) || 0 });
   }
@@ -548,7 +548,7 @@ export default class UploadHandler {
       if (files.length !== verifiedAssets.length) this.actionBinder.multiFileFailure = 'uploaderror';
       this.actionBinder.LOADER_LIMIT = 95;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
-      if (abortSignal.aborted) return;
+      if (abortSignal.aborted || !this.actionBinder.isUploading) return;
       this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
     } catch (error) {
       await this.transitionScreen.showSplashScreen();
@@ -675,6 +675,5 @@ export default class UploadHandler {
       return;
     }
     this.actionBinder.uploadTimestamp = Date.now();
-    this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
   }
 }

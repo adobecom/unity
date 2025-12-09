@@ -960,12 +960,11 @@ describe('UploadHandler', () => {
     afterEach(() => {
       sinon.restore();
     });
-    it('should call showSplashScreen, uploadMultiFile, and analytics', async () => {
+    it('should call showSplashScreen, uploadMultiFile', async () => {
       const files = [{ type: 'application/pdf' }];
       await uploadHandler.multiFileUserUpload(files, {});
       expect(uploadHandler.showSplashScreen.called).to.be.true;
       expect(uploadHandler.uploadMultiFile.called).to.be.true;
-      expect(mockActionBinder.dispatchAnalyticsEvent.calledWith('uploaded')).to.be.true;
     });
     it('should handle error', async () => {
       uploadHandler.uploadMultiFile.restore();
