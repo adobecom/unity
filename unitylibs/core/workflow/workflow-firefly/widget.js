@@ -11,11 +11,22 @@ import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 // Base path to prompt-bar assets
 const getPromptBarBasePath = () => {
-  const { origin } = window.location;
-  const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-    ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-    : origin;
-  return `${baseUrl}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
+  const { origin, pathname } = window.location;
+  
+  // For local development, use origin directly
+  if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    return `${origin}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
+  }
+  
+  // For AEM/HLX environments, try to use the same origin first
+  // This allows testing on feature branches
+  if (origin.includes('.aem.') || origin.includes('.hlx.')) {
+    // Use the current origin instead of hardcoding main branch
+    return `${origin}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
+  }
+  
+  // Default fallback
+  return `${origin}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
 };
 
 // Module cache
@@ -30,13 +41,21 @@ async function loadPromptBarModule() {
   if (promptBarLoadPromise) return promptBarLoadPromise;
 
   const basePath = getPromptBarBasePath();
+  // eslint-disable-next-line no-console
+  console.log('[Unity] Loading prompt-bar from:', basePath);
 
   promptBarLoadPromise = (async () => {
-    // Load Lit runtime first
-    await import(`${basePath}/runtime.min.js`);
-    // Load the main component
-    promptBarModule = await import(`${basePath}/prompt-bar-app-lightweight.js`);
-    return promptBarModule;
+    try {
+      // Load Lit runtime first
+      await import(`${basePath}/runtime.min.js`);
+      // Load the main component
+      promptBarModule = await import(`${basePath}/prompt-bar-app-lightweight.js`);
+      return promptBarModule;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[Unity] Failed to load prompt-bar module from:', basePath, error);
+      throw error;
+    }
   })();
 
   return promptBarLoadPromise;
