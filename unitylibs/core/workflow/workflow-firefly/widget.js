@@ -9,24 +9,12 @@
 
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
-// Base path to prompt-bar assets
+// Base path to prompt-bar assets (relative to this module)
 const getPromptBarBasePath = () => {
-  const { origin, pathname } = window.location;
-  
-  // For local development, use origin directly
-  if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-    return `${origin}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
-  }
-  
-  // For AEM/HLX environments, try to use the same origin first
-  // This allows testing on feature branches
-  if (origin.includes('.aem.') || origin.includes('.hlx.')) {
-    // Use the current origin instead of hardcoding main branch
-    return `${origin}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
-  }
-  
-  // Default fallback
-  return `${origin}/unitylibs/core/workflow/workflow-firefly/prompt-bar`;
+  // Use import.meta.url to get the current module's directory
+  const currentModuleUrl = import.meta.url;
+  const baseUrl = currentModuleUrl.substring(0, currentModuleUrl.lastIndexOf('/'));
+  return `${baseUrl}/prompt-bar`;
 };
 
 // Module cache
