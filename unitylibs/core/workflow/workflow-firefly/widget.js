@@ -130,18 +130,33 @@ export default class UnityWidget {
     try {
       // Load the prompt-bar module
       this.promptBarModule = await loadPromptBarModule();
-      
+
+      // Get exported constants and functions
       const {
-        PromptAdvancedElement,
         IMAGE_APPLICATION_KEY,
         VIDEO_APPLICATION_KEY,
         SOUND_FX_APPLICATION_KEY,
+        promptAdvancedTagName,
+        unlocalized,
       } = this.promptBarModule;
 
-      // Load localized strings
+      // Store application keys for later use
+      this.appKeys = {
+        IMAGE_APPLICATION_KEY,
+        VIDEO_APPLICATION_KEY,
+        SOUND_FX_APPLICATION_KEY,
+      };
+
+      // Load localized strings (or use default unlocalized)
       const { locale } = getConfig();
       const localeCode = locale?.ietf || 'en-US';
-      const localized = await loadLocaleData(localeCode);
+      let localized;
+      try {
+        localized = await loadLocaleData(localeCode);
+      } catch (e) {
+        console.warn('Failed to load locale, using defaults:', e);
+        localized = unlocalized;
+      }
 
       // Map Unity verb types to prompt-bar application keys
       const verbToAppKey = {
@@ -153,8 +168,9 @@ export default class UnityWidget {
       // Build application configs based on verbs
       const applicationConfigs = this.buildApplicationConfigs(localized);
 
-      // Create the prompt-advanced element
-      this.promptBarElement = document.createElement('firefly-prompt-advanced');
+      // Create the prompt-advanced element using the exported tag name
+      const tagName = promptAdvancedTagName || 'firefly-prompt-advanced';
+      this.promptBarElement = document.createElement(tagName);
 
       // Set properties
       this.promptBarElement.localized = localized;
@@ -320,11 +336,12 @@ export default class UnityWidget {
   setupPromptBarEvents() {
     if (!this.promptBarElement) return;
 
+    // Use stored application keys
     const {
       IMAGE_APPLICATION_KEY,
       VIDEO_APPLICATION_KEY,
       SOUND_FX_APPLICATION_KEY,
-    } = this.promptBarModule;
+    } = this.appKeys;
 
     // Map application keys back to Unity verb types
     const appKeyToVerb = {
