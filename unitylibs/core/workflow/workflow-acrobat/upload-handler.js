@@ -465,6 +465,7 @@ export default class UploadHandler {
       const validated = await this.handleValidations(assetData);
       if (!validated) return;
     }
+    if (abortSignal.aborted || !this.actionBinder.isUploading) return;
     this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, maxRetryCount: attemptMap?.get(0) || 0 });
   }
@@ -500,6 +501,7 @@ export default class UploadHandler {
     const workflowId = crypto.randomUUID();
     const { maxConcurrentFiles, maxConcurrentChunks } = this.getConcurrentLimits();
     try {
+      const abortSignal = this.actionBinder.getAbortSignal();
       const { blobDataArray, assetDataArray, fileTypeArray } = await this.createInitialAssets(files, workflowId, maxConcurrentFiles);
       if (assetDataArray.length === 0) {
         await this.actionBinder.dispatchErrorToast('pre_upload_error_create_asset', 500, 'Error during asset creation or blob retrieval', false, true, { code: 'pre_upload_error_create_asset' });
@@ -520,6 +522,7 @@ export default class UploadHandler {
           blobDataArray,
           fileTypeArray,
           maxConcurrentChunks,
+          abortSignal,
         ));
       } catch (error) {
         await this.actionBinder.dispatchErrorToast('upload_warn_chunk_upload_exception', error.status || 500, `Error during chunk upload: ${error.message}`, false, true, {
@@ -545,6 +548,7 @@ export default class UploadHandler {
       if (files.length !== verifiedAssets.length) this.actionBinder.multiFileFailure = 'uploaderror';
       this.actionBinder.LOADER_LIMIT = 95;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 95);
+      if (abortSignal.aborted || !this.actionBinder.isUploading) return;
       this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
     } catch (error) {
       await this.transitionScreen.showSplashScreen();
@@ -671,6 +675,5 @@ export default class UploadHandler {
       return;
     }
     this.actionBinder.uploadTimestamp = Date.now();
-    this.actionBinder.dispatchAnalyticsEvent('uploaded', filesData);
   }
 }

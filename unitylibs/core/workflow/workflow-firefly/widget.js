@@ -394,6 +394,11 @@ export default class UnityWidget {
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
     const actionContainer = createTag('div', { class: 'action-container' });
+    const hasPromptLabel = this.el.querySelector('.icon-placeholder-prompt-label');
+    if (hasPromptLabel && ph['placeholder-prompt-label']) {
+      const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label' }, ph['placeholder-prompt-label']);
+      inpWrap.appendChild(promptLabel);
+    }
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
       verbBtn.append(...verbDropdown);
