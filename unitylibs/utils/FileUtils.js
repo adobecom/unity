@@ -1,3 +1,8 @@
+// eslint-disable-next-line import/no-unresolved
+import { getType as vendorGetType } from '../vendor/mime-lite.js';
+
+let mimeGetTypeResolver = vendorGetType;
+
 export function getExtension(name) {
   if (!name || typeof name !== 'string' || (name.startsWith('.') && name.indexOf('.', 1) === -1) || !name.includes('.')) return '';
   const lastDot = name.lastIndexOf('.');
@@ -15,13 +20,17 @@ export function removeExtension(name) {
 }
 
 export function getMimeType(fileName) {
-  const extToTypeMap = {
-    indd: 'application/x-indesign',
-    ai: 'application/illustrator',
-    psd: 'image/vnd.adobe.photoshop',
-    form: 'application/vnd.adobe.form.fillsign',
-  };
-  return extToTypeMap[getExtension(fileName)];
+  // const extToTypeMap = {
+  //   indd: 'application/x-indesign',
+  //   ai: 'application/illustrator',
+  //   psd: 'image/vnd.adobe.photoshop',
+  //   form: 'application/vnd.adobe.form.fillsign',
+  // };
+  // return extToTypeMap[getExtension(fileName)];
+
+  // Keep simple and synchronous; resolver is pre-bound to local vendor by default
+  return (mimeGetTypeResolver && mimeGetTypeResolver(fileName)) || '';
+
 }
 
 export async function getImageDimensions(file) {
