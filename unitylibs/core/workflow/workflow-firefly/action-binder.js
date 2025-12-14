@@ -14,41 +14,48 @@ import {
   getLocale,
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
+import NetworkUtils from '../../../utils/NetworkUtils.js';
 
-class ServiceHandler {
-  constructor(renderWidget = false, canvasArea = null, unityEl = null) {
-    this.renderWidget = renderWidget;
-    this.canvasArea = canvasArea;
+export default class ActionBinder {
+  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
+
+  boundHandleKeyDown = this.handleKeyDown.bind(this);
+
+  boundOutsideClickHandler = this.handleOutsideClick.bind(this);
+
+  constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
-  }
-
-  async fetchFromService(url, options) {
-    try {
-      const response = await fetch(url, options);
-      const error = new Error();
-      if (response.status !== 200) {
-        error.status = response.status;
-        throw error;
-      }
-      return response.json();
-    } catch (error) {
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        error.status = 504;
-      }
-      throw error;
-    }
-  }
-
-  async postCallToService(api, options, unityProduct, unityAction) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, {
-        'x-unity-product': unityProduct,
-        'x-unity-action': unityAction,
-      }),
-      ...options,
-    };
-    return this.fetchFromService(api, postOpts);
+    this.workflowCfg = workflowCfg;
+    this.block = block;
+    this.canvasArea = canvasArea;
+    this.actions = actionMap;
+    this.query = '';
+    this.activeIndex = -1;
+    this.id = '';
+    this.apiConfig = { ...unityConfig };
+    this.inputField = this.getElement('.inp-field');
+    this.dropdown = this.getElement('.drop');
+    this.widget = this.getElement('.ex-unity-widget');
+    this.viewport = defineDeviceByScreenSize();
+    this.widgetWrap = this.getElement('.ex-unity-wrap');
+    this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
+    this.widgetWrap.addEventListener('firefly-audio-error', (ev) => {
+      const run = async () => {
+        try {
+          if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+          this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-audio-fail' }, ev?.detail?.error, this.lanaOptions, 'client');
+        } catch (e) { /* noop */ }
+      };
+      run();
+    });
+    this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
+    this.widgetWrap.append(this.scrRead);
+    this.errorToastEl = null;
+    this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
+    this.sendAnalyticsToSplunk = null;
+    this.networkUtils = new NetworkUtils();
+    this.addAccessibility();
+    this.initAction();
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -67,50 +74,6 @@ class ServiceHandler {
     alertText.innerText = msg;
     errorToast.classList.add('show');
     window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
-  }
-}
-
-export default class ActionBinder {
-  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
-
-  boundHandleKeyDown = this.handleKeyDown.bind(this);
-
-  boundOutsideClickHandler = this.handleOutsideClick.bind(this);
-
-  constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
-    this.unityEl = unityEl;
-    this.workflowCfg = workflowCfg;
-    this.block = block;
-    this.canvasArea = canvasArea;
-    this.actions = actionMap;
-    this.query = '';
-    this.serviceHandler = null;
-    this.activeIndex = -1;
-    this.id = '';
-    this.apiConfig = { ...unityConfig };
-    this.inputField = this.getElement('.inp-field');
-    this.dropdown = this.getElement('.drop');
-    this.widget = this.getElement('.ex-unity-widget');
-    this.viewport = defineDeviceByScreenSize();
-    this.widgetWrap = this.getElement('.ex-unity-wrap');
-    this.widgetWrap.addEventListener('firefly-reinit-action-listeners', () => this.initActionListeners());
-    this.widgetWrap.addEventListener('firefly-audio-error', (ev) => {
-      const run = async () => {
-        try {
-          if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
-          if (!this.serviceHandler) await this.loadServiceHandler();
-          this.serviceHandler?.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-audio-fail' }, ev?.detail?.error, this.lanaOptions, 'client');
-        } catch (e) { /* noop */ }
-      };
-      run();
-    });
-    this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
-    this.widgetWrap.append(this.scrRead);
-    this.errorToastEl = null;
-    this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
-    this.sendAnalyticsToSplunk = null;
-    this.addAccessibility();
-    this.initAction();
   }
 
   async initAction() {
@@ -186,14 +149,6 @@ export default class ActionBinder {
     });
   }
 
-  async loadServiceHandler() {
-    this.serviceHandler = new ServiceHandler(
-      this.workflowCfg.targetCfg.renderWidget,
-      this.canvasArea,
-      this.unityEl,
-    );
-  }
-
   addEventListeners(el, actionsList) {
     const handleClick = async (event) => {
       event.preventDefault();
@@ -256,7 +211,7 @@ export default class ActionBinder {
 
   validateInput(query) {
     if (query.length > 750) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
+      this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
     }
     return { isValid: true };
@@ -279,7 +234,6 @@ export default class ActionBinder {
 
   async generateContent() {
     await this.initAnalytics();
-    if (!this.serviceHandler) await this.loadServiceHandler();
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
     if (cgen) {
@@ -321,11 +275,25 @@ export default class ActionBinder {
         },
         ...(this.id ? { assetId: this.id } : { query: this.query }),
       };
-      const { url } = await this.serviceHandler.postCallToService(
+      const postOpts = {
+        method: 'POST',
+        headers: await getHeaders(unityConfig.apiKey, {
+          'x-unity-product': this.workflowCfg.productName,
+          'x-unity-action': `${action}-${this.getSelectedVerbType()}Generation`,
+        }),
+        body: JSON.stringify(payload),
+      };
+      const { url } = await this.networkUtils.fetchFromService(
         this.apiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(payload) },
-        this.workflowCfg.productName,
-        `${action}-${this.getSelectedVerbType()}Generation`,
+        postOpts,
+        async (response) => {
+          if (response.status !== 200) {
+            const error = new Error();
+            error.status = response.status;
+            throw error;
+          }
+          return response.json();
+        },
       );
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
@@ -334,7 +302,7 @@ export default class ActionBinder {
       if (url) window.location.href = url;
     } catch (err) {
       this.query = '';
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+      this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
       this.logAnalytics('generate', {
         ...eventData,
         errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
