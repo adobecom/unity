@@ -124,18 +124,82 @@ const miloLibs = setLibs(LIBS);
 
 (function loadStyles() {
   const paths = [`${miloLibs}/styles/styles.css`];
-  if (STYLES) { paths.push(STYLES); }
+  if (STYLES) {
+    paths.push(STYLES);
+  }
   paths.forEach((path) => {
     const link = document.createElement('link');
     link.setAttribute('rel', 'stylesheet');
     link.setAttribute('href', path);
     document.head.appendChild(link);
   });
-}());
+})();
+
+(function loadPromptBarApp() {
+  // if (window.location.hostname !== 'localhost') return;
+
+  const scriptUrl =
+    'https://clio-assets-stage.corp.adobe.com/clio-playground/script-cache/prompt-bar-app/v0/dist/main.bundle.js';
+
+  // Load the script
+  const script = document.createElement('script');
+  script.src = scriptUrl;
+  script.async = true;
+  script.onload = () => {
+    // Create the prompt bar app element
+    const args = {
+      // Add default configuration here if needed
+      // host: { /* ... */ },
+      // persistName: 'my-persist-name',
+      // environment: { /* ... */ },
+      // features: { /* ... */ },
+      // analyticsConfig: { /* ... */ },
+      // settingsConfig: { /* ... */ },
+      // additionalQueryParams: { /* ... */ },
+    };
+
+    const promptBarHTML = [
+      '<sp-theme theme="light" scale="medium" theme="spectrum"><firefly-prompt-bar-app',
+      args.host !== undefined ? ` host='${JSON.stringify(args.host)}'` : '',
+      args.persistName !== undefined
+        ? ` persistName="${args.persistName}"`
+        : '',
+      args.environment !== undefined
+        ? ` environment='${JSON.stringify(args.environment)}'`
+        : '',
+      args.features !== undefined
+        ? ` features='${JSON.stringify(args.features)}'`
+        : '',
+      args.analyticsConfig !== undefined
+        ? ` analyticsConfig='${JSON.stringify(args.analyticsConfig)}'`
+        : '',
+      args.settingsConfig !== undefined
+        ? ` settingsConfig='${JSON.stringify(args.settingsConfig)}'`
+        : '',
+      args.additionalQueryParams !== undefined
+        ? ` additionalQueryParams='${JSON.stringify(
+            args.additionalQueryParams
+          )}'`
+        : '',
+      '></firefly-prompt-bar-app> </sp-theme>',
+    ].join('');
+
+    const container = document.createElement('div');
+    container.id = 'firefly-prompt-bar-container';
+    container.innerHTML = promptBarHTML;
+    document.body.appendChild(container);
+  };
+  script.onerror = (error) => {
+    console.error('Failed to load prompt bar script:', error);
+  };
+  document.head.appendChild(script);
+})();
 
 (async function loadPage() {
-  const { loadArea, setConfig, loadLana } = await import(`${miloLibs}/utils/utils.js`);
+  const { loadArea, setConfig, loadLana } = await import(
+    `${miloLibs}/utils/utils.js`
+  );
   setConfig({ ...CONFIG, miloLibs });
   loadLana({ clientId: 'unity', tags: 'info' });
   await loadArea();
-}());
+})();
