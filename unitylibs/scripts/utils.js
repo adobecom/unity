@@ -5,7 +5,7 @@ export const [setLibs, getLibs] = (() => {
       libs = (() => {
         const { hostname, search } = location || window.location;
         if (hostname === 'acrobat.adobe.com') return 'https://www.adobe.com/libs';
-        if (hostname === 'stage.acrobat.adobe.com' || hostname === 'mwpw-2345--dc-frictionless--adobecom.aem.page') return 'https://www.stage.adobe.com/libs';
+        if (hostname === 'stage.acrobat.adobe.com') return 'https://www.stage.adobe.com/libs';
         if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
