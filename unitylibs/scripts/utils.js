@@ -307,6 +307,7 @@ export const unityConfig = (() => {
     || host.includes('aem.live')
     || host.includes('localhost')
     || host.includes('stage.adobe')
+    || host.includes('stage.acrobat.adobe')
     || host.includes('corp.adobe')
     || host.includes('graybox.adobe')) {
     return cfg.stage;
