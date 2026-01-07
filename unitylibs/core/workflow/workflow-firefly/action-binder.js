@@ -10,7 +10,7 @@ import {
   createTag,
   defineDeviceByScreenSize,
   getLibs,
-  getHeaders,
+  getApiCallOptions,
   getLocale,
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
@@ -275,14 +275,15 @@ export default class ActionBinder {
         },
         ...(this.id ? { assetId: this.id } : { query: this.query }),
       };
-      const postOpts = {
-        method: 'POST',
-        headers: await getHeaders(unityConfig.apiKey, {
+      const postOpts = await getApiCallOptions(
+        'POST',
+        unityConfig.apiKey,
+        {
           'x-unity-product': this.workflowCfg.productName,
           'x-unity-action': `${action}-${this.getSelectedVerbType()}Generation`,
-        }),
-        body: JSON.stringify(payload),
-      };
+        },
+        { body: JSON.stringify(payload) },
+      );
       const { url } = await this.networkUtils.fetchFromService(
         this.apiConfig.connectorApiEndPoint,
         postOpts,
