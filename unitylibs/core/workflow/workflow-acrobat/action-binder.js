@@ -176,6 +176,7 @@ export default class ActionBinder {
     this.multiFileValidationFailure = false;
     this.initialize();
     this.experimentData = null;
+    this.pdflite = null;
   }
 
   async initialize() {
@@ -502,6 +503,61 @@ export default class ActionBinder {
     return getMimeType(file.name);
   }
 
+  async ensurePdflite() {
+    if (this.pdflite) return this.pdflite;
+    const moduleUrl = new URL('../../../../libs/pdflite/dc-pdflite.js', import.meta.url).href;
+    const { default: DcPdflite } = await import(moduleUrl);
+    const pdflite = new DcPdflite();
+    await pdflite.init();
+    this.pdflite = pdflite;
+    return this.pdflite;
+  }
+
+  async filterFilesWithPdflite(files) {
+    // Only PDFs are checked by pdflite; others pass through
+    const checks = files.map((file) => {
+      if (file.type !== 'application/pdf') {
+        return Promise.resolve({ file, ok: true });
+      }
+      return (async () => {
+        const pdflite = await this.ensurePdflite();
+        const details = await pdflite.fileDetails(file);
+        // Log details for developer inspection
+        // eslint-disable-next-line no-console
+        console.log('pdflite fileDetails', file.name, JSON.stringify(details, null, 2));
+        const isEncrypted = details?.IS_ENCRYPTED === true;
+        const isPasswordProtected = details?.IS_PASSWORD_PROTECTED === true;
+        if (isEncrypted || isPasswordProtected) {
+          // eslint-disable-next-line no-console
+          console.warn('pdflite invalid (encrypted/password-protected)', file.name, { isEncrypted, isPasswordProtected });
+          throw new Error('PDF is encrypted or password-protected');
+        }
+        const dimensions = await pdflite.pageDimensions(file, 0);
+        // eslint-disable-next-line no-console
+        console.log('pdflite pageDimensions', file.name, JSON.stringify(dimensions, null, 2));
+        return { file, ok: true };
+      })().catch((error) => {
+        // eslint-disable-next-line no-console
+        console.warn('pdflite validation failed', file.name, error);
+        return { file, ok: false, error };
+      });
+    });
+    const results = await Promise.all(checks);
+    const passed = results.filter((r) => r.ok).map((r) => r.file);
+    const failedCount = results.length - passed.length;
+    if (failedCount > 0 && this.MULTI_FILE) {
+      this.multiFileValidationFailure = true;
+    }
+    if (passed.length === 0 && files.length > 0) {
+      await this.dispatchErrorToast('validation_error_validate_files', null, 'All files failed pdflite checks', false, true, {
+        code: 'validation_error_validate_files',
+        subCode: 'validation_error_multiple_invalid_files',
+        desc: 'All files failed pdflite checks',
+      });
+    }
+    return passed;
+  }
+
   async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
@@ -510,7 +566,10 @@ export default class ActionBinder {
       return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
-    const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
+    // Pre-validate PDFs using pdflite, excluding bad PDFs but keeping good ones
+    const prevalidatedFiles = await this.filterFilesWithPdflite(sanitizedFiles);
+    if (prevalidatedFiles.length === 0) return;
+    const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
     if (!isValid) return;
     await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
