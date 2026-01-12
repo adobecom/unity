@@ -3,6 +3,10 @@
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
+  //static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets-stage.corp.adobe.com/clio-playground/script-cache/prompt-bar-app/v0/dist/main.bundle.js';
+  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/117.0.43/prompt-bar-app/dist/main.bundle.js';
+  static SPECTRUM_THEME_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/116.1.4/spectrum-theme/dist/main.bundle.js';
+
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
     this.target = target;
@@ -25,9 +29,18 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
+    this.promptBarApp = null;
+    this.useFireflyPromptBar = this.workflowCfg?.targetCfg?.useFireflyPromptBar ?? false;
   }
 
   async initWidget() {
+    if (true) {
+      return this.initFireflyPromptBar();
+    }
+    return this.initLegacyWidget();
+  }
+
+  async initLegacyWidget() {
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
@@ -52,6 +65,244 @@ export default class UnityWidget {
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  async loadFireflyPromptBarScript() {
+    return new Promise((resolve, reject) => {
+      const existingScript = document.querySelector(`script[src="${UnityWidget.PROMPT_BAR_SCRIPT_URL}"]`);
+      if (existingScript) {
+        resolve();
+        return;
+      }
+
+      // Webpack chunk loader hack
+      // const scriptUrl = new URL(UnityWidget.PROMPT_BAR_SCRIPT_URL);
+      // const correctBasePath = scriptUrl.origin + scriptUrl.pathname.replace(/[^/]+$/, '');
+
+      // // Create a dummy script tag that the auto-detection will find
+      // // It scans backwards, so this needs to be the LAST script before our bundle loads
+      // const dummyScript = document.createElement('script');
+      // dummyScript.src = correctBasePath + 'dummy.js'; // doesn't need to exist
+      // dummyScript.type = 'text/javascript';
+      // // Don't actually load it - just having the src attribute is enough
+      // dummyScript.setAttribute('data-webpack-hint', 'true');
+      // document.body.appendChild(dummyScript);
+
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.src = UnityWidget.PROMPT_BAR_SCRIPT_URL;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load Firefly prompt bar script'));
+      document.head.appendChild(script);
+    });
+  }
+
+  async loadSpectrumThemeScript() {
+    return new Promise((resolve, reject) => {
+      const existingScript = document.querySelector(`script[src="${UnityWidget.SPECTRUM_THEME_SCRIPT_URL}"]`);
+      if (existingScript) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.src = UnityWidget.SPECTRUM_THEME_SCRIPT_URL;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load Spectrum theme script'));
+      document.head.appendChild(script);
+    });
+  }
+
+  getPromptBarEnvironment() {
+    // const { locale } = getConfig();
+    // const localeCode = locale?.ietf || 'en-US';
+    // const envType = unityConfig.env === 'prod' ? 'prod' : 'stage';
+
+    // return {
+    //   type: envType,
+    //   localeCode,
+    //   ...(this.workflowCfg.targetCfg.promptBarEnvironment || {}),
+    // };
+
+    return { type: "development" };
+  }
+
+  isMax25Theme() {
+    const themeMeta = document.querySelector('meta[name="theme"][content="max25"]');
+    // Check for theme-two class on root elements
+    const hasThemeTwo = document.documentElement.classList.contains('theme-two') 
+      || document.body?.classList.contains('theme-two');
+    return !!themeMeta || hasThemeTwo;
+  }
+
+  getPromptBarSettingsConfig() {
+    const isMax25 = this.isMax25Theme();
+    
+    // Base configuration for non-max25 theme
+    const defaultConfig = {
+      "hideMoreButton": true,
+      "image-generation": {
+        "placeholder": "Describe the image you want to generate",
+        "hideModelPicker": true,
+        "settings": ["model"]
+      },
+      "video-generation": {
+        "placeholder": "Describe the video you want to generate",
+        "hideModelPicker": true,
+        "settings": ["model"]
+      },
+      "sound-fx-generation": {
+        "disabled": true
+      },
+      "vector-generation": {
+        "disabled": true
+      }
+    };
+
+    // Configuration for max25 theme
+    const max25Config = {
+      "hideMoreButton": true,
+      "image-generation": {
+        "placeholder": "Describe what you want to generate",
+        "hideModelPicker": false,
+        "models": [
+          "google:firefly:colligo:gemini-flash",
+          "adobe:firefly:colligo:image5",
+          "openai:firefly:colligo:gpt-4o",
+          "blackforest:firefly:colligo:flux-kontext-max"
+        ],
+        "defaultModelId": "google:firefly:colligo:gemini-flash",
+        "settings": ["model"],
+        "highlightModelPicker": false
+      },
+      "video-generation": {
+        "placeholder": "Describe what you want to generate",
+        "hideModelPicker": true,
+        "settings": ["model"]
+      },
+      "sound-fx-generation": {
+        "disabled": true
+      },
+      "vector-generation": {
+        "disabled": true
+      }
+    };
+
+    return isMax25 ? max25Config : defaultConfig;
+
+    // return {
+    //   ...(isMax25 ? max25Config : defaultConfig),
+    //   ...(this.workflowCfg.targetCfg.promptBarSettingsConfig || {}),
+    // };
+  }
+
+  async initFireflyPromptBar() {
+    const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
+      .map((c) => createTag('div', { class: c }));
+    this.widgetWrap = widgetWrap;
+    this.widget = widget;
+    unitySprite.innerHTML = this.spriteCon;
+    this.widgetWrap.append(unitySprite);
+
+    try {
+      await this.loadSpectrumThemeScript();
+      await this.loadFireflyPromptBarScript();
+    } catch (e) {
+      window.lana?.log(`Message: Failed to load Firefly prompt bar dependencies, Error: ${e}`, this.lanaOptions);
+      return this.initLegacyWidget();
+    }
+
+    const spTheme = createTag('sp-theme', {
+      theme: 'light',
+      scale: 'medium',
+      color: 'light',
+    });
+
+    const promptBarContainer = createTag('div', {
+      id: 'prompt-bar-app-container',
+      class: 'prompt-bar-app-container',
+    });
+    promptBarContainer.style.textAlign = 'left'; //see if this is needed. Add only if the css in widget.css doean't work.
+
+    const fireflyPromptBarApp = document.createElement('firefly-prompt-bar-app');
+    fireflyPromptBarApp.id = 'prompt-bar-app';
+    fireflyPromptBarApp.style.width = '100%';
+    fireflyPromptBarApp.style.height = '100%';
+
+    // Set component properties (equivalent to LitElement property binding)
+    fireflyPromptBarApp.environment = this.getPromptBarEnvironment();
+    fireflyPromptBarApp.settingsConfig = this.getPromptBarSettingsConfig();
+
+    this.promptBarApp = fireflyPromptBarApp;
+
+    promptBarContainer.appendChild(fireflyPromptBarApp);
+    spTheme.appendChild(promptBarContainer);
+    this.widget.appendChild(spTheme);
+
+    this.setupFireflyPromptBarEvents(fireflyPromptBarApp);
+
+    this.addWidget();
+    if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
+
+    return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  setupFireflyPromptBarEvents(promptBarApp) {
+    promptBarApp.addEventListener('prompt-bar-app-application-change', (e) => {
+      this.handleApplicationChange(e);
+    });
+
+    promptBarApp.addEventListener('prompt-bar-app-setting-interact', (e) => {
+      this.handleSettingInteract(e);
+    });
+
+    promptBarApp.addEventListener('prompt-bar-app-generate', (e) => {
+      this.handlePromptBarGenerate(e);
+    });
+
+    promptBarApp.addEventListener('prompt-bar-app-more-button-click', (e) => {
+      this.handleMoreButtonClick(e);
+    });
+  }
+
+  handleApplicationChange(e) {
+    const { detail } = e;
+    if (detail?.application) {
+      this.selectedVerbType = detail.application;
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    }
+    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-application-change', { detail }));
+  }
+
+  handleSettingInteract(e) {
+    const { detail } = e;
+    if (detail?.modelId) {
+      this.selectedModelId = detail.modelId;
+      this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+    }
+    if (detail?.modelVersion) {
+      this.selectedModelVersion = detail.modelVersion;
+      this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    }
+    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-setting-interact', { detail }));
+  }
+
+  handlePromptBarGenerate(e) {
+    const { detail } = e;
+    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-generate', {
+      detail: {
+        prompt: detail?.prompt || '',
+        verb: this.selectedVerbType,
+        modelId: this.selectedModelId,
+        modelVersion: this.selectedModelVersion,
+        ...detail,
+      },
+    }));
+  }
+
+  handleMoreButtonClick(e) {
+    const { detail } = e;
+    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-more-button-click', { detail }));
   }
 
   async ensureSoundModuleLoaded() {

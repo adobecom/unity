@@ -104,6 +104,10 @@ export default class ActionBinder {
       };
       run();
     });
+    this.widgetWrap.addEventListener('firefly-generate', (ev) => this.handleFireflyGenerate(ev));
+    this.widgetWrap.addEventListener('firefly-application-change', (ev) => this.handleFireflyApplicationChange(ev));
+    this.widgetWrap.addEventListener('firefly-setting-interact', (ev) => this.handleFireflySettingInteract(ev));
+    this.widgetWrap.addEventListener('firefly-more-button-click', (ev) => this.handleFireflyMoreButtonClick(ev));
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
@@ -565,8 +569,87 @@ export default class ActionBinder {
   }
 
   resetDropdown() {
-    this.inputField.focus();
-    if (!this.query) this.inputField.value = '';
+    this.inputField?.focus();
+    if (!this.query && this.inputField) this.inputField.value = '';
     this.hideDropdown();
+  }
+
+  async handleFireflyGenerate(ev) {
+    const { detail } = ev;
+    await this.initAnalytics();
+    if (!this.serviceHandler) await this.loadServiceHandler();
+
+    const prompt = detail?.prompt || '';
+    const verb = detail?.verb || this.getSelectedVerbType();
+    const modelId = detail?.modelId || this.getSelectedModelId();
+    const modelVersion = detail?.modelVersion || this.getSelectedModelVersion();
+    const selectedVerbType = `text-to-${verb}`;
+    const action = 'generate';
+
+    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+    const queryParams = {};
+    if (cgen) {
+      cgen.split('&').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key && value) queryParams[key] = value;
+      });
+    }
+
+    const eventData = { assetId: '', verb: selectedVerbType, action };
+    this.logAnalytics('generate', eventData, { workflowStep: 'start' });
+
+    const validation = this.validateInput(prompt);
+    if (!validation.isValid) {
+      this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
+      return;
+    }
+
+    try {
+      const payload = {
+        targetProduct: this.workflowCfg.productName,
+        additionalQueryParams: queryParams,
+        payload: {
+          workflow: selectedVerbType,
+          ...(modelId ? { modelId } : {}),
+          ...(modelVersion ? { modelVersion } : {}),
+          locale: getLocale(),
+          action,
+        },
+        query: prompt,
+      };
+
+      const { url } = await this.serviceHandler.postCallToService(
+        this.apiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(payload) },
+        this.workflowCfg.productName,
+        `${action}-${verb}Generation`,
+      );
+
+      this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
+      if (url) window.location.href = url;
+    } catch (err) {
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+      this.logAnalytics('generate', {
+        ...eventData,
+        errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
+      }, { workflowStep: 'complete', statusCode: -1 });
+      window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
+    }
+  }
+
+  handleFireflyApplicationChange(ev) {
+    const { detail } = ev;
+    sendAnalyticsEvent(new CustomEvent(`FF Application change: ${detail?.application || 'unknown'}|UnityWidget`));
+  }
+
+  handleFireflySettingInteract(ev) {
+    const { detail } = ev;
+    sendAnalyticsEvent(new CustomEvent(`FF Setting interact: ${detail?.modelId || 'unknown'}|UnityWidget`));
+  }
+
+  handleFireflyMoreButtonClick(ev) {
+    const { detail } = ev;
+    sendAnalyticsEvent(new CustomEvent('FF More button click|UnityWidget'));
+    window.lana?.log(`More button clicked, detail: ${JSON.stringify(detail)}`, this.lanaOptions);
   }
 }

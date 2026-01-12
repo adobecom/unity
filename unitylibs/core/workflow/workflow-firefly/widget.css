@@ -376,6 +376,9 @@
   border-radius: 20px;
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container {
+  text-align: left;
+}
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete,
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete {
   background: rgb(255 255 255 / 55%);
@@ -1279,4 +1282,50 @@
   :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
     position: static;
   }
+}
+
+/* Firefly Prompt Bar Component Custom Styles */
+/* Remove outer padding for max25 theme (matches legacy behavior) */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app {
+  /* CSS Custom Properties - remove outer padding/border for max25 theme */
+  --firefly-prompt-advanced-container-outer-padding: 0px;
+  --firefly-prompt-advanced-container-outer-border-color: transparent;
+  --firefly-prompt-advanced-container-outer-border-width: 0px;
+}
+
+/* Ensure placeholder text is visible - try CSS variables if component supports them */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app {
+  /* These CSS variables may be used by the component for placeholder styling */
+  --firefly-prompt-input-placeholder-opacity: 1;
+  --firefly-prompt-input-placeholder-color: inherit;
+}
+
+/* Fallback: Direct placeholder styling (may not work if Shadow DOM blocks it) */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app input::placeholder,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app textarea::placeholder {
+  opacity: 1 !important;
+  color: inherit !important;
+  visibility: visible !important;
+}
+
+/* Custom generate button styles - apply only for non-max25 theme (matches legacy behavior) */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app::part(generate-button) {
+  --mod-button-background-default: transparent;
+  --spectrum-button-content-color-default: white;
+  --spectrum-button-content-color-hover: white;
+  background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+  background-clip: border-box;
+  background-origin: border-box;
+  border: none;
+}
+
+/* max25 theme button styles - matches legacy var(--light-bg) background and black text */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app::part(generate-button) {
+  --mod-button-background-default: var(--light-bg, #ffffff);
+  --spectrum-button-content-color-default: var(--color-black, #000000);
+  --spectrum-button-content-color-hover: var(--color-black, #000000);
+  background: var(--light-bg, #ffffff);
+  background-clip: border-box;
+  background-origin: border-box;
+  border: none;
 }

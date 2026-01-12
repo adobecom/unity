@@ -4,6 +4,14 @@
     "selector": ".copy",
     "handler": "render",
     "renderWidget": true,
+    "useFireflyPromptBar": true,
+    "promptBarEnvironment": {
+      "type": "stage",
+      "localeCode": "en-US"
+    },
+    "promptBarSettingsConfig": {
+      "hideMoreButton": false
+    },
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",
     "insert": "before",
@@ -20,6 +28,14 @@
     "selector": ".text",
     "handler": "render",
     "renderWidget": true,
+    "useFireflyPromptBar": true,
+    "promptBarEnvironment": {
+      "type": "stage",
+      "localeCode": "en-US"
+    },
+    "promptBarSettingsConfig": {
+      "hideMoreButton": false
+    },
     "source": ".text",
     "target": "p:last-of-type",
     "insert": "after",
