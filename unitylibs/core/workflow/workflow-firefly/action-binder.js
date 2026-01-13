@@ -14,7 +14,6 @@ import {
   getLocale,
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
-import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 export default class ActionBinder {
   static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
@@ -53,10 +52,15 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
     this.sendAnalyticsToSplunk = null;
-    this.networkUtils = new NetworkUtils();
     this.addAccessibility();
     this.initAction();
   }
+
+  getNetworkUtils = async () => {
+    if (this.networkUtils) return this.networkUtils;
+    const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
+    return (this.networkUtils = new NetworkUtils());
+  };
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
@@ -284,7 +288,8 @@ export default class ActionBinder {
         },
         { body: JSON.stringify(payload) },
       );
-      const { url } = await this.networkUtils.fetchFromService(
+      const networkUtils = await this.getNetworkUtils();
+      const { url } = await networkUtils.fetchFromService(
         this.apiConfig.connectorApiEndPoint,
         postOpts,
         async (response) => {

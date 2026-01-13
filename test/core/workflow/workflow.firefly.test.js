@@ -236,7 +236,8 @@ describe('Firefly Workflow Tests', () => {
 
     it('should handle generateContent with network errors', async () => {
       actionBinder.inputField.value = 'valid query';
-      const fetchStub = sinon.stub(actionBinder.networkUtils, 'fetchFromService').rejects(new Error('Network error'));
+      const fetchStub = sinon.stub().rejects(new Error('Network error'));
+      const getNetStub = sinon.stub(actionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
       const showErrorToastStub = sinon.stub(actionBinder, 'showErrorToast');
       const logAnalyticsStub = sinon.stub(actionBinder, 'logAnalytics');
 
@@ -246,7 +247,7 @@ describe('Firefly Workflow Tests', () => {
       expect(logAnalyticsStub.calledTwice).to.be.true;
       expect(logAnalyticsStub.secondCall.args[2].statusCode).to.equal(-1);
 
-      fetchStub.restore();
+      getNetStub.restore();
       showErrorToastStub.restore();
       logAnalyticsStub.restore();
     });
@@ -2233,7 +2234,8 @@ describe('Firefly Workflow Tests', () => {
       const resetDropdownStub = sinon.stub(testActionBinder, 'resetDropdown');
 
       // Mock network call
-      const fetchStub = sinon.stub(testActionBinder.networkUtils, 'fetchFromService').resolves({});
+      const fetchStub = sinon.stub().resolves({});
+      const getNetStub = sinon.stub(testActionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
 
       const input = mockBlock.querySelector('.inp-field');
       input.value = 'test query';
@@ -2242,7 +2244,7 @@ describe('Firefly Workflow Tests', () => {
 
       expect(testActionBinder.query).to.equal('');
       expect(testActionBinder.id).to.equal('test-asset-id');
-      fetchStub.restore();
+      getNetStub.restore();
       resetDropdownStub.restore();
     });
 
@@ -2253,7 +2255,8 @@ describe('Firefly Workflow Tests', () => {
       sinon.stub(testActionBinder, 'logAnalytics');
 
       // Mock network to throw error
-      sinon.stub(testActionBinder.networkUtils, 'fetchFromService').rejects(new Error('Service error'));
+      const fetchStub = sinon.stub().rejects(new Error('Service error'));
+      const getNetStub = sinon.stub(testActionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
       const showErrorToastStub = sinon.stub(testActionBinder, 'showErrorToast');
 
       const input = mockBlock.querySelector('.inp-field');
@@ -2263,6 +2266,7 @@ describe('Firefly Workflow Tests', () => {
 
       expect(showErrorToastStub.calledOnce).to.be.true;
       showErrorToastStub.restore();
+      getNetStub.restore();
     });
 
     it('should handle initializeApiConfig', () => {
