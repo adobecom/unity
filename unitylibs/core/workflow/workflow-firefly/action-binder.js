@@ -577,7 +577,7 @@ export default class ActionBinder {
   async handleFireflyGenerate(ev) {
     const { detail } = ev;
     await this.initAnalytics();
-    if (!this.serviceHandler) await this.loadServiceHandler();
+    // if (!this.serviceHandler) await this.loadServiceHandler();
 
     const prompt = detail?.prompt || '';
     const verb = detail?.verb || this.getSelectedVerbType();
@@ -588,12 +588,12 @@ export default class ActionBinder {
 
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
     const queryParams = {};
-    if (cgen) {
-      cgen.split('&').forEach((param) => {
-        const [key, value] = param.split('=');
-        if (key && value) queryParams[key] = value;
-      });
-    }
+    // if (cgen) {
+    //   cgen.split('&').forEach((param) => {
+    //     const [key, value] = param.split('=');
+    //     if (key && value) queryParams[key] = value;
+    //   });
+    // }
 
     const eventData = { assetId: '', verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
@@ -604,37 +604,37 @@ export default class ActionBinder {
       return;
     }
 
-    try {
-      const payload = {
-        targetProduct: this.workflowCfg.productName,
-        additionalQueryParams: queryParams,
-        payload: {
-          workflow: selectedVerbType,
-          ...(modelId ? { modelId } : {}),
-          ...(modelVersion ? { modelVersion } : {}),
-          locale: getLocale(),
-          action,
-        },
-        query: prompt,
-      };
+    // try {
+    //   const payload = {
+    //     targetProduct: this.workflowCfg.productName,
+    //     additionalQueryParams: queryParams,
+    //     payload: {
+    //       workflow: selectedVerbType,
+    //       ...(modelId ? { modelId } : {}),
+    //       ...(modelVersion ? { modelVersion } : {}),
+    //       locale: getLocale(),
+    //       action,
+    //     },
+    //     query: prompt,
+    //   };
 
-      const { url } = await this.serviceHandler.postCallToService(
-        this.apiConfig.connectorApiEndPoint,
-        { body: JSON.stringify(payload) },
-        this.workflowCfg.productName,
-        `${action}-${verb}Generation`,
-      );
+    //   const { url } = await this.serviceHandler.postCallToService(
+    //     this.apiConfig.connectorApiEndPoint,
+    //     { body: JSON.stringify(payload) },
+    //     this.workflowCfg.productName,
+    //     `${action}-${verb}Generation`,
+    //   );
 
-      this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
-      if (url) window.location.href = url;
-    } catch (err) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
-      this.logAnalytics('generate', {
-        ...eventData,
-        errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
-      }, { workflowStep: 'complete', statusCode: -1 });
-      window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
-    }
+    //   this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
+    //   if (url) window.location.href = url;
+    // } catch (err) {
+    //   this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+    //   this.logAnalytics('generate', {
+    //     ...eventData,
+    //     errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
+    //   }, { workflowStep: 'complete', statusCode: -1 });
+    //   window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
+    // }
   }
 
   handleFireflyApplicationChange(ev) {

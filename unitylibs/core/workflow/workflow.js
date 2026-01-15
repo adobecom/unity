@@ -41,6 +41,12 @@ class WfInitiator {
     ];
     const wfRes = workflowRes[workflowName] || [];
     const priorityList = [...commonResources, ...wfRes];
+
+   //Doing this in unity.js
+    // if (workflowName === 'workflow-firefly') {
+    //   WfInitiator.preloadFireflyScripts();
+    // }
+
     const pfr = await priorityLoad(priorityList);
 
     return {
@@ -48,6 +54,24 @@ class WfInitiator {
       spriteCallRes: pfr.length > 2 ? pfr[2] : null,
     };
   }
+
+  // static preloadFireflyScripts() {
+  //   const externalScripts = [
+  //     'https://clio-assets.adobe.com/clio-playground/script-cache/117.0.43/prompt-bar-app/dist/main.bundle.js',
+  //     'https://clio-assets.adobe.com/clio-playground/script-cache/116.1.4/spectrum-theme/dist/main.bundle.js',
+  //   ];
+
+  //   externalScripts.forEach((url) => {
+  //     const existing = document.querySelector(`link[rel="modulepreload"][href="${url}"]`);
+  //     if (existing) return;
+
+  //     const link = document.createElement('link');
+  //     link.rel = 'modulepreload';
+  //     link.href = url;
+  //     link.crossOrigin = 'anonymous';
+  //     document.head.appendChild(link);
+  //   });
+  // }
 
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
     setUnityLibs(unityLibs, project);
@@ -64,6 +88,8 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
+
+    const actionBinderPromise = import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
@@ -76,7 +102,7 @@ class WfInitiator {
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
-    const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
+    const { default: ActionBinder } = await actionBinderPromise;
     await new ActionBinder(
       this.el,
       this.workflowCfg,

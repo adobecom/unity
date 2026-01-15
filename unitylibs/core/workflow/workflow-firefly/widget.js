@@ -74,20 +74,6 @@ export default class UnityWidget {
         resolve();
         return;
       }
-
-      // Webpack chunk loader hack
-      // const scriptUrl = new URL(UnityWidget.PROMPT_BAR_SCRIPT_URL);
-      // const correctBasePath = scriptUrl.origin + scriptUrl.pathname.replace(/[^/]+$/, '');
-
-      // // Create a dummy script tag that the auto-detection will find
-      // // It scans backwards, so this needs to be the LAST script before our bundle loads
-      // const dummyScript = document.createElement('script');
-      // dummyScript.src = correctBasePath + 'dummy.js'; // doesn't need to exist
-      // dummyScript.type = 'text/javascript';
-      // // Don't actually load it - just having the src attribute is enough
-      // dummyScript.setAttribute('data-webpack-hint', 'true');
-      // document.body.appendChild(dummyScript);
-
       const script = document.createElement('script');
       script.type = 'module';
       script.src = UnityWidget.PROMPT_BAR_SCRIPT_URL;
@@ -129,16 +115,26 @@ export default class UnityWidget {
 
   isMax25Theme() {
     const themeMeta = document.querySelector('meta[name="theme"][content="max25"]');
-    // Check for theme-two class on root elements
     const hasThemeTwo = document.documentElement.classList.contains('theme-two') 
       || document.body?.classList.contains('theme-two');
     return !!themeMeta || hasThemeTwo;
   }
 
+  getAdditionalQueryParams() {
+    const cgen = this.el.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+    const queryParams = {};
+    if (cgen) {
+      cgen.split('&').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key && value) queryParams[key] = value;
+      });
+    }
+    return queryParams;
+  }
+
   getPromptBarSettingsConfig() {
     const isMax25 = this.isMax25Theme();
     
-    // Base configuration for non-max25 theme
     const defaultConfig = {
       "hideMoreButton": true,
       "image-generation": {
@@ -159,7 +155,6 @@ export default class UnityWidget {
       }
     };
 
-    // Configuration for max25 theme
     const max25Config = {
       "hideMoreButton": true,
       "image-generation": {
@@ -204,9 +199,13 @@ export default class UnityWidget {
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
 
+    this.workflowCfg.placeholder = this.popPlaceholders();
+    
     try {
-      await this.loadSpectrumThemeScript();
-      await this.loadFireflyPromptBarScript();
+      await Promise.all([
+        this.loadSpectrumThemeScript(),
+        this.loadFireflyPromptBarScript(),
+      ]);
     } catch (e) {
       window.lana?.log(`Message: Failed to load Firefly prompt bar dependencies, Error: ${e}`, this.lanaOptions);
       return this.initLegacyWidget();
@@ -229,9 +228,9 @@ export default class UnityWidget {
     fireflyPromptBarApp.style.width = '100%';
     fireflyPromptBarApp.style.height = '100%';
 
-    // Set component properties (equivalent to LitElement property binding)
     fireflyPromptBarApp.environment = this.getPromptBarEnvironment();
     fireflyPromptBarApp.settingsConfig = this.getPromptBarSettingsConfig();
+    fireflyPromptBarApp.additionalQueryParams = this.getAdditionalQueryParams();
 
     this.promptBarApp = fireflyPromptBarApp;
 
