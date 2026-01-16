@@ -236,19 +236,19 @@ describe('Firefly Workflow Tests', () => {
 
     it('should handle generateContent with network errors', async () => {
       actionBinder.inputField.value = 'valid query';
-      const mockServiceHandler = {
-        postCallToService: sinon.stub().rejects(new Error('Network error')),
-        showErrorToast: sinon.stub(),
-      };
-      actionBinder.serviceHandler = mockServiceHandler;
+      const fetchStub = sinon.stub().rejects(new Error('Network error'));
+      const getNetStub = sinon.stub(actionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
+      const showErrorToastStub = sinon.stub(actionBinder, 'showErrorToast');
       const logAnalyticsStub = sinon.stub(actionBinder, 'logAnalytics');
 
       await actionBinder.generateContent();
 
-      expect(mockServiceHandler.showErrorToast.calledOnce).to.be.true;
+      expect(showErrorToastStub.calledOnce).to.be.true;
       expect(logAnalyticsStub.calledTwice).to.be.true;
       expect(logAnalyticsStub.secondCall.args[2].statusCode).to.equal(-1);
 
+      getNetStub.restore();
+      showErrorToastStub.restore();
       logAnalyticsStub.restore();
     });
 
@@ -2229,53 +2229,49 @@ describe('Firefly Workflow Tests', () => {
 
       // Mock dependencies
       sinon.stub(testActionBinder, 'initAnalytics').resolves();
-      sinon.stub(testActionBinder, 'loadServiceHandler').resolves();
       sinon.stub(testActionBinder, 'validateInput').returns({ isValid: true });
       sinon.stub(testActionBinder, 'logAnalytics');
-      sinon.stub(testActionBinder, 'resetDropdown');
+      const resetDropdownStub = sinon.stub(testActionBinder, 'resetDropdown');
 
-      // Mock serviceHandler
-      testActionBinder.serviceHandler = { postCallToService: sinon.stub().resolves({ success: true }) };
+      // Mock network call
+      const fetchStub = sinon.stub().resolves({});
+      const getNetStub = sinon.stub(testActionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
 
       const input = mockBlock.querySelector('.inp-field');
       input.value = 'test query';
 
       await testActionBinder.generateContent();
 
-      expect(testActionBinder.serviceHandler.postCallToService.calledOnce).to.be.true;
+      expect(testActionBinder.query).to.equal('');
+      expect(testActionBinder.id).to.equal('test-asset-id');
+      getNetStub.restore();
+      resetDropdownStub.restore();
     });
 
     it('should handle generateContent error', async () => {
       // Mock dependencies
       sinon.stub(testActionBinder, 'initAnalytics').resolves();
-      sinon.stub(testActionBinder, 'loadServiceHandler').resolves();
       sinon.stub(testActionBinder, 'validateInput').returns({ isValid: true });
       sinon.stub(testActionBinder, 'logAnalytics');
 
-      // Mock serviceHandler to throw error
-      testActionBinder.serviceHandler = { postCallToService: sinon.stub().rejects(new Error('Service error')), showErrorToast: sinon.stub() };
+      // Mock network to throw error
+      const fetchStub = sinon.stub().rejects(new Error('Service error'));
+      const getNetStub = sinon.stub(testActionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
+      const showErrorToastStub = sinon.stub(testActionBinder, 'showErrorToast');
 
       const input = mockBlock.querySelector('.inp-field');
       input.value = 'test query';
 
       await testActionBinder.generateContent();
 
-      expect(testActionBinder.serviceHandler.showErrorToast.calledOnce).to.be.true;
+      expect(showErrorToastStub.calledOnce).to.be.true;
+      showErrorToastStub.restore();
+      getNetStub.restore();
     });
 
     it('should handle initializeApiConfig', () => {
       const result = testActionBinder.initializeApiConfig();
       expect(result).to.be.an('object');
-    });
-
-    it('should handle loadServiceHandler', async () => {
-      // Ensure targetCfg exists
-      if (!testActionBinder.workflowCfg.targetCfg) {
-        testActionBinder.workflowCfg.targetCfg = {};
-      }
-      testActionBinder.workflowCfg.targetCfg.renderWidget = true;
-      await testActionBinder.loadServiceHandler();
-      expect(testActionBinder.serviceHandler).to.be.an('object');
     });
 
     it('should handle addEventListeners for A element', () => {
