@@ -1319,3 +1319,11 @@
   background-clip: border-box;
   background-origin: border-box;
 }
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .text {
+  padding: 0 29px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .ex-unity-wrap {
+  width: inherit;
+}
