@@ -546,8 +546,7 @@ export default class ActionBinder {
       })().catch((error) => {
         // eslint-disable-next-line no-console
         console.warn('pdflite validation failed', file.name, error);
-        return { file, ok: true, errorType: error.errorType || 'other' };
-        // return { file, ok: false, error, errorType: error.errorType || 'other' };
+        return { file, ok: false, error, errorType: error.errorType || 'other' };
       });
     });
     const results = await Promise.all(checks);
