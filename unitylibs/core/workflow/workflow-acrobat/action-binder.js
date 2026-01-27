@@ -30,6 +30,8 @@ export default class ActionBinder {
     EMPTY_FILE: 'validation_error_empty_file',
     FILE_TOO_LARGE: 'validation_error_file_too_large',
     SAME_FILE_TYPE: 'validation_error_file_same_type',
+    OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count',
+    UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count',
   };
 
   static MULTI_FILE_ERROR_MESSAGES = {
@@ -37,6 +39,8 @@ export default class ActionBinder {
     EMPTY_FILE: 'validation_error_empty_file_multi',
     FILE_TOO_LARGE: 'validation_error_file_too_large_multi',
     SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
+    OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
+    UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count_multi',
   };
 
   static LIMITS_MAP = {
@@ -96,7 +100,6 @@ export default class ActionBinder {
     validation_error_file_same_type_multi: -206,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
-    upload_validation_error_verify_page_count: -302,
     upload_validation_error_max_page_count_multi: -303,
     upload_validation_error_duplicate_asset: -304,
     upload_error_max_quota_exceeded: -400,
@@ -132,7 +135,6 @@ export default class ActionBinder {
     validation_error_file_same_type_multi: 'verb_upload_error_file_same_type_multi',
     upload_validation_error_max_page_count: 'verb_upload_error_max_page_count',
     upload_validation_error_min_page_count: 'verb_upload_error_min_page_count',
-    upload_validation_error_verify_page_count: 'verb_upload_error_verify_page_count',
     upload_validation_error_max_page_count_multi: 'verb_upload_error_max_page_count_multi',
     upload_validation_error_duplicate_asset: 'verb_upload_error_duplicate_asset',
     upload_error_max_quota_exceeded: 'verb_upload_error_max_quota_exceeded',
@@ -504,101 +506,70 @@ export default class ActionBinder {
   }
 
   async loadPdflite() {
-    if (this.pdflite) return this.pdflite;
-    const moduleUrl = new URL('../../../../libs/pdflite/dc-pdflite.js', import.meta.url).href;
-    const { default: DcPdflite } = await import(moduleUrl);
-    const pdflite = new DcPdflite();
-    await pdflite.init();
-    this.pdflite = pdflite;
-    return this.pdflite;
+    if (this.pdflite) return;
+    try {
+      const moduleUrl = new URL('../../../../libs/pdflite/dc-pdflite.js', import.meta.url).href;
+      const { default: DcPdflite } = await import(moduleUrl);
+      const pdflite = new DcPdflite();
+      await pdflite.init();
+      this.pdflite = pdflite;
+    } catch (error) {
+      this.pdflite = null;
+      await this.dispatchErrorToast('error_generic', 500, `Exception thrown when loading pdflite: ${error.message}`, true);
+    }
   }
 
   async filterFilesWithPdflite(files) {
+    const hasPdfFiles = files.some((f) => f.type === 'application/pdf');
+    if (hasPdfFiles) await this.loadPdflite();
+    else return files;
+    if (!this.pdflite) return files;
     const checks = files.map((file) => {
       if (file.type !== 'application/pdf') {
         return Promise.resolve({ file, ok: true });
       }
       return (async () => {
-        const pdflite = await this.loadPdflite();
-        const details = await pdflite.fileDetails(file);
-        // Log details for developer inspection
-        // eslint-disable-next-line no-console
-        console.log('pdflite fileDetails', file.name, JSON.stringify(details, null, 2));
+        const details = await this.pdflite.fileDetails(file);
         const overMaxPageCount = this.limits.pageLimit?.maxNumPages && details?.NUM_PAGES > this.limits.pageLimit.maxNumPages;
         const underMinPageCount = this.limits.pageLimit?.minNumPages && details?.NUM_PAGES < this.limits.pageLimit.minNumPages;
-
-        // Throw specific errors for page count violations
+        let error = null;
         if (overMaxPageCount) {
-          // eslint-disable-next-line no-console
-          console.warn('pdflite invalid (exceeds max page count)', file.name, { numPages: details?.NUM_PAGES, maxPages: this.limits.pageLimit.maxNumPages });
-          const error = new Error(`PDF exceeds maximum page count: ${details?.NUM_PAGES} > ${this.limits.pageLimit.maxNumPages}`);
-          error.errorType = 'overMaxPageCount';
-          throw error;
+          error = new Error(`PDF exceeds maximum page count: ${details?.NUM_PAGES} > ${this.limits.pageLimit.maxNumPages}`);
+          error.errorType = 'OVER_MAX_PAGE_COUNT';
         }
         if (underMinPageCount) {
-          // eslint-disable-next-line no-console
-          console.warn('pdflite invalid (below min page count)', file.name, { numPages: details?.NUM_PAGES, minPages: this.limits.pageLimit.minNumPages });
-          const error = new Error(`PDF below minimum page count: ${details?.NUM_PAGES} < ${this.limits.pageLimit.minNumPages}`);
-          error.errorType = 'underMinPageCount';
-          throw error;
+          error = new Error(`PDF below minimum page count: ${details?.NUM_PAGES} < ${this.limits.pageLimit.minNumPages}`);
+          error.errorType = 'UNDER_MIN_PAGE_COUNT';
         }
+        if (error) throw error;
         return { file, ok: true };
-      })().catch((error) => {
-        // eslint-disable-next-line no-console
-        console.warn('pdflite validation failed', file.name, error);
-        return { file, ok: false, error, errorType: error.errorType || 'other' };
-      });
+      })().catch((error) => ({ file, ok: false, error, errorType: error.errorType || 'other' }));
     });
     const results = await Promise.all(checks);
     const passed = results.filter((r) => r.ok).map((r) => r.file);
     const failed = results.filter((r) => !r.ok);
-    // Single-file: if page count validation fails, dispatch error and return empty
     if (!this.MULTI_FILE && failed.length > 0) {
       const failure = failed[0];
-      if (failure.errorType === 'overMaxPageCount') {
-        await this.dispatchErrorToast('upload_validation_error_max_page_count', null, null, false, true, { code: 'upload_validation_error_max_page_count' });
-        return [];
-      }
-      if (failure.errorType === 'underMinPageCount') {
-        await this.dispatchErrorToast('upload_validation_error_min_page_count', null, null, false, true, { code: 'upload_validation_error_min_page_count' });
+      const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES[failure.errorType];
+      if (errorCode) {
+        await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
         return [];
       }
     }
-
-    // Multi-file: check if all files failed for the same page count reason
     if (this.MULTI_FILE && failed.length > 0) {
-      const pageCountFailures = failed.filter((f) => f.errorType === 'overMaxPageCount' || f.errorType === 'underMinPageCount');
-
-      // If all failures are page count related and same type
+      const pageCountFailures = failed.filter((f) => f.errorType === 'OVER_MAX_PAGE_COUNT' || f.errorType === 'UNDER_MIN_PAGE_COUNT');
       if (pageCountFailures.length === failed.length && failed.length === results.length) {
-        const allOverMax = failed.every((f) => f.errorType === 'overMaxPageCount');
-        const allUnderMin = failed.every((f) => f.errorType === 'underMinPageCount');
-
-        if (allOverMax) {
-          await this.dispatchErrorToast('upload_validation_error_max_page_count', null, null, false, true, { code: 'upload_validation_error_max_page_count' });
-          return [];
-        }
-        if (allUnderMin) {
-          await this.dispatchErrorToast('upload_validation_error_min_page_count', null, null, false, true, { code: 'upload_validation_error_min_page_count' });
-          return [];
+        const allSameError = failed.every((f) => f.errorType === failed[0].errorType);
+        if (allSameError) {
+          const errorCode = ActionBinder.MULTI_FILE_ERROR_MESSAGES[failed[0].errorType];
+          if (errorCode) {
+            await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
+            return [];
+          }
         }
       }
       if (failed.length > 0) this.multiFileValidationFailure = true;
     }
-
-    // If no files passed and we haven't already dispatched a page count error
-    // if (passed.length === 0 && files.length > 0 && failed.length > 0) {
-    //   const hasPageCountError = failed.some((f) => f.errorType === 'overMaxPageCount' || f.errorType === 'underMinPageCount');
-    //   if (!hasPageCountError) {
-    //     // Only show generic error if it's not a page count error (already handled above)
-    //     await this.dispatchErrorToast('validation_error_validate_files', null, 'All files failed pdflite checks', false, true, {
-    //       code: 'validation_error_validate_files',
-    //       subCode: 'validation_error_multiple_invalid_files',
-    //       desc: 'All files failed pdflite checks',
-    //     });
-    //   }
-    // }
-
     return passed;
   }
 
@@ -610,7 +581,6 @@ export default class ActionBinder {
       return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
-    // Pre-validate PDFs using pdflite, excluding bad PDFs but keeping good ones
     const prevalidatedFiles = await this.filterFilesWithPdflite(sanitizedFiles);
     if (prevalidatedFiles.length === 0) return;
     const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
