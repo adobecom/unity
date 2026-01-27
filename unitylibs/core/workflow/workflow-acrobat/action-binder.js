@@ -524,14 +524,8 @@ export default class ActionBinder {
         // Log details for developer inspection
         // eslint-disable-next-line no-console
         console.log('pdflite fileDetails', file.name, JSON.stringify(details, null, 2));
-        const isEncrypted = details?.IS_ENCRYPTED === true;
-        const isPasswordProtected = details?.IS_PASSWORD_PROTECTED === true;
-
-        // Check page limits only if they exist
-        const hasMaxPageLimit = this.limits.pageLimit?.maxNumPages;
-        const hasMinPageLimit = this.limits.pageLimit?.minNumPages;
-        const overMaxPageCount = hasMaxPageLimit && details?.NUM_PAGES > this.limits.pageLimit.maxNumPages;
-        const underMinPageCount = hasMinPageLimit && details?.NUM_PAGES < this.limits.pageLimit.minNumPages;
+        const overMaxPageCount = this.limits.pageLimit?.maxNumPages && details?.NUM_PAGES > this.limits.pageLimit.maxNumPages;
+        const underMinPageCount = this.limits.pageLimit?.minNumPages && details?.NUM_PAGES < this.limits.pageLimit.minNumPages;
 
         // Throw specific errors for page count violations
         if (overMaxPageCount) {
@@ -548,27 +542,17 @@ export default class ActionBinder {
           error.errorType = 'underMinPageCount';
           throw error;
         }
-        if (isEncrypted || isPasswordProtected) {
-          // eslint-disable-next-line no-console
-          console.warn('pdflite invalid (encrypted/password-protected)', file.name, { isEncrypted, isPasswordProtected });
-          const error = new Error('PDF is encrypted or password-protected');
-          error.errorType = 'encrypted';
-          throw error;
-        }
-        const dimensions = await pdflite.pageDimensions(file, 0);
-        // eslint-disable-next-line no-console
-        console.log('pdflite pageDimensions', file.name, JSON.stringify(dimensions, null, 2));
         return { file, ok: true };
       })().catch((error) => {
         // eslint-disable-next-line no-console
         console.warn('pdflite validation failed', file.name, error);
-        return { file, ok: false, error, errorType: error.errorType || 'other' };
+        return { file, ok: true, errorType: error.errorType || 'other' };
+        // return { file, ok: false, error, errorType: error.errorType || 'other' };
       });
     });
     const results = await Promise.all(checks);
     const passed = results.filter((r) => r.ok).map((r) => r.file);
     const failed = results.filter((r) => !r.ok);
-
     // Single-file: if page count validation fails, dispatch error and return empty
     if (!this.MULTI_FILE && failed.length > 0) {
       const failure = failed[0];
@@ -600,25 +584,21 @@ export default class ActionBinder {
           return [];
         }
       }
-
-      // Otherwise, continue with valid files (like validateFiles does)
-      if (failed.length > 0) {
-        this.multiFileValidationFailure = true;
-      }
+      if (failed.length > 0) this.multiFileValidationFailure = true;
     }
 
     // If no files passed and we haven't already dispatched a page count error
-    if (passed.length === 0 && files.length > 0 && failed.length > 0) {
-      const hasPageCountError = failed.some((f) => f.errorType === 'overMaxPageCount' || f.errorType === 'underMinPageCount');
-      if (!hasPageCountError) {
-        // Only show generic error if it's not a page count error (already handled above)
-        await this.dispatchErrorToast('validation_error_validate_files', null, 'All files failed pdflite checks', false, true, {
-          code: 'validation_error_validate_files',
-          subCode: 'validation_error_multiple_invalid_files',
-          desc: 'All files failed pdflite checks',
-        });
-      }
-    }
+    // if (passed.length === 0 && files.length > 0 && failed.length > 0) {
+    //   const hasPageCountError = failed.some((f) => f.errorType === 'overMaxPageCount' || f.errorType === 'underMinPageCount');
+    //   if (!hasPageCountError) {
+    //     // Only show generic error if it's not a page count error (already handled above)
+    //     await this.dispatchErrorToast('validation_error_validate_files', null, 'All files failed pdflite checks', false, true, {
+    //       code: 'validation_error_validate_files',
+    //       subCode: 'validation_error_multiple_invalid_files',
+    //       desc: 'All files failed pdflite checks',
+    //     });
+    //   }
+    // }
 
     return passed;
   }

@@ -245,70 +245,70 @@ export default class UploadHandler {
     return true;
   }
 
-  async checkPageNumCount(assetData, isMultiFile = false) {
-    try {
-      const handleMetadata = async (metadata) => {
-        if (this.actionBinder?.limits?.pageLimit?.maxNumPages
-          && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
-        ) {
-          if (!isMultiFile) {
-            await this.showSplashScreen();
-            await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
-          }
-          return true;
-        }
-        if (this.actionBinder?.limits?.pageLimit?.minNumPages
-          && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
-        ) {
-          await this.showSplashScreen();
-          await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-          return true;
-        }
-        return false;
-      };
-      const queryString = new URLSearchParams({ id: assetData.id }).toString();
-      const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
-      const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
+  // async checkPageNumCount(assetData, isMultiFile = false) {
+  //   try {
+  //     const handleMetadata = async (metadata) => {
+  //       if (this.actionBinder?.limits?.pageLimit?.maxNumPages
+  //         && metadata.numPages > this.actionBinder.limits.pageLimit.maxNumPages
+  //       ) {
+  //         if (!isMultiFile) {
+  //           await this.showSplashScreen();
+  //           await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
+  //         }
+  //         return true;
+  //       }
+  //       if (this.actionBinder?.limits?.pageLimit?.minNumPages
+  //         && metadata.numPages < this.actionBinder.limits.pageLimit.minNumPages
+  //       ) {
+  //         await this.showSplashScreen();
+  //         await this.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
+  //         return true;
+  //       }
+  //       return false;
+  //     };
+  //     const queryString = new URLSearchParams({ id: assetData.id }).toString();
+  //     const url = `${this.actionBinder.acrobatApiConfig.acrobatEndpoint.getMetadata}?${queryString}`;
+  //     const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {});
 
-      const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata };
-      modifiedRetryConfig.extraRetryCheck = async (responseStatus, responseJson) => responseStatus === 200 && !responseJson.numPages;
-      const response = await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
-      if (response.status === 200 && response.maxRetryPassed) {
-        return false;
-      }
-      return response;
-    } catch (e) {
-      await this.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
-        code: 'upload_validation_error_verify_page_count',
-        subCode: e.status,
-        message: `Exception thrown when verifying PDF page count; ${e.message}`,
-      });
-      this.actionBinder.operations = [];
-      return false;
-    }
-  }
+  //     const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.getMetadata };
+  //     modifiedRetryConfig.extraRetryCheck = async (responseStatus, responseJson) => responseStatus === 200 && !responseJson.numPages;
+  //     const response = await this.networkUtils.fetchFromServiceWithRetry(url, getOpts, modifiedRetryConfig, handleMetadata);
+  //     if (response.status === 200 && response.maxRetryPassed) {
+  //       return false;
+  //     }
+  //     return response;
+  //   } catch (e) {
+  //     await this.showSplashScreen();
+  //     await this.actionBinder.dispatchErrorToast('upload_validation_error_verify_page_count', e.status || 500, `Exception thrown when verifying PDF page count; ${e.message}`, false, e.showError, {
+  //       code: 'upload_validation_error_verify_page_count',
+  //       subCode: e.status,
+  //       message: `Exception thrown when verifying PDF page count; ${e.message}`,
+  //     });
+  //     this.actionBinder.operations = [];
+  //     return false;
+  //   }
+  // }
 
-  async handleValidations(assetData, isMultiFile = false) {
-    let validated = true;
-    for (const limit of Object.keys(this.actionBinder.limits)) {
-      switch (limit) {
-        case 'pageLimit': {
-          const pageLimitRes = await this.checkPageNumCount(assetData, isMultiFile);
-          if (pageLimitRes) {
-            validated = false;
-            if (!isMultiFile) {
-              this.actionBinder.operations = [];
-            }
-          }
-          break;
-        }
-        default:
-          break;
-      }
-    }
-    return validated;
-  }
+  // async handleValidations(assetData, isMultiFile = false) {
+  //   let validated = true;
+  //   for (const limit of Object.keys(this.actionBinder.limits)) {
+  //     switch (limit) {
+  //       case 'pageLimit': {
+  //         const pageLimitRes = await this.checkPageNumCount(assetData, isMultiFile);
+  //         if (pageLimitRes) {
+  //           validated = false;
+  //           if (!isMultiFile) {
+  //             this.actionBinder.operations = [];
+  //           }
+  //         }
+  //         break;
+  //       }
+  //       default:
+  //         break;
+  //     }
+  //   }
+  //   return validated;
+  // }
 
   async dispatchGenericError(info = null, showError = true) {
     this.actionBinder.operations = [];
@@ -461,10 +461,10 @@ export default class UploadHandler {
     this.actionBinder.operations.push(assetData.id);
     const verified = await this.verifyContent(assetData);
     if (!verified || abortSignal.aborted) return;
-    if (isPdf) {
-      const validated = await this.handleValidations(assetData);
-      if (!validated) return;
-    }
+    // if (isPdf) {
+    //   const validated = await this.handleValidations(assetData);
+    //   if (!validated) return;
+    // }
     if (abortSignal.aborted || !this.actionBinder.isUploading) return;
     this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', { ...fileData, assetId: assetData.id, maxRetryCount: attemptMap?.get(0) || 0 });
@@ -595,10 +595,11 @@ export default class UploadHandler {
     const assetsToDelete = [];
     await this.executeInBatches(uploadedAssets, this.getConcurrentLimits().maxConcurrentFiles, async (assetData) => {
       const verified = await this.verifyContent(assetData);
-      if (verified) {
-        const validated = await this.handleValidations(assetData, true);
-        if (!validated) assetsToDelete.push(assetData);
-      } else assetsToDelete.push(assetData);
+      if (!verified) assetsToDelete.push(assetData);
+      // if (verified) {
+      //   const validated = await this.handleValidations(assetData, true);
+      //   if (!validated) assetsToDelete.push(assetData);
+      // } else assetsToDelete.push(assetData);
     });
     const verifiedAssets = uploadedAssets.filter((asset) => !assetsToDelete.some((deletedAsset) => deletedAsset.id === asset.id));
     return { verifiedAssets, assetsToDelete };
