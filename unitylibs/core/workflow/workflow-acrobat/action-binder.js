@@ -40,7 +40,6 @@ export default class ActionBinder {
     FILE_TOO_LARGE: 'validation_error_file_too_large_multi',
     SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
-    UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count_multi',
   };
 
   static LIMITS_MAP = {
@@ -557,16 +556,11 @@ export default class ActionBinder {
       }
     }
     if (this.MULTI_FILE && failed.length > 0) {
-      const pageCountFailures = failed.filter((f) => f.errorType === 'OVER_MAX_PAGE_COUNT' || f.errorType === 'UNDER_MIN_PAGE_COUNT');
+      const pageCountFailures = failed.filter((f) => f.errorType === 'OVER_MAX_PAGE_COUNT');
       if (pageCountFailures.length === failed.length && failed.length === results.length) {
-        const allSameError = failed.every((f) => f.errorType === failed[0].errorType);
-        if (allSameError) {
-          const errorCode = ActionBinder.MULTI_FILE_ERROR_MESSAGES[failed[0].errorType];
-          if (errorCode) {
-            await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
-            return [];
-          }
-        }
+        const errorCode = ActionBinder.MULTI_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
+        await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
+        return [];
       }
       if (failed.length > 0) this.multiFileValidationFailure = true;
     }
