@@ -584,6 +584,7 @@ export default class ActionBinder {
     const modelId = detail?.modelId || this.getSelectedModelId();
     const modelVersion = detail?.modelVersion || this.getSelectedModelVersion();
     const selectedVerbType = `text-to-${verb}`;
+    //const selectedVerbType = `text-to-image`;
     const action = 'generate';
 
     const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();

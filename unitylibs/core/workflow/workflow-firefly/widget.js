@@ -4,7 +4,7 @@ import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   //static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets-stage.corp.adobe.com/clio-playground/script-cache/prompt-bar-app/v0/dist/main.bundle.js';
-  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/117.0.43/prompt-bar-app/dist/main.bundle.js';
+  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/125.1.0/prompt-bar-app/dist/main.bundle.js';
   static SPECTRUM_THEME_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/116.1.4/spectrum-theme/dist/main.bundle.js';
 
   constructor(target, el, workflowCfg, spriteCon) {
@@ -140,6 +140,7 @@ export default class UnityWidget {
     
     // Base configuration for non-max25 theme
     const defaultConfig = {
+      openTarget : "_self",
       "hideMoreButton": true,
       "image-generation": {
         "placeholder": "Describe the image you want to generate",
@@ -233,6 +234,29 @@ export default class UnityWidget {
     fireflyPromptBarApp.environment = this.getPromptBarEnvironment();
     fireflyPromptBarApp.settingsConfig = this.getPromptBarSettingsConfig();
 
+    // const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+
+    const cgenEl =
+      this.widgetWrap?.querySelector('.icon-cgen')
+      || this.unityEl?.querySelector('.icon-cgen')
+      || document.querySelector('.icon-cgen');
+
+    const cgen = cgenEl?.parentElement?.textContent?.trim();
+
+    const queryParams = {};
+    if (cgen) {
+      cgen.split('&').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key && value) queryParams[key] = value;
+      });
+    }
+
+    // const queryParams = {"cgen" : "helloVG"};
+
+    fireflyPromptBarApp.additionalQueryParams = queryParams;
+
+    fireflyPromptBarApp.autoFocus = false;
+
     this.promptBarApp = fireflyPromptBarApp;
 
     promptBarContainer.appendChild(fireflyPromptBarApp);
@@ -263,6 +287,14 @@ export default class UnityWidget {
     promptBarApp.addEventListener('prompt-bar-app-more-button-click', (e) => {
       this.handleMoreButtonClick(e);
     });
+
+    promptBarApp.addEventListener('prompt-advanced-generate', (e) => {
+      console.log('prompt-advanced-generate!!!', e.detail);
+      if (e.detail.prompt.length < 10) {
+        alert('prompt too short!');
+        e.stopPropagation();
+      }
+    }, { capture: true });
   }
 
   handleApplicationChange(e) {
@@ -271,7 +303,7 @@ export default class UnityWidget {
       this.selectedVerbType = detail.application;
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     }
-    this.widgetWrap.dispatchEvent(new CustomEvent('firefly-application-change', { detail }));
+    // this.widgetWrap.dispatchEvent(new CustomEvent('firefly-application-change', { detail }));
   }
 
   handleSettingInteract(e) {
