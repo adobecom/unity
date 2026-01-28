@@ -10,7 +10,8 @@ import {
   createChunkUploadErrorMessage,
   createChunkAnalyticsData,
   DEFAULT_CHUNK_CONFIG,
-  ChunkingUtils,
+  getAssetId,
+  executeInBatches,
 } from '../../unitylibs/utils/chunkingUtils.js';
 
 describe('Chunking Utils', () => {
@@ -150,60 +151,6 @@ describe('Chunking Utils', () => {
     });
   });
 
-  describe('batchChunkUpload', () => {
-    let mockUploadFunction;
-    let mockSignal;
-
-    beforeEach(() => {
-      mockUploadFunction = sinon.stub();
-      mockSignal = { aborted: false };
-    });
-
-    it('should handle batch upload with multiple files', async () => {
-      const fileData = [
-        { assetId: 'asset1', blocksize: 1024, uploadUrls: ['https://upload.com/chunk1?partNumber=1', 'https://upload.com/chunk2?partNumber=2'] },
-        { assetId: 'asset2', blocksize: 1024, uploadUrls: ['https://upload.com/chunk3?partNumber=1', 'https://upload.com/chunk4?partNumber=2'] },
-      ];
-      const blobDataArray = [
-        new File(['x'.repeat(2048)], 'file1.txt'),
-        new File(['y'.repeat(2048)], 'file2.txt'),
-      ];
-      const filetypeArray = ['text/plain', 'text/plain'];
-      mockUploadFunction.resolves({ response: 'success', attempt: 1 });
-      const result = await batchChunkUpload(
-        fileData,
-        blobDataArray,
-        filetypeArray,
-        2,
-        mockUploadFunction,
-        mockSignal,
-        {},
-      );
-      expect(result.failedFiles.size).to.equal(0);
-      expect(mockUploadFunction.callCount).to.equal(4); // Should be called 4 times
-      expect(result.attemptMap.size).to.equal(4); // 2 files * 2 chunks each
-    });
-
-    it('should handle file upload failures', async () => {
-      const fileData = [{ assetId: 'asset1', blocksize: 1024, uploadUrls: ['https://upload.com/chunk1?partNumber=1'] }];
-      const blobDataArray = [new File(['test'], 'file.txt')];
-      const filetypeArray = ['text/plain'];
-      const uploadError = new Error('Upload failed');
-      mockUploadFunction.rejects(uploadError);
-      const result = await batchChunkUpload(
-        fileData,
-        blobDataArray,
-        filetypeArray,
-        1,
-        mockUploadFunction,
-        mockSignal,
-        {},
-      );
-      expect(result.failedFiles.size).to.equal(1);
-      expect(mockUploadFunction.callCount).to.equal(1); // Should be called once before failing
-    });
-  });
-
   describe('calculateChunkProgress', () => {
     it('should calculate progress correctly', () => {
       const progress = calculateChunkProgress(5, 10, 20);
@@ -237,38 +184,244 @@ describe('Chunking Utils', () => {
     });
   });
 
-  describe('ChunkingUtils class', () => {
-    let chunkingUtils;
+  describe('getAssetId', () => {
+    it('should return id when id is present', () => {
+      const assetData = { id: 'asset-123', assetId: 'asset-456' };
+      expect(getAssetId(assetData)).to.equal('asset-123');
+    });
+
+    it('should return assetId when id is not present', () => {
+      const assetData = { assetId: 'asset-456' };
+      expect(getAssetId(assetData)).to.equal('asset-456');
+    });
+
+    it('should return undefined when neither is present', () => {
+      const assetData = {};
+      expect(getAssetId(assetData)).to.be.undefined;
+    });
+  });
+
+  describe('executeInBatches', () => {
+    it('should execute all items with concurrency limit', async () => {
+      const items = [1, 2, 3, 4, 5];
+      const results = [];
+      const processFn = async (item) => {
+        results.push(item);
+      };
+      await executeInBatches(items, 2, processFn);
+      expect(results).to.have.length(5);
+      expect(results).to.include.members([1, 2, 3, 4, 5]);
+    });
+
+    it('should handle empty items array', async () => {
+      const results = [];
+      await executeInBatches([], 2, async (item) => { results.push(item); });
+      expect(results).to.have.length(0);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const items = [1, 2, 3];
+      let errorCount = 0;
+      const processFn = async (item) => {
+        if (item === 2) throw new Error('Test error');
+        errorCount += 1;
+      };
+      await executeInBatches(items, 2, processFn);
+      expect(errorCount).to.equal(2);
+    });
+  });
+
+  describe('batchChunkUpload', () => {
+    let mockUploadFunction;
+    let mockSignal;
 
     beforeEach(() => {
-      chunkingUtils = new ChunkingUtils();
+      mockUploadFunction = sinon.stub();
+      mockSignal = { aborted: false };
     });
 
-    it('should use default config', () => {
-      expect(chunkingUtils.config.blockSize).to.equal(DEFAULT_CHUNK_CONFIG.blockSize);
-      expect(chunkingUtils.config.maxRetries).to.equal(DEFAULT_CHUNK_CONFIG.maxRetries);
+    it('should upload chunks for multiple files with flat batching', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk1?partNumber=1' }] },
+        { id: 'asset2', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk2?partNumber=1' }] },
+      ];
+      const blobDataArray = [
+        new File(['x'.repeat(512)], 'file1.txt'),
+        new File(['y'.repeat(512)], 'file2.txt'),
+      ];
+      const filetypeArray = ['text/plain', 'text/plain'];
+      mockUploadFunction.resolves({ attempt: 1 });
+      const result = await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        2,
+        mockUploadFunction,
+        mockSignal,
+      );
+      expect(result.failedFiles.size).to.equal(0);
+      expect(mockUploadFunction.callCount).to.equal(2);
+      expect(result.attemptMap.size).to.equal(2);
     });
 
-    it('should allow custom config', () => {
-      const customConfig = { blockSize: 2048, maxRetries: 5 };
-      const customUtils = new ChunkingUtils(customConfig);
-      expect(customUtils.config.blockSize).to.equal(2048);
-      expect(customUtils.config.maxRetries).to.equal(5);
-    });
-
-    it('should upload file with chunking', async () => {
-      const mockUploadFunction = sinon.stub().resolves({ response: 'success', attempt: 1 });
-      const mockFile = new File(['test'], 'test.txt');
-      const uploadUrls = ['https://example.com/upload'];
-      const result = await chunkingUtils.uploadFile({
-        uploadUrls,
-        file: mockFile,
-        blockSize: 1024,
-        uploadFunction: mockUploadFunction,
-        signal: { aborted: false },
-      });
-      expect(result.failedChunks.size).to.equal(0);
+    it('should handle assetData.id (Acrobat style)', async () => {
+      const assetDataArray = [
+        { id: 'asset-with-id', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk?partNumber=1' }] },
+      ];
+      const blobDataArray = [new File(['test'], 'file.txt')];
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.resolves({ attempt: 1 });
+      await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+      );
       expect(mockUploadFunction.calledOnce).to.be.true;
+      const callArgs = mockUploadFunction.firstCall.args;
+      expect(callArgs[3]).to.equal('asset-with-id'); // assetId argument
+    });
+
+    it('should skip files with mismatched chunk count', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 512, uploadUrls: [{ href: 'https://upload.com/chunk1' }] }, // expects 2 chunks but only 1 URL
+      ];
+      const blobDataArray = [new File(['x'.repeat(1024)], 'file1.txt')]; // 1024 bytes / 512 blocksize = 2 chunks
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.resolves({ attempt: 1 });
+      const result = await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+      );
+      expect(mockUploadFunction.called).to.be.false;
+      expect(result.failedFiles.size).to.equal(0);
+    });
+
+    it('should handle upload failures and mark file as failed', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk1?partNumber=1' }] },
+      ];
+      const blobDataArray = [new File(['test'], 'file.txt')];
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.rejects(new Error('Upload failed'));
+      const result = await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+      );
+      expect(result.failedFiles.size).to.equal(1);
+    });
+
+    it('should stop uploading file chunks after first failure', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 512, uploadUrls: [{ href: 'https://upload.com/chunk1?partNumber=1' }, { href: 'https://upload.com/chunk2?partNumber=2' }] },
+      ];
+      const blobDataArray = [new File(['x'.repeat(1024)], 'file1.txt')]; // 2 chunks
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.onFirstCall().rejects(new Error('First chunk failed'));
+      mockUploadFunction.onSecondCall().resolves({ attempt: 1 });
+      const result = await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+      );
+      expect(result.failedFiles.size).to.equal(1);
+      // Second chunk should not be uploaded due to fileUploadFailed flag
+    });
+
+    it('should handle aborted signal', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk1' }] },
+      ];
+      const blobDataArray = [new File(['test'], 'file.txt')];
+      const filetypeArray = ['text/plain'];
+      mockSignal.aborted = true;
+      const result = await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+      );
+      expect(mockUploadFunction.called).to.be.false;
+      expect(result.failedFiles.size).to.equal(0);
+    });
+
+    it('should pass chunkContext to upload function', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk?partNumber=5' }] },
+      ];
+      const blobDataArray = [new File(['test'], 'file.txt')];
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.resolves({ attempt: 2 });
+      await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+      );
+      const callArgs = mockUploadFunction.firstCall.args;
+      const chunkContext = callArgs[6]; // 7th argument
+      expect(chunkContext.assetId).to.equal('asset1');
+      expect(chunkContext.chunkNumber).to.equal(5);
+      expect(chunkContext.fileType).to.equal('text/plain');
+      expect(chunkContext.fileIndex).to.equal(0);
+      expect(chunkContext.chunkIndex).to.equal(0);
+    });
+
+    it('should call onChunkSuccess callback on successful upload', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk' }] },
+      ];
+      const blobDataArray = [new File(['test'], 'file.txt')];
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.resolves({ attempt: 1 });
+      const onChunkSuccess = sinon.stub();
+      await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+        { onChunkSuccess },
+      );
+      expect(onChunkSuccess.calledOnce).to.be.true;
+    });
+
+    it('should call onChunkError callback on failed upload', async () => {
+      const assetDataArray = [
+        { id: 'asset1', blocksize: 1024, uploadUrls: [{ href: 'https://upload.com/chunk' }] },
+      ];
+      const blobDataArray = [new File(['test'], 'file.txt')];
+      const filetypeArray = ['text/plain'];
+      mockUploadFunction.rejects(new Error('Upload failed'));
+      const onChunkError = sinon.stub();
+      await batchChunkUpload(
+        assetDataArray,
+        blobDataArray,
+        filetypeArray,
+        1,
+        mockUploadFunction,
+        mockSignal,
+        { onChunkError },
+      );
+      expect(onChunkError.calledOnce).to.be.true;
     });
   });
 });
