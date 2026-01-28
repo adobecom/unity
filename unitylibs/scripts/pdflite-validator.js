@@ -31,15 +31,17 @@ export async function validateFilesWithPdflite(files, limits) {
     if (file.type !== 'application/pdf') return Promise.resolve({ file, ok: true });
     return (async () => {
       const details = await pdflite.fileDetails(file);
-      const overMaxPageCount = limits.pageLimit?.maxNumPages && details?.NUM_PAGES > limits.pageLimit.maxNumPages;
-      const underMinPageCount = limits.pageLimit?.minNumPages && details?.NUM_PAGES < limits.pageLimit.minNumPages;
+      const pageCount = details?.NUM_PAGES;
+      if (pageCount === undefined || pageCount === null) return { file, ok: true };
+      const overMaxPageCount = limits.pageLimit?.maxNumPages && pageCount > limits.pageLimit.maxNumPages;
+      const underMinPageCount = limits.pageLimit?.minNumPages && pageCount < limits.pageLimit.minNumPages;
       let error = null;
       if (overMaxPageCount) {
-        error = new Error(`PDF exceeds maximum page count: ${details?.NUM_PAGES} > ${limits.pageLimit.maxNumPages}`);
+        error = new Error(`PDF exceeds maximum page count: ${pageCount} > ${limits.pageLimit.maxNumPages}`);
         error.errorType = 'OVER_MAX_PAGE_COUNT';
       }
       if (underMinPageCount) {
-        error = new Error(`PDF below minimum page count: ${details?.NUM_PAGES} < ${limits.pageLimit.minNumPages}`);
+        error = new Error(`PDF below minimum page count: ${pageCount} < ${limits.pageLimit.minNumPages}`);
         error.errorType = 'UNDER_MIN_PAGE_COUNT';
       }
       if (error) throw error;
