@@ -325,7 +325,7 @@ export default class ActionBinder {
   }
 
   addAccessibility() {
-    this.addKeyDown();
+    //this.addKeyDown();
   }
 
   addKeyDown() {
@@ -521,6 +521,7 @@ export default class ActionBinder {
     this.dropdown?.classList.remove('hidden');
     this.dropdown?.removeAttribute('inert');
     this.dropdown?.removeAttribute('aria-hidden');
+    this.addKeyDown();
     document.addEventListener('click', this.boundOutsideClickHandler, true);
   }
 
@@ -530,6 +531,7 @@ export default class ActionBinder {
       this.dropdown?.setAttribute('inert', '');
       this.dropdown?.setAttribute('aria-hidden', 'true');
       document.removeEventListener('click', this.boundOutsideClickHandler, true);
+      this.rmvKeyDown();
     }
   }
 
