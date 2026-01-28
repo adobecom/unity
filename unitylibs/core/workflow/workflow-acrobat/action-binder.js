@@ -177,7 +177,6 @@ export default class ActionBinder {
     this.multiFileValidationFailure = false;
     this.initialize();
     this.experimentData = null;
-    this.pdflite = null;
   }
 
   async initialize() {
@@ -504,67 +503,25 @@ export default class ActionBinder {
     return getMimeType(file.name);
   }
 
-  async loadPdflite() {
-    if (this.pdflite) return;
-    try {
-      const moduleUrl = new URL('../../../../libs/pdflite/dc-pdflite.js', import.meta.url).href;
-      const { default: DcPdflite } = await import(moduleUrl);
-      const pdflite = new DcPdflite();
-      await pdflite.init();
-      this.pdflite = pdflite;
-    } catch (error) {
-      this.pdflite = null;
-      await this.dispatchErrorToast('error_generic', 500, `Exception thrown when loading pdflite: ${error.message}`, true);
-    }
-  }
-
   async filterFilesWithPdflite(files) {
-    const hasPdfFiles = files.some((f) => f.type === 'application/pdf');
-    if (hasPdfFiles) await this.loadPdflite();
-    else return files;
-    if (!this.pdflite) return files;
-    const checks = files.map((file) => {
-      if (file.type !== 'application/pdf') {
-        return Promise.resolve({ file, ok: true });
-      }
-      return (async () => {
-        const details = await this.pdflite.fileDetails(file);
-        const overMaxPageCount = this.limits.pageLimit?.maxNumPages && details?.NUM_PAGES > this.limits.pageLimit.maxNumPages;
-        const underMinPageCount = this.limits.pageLimit?.minNumPages && details?.NUM_PAGES < this.limits.pageLimit.minNumPages;
-        let error = null;
-        if (overMaxPageCount) {
-          error = new Error(`PDF exceeds maximum page count: ${details?.NUM_PAGES} > ${this.limits.pageLimit.maxNumPages}`);
-          error.errorType = 'OVER_MAX_PAGE_COUNT';
+    if (!this.limits.pageLimit) return files;
+    try {
+      const { validateFilesWithPdflite, getPageCountErrorCode } = await import('../../../scripts/pdflite-validator.js');
+      const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
+      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
+      if (failed && failed.length > 0) {
+        const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
+        if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
+          await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
+          if (errorInfo.returnEmpty) return [];
         }
-        if (underMinPageCount) {
-          error = new Error(`PDF below minimum page count: ${details?.NUM_PAGES} < ${this.limits.pageLimit.minNumPages}`);
-          error.errorType = 'UNDER_MIN_PAGE_COUNT';
-        }
-        if (error) throw error;
-        return { file, ok: true };
-      })().catch((error) => ({ file, ok: false, error, errorType: error.errorType || 'other' }));
-    });
-    const results = await Promise.all(checks);
-    const passed = results.filter((r) => r.ok).map((r) => r.file);
-    const failed = results.filter((r) => !r.ok);
-    if (!this.MULTI_FILE && failed.length > 0) {
-      const failure = failed[0];
-      const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES[failure.errorType];
-      if (errorCode) {
-        await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
-        return [];
+        if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
+      return passed;
+    } catch (error) {
+      await this.dispatchErrorToast('error_generic', 500, `Exception during PDF validation: ${error.message}`, true);
+      return files;
     }
-    if (this.MULTI_FILE && failed.length > 0) {
-      const pageCountFailures = failed.filter((f) => f.errorType === 'OVER_MAX_PAGE_COUNT');
-      if (pageCountFailures.length === failed.length && failed.length === results.length) {
-        const errorCode = ActionBinder.MULTI_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
-        await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
-        return [];
-      }
-      if (failed.length > 0) this.multiFileValidationFailure = true;
-    }
-    return passed;
   }
 
   async handleFileUpload(files) {
