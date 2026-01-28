@@ -325,3 +325,14 @@ export function sendAnalyticsEvent(event) {
   }
   window._satellite?.track('event', data); // eslint-disable-line no-underscore-dangle
 }
+
+// acrobat subdomain redirect
+export function isAcrobatSubDomain() {
+  const { hostname } = window.location;
+  return (
+    hostname === 'acrobat.adobe.com' ||
+    hostname === 'stage.acrobat.adobe.com' ||
+    hostname.endsWith('--dc-frictionless--adobecom.aem.page') ||
+    hostname.endsWith('--dc-frictionless--adobecom.aem.live')
+  );
+}

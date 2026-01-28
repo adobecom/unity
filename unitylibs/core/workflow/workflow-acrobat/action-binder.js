@@ -10,6 +10,7 @@ import {
   priorityLoad,
   isGuestUser,
   getApiCallOptions,
+  isAcrobatSubDomain,
 } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
 
@@ -605,6 +606,10 @@ export default class ActionBinder {
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
+      // acrobat subdomain redirect
+      if (isAcrobatSubDomain()) {
+        document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
+      }
       if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
