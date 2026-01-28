@@ -113,7 +113,7 @@ body > .splash-loader {
 }
 
 .progress-holder .spectrum-ProgressBar--sideLabel .spectrum-ProgressBar-track {
-  flex: 1 1 10px;
+  flex: 1 1 8px;
 }
 
 .progress-holder .spectrum-ProgressBar--sideLabel .spectrum-ProgressBar-label {
