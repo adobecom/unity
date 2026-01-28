@@ -418,6 +418,8 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
+    // If current element is not in our managed elements, let Tab work naturally
+    if (currentIndex === -1) return;
     const isShift = event.shiftKey;
     const currentElement = document.activeElement;
     const isFirstElement = currentIndex === 0;
@@ -437,9 +439,11 @@ export default class ActionBinder {
         return;
       }
     } else if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+      // Allow focus to escape the widget at boundaries
       this.hideDropdown();
       return;
     }
+    // Only prevent default when moving within the widget
     event.preventDefault();
     if (currentElement.classList.contains('tip-con')) {
       if (!isShift) {
