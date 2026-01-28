@@ -52,6 +52,7 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
     this.sendAnalyticsToSplunk = null;
+    this.addAccessibility();
     this.initAction();
   }
 
@@ -323,6 +324,10 @@ export default class ActionBinder {
     this.hideDropdown();
   }
 
+  addAccessibility() {
+    this.addKeyDown();
+  }
+
   addKeyDown() {
     this.rmvKeyDown();
     this.block.addEventListener('keydown', this.boundHandleKeyDown);
@@ -413,6 +418,7 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
+    if (currentIndex === -1) return;
     const isShift = event.shiftKey;
     const currentElement = document.activeElement;
     const isFirstElement = currentIndex === 0;
@@ -516,7 +522,6 @@ export default class ActionBinder {
     this.dropdown?.classList.remove('hidden');
     this.dropdown?.removeAttribute('inert');
     this.dropdown?.removeAttribute('aria-hidden');
-    this.addKeyDown();
     document.addEventListener('click', this.boundOutsideClickHandler, true);
   }
 
@@ -526,7 +531,6 @@ export default class ActionBinder {
       this.dropdown?.setAttribute('inert', '');
       this.dropdown?.setAttribute('aria-hidden', 'true');
       document.removeEventListener('click', this.boundOutsideClickHandler, true);
-      this.rmvKeyDown();
     }
   }
 
