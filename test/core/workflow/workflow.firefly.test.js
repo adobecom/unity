@@ -2369,12 +2369,6 @@ describe('Firefly Workflow Tests', () => {
       expect(hideDropdownSpy.calledOnce).to.be.true;
     });
 
-    it('should handle addAccessibility', () => {
-      const addKeyDownSpy = sinon.spy(testActionBinder, 'addKeyDown');
-      testActionBinder.addAccessibility();
-      expect(addKeyDownSpy.calledOnce).to.be.true;
-    });
-
     it('should handle addKeyDown', () => {
       const rmvKeyDownSpy = sinon.spy(testActionBinder, 'rmvKeyDown');
       const addEventListenerSpy = sinon.spy(testActionBinder.block, 'addEventListener');

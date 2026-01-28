@@ -52,7 +52,6 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
     this.sendAnalyticsToSplunk = null;
-    this.addAccessibility();
     this.initAction();
   }
 
@@ -322,10 +321,6 @@ export default class ActionBinder {
     this.id = el.getAttribute('id')?.trim();
     this.generateContent();
     this.hideDropdown();
-  }
-
-  addAccessibility() {
-    //this.addKeyDown();
   }
 
   addKeyDown() {
