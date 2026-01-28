@@ -473,7 +473,7 @@ export default class UploadHandler {
       await this.deleteFailedAssets(assetsToDelete);
       if (verifiedAssets.length === 0) {
         await this.transitionScreen.showSplashScreen();
-        await this.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count_multi');
+        await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset');
         return;
       }
       if (files.length !== verifiedAssets.length) this.actionBinder.multiFileFailure = 'uploaderror';
