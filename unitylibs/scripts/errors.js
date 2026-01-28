@@ -28,9 +28,9 @@ async function loadErrorMessages(verb) {
   if (origin.includes('.aem.') || origin.includes('.hlx.')) {
     baseUrl = `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`;
   } else if (origin === 'https://stage.acrobat.adobe.com') {
-    baseUrl = 'https://stage.adobe.com';
+    baseUrl = 'https://www.stage.adobe.com';
   } else if (origin === 'https://acrobat.adobe.com') {
-    baseUrl = 'https://adobe.com';
+    baseUrl = 'https://www.adobe.com';
   } else {
     baseUrl = origin;
   }
