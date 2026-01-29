@@ -30,6 +30,8 @@ export default class ActionBinder {
     EMPTY_FILE: 'validation_error_empty_file',
     FILE_TOO_LARGE: 'validation_error_file_too_large',
     SAME_FILE_TYPE: 'validation_error_file_same_type',
+    OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count',
+    UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count',
   };
 
   static MULTI_FILE_ERROR_MESSAGES = {
@@ -37,6 +39,7 @@ export default class ActionBinder {
     EMPTY_FILE: 'validation_error_empty_file_multi',
     FILE_TOO_LARGE: 'validation_error_file_too_large_multi',
     SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
+    OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
   };
 
   static LIMITS_MAP = {
@@ -96,7 +99,6 @@ export default class ActionBinder {
     validation_error_file_same_type_multi: -206,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
-    upload_validation_error_verify_page_count: -302,
     upload_validation_error_max_page_count_multi: -303,
     upload_validation_error_duplicate_asset: -304,
     upload_error_max_quota_exceeded: -400,
@@ -132,7 +134,6 @@ export default class ActionBinder {
     validation_error_file_same_type_multi: 'verb_upload_error_file_same_type_multi',
     upload_validation_error_max_page_count: 'verb_upload_error_max_page_count',
     upload_validation_error_min_page_count: 'verb_upload_error_min_page_count',
-    upload_validation_error_verify_page_count: 'verb_upload_error_verify_page_count',
     upload_validation_error_max_page_count_multi: 'verb_upload_error_max_page_count_multi',
     upload_validation_error_duplicate_asset: 'verb_upload_error_duplicate_asset',
     upload_error_max_quota_exceeded: 'verb_upload_error_max_quota_exceeded',
@@ -502,6 +503,27 @@ export default class ActionBinder {
     return getMimeType(file.name);
   }
 
+  async filterFilesWithPdflite(files) {
+    if (!this.limits.pageLimit) return files;
+    try {
+      const { validateFilesWithPdflite, getPageCountErrorCode } = await import('../../../scripts/pdflite-validator.js');
+      const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
+      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
+      if (failed && failed.length > 0) {
+        const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
+        if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
+          await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
+          if (errorInfo.returnEmpty) return [];
+        }
+        if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
+      }
+      return passed;
+    } catch (error) {
+      await this.dispatchErrorToast('error_generic', 500, `Exception during PDF validation: ${error.message}`, true);
+      return files;
+    }
+  }
+
   async handleFileUpload(files) {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
@@ -510,7 +532,9 @@ export default class ActionBinder {
       return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
-    const { isValid, validFiles } = await this.validateFiles(sanitizedFiles);
+    const prevalidatedFiles = await this.filterFilesWithPdflite(sanitizedFiles);
+    if (prevalidatedFiles.length === 0) return;
+    const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
     if (!isValid) return;
     await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
