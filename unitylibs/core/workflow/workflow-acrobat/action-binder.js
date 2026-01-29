@@ -10,7 +10,7 @@ import {
   priorityLoad,
   isGuestUser,
   getApiCallOptions,
-  isAcrobatSubDomain,
+  getMatchedDomain,
 } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
 
@@ -606,8 +606,7 @@ export default class ActionBinder {
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
-      // acrobat subdomain redirect
-      if (isAcrobatSubDomain()) {
+      if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
         document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
       }
       if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
