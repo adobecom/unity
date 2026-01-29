@@ -46,7 +46,11 @@ export async function validateFilesWithPdflite(files, limits) {
       }
       if (error) throw error;
       return { file, ok: true };
-    })().catch((error) => ({ file, ok: false, error, errorType: error.errorType || 'other' }));
+    })().catch((error) => {
+      const isPageCountError = error.errorType === 'OVER_MAX_PAGE_COUNT' || error.errorType === 'UNDER_MIN_PAGE_COUNT';
+      if (isPageCountError) return { file, ok: false, error, errorType: error.errorType };
+      return { file, ok: true };
+    });
   });
   const results = await Promise.all(checks);
   const passed = results.filter((r) => r.ok).map((r) => r.file);
