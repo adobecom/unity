@@ -1293,6 +1293,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app {
   --firefly-prompt-input-placeholder-opacity: 1;
   --firefly-prompt-input-placeholder-color: inherit;
+  --firefly-prompt-input-bottom-padding: 0px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app input::placeholder,
@@ -1326,4 +1327,8 @@
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .ex-unity-wrap {
   width: inherit;
+}
+
+.prompt-focused {
+  --firefly-prompt-advanced-container-inner-background-color: rgba(255 255 255 / 50%);
 }

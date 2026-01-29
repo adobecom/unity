@@ -108,6 +108,7 @@ export default class ActionBinder {
     this.widgetWrap.addEventListener('firefly-application-change', (ev) => this.handleFireflyApplicationChange(ev));
     this.widgetWrap.addEventListener('firefly-setting-interact', (ev) => this.handleFireflySettingInteract(ev));
     this.widgetWrap.addEventListener('firefly-more-button-click', (ev) => this.handleFireflyMoreButtonClick(ev));
+    this.widgetWrap.addEventListener('firefly-prompt-validate', (ev) => this.handlePromptValidate(ev));
     this.scrRead = createTag('div', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' });
     this.widgetWrap.append(this.scrRead);
     this.errorToastEl = null;
@@ -586,8 +587,8 @@ export default class ActionBinder {
     const selectedVerbType = `text-to-${verb}`;
     const action = 'generate';
 
-    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
-    const queryParams = {};
+    // const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+    // const queryParams = {};
     // if (cgen) {
     //   cgen.split('&').forEach((param) => {
     //     const [key, value] = param.split('=');
@@ -598,11 +599,11 @@ export default class ActionBinder {
     const eventData = { assetId: '', verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
 
-    const validation = this.validateInput(prompt);
-    if (!validation.isValid) {
-      this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
-      return;
-    }
+    // const validation = this.validateInput(prompt);
+    // if (!validation.isValid) {
+    //   this.showValidationError(validation.errorCode);
+    //   return;
+    // }
 
     // try {
     //   const payload = {
@@ -651,5 +652,15 @@ export default class ActionBinder {
     const { detail } = ev;
     sendAnalyticsEvent(new CustomEvent('FF More button click|UnityWidget'));
     window.lana?.log(`More button clicked, detail: ${JSON.stringify(detail)}`, this.lanaOptions);
+  }
+
+  handlePromptValidate(ev) {
+    const { detail } = ev;
+    const validation = this.validateInput(detail?.prompt);
+    if (!validation.isValid) {
+      this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
+      detail?.originalEvent?.stopPropagation();
+      //this.showValidationError(validation.errorCode);
+    }
   }
 }

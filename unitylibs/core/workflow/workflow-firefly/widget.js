@@ -3,11 +3,12 @@
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
-  //static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets-stage.corp.adobe.com/clio-playground/script-cache/prompt-bar-app/v0/dist/main.bundle.js';
-  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/117.0.43/prompt-bar-app/dist/main.bundle.js';
+  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/127.1.6/prompt-bar-app/dist/main.bundle.js';
   static SPECTRUM_THEME_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/116.1.4/spectrum-theme/dist/main.bundle.js';
+  static FIREFLY_HUB_ORIGIN = 'https://firefly.adobe.com';
 
   constructor(target, el, workflowCfg, spriteCon) {
+    this.prefetchFireflyHub();
     this.el = el;
     this.target = target;
     this.workflowCfg = workflowCfg;
@@ -32,6 +33,58 @@ export default class UnityWidget {
     this.promptBarApp = null;
     this.useFireflyPromptBar = this.workflowCfg?.targetCfg?.useFireflyPromptBar ?? false;
   }
+
+  prefetchFireflyHub() {
+    // Early connection to Firefly origin for faster navigation
+    if (document.querySelector(`link[href="${UnityWidget.FIREFLY_HUB_ORIGIN}"]`)) return;
+    const preconnect = document.createElement('link');
+    preconnect.rel = 'preconnect';
+    preconnect.href = UnityWidget.FIREFLY_HUB_ORIGIN;
+    preconnect.crossOrigin = 'anonymous';
+    document.head.appendChild(preconnect);
+
+    // DNS prefetch as fallback for browsers that don't support preconnect
+    const dnsPrefetch = document.createElement('link');
+    dnsPrefetch.rel = 'dns-prefetch';
+    dnsPrefetch.href = UnityWidget.FIREFLY_HUB_ORIGIN;
+    document.head.appendChild(dnsPrefetch);
+
+    // Prefetch hub endpoint to warm cache and capture network errors
+    this.prefetchHubWithErrorCapture();
+  }
+
+  async prefetchHubWithErrorCapture() {
+    const hubUrl = `${UnityWidget.FIREFLY_HUB_ORIGIN}/hub`;
+    try {
+      await fetch(hubUrl, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        credentials: 'omit',
+      });
+    } catch (error) {
+      window.lana?.log(`Firefly Hub prefetch failed: ${error.message}`, this.lanaOptions);
+    }
+  }
+
+  //   async prefetchHubWithErrorCapture() {
+//   const hubUrl = `${UnityWidget.FIREFLY_HUB_ORIGIN}/hub`;
+//   try {
+//     const response = await fetch(hubUrl, {
+//       method: 'GET',           // Full request
+//       mode: 'cors',            // ← Changed: Requires CORS headers from server
+//       credentials: 'include',  // ← Changed: Include cookies if needed
+//     });
+    
+//     // Now you CAN read the response
+//     if (!response.ok) {
+//       // 🎯 Capture HTTP errors (404, 500, etc.)
+//       window.lana?.log(`Firefly Hub HTTP error: ${response.status}`, this.lanaOptions);
+//     }
+//   } catch (error) {
+//     // Network errors (DNS, connection refused, CORS blocked)
+//     window.lana?.log(`Firefly Hub prefetch failed: ${error.message}`, this.lanaOptions);
+//   }
+// }
 
   async initWidget() {
     if (true) {
@@ -137,6 +190,7 @@ export default class UnityWidget {
     
     const defaultConfig = {
       "hideMoreButton": true,
+      "openTarget" : "_self",
       "image-generation": {
         "placeholder": "Describe the image you want to generate",
         "hideModelPicker": true,
@@ -157,6 +211,7 @@ export default class UnityWidget {
 
     const max25Config = {
       "hideMoreButton": true,
+      "openTarget" : "_self",
       "image-generation": {
         "placeholder": "Describe what you want to generate",
         "hideModelPicker": false,
@@ -221,8 +276,10 @@ export default class UnityWidget {
       id: 'prompt-bar-app-container',
       class: 'prompt-bar-app-container',
     });
-    promptBarContainer.style.textAlign = 'left'; //see if this is needed. Add only if the css in widget.css doean't work.
+    // promptBarContainer.style.textAlign = 'left'; //Addressed within the prompt bar app css
 
+    // promptBarCount = document.querySelectorAll("firefly-prompt-bar-app").length;   // Check what could be the better way to give persistName
+    // let persistName = `prompt-bar-app-${promptBarCount + 1}`;
     const fireflyPromptBarApp = document.createElement('firefly-prompt-bar-app');
     fireflyPromptBarApp.id = 'prompt-bar-app';
     fireflyPromptBarApp.style.width = '100%';
@@ -231,6 +288,9 @@ export default class UnityWidget {
     fireflyPromptBarApp.environment = this.getPromptBarEnvironment();
     fireflyPromptBarApp.settingsConfig = this.getPromptBarSettingsConfig();
     fireflyPromptBarApp.additionalQueryParams = this.getAdditionalQueryParams();
+    fireflyPromptBarApp.autoFocus = false;
+    fireflyPromptBarApp.numRows = 2;
+    // fireflyPromptBarApp.persistName = persistName;
 
     this.promptBarApp = fireflyPromptBarApp;
 
@@ -238,10 +298,10 @@ export default class UnityWidget {
     spTheme.appendChild(promptBarContainer);
     this.widget.appendChild(spTheme);
 
-    this.setupFireflyPromptBarEvents(fireflyPromptBarApp);
+    // this.setupFireflyPromptBarEvents(fireflyPromptBarApp);
 
     this.addWidget();
-    if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
+    // if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
 
     return this.workflowCfg.targetCfg.actionMap;
   }
@@ -254,6 +314,12 @@ export default class UnityWidget {
     promptBarApp.addEventListener('prompt-bar-app-setting-interact', (e) => {
       this.handleSettingInteract(e);
     });
+
+    promptBarApp.addEventListener('prompt-advanced-generate', (e) => {
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-prompt-validate', {
+        detail: { prompt: e.detail?.prompt, originalEvent: e },
+      }));
+    }, { capture: true });
 
     promptBarApp.addEventListener('prompt-bar-app-generate', (e) => {
       this.handlePromptBarGenerate(e);
@@ -282,6 +348,13 @@ export default class UnityWidget {
     if (detail?.modelVersion) {
       this.selectedModelVersion = detail.modelVersion;
       this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    }
+    if (detail?.settingId === 'prompt') {
+      if (detail?.type === 'focus') {
+        this.promptBarApp?.classList.add('prompt-focused');
+      } else if (detail?.type === 'blur') {
+        this.promptBarApp?.classList.remove('prompt-focused');
+      }
     }
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-setting-interact', { detail }));
   }
