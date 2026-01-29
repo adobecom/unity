@@ -5,7 +5,7 @@ let pdfliteInstance = null;
 async function loadPdflite() {
   if (pdfliteInstance) return pdfliteInstance;
   try {
-    const moduleUrl = new URL('../../libs/pdflite/dc-pdflite.js', import.meta.url).href;
+    const moduleUrl = new URL('../libs/pdflite/dc-pdflite.js', import.meta.url).href;
     const { default: DcPdflite } = await import(moduleUrl);
     const pdflite = new DcPdflite();
     await pdflite.init();
