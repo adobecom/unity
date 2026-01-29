@@ -136,7 +136,6 @@ describe('ActionBinder', () => {
     });
   });
 
-
   describe('ActionBinder', () => {
     describe('dispatchErrorToast', () => {
       it('should dispatch error toast event with correct data', async () => {
@@ -642,9 +641,7 @@ describe('ActionBinder', () => {
     describe('Redirect Methods', () => {
       beforeEach(() => {
         // Mock network utilities for ActionBinder
-        actionBinder.networkUtils = { 
-          fetchFromServiceWithRetry: sinon.stub().resolves({ url: 'https://test-redirect-url.com' }) 
-        };
+        actionBinder.networkUtils = { fetchFromServiceWithRetry: sinon.stub().resolves({ url: 'https://test-redirect-url.com' }) };
         actionBinder.acrobatApiConfig = { connectorApiEndPoint: 'https://test-api.com/connector' };
         actionBinder.workflowCfg = {
           enabledFeatures: ['test-feature'],
@@ -670,16 +667,16 @@ describe('ActionBinder', () => {
       describe('getRedirectUrl', () => {
         it('should successfully get redirect URL', async () => {
           const cOpts = { test: 'options' };
-          
+
           // Directly stub the method to simulate successful redirect URL retrieval
-          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async (opts) => {
+          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async () => {
             // Simulate calling the network utils
             actionBinder.networkUtils.fetchFromServiceWithRetry();
             // Set the expected redirect URL
             actionBinder.redirectUrl = 'https://test-redirect-url.com';
             return 'https://test-redirect-url.com';
           });
-          
+
           await actionBinder.getRedirectUrl(cOpts);
 
           expect(actionBinder.networkUtils.fetchFromServiceWithRetry.called).to.be.true;
@@ -689,15 +686,15 @@ describe('ActionBinder', () => {
         it('should handle error when getting redirect URL', async () => {
           const error = new Error('Test error');
           error.status = 500;
-          
+
           // Directly stub the method to simulate error handling
-          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async (opts) => {
+          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async () => {
             // Simulate the error handling behavior
             await actionBinder.showTransitionScreen();
             await actionBinder.dispatchErrorToast(
               'pre_upload_error_fetch_redirect_url',
               500,
-              `Exception thrown when retrieving redirect URL. Message: ${error.message}, Options: ${JSON.stringify(opts)}`,
+              `Exception thrown when retrieving redirect URL. Message: ${error.message}, Options: ${JSON.stringify({ test: 'options' })}`,
               false,
               undefined,
               {
@@ -728,7 +725,7 @@ describe('ActionBinder', () => {
 
         it('should handle missing URL in response', async () => {
           // Directly stub the method to simulate missing URL handling
-          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async (opts) => {
+          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async () => {
             // Simulate the missing URL error handling behavior
             await actionBinder.showTransitionScreen();
             await actionBinder.dispatchErrorToast(
@@ -938,6 +935,7 @@ describe('ActionBinder', () => {
           targetCfg: { verbsWithoutMfuToSfuFallback: ['compress-pdf'] },
         };
         actionBinder.sanitizeFileName = sinon.stub().resolves('sanitized-file.pdf');
+        actionBinder.filterFilesWithPdflite = sinon.stub().callsFake(async (files) => files);
         actionBinder.validateFiles = sinon.stub().resolves({ isValid: true, validFiles: [] });
         actionBinder.handleSingleFileUpload = sinon.stub().resolves();
         actionBinder.handleMultiFileUpload = sinon.stub().resolves();
@@ -953,6 +951,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledWith('test.pdf')).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleSingleFileUpload.calledWith(files)).to.be.true;
@@ -969,6 +968,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleMultiFileUpload.calledWith(files)).to.be.true;
@@ -986,6 +986,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleSingleFileUpload.calledWith(validFile)).to.be.true;
@@ -999,6 +1000,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledWith('test.pdf')).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.false;
         expect(actionBinder.handleSingleFileUpload.called).to.be.false;
@@ -1017,6 +1019,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleMultiFileUpload.calledWith(validFile)).to.be.true;
@@ -1291,7 +1294,7 @@ describe('ActionBinder', () => {
         // Mock transition screen to avoid early return
         actionBinder.transitionScreen = { test: 'existing' };
         actionBinder.handlePreloads = sinon.stub().resolves();
-        
+
         const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
         await actionBinder.acrobatActionMaps('interrupt');
         expect(spy.called).to.be.true;
@@ -1302,7 +1305,7 @@ describe('ActionBinder', () => {
         // Mock transition screen to avoid early return
         actionBinder.transitionScreen = { test: 'existing' };
         actionBinder.handlePreloads = sinon.stub().resolves();
-        
+
         const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
         const files = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
@@ -1551,7 +1554,6 @@ describe('ActionBinder', () => {
       });
     });
 
-
     describe('handleRedirect Error Handling', () => {
       beforeEach(() => {
         actionBinder.workflowCfg = {
@@ -1575,8 +1577,7 @@ describe('ActionBinder', () => {
         const cOpts = { payload: {} };
         const filesData = { type: 'application/pdf', size: 123, count: 1 };
 
-        // Mock the redirect URL fetch to succeed  
-        const mockResponse = { url: 'https://test-redirect.com' };
+        // Mock the redirect URL fetch to succeed
         sinon.stub(actionBinder, 'getRedirectUrl').resolves();
         actionBinder.redirectUrl = 'https://test-redirect.com';
 
@@ -2006,6 +2007,41 @@ describe('ActionBinder', () => {
     it('should support pdf-word-ppt-txt file types for pdf-ai', () => {
       const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
       expect(pdfAiLimits).to.include('allowed-filetypes-pdf-word-ppt-txt');
+    });
+  });
+
+  describe('filterFilesWithPdflite', () => {
+    beforeEach(() => {
+      actionBinder.MULTI_FILE = false;
+      actionBinder.limits = {
+        pageLimit: {
+          maxNumPages: 100,
+          minNumPages: 2,
+        },
+      };
+      sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+    });
+
+    it('should return files unchanged if no page limits configured', async () => {
+      delete actionBinder.limits.pageLimit;
+      const files = [{ type: 'application/pdf', name: 'test.pdf' }];
+      const result = await actionBinder.filterFilesWithPdflite(files);
+      expect(result).to.equal(files);
+      expect(actionBinder.dispatchErrorToast.called).to.be.false;
+    });
+
+    it('should have filterFilesWithPdflite method', () => {
+      expect(actionBinder.filterFilesWithPdflite).to.be.a('function');
+    });
+
+    it('should call filterFilesWithPdflite when page limits exist', async () => {
+      const files = [{ type: 'application/pdf', name: 'test.pdf' }];
+
+      // With page limits configured, should attempt to validate
+      const result = await actionBinder.filterFilesWithPdflite(files);
+
+      // Should return an array (either validated or original files)
+      expect(Array.isArray(result)).to.be.true;
     });
   });
 });
