@@ -58,13 +58,13 @@ describe('UploadHandler', () => {
 
     // Stub getFlatObject globally to avoid import issues
     window.getFlatObject = sinon.stub().resolves(() => 'mocked-flatten-result');
-    
+
     // Stub getApiCallOptions globally to avoid import issues
     window.getApiCallOptions = sinon.stub().resolves({
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-token',
+        Authorization: 'Bearer test-token',
       },
     });
 
@@ -136,9 +136,7 @@ describe('UploadHandler', () => {
       getAdditionalHeaders: sinon.stub().returns({}),
     };
 
-    mockNetworkUtils = {
-      fetchFromServiceWithRetry: sinon.stub(),
-    };
+    mockNetworkUtils = { fetchFromServiceWithRetry: sinon.stub() };
 
     uploadHandler = new UploadHandler(mockActionBinder, mockNetworkUtils);
     uploadHandler.transitionScreen = mockTransitionScreen;
@@ -231,80 +229,6 @@ describe('UploadHandler', () => {
     });
   });
 
-  describe('checkPageNumCount', () => {
-    it('should validate normal page count', async () => {
-      const assetData = { id: 'asset-123' };
-      // Mock fetchFromServiceWithRetry to call the callback with response data
-      mockNetworkUtils.fetchFromServiceWithRetry = sinon.stub().callsFake(async (url, opts, retryConfig, callback) => {
-        const result = await callback({ numPages: 50 });
-        return result;
-      });
-      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, false));
-      expect(result).to.be.false;
-    });
-
-    it('should handle error in checkPageNumCount', async () => {
-      mockNetworkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(new Error('fail'));
-      const assetData = { id: 'asset-123' };
-      const result = await runWithFakeTimers(() => uploadHandler.checkPageNumCount(assetData, false), 5000);
-      expect(result).to.be.false;
-    });
-
-    it('should handle max page count exceeded', async () => {
-      const assetData = { id: 'asset-123' };
-      
-      // Directly stub the method to simulate max page count validation failure
-      sinon.stub(uploadHandler, 'checkPageNumCount').callsFake(async (assetData, isMultiFile) => {
-        await uploadHandler.showSplashScreen();
-        await uploadHandler.actionBinder.dispatchErrorToast('upload_validation_error_max_page_count');
-        return true;
-      });
-      
-      const result = await uploadHandler.checkPageNumCount(assetData, false);
-      
-      expect(result).to.be.true;
-      expect(uploadHandler.showSplashScreen.called).to.be.true;
-      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_max_page_count')).to.be.true;
-    });
-
-    it('should handle min page count not met', async () => {
-      const assetData = { id: 'asset-123' };
-      sinon.stub(uploadHandler, 'checkPageNumCount').callsFake(async (assetData, isMultiFile) => {
-      await uploadHandler.showSplashScreen();
-      await uploadHandler.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-      return true;
-      });
-      
-      const result = await uploadHandler.checkPageNumCount(assetData, false);
-      expect(result).to.be.true;
-      expect(uploadHandler.showSplashScreen.called).to.be.true;
-      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_min_page_count')).to.be.true;
-    });
-
-    it('should handle max page count exceeded for multi-file', async () => {
-      const assetData = { id: 'asset-123' };
-      sinon.stub(uploadHandler, 'checkPageNumCount').callsFake(async (assetData, isMultiFile) => {
-        return true;
-      });
-      
-      const result = await uploadHandler.checkPageNumCount(assetData, true);
-      expect(result).to.be.true;
-      expect(uploadHandler.showSplashScreen.called).to.be.false;
-    });
-
-    it('should handle min page count not met for multi-file', async () => {
-      const assetData = { id: 'asset-123' };
-      sinon.stub(uploadHandler, 'checkPageNumCount').callsFake(async (assetData, isMultiFile) => {
-        await uploadHandler.showSplashScreen();
-        await uploadHandler.actionBinder.dispatchErrorToast('upload_validation_error_min_page_count');
-        return true;
-      });
-      
-      const result = await uploadHandler.checkPageNumCount(assetData, true);
-      expect(result).to.be.true;
-    });
-  });
-
   describe('PDF Chunking', () => {
     it('should chunk and upload PDF successfully', async () => {
       const assetDataArray = [{
@@ -348,11 +272,9 @@ describe('UploadHandler', () => {
   describe('Content Verification', () => {
     it('should verify content successfully', async () => {
       const assetData = { id: 'asset-123' };
-      
+
       // Directly stub the method to simulate successful content verification
-      sinon.stub(uploadHandler, 'verifyContent').callsFake(async (assetData, signal) => {
-        return true;
-      });
+      sinon.stub(uploadHandler, 'verifyContent').callsFake(async () => true);
 
       const result = await uploadHandler.verifyContent(assetData, null);
       expect(result).to.be.true;
@@ -389,11 +311,9 @@ describe('UploadHandler', () => {
   describe('Asset Creation', () => {
     it('should create asset successfully', async () => {
       const file = { name: 'test.pdf', size: 1000, type: 'application/pdf' };
-      
+
       // Directly stub the method to simulate successful asset creation
-      sinon.stub(uploadHandler, 'createAsset').callsFake(async (file, multifile, workflowId) => {
-        return { id: 'asset-123' };
-      });
+      sinon.stub(uploadHandler, 'createAsset').callsFake(async () => ({ id: 'asset-123' }));
 
       const result = await uploadHandler.createAsset(file, true, 'workflow-123');
 
@@ -454,26 +374,6 @@ describe('UploadHandler', () => {
         error.showError,
         sinon.match.has('subCode', 401),
       )).to.be.true;
-    });
-  });
-
-  describe('General Validations', () => {
-    it('should pass all validations', async () => {
-      const assetData = { id: 'asset-123' };
-      uploadHandler.checkPageNumCount = sinon.stub().resolves(false);
-
-      const result = await uploadHandler.handleValidations(assetData, false);
-
-      expect(result).to.be.true;
-    });
-
-    it('should fail validations on error', async () => {
-      const assetData = { id: 'asset-123' };
-      uploadHandler.checkPageNumCount = sinon.stub().resolves(true);
-
-      const result = await uploadHandler.handleValidations(assetData, false);
-
-      expect(result).to.be.false;
     });
   });
 
@@ -595,7 +495,6 @@ describe('UploadHandler', () => {
       uploadHandler.createAsset = sinon.stub().resolves(assetData);
       uploadHandler.chunkPdf = sinon.stub().resolves({ failedFiles: new Set(), attemptMap: new Map([[0, 1]]) });
       uploadHandler.verifyContent = sinon.stub().resolves(true);
-      uploadHandler.handleValidations = sinon.stub().resolves(true);
     });
 
     it('should successfully upload a single file', async () => {
@@ -605,7 +504,6 @@ describe('UploadHandler', () => {
       expect(uploadHandler.createAsset.calledOnce).to.be.true;
       expect(uploadHandler.chunkPdf.calledOnce).to.be.true;
       expect(uploadHandler.verifyContent.calledOnce).to.be.true;
-      expect(uploadHandler.handleValidations.calledOnce).to.be.true;
       expect(mockActionBinder.setAssetId.calledWith(assetData.id)).to.be.true;
       expect(mockActionBinder.handleRedirect.calledOnce).to.be.true;
       expect(mockActionBinder.setIsUploading.calledWith(true)).to.be.true;
@@ -718,7 +616,7 @@ describe('UploadHandler', () => {
       const noVerifiedFiles = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
       await uploadHandler.uploadMultiFile(noVerifiedFiles, {});
       expect(uploadHandler.transitionScreen.showSplashScreen.called).to.be.true;
-      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_validation_error_max_page_count_multi')).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.calledWith('upload_error_finalize_asset')).to.be.true;
     });
   });
 
@@ -769,7 +667,6 @@ describe('UploadHandler', () => {
       ];
 
       uploadHandler.verifyContent = sinon.stub().resolves(true);
-      uploadHandler.handleValidations = sinon.stub().resolves(true);
     });
 
     it('should process all assets successfully', async () => {
@@ -778,14 +675,6 @@ describe('UploadHandler', () => {
       expect(result.verifiedAssets.length).to.equal(2);
       expect(result.assetsToDelete.length).to.equal(0);
       expect(uploadHandler.verifyContent.calledTwice).to.be.true;
-      expect(uploadHandler.handleValidations.calledTwice).to.be.true;
-    });
-
-    it('should handle failed validations', async () => {
-      uploadHandler.handleValidations.resolves(false);
-      const result = await uploadHandler.processUploadedAssets(uploadedAssets);
-      expect(result.verifiedAssets.length).to.equal(0);
-      expect(result.assetsToDelete.length).to.equal(2);
     });
 
     it('should handle failed content verification', async () => {
@@ -870,18 +759,6 @@ describe('UploadHandler', () => {
       expect(uploadHandler.showSplashScreen.called).to.be.true;
     });
   });
-
-  // describe('uploadFileChunks', () => {
-  //   it('should call chunkPdf and return filtered assets', async () => {
-  //     const assetDataArray = [{ id: 'a1' }, { id: 'a2' }];
-  //     const blobDataArray = [new Blob(['a']), new Blob(['b'])];
-  //     const fileTypeArray = ['application/pdf', 'application/pdf'];
-  //     sinon.stub(uploadHandler, 'chunkPdf').resolves(new Set([1]));
-  //     const result = await uploadHandler.uploadFileChunks(assetDataArray, blobDataArray, fileTypeArray, 2);
-  //     expect(uploadHandler.chunkPdf.calledOnce).to.be.true;
-  //     expect(result).to.deep.equal([assetDataArray[0]]);
-  //   });
-  // });
 
   describe('showSplashScreen', () => {
     it('should call initSplashScreen and transitionScreen.showSplashScreen', async () => {

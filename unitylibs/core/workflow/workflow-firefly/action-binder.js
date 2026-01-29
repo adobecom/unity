@@ -418,6 +418,7 @@ export default class ActionBinder {
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
+    if (currentIndex === -1) return;
     const isShift = event.shiftKey;
     const currentElement = document.activeElement;
     const isFirstElement = currentIndex === 0;
