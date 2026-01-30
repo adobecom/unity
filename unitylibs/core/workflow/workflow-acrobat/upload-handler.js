@@ -105,88 +105,43 @@ export default class UploadHandler {
     return 'MID_RANGE';
   }
 
-  async executeInBatches(items, maxConcurrent, processFn) {
-    const executing = new Set();
-    for (const item of items) {
-      const promise = processFn(item)
-        .then(() => { executing.delete(promise); })
-        .catch(() => { executing.delete(promise); });
-      executing.add(promise);
-      if (executing.size >= maxConcurrent) await Promise.any(executing);
-    }
-    if (executing.size > 0) {
-      await Promise.all(executing);
-    }
-  }
+  async uploadChunkToStorage(urlString, chunk, fileType, assetId, signal, chunkNumber, chunkContext) {
+    const putOpts = {
+      method: 'PUT',
+      headers: { 'Content-Type': fileType },
+      body: chunk,
+      signal,
+    };
+    const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default };
+    modifiedRetryConfig.extraRetryCheck = async (response) => !response.ok;
 
-  async batchUpload(tasks, batchSize) {
-    await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
+    const { attempt } = await this.networkUtils.fetchFromServiceWithRetry(
+      urlString,
+      putOpts,
+      modifiedRetryConfig,
+      (response, attemptNum) => this.afterUploadFileToUnity({
+        ...chunkContext,
+        response,
+        attempt: attemptNum,
+      }),
+      (error) => this.errorAfterUploadFileToUnity({
+        ...chunkContext,
+        error,
+      }),
+    );
+    return { attempt };
   }
 
   async chunkPdf(assetDataArray, blobDataArray, filetypeArray, batchSize, signal) {
-    const uploadTasks = [];
-    const failedFiles = new Set();
-    const attemptMap = new Map();
-    assetDataArray.forEach((assetData, fileIndex) => {
-      if (signal?.aborted) return;
-      const blobData = blobDataArray[fileIndex];
-      const fileType = filetypeArray[fileIndex];
-      const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-      if (assetData.uploadUrls.length !== totalChunks) return;
-      let fileUploadFailed = false;
-      let maxAttempts = 0;
-      const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
-        const start = i * assetData.blocksize;
-        const end = Math.min(start + assetData.blocksize, blobData.size);
-        const chunk = blobData.slice(start, end);
-        const url = assetData.uploadUrls[i];
-        return async () => {
-          if (fileUploadFailed || signal?.aborted) return;
-          const urlObj = new URL(url.href);
-          const chunkNumber = urlObj.searchParams.get('partNumber') || 0;
-          try {
-            const putOpts = {
-              method: 'PUT',
-              headers: { 'Content-Type': fileType },
-              body: chunk,
-              signal,
-            };
-            const chunkNumberInt = parseInt(chunkNumber, 10);
-            const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default };
-            modifiedRetryConfig.extraRetryCheck = async (response) => !response.ok;
-            const chunkContext = {
-              assetId: assetData.id,
-              blobData: chunk,
-              chunkNumber: chunkNumberInt,
-              fileType,
-            };
-            const { attempt } = await this.networkUtils.fetchFromServiceWithRetry(
-              url.href,
-              putOpts,
-              modifiedRetryConfig,
-              (response, attempt) => this.afterUploadFileToUnity({
-                ...chunkContext,
-                response,
-                attempt,
-              }),
-              (error) => this.errorAfterUploadFileToUnity({
-                ...chunkContext,
-                error,
-              }),
-            );
-            if (attempt > maxAttempts) maxAttempts = attempt;
-            attemptMap.set(fileIndex, maxAttempts);
-          } catch (err) {
-            failedFiles.add({ fileIndex, chunkNumber });
-            fileUploadFailed = true;
-          }
-        };
-      });
-      uploadTasks.push(...chunkTasks);
-    });
-    if (signal?.aborted) return { failedFiles, attemptMap };
-    await this.batchUpload(uploadTasks, batchSize);
-    return { failedFiles, attemptMap };
+    const { batchChunkUpload } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
+    return batchChunkUpload(
+      assetDataArray,
+      blobDataArray,
+      filetypeArray,
+      batchSize,
+      this.uploadChunkToStorage.bind(this),
+      signal,
+    );
   }
 
   async verifyContent(assetData, signal) {
@@ -488,10 +443,11 @@ export default class UploadHandler {
   }
 
   async createInitialAssets(files, workflowId, maxConcurrentFiles) {
+    const { executeInBatches } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
     const blobDataArray = [];
     const assetDataArray = [];
     const fileTypeArray = [];
-    await this.executeInBatches(files, maxConcurrentFiles, async (file) => {
+    await executeInBatches(files, maxConcurrentFiles, async (file) => {
       try {
         const [blobData, assetData] = await Promise.all([
           this.getBlobData(file),
@@ -523,8 +479,9 @@ export default class UploadHandler {
   }
 
   async processUploadedAssets(uploadedAssets) {
+    const { executeInBatches } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
     const assetsToDelete = [];
-    await this.executeInBatches(uploadedAssets, this.getConcurrentLimits().maxConcurrentFiles, async (assetData) => {
+    await executeInBatches(uploadedAssets, this.getConcurrentLimits().maxConcurrentFiles, async (assetData) => {
       const verified = await this.verifyContent(assetData);
       if (!verified) assetsToDelete.push(assetData);
     });
