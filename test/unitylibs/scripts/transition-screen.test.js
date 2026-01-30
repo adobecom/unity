@@ -166,4 +166,54 @@ describe('TransitionScreen', () => {
       stub2.restore();
     });
   });
+
+  describe('getFragmentLink', () => {
+    it('should return domain-specific fragment link when domain matches', () => {
+      screen.workflowCfg = {
+        targetCfg: {
+          splashScreenConfig: {
+            fragmentLink: '/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen',
+            'fragmentLink-acrobat': '/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat',
+          },
+        },
+        productName: 'Acrobat',
+        name: 'workflow-acrobat',
+      };
+      expect(screen.getFragmentLink('acrobat')).to.equal('/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat');
+    });
+
+    it('should fall back to default when domain matches but no domain-specific fragment exists', () => {
+      const fragmentLink = '/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen';
+      screen.workflowCfg = {
+        targetCfg: { splashScreenConfig: { fragmentLink } },
+        productName: 'Acrobat',
+        name: 'workflow-acrobat',
+      };
+      expect(screen.getFragmentLink('acrobat')).to.equal(fragmentLink);
+    });
+
+    it('should return product-specific fragment link for workflow-upload', () => {
+      screen.workflowCfg = {
+        targetCfg: {
+          splashScreenConfig: {
+            fragmentLink: '/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen',
+            'fragmentLink-photoshop': '/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen',
+          },
+        },
+        productName: 'Photoshop',
+        name: 'workflow-upload',
+      };
+      expect(screen.getFragmentLink(undefined)).to.equal('/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen');
+    });
+
+    it('should return default fragment link when no domain match and not workflow-upload', () => {
+      const fragmentLink = '/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen';
+      screen.workflowCfg = {
+        targetCfg: { splashScreenConfig: { fragmentLink } },
+        productName: 'Acrobat',
+        name: 'workflow-acrobat',
+      };
+      expect(screen.getFragmentLink(undefined)).to.equal(fragmentLink);
+    });
+  });
 });
