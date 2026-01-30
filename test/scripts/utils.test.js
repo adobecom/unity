@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { setLibs, getLibs, getHeaders } from '../../unitylibs/scripts/utils.js';
+import { setLibs, getLibs, getHeaders, getMatchedDomain } from '../../unitylibs/scripts/utils.js';
 
 describe('Libs', () => {
   it('Default Libs', () => {
@@ -110,5 +110,29 @@ describe('Headers and Token', () => {
     } finally {
       refreshTokenStub.restore();
     }
+  });
+});
+
+describe('getMatchedDomain', () => {
+  it('should return matching domain key for hostname', () => {
+    const domainMap = { acrobat: ['^(stage\\.)?acrobat\\.adobe\\.com$'] };
+    expect(getMatchedDomain(domainMap, 'acrobat.adobe.com')).to.equal('acrobat');
+    expect(getMatchedDomain(domainMap, 'stage.acrobat.adobe.com')).to.equal('acrobat');
+  });
+
+  it('should match AEM preview/live domains', () => {
+    const domainMap = { acrobat: ['^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$'] };
+    expect(getMatchedDomain(domainMap, 'main--dc-frictionless--adobecom.aem.page')).to.equal('acrobat');
+    expect(getMatchedDomain(domainMap, 'main--dc-frictionless--adobecom.aem.live')).to.equal('acrobat');
+  });
+
+  it('should return undefined when no match', () => {
+    const domainMap = { acrobat: ['^acrobat\\.adobe\\.com$'] };
+    expect(getMatchedDomain(domainMap, 'www.adobe.com')).to.be.undefined;
+  });
+
+  it('should return undefined for empty domainMap', () => {
+    expect(getMatchedDomain({}, 'acrobat.adobe.com')).to.be.undefined;
+    expect(getMatchedDomain()).to.be.undefined;
   });
 });

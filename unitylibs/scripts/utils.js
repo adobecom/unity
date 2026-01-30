@@ -326,9 +326,6 @@ export function sendAnalyticsEvent(event) {
   window._satellite?.track('event', data); // eslint-disable-line no-underscore-dangle
 }
 
-export function getMatchedDomain(domainMap = {}) {
-  const { hostname } = window.location;
-  return Object.keys(domainMap).find((domain) =>
-    domainMap[domain].some((pattern) => new RegExp(pattern).test(hostname))
-  );
+export function getMatchedDomain(domainMap = {}, hostname = window.location.hostname) {
+  return Object.keys(domainMap).find((domain) => domainMap[domain].some((pattern) => new RegExp(pattern).test(hostname)));
 }

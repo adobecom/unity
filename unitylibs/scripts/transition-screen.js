@@ -75,10 +75,9 @@ export default class TransitionScreen {
     }, newDelay);
   }
 
-  getFragmentLink() {
-    const { splashScreenConfig, domainMap } = this.workflowCfg.targetCfg;
-    const matchedDomain = getMatchedDomain(domainMap);
-    if (matchedDomain) {
+  getFragmentLink(matchedDomain = getMatchedDomain(this.workflowCfg.targetCfg.domainMap)) {
+    const { splashScreenConfig } = this.workflowCfg.targetCfg;
+    if (matchedDomain && splashScreenConfig[`fragmentLink-${matchedDomain}`]) {
       return splashScreenConfig[`fragmentLink-${matchedDomain}`];
     }
     const productName = this.workflowCfg.productName.toLowerCase();
