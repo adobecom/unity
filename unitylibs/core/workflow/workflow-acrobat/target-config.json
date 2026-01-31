@@ -52,16 +52,16 @@
     "experimentationOn": ["add-comment"]
   },
   "study-marquee": {
-    "selector": ".study-marquee",
-    "source": ".study-marquee",
-    "target": ".study-marquee",
+    "selector": ".foreground",
+    "source": ".foreground .study-marquee-container",
+    "target": ".foreground .study-marquee-container",
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
-      ".study-marquee": "upload",
+      ".foreground": "upload",
       "#file-upload": "upload"
     },
     "nonpdfSfuProductScreen": ["quiz-maker", "flashcard-maker"],
