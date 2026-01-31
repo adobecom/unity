@@ -50,16 +50,12 @@ class WfInitiator {
   }
 
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Init called with:', { el, project, unityLibs });
     setUnityLibs(unityLibs, project);
     this.el = el;
     this.unityLibs = unityLibs;
     this.project = project;
     this.enabledFeatures = [];
     this.workflowCfg = this.getWorkFlowInformation();
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Workflow config:', this.workflowCfg);
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
@@ -110,10 +106,6 @@ class WfInitiator {
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
     const defaults = targetConfig._defaults || {};
     let targetCfg = null;
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Supported blocks:', supportedBlocks);
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Previous element:', prevElem, prevElem?.classList);
     for (let k = 0; k < supportedBlocks.length; k += 1) {
       const classes = supportedBlocks[k].split('.');
       let hasAllClasses = true;
@@ -127,17 +119,11 @@ class WfInitiator {
         }
       }
       if (hasAllClasses) {
-        // eslint-disable-next-line no-console
-        console.log('Unity Debug - Matched block:', supportedBlocks[k]);
         targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
         break;
       }
     }
-    if (!targetCfg) {
-      // eslint-disable-next-line no-console
-      console.log('Unity Debug - No matching block found');
-      return [null, null, null];
-    }
+    if (!targetCfg) return [null, null, null];
     await this.intEnbReendered(prevElem, targetCfg.selector);
     let ta = null;
     ta = this.createInteractiveArea(prevElem, targetCfg.selector, targetCfg);
@@ -258,24 +244,16 @@ class WfInitiator {
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
     const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee');
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Looking for verb-widget or study-marquee:', verbWidget);
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
-      // eslint-disable-next-line no-console
-      console.log('Unity Debug - Found verb:', verb);
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
     }
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Configured features found:', configuredFeatures.length);
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
       if (!cfName) return;
       const fn = cfName.trim().replace('icon-', '');
       if (supportedFeatures.has(fn)) {
-        // eslint-disable-next-line no-console
-        console.log('Unity Debug - Adding feature:', fn);
         if (!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
@@ -285,8 +263,6 @@ class WfInitiator {
         this.workflowCfg.supportedTexts[fn].push(cf.closest('li').innerText);
       }
     });
-    // eslint-disable-next-line no-console
-    console.log('Unity Debug - Final enabled features:', this.workflowCfg.enabledFeatures);
   }
 }
 
