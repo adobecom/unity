@@ -208,6 +208,8 @@ class WfInitiator {
           'chat-pdf-student',
           'summarize-pdf',
           'pdf-ai',
+          'quiz-maker',
+          'flashcard-maker',
         ]),
       },
       'workflow-ai': {
