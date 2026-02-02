@@ -57,7 +57,7 @@
     "target": ".foreground .study-marquee-container",
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink": "/drafts/ruchika/study-space/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
