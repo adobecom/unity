@@ -112,6 +112,7 @@ export default class ActionBinder {
     upload_warn_delete_asset: -603,
     validation_warn_validate_files: -604,
     warn_fetch_experiment: -605,
+    warn_page_config_call_failed: -606,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -218,13 +219,17 @@ export default class ActionBinder {
     });
   }
 
-  getAcrobatApiConfig() {
-    unityConfig.acrobatEndpoint = {
-      createAsset: `${unityConfig.apiEndPoint}/asset`,
-      finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+  getAcrobatApiConfig(newAPIEndpoint) {
+    const apiEndPoint = newAPIEndpoint || unityConfig.apiEndPoint;
+    return {
+      acrobatEndpoint: {
+        createAsset: `${apiEndPoint}/asset`,
+        finalizeAsset: `${apiEndPoint}/asset/finalize`,
+        getMetadata: `${apiEndPoint}/asset/metadata`,
+        connector: `${apiEndPoint}/asset/connector`,
+        log: `${apiEndPoint}/log`,
+      },
     };
-    return unityConfig;
   }
 
   getAdditionalHeaders() {
@@ -284,6 +289,7 @@ export default class ActionBinder {
             subCode: ActionBinder.ERROR_MAP[errorMetaData.subCode] || errorMetaData.subCode || status,
             desc: errorMetaData.desc || message || info || undefined,
           },
+          logEndPoint: this.acrobatApiConfig?.acrobatEndpoint?.log,
           sendToSplunk,
         },
       },
@@ -292,7 +298,7 @@ export default class ActionBinder {
 
   async dispatchAnalyticsEvent(eventName, data = null) {
     const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
-    const detail = { event: eventName, ...(data && { data }), sendToSplunk };
+    const detail = { event: eventName, ...(data && { data }), logEndPoint: this.acrobatApiConfig?.acrobatEndpoint?.log, sendToSplunk };
     this.block.dispatchEvent(new CustomEvent(unityConfig.trackAnalyticsEvent, { detail }));
   }
 
@@ -429,7 +435,7 @@ export default class ActionBinder {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
       this.networkUtils.fetchFromServiceWithRetry(
-        this.acrobatApiConfig.connectorApiEndPoint,
+        this.acrobatApiConfig.acrobatEndpoint.connector,
         postOpts,
       ),
     );
@@ -537,6 +543,7 @@ export default class ActionBinder {
     const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
     if (!isValid) return;
     await this.initUploadHandler();
+    await this.ensureOptimalEndpoint();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
     } else {
@@ -708,6 +715,28 @@ export default class ActionBinder {
     this.filesData.assetId = assetId;
   }
 
+  async ensureOptimalEndpoint() {
+    if (this.pageConfigPromise) {
+      await this.pageConfigPromise;
+    }
+  }
+
+  async fetchPageConfig() {
+    const getOpts = await getApiCallOptions('GET', unityConfig.apiKey, {}, {});
+    const pageConfigUrl = `${unityConfig.apiEndPoint}/pageConfig`;
+    await this.networkUtils.fetchPageConfig(
+      pageConfigUrl,
+      getOpts,
+      (newEndpoint) => {
+        this.dispatchAnalyticsEvent('pageConfigUpdated', { newEndpoint });
+        this.acrobatApiConfig = this.getAcrobatApiConfig(newEndpoint);
+      },
+      (failure) => {
+        this.dispatchErrorToast('warn_page_config_call_failed', null, null, true, true, { code: 'warn_page_config_call_failed', subCode: failure?.status, desc: failure?.type });
+      },
+    );
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
       const el = b.querySelector(key);
@@ -739,6 +768,9 @@ export default class ActionBinder {
     }
     if (b === this.block) {
       this.loadTransitionScreen();
+    }
+    if (!this.pageConfigPromise) {
+      this.pageConfigPromise = this.fetchPageConfig();
     }
   }
 }

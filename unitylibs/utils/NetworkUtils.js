@@ -151,4 +151,27 @@ export default class NetworkUtils {
       throw error;
     }
   }
+
+  async fetchPageConfig(pageConfigUrl, options, unityEndpointSuccessCb, unityEndpointFailureCb) {
+    try {
+      const TIMEOUT_MS = 5000;
+      const pageConfigResponse = await this.fetchWithTimeout(pageConfigUrl, options, TIMEOUT_MS);
+      if (pageConfigResponse.ok) {
+        const responseJson = await this.getResponseJson(pageConfigResponse, {});
+        const locationHeader = pageConfigResponse.headers.get('location');
+        if (locationHeader) {
+          const newEndpoint = `${locationHeader}/api/v1`;
+          unityEndpointSuccessCb(newEndpoint);
+          return responseJson;
+        }
+        unityEndpointFailureCb({ type: 'no-location-header', status: pageConfigResponse.status });
+        return responseJson;
+      }
+      unityEndpointFailureCb({ type: 'non-ok-status', status: pageConfigResponse.status });
+      return await this.getResponseJson(pageConfigResponse, {});
+    } catch (error) {
+      unityEndpointFailureCb({ type: `Network-error - ${error.message}` });
+      return null;
+    }
+  }
 }
