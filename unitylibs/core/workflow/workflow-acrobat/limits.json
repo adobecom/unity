@@ -156,5 +156,22 @@
       "image/gif",
       "image/tiff"
     ]
+  },
+  "allowed-filetypes-study-spaces": {
+    "allowedFileTypes": [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msexcel",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/x-vnd.oasis.opendocument.spreadsheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/rtf",
+      "text/rtf",
+      "text/plain",
+      "text/vtt"
+    ]
   }
 }
