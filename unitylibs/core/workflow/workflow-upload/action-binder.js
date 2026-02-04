@@ -258,23 +258,9 @@ export default class ActionBinder {
     }
   }
 
-  getCgenQueryParams() {
-    const label = Array.from(this.unityEl.querySelectorAll('div'))
-      .find((el) => el.textContent?.trim().toLowerCase() === 'cgen');
-    const cGenNew = label?.nextElementSibling?.textContent?.trim();
-    const cGenLegacy = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
-    const cgen = (cGenNew || cGenLegacy || '').trim();
-    const params = {};
-    if (!cgen) return params;
-    cgen.split('&').forEach((param) => {
-      const [key, value] = param.split('=');
-      if (key && value) params[key] = value;
-    });
-    return params;
-  }
-  
   async continueInApp(assetId, file) {
-    const queryParams = this.getCgenQueryParams();
+    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+    const queryParams = getCgenQueryParams(this.unityEl);
     const payload = {
       locale: getLocale(),
       additionalQueryParams: queryParams,
