@@ -1,4 +1,4 @@
-export default function getCgenQueryParams(unityEl) {
+export function getCgenQueryParams(unityEl) {
   const label = Array.from(unityEl.querySelectorAll('div'))
     .find((el) => el.textContent?.trim().toLowerCase() === 'cgen');
   const cGenNew = label?.nextElementSibling?.textContent?.trim();
@@ -12,3 +12,4 @@ export default function getCgenQueryParams(unityEl) {
   });
   return params;
 }
+export default getCgenQueryParams;
