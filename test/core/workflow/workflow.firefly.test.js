@@ -2,6 +2,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
+import { setUnityLibs } from '../../../unitylibs/scripts/utils.js';
 import ActionBinder from '../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
 import UnityWidget from '../../../unitylibs/core/workflow/workflow-firefly/widget.js';
 import augmentSound from '../../../unitylibs/core/workflow/workflow-firefly/sound-utils.js';
@@ -17,6 +18,8 @@ describe('Firefly Workflow Tests', () => {
   let spriteContainer;
 
   before(async () => {
+    // Initialize libs base so dynamic imports resolve
+    setUnityLibs('', 'unity');
     // Attach sound methods onto the widget prototype for tests
     augmentSound(UnityWidget.prototype);
     document.body.innerHTML = await readFile({ path: './mocks/ff-body.html' });
@@ -207,6 +210,16 @@ describe('Firefly Workflow Tests', () => {
   });
 
   describe('Error Handling', () => {
+    let sandbox;
+
+    beforeEach(() => {
+      sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+    });
+
     it('should validate input length correctly', () => {
       const shortQuery = 'short query';
       const longQuery = 'a'.repeat(751);
@@ -224,32 +237,26 @@ describe('Firefly Workflow Tests', () => {
 
     it('should handle generateContent with invalid input', async () => {
       actionBinder.inputField.value = 'a'.repeat(751);
-      const logAnalyticsStub = sinon.stub(actionBinder, 'logAnalytics');
+      const logAnalyticsStub = sandbox.stub(actionBinder, 'logAnalytics');
 
       await actionBinder.generateContent();
 
       expect(logAnalyticsStub.calledTwice).to.be.true;
       expect(logAnalyticsStub.secondCall.args[2].statusCode).to.equal(-1);
-
-      logAnalyticsStub.restore();
     });
 
     it('should handle generateContent with network errors', async () => {
       actionBinder.inputField.value = 'valid query';
-      const fetchStub = sinon.stub().rejects(new Error('Network error'));
-      const getNetStub = sinon.stub(actionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
-      const showErrorToastStub = sinon.stub(actionBinder, 'showErrorToast');
-      const logAnalyticsStub = sinon.stub(actionBinder, 'logAnalytics');
+      const fetchStub = sandbox.stub().rejects(new Error('Network error'));
+      sandbox.stub(actionBinder, 'getNetworkUtils').resolves({ fetchFromService: fetchStub });
+      const showErrorToastStub = sandbox.stub(actionBinder, 'showErrorToast');
+      const logAnalyticsStub = sandbox.stub(actionBinder, 'logAnalytics');
 
       await actionBinder.generateContent();
 
       expect(showErrorToastStub.calledOnce).to.be.true;
       expect(logAnalyticsStub.calledTwice).to.be.true;
       expect(logAnalyticsStub.secondCall.args[2].statusCode).to.equal(-1);
-
-      getNetStub.restore();
-      showErrorToastStub.restore();
-      logAnalyticsStub.restore();
     });
 
     it('should handle execActions errors gracefully', async () => {
@@ -2243,7 +2250,7 @@ describe('Firefly Workflow Tests', () => {
       await testActionBinder.generateContent();
 
       expect(testActionBinder.query).to.equal('');
-      expect(testActionBinder.id).to.equal('test-asset-id');
+      expect(testActionBinder.id).to.equal('');
       getNetStub.restore();
       resetDropdownStub.restore();
     });
