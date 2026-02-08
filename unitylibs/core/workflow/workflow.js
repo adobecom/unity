@@ -34,11 +34,17 @@ class WfInitiator {
       ],
       'workflow-ai': sharedWfRes,
       'workflow-firefly': sharedWfRes,
+      'workflow-shareablepromptbar': sharedWfRes,
     };
-    const commonResources = [
-      `${baseWfPath}/target-config.json`,
-      `${baseWfPath}/action-binder.js`,
-    ];
+    const commonResources = workflowName === 'workflow-shareablepromptbar'
+      ? [
+        `${baseWfPath}/target-config.json`,
+        `${baseWfPath}/config-builder.js`,
+      ]
+      : [
+        `${baseWfPath}/target-config.json`,
+        `${baseWfPath}/action-binder.js`,
+      ];
     const wfRes = workflowRes[workflowName] || [];
     const priorityList = [...commonResources, ...wfRes];
     const pfr = await priorityLoad(priorityList);
@@ -220,6 +226,11 @@ class WfInitiator {
         psw,
       },
       'workflow-firefly': {
+        productName: 'Firefly',
+        sfList: new Set(['text-to-mage']),
+        stList: new Set(['prompt', 'tip', 'legal', 'generate']),
+      },
+      'workflow-shareablepromptbar': {
         productName: 'Firefly',
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),

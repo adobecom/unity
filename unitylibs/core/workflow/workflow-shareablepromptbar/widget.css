@@ -1,0 +1,83 @@
+.unity-enabled .interactive-area .ex-unity-wrap {
+  position: relative;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .unity-sprite-container {
+  display: none;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+  position: relative;
+  z-index: 1;
+  width: 720px;
+  max-width: 100%;
+  margin: 16px 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget sp-theme {
+  display: block;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container {
+  width: 100%;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget firefly-prompt-bar-app {
+  display: block;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    width: auto;
+  }
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app {
+  --firefly-prompt-advanced-container-outer-padding: 0px;
+  --firefly-prompt-advanced-container-outer-border-color: transparent;
+  --firefly-prompt-advanced-container-outer-border-width: 0px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app {
+  --firefly-prompt-input-placeholder-opacity: 1;
+  --firefly-prompt-input-placeholder-color: inherit;
+  --firefly-prompt-input-bottom-padding: 0px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app input::placeholder,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app textarea::placeholder {
+  opacity: 1 !important;
+  color: inherit !important;
+  visibility: visible !important;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app::part(generate-button) {
+  --mod-button-background-default: transparent;
+  --spectrum-button-content-color-default: white;
+  --spectrum-button-content-color-hover: white;
+  background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+  background-clip: border-box;
+  background-origin: border-box;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .prompt-bar-app-container firefly-prompt-bar-app#prompt-bar-app::part(generate-button) {
+  --mod-button-background-default: var(--light-bg, #ffffff);
+  --spectrum-button-content-color-default: var(--color-black, #000000);
+  --spectrum-button-content-color-hover: var(--color-black, #000000);
+  background: var(--light-bg, #ffffff);
+  background-clip: border-box;
+  background-origin: border-box;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .text {
+  padding: 0 29px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .ex-unity-wrap {
+  width: inherit;
+}
+
+.prompt-focused {
+  --firefly-prompt-advanced-container-inner-background-color: rgba(255 255 255 / 50%);
+}
