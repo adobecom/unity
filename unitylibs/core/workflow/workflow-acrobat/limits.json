@@ -156,5 +156,8 @@
       "image/gif",
       "image/tiff"
     ]
+  },
+  "allowed-filetypes-heic": {
+    "allowedFileTypes": ["image/heic"]
   }
 }
