@@ -73,6 +73,7 @@ export default class ActionBinder {
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
     'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
+    'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -550,7 +551,12 @@ export default class ActionBinder {
       if (!response.ok) throw new Error('Error loading verb limits');
       const limits = await response.json();
       const combinedLimits = keys.reduce((acc, key) => {
-        if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
+        if (limits[key]) {
+          Object.entries(limits[key]).forEach(([k, v]) => {
+            if (acc[k] && Array.isArray(acc[k]) && Array.isArray(v)) acc[k] = [...new Set([...acc[k], ...v])];
+            else acc[k] = v;
+          });
+        }
         return acc;
       }, {});
       if (!combinedLimits || Object.keys(combinedLimits).length === 0) {
