@@ -388,6 +388,8 @@ describe('ActionBinder', () => {
     });
 
     describe('loadVerbLimits', () => {
+      let fetchStub;
+
       beforeEach(() => {
         mockWorkflowCfg.limits = {
           'test-verb': {
@@ -397,17 +399,201 @@ describe('ActionBinder', () => {
         };
         actionBinder.workflowCfg = mockWorkflowCfg;
         actionBinder.limits = mockWorkflowCfg.limits['test-verb'];
-        // Mock loadVerbLimits to return the expected limits
-        sinon.stub(actionBinder, 'loadVerbLimits').resolves({
-          maxFileSize: 10485760,
-          allowedFileTypes: ['application/pdf'],
-        });
         actionBinder.acrobatApiConfig = { acrobatEndpoint: { getVerbLimits: '/api/verb-limits' } };
+
+        // Create a proper fetch stub
+        fetchStub = sinon.stub(window, 'fetch');
       });
 
-      it('should load verb limits successfully', async () => {
-        const result = await actionBinder.loadVerbLimits('test-verb', ['maxFileSize', 'allowedFileTypes']);
-        expect(result).to.be.an('object');
+      afterEach(() => {
+        fetchStub.restore();
+      });
+
+      it('should load verb limits successfully with single key', async () => {
+        const mockLimits = {
+          single: {
+            uploadType: 'single',
+            maxNumFiles: 1,
+            allowedFileTypes: ['application/pdf'],
+            maxFileSize: 104857600,
+          },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['single']);
+        expect(result).to.deep.equal({
+          uploadType: 'single',
+          maxNumFiles: 1,
+          allowedFileTypes: ['application/pdf'],
+          maxFileSize: 104857600,
+        });
+      });
+
+      it('should merge array values when same property appears in multiple keys', async () => {
+        const mockLimits = {
+          'allowed-filetypes-all': { allowedFileTypes: ['application/pdf', 'image/jpeg', 'image/png'] },
+          'allowed-filetypes-heic': { allowedFileTypes: ['image/heic'] },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['allowed-filetypes-all', 'allowed-filetypes-heic']);
+
+        // Should contain all file types from both keys
+        expect(result.allowedFileTypes).to.be.an('array');
+        expect(result.allowedFileTypes).to.have.lengthOf(4);
+        expect(result.allowedFileTypes).to.include.members(['application/pdf', 'image/jpeg', 'image/png', 'image/heic']);
+      });
+
+      it('should handle heic-to-pdf configuration correctly', async () => {
+        const mockLimits = {
+          hybrid: { uploadType: 'hybrid' },
+          'allowed-filetypes-all': {
+            allowedFileTypes: [
+              'application/pdf',
+              'application/msword',
+              'application/xml',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.ms-powerpoint',
+              'application/mspowerpoint',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/x-tika-ooxml',
+              'application/vnd.ms-excel',
+              'application/msexcel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/x-tika-msworks-spreadsheet',
+              'application/vnd.adobe.form.fillsign',
+              'application/illustrator',
+              'application/rtf',
+              'application/x-indesign',
+              'image/jpeg',
+              'image/png',
+              'image/bmp',
+              'image/gif',
+              'image/vnd.adobe.photoshop',
+              'image/tiff',
+              'message/rfc822',
+              'text/plain',
+              'text/rtf',
+            ],
+          },
+          'allowed-filetypes-heic': { allowedFileTypes: ['image/heic'] },
+          'max-filesize-100-mb': { maxFileSize: 104857600 },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        // Test the actual heic-to-pdf configuration
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb']);
+
+        // Should contain uploadType from hybrid
+        expect(result.uploadType).to.equal('hybrid');
+
+        // Should contain maxFileSize from max-filesize-100-mb
+        expect(result.maxFileSize).to.equal(104857600);
+
+        // Should contain all file types from both allowed-filetypes-all and allowed-filetypes-heic
+        expect(result.allowedFileTypes).to.be.an('array');
+        expect(result.allowedFileTypes).to.have.lengthOf(26); // 25 from 'all' + 1 from 'heic'
+        expect(result.allowedFileTypes).to.include('image/heic');
+        expect(result.allowedFileTypes).to.include('application/pdf');
+        expect(result.allowedFileTypes).to.include('image/jpeg');
+      });
+
+      it('should replace non-array values when same property appears multiple times', async () => {
+        const mockLimits = {
+          'max-filesize-5-mb': { maxFileSize: 5242880 },
+          'max-filesize-100-mb': { maxFileSize: 104857600 },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['max-filesize-5-mb', 'max-filesize-100-mb']);
+
+        // Should use the last value (replacement behavior for non-arrays)
+        expect(result.maxFileSize).to.equal(104857600);
+      });
+
+      it('should remove duplicates when merging arrays', async () => {
+        const mockLimits = {
+          'config-a': { allowedFileTypes: ['application/pdf', 'image/jpeg', 'image/png'] },
+          'config-b': { allowedFileTypes: ['image/jpeg', 'image/png', 'image/heic'] },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['config-a', 'config-b']);
+
+        // Should have unique values only: pdf, jpeg, png, heic
+        expect(result.allowedFileTypes).to.have.lengthOf(4);
+        expect(result.allowedFileTypes).to.include.members(['application/pdf', 'image/jpeg', 'image/png', 'image/heic']);
+      });
+
+      it('should handle missing keys gracefully', async () => {
+        const mockLimits = {
+          single: {
+            uploadType: 'single',
+            maxNumFiles: 1,
+          },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['single', 'non-existent-key']);
+
+        // Should only have properties from 'single'
+        expect(result).to.deep.equal({
+          uploadType: 'single',
+          maxNumFiles: 1,
+        });
+      });
+
+      it('should dispatch error toast when fetch fails', async () => {
+        fetchStub.resolves({
+          ok: false,
+          status: 404,
+        });
+
+        sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['single']);
+
+        expect(actionBinder.dispatchErrorToast.called).to.be.true;
+        expect(result).to.deep.equal({});
+      });
+
+      it('should dispatch error toast when limits are empty', async () => {
+        const mockLimits = {};
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+
+        await actionBinder.loadVerbLimits('workflow-acrobat', ['non-existent']);
+
+        expect(actionBinder.dispatchErrorToast.called).to.be.true;
       });
     });
 
