@@ -4,7 +4,7 @@ import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   //static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets-stage.corp.adobe.com/clio-playground/script-cache/prompt-bar-app/v0/dist/main.bundle.js';
-  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/125.1.0/prompt-bar-app/dist/main.bundle.js';
+  static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/125.1.3/prompt-bar-app/dist/main.bundle.js';
   static SPECTRUM_THEME_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/116.1.4/spectrum-theme/dist/main.bundle.js';
 
   constructor(target, el, workflowCfg, spriteCon) {
@@ -135,66 +135,155 @@ export default class UnityWidget {
     return !!themeMeta || hasThemeTwo;
   }
 
-  getPromptBarSettingsConfig() {
-    const isMax25 = this.isMax25Theme();
-    
-    // Base configuration for non-max25 theme
-    const defaultConfig = {
-      openTarget : "_self",
-      "hideMoreButton": true,
-      "image-generation": {
-        "placeholder": "Describe the image you want to generate",
-        "hideModelPicker": true,
-        "settings": ["model"]
-      },
-      "video-generation": {
-        "placeholder": "Describe the video you want to generate",
-        "hideModelPicker": true,
-        "settings": ["model"]
-      },
-      "sound-fx-generation": {
-        "disabled": true
-      },
-      "vector-generation": {
-        "disabled": true
-      }
+  async getPromptBarSettingsConfig() {
+    const config = {
+      'openTarget': '_self',
+      'hideMoreButton': true,
     };
 
-    // Configuration for max25 theme
-    const max25Config = {
-      "hideMoreButton": true,
-      "image-generation": {
-        "placeholder": "Describe what you want to generate",
-        "hideModelPicker": false,
-        "models": [
-          "google:firefly:colligo:gemini-flash",
-          "adobe:firefly:colligo:image5",
-          "openai:firefly:colligo:gpt-4o",
-          "blackforest:firefly:colligo:flux-kontext-max"
-        ],
-        "defaultModelId": "google:firefly:colligo:gemini-flash",
-        "settings": ["model"],
-        "highlightModelPicker": false
-      },
-      "video-generation": {
-        "placeholder": "Describe what you want to generate",
-        "hideModelPicker": true,
-        "settings": ["model"]
-      },
-      "sound-fx-generation": {
-        "disabled": true
-      },
-      "vector-generation": {
-        "disabled": true
+    // Get placeholder from icon-placeholder-input (same for all applicationIds)
+    const placeholderEl = this.el.querySelector('.icon-placeholder-input');
+    const placeholder = placeholderEl?.parentElement?.textContent?.trim();
+
+    // Find all enabled applications (icon-verb-*)
+    const verbIcons = Array.from(this.el.querySelectorAll('[class*="icon-verb-"]'))
+      .filter((icon) => icon.className.includes('icon-verb-') && !icon.className.includes('icon-default-verb-'));
+
+    const enabledApps = new Set();
+    verbIcons.forEach((icon) => {
+      const match = icon.className.match(/icon-verb-([a-z-]+)/);
+      if (match) {
+        const appId = match[1]; // e.g., "image-generation", "vector-generation"
+        enabledApps.add(appId);
       }
-    };
+    });
 
-    return isMax25 ? max25Config : defaultConfig;
+    // Find default application (icon-default-verb-*)
+    const defaultIcon = this.el.querySelector('[class*="icon-default-verb-"]');
+    if (defaultIcon) {
+      const match = defaultIcon.className.match(/icon-default-verb-([a-z-]+)/);
+      if (match) {
+        config['defaultApplicationId'] = match[1];
+      }
+    }
 
-    // return {
-    //   ...(isMax25 ? max25Config : defaultConfig),
-    //   ...(this.workflowCfg.targetCfg.promptBarSettingsConfig || {}),
-    // };
+    // Check for model picker visibility icons
+    const showModelsAll = this.el.querySelector('.icon-show-models-all');
+    const showModelsFirstParty = this.el.querySelector('.icon-show-models-first-party');
+    const showModelsThirdParty = this.el.querySelector('.icon-show-models-third-party');
+    const showModels = this.el.querySelector('.icon-show-models');
+
+    // Determine hideModelPicker: true if none of the model icons are present
+    const hasModelIcon = !!(showModelsAll || showModelsFirstParty || showModelsThirdParty || showModels);
+    const hideModelPicker = !hasModelIcon;
+
+    // Determine models configuration
+    let modelsConfigByApp = null; // Map of appId -> { models: string[], defaultModelId: string }
+
+    if (showModelsAll) {
+      modelsConfigByApp = 'all';
+    } else if (showModelsFirstParty) {
+      modelsConfigByApp = 'first-party';
+    } else if (showModelsThirdParty) {
+      modelsConfigByApp = 'third-party';
+    } else if (showModels) {
+      // Download JSON and read values
+      try {
+        const { origin } = window.location;
+        const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
+          ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+          : origin;
+        const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-shared.json`;
+        const results = await fetch(modelFile);
+        if (results.ok) {
+          const modelJson = await results.json();
+          const modelsData = modelJson?.content?.data || [];
+          
+          // Map modules to application IDs
+          const moduleToAppMap = {
+            'image': 'image-generation',
+            'video': 'video-generation',
+            'vector': 'vector-generation',
+          };
+
+          // Group models by application
+          modelsConfigByApp = {};
+          Object.values(moduleToAppMap).forEach((appId) => {
+            modelsConfigByApp[appId] = {
+              models: [],
+              defaultModelId: null,
+            };
+          });
+
+          // Process each model entry
+          if (Array.isArray(modelsData) && modelsData.length > 0) {
+            modelsData.forEach((entry) => {
+              const { module, model, default: isDefault } = entry;
+              const appId = moduleToAppMap[module];
+              
+              if (appId && model) {
+                if (!modelsConfigByApp[appId]) {
+                  modelsConfigByApp[appId] = {
+                    models: [],
+                    defaultModelId: null,
+                  };
+                }
+                
+                modelsConfigByApp[appId].models.push(model);
+                
+                // Set default model if this entry has default="true" (only set if not already set)
+                if ((isDefault === 'true' || isDefault === true) && !modelsConfigByApp[appId].defaultModelId) {
+                  modelsConfigByApp[appId].defaultModelId = model;
+                }
+              }
+            });
+
+            // If no default was found, use the first model as default
+            Object.keys(modelsConfigByApp).forEach((appId) => {
+              if (modelsConfigByApp[appId].models.length > 0 && !modelsConfigByApp[appId].defaultModelId) {
+                modelsConfigByApp[appId].defaultModelId = modelsConfigByApp[appId].models[0];
+              }
+            });
+          }
+        }
+      } catch (e) {
+        window.lana?.log(`Message: Error loading models config, Error: ${e}`, this.lanaOptions);
+      }
+    }
+
+    // Build configuration dynamically for each enabled application found in DOM
+    // No hardcoded list - only process applications that are actually present
+    enabledApps.forEach((appId) => {
+      config[appId] = {
+        'placeholder': placeholder,
+        'hideModelPicker': hideModelPicker,
+        'highlightModelPicker': false,
+        'settings': ['model'],
+      };
+
+      // Add models configuration if available
+      if (modelsConfigByApp) {
+        if (typeof modelsConfigByApp === 'string') {
+          // For 'all', 'first-party', 'third-party' cases
+          config[appId]['models'] = modelsConfigByApp;
+          // Explicitly set hideModelPicker to false when models are configured
+          config[appId]['hideModelPicker'] = false;
+        } else if (modelsConfigByApp[appId]) {
+          // For JSON-loaded models, set per-application config
+          const appModelsConfig = modelsConfigByApp[appId];
+          if (appModelsConfig.models && appModelsConfig.models.length > 0) {
+            config[appId]['models'] = appModelsConfig.models;
+            // Explicitly set hideModelPicker to false when models are configured
+            config[appId]['hideModelPicker'] = false;
+            if (appModelsConfig.defaultModelId) {
+              config[appId]['defaultModelId'] = appModelsConfig.defaultModelId;
+            }
+          }
+        }
+      }
+    });
+
+    return config;
   }
 
   async initFireflyPromptBar() {
@@ -230,10 +319,6 @@ export default class UnityWidget {
     fireflyPromptBarApp.style.width = '100%';
     fireflyPromptBarApp.style.height = '100%';
 
-    // Set component properties (equivalent to LitElement property binding)
-    fireflyPromptBarApp.environment = this.getPromptBarEnvironment();
-    fireflyPromptBarApp.settingsConfig = this.getPromptBarSettingsConfig();
-
     // const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
 
     const cgenEl =
@@ -251,10 +336,10 @@ export default class UnityWidget {
       });
     }
 
-    // const queryParams = {"cgen" : "helloVG"};
-
+    // Set component properties before adding to DOM (standard LitElement pattern)
+    fireflyPromptBarApp.environment = this.getPromptBarEnvironment();
+    fireflyPromptBarApp.settingsConfig = await this.getPromptBarSettingsConfig();
     fireflyPromptBarApp.additionalQueryParams = queryParams;
-
     fireflyPromptBarApp.autoFocus = false;
 
     this.promptBarApp = fireflyPromptBarApp;
