@@ -295,31 +295,24 @@ export const unityConfig = (() => {
       ...commoncfg,
     },
     stage: {
-      apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
-      connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
-      env: 'stage',
-      ...commoncfg,
-    },
-    dev: {
       apiEndPoint: 'https://unity-dev.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity-dev.adobe.io/api/v1/asset/connector',
       env: 'stage',
+      ...commoncfg,
     },
   };
-  // always use dev
-  return cfg.dev;
-  // if (host.includes('hlx.page')
-  //   || host.includes('hlx.live')
-  //   || host.includes('aem.page')
-  //   || host.includes('aem.live')
-  //   || host.includes('localhost')
-  //   || host.includes('stage.adobe')
-  //   || host.includes('stage.acrobat.adobe')
-  //   || host.includes('corp.adobe')
-  //   || host.includes('graybox.adobe')) {
-  //   return cfg.stage;
-  // }
-  // return cfg.prod;
+  if (host.includes('hlx.page')
+    || host.includes('hlx.live')
+    || host.includes('aem.page')
+    || host.includes('aem.live')
+    || host.includes('localhost')
+    || host.includes('stage.adobe')
+    || host.includes('stage.acrobat.adobe')
+    || host.includes('corp.adobe')
+    || host.includes('graybox.adobe')) {
+    return cfg.stage;
+  }
+  return cfg.prod;
 })();
 
 export function sendAnalyticsEvent(event) {
