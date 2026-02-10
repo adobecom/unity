@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 
+
 import { createTag } from '../../../scripts/utils.js';
 import PromptBarConfigBuilder from './config-builder.js';
 
