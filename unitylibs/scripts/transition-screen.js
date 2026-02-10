@@ -3,6 +3,7 @@ import {
   localizeLink,
   loadImg,
   loadArea,
+  getMatchedDomain,
 } from './utils.js';
 
 export default class TransitionScreen {
@@ -74,12 +75,21 @@ export default class TransitionScreen {
     }, newDelay);
   }
 
+  getFragmentLink(matchedDomain = getMatchedDomain(this.workflowCfg.targetCfg.domainMap)) {
+    const { splashScreenConfig } = this.workflowCfg.targetCfg;
+    if (matchedDomain && splashScreenConfig[`fragmentLink-${matchedDomain}`]) {
+      return splashScreenConfig[`fragmentLink-${matchedDomain}`];
+    }
+    const productName = this.workflowCfg.productName.toLowerCase();
+    if (this.workflowCfg.name === 'workflow-upload') {
+      return splashScreenConfig[`fragmentLink-${productName}`];
+    }
+    return splashScreenConfig.fragmentLink;
+  }
+
   async loadSplashFragment() {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
-    const productName = this.workflowCfg.productName.toLowerCase();
-    const fragmentLink = this.workflowCfg.name === 'workflow-upload'
-      ? this.workflowCfg.targetCfg.splashScreenConfig[`fragmentLink-${productName}`]
-      : this.workflowCfg.targetCfg.splashScreenConfig.fragmentLink;
+    const fragmentLink = this.getFragmentLink();
     this.splashFragmentLink = localizeLink(`${window.location.origin}${fragmentLink}`);
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();

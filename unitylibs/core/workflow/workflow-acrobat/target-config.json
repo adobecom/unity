@@ -7,7 +7,14 @@
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink-acrobat": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat",
       "splashScreenParent": "body"
+    },
+    "domainMap": {
+      "acrobat": [
+        "^(stage\\.)?acrobat\\.adobe\\.com$",
+        "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
+      ]
     },
     "actionMap": {
       ".verb-wrapper": "upload",
