@@ -140,15 +140,11 @@ export default class UnityWidget {
       'openTarget': '_self',
       'hideMoreButton': true,
     };
-
-    // Get placeholder from icon-placeholder-input (same for all applicationIds)
     const placeholderEl = this.el.querySelector('.icon-placeholder-input');
     const placeholder = placeholderEl?.parentElement?.textContent?.trim();
 
-    // Find all enabled applications (icon-verb-*)
     const verbIcons = Array.from(this.el.querySelectorAll('[class*="icon-verb-"]'))
       .filter((icon) => icon.className.includes('icon-verb-') && !icon.className.includes('icon-default-verb-'));
-
     const enabledApps = new Set();
     verbIcons.forEach((icon) => {
       const match = icon.className.match(/icon-verb-([a-z-]+)/);
@@ -158,7 +154,6 @@ export default class UnityWidget {
       }
     });
 
-    // Find default application (icon-default-verb-*)
     const defaultIcon = this.el.querySelector('[class*="icon-default-verb-"]');
     if (defaultIcon) {
       const match = defaultIcon.className.match(/icon-default-verb-([a-z-]+)/);
@@ -166,28 +161,48 @@ export default class UnityWidget {
         config['defaultApplicationId'] = match[1];
       }
     }
+    const { hideModelPicker, modelsConfigByApp } = await this.getModelsConfig();
+    const allApplicationIds = ['image-generation', 'video-generation', 'vector-generation', 'sound-fx-generation'];
+    allApplicationIds.forEach((appId) => {
+      if (!enabledApps.has(appId)) {
+        config[appId] = {
+          disabled: true,
+        };
+      } else {
+        config[appId] = {
+          'placeholder': placeholder,
+          'hideModelPicker': hideModelPicker,
+          'highlightModelPicker': false,
+          'settings': ['model'],
+        };
 
-    // Check for model picker visibility icons
-    const showModelsAll = this.el.querySelector('.icon-show-models-all');
-    const showModelsFirstParty = this.el.querySelector('.icon-show-models-first-party');
-    const showModelsThirdParty = this.el.querySelector('.icon-show-models-third-party');
+        if (modelsConfigByApp) {
+          if (typeof modelsConfigByApp === 'string') {
+            config[appId]['models'] = modelsConfigByApp;
+          } else if (modelsConfigByApp[appId]) {
+            const appModelsConfig = modelsConfigByApp[appId];
+            if (appModelsConfig.models && appModelsConfig.models.length > 0) {
+              config[appId]['models'] = appModelsConfig.models;
+              if (appModelsConfig.defaultModelId) {
+                config[appId]['defaultModelId'] = appModelsConfig.defaultModelId;
+              }
+            }
+          }
+        }
+      }
+    });
+    return config;
+  }
+
+  async getModelsConfig() {
     const showModels = this.el.querySelector('.icon-show-models');
-
-    // Determine hideModelPicker: true if none of the model icons are present
-    const hasModelIcon = !!(showModelsAll || showModelsFirstParty || showModelsThirdParty || showModels);
-    const hideModelPicker = !hasModelIcon;
-
-    // Determine models configuration
-    let modelsConfigByApp = null; // Map of appId -> { models: string[], defaultModelId: string }
-
-    if (showModelsAll) {
-      modelsConfigByApp = 'all';
-    } else if (showModelsFirstParty) {
-      modelsConfigByApp = 'first-party';
-    } else if (showModelsThirdParty) {
-      modelsConfigByApp = 'third-party';
-    } else if (showModels) {
-      // Download JSON and read values
+    const showModelsWithSuffix = this.el.querySelector('[class*="icon-show-models-"]');
+    const hideModelPicker = !(showModels || showModelsWithSuffix);
+    if (showModelsWithSuffix) {
+      const match = showModelsWithSuffix.className.match(/icon-show-models-([a-z-]+)/);
+      return { hideModelPicker, modelsConfigByApp: match ? match[1] : null };
+    }
+    if (showModels) {
       try {
         const { origin } = window.location;
         const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
@@ -195,95 +210,54 @@ export default class UnityWidget {
           : origin;
         const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-shared.json`;
         const results = await fetch(modelFile);
-        if (results.ok) {
-          const modelJson = await results.json();
-          const modelsData = modelJson?.content?.data || [];
-          
-          // Map modules to application IDs
-          const moduleToAppMap = {
-            'image': 'image-generation',
-            'video': 'video-generation',
-            'vector': 'vector-generation',
-          };
-
-          // Group models by application
-          modelsConfigByApp = {};
-          Object.values(moduleToAppMap).forEach((appId) => {
-            modelsConfigByApp[appId] = {
-              models: [],
-              defaultModelId: null,
-            };
-          });
-
-          // Process each model entry
-          if (Array.isArray(modelsData) && modelsData.length > 0) {
-            modelsData.forEach((entry) => {
-              const { module, model, default: isDefault } = entry;
-              const appId = moduleToAppMap[module];
-              
-              if (appId && model) {
-                if (!modelsConfigByApp[appId]) {
-                  modelsConfigByApp[appId] = {
-                    models: [],
-                    defaultModelId: null,
-                  };
-                }
-                
-                modelsConfigByApp[appId].models.push(model);
-                
-                // Set default model if this entry has default="true" (only set if not already set)
-                if ((isDefault === 'true' || isDefault === true) && !modelsConfigByApp[appId].defaultModelId) {
-                  modelsConfigByApp[appId].defaultModelId = model;
-                }
-              }
-            });
-
-            // If no default was found, use the first model as default
-            Object.keys(modelsConfigByApp).forEach((appId) => {
-              if (modelsConfigByApp[appId].models.length > 0 && !modelsConfigByApp[appId].defaultModelId) {
-                modelsConfigByApp[appId].defaultModelId = modelsConfigByApp[appId].models[0];
-              }
-            });
-          }
+        if (!results.ok) {
+          return { hideModelPicker, modelsConfigByApp: null };
         }
-      } catch (e) {
-        window.lana?.log(`Message: Error loading models config, Error: ${e}`, this.lanaOptions);
-      }
-    }
-
-    // Build configuration dynamically for each enabled application found in DOM
-    // No hardcoded list - only process applications that are actually present
-    enabledApps.forEach((appId) => {
-      config[appId] = {
-        'placeholder': placeholder,
-        'hideModelPicker': hideModelPicker,
-        'highlightModelPicker': false,
-        'settings': ['model'],
-      };
-
-      // Add models configuration if available
-      if (modelsConfigByApp) {
-        if (typeof modelsConfigByApp === 'string') {
-          // For 'all', 'first-party', 'third-party' cases
-          config[appId]['models'] = modelsConfigByApp;
-          // Explicitly set hideModelPicker to false when models are configured
-          config[appId]['hideModelPicker'] = false;
-        } else if (modelsConfigByApp[appId]) {
-          // For JSON-loaded models, set per-application config
-          const appModelsConfig = modelsConfigByApp[appId];
-          if (appModelsConfig.models && appModelsConfig.models.length > 0) {
-            config[appId]['models'] = appModelsConfig.models;
-            // Explicitly set hideModelPicker to false when models are configured
-            config[appId]['hideModelPicker'] = false;
-            if (appModelsConfig.defaultModelId) {
-              config[appId]['defaultModelId'] = appModelsConfig.defaultModelId;
+        const modelJson = await results.json();
+        const modelsData = modelJson?.content?.data || [];
+        const moduleToAppMap = {
+          'image': 'image-generation',
+          'video': 'video-generation',
+          'vector': 'vector-generation',
+        };
+        const modelsConfigByApp = {};
+        Object.values(moduleToAppMap).forEach((appId) => {
+          modelsConfigByApp[appId] = {
+            models: [],
+            defaultModelId: null,
+          };
+        });
+        if (!Array.isArray(modelsData) || modelsData.length === 0) {
+          return { hideModelPicker, modelsConfigByApp };
+        }
+        modelsData.forEach((entry) => {
+          const { module, model, default: isDefault } = entry;
+          const appId = moduleToAppMap[module];
+          if (appId && model) {
+            if (!modelsConfigByApp[appId]) {
+              modelsConfigByApp[appId] = {
+                models: [],
+                defaultModelId: null,
+              };
+            }
+            modelsConfigByApp[appId].models.push(model);
+            if ((isDefault === 'true' || isDefault === true) && !modelsConfigByApp[appId].defaultModelId) {
+              modelsConfigByApp[appId].defaultModelId = model;
             }
           }
-        }
+        });
+        Object.keys(modelsConfigByApp).forEach((appId) => {
+          if (modelsConfigByApp[appId].models.length > 0 && !modelsConfigByApp[appId].defaultModelId) {
+            modelsConfigByApp[appId].defaultModelId = modelsConfigByApp[appId].models[0];
+          }
+        });
+        return { hideModelPicker, modelsConfigByApp };
+      } catch (e) {
+        window.lana?.log(`Message: Error loading models config, Error: ${e}`, this.lanaOptions);
+        return { hideModelPicker, modelsConfigByApp: null };
       }
-    });
-
-    return config;
+    }
+    return { hideModelPicker, modelsConfigByApp: null };
   }
 
   async initFireflyPromptBar() {
