@@ -2675,7 +2675,7 @@ describe('Firefly Workflow Tests', () => {
         'placeholder-variation-label-1': 'Var A',
       };
       const data = [
-        { verb: 'sound', prompt: 'sound prompt', assetid: '', env: 'stage', variationUrls: 'u1||u2||u3' },
+        { verb: 'sound', prompt: 'sound prompt', assetid: '', env: 'stage', variationUrls: 'https://u1,https://u2,https://u3' },
         { verb: 'image', prompt: 'img prompt', assetid: 'i1', env: 'stage', variationUrls: '' },
         { verb: 'video', prompt: 'vid prompt', assetid: 'v1', env: 'stage', variationUrls: '' },
       ];
@@ -2683,8 +2683,8 @@ describe('Firefly Workflow Tests', () => {
       expect(pm.sound).to.exist;
       expect(pm.sound[0].assetid).to.equal('');
       expect(pm.sound[0].variations).to.deep.equal([
-        { label: 'Var A', url: 'u1' },
-        { label: 'Var B', url: 'u2' },
+        { label: 'Var A', url: 'https://u1' },
+        { label: 'Var B', url: 'https://u2' },
       ]);
       expect(pm.image).to.exist;
       expect(pm.image[0].variations).to.deep.equal([]);
@@ -2696,7 +2696,7 @@ describe('Firefly Workflow Tests', () => {
       const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
       const promptObj = {
         prompt: 'sound prompt',
-        variations: [{ label: 'Sample', url: 'u1' }],
+        variations: [{ label: 'Sample', url: 'https://u1' }],
       };
       const details = testWidget.renderSoundDetails(promptObj);
       const tile = details.querySelector('.variation-tile');
