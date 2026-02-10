@@ -585,10 +585,10 @@ export default class UnityWidget {
               .map(({ val }) => val);
             let urls = [];
             if (typeof item.variationUrls === 'string' && item.variationUrls.trim()) {
-              const parts = item.variationUrls.split(',https');
+              const parts = item.variationUrls.split(/\s*,\s*https:\/\//);
               urls = parts.map((part, idx) => {
                 const trimmed = part.trim();
-                return idx === 0 ? trimmed : `https${trimmed}`;
+                return idx === 0 ? trimmed : `https://${trimmed}`;
               }).filter((url) => url);
             }
             variations = labels.map((lbl, idx) => ({ label: lbl, url: urls[idx] || '' }));

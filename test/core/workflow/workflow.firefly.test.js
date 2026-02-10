@@ -2671,11 +2671,13 @@ describe('Firefly Workflow Tests', () => {
     it('should populate variations only for sound using placeholder labels and urls', () => {
       const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
       testWidget.workflowCfg.placeholder = {
+        'placeholder-variation-label-4': 'Var D',
+        'placeholder-variation-label-3': 'Var C',
         'placeholder-variation-label-2': 'Var B',
         'placeholder-variation-label-1': 'Var A',
       };
       const data = [
-        { verb: 'sound', prompt: 'sound prompt', assetid: '', env: 'stage', variationUrls: 'https://u1,https://u2,https://u3' },
+        { verb: 'sound', prompt: 'sound prompt', assetid: '', env: 'stage', variationUrls: 'https://u1,https://u2, https://u3 , https://u4' },
         { verb: 'image', prompt: 'img prompt', assetid: 'i1', env: 'stage', variationUrls: '' },
         { verb: 'video', prompt: 'vid prompt', assetid: 'v1', env: 'stage', variationUrls: '' },
       ];
@@ -2685,6 +2687,8 @@ describe('Firefly Workflow Tests', () => {
       expect(pm.sound[0].variations).to.deep.equal([
         { label: 'Var A', url: 'https://u1' },
         { label: 'Var B', url: 'https://u2' },
+        { label: 'Var C', url: 'https://u3' },
+        { label: 'Var D', url: 'https://u4' }
       ]);
       expect(pm.image).to.exist;
       expect(pm.image[0].variations).to.deep.equal([]);
