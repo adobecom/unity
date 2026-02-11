@@ -2,14 +2,6 @@
 import { getConfig, unityConfig } from '../../../scripts/utils.js';
 
 export default class PromptBarConfigBuilder {
-  static STATIC_CONFIG = {
-    hideMoreButton: true,
-    openTarget: '_self',
-    autoFocus: false,
-    settings: ['model'],
-    highlightModelPicker: false,
-  };
-
   constructor(el, workflowCfg) {
     this.el = el;
     this.workflowCfg = workflowCfg;
@@ -35,55 +27,14 @@ export default class PromptBarConfigBuilder {
     };
   }
 
-  async fetchModels() {
-    if (this.models) return this.models;
-    try {
-      const { origin } = window.location;
-      const baseUrl = this.getBaseUrl(origin);
-      const modelFile = `${baseUrl}/unity/configs/prompt/shareable-promptbar-models.json`;
-      const response = await fetch(modelFile);
-      if (!response.ok) { throw new Error(response.status); }
-      const modelJson = await response.json();
-      this.models = modelJson?.content?.data || [];
-      return this.models;
-    } catch (e) {
-      window.lana?.log(`Message: Failed to fetch models, Error: ${e}`, this.lanaOptions);
-      return [];
-    }
-  }
-
-  getBaseUrl(origin) {
-    if (origin.includes('.aem.') || origin.includes('.hlx.')) {
-      const env = origin.includes('.hlx.') ? 'hlx' : 'aem';
-      return `https://main--unity--adobecom.${env}.live`;
-    }
-    return origin;
-  }
-
-  getDefaultModelId() {
-    
-  }
-
-  extractAuthoredConfig() {
-    const config = {};
-    config.enabledVerbs = this.extractEnabledVerbs();
-    config.placeholders = this.extractPlaceholders();
-    config.authoredSettings = this.extractAuthoredSettings();
-
-    this.authoredConfig = config;
-    return config;
-  }
-
-  extractEnabledVerbs() {
-    //TODO: implement this
-  }
-
-  extractPlaceholders() {
-    //TODO: implement this
-  }
-
   getAdditionalQueryParams() {
-    const cgen = this.el.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
+    const cgenEl =
+      this.widgetWrap?.querySelector('.icon-cgen')
+      || this.unityEl?.querySelector('.icon-cgen')
+      || document.querySelector('.icon-cgen');
+
+    const cgen = cgenEl?.parentElement?.textContent?.trim();
+
     const queryParams = {};
     if (cgen) {
       cgen.split('&').forEach((param) => {
@@ -94,41 +45,138 @@ export default class PromptBarConfigBuilder {
     return queryParams;
   }
 
-  extractAuthoredSettings() {
-    //TODO: implement this for hide model picker, highlight model picker, default model id
+  async getPromptBarSettingsConfig() {
+    const config = {
+      openTarget: this.workflowCfg.targetCfg.openTarget,
+      hideMoreButton: this.workflowCfg.targetCfg.hideMoreButton,
+      autoFocus: this.workflowCfg.targetCfg.autoFocus,
+      numRows: this.workflowCfg.targetCfg.numRows,
+    };
+    const placeholderEl = this.el.querySelector('.icon-placeholder-input');
+    const placeholder = placeholderEl?.parentElement?.textContent?.trim();
+
+    const verbIcons = Array.from(this.el.querySelectorAll('[class*="icon-verb-"]'))
+      .filter((icon) => icon.className.includes('icon-verb-') && !icon.className.includes('icon-default-verb-'));
+    const enabledApps = new Set();
+    verbIcons.forEach((icon) => {
+      const match = icon.className.match(/icon-verb-([a-z-]+)/);
+      if (match) {
+        const appId = match[1]; // e.g., "image-generation", "vector-generation"
+        enabledApps.add(appId);
+      }
+    });
+
+    const defaultIcon = this.el.querySelector('[class*="icon-default-verb-"]');
+    if (defaultIcon) {
+      const match = defaultIcon.className.match(/icon-default-verb-([a-z-]+)/);
+      if (match) {
+        const [, defaultAppId] = match;
+        config.defaultApplicationId = defaultAppId;
+      }
+    }
+    const { hideModelPicker, modelsConfigByApp } = await this.getModelsConfig();
+    const allApplicationIds = ['image-generation', 'video-generation', 'vector-generation', 'sound-fx-generation'];
+    allApplicationIds.forEach((appId) => {
+      if (!enabledApps.has(appId)) {
+        config[appId] = {
+          disabled: true,
+        };
+      } else {
+        config[appId] = {
+          placeholder,
+          hideModelPicker,
+          highlightModelPicker: this.workflowCfg.targetCfg.highlightModelPicker,
+          settings: this.workflowCfg.targetCfg.settings,
+        };
+
+        if (modelsConfigByApp) {
+          if (typeof modelsConfigByApp === 'string') {
+            config[appId]['models'] = modelsConfigByApp;
+          } else if (modelsConfigByApp[appId]) {
+            const appModelsConfig = modelsConfigByApp[appId];
+            if (appModelsConfig.models && appModelsConfig.models.length > 0) {
+              config[appId]['models'] = appModelsConfig.models;
+              if (appModelsConfig.defaultModelId) {
+                config[appId]['defaultModelId'] = appModelsConfig.defaultModelId;
+              }
+            }
+          }
+        }
+      }
+    });
+    return config;
   }
 
-  async buildSettingsConfig(options = {}) {
-    // combine all the settings from the authored config + static config + models data
-
-    return {
-      hideMoreButton: true,
-      openTarget: '_self',
-      'image-generation': {
-        placeholder: 'Describe the image you want to generate',
-        hideModelPicker: true,
-        settings: ['model'],
-      },
-      'video-generation': {
-        placeholder: 'Describe the video you want to generate',
-        hideModelPicker: true,
-        settings: ['model'],
-      },
-      'sound-fx-generation': {
-        disabled: true,
-      },
-      'vector-generation': {
-        disabled: true,
-      },
-    };
+  async getModelsConfig() {
+    const showModels = this.el.querySelector('.icon-show-models');
+    const showModelsWithSuffix = this.el.querySelector('[class*="icon-show-models-"]');
+    const hideModelPicker = !(showModels || showModelsWithSuffix);
+    if (showModelsWithSuffix) {
+      const match = showModelsWithSuffix.className.match(/icon-show-models-([a-z-]+)/);
+      return { hideModelPicker, modelsConfigByApp: match ? match[1] : null };
+    }
+    if (showModels) {
+      try {
+        const { origin } = window.location;
+        const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
+          ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+          : origin;
+        const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-shared.json`;
+        const results = await fetch(modelFile);
+        if (!results.ok) {
+          return { hideModelPicker, modelsConfigByApp: null };
+        }
+        const modelJson = await results.json();
+        const modelsData = modelJson?.content?.data || [];
+        const moduleToAppMap = {
+          image: 'image-generation',
+          video: 'video-generation',
+          vector: 'vector-generation',
+        };
+        const modelsConfigByApp = {};
+        Object.values(moduleToAppMap).forEach((appId) => {
+          modelsConfigByApp[appId] = {
+            models: [],
+            defaultModelId: null,
+          };
+        });
+        if (!Array.isArray(modelsData) || modelsData.length === 0) {
+          return { hideModelPicker, modelsConfigByApp };
+        }
+        modelsData.forEach((entry) => {
+          const { module, model, default: isDefault } = entry;
+          const appId = moduleToAppMap[module];
+          if (appId && model) {
+            if (!modelsConfigByApp[appId]) {
+              modelsConfigByApp[appId] = {
+                models: [],
+                defaultModelId: null,
+              };
+            }
+            modelsConfigByApp[appId].models.push(model);
+            if ((isDefault === 'true' || isDefault === true) && !modelsConfigByApp[appId].defaultModelId) {
+              modelsConfigByApp[appId].defaultModelId = model;
+            }
+          }
+        });
+        Object.keys(modelsConfigByApp).forEach((appId) => {
+          if (modelsConfigByApp[appId].models.length > 0 && !modelsConfigByApp[appId].defaultModelId) {
+            modelsConfigByApp[appId].defaultModelId = modelsConfigByApp[appId].models[0];
+          }
+        });
+        return { hideModelPicker, modelsConfigByApp };
+      } catch (e) {
+        window.lana?.log(`Message: Error loading models config, Error: ${e}`, this.lanaOptions);
+        return { hideModelPicker, modelsConfigByApp: null };
+      }
+    }
+    return { hideModelPicker, modelsConfigByApp: null };
   }
 
   async build(options = {}) {
-    this.extractAuthoredConfig();
-
     const [environment, settingsConfig] = await Promise.all([
       Promise.resolve(this.buildEnvironmentConfig()),
-      this.buildSettingsConfig(options),
+      this.getPromptBarSettingsConfig(options),
     ]);
 
     return {

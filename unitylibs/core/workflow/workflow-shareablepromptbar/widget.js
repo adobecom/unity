@@ -30,8 +30,6 @@ export default class UnityWidget {
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
 
-    this.workflowCfg.placeholder = this.popPlaceholders();
-
     try {
       const [, , promptBarConfig] = await Promise.all([
         this.loadScript(UnityWidget.SPECTRUM_THEME_SCRIPT_URL, 'Spectrum theme'),
@@ -50,15 +48,6 @@ export default class UnityWidget {
     this.addWidget();
     if (this.workflowCfg.targetCfg?.floatPrompt) this.initIO?.();
     return this.workflowCfg.targetCfg?.actionMap || {};  //check if this is needed
-  }
-
-  popPlaceholders() {
-    return Object.fromEntries(
-      [...this.el.querySelectorAll('[class*="placeholder"]')].map((element) => [
-        element.classList[1]?.replace('icon-', '') || '',
-        element.closest('li')?.innerText || '',
-      ]).filter(([key]) => key),
-    );
   }
 
   addWidget() {
@@ -108,8 +97,6 @@ export default class UnityWidget {
       environment,
       settingsConfig,
       additionalQueryParams,
-      autoFocus: this.workflowCfg?.targetCfg?.autoFocus ?? false,
-      numRows: 2,
     });
     this.promptBarApp = fireflyPromptBarApp;
 

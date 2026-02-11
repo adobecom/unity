@@ -2,6 +2,12 @@
 
 {
   "hero-marquee": {
+    "openTarget": "_self",
+    "hideMoreButton": true,
+    "settings": ["model"],
+    "autoFocus": false,
+    "highlightModelPicker": false,
+    "numRows": 2,
     "type": "text",
     "selector": ".copy",
     "handler": "render",
@@ -18,6 +24,12 @@
     "sendSplunkAnalytics": true
   },
   "showcase-marquee": {
+    "openTarget": "_self",
+    "hideMoreButton": true,
+    "settings": ["model"],
+    "autoFocus": false,
+    "highlightModelPicker": false,
+    "numRows": 2,
     "type": "text",
     "selector": ".text",
     "handler": "render",
