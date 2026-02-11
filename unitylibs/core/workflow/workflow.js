@@ -70,6 +70,7 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
+    const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
@@ -82,7 +83,6 @@ class WfInitiator {
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
-    const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     await new ActionBinder(
       this.el,
       this.workflowCfg,
@@ -232,8 +232,7 @@ class WfInitiator {
       },
       'workflow-shareablepromptbar': {
         productName: 'Firefly',
-        sfList: new Set(['text-to-mage']),
-        stList: new Set(['prompt', 'tip', 'legal', 'generate']),
+        sfList: new Set(['text-to-mage'])
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
@@ -279,6 +278,4 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
   await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
-  //dummy commit to sync code on codebus
-  //dummy commit to sync code on codebus
 }

@@ -1,16 +1,6 @@
 /* eslint-disable class-methods-use-this */
-//dummy commit to sync code on codebusp
 import { getConfig, unityConfig } from '../../../scripts/utils.js';
 
-/**
- * PromptBarConfigBuilder - Builds configuration for the shareable prompt bar component
- *
- * Configuration Sources:
- * 1. Static defaults (defined in this file)
- * 2. Environment detection (stage/prod based on hostname)
- * 3. Models from SharePoint (/unity/configs/prompt/model-picker.json)
- * 4. Authored content from document (placeholders, query params, enabled verbs)
- */
 export default class PromptBarConfigBuilder {
   static STATIC_CONFIG = {
     hideMoreButton: true,
@@ -78,7 +68,6 @@ export default class PromptBarConfigBuilder {
     const config = {};
     config.enabledVerbs = this.extractEnabledVerbs();
     config.placeholders = this.extractPlaceholders();
-    config.additionalQueryParams = this.extractQueryParams();
     config.authoredSettings = this.extractAuthoredSettings();
 
     this.authoredConfig = config;
@@ -137,14 +126,14 @@ export default class PromptBarConfigBuilder {
   async build(options = {}) {
     this.extractAuthoredConfig();
 
-    const [environment, settings] = await Promise.all([
+    const [environment, settingsConfig] = await Promise.all([
       Promise.resolve(this.buildEnvironmentConfig()),
       this.buildSettingsConfig(options),
     ]);
 
     return {
       environment,
-      settings,
+      settingsConfig,
       additionalQueryParams: this.getAdditionalQueryParams(),
     };
   }

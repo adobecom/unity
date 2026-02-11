@@ -6,7 +6,6 @@ import PromptBarConfigBuilder from './config-builder.js';
 
 export default class UnityWidget {
   static PROMPT_BAR_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/127.1.6/prompt-bar-app/dist/main.bundle.js';
-
   static SPECTRUM_THEME_SCRIPT_URL = 'https://clio-assets.adobe.com/clio-playground/script-cache/116.1.4/spectrum-theme/dist/main.bundle.js';
 
   constructor(target, el, workflowCfg, spriteCon) {
@@ -19,9 +18,6 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-ShareablePromptBar' };
     this.promptBarApp = null;
     this.promptBarConfig = null;
-    this.selectedVerbType = '';
-    this.selectedModelId = '';
-    this.selectedModelVersion = '';
     this.configBuilder = new PromptBarConfigBuilder(this.el, this.workflowCfg);
   }
 
@@ -107,11 +103,14 @@ export default class UnityWidget {
     fireflyPromptBarApp.style.width = '100%';
     fireflyPromptBarApp.style.height = '100%';
 
-    const { environment, settings, additionalQueryParams } = this.promptBarConfig;
-    fireflyPromptBarApp.environment = environment;
-    fireflyPromptBarApp.settingsConfig = settings;
-    fireflyPromptBarApp.additionalQueryParams = additionalQueryParams;
-
+    const { environment, settingsConfig, additionalQueryParams } = this.promptBarConfig;
+    Object.assign(fireflyPromptBarApp, {
+      environment,
+      settingsConfig,
+      additionalQueryParams,
+      autoFocus: this.workflowCfg?.targetCfg?.autoFocus ?? false,
+      numRows: 2,
+    });
     this.promptBarApp = fireflyPromptBarApp;
 
     promptBarContainer.appendChild(fireflyPromptBarApp);
@@ -120,11 +119,26 @@ export default class UnityWidget {
   }
 
   setupEvents() {
-    promptBarApp.addEventListener('prompt-advanced-generate', (e) => {
+    this.promptBarApp.addEventListener('prompt-bar-app-setting-interact', (e) => {
+      this.handleSettingInteract(e);
+    });
+
+    this.promptBarApp.addEventListener('prompt-advanced-generate', (e) => {
       this.widgetWrap.dispatchEvent(new CustomEvent('firefly-prompt-generate', {
         detail: { prompt: e.detail?.prompt, originalEvent: e },
       }));
     }, { capture: true });
+  }
+
+  handleSettingInteract(e) {
+    const { detail } = e;
+    if (detail?.settingId === 'prompt') {
+      if (detail?.type === 'focus') {
+        this.promptBarApp?.classList.add('prompt-focused');
+      } else if (detail?.type === 'blur') {
+        this.promptBarApp?.classList.remove('prompt-focused');
+      }
+    }
   }
 }
 
