@@ -49,8 +49,6 @@ export default class PromptBarConfigBuilder {
     const config = {
       openTarget: this.workflowCfg.targetCfg.openTarget,
       hideMoreButton: this.workflowCfg.targetCfg.hideMoreButton,
-      autoFocus: this.workflowCfg.targetCfg.autoFocus,
-      numRows: this.workflowCfg.targetCfg.numRows,
     };
     const placeholderEl = this.el.querySelector('.icon-placeholder-input');
     const placeholder = placeholderEl?.parentElement?.textContent?.trim();

@@ -97,6 +97,8 @@ export default class UnityWidget {
       environment,
       settingsConfig,
       additionalQueryParams,
+      autoFocus: this.workflowCfg?.targetCfg?.autoFocus ?? false,
+      numRows: this.workflowCfg?.targetCfg?.numRows ?? 2
     });
     this.promptBarApp = fireflyPromptBarApp;
 
