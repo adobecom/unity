@@ -259,16 +259,8 @@ export default class ActionBinder {
   }
 
   async continueInApp(assetId, file) {
-    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
-    const queryParams = {};
-    if (cgen) {
-      cgen.split('&').forEach((param) => {
-        const [key, value] = param.split('=');
-        if (key && value) {
-          queryParams[key] = value;
-        }
-      });
-    }
+    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+    const queryParams = getCgenQueryParams(this.unityEl);
     const payload = {
       locale: getLocale(),
       additionalQueryParams: queryParams,

@@ -24,9 +24,16 @@ function createErrorMap(errorList) {
 async function loadErrorMessages(verb) {
   const { locale } = getConfig();
   const { origin } = window.location;
-  const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-    ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-    : origin;
+  let baseUrl;
+  if (origin.includes('.aem.') || origin.includes('.hlx.')) {
+    baseUrl = `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`;
+  } else if (origin === 'https://stage.acrobat.adobe.com') {
+    baseUrl = 'https://www.stage.adobe.com';
+  } else if (origin === 'https://acrobat.adobe.com') {
+    baseUrl = 'https://www.adobe.com';
+  } else {
+    baseUrl = origin;
+  }
   const errorFile = locale.prefix && locale.prefix !== '/'
     ? `${baseUrl}${locale.prefix}/unity/configs/errors/${verb}.json`
     : `${baseUrl}/unity/configs/errors/${verb}.json`;

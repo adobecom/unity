@@ -136,7 +136,6 @@ describe('ActionBinder', () => {
     });
   });
 
-
   describe('ActionBinder', () => {
     describe('dispatchErrorToast', () => {
       it('should dispatch error toast event with correct data', async () => {
@@ -389,6 +388,8 @@ describe('ActionBinder', () => {
     });
 
     describe('loadVerbLimits', () => {
+      let fetchStub;
+
       beforeEach(() => {
         mockWorkflowCfg.limits = {
           'test-verb': {
@@ -398,17 +399,201 @@ describe('ActionBinder', () => {
         };
         actionBinder.workflowCfg = mockWorkflowCfg;
         actionBinder.limits = mockWorkflowCfg.limits['test-verb'];
-        // Mock loadVerbLimits to return the expected limits
-        sinon.stub(actionBinder, 'loadVerbLimits').resolves({
-          maxFileSize: 10485760,
-          allowedFileTypes: ['application/pdf'],
-        });
         actionBinder.acrobatApiConfig = { acrobatEndpoint: { getVerbLimits: '/api/verb-limits' } };
+
+        // Create a proper fetch stub
+        fetchStub = sinon.stub(window, 'fetch');
       });
 
-      it('should load verb limits successfully', async () => {
-        const result = await actionBinder.loadVerbLimits('test-verb', ['maxFileSize', 'allowedFileTypes']);
-        expect(result).to.be.an('object');
+      afterEach(() => {
+        fetchStub.restore();
+      });
+
+      it('should load verb limits successfully with single key', async () => {
+        const mockLimits = {
+          single: {
+            uploadType: 'single',
+            maxNumFiles: 1,
+            allowedFileTypes: ['application/pdf'],
+            maxFileSize: 104857600,
+          },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['single']);
+        expect(result).to.deep.equal({
+          uploadType: 'single',
+          maxNumFiles: 1,
+          allowedFileTypes: ['application/pdf'],
+          maxFileSize: 104857600,
+        });
+      });
+
+      it('should merge array values when same property appears in multiple keys', async () => {
+        const mockLimits = {
+          'allowed-filetypes-all': { allowedFileTypes: ['application/pdf', 'image/jpeg', 'image/png'] },
+          'allowed-filetypes-heic': { allowedFileTypes: ['image/heic'] },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['allowed-filetypes-all', 'allowed-filetypes-heic']);
+
+        // Should contain all file types from both keys
+        expect(result.allowedFileTypes).to.be.an('array');
+        expect(result.allowedFileTypes).to.have.lengthOf(4);
+        expect(result.allowedFileTypes).to.include.members(['application/pdf', 'image/jpeg', 'image/png', 'image/heic']);
+      });
+
+      it('should handle heic-to-pdf configuration correctly', async () => {
+        const mockLimits = {
+          hybrid: { uploadType: 'hybrid' },
+          'allowed-filetypes-all': {
+            allowedFileTypes: [
+              'application/pdf',
+              'application/msword',
+              'application/xml',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.ms-powerpoint',
+              'application/mspowerpoint',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/x-tika-ooxml',
+              'application/vnd.ms-excel',
+              'application/msexcel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/x-tika-msworks-spreadsheet',
+              'application/vnd.adobe.form.fillsign',
+              'application/illustrator',
+              'application/rtf',
+              'application/x-indesign',
+              'image/jpeg',
+              'image/png',
+              'image/bmp',
+              'image/gif',
+              'image/vnd.adobe.photoshop',
+              'image/tiff',
+              'message/rfc822',
+              'text/plain',
+              'text/rtf',
+            ],
+          },
+          'allowed-filetypes-heic': { allowedFileTypes: ['image/heic'] },
+          'max-filesize-100-mb': { maxFileSize: 104857600 },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        // Test the actual heic-to-pdf configuration
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb']);
+
+        // Should contain uploadType from hybrid
+        expect(result.uploadType).to.equal('hybrid');
+
+        // Should contain maxFileSize from max-filesize-100-mb
+        expect(result.maxFileSize).to.equal(104857600);
+
+        // Should contain all file types from both allowed-filetypes-all and allowed-filetypes-heic
+        expect(result.allowedFileTypes).to.be.an('array');
+        expect(result.allowedFileTypes).to.have.lengthOf(26); // 25 from 'all' + 1 from 'heic'
+        expect(result.allowedFileTypes).to.include('image/heic');
+        expect(result.allowedFileTypes).to.include('application/pdf');
+        expect(result.allowedFileTypes).to.include('image/jpeg');
+      });
+
+      it('should replace non-array values when same property appears multiple times', async () => {
+        const mockLimits = {
+          'max-filesize-5-mb': { maxFileSize: 5242880 },
+          'max-filesize-100-mb': { maxFileSize: 104857600 },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['max-filesize-5-mb', 'max-filesize-100-mb']);
+
+        // Should use the last value (replacement behavior for non-arrays)
+        expect(result.maxFileSize).to.equal(104857600);
+      });
+
+      it('should remove duplicates when merging arrays', async () => {
+        const mockLimits = {
+          'config-a': { allowedFileTypes: ['application/pdf', 'image/jpeg', 'image/png'] },
+          'config-b': { allowedFileTypes: ['image/jpeg', 'image/png', 'image/heic'] },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['config-a', 'config-b']);
+
+        // Should have unique values only: pdf, jpeg, png, heic
+        expect(result.allowedFileTypes).to.have.lengthOf(4);
+        expect(result.allowedFileTypes).to.include.members(['application/pdf', 'image/jpeg', 'image/png', 'image/heic']);
+      });
+
+      it('should handle missing keys gracefully', async () => {
+        const mockLimits = {
+          single: {
+            uploadType: 'single',
+            maxNumFiles: 1,
+          },
+        };
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['single', 'non-existent-key']);
+
+        // Should only have properties from 'single'
+        expect(result).to.deep.equal({
+          uploadType: 'single',
+          maxNumFiles: 1,
+        });
+      });
+
+      it('should dispatch error toast when fetch fails', async () => {
+        fetchStub.resolves({
+          ok: false,
+          status: 404,
+        });
+
+        sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+
+        const result = await actionBinder.loadVerbLimits('workflow-acrobat', ['single']);
+
+        expect(actionBinder.dispatchErrorToast.called).to.be.true;
+        expect(result).to.deep.equal({});
+      });
+
+      it('should dispatch error toast when limits are empty', async () => {
+        const mockLimits = {};
+
+        fetchStub.resolves({
+          ok: true,
+          json: async () => mockLimits,
+        });
+
+        sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+
+        await actionBinder.loadVerbLimits('workflow-acrobat', ['non-existent']);
+
+        expect(actionBinder.dispatchErrorToast.called).to.be.true;
       });
     });
 
@@ -642,9 +827,7 @@ describe('ActionBinder', () => {
     describe('Redirect Methods', () => {
       beforeEach(() => {
         // Mock network utilities for ActionBinder
-        actionBinder.networkUtils = { 
-          fetchFromServiceWithRetry: sinon.stub().resolves({ url: 'https://test-redirect-url.com' }) 
-        };
+        actionBinder.networkUtils = { fetchFromServiceWithRetry: sinon.stub().resolves({ url: 'https://test-redirect-url.com' }) };
         actionBinder.acrobatApiConfig = { connectorApiEndPoint: 'https://test-api.com/connector' };
         actionBinder.workflowCfg = {
           enabledFeatures: ['test-feature'],
@@ -670,16 +853,16 @@ describe('ActionBinder', () => {
       describe('getRedirectUrl', () => {
         it('should successfully get redirect URL', async () => {
           const cOpts = { test: 'options' };
-          
+
           // Directly stub the method to simulate successful redirect URL retrieval
-          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async (opts) => {
+          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async () => {
             // Simulate calling the network utils
             actionBinder.networkUtils.fetchFromServiceWithRetry();
             // Set the expected redirect URL
             actionBinder.redirectUrl = 'https://test-redirect-url.com';
             return 'https://test-redirect-url.com';
           });
-          
+
           await actionBinder.getRedirectUrl(cOpts);
 
           expect(actionBinder.networkUtils.fetchFromServiceWithRetry.called).to.be.true;
@@ -689,15 +872,15 @@ describe('ActionBinder', () => {
         it('should handle error when getting redirect URL', async () => {
           const error = new Error('Test error');
           error.status = 500;
-          
+
           // Directly stub the method to simulate error handling
-          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async (opts) => {
+          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async () => {
             // Simulate the error handling behavior
             await actionBinder.showTransitionScreen();
             await actionBinder.dispatchErrorToast(
               'pre_upload_error_fetch_redirect_url',
               500,
-              `Exception thrown when retrieving redirect URL. Message: ${error.message}, Options: ${JSON.stringify(opts)}`,
+              `Exception thrown when retrieving redirect URL. Message: ${error.message}, Options: ${JSON.stringify({ test: 'options' })}`,
               false,
               undefined,
               {
@@ -728,7 +911,7 @@ describe('ActionBinder', () => {
 
         it('should handle missing URL in response', async () => {
           // Directly stub the method to simulate missing URL handling
-          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async (opts) => {
+          sinon.stub(actionBinder, 'getRedirectUrl').callsFake(async () => {
             // Simulate the missing URL error handling behavior
             await actionBinder.showTransitionScreen();
             await actionBinder.dispatchErrorToast(
@@ -938,6 +1121,7 @@ describe('ActionBinder', () => {
           targetCfg: { verbsWithoutMfuToSfuFallback: ['compress-pdf'] },
         };
         actionBinder.sanitizeFileName = sinon.stub().resolves('sanitized-file.pdf');
+        actionBinder.filterFilesWithPdflite = sinon.stub().callsFake(async (files) => files);
         actionBinder.validateFiles = sinon.stub().resolves({ isValid: true, validFiles: [] });
         actionBinder.handleSingleFileUpload = sinon.stub().resolves();
         actionBinder.handleMultiFileUpload = sinon.stub().resolves();
@@ -953,6 +1137,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledWith('test.pdf')).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleSingleFileUpload.calledWith(files)).to.be.true;
@@ -969,6 +1154,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleMultiFileUpload.calledWith(files)).to.be.true;
@@ -986,6 +1172,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleSingleFileUpload.calledWith(validFile)).to.be.true;
@@ -999,6 +1186,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledWith('test.pdf')).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.false;
         expect(actionBinder.handleSingleFileUpload.called).to.be.false;
@@ -1017,6 +1205,7 @@ describe('ActionBinder', () => {
         await actionBinder.handleFileUpload(files);
 
         expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
         expect(actionBinder.validateFiles.called).to.be.true;
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleMultiFileUpload.calledWith(validFile)).to.be.true;
@@ -1291,7 +1480,7 @@ describe('ActionBinder', () => {
         // Mock transition screen to avoid early return
         actionBinder.transitionScreen = { test: 'existing' };
         actionBinder.handlePreloads = sinon.stub().resolves();
-        
+
         const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
         await actionBinder.acrobatActionMaps('interrupt');
         expect(spy.called).to.be.true;
@@ -1302,7 +1491,7 @@ describe('ActionBinder', () => {
         // Mock transition screen to avoid early return
         actionBinder.transitionScreen = { test: 'existing' };
         actionBinder.handlePreloads = sinon.stub().resolves();
-        
+
         const spy = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
         const files = [new File(['test'], 'test.pdf', { type: 'application/pdf' })];
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
@@ -1551,7 +1740,6 @@ describe('ActionBinder', () => {
       });
     });
 
-
     describe('handleRedirect Error Handling', () => {
       beforeEach(() => {
         actionBinder.workflowCfg = {
@@ -1575,8 +1763,7 @@ describe('ActionBinder', () => {
         const cOpts = { payload: {} };
         const filesData = { type: 'application/pdf', size: 123, count: 1 };
 
-        // Mock the redirect URL fetch to succeed  
-        const mockResponse = { url: 'https://test-redirect.com' };
+        // Mock the redirect URL fetch to succeed
         sinon.stub(actionBinder, 'getRedirectUrl').resolves();
         actionBinder.redirectUrl = 'https://test-redirect.com';
 
@@ -2006,6 +2193,41 @@ describe('ActionBinder', () => {
     it('should support pdf-word-ppt-txt file types for pdf-ai', () => {
       const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
       expect(pdfAiLimits).to.include('allowed-filetypes-pdf-word-ppt-txt');
+    });
+  });
+
+  describe('filterFilesWithPdflite', () => {
+    beforeEach(() => {
+      actionBinder.MULTI_FILE = false;
+      actionBinder.limits = {
+        pageLimit: {
+          maxNumPages: 100,
+          minNumPages: 2,
+        },
+      };
+      sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+    });
+
+    it('should return files unchanged if no page limits configured', async () => {
+      delete actionBinder.limits.pageLimit;
+      const files = [{ type: 'application/pdf', name: 'test.pdf' }];
+      const result = await actionBinder.filterFilesWithPdflite(files);
+      expect(result).to.equal(files);
+      expect(actionBinder.dispatchErrorToast.called).to.be.false;
+    });
+
+    it('should have filterFilesWithPdflite method', () => {
+      expect(actionBinder.filterFilesWithPdflite).to.be.a('function');
+    });
+
+    it('should call filterFilesWithPdflite when page limits exist', async () => {
+      const files = [{ type: 'application/pdf', name: 'test.pdf' }];
+
+      // With page limits configured, should attempt to validate
+      const result = await actionBinder.filterFilesWithPdflite(files);
+
+      // Should return an array (either validated or original files)
+      expect(Array.isArray(result)).to.be.true;
     });
   });
 });

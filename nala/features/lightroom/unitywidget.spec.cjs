@@ -24,7 +24,7 @@ module.exports = {
       tcid: '2',
       name: '@lr-unityLrProductpage',
       path: '/drafts/nala/unity/lightroom',
-      url: 'f0.lightroom.adobe.com',
+      url: 'f0stage.lightroom.adobe.com',
       tags: '@lr-unity @smoke @regression @unity',
     },
   ],
