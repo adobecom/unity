@@ -238,14 +238,8 @@ export default class ActionBinder {
 
   async generateContent() {
     await this.initAnalytics();
-    const cgen = this.unityEl.querySelector('.icon-cgen')?.nextSibling?.textContent?.trim();
-    const queryParams = {};
-    if (cgen) {
-      cgen.split('&').forEach((param) => {
-        const [key, value] = param.split('=');
-        if (key && value) queryParams[key] = value;
-      });
-    }
+    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+    const queryParams = getCgenQueryParams(this.unityEl);
     const currentVerb = this.getSelectedVerbType();
     const genBtn = this.block.querySelector('.gen-btn');
     const override = genBtn?.dataset?.soundPrompt;
