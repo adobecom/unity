@@ -72,8 +72,7 @@ export default class PromptBarConfigBuilder {
         config.defaultApplicationId = defaultAppId;
       }
     }
-    const { hideModelPicker, modelsConfigByApp } = await this.getModelsConfig();
-    const allApplicationIds = ['image-generation', 'video-generation', 'vector-generation', 'sound-fx-generation'];
+    const { hideModelPicker, modelsConfigByApp, allApplicationIds = [] } = await this.getModelsConfig();
     allApplicationIds.forEach((appId) => {
       if (!enabledApps.has(appId)) {
         config[appId] = {
@@ -109,41 +108,46 @@ export default class PromptBarConfigBuilder {
     const showModels = this.el.querySelector('.icon-show-models');
     const showModelsWithSuffix = this.el.querySelector('[class*="icon-show-models-"]');
     const hideModelPicker = !(showModels || showModelsWithSuffix);
+
+    let allApplicationIds = [];
+    let modelJson = null;
+    try {
+      const { origin } = window.location;
+      const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
+        ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+        : origin;
+      const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-shared.json`;
+      const results = await fetch(modelFile);
+      if (results.ok) {
+        modelJson = await results.json();
+        const verbsData = modelJson?.verbs?.data || [];
+        if (Array.isArray(verbsData)) {
+          const collected = [];
+          verbsData.forEach((entry) => {
+            const sv = entry.supportedVerbs;
+            if (Array.isArray(sv)) {
+              collected.push(...sv);
+            } else if (sv != null && sv !== '') {
+              collected.push(sv);
+            }
+          });
+          allApplicationIds = [...new Set(collected)];
+        }
+      }
+    } catch (e) {
+      window.lana?.log(`Message: Error loading models config, Error: ${e}`, this.lanaOptions);
+    }
+
     if (showModelsWithSuffix) {
       const match = showModelsWithSuffix.className.match(/icon-show-models-([a-z-]+)/);
-      return { hideModelPicker, modelsConfigByApp: match ? match[1] : null };
+      return { hideModelPicker, modelsConfigByApp: match ? match[1] : null, allApplicationIds };
     }
-    if (showModels) {
-      try {
-        const { origin } = window.location;
-        const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-          ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-          : origin;
-        const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-shared.json`;
-        const results = await fetch(modelFile);
-        if (!results.ok) {
-          return { hideModelPicker, modelsConfigByApp: null };
-        }
-        const modelJson = await results.json();
-        const modelsData = modelJson?.content?.data || [];
-        const moduleToAppMap = {
-          image: 'image-generation',
-          video: 'video-generation',
-          vector: 'vector-generation',
-        };
-        const modelsConfigByApp = {};
-        Object.values(moduleToAppMap).forEach((appId) => {
-          modelsConfigByApp[appId] = {
-            models: [],
-            defaultModelId: null,
-          };
-        });
-        if (!Array.isArray(modelsData) || modelsData.length === 0) {
-          return { hideModelPicker, modelsConfigByApp };
-        }
+    if (showModels && modelJson) {
+      const modelsData = modelJson?.content?.data || [];
+      const modelsConfigByApp = {};
+      if (Array.isArray(modelsData) && modelsData.length > 0) {
         modelsData.forEach((entry) => {
-          const { module, model, default: isDefault } = entry;
-          const appId = moduleToAppMap[module];
+          const { module: appId, model, default: isDefault } = entry;
           if (appId && model) {
             if (!modelsConfigByApp[appId]) {
               modelsConfigByApp[appId] = {
@@ -162,13 +166,10 @@ export default class PromptBarConfigBuilder {
             modelsConfigByApp[appId].defaultModelId = modelsConfigByApp[appId].models[0];
           }
         });
-        return { hideModelPicker, modelsConfigByApp };
-      } catch (e) {
-        window.lana?.log(`Message: Error loading models config, Error: ${e}`, this.lanaOptions);
-        return { hideModelPicker, modelsConfigByApp: null };
       }
+      return { hideModelPicker, modelsConfigByApp, allApplicationIds };
     }
-    return { hideModelPicker, modelsConfigByApp: null };
+    return { hideModelPicker, modelsConfigByApp: null, allApplicationIds };
   }
 
   async build(options = {}) {
