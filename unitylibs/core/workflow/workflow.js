@@ -207,6 +207,7 @@ class WfInitiator {
           'chat-pdf-student',
           'summarize-pdf',
           'pdf-ai',
+          'heic-to-pdf',
         ]),
       },
       'workflow-ai': {

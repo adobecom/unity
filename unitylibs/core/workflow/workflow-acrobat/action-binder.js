@@ -10,6 +10,7 @@ import {
   priorityLoad,
   isGuestUser,
   getApiCallOptions,
+  getMatchedDomain,
 } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
 
@@ -73,6 +74,7 @@ export default class ActionBinder {
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
     'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
+    'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -550,7 +552,12 @@ export default class ActionBinder {
       if (!response.ok) throw new Error('Error loading verb limits');
       const limits = await response.json();
       const combinedLimits = keys.reduce((acc, key) => {
-        if (limits[key]) Object.entries(limits[key]).forEach(([k, v]) => { acc[k] = v; });
+        if (limits[key]) {
+          Object.entries(limits[key]).forEach(([k, v]) => {
+            if (acc[k] && Array.isArray(acc[k]) && Array.isArray(v)) acc[k] = [...new Set([...acc[k], ...v])];
+            else acc[k] = v;
+          });
+        }
         return acc;
       }, {});
       if (!combinedLimits || Object.keys(combinedLimits).length === 0) {
@@ -605,6 +612,9 @@ export default class ActionBinder {
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
+      if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
+        document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
+      }
       if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
       } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;

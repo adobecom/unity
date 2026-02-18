@@ -583,8 +583,14 @@ export default class UnityWidget {
               .filter(({ idx, val }) => Number.isFinite(idx) && val)
               .sort((a, b) => a.idx - b.idx)
               .map(({ val }) => val);
-            const urls = (typeof item.variationUrls === 'string' ? item.variationUrls : '')
-              .split('||').map((s) => s.trim()).filter((s) => s);
+            let urls = [];
+            if (typeof item.variationUrls === 'string' && item.variationUrls.trim()) {
+              const parts = item.variationUrls.split(/\s*,\s*https:\/\//);
+              urls = parts.map((part, idx) => {
+                const trimmed = part.trim();
+                return idx === 0 ? trimmed : `https://${trimmed}`;
+              }).filter((url) => url);
+            }
             variations = labels.map((lbl, idx) => ({ label: lbl, url: urls[idx] || '' }));
           }
           promptMap[item.verb].push({ prompt: item.prompt, assetid: item.assetid, variations });
