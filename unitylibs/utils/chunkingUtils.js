@@ -1,4 +1,9 @@
 /* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
+
+export function getAssetId(assetData) {
+  return assetData.id ?? assetData.assetId;
+}
 
 export function createFileChunks(file, blockSize) {
   const totalChunks = Math.ceil(file.size / blockSize);
@@ -65,74 +70,6 @@ export async function createChunkUploadTasks(uploadUrls, file, blockSize, upload
   }
 }
 
-export async function batchChunkUpload(fileData, blobDataArray, filetypeArray, batchSize, uploadFunction, signal = null, options = {}) {
-  const { onFileComplete, onFileError } = options;
-  const failedFiles = new Set();
-  const attemptMap = new Map();
-  const uploadTasks = [];
-  fileData.forEach((assetData, fileIndex) => {
-    if (signal?.aborted) return;
-    const blobData = blobDataArray[fileIndex];
-    const fileType = filetypeArray[fileIndex];
-    const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
-    if (assetData.uploadUrls.length !== totalChunks) {
-      const error = new Error(`Mismatch between chunks and URLs for file ${fileIndex}`);
-      failedFiles.add({ fileIndex, error });
-      return;
-    }
-    let fileUploadFailed = false;
-    let maxAttempts = 0;
-    const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
-      const start = i * assetData.blocksize;
-      const end = Math.min(start + assetData.blocksize, blobData.size);
-      const chunk = blobData.slice(start, end);
-      const url = assetData.uploadUrls[i];
-      return async () => {
-        if (fileUploadFailed || signal?.aborted) return null;
-        const urlString = typeof url === 'object' ? url.href : url;
-        const chunkNumber = extractChunkNumber(url, i);
-        try {
-          const result = await uploadFunction(urlString, chunk, fileType, assetData.assetId, signal, chunkNumber);
-          const attempt = result?.attempt || 1;
-          if (attempt > maxAttempts) maxAttempts = attempt;
-          attemptMap.set(`${fileIndex}-${i}`, attempt);
-          return result;
-        } catch (err) {
-          fileUploadFailed = true;
-          failedFiles.add({ fileIndex, chunkIndex: i, error: err });
-          throw err;
-        }
-      };
-    });
-    uploadTasks.push({
-      fileIndex,
-      assetData,
-      chunkTasks,
-      maxAttempts: () => maxAttempts,
-    });
-  });
-  if (signal?.aborted) return { failedFiles, attemptMap };
-  try {
-    for (let i = 0; i < uploadTasks.length; i += batchSize) {
-      const batch = uploadTasks.slice(i, i + batchSize);
-      const batchPromises = batch.map(async (task) => {
-        try {
-          await Promise.all(task.chunkTasks.map((chunkTask) => chunkTask()));
-          if (onFileComplete) onFileComplete(task.fileIndex, task.assetData);
-        } catch (error) {
-          if (onFileError) onFileError(task.fileIndex, error);
-          throw error;
-        }
-      });
-      await Promise.all(batchPromises);
-    }
-
-    return { failedFiles, attemptMap };
-  } catch (error) {
-    return { failedFiles, attemptMap };
-  }
-}
-
 export function calculateChunkProgress(completedChunks, totalChunks, baseProgress = 0) {
   const chunkProgress = (completedChunks / totalChunks) * (100 - baseProgress);
   return Math.min(baseProgress + chunkProgress, 100);
@@ -156,23 +93,86 @@ export const DEFAULT_CHUNK_CONFIG = {
   batchSize: 5,
 };
 
-export class ChunkingUtils {
-  constructor(config = {}) {
-    this.config = { ...DEFAULT_CHUNK_CONFIG, ...config };
+export async function executeInBatches(items, maxConcurrent, processFn) {
+  const executing = new Set();
+  for (const item of items) {
+    const promise = processFn(item)
+      .then(() => { executing.delete(promise); })
+      .catch(() => { executing.delete(promise); });
+    executing.add(promise);
+    if (executing.size >= maxConcurrent) await Promise.any(executing);
   }
+  if (executing.size > 0) {
+    await Promise.all(executing);
+  }
+}
 
-  // eslint-disable-next-line class-methods-use-this
-  async uploadFile(params) {
-    const {
-      uploadUrls, file, blockSize, uploadFunction, signal, options = {},
-    } = params;
-    return createChunkUploadTasks(uploadUrls, file, blockSize, uploadFunction, signal, options);
-  }
+export async function batchChunkUpload(
+  assetDataArray,
+  blobDataArray,
+  filetypeArray,
+  batchSize,
+  uploadFunction,
+  signal = null,
+  options = {},
+) {
+  const { onChunkSuccess, onChunkError } = options;
+  const uploadTasks = [];
+  const failedFiles = new Set();
+  const attemptMap = new Map();
 
-  async batchUpload(params) {
-    const {
-      fileData, blobDataArray, filetypeArray, batchSize = this.config.batchSize, uploadFunction, signal, options = {},
-    } = params;
-    return batchChunkUpload(fileData, blobDataArray, filetypeArray, batchSize, uploadFunction, signal, options);
-  }
+  assetDataArray.forEach((assetData, fileIndex) => {
+    if (signal?.aborted) return;
+    const blobData = blobDataArray[fileIndex];
+    const fileType = filetypeArray[fileIndex];
+    const totalChunks = Math.ceil(blobData.size / assetData.blocksize);
+
+    if (assetData.uploadUrls.length !== totalChunks) return;
+
+    let fileUploadFailed = false;
+    let maxAttempts = 0;
+
+    const chunkTasks = Array.from({ length: totalChunks }, (_, i) => {
+      const start = i * assetData.blocksize;
+      const end = Math.min(start + assetData.blocksize, blobData.size);
+      const chunk = blobData.slice(start, end);
+      const url = assetData.uploadUrls[i];
+
+      return async () => {
+        if (fileUploadFailed || signal?.aborted) return null;
+        const urlString = typeof url === 'object' ? url.href : url;
+        const chunkNumber = extractChunkNumber(url, i);
+        const assetId = getAssetId(assetData);
+
+        const chunkContext = {
+          assetId,
+          blobData: chunk,
+          chunkNumber,
+          fileType,
+          fileIndex,
+          chunkIndex: i,
+        };
+
+        try {
+          const result = await uploadFunction(urlString, chunk, fileType, assetId, signal, chunkNumber, chunkContext);
+          const attempt = result?.attempt || 1;
+          if (attempt > maxAttempts) maxAttempts = attempt;
+          attemptMap.set(fileIndex, maxAttempts);
+          if (onChunkSuccess) onChunkSuccess(chunkContext, result);
+          return result;
+        } catch (err) {
+          failedFiles.add({ fileIndex, chunkNumber });
+          fileUploadFailed = true;
+          if (onChunkError) onChunkError(chunkContext, err);
+          return null;
+        }
+      };
+    });
+
+    uploadTasks.push(...chunkTasks);
+  });
+
+  if (signal?.aborted) return { failedFiles, attemptMap };
+  await executeInBatches(uploadTasks, batchSize, async (task) => { await task(); });
+  return { failedFiles, attemptMap };
 }
