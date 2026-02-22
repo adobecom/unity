@@ -1,23 +1,11 @@
 {
   "_defaults": {
     "renderWidget": false,
-    "source": ".verb-wrapper .verb-container",
-    "target": ".verb-wrapper .verb-container",
-    "showSplashScreen": true,
-    "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
-      "fragmentLink-acrobat": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat",
-      "splashScreenParent": "body"
-    },
     "domainMap": {
       "acrobat": [
         "^(stage\\.)?acrobat\\.adobe\\.com$",
         "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
       ]
-    },
-    "actionMap": {
-      ".verb-wrapper": "upload",
-      "#file-upload": "upload"
     },
     "uploadLimits": {
       "HIGH_END": { "files": 10, "chunks": 10 },
@@ -62,6 +50,7 @@
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink-acrobat": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat",
       "splashScreenParent": "body"
     },
     "actionMap": {
