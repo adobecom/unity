@@ -1,24 +1,11 @@
 {
-  "verb-widget": {
-    "selector": ".verb-wrapper",
+  "_defaults": {
     "renderWidget": false,
-    "source": ".verb-wrapper .verb-container",
-    "target": ".verb-wrapper .verb-container",
-    "showSplashScreen": true,
-    "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
-      "fragmentLink-acrobat": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat",
-      "splashScreenParent": "body"
-    },
     "domainMap": {
       "acrobat": [
         "^(stage\\.)?acrobat\\.adobe\\.com$",
         "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
       ]
-    },
-    "actionMap": {
-      ".verb-wrapper": "upload",
-      "#file-upload": "upload"
     },
     "uploadLimits": {
       "HIGH_END": { "files": 10, "chunks": 10 },
@@ -28,8 +15,8 @@
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
-    "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "heic-to-pdf"],
-    "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai"],
+    "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "heic-to-pdf", "quiz-maker", "flashcard-maker"],
+    "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "quiz-maker", "flashcard-maker"],
     "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
     "experimentationOn": ["add-comment"],
     "fetchApiConfig": {
@@ -54,6 +41,35 @@
           "retryDelay": 1000
         }
       }
+    }
+  },
+  "verb-widget": {
+    "selector": ".verb-wrapper",
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink-acrobat": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": "upload",
+      "#file-upload": "upload"
+    }
+  },
+  "study-marquee": {
+    "selector": ".foreground",
+    "source": ".foreground .study-marquee-container",
+    "target": ".foreground .study-marquee-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/drafts/ruchika/study-space/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".foreground": "upload",
+      "#file-upload": "upload"
     }
   }
 }
