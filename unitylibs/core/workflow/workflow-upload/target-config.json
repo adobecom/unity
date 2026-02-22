@@ -40,5 +40,47 @@
       "#file-upload": "upload"
     },
     "sendSplunkAnalytics": true
+  },
+  "upload-marquee": {
+    "selector": ".drop-zone",
+    "renderWidget": false,
+    "source": ".drop-zone",
+    "target": ".drop-zone",
+    "productTag-photoshop": "PS",
+    "productTag-lightroom": "LR",
+    "productTag-firefly": "FF",
+    "limits": {
+      "maxNumFiles": 1
+    },
+    "limits-photoshop": {
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
+      "maxFileSize": 40000000,
+      "maxHeight": 8000,
+      "maxWidth": 8000
+    },
+    "limits-lightroom": {
+      "allowedFileTypes": ["image/jpeg", "image/jpg"],
+      "maxFileSize": 40000000,
+      "maxHeight": 8000,
+      "maxWidth": 8000
+    },
+    "limits-firefly": {
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/webp"],
+      "maxFileSize": 100000000,
+      "minHeight": 512,
+      "minWidth": 512
+    },
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
+      "fragmentLink-lightroom": "/cc-shared/fragments/products/photoshop-lightroom/unity/splash-page/splashscreen",
+      "fragmentLink-firefly": "/cc-shared/fragments/products/firefly/unity/splash-page",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".drop-zone": "upload",
+      "#file-upload": "upload"
+    },
+    "sendSplunkAnalytics": true
   }
 }
