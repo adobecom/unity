@@ -120,6 +120,7 @@ class WfInitiator {
       }
       if (hasAllClasses) {
         targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
+        console.log('targetCfg (merged):', JSON.stringify(targetCfg, null, 2));
         break;
       }
     }
