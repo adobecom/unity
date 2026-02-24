@@ -1,5 +1,5 @@
 {
-  "upload": {
+  "_defaults": {
     "selector": ".drop-zone",
     "renderWidget": false,
     "source": ".drop-zone",
@@ -40,5 +40,7 @@
       "#file-upload": "upload"
     },
     "sendSplunkAnalytics": true
-  }
+  },
+  "upload": {},
+  "upload-marquee": {}
 }

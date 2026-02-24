@@ -103,7 +103,8 @@ class WfInitiator {
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
-    const supportedBlocks = Object.keys(targetConfig);
+    const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
+    const defaults = targetConfig._defaults || {};
     let targetCfg = null;
     for (let k = 0; k < supportedBlocks.length; k += 1) {
       const classes = supportedBlocks[k].split('.');
@@ -118,7 +119,7 @@ class WfInitiator {
         }
       }
       if (hasAllClasses) {
-        targetCfg = targetConfig[supportedBlocks[k]];
+        targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
         break;
       }
     }
@@ -147,7 +148,7 @@ class WfInitiator {
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
-    if (!targetCfg.renderWidget && block.classList.contains('upload')) {
+    if (!targetCfg.renderWidget && (block.classList.contains('upload') || block.classList.contains('upload-marquee'))) {
       return block.querySelectorAll(selector);
     }
     if (!targetCfg.renderWidget) return null;
