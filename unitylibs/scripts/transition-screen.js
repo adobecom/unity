@@ -106,8 +106,16 @@ export default class TransitionScreen {
       });
     }
     const sections = doc.querySelectorAll('body > div');
+    if (this.workflowCfg.theme) {
+      const keepLight = this.workflowCfg.theme === 'light';
+      [...sections].forEach((section) => {
+        const isLightSection = section.querySelector('.light') !== null;
+        if (keepLight !== isLightSection) section.remove();
+      });
+    }
+    const filteredSections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
-    f.append(...sections);
+    f.append(...filteredSections);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
     );

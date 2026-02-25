@@ -384,6 +384,7 @@ export default class ActionBinder {
   async loadTransitionScreen() {
     if (!this.transitionScreen) {
       try {
+        this.workflowCfg.theme = this.unityEl.classList.contains('light') ? 'light' : 'dark';
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
         await this.transitionScreen.delayedSplashLoader();
