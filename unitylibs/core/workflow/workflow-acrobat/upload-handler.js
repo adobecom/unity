@@ -19,13 +19,22 @@ export default class UploadHandler {
     return feature === 'pdf-ai' ? 'chat-pdf-pdf-ai' : feature;
   }
 
+  async getEffectiveFileType(file) {
+    const { getExtension } = await import('../../../utils/FileUtils.js');
+    const isHeicWithoutMimeType = this.actionBinder.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
+      && getExtension(file.name).toLowerCase() === 'heic'
+      && !file.type;
+    return isHeicWithoutMimeType ? 'image/heic' : file.type;
+  }
+
   async createAsset(file, multifile = false, workflowId = null) {
+    const effectiveFileType = await this.getEffectiveFileType(file);
     const data = {
       surfaceId: unityConfig.surfaceId,
       targetProduct: this.actionBinder.workflowCfg.productName,
       name: file.name,
       size: file.size,
-      format: file.type,
+      format: effectiveFileType,
       ...(multifile && { multifile }),
       ...(workflowId && { workflowId }),
     };
@@ -346,6 +355,7 @@ export default class UploadHandler {
     }
     fileData.assetId = assetData.id;
     this.actionBinder.setAssetId(assetData.id);
+    const effectiveFileType = await this.getEffectiveFileType(file);
     cOpts = {
       assetId: assetData.id,
       targetProduct: this.actionBinder.workflowCfg.productName,
@@ -357,7 +367,7 @@ export default class UploadHandler {
           [assetData.id]: {
             name: file.name,
             size: file.size,
-            type: file.type,
+            type: effectiveFileType,
           },
         },
         ...(!isPdf ? { feedback: 'nonpdf' } : {}),
@@ -372,7 +382,7 @@ export default class UploadHandler {
       ({ failedFiles, attemptMap } = await this.chunkPdf(
         [assetData],
         [blobData],
-        [file.type],
+        [effectiveFileType],
         maxConcurrentChunks,
         abortSignal,
       ));
