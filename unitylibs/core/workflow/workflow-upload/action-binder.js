@@ -407,6 +407,9 @@ export default class ActionBinder {
       case 'interrupt':
         await this.cancelUploadOperation();
         break;
+      case 'redirect':
+        console.log('redirect');
+        break;
       default:
         break;
     }

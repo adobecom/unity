@@ -38,7 +38,8 @@
     },
     "actionMap": {
       ".drop-zone": "upload",
-      "#file-upload": "upload"
+      "#file-upload": "upload",
+      ".upload-marquee-cta": "redirect"
     },
     "sendSplunkAnalytics": true
   },
