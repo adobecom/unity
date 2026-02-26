@@ -146,6 +146,7 @@ body > .splash-loader {
 
 .splash-loader .text-block [class^="heading"]:first-of-type {
   margin: 0 0 var(--spacing-l) 0;
+  color: white !important;
 }
 
 .splash-loader .text-block p.icon-area {
@@ -165,6 +166,7 @@ body > .splash-loader {
   font-size: var(--type-heading-l-size);
   line-height: var(--type-heading-l-lh);
   font-weight: 700;
+  color: white !important;
 }
 
 @media screen and (min-width: 600px) {
