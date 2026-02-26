@@ -33,6 +33,7 @@
       "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
       "fragmentLink-lightroom": "/cc-shared/fragments/products/photoshop-lightroom/unity/splash-page/splashscreen",
       "fragmentLink-firefly": "/drafts/arushi/firefly/fragments/splashscreen",
+      "fragmentLink-firefly-light": "/drafts/arushi/firefly/fragments/splashscreen-light",
       "splashScreenParent": "body"
     },
     "actionMap": {
