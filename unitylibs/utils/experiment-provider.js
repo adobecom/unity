@@ -1,8 +1,9 @@
 /* eslint-disable no-underscore-dangle */
 
 export async function getDecisionScopesForVerb(verb) {
-  const region = await getRegion().catch(() => undefined);
-  return [`acom_unity_acrobat_${verb}${region ? `_${region}` : ''}`];
+  // const region = await getRegion().catch(() => undefined);
+  // return [`acom_unity_acrobat_${verb}${region ? `_${region}` : ''}`];
+  return ['acom_unity_acrobat_add-comment_us', 'acom_unity_acrobat_add-comment_fr'];
 }
 
 export async function getRegion() {
