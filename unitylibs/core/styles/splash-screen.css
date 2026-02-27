@@ -56,6 +56,10 @@ body > .splash-loader {
   color: white !important;
 }
 
+.splash-loader.dark .text .con-button:hover {
+  color: black !important;
+}
+
 .progress-holder {
   width: 100%;
 }
