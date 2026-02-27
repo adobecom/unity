@@ -408,8 +408,7 @@ export default class ActionBinder {
         await this.cancelUploadOperation();
         break;
       case 'redirect':
-        sendAnalyticsEvent(new CustomEvent('Edit Photos with AI|UnityWidget'));
-        this.logAnalyticsinSplunk('Edit Photos with AI|UnityWidget', {});
+        this.logAnalyticsinSplunk('Edit Photos CTA|UnityWidget', {});
         break;
       default:
         break;
