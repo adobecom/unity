@@ -258,6 +258,13 @@ export default class ActionBinder {
     }
   }
 
+  getVerbFromDom() {
+    const verbEl = this.unityEl.querySelector('[class*="icon-verb-"]');
+    if (!verbEl) return undefined;
+    const match = verbEl.className.match(/icon-verb-(\w+)/);
+    return match?.[1] ?? undefined;
+  }
+
   async continueInApp(assetId, file) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
@@ -269,6 +276,8 @@ export default class ActionBinder {
     };
     if (this.workflowCfg.productName.toLowerCase() === 'firefly') {
       payload.action = 'asset-upload';
+      const verb = this.getVerbFromDom();
+      if (verb) payload.verb = verb;
     }
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
       payload.referer = window.location.href;
