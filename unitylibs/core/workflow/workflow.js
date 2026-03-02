@@ -209,6 +209,8 @@ class WfInitiator {
           'summarize-pdf',
           'pdf-ai',
           'heic-to-pdf',
+          'quiz-maker',
+          'flashcard-maker',
         ]),
       },
       'workflow-ai': {
@@ -242,7 +244,7 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget');
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
