@@ -32,12 +32,14 @@
     "splashScreenConfig": {
       "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
       "fragmentLink-lightroom": "/cc-shared/fragments/products/photoshop-lightroom/unity/splash-page/splashscreen",
-      "fragmentLink-firefly": "/cc-shared/fragments/products/firefly/unity/splash-page",
+      "fragmentLink-firefly": "/drafts/arushi/firefly/fragments/splashscreen",
+      "fragmentLink-firefly-dark": "/drafts/arushi/firefly/fragments/splashscreen-dark",
       "splashScreenParent": "body"
     },
     "actionMap": {
       ".drop-zone": "upload",
-      "#file-upload": "upload"
+      "#file-upload": "upload",
+      ".upload-marquee-cta": "redirect"
     },
     "sendSplunkAnalytics": true
   },

@@ -82,6 +82,11 @@ export default class TransitionScreen {
     }
     const productName = this.workflowCfg.productName.toLowerCase();
     if (this.workflowCfg.name === 'workflow-upload') {
+      const { theme } = this.workflowCfg;
+      const themedKey = theme ? `fragmentLink-${productName}-${theme}` : null;
+      if (themedKey && splashScreenConfig[themedKey]) {
+        return splashScreenConfig[themedKey];
+      }
       return splashScreenConfig[`fragmentLink-${productName}`];
     }
     return splashScreenConfig.fragmentLink;
@@ -107,6 +112,7 @@ export default class TransitionScreen {
     }
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
+    if (this.workflowCfg.theme === 'dark') f.classList.add('dark');
     f.append(...sections);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,

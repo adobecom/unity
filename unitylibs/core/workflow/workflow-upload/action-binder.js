@@ -384,6 +384,7 @@ export default class ActionBinder {
   async loadTransitionScreen() {
     if (!this.transitionScreen) {
       try {
+        this.workflowCfg.theme = this.unityEl.classList.contains('dark') ? 'dark' : null;
         const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
         this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
         await this.transitionScreen.delayedSplashLoader();
@@ -406,6 +407,9 @@ export default class ActionBinder {
       case 'interrupt':
         await this.cancelUploadOperation();
         break;
+      case 'redirect':
+        this.logAnalyticsinSplunk('Edit Photos CTA|UnityWidget', {});
+        break;
       default:
         break;
     }
@@ -423,8 +427,11 @@ export default class ActionBinder {
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
-          e.preventDefault();
-          await this.executeActionMaps(actMap[key]);
+          const action = actMap[key];
+          if (action !== 'redirect') {
+            e.preventDefault();
+          }
+          await this.executeActionMaps(action);
         });
       },
       DIV: (el, key) => {
