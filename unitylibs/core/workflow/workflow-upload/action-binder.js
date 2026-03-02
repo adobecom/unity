@@ -408,8 +408,8 @@ export default class ActionBinder {
         await this.cancelUploadOperation();
         break;
       case 'redirect':
-      this.logAnalyticsinSplunk('Edit Photos CTA|UnityWidget', {});
-      break;
+        this.logAnalyticsinSplunk('Edit Photos CTA|UnityWidget', {});
+        break;
       default:
         break;
     }
@@ -427,8 +427,11 @@ export default class ActionBinder {
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
-          e.preventDefault();
-          await this.executeActionMaps(actMap[key]);
+          const action = actMap[key];
+          if (action !== 'redirect') {
+            e.preventDefault();
+          }
+          await this.executeActionMaps(action);
         });
       },
       DIV: (el, key) => {
