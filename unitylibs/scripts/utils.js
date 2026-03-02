@@ -289,8 +289,8 @@ export const unityConfig = (() => {
   };
   const cfg = {
     prod: {
-      apiEndPoint: 'https://unity.adobe.io/api/v1',
-      connectorApiEndPoint: 'https://unity.adobe.io/api/v1/asset/connector',
+      apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
+      connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
       env: 'prod',
       ...commoncfg,
     },
