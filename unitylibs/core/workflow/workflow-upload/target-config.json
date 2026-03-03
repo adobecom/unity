@@ -32,8 +32,8 @@
     "splashScreenConfig": {
       "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",
       "fragmentLink-lightroom": "/cc-shared/fragments/products/photoshop-lightroom/unity/splash-page/splashscreen",
-      "fragmentLink-firefly": "/drafts/arushi/firefly/fragments/splashscreen",
-      "fragmentLink-firefly-dark": "/drafts/arushi/firefly/fragments/splashscreen-dark",
+      "fragmentLink-firefly": "/cc-shared/fragments/products/firefly/unity/splash-page",
+      "fragmentLink-firefly-dark": "/cc-shared/fragments/products/firefly/unity/splash-page",
       "splashScreenParent": "body"
     },
     "actionMap": {
