@@ -281,7 +281,7 @@ export default class ActionBinder {
           message: `${message}`,
           status,
           info: `Upload Type: ${this.MULTI_FILE ? 'multi' : 'single'}; ${info}`,
-          accountType: this.signedOut ? 'guest' : 'signed-in',
+          accountType: this.signedOut === true ? 'guest' : this.signedOut === false ? 'signed-in' : 'unknown',
           metaData: this.filesData,
           errorData: {
             code: ActionBinder.ERROR_MAP[errorMetaData.code || errorType] || -1,
