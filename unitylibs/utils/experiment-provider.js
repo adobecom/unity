@@ -32,10 +32,8 @@ export async function getExperimentData(decisionScopes) {
           const targetData = TargetPropositionResult?.decisions?.[0]?.items?.[0]?.data?.content;
           if (targetData) {
             window._satellite.track('propositionDisplay', TargetPropositionResult.propositions);
-            resolve(targetData);
-          } else {
-            reject(new Error(`Target proposition returned but no valid data for scopes: ${Array.isArray(decisionScopes) ? decisionScopes.join(', ') : decisionScopes}`));
           }
+          resolve(targetData || null);
         },
       });
     } catch (e) {
