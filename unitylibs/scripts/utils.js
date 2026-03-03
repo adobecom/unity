@@ -44,7 +44,8 @@ async function getRefreshToken() {
     const { tokenInfo } = window.adobeIMS ? await window.adobeIMS.refreshToken() : {};
     return tokenInfo;
   } catch (e) {
-    if (e?.message?.trim() === 'invalid_credentials') {
+    const errorMsg = (e?.message || e?.exception?.message || '').trim();
+    if (errorMsg === 'invalid_credentials') {
       return { token: null, isGuestToken: true };
     }
     return {
