@@ -84,9 +84,7 @@ export default class TransitionScreen {
     if (this.workflowCfg.name === 'workflow-upload') {
       const { theme } = this.workflowCfg;
       const themedKey = theme ? `fragmentLink-${productName}-${theme}` : null;
-      if (themedKey && splashScreenConfig[themedKey]) {
-        return splashScreenConfig[themedKey];
-      }
+      if (themedKey && splashScreenConfig[themedKey]) return splashScreenConfig[themedKey];
       return splashScreenConfig[`fragmentLink-${productName}`];
     }
     return splashScreenConfig.fragmentLink;

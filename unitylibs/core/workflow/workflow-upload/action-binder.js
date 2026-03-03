@@ -259,10 +259,10 @@ export default class ActionBinder {
   }
 
   getVerbFromDom() {
-    const verbEl = this.unityEl.querySelector('[class*="icon-verb-"]');
+    const verbEl = this.unityEl?.querySelector('[class*="icon-verb-"]');
     if (!verbEl) return undefined;
-    const match = verbEl.className.match(/icon-verb-(\w+)/);
-    return match?.[1] ?? undefined;
+    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-verb-'));
+    return verbClass?.slice('icon-verb-'.length);
   }
 
   async continueInApp(assetId, file) {
@@ -437,9 +437,7 @@ export default class ActionBinder {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
           const action = actMap[key];
-          if (action !== 'redirect') {
-            e.preventDefault();
-          }
+          if (action !== 'redirect') e.preventDefault();
           await this.executeActionMaps(action);
         });
       },
