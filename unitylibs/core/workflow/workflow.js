@@ -148,7 +148,7 @@ class WfInitiator {
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
-    if (!targetCfg.renderWidget && block.classList.contains('upload')) {
+    if (!targetCfg.renderWidget && (block.classList.contains('upload') || block.classList.contains('upload-marquee'))) {
       return block.querySelectorAll(selector);
     }
     if (!targetCfg.renderWidget) return null;
