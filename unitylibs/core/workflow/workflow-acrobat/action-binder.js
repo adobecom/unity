@@ -664,7 +664,7 @@ export default class ActionBinder {
     if (this.signedOut === undefined) {
       if (this.tokenError) {
         const errorDetails = this.tokenError;
-        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
+        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${JSON.stringify(errorDetails.originalError)}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
           desc: errorDetails,
         });
