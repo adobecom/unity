@@ -376,7 +376,11 @@ export default class ActionBinder {
 
     for (const file of files) {
       let fail = false;
-      if (!this.limits.allowedFileTypes.includes(file.type)) {
+      const { getExtension } = await import('../../../utils/FileUtils.js');
+      const typeCheckFail = this.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
+        ? getExtension(file.name).toLowerCase() !== 'heic' && !this.limits.allowedFileTypes.includes(file.type)
+        : !this.limits.allowedFileTypes.includes(file.type);
+      if (typeCheckFail) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
         if (this.MULTI_FILE) {

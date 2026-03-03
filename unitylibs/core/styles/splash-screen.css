@@ -51,6 +51,15 @@ body > .splash-loader {
   display: flex;
 }
 
+.splash-loader.dark .text .con-button {
+  border-color: white !important;
+  color: white !important;
+}
+
+.splash-loader.dark .text .con-button:hover {
+  color: black !important;
+}
+
 .progress-holder {
   width: 100%;
 }
@@ -129,6 +138,10 @@ body > .splash-loader {
   font-weight: 700;
 }
 
+.splash-loader.dark .progress-holder .spectrum-ProgressBar--sideLabel .spectrum-ProgressBar-percentage {
+  color: white !important;
+}
+
 .splash-loader .text .icon-area img,
 .splash-loader .text video {
   width: 157px;
@@ -148,6 +161,10 @@ body > .splash-loader {
   margin: 0 0 var(--spacing-l) 0;
 }
 
+.splash-loader.dark .text-block [class^="heading"]:first-of-type {
+  color: white !important;
+}
+
 .splash-loader .text-block p.icon-area {
   margin-block: var(--spacing-s);
 }
@@ -165,6 +182,10 @@ body > .splash-loader {
   font-size: var(--type-heading-l-size);
   line-height: var(--type-heading-l-lh);
   font-weight: 700;
+}
+
+.splash-loader.dark .text-block p {
+  color: white !important;
 }
 
 @media screen and (min-width: 600px) {
