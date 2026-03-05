@@ -30,5 +30,21 @@
       ".drop-item": { "actionType": "setPromptValue" }
     },
     "sendSplunkAnalytics": true
+  },
+  "upload-marquee": {
+    "type": "text",
+    "selector": ".copy",
+    "handler": "render",
+    "renderWidget": true,
+    "source": ".copy",
+    "target": ".upload-marquee-prompt-container",
+    "insert": "after",
+    "verbsWithoutPromptSuggestions": ["vector"],
+    "actionMap": {
+      ".inp-field": { "actionType": "autocomplete" },
+      ".gen-btn": { "actionType": "generate" },
+      ".drop-item": { "actionType": "setPromptValue" }
+    },
+    "sendSplunkAnalytics": true
   }
 }
