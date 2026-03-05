@@ -80,25 +80,22 @@ describe('getExperimentData', () => {
     expect(result).to.deep.equal(mockTargetData);
   });
 
-  it('should reject when target returns empty decisions', async () => {
-    await testErrorScenario(
-      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
-      () => setupMock(createMockResult(null, [])),
-    );
+  it('should resolve with null when target returns empty decisions', async () => {
+    setupMock(createMockResult(null, []));
+    const result = await getExperimentData(['acom_unity_acrobat_add-comment_us']);
+    expect(result).to.equal(null);
   });
 
-  it('should reject when target returns empty items', async () => {
-    await testErrorScenario(
-      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
-      () => setupMock({ decisions: [{ items: [] }] }),
-    );
+  it('should resolve with null when target returns empty items', async () => {
+    setupMock({ decisions: [{ items: [] }] });
+    const result = await getExperimentData(['acom_unity_acrobat_add-comment_us']);
+    expect(result).to.equal(null);
   });
 
-  it('should reject when target returns invalid structure', async () => {
-    await testErrorScenario(
-      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
-      () => setupMock({ invalid: 'structure' }),
-    );
+  it('should resolve with null when target returns invalid structure', async () => {
+    setupMock({ invalid: 'structure' });
+    const result = await getExperimentData(['acom_unity_acrobat_add-comment_us']);
+    expect(result).to.equal(null);
   });
 
   it('should reject when satellite track throws exception', async () => {
@@ -108,18 +105,16 @@ describe('getExperimentData', () => {
     );
   });
 
-  it('should reject when target result is null', async () => {
-    await testErrorScenario(
-      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
-      () => setupMock(null),
-    );
+  it('should resolve with null when target result is null', async () => {
+    setupMock(null);
+    const result = await getExperimentData(['acom_unity_acrobat_add-comment_us']);
+    expect(result).to.equal(null);
   });
 
-  it('should reject when target result is undefined', async () => {
-    await testErrorScenario(
-      'Target proposition returned but no valid data for scopes: acom_unity_acrobat_add-comment_us',
-      () => setupMock(undefined),
-    );
+  it('should resolve with null when target result is undefined', async () => {
+    setupMock(undefined);
+    const result = await getExperimentData(['acom_unity_acrobat_add-comment_us']);
+    expect(result).to.equal(null);
   });
 });
 

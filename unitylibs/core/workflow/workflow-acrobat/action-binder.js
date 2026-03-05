@@ -75,6 +75,8 @@ export default class ActionBinder {
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
     'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'quiz-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
+    'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -374,7 +376,11 @@ export default class ActionBinder {
 
     for (const file of files) {
       let fail = false;
-      if (!this.limits.allowedFileTypes.includes(file.type)) {
+      const { getExtension } = await import('../../../utils/FileUtils.js');
+      const typeCheckFail = this.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
+        ? getExtension(file.name).toLowerCase() !== 'heic' && !this.limits.allowedFileTypes.includes(file.type)
+        : !this.limits.allowedFileTypes.includes(file.type);
+      if (typeCheckFail) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
         if (this.MULTI_FILE) {
@@ -662,7 +668,7 @@ export default class ActionBinder {
     if (this.signedOut === undefined) {
       if (this.tokenError) {
         const errorDetails = this.tokenError;
-        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${errorDetails.originalError}`, false, true, {
+        await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${JSON.stringify(errorDetails.originalError)}`, false, true, {
           code: 'pre_upload_error_fetching_access_token',
           desc: errorDetails,
         });
