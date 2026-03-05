@@ -85,6 +85,7 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
     this.filesData = {};
+    this.verb = this.getVerbFromDom();
   }
 
   getApiConfig() {
@@ -276,8 +277,7 @@ export default class ActionBinder {
     };
     if (this.workflowCfg.productName.toLowerCase() === 'firefly') {
       payload.action = 'asset-upload';
-      const verb = this.getVerbFromDom();
-      if (verb) payload.verb = verb;
+      if (this.verb) payload.verb = this.verb;
     }
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop') {
       payload.referer = window.location.href;
@@ -349,7 +349,7 @@ export default class ActionBinder {
 
   logAnalyticsinSplunk(eventName, data) {
     if (this.sendAnalyticsToSplunk) {
-      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, data, `${unityConfig.apiEndPoint}/log`);
+      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, { ...data, action: 'upload', verb: this.verb }, `${unityConfig.apiEndPoint}/log`);
     }
   }
 
