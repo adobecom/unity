@@ -211,6 +211,12 @@
   background: none;
 }
 
+.upload-marquee.unity-enabled .interactive-area {
+  display: inherit;
+  justify-content: center;
+  background: none;
+}
+
 .hero-marquee.unity-enabled .interactive-area .text {
   max-width: 800px;
   margin: var(--spacing-xxl) 0 var(--spacing-m);
