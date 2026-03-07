@@ -107,6 +107,7 @@ export default class TransitionScreen {
       });
     };
     resetAttributeBase('img', 'src');
+    resetAttributeBase('source', 'srcset');
   }
 
   async loadSplashFragment() {
