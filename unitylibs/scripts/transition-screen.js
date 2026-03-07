@@ -4,6 +4,7 @@ import {
   loadImg,
   loadArea,
   getMatchedDomain,
+  getConfig,
 } from './utils.js';
 
 export default class TransitionScreen {
@@ -90,6 +91,23 @@ export default class TransitionScreen {
     return splashScreenConfig.fragmentLink;
   }
 
+  /**
+   * Replaces root-relative poster paths (./media_...) in the given area with full URLs using config contentRoot.
+   */
+  replaceDotMedia(area) {
+    const config = getConfig?.();
+    const contentRoot = config?.contentRoot ?? '';
+    if (!contentRoot) return;
+    const resetAttributeBase = (tag, attr) => {
+      area.querySelectorAll(`${tag}[${attr}^="./media_"]`).forEach((el) => {
+        const value = el.getAttribute(attr);
+        if (!value) return;
+        el.setAttribute(attr, new URL(`${contentRoot}${value.substring(1)}`, window.location.href).href);
+      });
+    };
+    resetAttributeBase('video', 'poster');
+  }
+
   async loadSplashFragment() {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
     const fragmentLink = this.getFragmentLink();
@@ -119,6 +137,7 @@ export default class TransitionScreen {
     const img = f.querySelector('img');
     if (img) loadImg(img);
     await loadArea(f);
+    this.replaceDotMedia(f);
     this.splashScreenEl = f;
   }
 
@@ -168,6 +187,16 @@ export default class TransitionScreen {
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
+  resetSplashVideos() {
+    if (!this.splashScreenEl) return;
+    const videos = this.splashScreenEl.querySelectorAll('video');
+    for (const video of videos) {
+      video.currentTime = 0;
+      delete video.dataset.playedOnce;
+      video.play()?.catch(() => { /* autoplay may be blocked */ });
+    }
+  }
+
   splashVisibilityController(displayOn) {
     if (!displayOn) {
       this.LOADER_LIMIT = 95;
@@ -179,6 +208,7 @@ export default class TransitionScreen {
       return;
     }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
+    this.resetSplashVideos();
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
     document.querySelector('main').setAttribute('aria-hidden', 'true');
