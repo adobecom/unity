@@ -91,9 +91,6 @@ export default class TransitionScreen {
     return splashScreenConfig.fragmentLink;
   }
 
-  /**
-   * Replaces root-relative poster paths (./media_...) in the given area with full URLs using config contentRoot.
-   */
   replaceDotMedia(area) {
     const config = getConfig?.();
     const contentRoot = config?.contentRoot ?? '';
