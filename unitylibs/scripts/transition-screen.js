@@ -131,6 +131,7 @@ export default class TransitionScreen {
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     if (this.workflowCfg.theme === 'dark') f.classList.add('dark');
     f.append(...sections);
+    this.replaceDotMedia(f);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
     );
@@ -138,7 +139,6 @@ export default class TransitionScreen {
     const img = f.querySelector('img');
     if (img) loadImg(img);
     await loadArea(f);
-    this.replaceDotMedia(f);
     this.splashScreenEl = f;
   }
 
