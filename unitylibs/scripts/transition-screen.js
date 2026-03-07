@@ -106,7 +106,7 @@ export default class TransitionScreen {
         el.setAttribute(attr, new URL(`${contentRoot}${value.substring(1)}`, window.location.href).href);
       });
     };
-    resetAttributeBase('video', 'poster');
+    resetAttributeBase('img', 'src');
   }
 
   async loadSplashFragment() {
@@ -139,6 +139,7 @@ export default class TransitionScreen {
     const img = f.querySelector('img');
     if (img) loadImg(img);
     await loadArea(f);
+    this.replaceDotMedia(f);
     this.splashScreenEl = f;
   }
 
