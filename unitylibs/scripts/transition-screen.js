@@ -1,9 +1,11 @@
+
 import {
   createTag,
   localizeLink,
   loadImg,
   loadArea,
   getMatchedDomain,
+  getConfig,
 } from './utils.js';
 
 export default class TransitionScreen {
@@ -90,6 +92,25 @@ export default class TransitionScreen {
     return splashScreenConfig.fragmentLink;
   }
 
+  replaceDotMedia(area = document) {
+    const config = getConfig?.();
+    const contentRoot = config?.contentRoot ?? '';
+    if (!contentRoot) return;
+    const prefix = (config?.locale?.prefix ?? '').replace('/', '') ?? '';
+    const currUrl = new URL(window.location.href);
+    const pathSeg = currUrl.pathname.split('/').length;
+    if (area === document && ((prefix === '' && pathSeg >= 3) || (prefix !== '' && pathSeg >= 4))) return;
+    const resetAttributeBase = (tag, attr) => {
+      area.querySelectorAll(`${tag}[${attr}^="./media_"]`).forEach((el) => {
+        const value = el.getAttribute(attr);
+        if (!value) return;
+        el.setAttribute(attr, new URL(`${contentRoot}${value.substring(1)}`, window.location.href).href);
+      });
+    };
+    resetAttributeBase('img', 'src');
+    resetAttributeBase('source', 'srcset');
+  }
+
   async loadSplashFragment() {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
     const fragmentLink = this.getFragmentLink();
@@ -111,6 +132,7 @@ export default class TransitionScreen {
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     if (this.workflowCfg.theme === 'dark') f.classList.add('dark');
+    if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') sections.forEach(sec => this.replaceDotMedia(sec))
     f.append(...sections);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
