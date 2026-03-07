@@ -91,10 +91,14 @@ export default class TransitionScreen {
     return splashScreenConfig.fragmentLink;
   }
 
-  replaceDotMedia(area) {
+  replaceDotMedia(area = document) {
     const config = getConfig?.();
     const contentRoot = config?.contentRoot ?? '';
     if (!contentRoot) return;
+    const prefix = (config?.locale?.prefix ?? '').replace('/', '') ?? '';
+    const currUrl = new URL(window.location.href);
+    const pathSeg = currUrl.pathname.split('/').length;
+    if (area === document && ((prefix === '' && pathSeg >= 3) || (prefix !== '' && pathSeg >= 4))) return;
     const resetAttributeBase = (tag, attr) => {
       area.querySelectorAll(`${tag}[${attr}^="./media_"]`).forEach((el) => {
         const value = el.getAttribute(attr);
