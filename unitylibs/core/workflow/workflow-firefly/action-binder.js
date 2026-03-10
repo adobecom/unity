@@ -54,6 +54,7 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
     this.addAccessibility();
     this.initAction();
+    this.verb = this.getVerbFromDom();
   }
 
   getNetworkUtils = async () => {
@@ -221,6 +222,13 @@ export default class ActionBinder {
     return { isValid: true };
   }
 
+  getVerbFromDom() {
+    const verbEl = this.unityEl?.querySelector('[class*="icon-verb-"]');
+    if (!verbEl) return undefined;
+    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-verb-'));
+    return verbClass?.slice('icon-verb-'.length);
+  }
+
   async initAnalytics() {
     if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
       this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
@@ -233,7 +241,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, logData, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, {...logData, operation: this.verb}, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {

@@ -15,7 +15,7 @@ function createPayloadForSplunk(metaData) {
     event: {
       name: eventName,
       category: product,
-      ...(verb && { subcategory: verb }),
+      ...(verb && { verb }),
       ...(action && { action }),
       ...(statusCode !== undefined && { statusCode }),
       ...(workflowStep && { workflowStep }),
