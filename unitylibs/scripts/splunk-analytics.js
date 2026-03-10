@@ -9,14 +9,15 @@ function getSessionID() {
 
 function createPayloadForSplunk(metaData) {
   const {
-    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData
+    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation
   } = metaData;
   return {
     event: {
       name: eventName,
       category: product,
-      ...(verb && { verb }),
+      ...(verb && { subcategory: verb }),
       ...(action && { action }),
+      ...(operation && { verb: operation }),
       ...(statusCode !== undefined && { statusCode }),
       ...(workflowStep && { workflowStep }),
     },

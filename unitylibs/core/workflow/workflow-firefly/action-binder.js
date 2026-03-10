@@ -223,10 +223,10 @@ export default class ActionBinder {
   }
 
   getVerbFromDom() {
-    const verbEl = this.unityEl?.querySelector('[class*="icon-verb-"]');
+    const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
     if (!verbEl) return undefined;
-    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-verb-'));
-    return verbClass?.slice('icon-verb-'.length);
+    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-operation-'));
+    return verbClass?.slice('icon-operation-'.length);
   }
 
   async initAnalytics() {
