@@ -1,0 +1,184 @@
+/* ===== DROPZONE FRAGMENT STYLES =====
+ * Scoped under .upload-marquee-block so styles only apply
+ * when the fragment is rendered inside the upload-marquee shell.
+ */
+
+.upload-marquee-block .hide { display: none; }
+
+/* ===== BUTTON ===== */
+.upload-marquee-block .upload-action-container {
+  margin: 0 auto;
+}
+
+.upload-marquee-block .action-button {
+  font-family: var(--body-font-family);
+  border-radius: var(--um-radius-pill);
+  border: 0;
+  background: var(--um-accent-strong);
+  color: var(--um-white);
+  cursor: pointer;
+  gap: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px 14px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 24px;
+  text-decoration: none;
+}
+
+.upload-marquee-block .action-button > picture {
+  margin-inline-end: 0;
+}
+
+.upload-marquee-block .action-button > picture,
+.upload-marquee-block .action-button > picture > img {
+  width: 24px;
+  height: 24px;
+}
+
+.upload-marquee-block .action-button .icon-upload-to-cloud-outline svg {
+  height: 1.3em;
+  width: 1.3em;
+  line-height: 0;
+}
+
+.upload-marquee-block .action-button:focus-visible {
+  background: var(--um-accent-strong);
+  color: var(--um-white);
+  text-decoration: none;
+}
+
+/* ===== DROP ZONE ===== */
+.upload-marquee-block .interactive-container > .tablet-up,
+.upload-marquee-block .interactive-container > .tablet-up.desktop-up,
+.upload-marquee-block .interactive-container > .desktop-up {
+  display: none;
+}
+
+.upload-marquee-block .drop-zone-container {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  text-align: center;
+}
+
+.upload-marquee-block .drop-zone {
+  border: 2px dashed rgb(255 255 255 / 50%);
+  border-radius: var(--um-radius-sm);
+  padding: 34px 24px;
+  margin-top: 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-sizing: border-box;
+  background-color: inherit;
+  background-image: radial-gradient(circle, rgb(255 255 255 / 18%) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.upload-marquee-block .drop-zone:hover,
+.upload-marquee-block .drop-zone.active {
+  background-image: none;
+  cursor: pointer;
+  border: 2px solid var(--um-accent);
+  background-color: var(--um-hover-bg);
+}
+
+.upload-marquee-block .drop-zone:focus-visible {
+  outline: 2px solid var(--um-accent-focus);
+  outline-offset: 2px;
+  border-color: var(--um-accent);
+}
+
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone > p:first-child {
+  color: var(--um-white);
+  margin: 0;
+  text-align: center;
+  font-size: var(--type-body-m-size);
+}
+
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone > p:first-child img,
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone > p:first-child svg {
+  display: block;
+  margin: 0 auto;
+  width: 40px;
+  height: 40px;
+  opacity: 0.9;
+}
+
+.upload-marquee-block .drop-zone .upload-action-container {
+  margin: 4px 0 2px;
+}
+
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone-container > p:last-child {
+  font-size: var(--type-body-xs-size);
+  line-height: var(--type-body-xs-lh);
+  margin-top: 16px;
+  color: var(--um-white);
+  text-align: center;
+  margin-block-end: 0;
+}
+
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone > p:not(:first-child):not(:last-child):not(.upload-action-container) {
+  color: var(--um-white);
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.upload-marquee-block .drop-zone > .drop-zone-heading {
+  color: var(--um-heading-text);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone > .drop-zone-body {
+  color: var(--um-body-muted);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  max-width: 380px;
+  margin: 0;
+  text-align: center;
+}
+
+.upload-marquee-block .upload-marquee-layout .upload-marquee-left .drop-zone-container > p:last-child a {
+  color: var(--um-accent-link);
+  text-decoration: underline;
+}
+
+/* ===== RESPONSIVE ===== */
+@media screen and (min-width: 600px) {
+  .upload-marquee-block .interactive-container > .tablet-up,
+  .upload-marquee-block .interactive-container > .tablet-up.desktop-up {
+    display: block;
+  }
+
+  .upload-marquee-block .interactive-container > .mobile-up,
+  .upload-marquee-block .interactive-container > .desktop-up {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .upload-marquee-block .interactive-container > .desktop-up,
+  .upload-marquee-block .interactive-container > .tablet-up.desktop-up {
+    display: block;
+  }
+
+  .upload-marquee-block .interactive-container > .mobile-up,
+  .upload-marquee-block .interactive-container > .tablet-up {
+    display: none;
+  }
+}

@@ -20,6 +20,17 @@ class WfInitiator {
     this.actionMap = {};
   }
 
+  getFragmentName() {
+    return [...this.el.classList]
+      .find((cls) => cls.startsWith('fragment-'))
+      ?.replace('fragment-', '') || null;
+  }
+
+  getFragmentContentRow() {
+    const rows = this.el.querySelectorAll(':scope > div');
+    return rows.length > 0 ? rows[rows.length - 1] : null;
+  }
+
   static async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const sharedWfRes = [
@@ -64,7 +75,20 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
-    if (this.targetConfig.renderWidget) {
+    const fragmentName = this.getFragmentName();
+    if (fragmentName) {
+      const fragmentContentRow = this.getFragmentContentRow();
+      const { default: Fragment } = await import(
+        `${getUnityLibs()}/core/fragments/${fragmentName}/${fragmentName}.js`
+      );
+      const fragmentActionMap = await new Fragment(
+        this.interactiveArea,
+        fragmentContentRow,
+        this.workflowCfg,
+      ).render();
+      const shellActions = this.targetConfig.actionMap || {};
+      this.actionMap = { ...shellActions, ...fragmentActionMap };
+    } else if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
       this.actionMap = await new UnityWidget(
@@ -102,7 +126,11 @@ class WfInitiator {
 
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
-    const prevElem = this.el.previousElementSibling;
+    let prevElem = this.el.previousElementSibling;
+    while (prevElem?.classList.contains('unity')) {
+      prevElem = prevElem.previousElementSibling;
+    }
+    if (!prevElem) return [null, null, null];
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
     const defaults = targetConfig._defaults || {};
     let targetCfg = null;
@@ -140,6 +168,9 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
+    if (this.getFragmentName()) {
+      return block.querySelector(selector);
+    }
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {

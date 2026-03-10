@@ -44,5 +44,11 @@
     "sendSplunkAnalytics": true
   },
   "upload": {},
-  "upload-marquee": {}
+  "upload-marquee": {
+    "selector": ".interactive-container",
+    "renderWidget": false,
+    "actionMap": {
+      ".upload-marquee-cta": "redirect"
+    }
+  }
 }

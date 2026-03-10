@@ -40,13 +40,17 @@ class ServiceHandler {
     return await response.json();
   }
 
+  getCanvasAreas() {
+    return this.canvasArea instanceof NodeList ? [...this.canvasArea] : [this.canvasArea];
+  }
+
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
     if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
     else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
-    this.canvasArea.forEach((element) => {
+    this.getCanvasAreas().forEach((element) => {
       element.style.pointerEvents = 'none';
       const errorToast = element.querySelector('.alert-holder');
       if (!errorToast) return;
@@ -86,6 +90,10 @@ export default class ActionBinder {
     this.assetId = null;
     this.filesData = {};
     this.verb = this.getVerbFromDom();
+  }
+
+  getCanvasAreas() {
+    return this.canvasArea instanceof NodeList ? [...this.canvasArea] : [this.canvasArea];
   }
 
   getApiConfig() {
@@ -232,7 +240,7 @@ export default class ActionBinder {
         fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
       ]);
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
-      this.canvasArea.forEach((element) => {
+      this.getCanvasAreas().forEach((element) => {
         const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
         const alertIcon = createTag('div', { class: 'alert-icon' });
         alertIcon.innerHTML = alertImg;
@@ -252,7 +260,7 @@ export default class ActionBinder {
         decorateDefaultLinkAnalytics(errholder);
         element.append(errholder);
       });
-      return this.canvasArea[0]?.querySelector('.alert-holder');
+      return this.getCanvasAreas()[0]?.querySelector('.alert-holder');
     } catch (e) {
       window.lana?.log(`Message: Error creating error toast, Error: ${e}`, this.lanaOptions);
       return null;
@@ -456,7 +464,7 @@ export default class ActionBinder {
       },
       INPUT: (el, key) => {
         el.addEventListener('click', () => {
-          this.canvasArea.forEach((element) => {
+          this.getCanvasAreas().forEach((element) => {
             const errHolder = element.querySelector('.alert-holder');
             if (errHolder?.classList.contains('show')) {
               element.style.pointerEvents = 'auto';
