@@ -349,7 +349,7 @@ export default class ActionBinder {
 
   logAnalyticsinSplunk(eventName, data) {
     if (this.sendAnalyticsToSplunk) {
-      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, { ...data, action: 'upload', operation: this.verb }, `${unityConfig.apiEndPoint}/log`);
+      this.sendAnalyticsToSplunk(eventName, this.workflowCfg.productName, { ...data, action: 'upload', verb: this.verb, operation: this.verb }, `${unityConfig.apiEndPoint}/log`);
     }
   }
 
