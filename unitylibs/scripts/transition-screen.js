@@ -196,8 +196,6 @@ export default class TransitionScreen {
       const wasPlayedBefore = !!video.dataset.playedOnce;
       video.currentTime = 0;
       delete video.dataset.playedOnce;
-      // Only call play() when re-showing (video had played before). On first display,
-      // skip play() so Safari shows the poster instead of suppressing it.
       if (wasPlayedBefore) {
         video.play()?.catch(() => {});
       }
