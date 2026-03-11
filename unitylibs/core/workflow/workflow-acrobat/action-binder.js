@@ -7,6 +7,7 @@
 import {
   unityConfig,
   getUnityLibs,
+  getConfig,
   priorityLoad,
   isGuestUser,
   getApiCallOptions,
@@ -445,7 +446,14 @@ export default class ActionBinder {
       .then(async (resArr) => {
         const { response } = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
-        this.redirectUrl = response.url;
+        if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
+          const localePrefix = getConfig()?.locale?.prefix?.replace('/', '');
+          if (localePrefix) {
+            const url = new URL(response.url);
+            baseUrl = `${url.origin}/${localePrefix}${url.pathname}`;
+          }
+        }
+        this.redirectUrl = response.url;        
       })
       .catch(async (e) => {
         await this.showTransitionScreen();
@@ -617,7 +625,7 @@ export default class ActionBinder {
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.delay(500);
-      const [baseUrl, queryString] = this.redirectUrl.split('?');
+      let [baseUrl, queryString] = this.redirectUrl.split('?');
       if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
         document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
       }
