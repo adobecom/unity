@@ -211,6 +211,11 @@
   background: none;
 }
 
+.upload-marquee.unity-enabled .interactive-area {
+  display: inherit;
+  background: none;
+}
+
 .hero-marquee.unity-enabled .interactive-area .text {
   max-width: 800px;
   margin: var(--spacing-xxl) 0 var(--spacing-m);
@@ -1145,6 +1150,10 @@
   .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky {
     bottom: 16px;
   }
+
+  .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    margin-left: 0px;
+  }
 }
 
 @media (min-width: 600px) and (max-width: 767px) {
@@ -1278,5 +1287,24 @@
   :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
   :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
     position: static;
+  }
+}
+.upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
+  border-radius: 20px;
+}
+.upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    width: 100%;
+    margin: 40px 0;
+    margin-left: 16px;
+}
+.upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+    padding-left: 0;
+  }
+@media (max-width: 599px) {
+  .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    margin: 40px 40px 0 0
+  }
+  .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+    padding: 0px;
   }
 }
