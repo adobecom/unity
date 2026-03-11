@@ -446,14 +446,15 @@ export default class ActionBinder {
       .then(async (resArr) => {
         const { response } = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
+        let redirectUrl = response.url;
         if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
           const localePrefix = getConfig()?.locale?.prefix?.replace('/', '');
           if (localePrefix) {
             const url = new URL(response.url);
-            baseUrl = `${url.origin}/${localePrefix}${url.pathname}`;
+            redirectUrl = `${url.origin}/${localePrefix}${url.pathname}${url.search}`;
           }
         }
-        this.redirectUrl = response.url;        
+        this.redirectUrl = redirectUrl;        
       })
       .catch(async (e) => {
         await this.showTransitionScreen();
