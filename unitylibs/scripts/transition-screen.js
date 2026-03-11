@@ -193,9 +193,14 @@ export default class TransitionScreen {
     if (!this.splashScreenEl) return;
     const videos = this.splashScreenEl.querySelectorAll('video');
     videos.forEach((video) => {
+      const wasPlayedBefore = !!video.dataset.playedOnce;
       video.currentTime = 0;
       delete video.dataset.playedOnce;
-      video.play()?.catch(() => {  });
+      // Only call play() when re-showing (video had played before). On first display,
+      // skip play() so Safari shows the poster instead of suppressing it.
+      if (wasPlayedBefore) {
+        video.play()?.catch(() => {});
+      }
     });
   }
 
