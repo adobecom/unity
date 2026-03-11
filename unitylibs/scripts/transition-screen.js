@@ -193,9 +193,12 @@ export default class TransitionScreen {
     if (!this.splashScreenEl) return;
     const videos = this.splashScreenEl.querySelectorAll('video');
     videos.forEach((video) => {
+      const wasPlayedBefore = !!video.dataset.playedOnce;
       video.currentTime = 0;
       delete video.dataset.playedOnce;
-      video.play()?.catch(() => {  });
+      if (wasPlayedBefore) {
+        video.play()?.catch(() => {});
+      }
     });
   }
 
