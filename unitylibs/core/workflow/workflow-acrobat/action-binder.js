@@ -451,7 +451,7 @@ export default class ActionBinder {
           const localePrefix = getConfig()?.locale?.prefix?.replace('/', '');
           if (localePrefix) {
             const url = new URL(response.url);
-            redirectUrl = `${url.origin}/${localePrefix}${url.pathname}${url.search}`;
+            redirectUrl = `${url.origin}/${localePrefix}${url.pathname}${url.search}${url.hash}`;
           }
         }
         this.redirectUrl = redirectUrl;        
