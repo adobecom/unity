@@ -626,7 +626,7 @@ export default class ActionBinder {
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
       await this.delay(500);
-      let [baseUrl, queryString] = this.redirectUrl.split('?');
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
       if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
         document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
       }
