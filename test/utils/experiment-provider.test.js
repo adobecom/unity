@@ -132,11 +132,11 @@ describe('getDecisionScopesForVerb', () => {
 
   it('should return decision scopes for known verb', async () => {
     const result = await getDecisionScopesForVerb('add-comment');
-    expect(result).to.deep.equal(['acom_unity_acrobat_add-comment_us']);
+    expect(result).to.deep.equal(['acom_unity_acrobat_add-comment_us', 'acom_unity_acrobat_add-comment']);
   });
 
   it('should return decision scopes for unknown verb using region', async () => {
     const result = await getDecisionScopesForVerb('unknown-verb');
-    expect(result).to.deep.equal(['acom_unity_acrobat_unknown-verb_us']);
+    expect(result).to.deep.equal(['acom_unity_acrobat_unknown-verb_us', 'acom_unity_acrobat_unknown-verb']);
   });
 });
