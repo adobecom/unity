@@ -196,14 +196,11 @@ export default class TransitionScreen {
       delete video.dataset.playedOnce;
       video.load();
       const playWhenReady = () => {
-        video.removeEventListener('loadeddata', playWhenReady);
-        video.removeEventListener('canplay', playWhenReady);
         video.currentTime = 0;
         video.play()?.catch(() => {});
       };
-      video.addEventListener('loadeddata', playWhenReady, { once: true });
-      video.addEventListener('canplay', playWhenReady, { once: true });
-      if (video.readyState >= 2) playWhenReady();
+      if (video.readyState >= 3) playWhenReady();
+      else video.addEventListener('canplay', playWhenReady, { once: true });
     });
   }
 
