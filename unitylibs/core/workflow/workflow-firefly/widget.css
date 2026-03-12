@@ -1300,6 +1300,9 @@
 .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
     padding-left: 0;
   }
+.unity-enabled .interactive-area .copy .ex-unity-wrap .alert-holder {
+    transform: translateY(-70%);
+}
 @media (max-width: 599px) {
   .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
     margin: 40px 40px 0 0
