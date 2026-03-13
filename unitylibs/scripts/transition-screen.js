@@ -193,12 +193,14 @@ export default class TransitionScreen {
     if (!this.splashScreenEl) return;
     const videos = this.splashScreenEl.querySelectorAll('video');
     videos.forEach((video) => {
-      const wasPlayedBefore = !!video.dataset.playedOnce;
-      video.currentTime = 0;
       delete video.dataset.playedOnce;
-      if (wasPlayedBefore) {
+      video.load();
+      const playWhenReady = () => {
+        video.currentTime = 0;
         video.play()?.catch(() => {});
-      }
+      };
+      if (video.readyState >= 3) playWhenReady();
+      else video.addEventListener('canplay', playWhenReady, { once: true });
     });
   }
 
