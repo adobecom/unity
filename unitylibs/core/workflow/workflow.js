@@ -61,6 +61,7 @@ class WfInitiator {
     // eslint-disable-next-line max-len
     const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
+    if (!this.targetConfig) return;
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;

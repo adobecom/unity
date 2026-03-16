@@ -45,6 +45,11 @@
   },
   "upload": {},
   "upload-marquee": {
-    "selector": ".interactive-slot"
+    "selector": ".interactive-slot",
+    "actionMap": {
+      ".drop-zone": "upload",
+      ".file-upload": "upload",
+      ".upload-marquee-cta": "redirect"
+    }
   }
 }
