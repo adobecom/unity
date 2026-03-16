@@ -64,7 +64,14 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
-    if (this.targetConfig.renderWidget) {
+    if (this.targetConfig.widgetType) {
+      const slot = this.interactiveArea;
+      const { default: getWidgetEntry } = await import(`${getUnityLibs()}/core/widgets/widget-registry.js`);
+      const { widget: loadWidget } = getWidgetEntry(this.targetConfig.widgetType);
+      const { default: UnityWidget } = await loadWidget();
+      this.actionMap = await new UnityWidget(slot, this.el, this.workflowCfg).initWidget();
+      this.interactiveArea = slot.querySelectorAll('.drop-zone');
+    } else if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
       this.actionMap = await new UnityWidget(
@@ -120,6 +127,13 @@ class WfInitiator {
       }
       if (hasAllClasses) {
         targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
+        // Resolve slot-based widget type from the interactive-slot element
+        if (targetCfg.selector) {
+          const slot = prevElem.querySelector(targetCfg.selector);
+          if (slot?.classList.contains('interactive-slot')) {
+            targetCfg.widgetType = slot.dataset.unityWidget || null;
+          }
+        }
         break;
       }
     }
@@ -140,8 +154,13 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
-    const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
+
+    // Slot-based widget path: CC has already created the interactive-slot container.
+    // Return it as a single element; the widget will mount its UI inside it.
+    if (asset?.classList.contains('interactive-slot')) return asset;
+
+    const iArea = createTag('div', { class: 'interactive-area' });
     if (asset.nodeName === 'PICTURE') {
       asset.querySelector('img').src = WfInitiator.getImgSrc(asset);
       [...asset.querySelectorAll('source')].forEach((s) => s.remove());

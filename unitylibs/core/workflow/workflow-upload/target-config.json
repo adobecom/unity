@@ -44,5 +44,7 @@
     "sendSplunkAnalytics": true
   },
   "upload": {},
-  "upload-marquee": {}
+  "upload-marquee": {
+    "selector": ".interactive-slot"
+  }
 }

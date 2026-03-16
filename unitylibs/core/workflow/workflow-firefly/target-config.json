@@ -24,9 +24,6 @@
     "insert": "after"
   },
   "upload-marquee": {
-    "selector": ".copy",
-    "source": ".copy",
-    "target": ".upload-marquee-prompt-container",
-    "insert": "after"
+    "selector": ".interactive-slot"
   }
 }
