@@ -189,6 +189,21 @@ export default class TransitionScreen {
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
+  resetSplashVideos() {
+    if (!this.splashScreenEl) return;
+    const videos = this.splashScreenEl.querySelectorAll('video');
+    videos.forEach((video) => {
+      delete video.dataset.playedOnce;
+      video.load();
+      const playWhenReady = () => {
+        video.currentTime = 0;
+        video.play()?.catch(() => {});
+      };
+      if (video.readyState >= 3) playWhenReady();
+      else video.addEventListener('canplay', playWhenReady, { once: true });
+    });
+  }
+
   splashVisibilityController(displayOn) {
     if (!displayOn) {
       this.LOADER_LIMIT = 95;
@@ -200,6 +215,7 @@ export default class TransitionScreen {
       return;
     }
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
+    this.resetSplashVideos();
     this.splashScreenEl.classList.add('show');
     this.splashScreenEl.parentElement?.classList.add('hide-splash-overflow');
     document.querySelector('main').setAttribute('aria-hidden', 'true');

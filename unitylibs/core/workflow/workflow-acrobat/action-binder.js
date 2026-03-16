@@ -7,6 +7,7 @@
 import {
   unityConfig,
   getUnityLibs,
+  getConfig,
   priorityLoad,
   isGuestUser,
   getApiCallOptions,
@@ -445,7 +446,18 @@ export default class ActionBinder {
       .then(async (resArr) => {
         const { response } = resArr[resArr.length - 1];
         if (!response?.url) throw new Error('Error connecting to App');
-        this.redirectUrl = response.url;
+        let redirectUrl = response.url;
+        if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
+          const localePrefix = getConfig()?.locale?.prefix?.replace('/', '');
+          if (localePrefix) {
+            const url = new URL(response.url);
+            if (!url.pathname.startsWith(`/${localePrefix}/`)) {
+              url.pathname = `/${localePrefix}${url.pathname}`.replace(/\/+/g, '/');
+            }
+            redirectUrl = url.href;
+          }
+        }
+        this.redirectUrl = redirectUrl;        
       })
       .catch(async (e) => {
         await this.showTransitionScreen();
