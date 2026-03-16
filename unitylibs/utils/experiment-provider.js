@@ -2,8 +2,7 @@
 
 export async function getDecisionScopesForVerb(verb) {
   const region = await getRegion().catch(() => undefined);
-  const verbScope = `acom_unity_acrobat_${verb}`;
-  return region ? [`${verbScope}_${region}`, verbScope] : [verbScope];
+  return [`acom_unity_acrobat_${verb}${region ? `_${region}` : ''}`];
 }
 
 export async function getRegion() {
