@@ -298,10 +298,10 @@ export default class UnityWidget {
     spTheme.appendChild(promptBarContainer);
     this.widget.appendChild(spTheme);
 
-    // this.setupFireflyPromptBarEvents(fireflyPromptBarApp);
+    this.setupFireflyPromptBarEvents(fireflyPromptBarApp);
 
     this.addWidget();
-    // if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
+    if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
 
     return this.workflowCfg.targetCfg.actionMap;
   }
