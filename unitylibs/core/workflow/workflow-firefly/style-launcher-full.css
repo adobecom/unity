@@ -332,3 +332,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
   width: fit-content;
 }
+
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
+  background: black;
+}
