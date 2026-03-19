@@ -15,45 +15,11 @@ import {
 const VIEWPORT_COL = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
 
 /**
- * Word/AEM often appends a stray "1" before the end of a list row (footnote artifact), e.g. "text1." or "style1".
- *
- * @param {string} text
- * @returns {string}
- */
-function sanitizeListRowFootnoteOne(text) {
-  if (!text) return text;
-  let t = text.trim();
-  t = t.replace(/([a-z])1\.(\s*)$/i, '$1.$2');
-  t = t.replace(/([a-z])1(\s*)$/i, '$1$2');
-  return t.trim();
-}
-
-/**
- * Build placeholder map from the Unity block (same keys as {@link UnityWidget#popPlaceholders} but keys work when
- * `icon-placeholder-*` is not the second token in `classList`).
+ * Text from the li that contains the given icon class (e.g. icon-placeholder-prompt, icon-placeholder-style).
+ * Rendered as-authored; only normalizes whitespace.
  *
  * @param {HTMLElement} root
- * @returns {Record<string, string>}
- */
-function collectPlaceholderRows(root) {
-  /** @type {Record<string, string>} */
-  const map = {};
-  root.querySelectorAll('[class*="placeholder"]').forEach((element) => {
-    const phClass = [...element.classList].find((c) => /^icon-placeholder-/.test(c));
-    if (!phClass) return;
-    const key = phClass.replace(/^icon-/, '');
-    const row = (element.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
-    if (key) map[key] = row;
-  });
-  return map;
-}
-
-/**
- * Text from the Unity list row that contains a placeholder icon (matches widget popPlaceholders li text).
- * Also finds elements whose class contains the suffix (e.g. single class "icon-placeholder-prompt-label").
- *
- * @param {HTMLElement} root
- * @param {string} iconClass e.g. icon-placeholder-prompt-label
+ * @param {string} iconClass
  * @returns {string}
  */
 function placeholderRowText(root, iconClass) {
@@ -229,33 +195,18 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   widgetInstance.selectedVerbText = 'Image';
   widgetWrap.setAttribute('data-selected-verb', 'image');
 
+  /* modelDropdown() in widget.js requires .icon-placeholder-input in el (reads parentElement.textContent). */
   const phStub = createTag('div', { hidden: true, 'aria-hidden': 'true' });
-  phStub.innerHTML = '<ul><li><span class="icon-placeholder-input"></span> </li></ul>';
+  phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
 
   widgetInstance.hasModelOptions = true;
   await widgetInstance.getModel();
 
-  /* Same rows as widget.js; also scan DOM so keys match even when `icon` is not classList[1]. */
-  const ph = { ...widgetInstance.popPlaceholders(), ...collectPlaceholderRows(el) };
-  const promptLabelText = sanitizeListRowFootnoteOne(
-    (
-      ph['placeholder-prompt-label']
-      || placeholderRowText(el, 'icon-placeholder-prompt-label')
-      || ph['placeholder-prompt']
-      || ''
-    ).trim(),
-  );
-  const styleSectionHeadingText = sanitizeListRowFootnoteOne(
-    (
-      ph['placeholder-style']
-      || placeholderRowText(el, 'icon-placeholder-style')
-      || ''
-    ).trim(),
-  );
+  const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
+  const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
 
   const inpWrap = createTag('div', { class: 'inp-wrap' });
-  /* Always show a label: from DOM placeholders or fallback "Prompt" so the field is never unlabeled. */
   const labelText = promptLabelText || 'Prompt';
   const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label unity-slf-prompt-label' }, labelText);
   const inpField = createTag('textarea', {
@@ -279,14 +230,24 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   }
 
   const actWrap = createTag('div', { class: 'act-wrap' });
-  const genBtn = createTag('a', {
-    href: '#',
-    class: 'unity-act-btn gen-btn unity-slf-gen-btn',
-    'daa-ll': 'Generate--image',
-    'aria-label': 'Generate',
-  });
-  genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));
-  widgetInstance.genBtn = genBtn;
+  const generateLi = el.querySelector('.icon-generate')?.closest('li');
+  let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
+  if (!genBtn) {
+    genBtn = createTag('a', {
+      href: '#',
+      class: 'unity-act-btn gen-btn unity-slf-gen-btn',
+      'daa-ll': 'Generate--image',
+      'aria-label': 'Generate',
+    });
+    genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));
+    widgetInstance.genBtn = genBtn;
+  } else if (!genBtn.querySelector('.btn-ico') && generateLi) {
+    const svgLink = generateLi.querySelector('a[href$=".svg"]');
+    if (svgLink?.href) {
+      const img = createTag('img', { src: svgLink.href, alt: 'Generate' });
+      genBtn.prepend(createTag('div', { class: 'btn-ico' }, img));
+    }
+  }
   actWrap.append(genBtn);
   inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
 
@@ -318,9 +279,12 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   styleItems.forEach((item) => styleList.append(item));
 
   const previewArea = createTag('div', { class: 'unity-slf-preview' });
-  const col = currentPreviewColumn();
-  const firstPreview = previewForViewport(previewRows[0], col);
-  if (firstPreview) previewArea.append(firstPreview);
+
+  function setPreviewPicture(pic) {
+    if (pic) previewArea.replaceChildren(pic);
+  }
+
+  setPreviewPicture(previewForViewport(previewRows[0], currentPreviewColumn()));
 
   function selectStyle(idx) {
     currentStyleIdx = idx;
@@ -329,9 +293,7 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
       item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
     });
     if (!userEdited) inpField.value = styles[idx].prompt;
-    previewArea.textContent = '';
-    const pic = previewForViewport(previewRows[idx], currentPreviewColumn());
-    if (pic) previewArea.append(pic);
+    setPreviewPicture(previewForViewport(previewRows[idx], currentPreviewColumn()));
   }
 
   styleItems.forEach((item, i) => {
@@ -348,10 +310,12 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
     userEdited = true;
   });
 
+  let lastPreviewCol = currentPreviewColumn();
   const onResize = () => {
-    previewArea.textContent = '';
-    const pic = previewForViewport(previewRows[currentStyleIdx], currentPreviewColumn());
-    if (pic) previewArea.append(pic);
+    const col = currentPreviewColumn();
+    if (col === lastPreviewCol) return;
+    lastPreviewCol = col;
+    setPreviewPicture(previewForViewport(previewRows[currentStyleIdx], col));
   };
   window.addEventListener('resize', onResize);
 
