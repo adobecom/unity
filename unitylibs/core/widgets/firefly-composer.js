@@ -163,6 +163,7 @@ export default class FireflyComposer {
    * (mirrors workflow-firefly/widget.js addWidget). Preserves hero-marquee content.
    */
   addWidget() {
+    console.log("inside addWidget");
     const targetCfg = this.workflowCfg?.targetCfg;
     const interactArea = this.container.querySelector('.copy') || this.container.querySelector('.text');
     const para = targetCfg?.target && interactArea ? interactArea.querySelector(targetCfg.target) : null;
