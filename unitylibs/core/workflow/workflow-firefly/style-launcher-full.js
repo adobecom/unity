@@ -249,7 +249,9 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
     }
   }
   actWrap.append(genBtn);
-  inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
+  actionContainer.append(actWrap);
+
+  inpWrap.append(promptLabel, inpField, actionContainer);
 
   const comboboxContainer = createTag('div', { class: 'autocomplete' });
   comboboxContainer.append(inpWrap);

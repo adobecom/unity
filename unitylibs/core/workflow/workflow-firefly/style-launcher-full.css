@@ -248,34 +248,56 @@
   padding-right: 0;
 }
 
-/* Model row + Generate on one line */
+/* Prompt layout: label, field, then action bar (model picker + Generate) */
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: grid;
-  grid-template-columns: 1fr auto;
-  column-gap: 16px;
+  grid-template-columns: 1fr;
+  /* row-gap: 24px; */
   align-items: center;
 }
 
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field-label,
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
-  grid-column: 1 / -1;
+  grid-column: 1;
 }
 
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
-  grid-column: 1 / -1;
+  grid-column: 1;
   color: #F8F8F8;
   padding: 10px 0px;
 }
 
+/* Action container: models-container + act-wrap in 3:1 ratio, 8px gap */
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
-  grid-column: 1;
-  min-width: 0;
+  /* grid-column: 1;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 8px;
+  align-items: center; */
   display: flex;
+  justify-content: space-between;
+  /* flex-direction: column; */
+  margin-top: 24px;
+  margin-left: 0;
   flex-wrap: wrap;
   align-items: center;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .act-wrap {
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  min-width: 0;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .act-wrap {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* When no model picker, place Generate button in right column */
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .act-wrap:only-child {
   grid-column: 2;
   justify-self: end;
 }
@@ -296,4 +318,17 @@
 
 .unity-enabled .interactive-area .selected-model {
   justify-content: flex-start;
+  background: #2C2C2C;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name, .unity-enabled .interactive-area.dark .ex-unity-wrap .models-container .model-name {
+  color: white;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
+  width: fit-content;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
+  width: fit-content;
 }
