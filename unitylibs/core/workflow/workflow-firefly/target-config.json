@@ -11,7 +11,7 @@
     },
     "sendSplunkAnalytics": true
   },
-  "hero-marquee.unity-style-launcher": {
+  "widget-prompt-with-style": {
     "selector": ".copy",
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",

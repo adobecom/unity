@@ -1,5 +1,5 @@
 /**
- * Parses Unity block authoring for the full style launcher (hero-marquee + unity-style-launcher).
+ * Parses Unity block authoring for the full style launcher (Unity block with .widget-prompt-with-style).
  * First top-level div: ul > li (thumbnail picture + label + default prompt after <br>).
  * Next div rows: each row has 3 column divs (mobile / tablet / desktop preview pictures).
  */

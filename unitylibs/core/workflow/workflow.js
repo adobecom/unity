@@ -101,11 +101,67 @@ class WfInitiator {
     });
   }
 
+  /**
+   * True when `other` comes after `ref` in document order (Node.compareDocumentPosition bitmask).
+   *
+   * @param {HTMLElement} ref
+   * @param {HTMLElement} other
+   * @returns {boolean}
+   */
+  static isDocumentFollowing(ref, other) {
+    const mask = ref.compareDocumentPosition(other);
+    // eslint-disable-next-line no-bitwise -- DOM compareDocumentPosition bitmask
+    return (mask & Node.DOCUMENT_POSITION_FOLLOWING) === Node.DOCUMENT_POSITION_FOLLOWING;
+  }
+
+  /**
+   * Locates the hero-marquee block associated with a Unity block that uses the full style launcher.
+   * Prefers preceding siblings, then the nearest preceding .hero-marquee within the same section.
+   *
+   * @param {HTMLElement} unityEl
+   * @returns {HTMLElement | null}
+   */
+  static findHeroMarqueeNearUnity(unityEl) {
+    if (!unityEl) return null;
+    let node = unityEl.previousElementSibling;
+    while (node) {
+      if (node.classList?.contains('hero-marquee')) return node;
+      node = node.previousElementSibling;
+    }
+    const scope = unityEl.closest('.section') || unityEl.parentElement;
+    if (!scope) return null;
+    const heroes = [...scope.querySelectorAll('.hero-marquee')];
+    let best = null;
+    heroes.forEach((h) => {
+      if (WfInitiator.isDocumentFollowing(h, unityEl)) {
+        if (!best || WfInitiator.isDocumentFollowing(best, h)) {
+          best = h;
+        }
+      }
+    });
+    return best;
+  }
+
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
+    // eslint-disable-next-line no-underscore-dangle -- target-config.json reserved key
     const defaults = targetConfig._defaults || {};
+    const widgetStyleCfg = targetConfig['widget-prompt-with-style'];
+    if (
+      this.workflowCfg.name === 'workflow-firefly'
+      && this.el.classList.contains('widget-prompt-with-style')
+      && widgetStyleCfg
+    ) {
+      const heroBlock = WfInitiator.findHeroMarqueeNearUnity(this.el);
+      if (!heroBlock) return [null, null, null];
+      const targetCfg = { ...defaults, ...widgetStyleCfg };
+      await this.intEnbReendered(heroBlock, targetCfg.selector);
+      const ta = this.createInteractiveArea(heroBlock, targetCfg.selector, targetCfg);
+      heroBlock.classList.add('unity-enabled');
+      return [heroBlock, ta, targetCfg];
+    }
     let targetCfg = null;
     for (let k = 0; k < supportedBlocks.length; k += 1) {
       const classes = supportedBlocks[k].split('.');
