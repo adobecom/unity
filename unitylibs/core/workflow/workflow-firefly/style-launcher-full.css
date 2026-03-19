@@ -81,11 +81,13 @@
 .unity-style-launcher-full .unity-slf-prompt-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.85;
+  color: #7d7d7d;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--Line-height-100, 18px);
+  letter-spacing: var(--Letter-spacing, 0);
 }
 
 /*
