@@ -15,6 +15,55 @@ import {
 const VIEWPORT_COL = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
 
 /**
+ * Word/AEM often appends a stray "1" before the end of a list row (footnote artifact), e.g. "text1." or "style1".
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function sanitizeListRowFootnoteOne(text) {
+  if (!text) return text;
+  let t = text.trim();
+  t = t.replace(/([a-z])1\.(\s*)$/i, '$1.$2');
+  t = t.replace(/([a-z])1(\s*)$/i, '$1$2');
+  return t.trim();
+}
+
+/**
+ * Build placeholder map from the Unity block (same keys as {@link UnityWidget#popPlaceholders} but keys work when
+ * `icon-placeholder-*` is not the second token in `classList`).
+ *
+ * @param {HTMLElement} root
+ * @returns {Record<string, string>}
+ */
+function collectPlaceholderRows(root) {
+  /** @type {Record<string, string>} */
+  const map = {};
+  root.querySelectorAll('[class*="placeholder"]').forEach((element) => {
+    const phClass = [...element.classList].find((c) => /^icon-placeholder-/.test(c));
+    if (!phClass) return;
+    const key = phClass.replace(/^icon-/, '');
+    const row = (element.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
+    if (key) map[key] = row;
+  });
+  return map;
+}
+
+/**
+ * Text from the Unity list row that contains a placeholder icon (matches widget popPlaceholders li text).
+ * Also finds elements whose class contains the suffix (e.g. single class "icon-placeholder-prompt-label").
+ *
+ * @param {HTMLElement} root
+ * @param {string} iconClass e.g. icon-placeholder-prompt-label
+ * @returns {string}
+ */
+function placeholderRowText(root, iconClass) {
+  const icon = root.querySelector(`.${iconClass}`)
+    || root.querySelector(`[class*="${iconClass}"]`);
+  if (!icon) return '';
+  return (icon.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+/**
  * @param {HTMLElement} li
  * @returns {{ picture: HTMLPictureElement, label: string, prompt: string } | null}
  */
@@ -39,18 +88,57 @@ export function parseStyleLi(li) {
 }
 
 /**
- * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
- * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
+ * True when `li` belongs to `ul` without crossing a nested list (Franklin may wrap `li` in div/p).
+ *
+ * @param {HTMLUListElement} ul
+ * @param {HTMLLIElement} li
+ * @returns {boolean}
  */
+function isDirectLiOfUl(ul, li) {
+  let p = li.parentElement;
+  while (p) {
+    if (p === ul) return true;
+    if (p.tagName === 'UL' || p.tagName === 'OL') return false;
+    p = p.parentElement;
+  }
+  return false;
+}
+
 /**
+ * All `li` nodes authored under this list (not inside a nested ul).
+ *
+ * @param {HTMLUListElement} ul
+ * @returns {HTMLLIElement[]}
+ */
+function topLevelLisInUl(ul) {
+  return [...ul.querySelectorAll('li')].filter((li) => isDirectLiOfUl(ul, li));
+}
+
+/**
+ * Picks the `ul` with the most thumbnail rows — avoids matching a stray 1-item list before the real style grid.
+ *
  * @param {HTMLElement} div
  * @returns {HTMLUListElement | null}
  */
 function findStyleVariantUl(div) {
   const uls = [...div.querySelectorAll('ul')];
-  return uls.find((u) => [...u.querySelectorAll(':scope > li')].some((li) => li.querySelector('picture'))) || null;
+  let best = null;
+  let bestScore = 0;
+  uls.forEach((u) => {
+    const lis = topLevelLisInUl(u);
+    const score = lis.filter((li) => li.querySelector('picture')).length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = u;
+    }
+  });
+  return bestScore > 0 ? best : null;
 }
 
+/**
+ * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
+ * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
+ */
 export function parseStyleLauncherAuthoring(root) {
   /* Prefer direct child divs (config rows + style table + preview rows). Fallback to single wrapper. */
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
@@ -60,21 +148,32 @@ export function parseStyleLauncherAuthoring(root) {
   }
   if (!topDivs.length) return { styles: [], previewRows: [] };
 
-  const stylesWrap = topDivs.find((div) => findStyleVariantUl(div));
-  if (!stylesWrap) return { styles: [], previewRows: [] };
+  /* Prefer the div whose list has the most thumbnail rows (not the first div that merely contains *some* list). */
+  let stylesWrap = null;
+  let ul = /** @type {HTMLUListElement | null} */ (null);
+  let bestListScore = 0;
+  topDivs.forEach((div) => {
+    const candidateUl = findStyleVariantUl(div);
+    if (!candidateUl) return;
+    const score = topLevelLisInUl(candidateUl).filter((li) => li.querySelector('picture')).length;
+    if (score > bestListScore) {
+      bestListScore = score;
+      ul = candidateUl;
+      stylesWrap = div;
+    }
+  });
+  if (!ul || !stylesWrap) return { styles: [], previewRows: [] };
 
-  const ul = findStyleVariantUl(stylesWrap);
   const styles = [];
-  if (ul) {
-    [...ul.querySelectorAll(':scope > li')].forEach((li) => {
-      const result = parseStyleLi(li);
-      if (result) {
-        styles.push(result);
-      } else if (styles.length && !styles[styles.length - 1].prompt) {
-        styles[styles.length - 1].prompt = li.textContent.trim();
-      }
-    });
-  }
+  const listItems = topLevelLisInUl(ul);
+  listItems.forEach((li) => {
+    const result = parseStyleLi(li);
+    if (result) {
+      styles.push(result);
+    } else if (styles.length && !styles[styles.length - 1].prompt) {
+      styles[styles.length - 1].prompt = li.textContent.trim();
+    }
+  });
 
   const startIdx = topDivs.indexOf(stylesWrap);
   const previewRows = topDivs.slice(startIdx + 1)
@@ -137,8 +236,28 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   widgetInstance.hasModelOptions = true;
   await widgetInstance.getModel();
 
+  /* Same rows as widget.js; also scan DOM so keys match even when `icon` is not classList[1]. */
+  const ph = { ...widgetInstance.popPlaceholders(), ...collectPlaceholderRows(el) };
+  const promptLabelText = sanitizeListRowFootnoteOne(
+    (
+      ph['placeholder-prompt-label']
+      || placeholderRowText(el, 'icon-placeholder-prompt-label')
+      || ph['placeholder-prompt']
+      || ''
+    ).trim(),
+  );
+  const styleSectionHeadingText = sanitizeListRowFootnoteOne(
+    (
+      ph['placeholder-style']
+      || placeholderRowText(el, 'icon-placeholder-style')
+      || ''
+    ).trim(),
+  );
+
   const inpWrap = createTag('div', { class: 'inp-wrap' });
-  const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label unity-slf-prompt-label' }, 'Prompt');
+  /* Always show a label: from DOM placeholders or fallback "Prompt" so the field is never unlabeled. */
+  const labelText = promptLabelText || 'Prompt';
+  const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label unity-slf-prompt-label' }, labelText);
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
@@ -176,7 +295,11 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   widget.append(comboboxContainer);
   widgetWrap.append(widget);
 
-  const stylesHeading = createTag('h4', { class: 'unity-slf-styles-heading' }, 'Choose a style');
+  const stylesHeading = createTag(
+    'h4',
+    { class: 'unity-slf-styles-heading' },
+    styleSectionHeadingText || 'Choose a style',
+  );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
   let currentStyleIdx = 0;
   let userEdited = false;

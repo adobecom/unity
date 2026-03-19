@@ -88,6 +88,15 @@
   opacity: 0.85;
 }
 
+/*
+ * widget.css sets .interactive-area.dark .inp-field-label to #000 for the marquee (dark chrome + light input).
+ * The full style-launcher card uses a dark shell; without this override the prompt label is effectively invisible.
+ */
+.unity-style-launcher-full.unity-enabled > .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label,
+.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-prompt-label {
+  color: rgb(245 245 245 / 92%) !important;
+}
+
 .unity-style-launcher-full .inp-field {
   min-height: 100px;
   resize: vertical;
