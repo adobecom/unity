@@ -24,8 +24,8 @@ class WfInitiator {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const sharedWfRes = [
       `${baseWfPath}/sprite.svg`,
-      `${baseWfPath}/widget.css`,
-      `${baseWfPath}/widget.js`,
+      `${baseWfPath}/stylewidget.css`,
+      `${baseWfPath}/stylewidget.js`,
     ];
     const workflowRes = {
       'workflow-photoshop': [
@@ -65,7 +65,7 @@ class WfInitiator {
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     if (this.targetConfig.renderWidget) {
-      const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
+      const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/stylewidget.js`);
       const spriteContent = await spriteSvg.text();
       this.actionMap = await new UnityWidget(
         this.interactiveArea,
