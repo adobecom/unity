@@ -226,6 +226,21 @@ export default class ActionBinder {
     return { isValid: true };
   }
 
+  /**
+   * When Generate runs from the full style launcher, the connector payload should include the selected style name
+   * at the end of the prompt (DOM label under the thumbnail).
+   *
+   * @param {string} query
+   * @returns {string}
+   */
+  appendSelectedStyleNameForStyleLauncher(query) {
+    const root = this.block;
+    if (!root?.classList?.contains('unity-style-launcher-full')) return query;
+    const styleName = root.querySelector('.unity-slf-style-item.selected .unity-slf-style-label')?.textContent?.trim();
+    if (!styleName || !query) return query;
+    return `${query} ${styleName}`;
+  }
+
   getVerbFromDom() {
     const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
     if (!verbEl) return undefined;
@@ -261,6 +276,7 @@ export default class ActionBinder {
     } else {
       this.query = this.inputField.value.trim();
     }
+    this.query = this.appendSelectedStyleNameForStyleLauncher(this.query);
     const selectedVerbType = `text-to-${currentVerb}`;
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
