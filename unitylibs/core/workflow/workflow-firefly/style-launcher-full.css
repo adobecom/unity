@@ -1,3 +1,6 @@
+/* Firefly prompt / model / generate styles — import from same folder so URL always matches this sheet */
+@import url('widget.css');
+
 /* Full style launcher UI (sibling between hero-marquee and Unity block, mountInUnityBlock) */
 
 /* Screen-reader-only bucket: preserves cgen / icons inside .unity for getCgenQueryParams & error copy */

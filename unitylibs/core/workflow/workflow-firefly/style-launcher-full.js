@@ -107,16 +107,18 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   if (!styles.length) return;
 
   const unityLibs = getUnityLibs();
-  /* Load widget.css first so launcher overrides in style-launcher-full.css win on equal specificity. */
-  await new Promise((resolve) => {
-    loadStyle(`${unityLibs}/core/workflow/workflow-firefly/widget.css`, resolve);
-  });
+  /*
+   * Pull in Firefly widget.css via @import inside style-launcher-full.css so the browser resolves
+   * widget.css from the same directory as this sheet (avoids broken URLs when getUnityLibs() mismatches the page).
+   */
   await new Promise((resolve) => {
     loadStyle(`${unityLibs}/core/workflow/workflow-firefly/style-launcher-full.css`, resolve);
   });
 
   const { el } = widgetInstance;
-  const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
+  /* verb-options: widget.css only gives models-container / action-container flex layout with this class */
+  const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options' });
+  const [widget, unitySprite] = ['ex-unity-widget', 'unity-sprite-container']
     .map((c) => createTag('div', { class: c }));
   widgetInstance.widgetWrap = widgetWrap;
   widgetInstance.widget = widget;
