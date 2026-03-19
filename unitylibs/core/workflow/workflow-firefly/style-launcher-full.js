@@ -267,7 +267,6 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
   let currentStyleIdx = 0;
-  let userEdited = false;
 
   const styleItems = styles.map((style, i) => {
     const li = createTag('li', {
@@ -290,14 +289,52 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
 
   setPreviewPicture(previewForViewport(previewRows[0], currentPreviewColumn()));
 
+  const EMPTY_PROMPT_RESTORE_MS = 5000;
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let emptyPromptRestoreTimerId = null;
+
+  function isPromptVisuallyEmpty() {
+    return inpField.value.trim() === '';
+  }
+
+  function clearEmptyPromptRestoreTimer() {
+    if (emptyPromptRestoreTimerId != null) {
+      clearTimeout(emptyPromptRestoreTimerId);
+      emptyPromptRestoreTimerId = null;
+    }
+  }
+
+  /** After 5s with an empty field, restore the default prompt for the currently selected style. */
+  function scheduleEmptyPromptRestoreIfStillEmpty() {
+    clearEmptyPromptRestoreTimer();
+    emptyPromptRestoreTimerId = setTimeout(() => {
+      emptyPromptRestoreTimerId = null;
+      if (!isPromptVisuallyEmpty()) return;
+      inpField.value = styles[currentStyleIdx]?.prompt ?? '';
+    }, EMPTY_PROMPT_RESTORE_MS);
+  }
+
+  /**
+   * When the prompt still matches the previously selected style’s default, a new style applies its default prompt.
+   * If the user changed the text away from that default, switching style leaves the prompt unchanged.
+   */
   function selectStyle(idx) {
+    clearEmptyPromptRestoreTimer();
+    const prevIdx = currentStyleIdx;
+    const prevDefault = styles[prevIdx]?.prompt ?? '';
+    const stillSyncedWithPreviousStyle = inpField.value === prevDefault;
     currentStyleIdx = idx;
     styleItems.forEach((item, i) => {
       item.classList.toggle('selected', i === idx);
       item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
     });
-    if (!userEdited) inpField.value = styles[idx].prompt;
+    if (stillSyncedWithPreviousStyle) {
+      inpField.value = styles[idx].prompt;
+    }
     setPreviewPicture(previewForViewport(previewRows[idx], currentPreviewColumn()));
+    if (isPromptVisuallyEmpty()) {
+      scheduleEmptyPromptRestoreIfStillEmpty();
+    }
   }
 
   styleItems.forEach((item, i) => {
@@ -311,7 +348,10 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   });
 
   inpField.addEventListener('input', () => {
-    userEdited = true;
+    clearEmptyPromptRestoreTimer();
+    if (isPromptVisuallyEmpty()) {
+      scheduleEmptyPromptRestoreIfStillEmpty();
+    }
   });
 
   let lastPreviewCol = currentPreviewColumn();
