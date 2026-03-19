@@ -12,7 +12,7 @@
     "sendSplunkAnalytics": true
   },
   "widget-prompt-with-style": {
-    "selector": ".copy",
+    "selector": ":scope > div",
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",
     "insert": "before",

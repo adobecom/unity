@@ -1,7 +1,8 @@
 /**
  * Parses Unity block authoring for the full style launcher (Unity block with .widget-prompt-with-style).
- * First top-level div: ul > li (thumbnail picture + label + default prompt after <br>).
- * Next div rows: each row has 3 column divs (mobile / tablet / desktop preview pictures).
+ * The style table is the first ul whose lis contain a thumbnail <picture> (verb/config ul comes first and is skipped).
+ * Following sibling div rows: each has 3 column divs (mobile / tablet / desktop preview pictures).
+ * Rows like cgen (no 3 pictures) are skipped.
  */
 
 import {
@@ -41,8 +42,17 @@ export function parseStyleLi(li) {
  * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
  * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
  */
+/**
+ * @param {HTMLElement} div
+ * @returns {HTMLUListElement | null}
+ */
+function findStyleVariantUl(div) {
+  const uls = [...div.querySelectorAll('ul')];
+  return uls.find((u) => [...u.querySelectorAll(':scope > li')].some((li) => li.querySelector('picture'))) || null;
+}
+
 export function parseStyleLauncherAuthoring(root) {
-  /* Prefer direct child divs (styles wrapper + preview rows as siblings). Fallback to single wrapper. */
+  /* Prefer direct child divs (config rows + style table + preview rows). Fallback to single wrapper. */
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
   if (topDivs.length === 1) {
     const inner = topDivs[0];
@@ -50,8 +60,10 @@ export function parseStyleLauncherAuthoring(root) {
   }
   if (!topDivs.length) return { styles: [], previewRows: [] };
 
-  const stylesWrap = topDivs[0];
-  const ul = stylesWrap.querySelector('ul');
+  const stylesWrap = topDivs.find((div) => findStyleVariantUl(div));
+  if (!stylesWrap) return { styles: [], previewRows: [] };
+
+  const ul = findStyleVariantUl(stylesWrap);
   const styles = [];
   if (ul) {
     [...ul.querySelectorAll(':scope > li')].forEach((li) => {
@@ -64,10 +76,13 @@ export function parseStyleLauncherAuthoring(root) {
     });
   }
 
-  const previewRows = topDivs.slice(1).map((row) => {
-    const cols = [...row.querySelectorAll(':scope > div')];
-    return cols.map((col) => col.querySelector('picture'));
-  });
+  const startIdx = topDivs.indexOf(stylesWrap);
+  const previewRows = topDivs.slice(startIdx + 1)
+    .map((row) => {
+      const cols = [...row.querySelectorAll(':scope > div')];
+      return cols.map((col) => col.querySelector('picture'));
+    })
+    .filter((pics) => pics.length === 3 && pics.every(Boolean));
 
   return { styles, previewRows };
 }
@@ -96,7 +111,7 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
     loadStyle(`${unityLibs}/core/workflow/workflow-firefly/style-launcher-full.css`, resolve);
   });
 
-  const el = widgetInstance.el;
+  const { el } = widgetInstance;
   const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
     .map((c) => createTag('div', { class: c }));
   widgetInstance.widgetWrap = widgetWrap;

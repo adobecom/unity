@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 
-import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
+import { createTag, getConfig, getUnityLibs, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -29,7 +29,9 @@ export default class UnityWidget {
 
   async initWidget() {
     if (this.workflowCfg.targetCfg?.mountInUnityBlock) {
-      const { parseStyleLauncherAuthoring, mountStyleLauncherFullUI } = await import('./style-launcher-full.js');
+      // Resolve via getUnityLibs() so the request matches other workflow modules (relative ./ URLs can 404 under import maps / CDN).
+      const styleLauncherUrl = `${getUnityLibs()}/core/workflow/workflow-firefly/style-launcher-full.js`;
+      const { parseStyleLauncherAuthoring, mountStyleLauncherFullUI } = await import(styleLauncherUrl);
       const parsed = parseStyleLauncherAuthoring(this.el);
       if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
       await mountStyleLauncherFullUI(this, parsed);
