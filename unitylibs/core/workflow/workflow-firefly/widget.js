@@ -28,6 +28,13 @@ export default class UnityWidget {
   }
 
   async initWidget() {
+    if (this.workflowCfg.targetCfg?.mountInUnityBlock) {
+      const { parseStyleLauncherAuthoring, mountStyleLauncherFullUI } = await import('./style-launcher-full.js');
+      const parsed = parseStyleLauncherAuthoring(this.el);
+      if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
+      await mountStyleLauncherFullUI(this, parsed);
+      return this.workflowCfg.targetCfg.actionMap;
+    }
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
@@ -314,7 +321,9 @@ export default class UnityWidget {
 
   modelDropdown() {
     if (!this.hasModelOptions) return [];
-    const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
+    const models = Array.isArray(this.models)
+      ? this.models.filter((obj) => obj.module === this.selectedVerbType)
+      : [];
     if (!Array.isArray(models) || models.length === 0) return [];
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedModelType = models[0].id;
@@ -506,6 +515,7 @@ export default class UnityWidget {
   }
 
   addWidget() {
+    if (this.workflowCfg.targetCfg?.mountInUnityBlock) return;
     const interactArea = this.target.querySelector('.copy');
     const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);

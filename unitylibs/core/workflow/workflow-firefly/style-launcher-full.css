@@ -1,0 +1,128 @@
+/* Full style launcher UI (Unity block below hero-marquee, mountInUnityBlock) */
+
+.unity-style-launcher-full {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.unity-style-launcher-full .unity-slf-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media screen and (min-width: 900px) {
+  .unity-style-launcher-full .unity-slf-main {
+    grid-template-columns: minmax(280px, 42%) 1fr;
+    gap: 32px;
+    align-items: stretch;
+  }
+}
+
+.unity-style-launcher-full .unity-slf-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.unity-style-launcher-full .unity-slf-right {
+  min-width: 0;
+}
+
+.unity-style-launcher-full .unity-slf-preview {
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 20%);
+}
+
+.unity-style-launcher-full .unity-slf-preview picture,
+.unity-style-launcher-full .unity-slf-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.unity-style-launcher-full .unity-slf-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.unity-style-launcher-full .ex-unity-wrap {
+  position: relative;
+}
+
+.unity-style-launcher-full .unity-slf-prompt-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+.unity-style-launcher-full .inp-field {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.unity-style-launcher-full .unity-slf-styles-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+.unity-style-launcher-full .unity-slf-style-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.unity-style-launcher-full .unity-slf-style-item {
+  flex: 0 0 auto;
+  width: 88px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  padding: 6px;
+  text-align: center;
+  transition: border-color 0.15s ease;
+}
+
+.unity-style-launcher-full .unity-slf-style-item.selected {
+  border-color: #1473e6;
+}
+
+.unity-style-launcher-full .unity-slf-style-item picture,
+.unity-style-launcher-full .unity-slf-style-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.unity-style-launcher-full .unity-slf-style-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unity-style-launcher-full .unity-slf-gen-btn {
+  white-space: nowrap;
+}

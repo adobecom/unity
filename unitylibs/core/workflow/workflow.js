@@ -77,10 +77,11 @@ class WfInitiator {
       this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
+    const actionBinderBlock = this.targetConfig?.mountInUnityBlock ? this.el : this.targetBlock;
     await new ActionBinder(
       this.el,
       this.workflowCfg,
-      this.targetBlock,
+      actionBinderBlock,
       this.interactiveArea,
       this.actionMap,
     ).initActionListeners();
@@ -140,6 +141,9 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
+    if (targetCfg.mountInUnityBlock) {
+      return this.el;
+    }
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {

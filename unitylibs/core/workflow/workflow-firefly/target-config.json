@@ -11,22 +11,29 @@
     },
     "sendSplunkAnalytics": true
   },
+  "hero-marquee.unity-style-launcher": {
+    "selector": ".copy",
+    "source": ".copy .main-copy",
+    "target": ".row-supplemental a",
+    "insert": "before",
+    "mountInUnityBlock": true
+  },
   "hero-marquee": {
     "selector": ".copy",
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",
     "insert": "before"
   },
-  "showcase-marquee": {
-    "selector": ".text",
-    "source": ".text",
-    "target": "p:last-of-type",
-    "insert": "after"
-  },
   "upload-marquee": {
     "selector": ".copy",
     "source": ".copy",
     "target": ".upload-marquee-prompt-container",
+    "insert": "after"
+  },
+  "showcase-marquee": {
+    "selector": ".text",
+    "source": ".text",
+    "target": "p:last-of-type",
     "insert": "after"
   }
 }

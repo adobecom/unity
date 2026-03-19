@@ -68,8 +68,10 @@ export default class ActionBinder {
     if (!errorCallbackOptions?.errorToastEl) return;
     const lang = document.querySelector('html').getAttribute('lang');
     const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
-    const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
-    if (promptBarEl) promptBarEl.style.pointerEvents = 'none';
+    const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
+      || this.canvasArea.querySelector('.ex-unity-wrap');
+    if (!promptBarEl) return;
+    promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
     if (!errorToast) return;
     const closeBtn = errorToast.querySelector('.alert-close');
@@ -104,7 +106,9 @@ export default class ActionBinder {
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
       const alertImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/alert.svg` });
       const closeImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/close.svg` });
-      const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
+      const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
+        || this.canvasArea.querySelector('.ex-unity-wrap');
+      if (!promptBarEl) return null;
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
       const alertIcon = createTag('div', { class: 'alert-icon' });
       alertIcon.append(alertImg, alertText);
@@ -241,7 +245,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, {...logData, operation: this.verb}, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {
