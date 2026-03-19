@@ -1,0 +1,54 @@
+.firefly-composer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 40px;
+  }
+  
+  .ffc-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .ffc-prompt {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .ffc-generate {
+    padding: 12px 16px;
+    background: linear-gradient(90deg, #ff3d00, #7b61ff);
+    color: white;
+    border: none;
+    border-radius: 8px;
+  }
+  
+  .ffc-styles {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+  }
+  
+  .ffc-style {
+    cursor: pointer;
+    border: 1px solid transparent;
+    padding: 4px;
+  }
+  
+  .ffc-style.active {
+    border: 1px solid white;
+  }
+  
+  .ffc-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .ffc-preview img {
+    max-width: 100%;
+    border-radius: 12px;
+  }

@@ -11,18 +11,20 @@
     },
     "sendSplunkAnalytics": true
   },
+
   "hero-marquee": {
-    "selector": ".copy",
-    "source": ".copy .main-copy",
-    "target": ".row-supplemental a",
-    "insert": "before"
+    "selector": ":scope",
+    "insert": "after",
+    "renderMode": "full-width"
   },
+
   "showcase-marquee": {
     "selector": ".text",
     "source": ".text",
     "target": "p:last-of-type",
     "insert": "after"
   },
+
   "upload-marquee": {
     "selector": ".copy",
     "source": ".copy",
