@@ -20,6 +20,8 @@ class WfInitiator {
     this.actionMap = {};
   }
 
+  /* ---------------- PRIORITY LOAD ---------------- */
+
   static async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const sharedWfRes = [
@@ -27,6 +29,7 @@ class WfInitiator {
       `${baseWfPath}/widget.css`,
       `${baseWfPath}/widget.js`,
     ];
+
     const workflowRes = {
       'workflow-photoshop': [
         ...sharedWfRes,
@@ -35,12 +38,15 @@ class WfInitiator {
       'workflow-ai': sharedWfRes,
       'workflow-firefly': sharedWfRes,
     };
+
     const commonResources = [
       `${baseWfPath}/target-config.json`,
       `${baseWfPath}/action-binder.js`,
     ];
+
     const wfRes = workflowRes[workflowName] || [];
     const priorityList = [...commonResources, ...wfRes];
+
     const pfr = await priorityLoad(priorityList);
 
     return {
@@ -49,34 +55,82 @@ class WfInitiator {
     };
   }
 
+  /* ---------------- NEW: WIDGET RESOLVER ---------------- */
+
+  async loadWidget() {
+    // 🔥 NEW: load custom widget based on class
+    if (this.el.classList.contains('widget-style')) {
+      return import(`${getUnityLibs()}/core/widgets/firefly-composer/firefly-composer.js`);
+    }
+
+    // fallback to existing behavior
+    return import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
+  }
+
+  /* ---------------- INIT ---------------- */
+
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
     setUnityLibs(unityLibs, project);
+
     this.el = el;
     this.unityLibs = unityLibs;
     this.project = project;
     this.enabledFeatures = [];
+
     this.workflowCfg = this.getWorkFlowInformation();
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
-    // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
+
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } =
+      await WfInitiator.priorityLibFetch(this.workflowCfg.name);
+
+    [this.targetBlock, this.interactiveArea, this.targetConfig] =
+      await this.getTarget(tcfg);
+
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
+
+    /* ---------------- WIDGET INIT ---------------- */
+
     if (this.targetConfig.renderWidget) {
-      const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
-      const spriteContent = await spriteSvg.text();
-      this.actionMap = await new UnityWidget(
+      const { default: UnityWidget } = await this.loadWidget();
+
+      // 🔥 Safe sprite handling (optional for new widgets)
+      let spriteContent = null;
+      if (spriteSvg) {
+        try {
+          spriteContent = await spriteSvg.text();
+        } catch (e) {
+          spriteContent = null;
+        }
+      }
+
+      const widgetInstance = new UnityWidget(
         this.interactiveArea,
         this.el,
         this.workflowCfg,
         spriteContent,
-      ).initWidget();
+      );
+
+      // 🔥 Support both old + new widget APIs
+      if (widgetInstance.initWidget) {
+        this.actionMap = await widgetInstance.initWidget();
+      } else if (widgetInstance.render) {
+        this.actionMap = await widgetInstance.render();
+      } else {
+        this.actionMap = {};
+      }
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
-    const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
+
+    /* ---------------- ACTION BINDER ---------------- */
+
+    const { default: ActionBinder } = await import(
+      `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`
+    );
+
     await new ActionBinder(
       this.el,
       this.workflowCfg,
@@ -85,6 +139,8 @@ class WfInitiator {
       this.actionMap,
     ).initActionListeners();
   }
+
+  /* ---------------- RENDER WAIT ---------------- */
 
   checkRenderStatus(block, selector, res, rej, etime, rtime) {
     if (etime > 20000) { rej(); return; }
@@ -100,76 +156,108 @@ class WfInitiator {
     });
   }
 
+  /* ---------------- TARGET ---------------- */
+
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
+
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
     const defaults = targetConfig._defaults || {};
+
     let targetCfg = null;
+
     for (let k = 0; k < supportedBlocks.length; k += 1) {
       const classes = supportedBlocks[k].split('.');
       let hasAllClasses = true;
-      // eslint-disable-next-line no-restricted-syntax
+
       for (const c of classes) {
         const hasClass = prevElem.classList.contains(c);
         const hasChild = prevElem.querySelector(`.${c}`);
+
         if (!(hasClass || hasChild)) {
           hasAllClasses = false;
           break;
         }
       }
+
       if (hasAllClasses) {
         targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
         break;
       }
     }
+
     if (!targetCfg) return [null, null, null];
+
     await this.intEnbReendered(prevElem, targetCfg.selector);
-    let ta = null;
-    ta = this.createInteractiveArea(prevElem, targetCfg.selector, targetCfg);
+
+    const ta = this.createInteractiveArea(prevElem, targetCfg.selector, targetCfg);
+
     prevElem.classList.add('unity-enabled');
+
     return [prevElem, ta, targetCfg];
   }
+
+  /* ---------------- IMAGE UTILS ---------------- */
 
   static getImgSrc(pic) {
     const viewport = defineDeviceByScreenSize();
     let source = '';
-    if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
-    else source = pic.querySelector('source[type="image/webp"][media]');
+
+    if (viewport === 'MOBILE') {
+      source = pic.querySelector('source[type="image/webp"]:not([media])');
+    } else {
+      source = pic.querySelector('source[type="image/webp"][media]');
+    }
+
     return source ? source.srcset : pic.querySelector('img').src;
   }
+
+  /* ---------------- INTERACTIVE AREA ---------------- */
 
   createInteractiveArea(block, selector, targetCfg) {
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
+
     if (asset.nodeName === 'PICTURE') {
       asset.querySelector('img').src = WfInitiator.getImgSrc(asset);
       [...asset.querySelectorAll('source')].forEach((s) => s.remove());
+
       const newPic = asset.cloneNode(true);
       this.el.querySelector(':scope > div > div').prepend(newPic);
     }
-    if (!targetCfg.renderWidget && (block.classList.contains('upload') || block.classList.contains('upload-marquee'))) {
+
+    if (!targetCfg.renderWidget &&
+      (block.classList.contains('upload') || block.classList.contains('upload-marquee'))) {
       return block.querySelectorAll(selector);
     }
+
     if (!targetCfg.renderWidget) return null;
+
     asset.insertAdjacentElement('beforebegin', iArea);
     iArea.append(asset);
+
     if (this.el.classList.contains('light')) iArea.classList.add('light');
     else iArea.classList.add('dark');
+
     return iArea;
   }
+
+  /* ---------------- WORKFLOW INFO ---------------- */
 
   getWorkFlowInformation() {
     let wfName = '';
     let product = '';
     let feature = '';
     let psw = '';
+
     [...this.el.classList].forEach((cn) => {
       if (cn.match('workflow-')) wfName = cn;
       if (cn.match('product-')) product = cn.replace('product-', '');
       if (cn.match('feature-')) feature = cn.replace('feature-', '');
       if (cn.match('psw-enabled')) psw = cn;
     });
+
     const workflowCfg = {
       'workflow-photoshop': {
         productName: 'Photoshop',
@@ -177,41 +265,7 @@ class WfInitiator {
       },
       'workflow-acrobat': {
         productName: 'acrobat',
-        sfList: new Set([
-          'fillsign',
-          'compress-pdf',
-          'add-comment',
-          'number-pages',
-          'split-pdf',
-          'crop-pages',
-          'delete-pages',
-          'insert-pdf',
-          'extract-pages',
-          'reorder-pages',
-          'sendforsignature',
-          'pdf-to-word',
-          'pdf-to-excel',
-          'pdf-to-ppt',
-          'pdf-to-image',
-          'pdf-to-png',
-          'createpdf',
-          'word-to-pdf',
-          'excel-to-pdf',
-          'ppt-to-pdf',
-          'jpg-to-pdf',
-          'png-to-pdf',
-          'combine-pdf',
-          'rotate-pages',
-          'protect-pdf',
-          'ocr-pdf',
-          'chat-pdf',
-          'chat-pdf-student',
-          'summarize-pdf',
-          'pdf-ai',
-          'heic-to-pdf',
-          'quiz-maker',
-          'flashcard-maker',
-        ]),
+        sfList: new Set([]),
       },
       'workflow-ai': {
         productName: 'Express',
@@ -229,7 +283,9 @@ class WfInitiator {
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
       },
     };
+
     if (!wfName || !workflowCfg[wfName]) return [];
+
     return {
       name: wfName,
       productName: workflowCfg[wfName].productName,
@@ -242,34 +298,56 @@ class WfInitiator {
     };
   }
 
+  /* ---------------- FEATURES ---------------- */
+
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
+
     const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee');
+
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
     }
+
     const configuredFeatures = this.el.querySelectorAll(':scope > div > div > ul > li > span.icon');
+
     configuredFeatures.forEach((cf) => {
       const cfName = [...cf.classList].find((cn) => cn.match('icon-'));
       if (!cfName) return;
+
       const fn = cfName.trim().replace('icon-', '');
+
       if (supportedFeatures.has(fn)) {
-        if (!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
+        if (!this.workflowCfg.enabledFeatures.includes(fn)) {
+          this.workflowCfg.enabledFeatures.push(fn);
+        }
         this.workflowCfg.featureCfg.push(cf.closest('li'));
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       } else if (supportedTexts && supportedTexts.has(fn)) {
-        this.workflowCfg.supportedTexts[fn] = this.workflowCfg.supportedTexts[fn] || [];
+        this.workflowCfg.supportedTexts[fn] =
+          this.workflowCfg.supportedTexts[fn] || [];
         this.workflowCfg.supportedTexts[fn].push(cf.closest('li').innerText);
       }
     });
   }
 }
 
-export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
+/* ---------------- EXPORT ---------------- */
+
+export default async function init(
+  el,
+  project = 'unity',
+  unityLibs = '/unitylibs',
+  unityVersion = 'v2',
+  langRegion = 'us',
+  langCode = 'en',
+) {
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
+
   setUnityLibs(unityLibs, project);
+
   await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
 }
