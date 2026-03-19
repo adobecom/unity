@@ -64,25 +64,33 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
+    let unityWidget = null;
     if (this.targetConfig.renderWidget) {
       const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
-      this.actionMap = await new UnityWidget(
+      unityWidget = new UnityWidget(
         this.interactiveArea,
         this.el,
         this.workflowCfg,
         spriteContent,
-      ).initWidget();
+      );
+      this.actionMap = await unityWidget.initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    const actionBinderBlock = this.targetConfig?.mountInUnityBlock ? this.el : this.targetBlock;
+    const styleLauncherRoot = unityWidget?.styleLauncherRoot ?? null;
+    const actionBinderBlock = this.targetConfig?.mountInUnityBlock
+      ? (styleLauncherRoot || this.el)
+      : this.targetBlock;
+    const canvasAreaForBinder = this.targetConfig?.mountInUnityBlock
+      ? (styleLauncherRoot || this.interactiveArea)
+      : this.interactiveArea;
     await new ActionBinder(
       this.el,
       this.workflowCfg,
       actionBinderBlock,
-      this.interactiveArea,
+      canvasAreaForBinder,
       this.actionMap,
     ).initActionListeners();
   }

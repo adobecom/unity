@@ -25,6 +25,8 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
+    /** @type {HTMLElement | null} Set when full style launcher mounts as a sibling of the Unity block */
+    this.styleLauncherRoot = null;
   }
 
   async initWidget() {

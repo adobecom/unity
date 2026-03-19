@@ -1,4 +1,22 @@
-/* Full style launcher UI (Unity block below hero-marquee, mountInUnityBlock) */
+/* Full style launcher UI (sibling between hero-marquee and Unity block, mountInUnityBlock) */
+
+/* Screen-reader-only bucket: preserves cgen / icons inside .unity for getCgenQueryParams & error copy */
+.unity-slf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.unity.workflow-firefly.widget-prompt-with-style.unity-prompt-with-style-host {
+  position: relative;
+  min-height: 0;
+}
 
 .unity-style-launcher-full {
   width: 100%;

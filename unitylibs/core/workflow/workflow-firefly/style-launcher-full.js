@@ -238,6 +238,21 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   const root = createTag('div', { class: 'unity-style-launcher-full' });
   root.append(main);
 
-  el.textContent = '';
-  el.append(root);
+  /* Keep authored Unity markup (cgen, error icons, model hints) inside the Unity block for query APIs; hide visually. */
+  const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only' });
+  holder.setAttribute('aria-hidden', 'true');
+  while (el.firstChild) {
+    holder.append(el.firstChild);
+  }
+  el.append(holder);
+  el.classList.add('unity-prompt-with-style-host');
+
+  /* Render between hero-marquee and the Unity block (sibling order: … hero, launcher, unity …). */
+  if (el.parentNode) {
+    el.parentNode.insertBefore(root, el);
+  } else {
+    el.append(root);
+  }
+
+  widgetInstance.styleLauncherRoot = root;
 }
