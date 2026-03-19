@@ -26,6 +26,7 @@ class WfInitiator {
       `${baseWfPath}/sprite.svg`,
       `${baseWfPath}/widget.css`,
       `${baseWfPath}/widget.js`,
+      `${baseWfPath}/test.js`,
     ];
     const workflowRes = {
       'workflow-photoshop': [
