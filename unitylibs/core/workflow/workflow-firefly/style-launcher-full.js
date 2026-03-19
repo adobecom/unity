@@ -107,6 +107,10 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   if (!styles.length) return;
 
   const unityLibs = getUnityLibs();
+  /* Load widget.css first so launcher overrides in style-launcher-full.css win on equal specificity. */
+  await new Promise((resolve) => {
+    loadStyle(`${unityLibs}/core/workflow/workflow-firefly/widget.css`, resolve);
+  });
   await new Promise((resolve) => {
     loadStyle(`${unityLibs}/core/workflow/workflow-firefly/style-launcher-full.css`, resolve);
   });
@@ -235,8 +239,15 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   const main = createTag('div', { class: 'unity-slf-main' });
   main.append(left, right);
 
-  const root = createTag('div', { class: 'unity-style-launcher-full' });
-  root.append(main);
+  /*
+   * Firefly widget.css only applies under `.unity-enabled .interactive-area .ex-unity-wrap …`.
+   * The launcher is a sibling of the hero, so we recreate that wrapper chain on the root.
+   */
+  const skin = el.classList.contains('light') ? 'light' : 'dark';
+  const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
+  const root = createTag('div', { class: 'unity-style-launcher-full unity-enabled' });
+  interactiveShell.append(main);
+  root.append(interactiveShell);
 
   /* Keep authored Unity markup (cgen, error icons, model hints) inside the Unity block for query APIs; hide visually. */
   const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only' });

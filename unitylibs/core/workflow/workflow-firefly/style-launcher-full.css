@@ -144,3 +144,89 @@
 .unity-style-launcher-full .unity-slf-gen-btn {
   white-space: nowrap;
 }
+
+/*
+ * Firefly widget.css scopes almost everything to:
+ *   .unity-enabled .interactive-area .ex-unity-wrap …
+ * The style launcher is inserted as a sibling of the hero, so we add those wrappers in JS.
+ * Below: card chrome + layout fixes so the prompt matches the designed embed (not raw browser defaults).
+ */
+
+.unity-style-launcher-full.unity-enabled {
+  max-width: 1200px;
+  margin-inline: auto;
+  margin-block: 24px;
+  box-sizing: border-box;
+}
+
+.unity-style-launcher-full.unity-enabled > .interactive-area {
+  box-sizing: border-box;
+  padding: 24px 20px 28px;
+  border-radius: 16px;
+  background: rgb(29 29 29 / 96%);
+  border: 1px solid rgb(255 255 255 / 10%);
+}
+
+@media screen and (min-width: 900px) {
+  .unity-style-launcher-full.unity-enabled > .interactive-area {
+    padding: 28px 32px 32px;
+  }
+}
+
+/* Prompt “glass” fills the column (widget.css defaults to 720px fixed width). */
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+  width: 100% !important;
+  max-width: 100%;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Model row + Generate on one line */
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 16px;
+  row-gap: 12px;
+  align-items: center;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field-label,
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
+  grid-column: 1 / -1;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
+  grid-column: 1 / -1;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
+  grid-column: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .act-wrap {
+  grid-column: 2;
+  justify-self: end;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .models-container {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+/* Separator before style thumbnails */
+.unity-style-launcher-full .unity-slf-left > .unity-slf-styles-heading {
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
