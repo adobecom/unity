@@ -256,6 +256,8 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   widget.append(comboboxContainer);
   widgetWrap.append(widget);
 
+  /* Style container: wraps heading + list */
+  const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
     'h4',
     { class: 'unity-slf-styles-heading' },
@@ -319,8 +321,13 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   };
   window.addEventListener('resize', onResize);
 
+  /* Parent container for prompt bar + style section */
+  const controlsContainer = createTag('div', { class: 'unity-slf-controls' });
+  styleContainer.append(stylesHeading, styleList);
+  controlsContainer.append(widgetWrap, styleContainer);
+
   const left = createTag('div', { class: 'unity-slf-left' });
-  left.append(widgetWrap, stylesHeading, styleList);
+  left.append(controlsContainer);
 
   const right = createTag('div', { class: 'unity-slf-right' });
   right.append(previewArea);

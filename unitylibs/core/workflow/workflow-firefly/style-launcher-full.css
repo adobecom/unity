@@ -34,29 +34,52 @@
 }
 
 .unity-style-launcher-full .unity-slf-main {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
 }
 
 @media screen and (min-width: 900px) {
   .unity-style-launcher-full .unity-slf-main {
-    grid-template-columns: minmax(280px, 42%) 1fr;
-    gap: 32px;
-    align-items: stretch;
+    flex-direction: row;
+    gap: 8px;
   }
 }
 
+/* Left container: unified background for prompt bar + style elements */
 .unity-style-launcher-full .unity-slf-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  flex: 1;
+  background: #1b1b1b;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+/* Parent container: prompt bar + style section */
+.unity-style-launcher-full .unity-slf-controls {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
 }
 
+/* Style section container: heading + style list */
+.unity-style-launcher-full .unity-slf-style-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
 .unity-style-launcher-full .unity-slf-right {
   min-width: 0;
+  flex: 1;
 }
 
 .unity-style-launcher-full .unity-slf-preview {
@@ -124,23 +147,23 @@
 }
 
 .unity-style-launcher-full .unity-slf-style-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .unity-style-launcher-full .unity-slf-style-item {
-  flex: 0 0 auto;
-  width: 88px;
+  min-width: 0;
   cursor: pointer;
   border-radius: 8px;
   border: 2px solid transparent;
   padding: 6px;
   text-align: center;
   transition: border-color 0.15s ease;
+  background: #2C2C2C;
 }
 
 .unity-style-launcher-full .unity-slf-style-item.selected {
@@ -184,25 +207,36 @@
 }
 
 .unity-style-launcher-full.unity-enabled > .interactive-area {
+  display: flex;
   box-sizing: border-box;
-  padding: 24px 20px 28px;
-  border-radius: 16px;
-  background: rgb(29 29 29 / 96%);
-  border: 1px solid rgb(255 255 255 / 10%);
+  background: #222;
+  padding: 14px;
+  border-radius: 20px;
+  gap: 8px;
 }
 
 @media screen and (min-width: 900px) {
   .unity-style-launcher-full.unity-enabled > .interactive-area {
-    padding: 28px 32px 32px;
+    padding: 14px
   }
 }
 
 /* Prompt “glass” fills the column (widget.css defaults to 720px fixed width). */
+/* No separate container for prompt bar — blends with left container #1B1B1B */
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
   width: 100% !important;
   max-width: 100%;
   margin: 0 !important;
   box-sizing: border-box;
+}
+
+/* Remove decorative ::after pseudo-element from widget.css */
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
+  content: none !important;
+  display: none !important;
 }
 
 .unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
@@ -249,7 +283,7 @@
 }
 
 /* Separator before style thumbnails */
-.unity-style-launcher-full .unity-slf-left > .unity-slf-styles-heading {
+.unity-style-launcher-full .unity-slf-style-container > .unity-slf-styles-heading {
   margin-top: 4px;
   padding-top: 20px;
   border-top: 1px solid rgb(255 255 255 / 12%);
