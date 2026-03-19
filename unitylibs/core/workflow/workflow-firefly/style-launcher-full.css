@@ -21,9 +21,16 @@
   min-height: 0;
 }
 
+/*
+ * Doodlebug / Figma: host can set --Font-size-100, --Line-height-100, --Letter-spacing on a parent.
+ * Figma dev links are not readable without login; paste inspect values here when the frame changes.
+ */
 .unity-style-launcher-full {
   width: 100%;
   box-sizing: border-box;
+  --Font-size-100: 14px;
+  --Line-height-100: 18px;
+  --Letter-spacing: 0;
 }
 
 .unity-style-launcher-full .unity-slf-main {
@@ -83,7 +90,7 @@
   margin-bottom: 8px;
   color: #7d7d7d;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: 14px;
+  font-size: var(--Font-size-100, 14px);
   font-style: normal;
   font-weight: 400;
   line-height: var(--Line-height-100, 18px);
@@ -95,7 +102,8 @@
  * The full style-launcher card uses a dark shell; without this override the prompt label is effectively invisible.
  */
 .unity-style-launcher-full.unity-enabled > .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label,
-.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-prompt-label {
+.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-prompt-label,
+.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-styles-heading {
   color: rgb(245 245 245 / 92%) !important;
 }
 
@@ -106,11 +114,13 @@
 
 .unity-style-launcher-full .unity-slf-styles-heading {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.85;
+  color: #7d7d7d;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: var(--Font-size-100, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--Line-height-100, 18px);
+  letter-spacing: var(--Letter-spacing, 0);
 }
 
 .unity-style-launcher-full .unity-slf-style-list {
