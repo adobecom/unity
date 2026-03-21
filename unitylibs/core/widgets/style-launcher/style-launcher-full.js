@@ -177,7 +177,7 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
    * widget.css from the same directory as this sheet (avoids broken URLs when getUnityLibs() mismatches the page).
    */
   await new Promise((resolve) => {
-    loadStyle(`${unityLibs}/core/workflow/workflow-firefly/style-launcher-full.css`, resolve);
+    loadStyle(`${unityLibs}/core/widgets/style-launcher/style-launcher-full.css`, resolve);
   });
 
   const { el } = widgetInstance;

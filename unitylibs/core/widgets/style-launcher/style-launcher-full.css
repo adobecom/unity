@@ -1,5 +1,4 @@
-/* Firefly prompt / model / generate styles — import from same folder so URL always matches this sheet */
-@import url('widget.css');
+/* Isolated style-launcher styles (no widget.css import) */
 
 /* Full style launcher UI (sibling between hero-marquee and Unity block, mountInUnityBlock) */
 
@@ -106,6 +105,174 @@
 
 .unity-style-launcher-full .ex-unity-wrap {
   position: relative;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Isolated widget primitives copied from workflow-firefly/widget.css         */
+/* (limited to elements rendered by style-launcher-full.js)                   */
+/* -------------------------------------------------------------------------- */
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+  border: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+  background: transparent;
+  resize: none;
+  margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+  color: #7d7d7d;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
+  display: flex;
+  width: fit-content;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn:focus {
+  outline: 2px solid #005fcc;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico {
+  display: flex;
+  align-content: center;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
+  width: 24px;
+  height: 24px;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
+  display: flex;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+  border-radius: 25px;
+  background: linear-gradient(90deg, #d73220 0%, #d92361 33%, #7155fa 100%);
+  border: none;
+  padding: 10px 20px;
+  gap: 8px;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+  color: var(--color-white, #fff);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
+  position: relative;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .selected-model {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: flex-start;
+  padding: 7px 12px;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 400;
+  width: 100%;
+  min-width: unset;
+  background: #2c2c2c;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .selected-model img,
+.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-link img {
+  width: 22px;
+  height: 22px;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .models-container .menu-icon {
+  position: relative;
+  top: 1px;
+  transition: transform 0.15s ease-in;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .models-container.show-menu .menu-icon {
+  transform: rotate(-180deg);
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .selected-model .menu-icon,
+.unity-style-launcher-full.unity-enabled .interactive-area .selected-model .menu-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
+  color: #fff;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
+  min-width: 270px;
+  background: #000;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .verb-list {
+  padding: 18px;
+  list-style: none;
+  box-shadow: 0 0 10px #0000001c;
+  border-radius: 10px;
+  color: #fff;
+  margin: 0;
+  animation: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+  display: block;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-link {
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  padding-inline-start: 25px;
+  text-transform: capitalize;
+  text-decoration: none;
+  text-align: start;
+  position: relative;
+  opacity: 1;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .model-link {
+  font-size: 14px;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
+  display: none;
+}
+
+.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
 }
 
 .unity-style-launcher-full .unity-slf-prompt-label {
@@ -316,23 +483,6 @@
   border-top: 1px solid rgb(255 255 255 / 12%);
 }
 
-.unity-enabled .interactive-area .selected-model {
-  justify-content: flex-start;
-  background: #2C2C2C;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name, .unity-enabled .interactive-area.dark .ex-unity-wrap .models-container .model-name {
-  color: white;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
+.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
   width: fit-content;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
-  width: fit-content;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
-  background: black;
 }

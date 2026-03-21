@@ -32,7 +32,7 @@ export default class UnityWidget {
   async initWidget() {
     if (this.workflowCfg.targetCfg?.mountInUnityBlock) {
       // Resolve via getUnityLibs() so the request matches other workflow modules (relative ./ URLs can 404 under import maps / CDN).
-      const styleLauncherUrl = `${getUnityLibs()}/core/workflow/workflow-firefly/style-launcher-full.js`;
+      const styleLauncherUrl = `${getUnityLibs()}/core/widgets/style-launcher/style-launcher-full.js`;
       const { parseStyleLauncherAuthoring, mountStyleLauncherFullUI } = await import(styleLauncherUrl);
       const parsed = parseStyleLauncherAuthoring(this.el);
       if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
