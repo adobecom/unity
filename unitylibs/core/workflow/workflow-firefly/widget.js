@@ -33,7 +33,7 @@ export default class UnityWidget {
 
   /**
    * Default for Firefly: marquee prompt bar via {@link initPromptWidget}.
-   * `mountInUnityBlock` uses {@link PromptWithStyleSelectWidget} instead (see workflow.js).
+   * `promptWithStyleSelect` uses {@link PromptWithStyleSelectWidget} instead (see workflow.js).
    */
   async initWidget() {
     const widgetsBase = `${getUnityLibs()}/core/widgets`;

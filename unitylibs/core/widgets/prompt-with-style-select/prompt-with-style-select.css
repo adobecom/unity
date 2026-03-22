@@ -1,11 +1,11 @@
 /*
- * Prompt + style select (`mountInUnityBlock`): card chrome, preview, `.unity-slf-*` layout.
+ * Prompt + style select (`promptWithStyleSelect`): card chrome, preview, `.unity-slf-*` layout.
  * Shared Firefly primitives live in `workflow-firefly/widget.css` (workflow priorityLoad).
  * Scoped overrides under `.unity-prompt-with-style-select` so this UI does not depend on
  * `prompt-widget/prompt-widget.css` (hero marquee layout).
  */
 
-/* Full UI (sibling between hero-marquee and Unity block, mountInUnityBlock) */
+/* Full UI (sibling between hero-marquee and Unity block, promptWithStyleSelect) */
 
 /* Screen-reader-only bucket: preserves cgen / icons inside .unity for getCgenQueryParams & error copy */
 .unity-slf-sr-only {

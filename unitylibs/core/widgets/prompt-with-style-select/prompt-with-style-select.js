@@ -2,9 +2,9 @@
 
 /**
  * Parses Unity block authoring for prompt + style selection (Unity block with .widget-prompt-with-style).
- * The style table is the first ul whose lis contain a thumbnail <picture> (verb/config ul comes first and is skipped).
- * Following sibling div rows: each has 3 column divs (mobile / tablet / desktop preview pictures).
- * Rows like cgen (no 3 pictures) are skipped.
+ * Row 0 is config (verbs, placeholders, etc.). The style strip is the first following row that contains a `<ul>`.
+ * Each `<li>` in that list is a style variant. The next N top-level rows (N = number of `<li>`) are preview rows:
+ * each row has three column `<div>`s (mobile / tablet / desktop) with a `<picture>` each.
  */
 
 import UnityWidget from '../../workflow/workflow-firefly/widget.js';
@@ -84,55 +84,31 @@ function topLevelLisInUl(ul) {
 }
 
 /**
- * Picks the `ul` with the most thumbnail rows — avoids matching a stray 1-item list before the real style grid.
- *
- * @param {HTMLElement} div
- * @returns {HTMLUListElement | null}
- */
-function findStyleVariantUl(div) {
-  const uls = [...div.querySelectorAll('ul')];
-  let best = null;
-  let bestScore = 0;
-  uls.forEach((u) => {
-    const lis = topLevelLisInUl(u);
-    const score = lis.filter((li) => li.querySelector('picture')).length;
-    if (score > bestScore) {
-      bestScore = score;
-      best = u;
-    }
-  });
-  return bestScore > 0 ? best : null;
-}
-
-/**
  * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
  * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
  */
 export function parsePromptWithStyleSelectAuthoring(root) {
-  /* Prefer direct child divs (config rows + style table + preview rows). Fallback to single wrapper. */
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
   if (topDivs.length === 1) {
     const inner = topDivs[0];
     topDivs = [...inner.children].filter((n) => n.nodeName === 'DIV');
   }
-  if (!topDivs.length) return { styles: [], previewRows: [] };
+  if (topDivs.length < 2) return { styles: [], previewRows: [] };
 
-  /* Prefer the div whose list has the most thumbnail rows (not the first div that merely contains *some* list). */
-  let stylesWrap = null;
+  /* 1. Skip row 0 (config). First later row that contains a <ul> is the style strip. */
+  let styleStripRowIndex = -1;
   let ul = /** @type {HTMLUListElement | null} */ (null);
-  let bestListScore = 0;
-  topDivs.forEach((div) => {
-    const candidateUl = findStyleVariantUl(div);
-    if (!candidateUl) return;
-    const score = topLevelLisInUl(candidateUl).filter((li) => li.querySelector('picture')).length;
-    if (score > bestListScore) {
-      bestListScore = score;
-      ul = candidateUl;
-      stylesWrap = div;
+  for (let i = 1; i < topDivs.length; i += 1) {
+    const found = topDivs[i].querySelector('ul');
+    if (found) {
+      ul = /** @type {HTMLUListElement} */ (found);
+      styleStripRowIndex = i;
+      break;
     }
-  });
-  if (!ul || !stylesWrap) return { styles: [], previewRows: [] };
+  }
+  if (!ul || styleStripRowIndex < 0) return { styles: [], previewRows: [] };
 
+  /* 2. Each top-level <li> in that <ul> → one style entry. */
   const styles = [];
   const listItems = topLevelLisInUl(ul);
   listItems.forEach((li) => {
@@ -144,13 +120,22 @@ export function parsePromptWithStyleSelectAuthoring(root) {
     }
   });
 
-  const startIdx = topDivs.indexOf(stylesWrap);
-  const previewRows = topDivs.slice(startIdx + 1)
-    .map((row) => {
+  if (!styles.length) return { styles: [], previewRows: [] };
+
+  /* 3. Next N top-level rows (N = styles.length): each is one preview row (3 column divs × picture). */
+  const afterStyleStrip = topDivs.slice(styleStripRowIndex + 1);
+  const previewRows = [];
+  for (let k = 0; k < styles.length; k += 1) {
+    const row = afterStyleStrip[k];
+    if (!row) {
+      previewRows.push([]);
+    } else {
       const cols = [...row.querySelectorAll(':scope > div')];
-      return cols.map((col) => col.querySelector('picture'));
-    })
-    .filter((pics) => pics.length === 3 && pics.every(Boolean));
+      const pics = cols.map((col) => col.querySelector('picture'));
+      const valid = pics.length === 3 && pics.every(Boolean);
+      previewRows.push(valid ? pics : []);
+    }
+  }
 
   return { styles, previewRows };
 }
@@ -407,7 +392,7 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
 }
 
 /**
- * Firefly Unity block + `mountInUnityBlock`: parse authoring and mount prompt-with-style-select UI
+ * Firefly Unity block + `promptWithStyleSelect`: parse authoring and mount prompt-with-style-select UI
  * (symmetric to {@link PromptWidget} for the hero marquee).
  */
 export class PromptWithStyleSelectWidget extends UnityWidget {

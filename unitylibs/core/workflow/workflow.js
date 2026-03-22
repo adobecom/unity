@@ -67,17 +67,11 @@ class WfInitiator {
     let unityWidget = null;
     if (this.targetConfig.renderWidget) {
       const spriteContent = await spriteSvg.text();
-      const isFireflyMarquee = this.workflowCfg.name === 'workflow-firefly'
-        && !this.targetConfig.mountInUnityBlock;
-      const isFireflyPromptWithStyle = this.workflowCfg.name === 'workflow-firefly'
-        && this.targetConfig.mountInUnityBlock;
       let WidgetClass;
-      if (isFireflyMarquee) {
-        ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
-      } else if (isFireflyPromptWithStyle) {
+      if (this.targetConfig.promptWithStyleSelect) {
         ({ PromptWithStyleSelectWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`));
       } else {
-        ({ default: WidgetClass } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`));
+        ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
       }
       unityWidget = new WidgetClass(
         this.interactiveArea,
@@ -91,10 +85,10 @@ class WfInitiator {
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const promptWithStyleSelectRoot = unityWidget?.promptWithStyleSelectRoot ?? null;
-    const actionBinderBlock = this.targetConfig?.mountInUnityBlock
+    const actionBinderBlock = this.targetConfig?.promptWithStyleSelect
       ? (promptWithStyleSelectRoot || this.el)
       : this.targetBlock;
-    const canvasAreaForBinder = this.targetConfig?.mountInUnityBlock
+    const canvasAreaForBinder = this.targetConfig?.promptWithStyleSelect
       ? (promptWithStyleSelectRoot || this.interactiveArea)
       : this.interactiveArea;
     await new ActionBinder(
@@ -171,7 +165,7 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
-    if (targetCfg.mountInUnityBlock) {
+    if (targetCfg.promptWithStyleSelect) {
       return this.el;
     }
     const iArea = createTag('div', { class: 'interactive-area' });

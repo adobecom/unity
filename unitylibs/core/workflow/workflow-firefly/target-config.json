@@ -16,7 +16,7 @@
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",
     "insert": "before",
-    "mountInUnityBlock": true
+    "promptWithStyleSelect": true
   },
   "hero-marquee": {
     "selector": ".copy",

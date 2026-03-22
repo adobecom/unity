@@ -3,9 +3,9 @@
 `workflow-firefly/widget.js` (**UnityWidget**) holds **shared** logic (model picker, generate button, dropdown helpers).
 
 - **PromptWidget** (`prompt-widget/prompt-widget.js`) extends it for the classic hero prompt bar (verbs, prompt suggestions, `createInpWrap`, etc.).
-- **PromptWithStyleSelectWidget** (`prompt-with-style-select/prompt-with-style-select.js`) extends it when `targetCfg.mountInUnityBlock`: parse Unity block (style thumbnails + previews), mount UI between hero and Unity block.
+- **PromptWithStyleSelectWidget** (`prompt-with-style-select/prompt-with-style-select.js`) extends it when `targetCfg.promptWithStyleSelect`: parse Unity block (style thumbnails + previews), mount UI between hero and Unity block.
 
-`workflow.js` picks the class: **PromptWidget** (Firefly + hero marquee), **PromptWithStyleSelectWidget** (Firefly + `mountInUnityBlock`), or the workflow’s default `widget.js` export.
+`workflow.js` picks the class: **PromptWidget** (Firefly + hero marquee), **PromptWithStyleSelectWidget** (Firefly + `promptWithStyleSelect`), or the workflow’s default `widget.js` export.
 
 **`UnityWidget.initWidget()`** delegates to **`initPromptWidget`** (marquee path; used by the base class when a workflow still instantiates **UnityWidget** directly).
 

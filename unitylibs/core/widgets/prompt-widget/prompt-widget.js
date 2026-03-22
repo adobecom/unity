@@ -2,7 +2,7 @@
 
 /**
  * Hero / marquee Firefly prompt bar: verb switcher, prompt suggestions dropdown, sound hooks,
- * and DOM insertion into `.copy`. Not used for `mountInUnityBlock` (prompt-with-style-select).
+ * and DOM insertion into `.copy`. Not used for `promptWithStyleSelect` (prompt-with-style-select).
  */
 
 import UnityWidget from '../../workflow/workflow-firefly/widget.js';
@@ -212,7 +212,7 @@ export class PromptWidget extends UnityWidget {
   }
 
   addWidget() {
-    if (this.workflowCfg.targetCfg?.mountInUnityBlock) return;
+    if (this.workflowCfg.targetCfg?.promptWithStyleSelect) return;
     const interactArea = this.target.querySelector('.copy');
     const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
