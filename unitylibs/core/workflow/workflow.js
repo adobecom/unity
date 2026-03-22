@@ -69,23 +69,18 @@ class WfInitiator {
       const spriteContent = await spriteSvg.text();
       const isFireflyMarquee = this.workflowCfg.name === 'workflow-firefly'
         && !this.targetConfig.mountInUnityBlock;
+      let WidgetClass;
       if (isFireflyMarquee) {
-        const { PromptWidget } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`);
-        unityWidget = new PromptWidget(
-          this.interactiveArea,
-          this.el,
-          this.workflowCfg,
-          spriteContent,
-        );
+        ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
       } else {
-        const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
-        unityWidget = new UnityWidget(
-          this.interactiveArea,
-          this.el,
-          this.workflowCfg,
-          spriteContent,
-        );
+        ({ default: WidgetClass } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`));
       }
+      unityWidget = new WidgetClass(
+        this.interactiveArea,
+        this.el,
+        this.workflowCfg,
+        spriteContent,
+      );
       this.actionMap = await unityWidget.initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
@@ -121,89 +116,44 @@ class WfInitiator {
     });
   }
 
-  /**
-   * True when `other` comes after `ref` in document order (Node.compareDocumentPosition bitmask).
-   *
-   * @param {HTMLElement} ref
-   * @param {HTMLElement} other
-   * @returns {boolean}
-   */
-  static isDocumentFollowing(ref, other) {
-    const mask = ref.compareDocumentPosition(other);
-    // eslint-disable-next-line no-bitwise -- DOM compareDocumentPosition bitmask
-    return (mask & Node.DOCUMENT_POSITION_FOLLOWING) === Node.DOCUMENT_POSITION_FOLLOWING;
-  }
-
-  /**
-   * Locates the hero-marquee block associated with a Unity block that uses the full style launcher.
-   * Prefers preceding siblings, then the nearest preceding .hero-marquee within the same section.
-   *
-   * @param {HTMLElement} unityEl
-   * @returns {HTMLElement | null}
-   */
-  static findHeroMarqueeNearUnity(unityEl) {
-    if (!unityEl) return null;
-    let node = unityEl.previousElementSibling;
-    while (node) {
-      if (node.classList?.contains('hero-marquee')) return node;
-      node = node.previousElementSibling;
-    }
-    const scope = unityEl.closest('.section') || unityEl.parentElement;
-    if (!scope) return null;
-    const heroes = [...scope.querySelectorAll('.hero-marquee')];
-    let best = null;
-    heroes.forEach((h) => {
-      if (WfInitiator.isDocumentFollowing(h, unityEl)) {
-        if (!best || WfInitiator.isDocumentFollowing(best, h)) {
-          best = h;
-        }
-      }
-    });
-    return best;
-  }
-
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
+    // List `widget-prompt-with-style` before `hero-marquee` (etc.) in target-config.json so the loop matches it first.
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
     // eslint-disable-next-line no-underscore-dangle -- target-config.json reserved key
     const defaults = targetConfig._defaults || {};
-    const widgetStyleCfg = targetConfig['widget-prompt-with-style'];
-    if (
-      this.workflowCfg.name === 'workflow-firefly'
-      && this.el.classList.contains('widget-prompt-with-style')
-      && widgetStyleCfg
-    ) {
-      const heroBlock = WfInitiator.findHeroMarqueeNearUnity(this.el);
-      if (!heroBlock) return [null, null, null];
-      const targetCfg = { ...defaults, ...widgetStyleCfg };
-      await this.intEnbReendered(heroBlock, targetCfg.selector);
-      const ta = this.createInteractiveArea(heroBlock, targetCfg.selector, targetCfg);
-      heroBlock.classList.add('unity-enabled');
-      return [heroBlock, ta, targetCfg];
-    }
+
     let targetCfg = null;
     for (let k = 0; k < supportedBlocks.length; k += 1) {
-      const classes = supportedBlocks[k].split('.');
-      let hasAllClasses = true;
-      // eslint-disable-next-line no-restricted-syntax
-      for (const c of classes) {
-        const hasClass = prevElem.classList.contains(c);
-        const hasChild = prevElem.querySelector(`.${c}`);
-        if (!(hasClass || hasChild)) {
-          hasAllClasses = false;
-          break;
+      const key = supportedBlocks[k];
+      const cfg = targetConfig[key];
+      let matches = false;
+      if (key === 'widget-prompt-with-style') {
+        matches = this.workflowCfg.name === 'workflow-firefly'
+          && this.el.classList.contains('widget-prompt-with-style');
+      } else {
+        const classes = key.split('.');
+        matches = true;
+        // eslint-disable-next-line no-restricted-syntax
+        for (const c of classes) {
+          const hasClass = prevElem?.classList.contains(c);
+          const hasChild = prevElem?.querySelector(`.${c}`);
+          if (!(hasClass || hasChild)) {
+            matches = false;
+            break;
+          }
         }
       }
-      if (hasAllClasses) {
-        targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
+      if (matches) {
+        targetCfg = { ...defaults, ...cfg };
         break;
       }
     }
-    if (!targetCfg) return [null, null, null];
+
+    if (!targetCfg || !prevElem) return [null, null, null];
     await this.intEnbReendered(prevElem, targetCfg.selector);
-    let ta = null;
-    ta = this.createInteractiveArea(prevElem, targetCfg.selector, targetCfg);
+    const ta = this.createInteractiveArea(prevElem, targetCfg.selector, targetCfg);
     prevElem.classList.add('unity-enabled');
     return [prevElem, ta, targetCfg];
   }
