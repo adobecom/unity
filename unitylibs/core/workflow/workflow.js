@@ -69,9 +69,13 @@ class WfInitiator {
       const spriteContent = await spriteSvg.text();
       const isFireflyMarquee = this.workflowCfg.name === 'workflow-firefly'
         && !this.targetConfig.mountInUnityBlock;
+      const isFireflyPromptWithStyle = this.workflowCfg.name === 'workflow-firefly'
+        && this.targetConfig.mountInUnityBlock;
       let WidgetClass;
       if (isFireflyMarquee) {
         ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
+      } else if (isFireflyPromptWithStyle) {
+        ({ PromptWithStyleSelectWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`));
       } else {
         ({ default: WidgetClass } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`));
       }
@@ -297,6 +301,7 @@ class WfInitiator {
   }
 }
 
+// eslint-disable-next-line no-unused-vars -- reserved API slot (version) for future use
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;

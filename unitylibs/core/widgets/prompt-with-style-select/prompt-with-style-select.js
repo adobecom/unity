@@ -1,3 +1,5 @@
+/* eslint-disable class-methods-use-this */
+
 /**
  * Parses Unity block authoring for prompt + style selection (Unity block with .widget-prompt-with-style).
  * The style table is the first ul whose lis contain a thumbnail <picture> (verb/config ul comes first and is skipped).
@@ -5,6 +7,7 @@
  * Rows like cgen (no 3 pictures) are skipped.
  */
 
+import UnityWidget from '../../workflow/workflow-firefly/widget.js';
 import {
   createTag,
   defineDeviceByScreenSize,
@@ -404,15 +407,23 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
 }
 
 /**
- * Entry point for UnityWidget.initWidget when `targetCfg.mountInUnityBlock` is true.
- * Parses the Unity block and mounts the prompt-with-style-select UI beside the block.
- *
- * @param {*} widgetInstance — UnityWidget (workflow-firefly/widget.js)
- * @returns {Promise<object>} `targetCfg.actionMap` for ActionBinder
+ * Firefly Unity block + `mountInUnityBlock`: parse authoring and mount prompt-with-style-select UI
+ * (symmetric to {@link PromptWidget} for the hero marquee).
  */
-export async function initPromptWithStyleSelectWidget(widgetInstance) {
-  const parsed = parsePromptWithStyleSelectAuthoring(widgetInstance.el);
-  if (!parsed.styles.length) return widgetInstance.workflowCfg.targetCfg.actionMap;
-  await mountPromptWithStyleSelectUI(widgetInstance, parsed);
-  return widgetInstance.workflowCfg.targetCfg.actionMap;
+export class PromptWithStyleSelectWidget extends UnityWidget {
+  constructor(...args) {
+    super(...args);
+    /** @type {HTMLElement | null} Set when UI mounts as a sibling of the Unity block */
+    this.promptWithStyleSelectRoot = null;
+  }
+
+  /**
+   * @returns {Promise<object>} `targetCfg.actionMap` for ActionBinder
+   */
+  async initWidget() {
+    const parsed = parsePromptWithStyleSelectAuthoring(this.el);
+    if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
+    await mountPromptWithStyleSelectUI(this, parsed);
+    return this.workflowCfg.targetCfg.actionMap;
+  }
 }

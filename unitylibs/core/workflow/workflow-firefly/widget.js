@@ -29,21 +29,14 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
-    /** @type {HTMLElement | null} Set when prompt-with-style-select UI mounts as a sibling of the Unity block */
-    this.promptWithStyleSelectRoot = null;
   }
 
   /**
-   * Delegates to `core/widgets/*` entry points.
-   * - `mountInUnityBlock` → prompt-with-style-select
-   * - else → marquee prompt widget (subclass with verb + prompt suggestions)
+   * Default for Firefly: marquee prompt bar via {@link initPromptWidget}.
+   * `mountInUnityBlock` uses {@link PromptWithStyleSelectWidget} instead (see workflow.js).
    */
   async initWidget() {
     const widgetsBase = `${getUnityLibs()}/core/widgets`;
-    if (this.workflowCfg.targetCfg?.mountInUnityBlock) {
-      const { initPromptWithStyleSelectWidget } = await import(`${widgetsBase}/prompt-with-style-select/prompt-with-style-select.js`);
-      return initPromptWithStyleSelectWidget(this);
-    }
     const { initPromptWidget } = await import(`${widgetsBase}/prompt-widget/prompt-widget.js`);
     return initPromptWidget(this);
   }
