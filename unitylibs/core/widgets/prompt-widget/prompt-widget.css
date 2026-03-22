@@ -1,0 +1,206 @@
+/**
+ * Classic Firefly prompt bar in hero / upload / showcase marquees (embedded in `.copy`).
+ * Loaded by initPromptWidget after workflow priorityLoad of workflow-firefly/widget.css.
+ */
+
+.hero-marquee.unity-enabled,
+.showcase-marquee.unity-enabled {
+  overflow: unset;
+}
+
+
+.hero-marquee.unity-enabled::before {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255 255 255 / 0%), rgba(255 255 255 / 50%));
+  filter: blur(5px);
+  backdrop-filter: blur(1px);
+  opacity: 0.8;
+}
+
+.hero-marquee.unity-enabled .interactive-area {
+  display: inherit;
+  justify-content: center;
+  background: none;
+}
+
+.upload-marquee.unity-enabled .interactive-area {
+  display: inherit;
+  background: none;
+}
+
+.hero-marquee.unity-enabled .interactive-area .text {
+  max-width: 800px;
+  margin: var(--spacing-xxl) 0 var(--spacing-m);
+}
+
+.hero-marquee.unity-enabled .icon-area {
+  height: 32px;
+  width: auto;
+  margin: 0 auto;
+}
+
+.hero-marquee [class^="heading-"]:last-of-type,
+.hero-marquee.unity-enabled [class^="heading-"]:only-of-type {
+  margin-bottom: var(--spacing-xxs);
+}
+
+.hero-marquee.unity-enabled .interactive-area .text .body-m {
+  font-weight: 400;
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .widget-bg {
+  opacity: 0;
+  visibility: hidden;
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  height: 10rem;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  transition: opacity 0.1s cubic-bezier(0, 0, 1, 1), visibility 0.1s cubic-bezier(0, 0, 1, 1);
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky .widget-bg {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden .widget-bg {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), translate 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .widget-bg .bg-one {
+  background-image: linear-gradient(#b2dfff00, #b2dfffb3 48%, #b2dfff);
+  flex: 0 auto;
+  width: 60%;
+  height: 100%;
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .widget-bg .bg-two {
+  background-image: linear-gradient(#b0acfe00, #b0acfebf 43%, #b0acfe);
+  flex: 0 auto;
+  width: 60%;
+  height: 100%;
+  position: absolute;
+  right: 0;
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky.hidden {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 0.1s cubic-bezier(0, 0, 1, 1), visibility 0.5s cubic-bezier(0, 0, 1, 1), translate 0.1s cubic-bezier(0, 0, 1, 1);
+}
+
+.hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+  position: fixed;
+  bottom: 30px;
+  left: 0;
+  z-index: 101;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  visibility: visible;
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    padding: 0;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+    bottom: 16px;
+  }
+
+  .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    margin-left: 0px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    padding: 0;
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+    bottom: 16px;
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
+    width: 95%;
+  }
+}
+
+@media screen and (max-width: 599px) {
+  .hero-marquee.unity-enabled h1,
+  .hero-marquee.unity-enabled h2,
+  .hero-marquee.unity-enabled h3,
+  .hero-marquee.unity-enabled h4,
+  .hero-marquee.unity-enabled h5 {
+    font-size: var(--type-heading-xl-size);
+    line-height: var(--type-heading-xl-lh);
+  }
+
+  .hero-marquee.unity-enabled p {
+    font-size: var(--type-body-s-size);
+    line-height: var(--type-body-s-lh);
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+    bottom: 16px;
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget {
+    padding: 0;
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky .ex-unity-widget {
+    width: 95%;
+  }
+}
+
+.upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
+  border-radius: 20px;
+}
+.upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    width: 100%;
+    margin: 40px 0;
+    margin-left: 16px;
+}
+.upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+    padding-left: 0;
+  }
+.upload-marquee.unity-enabled .interactive-area .copy .ex-unity-wrap .alert-holder {
+    transform: translateY(-70%);
+}
+@media (max-width: 599px) {
+  .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    margin: 40px 40px 0 0
+  }
+  .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+    padding: 0px;
+  }
+}

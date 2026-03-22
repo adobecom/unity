@@ -5,6 +5,7 @@ import { readFile } from '@web/test-runner-commands';
 import { setUnityLibs } from '../../../unitylibs/scripts/utils.js';
 import ActionBinder from '../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
 import UnityWidget from '../../../unitylibs/core/workflow/workflow-firefly/widget.js';
+import { PromptWidget } from '../../../unitylibs/core/widgets/prompt-widget/prompt-widget.js';
 import augmentSound from '../../../unitylibs/core/workflow/workflow-firefly/sound-utils.js';
 
 describe('Firefly Workflow Tests', () => {
@@ -37,7 +38,7 @@ describe('Firefly Workflow Tests', () => {
       '.inp-field': [{ actionType: 'autocomplete' }],
     };
 
-    sinon.stub(UnityWidget.prototype, 'loadPrompts').callsFake(function loadPromptsStub() {
+    sinon.stub(PromptWidget.prototype, 'loadPrompts').callsFake(function loadPromptsStub() {
       const samplePrompts = [
         { verb: 'image', prompt: 'A calm face blending into a forest landscape with birds flying from the silhouette. Soft lighting with color popping trees', assetid: '17669552-32bc-4216-82fe-8f7e72ffb4b0' },
         { verb: 'image', prompt: 'Make a cheerful product image of a collectible jar with a tiny person tending to a miniature garden, complete with working watering can, tiny plants, and a little bench, the jar lid decorated with flower patterns and labeled Green Thumb Series', assetid: '69c64e7a-83cb-466b-a530-6b42b06a914a' },
@@ -61,7 +62,7 @@ describe('Firefly Workflow Tests', () => {
       copy.innerHTML = '<a href="#">Target Link</a>';
     }
 
-    unityWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+    unityWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
     await unityWidget.initWidget();
 
     // Ensure .ex-unity-wrap is present before constructing ActionBinder
@@ -410,7 +411,7 @@ describe('Firefly Workflow Tests', () => {
 
   describe('hidePromptDropdown edge cases', () => {
     it('should not close model menu when exceptElement is the selected model button', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       // Attach widgetWrap and widget to the document to mirror production DOM
@@ -432,7 +433,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should not close verb menu when exceptElement is the selected verb button', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       document.body.appendChild(w.widgetWrap);
@@ -453,7 +454,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should close model and verb menus when exceptElement is different', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widget = document.createElement('div');
       const dropdown = document.createElement('div');
       dropdown.className = 'prompt-dropdown-container drop';
@@ -482,7 +483,7 @@ describe('Firefly Workflow Tests', () => {
 
   describe('Sound prompt dropdown interactions', () => {
     it('clicking a sound suggestion expands details and renders inline Use button', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.selectedVerbType = 'sound';
       const dropdown = document.createElement('ul');
       document.body.appendChild(dropdown);
@@ -499,7 +500,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('Enter/Space on a sound suggestion expands details', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.selectedVerbType = 'sound';
       const dropdown = document.createElement('ul');
       document.body.appendChild(dropdown);
@@ -521,7 +522,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('Tab from expanded suggestion focuses the inline Use button', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.selectedVerbType = 'sound';
       const dropdown = document.createElement('ul');
       document.body.appendChild(dropdown);
@@ -813,7 +814,7 @@ describe('Firefly Workflow Tests', () => {
 
   describe('UnityWidget additional methods', () => {
     it('should hide prompt dropdown correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widget = document.createElement('div');
       const dropdown = document.createElement('div');
       dropdown.classList.add('prompt-dropdown-container', 'drop');
@@ -825,7 +826,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should update analytics correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.promptItems = [
         document.createElement('li'),
         document.createElement('li'),
@@ -841,7 +842,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should get limited display prompts correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const prompts = [
         { prompt: 'Short prompt', assetid: '1' },
         { prompt: 'This is a very long prompt that should be truncated when it exceeds the character limit of 105 characters and should show ellipsis at the end', assetid: '2' },
@@ -855,7 +856,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should add prompt items to dropdown correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.selectedVerbType = 'image';
       const dropdown = document.createElement('ul');
       const prompts = [
@@ -875,7 +876,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should create footer correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const tipLi = document.createElement('li');
       tipLi.innerHTML = '<span class="icon-tip"></span>Test tip text';
       const legalLi = document.createElement('li');
@@ -896,7 +897,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should create action button correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.selectedVerbType = 'image';
       testWidget.selectedVerbText = 'Image';
       const cfg = document.createElement('div');
@@ -912,7 +913,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should add widget to DOM correctly', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widget = document.createElement('div');
       testWidget.widgetWrap = document.createElement('div');
       const copy = document.createElement('div');
@@ -923,7 +924,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should get prompt correctly', async () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.hasPromptSuggestions = true;
       testWidget.prompts = {
         image: [
@@ -1026,20 +1027,20 @@ describe('Firefly Workflow Tests', () => {
 
   describe('Error handling and edge cases', () => {
     it('should handle missing dropdown gracefully', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widget = document.createElement('div');
       expect(() => testWidget.hidePromptDropdown()).to.not.throw();
     });
 
     it('should handle empty prompt data gracefully', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const promptMap = testWidget.createPromptMap([]);
       expect(promptMap).to.be.an('object');
       expect(Object.keys(promptMap)).to.have.length(0);
     });
 
     it('should handle null/undefined data in createPromptMap', () => {
-      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const promptMap = testWidget.createPromptMap(null);
       expect(promptMap).to.be.an('object');
       expect(Object.keys(promptMap)).to.have.length(0);
@@ -1053,7 +1054,7 @@ describe('Firefly Workflow Tests', () => {
     let otherMenuContainer;
 
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
 
       // Create test DOM structure
       menuContainer = document.createElement('div');
@@ -1188,7 +1189,7 @@ describe('Firefly Workflow Tests', () => {
     let event;
 
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widgetWrap = document.createElement('div');
       testWidget.widget = document.createElement('div');
       testWidget.updateDropdownForVerb = sinon.stub();
@@ -1423,7 +1424,7 @@ describe('Firefly Workflow Tests', () => {
     let mockEl;
 
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.widgetWrap = document.createElement('div');
       testWidget.widgetWrap.setAttribute('data-selected-verb', 'image');
 
@@ -1706,7 +1707,7 @@ describe('Firefly Workflow Tests', () => {
   describe('Model dropdown and verb/model interplay', () => {
     let testWidget;
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       // Set placeholder input used by modelDropdown for aria labels
       const mockEl = document.createElement('div');
       const placeholderInput = document.createElement('span');
@@ -1846,7 +1847,7 @@ describe('Firefly Workflow Tests', () => {
 
   describe('verbDropdown outside click handler', () => {
     it('closes the verb menu on outside document click', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       document.body.appendChild(w.widgetWrap);
@@ -1906,7 +1907,7 @@ describe('Firefly Workflow Tests', () => {
     let testWidget;
 
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
     });
 
     it('should return empty object for non-array data', () => {
@@ -2059,7 +2060,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('loadPrompts sets prompts using createPromptMap()', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       // Stub fetch to return stage env data so it matches unityConfig.env in tests
       const fetchStub = sinon.stub().resolves({
         ok: true,
@@ -2078,7 +2079,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('getModel loads and returns models when hasModelOptions is true', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.hasModelOptions = true;
       const modelFetch = sinon.stub().resolves({
         ok: true,
@@ -2097,14 +2098,14 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('getModel returns [] when hasModelOptions is false', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.hasModelOptions = false;
       const models = await w.getModel();
       expect(models).to.deep.equal([]);
     });
 
     it('getModel handles fetch error and logs via lana', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.hasModelOptions = true;
       const logSpy = sinon.spy();
       window.lana = { log: logSpy };
@@ -2121,7 +2122,7 @@ describe('Firefly Workflow Tests', () => {
     let testWidget;
 
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
     });
 
     it('should execute loadPrompts function', async () => {
@@ -2676,7 +2677,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should populate variations only for sound using placeholder labels and urls', () => {
-      const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
       testWidget.workflowCfg.placeholder = {
         'placeholder-variation-label-4': 'Var D',
         'placeholder-variation-label-3': 'Var C',
@@ -2704,7 +2705,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('should keep play button visible after pausing a sound variation', () => {
-      const testWidget = new UnityWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
+      const testWidget = new PromptWidget(block, unityElement, { ...workflowCfg }, spriteContainer);
       const promptObj = {
         prompt: 'sound prompt',
         variations: [{ label: 'Sample', url: 'https://u1' }],
@@ -2721,7 +2722,7 @@ describe('Firefly Workflow Tests', () => {
 
   describe('Additional Widget coverage', () => {
     it('formatTime should format seconds correctly', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       augmentSound(w);
       expect(w.formatTime(0)).to.equal('0:00');
       expect(w.formatTime(5)).to.equal('0:05');
@@ -2729,7 +2730,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('clearSelectedModelState should reset model fields', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.selectedModelId = 'id';
       w.selectedModelVersion = 'v';
       w.selectedModelModule = 'm';
@@ -2742,7 +2743,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('showPlaybackErrorToast should dispatch firefly-audio-error', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       augmentSound(w);
       w.widgetWrap = document.createElement('div');
       let fired = false;
@@ -2752,7 +2753,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('createModelMap should group models by module', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const map = w.createModelMap([
         { type: 'gen', module: 'sound', name: 'S1', id: '1', version: 'v1', icon: 'i1' },
         { type: 'gen', module: 'image', name: 'I1', id: '2', version: 'v2', icon: 'i2' },
@@ -2763,7 +2764,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('modelDropdown should return controls when models exist for selected verb', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.hasModelOptions = true;
       w.selectedVerbType = 'sound';
       w.models = [
@@ -2791,7 +2792,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('hidePromptDropdown should hide dropdown and reset sound details', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widget = document.createElement('div');
       const container = document.createElement('div');
       container.className = 'prompt-dropdown-container';
@@ -2814,7 +2815,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('resetAllSoundVariations should remove details and clear states', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widget = document.createElement('div');
       const details = document.createElement('div');
       details.className = 'sound-details';
@@ -2827,7 +2828,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('toggleSoundDetails should expand and collapse details and wire Use prompt', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       const dropdown = document.createElement('ul');
@@ -2850,7 +2851,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('consumeEventAndFocus should focus target', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const btn = document.createElement('button');
       document.body.appendChild(btn);
       const ev = new Event('custom');
@@ -2863,7 +2864,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('resetTileToIdle should reset classes and aria state', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'L', url: 'u' }, 0, strip);
       // Simulate playing state and then reset
@@ -2897,7 +2898,7 @@ describe('Firefly Workflow Tests', () => {
     afterEach(() => { window.Audio = originalAudio; });
 
     it('inline Use button keydown Enter/Space triggers click and Tab moves focus to first tile', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       const dd = document.createElement('ul');
@@ -2928,7 +2929,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('inline Use button Shift+Tab moves focus back to item', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       const dd = document.createElement('ul');
@@ -2952,7 +2953,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('tile ArrowRight/ArrowLeft moves focus between tiles', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const promptObj = { prompt: 'p', variations: [{ label: 'A', url: 'u1' }, { label: 'B', url: 'u2' }, { label: 'C', url: 'u3' }] };
       const details = w.renderSoundDetails(promptObj);
       document.body.appendChild(details);
@@ -2970,7 +2971,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('tile Tab moves focus to next suggestion and Shift+Tab to Use button', (done) => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       w.widgetWrap = document.createElement('div');
       w.widget = document.createElement('div');
       const dd = document.createElement('ul');
@@ -3005,7 +3006,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('pause button keyboard toggles playback and visibility', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const details = w.renderSoundDetails({ prompt: 'p', variations: [{ label: 'A', url: 'u1' }] });
       document.body.appendChild(details);
       const tile = details.querySelector('.variation-tile');
@@ -3063,7 +3064,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('loadedmetadata should cache duration and reset progress', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       const audio = tile.audioRef;
@@ -3077,7 +3078,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('timeupdate should set duration text when not playing', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       const audio = tile.audioRef;
@@ -3087,7 +3088,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('tick via RAF updates progress while playing', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       const audio = tile.audioRef;
@@ -3103,7 +3104,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('pause with forceIdle resets tile to idle state', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       const audio = tile.audioRef;
@@ -3117,7 +3118,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('ended event resets tile state and progress', () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       const audio = tile.audioRef;
@@ -3130,7 +3131,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('tile click toggles playback via playIfPaused', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       document.body.appendChild(tile);
@@ -3143,7 +3144,7 @@ describe('Firefly Workflow Tests', () => {
     });
 
     it('tile keydown Enter toggles playback', async () => {
-      const w = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      const w = new PromptWidget(block, unityElement, workflowCfg, spriteContainer);
       const strip = document.createElement('div');
       const tile = w.createVariationTile({ label: 'A', url: 'u1' }, 0, strip);
       document.body.appendChild(tile);

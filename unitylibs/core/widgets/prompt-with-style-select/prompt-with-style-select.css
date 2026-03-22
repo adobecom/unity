@@ -1,6 +1,11 @@
-/* Isolated style-launcher styles (no widget.css import) */
+/*
+ * Prompt + style select (`mountInUnityBlock`): card chrome, preview, `.unity-slf-*` layout.
+ * Shared Firefly primitives live in `workflow-firefly/widget.css` (workflow priorityLoad).
+ * Scoped overrides under `.unity-prompt-with-style-select` so this UI does not depend on
+ * `prompt-widget/prompt-widget.css` (hero marquee layout).
+ */
 
-/* Full style launcher UI (sibling between hero-marquee and Unity block, mountInUnityBlock) */
+/* Full UI (sibling between hero-marquee and Unity block, mountInUnityBlock) */
 
 /* Screen-reader-only bucket: preserves cgen / icons inside .unity for getCgenQueryParams & error copy */
 .unity-slf-sr-only {
@@ -24,7 +29,7 @@
  * Doodlebug / Figma: host can set --Font-size-100, --Line-height-100, --Letter-spacing on a parent.
  * Figma dev links are not readable without login; paste inspect values here when the frame changes.
  */
-.unity-style-launcher-full {
+.unity-prompt-with-style-select {
   width: 100%;
   box-sizing: border-box;
   --Font-size-100: 14px;
@@ -32,7 +37,7 @@
   --Letter-spacing: 0;
 }
 
-.unity-style-launcher-full .unity-slf-main {
+.unity-prompt-with-style-select .unity-slf-main {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -42,14 +47,14 @@
 }
 
 @media screen and (min-width: 900px) {
-  .unity-style-launcher-full .unity-slf-main {
+  .unity-prompt-with-style-select .unity-slf-main {
     flex-direction: row;
     gap: 8px;
   }
 }
 
 /* Left container: unified background for prompt bar + style elements */
-.unity-style-launcher-full .unity-slf-left {
+.unity-prompt-with-style-select .unity-slf-left {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -61,7 +66,7 @@
 }
 
 /* Parent container: prompt bar + style section */
-.unity-style-launcher-full .unity-slf-controls {
+.unity-prompt-with-style-select .unity-slf-controls {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -69,33 +74,33 @@
 }
 
 /* Style section container: heading + style list */
-.unity-style-launcher-full .unity-slf-style-container {
+.unity-prompt-with-style-select .unity-slf-style-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
 }
 
-.unity-style-launcher-full .unity-slf-right {
+.unity-prompt-with-style-select .unity-slf-right {
   min-width: 0;
   flex: 1;
 }
 
-.unity-style-launcher-full .unity-slf-preview {
+.unity-prompt-with-style-select .unity-slf-preview {
   border-radius: 12px;
   overflow: hidden;
   background: rgb(0 0 0 / 20%);
 }
 
-.unity-style-launcher-full .unity-slf-preview picture,
-.unity-style-launcher-full .unity-slf-preview img {
+.unity-prompt-with-style-select .unity-slf-preview picture,
+.unity-prompt-with-style-select .unity-slf-preview img {
   display: block;
   width: 100%;
   height: auto;
   object-fit: cover;
 }
 
-.unity-style-launcher-full .unity-slf-sprite {
+.unity-prompt-with-style-select .unity-slf-sprite {
   position: absolute;
   width: 0;
   height: 0;
@@ -103,16 +108,16 @@
   pointer-events: none;
 }
 
-.unity-style-launcher-full .ex-unity-wrap {
+.unity-prompt-with-style-select .ex-unity-wrap {
   position: relative;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Isolated widget primitives copied from workflow-firefly/widget.css         */
-/* (limited to elements rendered by style-launcher-full.js)                   */
+/* Isolated widget primitives (aligned with workflow-firefly/widget-common.css) */
+/* (limited to elements rendered by prompt-with-style-select.js)                   */
 /* -------------------------------------------------------------------------- */
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
   border: none;
   width: 100%;
   box-sizing: border-box;
@@ -125,40 +130,40 @@
   scrollbar-color: #888 transparent;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
   color: #7d7d7d;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
   display: flex;
   width: fit-content;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn {
   text-decoration: none;
   display: flex;
   align-items: center;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn:focus {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn:focus {
   outline: 2px solid #005fcc;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico {
   display: flex;
   align-content: center;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
   width: 24px;
   height: 24px;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
   display: flex;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
   border-radius: 25px;
   background: linear-gradient(90deg, #d73220 0%, #d92361 33%, #7155fa 100%);
   border: none;
@@ -166,19 +171,19 @@
   gap: 8px;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
   color: var(--color-white, #fff);
   font-size: 19px;
   font-weight: 700;
   line-height: normal;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
   position: relative;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .selected-model {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -196,38 +201,38 @@
   color: #fff;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .selected-model img,
-.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-link img {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model img,
+.unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-link img {
   width: 22px;
   height: 22px;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .models-container .menu-icon {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .models-container .menu-icon {
   position: relative;
   top: 1px;
   transition: transform 0.15s ease-in;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .models-container.show-menu .menu-icon {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .models-container.show-menu .menu-icon {
   transform: rotate(-180deg);
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .selected-model .menu-icon,
-.unity-style-launcher-full.unity-enabled .interactive-area .selected-model .menu-icon svg {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model .menu-icon,
+.unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model .menu-icon svg {
   width: 12px;
   height: 12px;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
   color: #fff;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
   min-width: 270px;
   background: #000;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .verb-list {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list {
   padding: 18px;
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
@@ -241,11 +246,11 @@
   z-index: 5;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .models-container.show-menu .verb-list {
   display: block;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-link {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-link {
   color: inherit;
   display: flex;
   align-items: center;
@@ -259,15 +264,15 @@
   opacity: 1;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .model-link {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .model-link {
   font-size: 14px;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
   display: none;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
   display: block;
   position: absolute;
   top: 50%;
@@ -275,7 +280,7 @@
   transform: translateY(-50%);
 }
 
-.unity-style-launcher-full .unity-slf-prompt-label {
+.unity-prompt-with-style-select .unity-slf-prompt-label {
   display: block;
   margin-bottom: 8px;
   color: #7d7d7d;
@@ -289,24 +294,24 @@
 
 /*
  * widget.css sets .interactive-area.dark .inp-field-label to #000 for the marquee (dark chrome + light input).
- * The full style-launcher card uses a dark shell; without this override the prompt label is effectively invisible.
+ * The prompt-with-style-select card uses a dark shell; without this override the prompt label is effectively invisible.
  */
-.unity-style-launcher-full.unity-enabled > .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label,
-.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-prompt-label,
-.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-styles-heading {
+.unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label,
+.unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .unity-slf-prompt-label,
+.unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .unity-slf-styles-heading {
   color: #7D7D7D;
 }
 
-.unity-style-launcher-full.unity-enabled > .interactive-area.dark .unity-slf-prompt-label {
+.unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .unity-slf-prompt-label {
   margin-bottom: 0px;
 }
 
-.unity-style-launcher-full .inp-field {
+.unity-prompt-with-style-select .inp-field {
   min-height: 100px;
   resize: vertical;
 }
 
-.unity-style-launcher-full .unity-slf-styles-heading {
+.unity-prompt-with-style-select .unity-slf-styles-heading {
   margin: 0;
   color: #7d7d7d;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
@@ -317,7 +322,7 @@
   letter-spacing: var(--Letter-spacing, 0);
 }
 
-.unity-style-launcher-full .unity-slf-style-list {
+.unity-prompt-with-style-select .unity-slf-style-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
@@ -326,7 +331,7 @@
   padding: 0;
 }
 
-.unity-style-launcher-full .unity-slf-style-item {
+.unity-prompt-with-style-select .unity-slf-style-item {
   min-width: 0;
   cursor: pointer;
   border-radius: 8px;
@@ -337,19 +342,19 @@
   background: #2C2C2C;
 }
 
-.unity-style-launcher-full .unity-slf-style-item.selected {
+.unity-prompt-with-style-select .unity-slf-style-item.selected {
   border-color: #1473e6;
 }
 
-.unity-style-launcher-full .unity-slf-style-item picture,
-.unity-style-launcher-full .unity-slf-style-item img {
+.unity-prompt-with-style-select .unity-slf-style-item picture,
+.unity-prompt-with-style-select .unity-slf-style-item img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: 4px;
 }
 
-.unity-style-launcher-full .unity-slf-style-label {
+.unity-prompt-with-style-select .unity-slf-style-label {
   display: block;
   margin-top: 6px;
   font-size: 11px;
@@ -359,25 +364,25 @@
   white-space: nowrap;
 }
 
-.unity-style-launcher-full .unity-slf-gen-btn {
+.unity-prompt-with-style-select .unity-slf-gen-btn {
   white-space: nowrap;
 }
 
 /*
  * Firefly widget.css scopes almost everything to:
  *   .unity-enabled .interactive-area .ex-unity-wrap …
- * The style launcher is inserted as a sibling of the hero, so we add those wrappers in JS.
+ * This UI is inserted as a sibling of the hero, so we add those wrappers in JS.
  * Below: card chrome + layout fixes so the prompt matches the designed embed (not raw browser defaults).
  */
 
-.unity-style-launcher-full.unity-enabled {
+.unity-prompt-with-style-select.unity-enabled {
   max-width: 1200px;
   margin-inline: auto;
   margin-block: 24px;
   box-sizing: border-box;
 }
 
-.unity-style-launcher-full.unity-enabled > .interactive-area {
+.unity-prompt-with-style-select.unity-enabled > .interactive-area {
   display: flex;
   box-sizing: border-box;
   background: #222;
@@ -387,14 +392,14 @@
 }
 
 @media screen and (min-width: 900px) {
-  .unity-style-launcher-full.unity-enabled > .interactive-area {
+  .unity-prompt-with-style-select.unity-enabled > .interactive-area {
     padding: 14px
   }
 }
 
 /* Prompt “glass” fills the column (widget.css defaults to 720px fixed width). */
 /* No separate container for prompt bar — blends with left container #1B1B1B */
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -405,37 +410,37 @@
 }
 
 /* Remove decorative ::after pseudo-element from widget.css */
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
   content: none !important;
   display: none !important;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
   padding-left: 0;
   padding-right: 0;
 }
 
 /* Prompt layout: label, field, then action bar (model picker + Generate) */
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: grid;
   grid-template-columns: 1fr;
   /* row-gap: 24px; */
   align-items: center;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field-label,
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field-label,
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
   grid-column: 1;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
   grid-column: 1;
   color: #F8F8F8;
   padding: 10px 0px;
 }
 
 /* Action container: models-container + act-wrap in 3:1 ratio, 8px gap */
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
   /* grid-column: 1;
   display: grid;
   grid-template-columns: 3fr 1fr;
@@ -450,26 +455,26 @@
   align-items: center;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   min-width: 0;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .act-wrap {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .act-wrap {
   display: flex;
   justify-content: flex-end;
   align-items: center;
 }
 
 /* When no model picker, place Generate button in right column */
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .act-wrap:only-child {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .act-wrap:only-child {
   grid-column: 2;
   justify-self: end;
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .models-container {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .models-container {
   display: flex;
   width: 100%;
   max-width: 100%;
@@ -477,12 +482,12 @@
 }
 
 /* Separator before style thumbnails */
-.unity-style-launcher-full .unity-slf-style-container > .unity-slf-styles-heading {
+.unity-prompt-with-style-select .unity-slf-style-container > .unity-slf-styles-heading {
   margin-top: 4px;
   padding-top: 20px;
   border-top: 1px solid rgb(255 255 255 / 12%);
 }
 
-.unity-style-launcher-full.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container {
   width: fit-content;
 }

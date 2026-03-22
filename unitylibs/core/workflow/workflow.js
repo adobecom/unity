@@ -66,25 +66,37 @@ class WfInitiator {
     this.workflowCfg.targetCfg = this.targetConfig;
     let unityWidget = null;
     if (this.targetConfig.renderWidget) {
-      const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
       const spriteContent = await spriteSvg.text();
-      unityWidget = new UnityWidget(
-        this.interactiveArea,
-        this.el,
-        this.workflowCfg,
-        spriteContent,
-      );
+      const isFireflyMarquee = this.workflowCfg.name === 'workflow-firefly'
+        && !this.targetConfig.mountInUnityBlock;
+      if (isFireflyMarquee) {
+        const { PromptWidget } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`);
+        unityWidget = new PromptWidget(
+          this.interactiveArea,
+          this.el,
+          this.workflowCfg,
+          spriteContent,
+        );
+      } else {
+        const { default: UnityWidget } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`);
+        unityWidget = new UnityWidget(
+          this.interactiveArea,
+          this.el,
+          this.workflowCfg,
+          spriteContent,
+        );
+      }
       this.actionMap = await unityWidget.initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    const styleLauncherRoot = unityWidget?.styleLauncherRoot ?? null;
+    const promptWithStyleSelectRoot = unityWidget?.promptWithStyleSelectRoot ?? null;
     const actionBinderBlock = this.targetConfig?.mountInUnityBlock
-      ? (styleLauncherRoot || this.el)
+      ? (promptWithStyleSelectRoot || this.el)
       : this.targetBlock;
     const canvasAreaForBinder = this.targetConfig?.mountInUnityBlock
-      ? (styleLauncherRoot || this.interactiveArea)
+      ? (promptWithStyleSelectRoot || this.interactiveArea)
       : this.interactiveArea;
     await new ActionBinder(
       this.el,

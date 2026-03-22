@@ -1,5 +1,5 @@
 /**
- * Parses Unity block authoring for the full style launcher (Unity block with .widget-prompt-with-style).
+ * Parses Unity block authoring for prompt + style selection (Unity block with .widget-prompt-with-style).
  * The style table is the first ul whose lis contain a thumbnail <picture> (verb/config ul comes first and is skipped).
  * Following sibling div rows: each has 3 column divs (mobile / tablet / desktop preview pictures).
  * Rows like cgen (no 3 pictures) are skipped.
@@ -105,7 +105,7 @@ function findStyleVariantUl(div) {
  * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
  * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
  */
-export function parseStyleLauncherAuthoring(root) {
+export function parsePromptWithStyleSelectAuthoring(root) {
   /* Prefer direct child divs (config rows + style table + preview rows). Fallback to single wrapper. */
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
   if (topDivs.length === 1) {
@@ -167,17 +167,14 @@ function currentPreviewColumn() {
  * @param {*} widgetInstance — UnityWidget instance (workflow-firefly/widget.js)
  * @param {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }} parsed
  */
-export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
+export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
   if (!styles.length) return;
 
   const unityLibs = getUnityLibs();
-  /*
-   * Pull in Firefly widget.css via @import inside style-launcher-full.css so the browser resolves
-   * widget.css from the same directory as this sheet (avoids broken URLs when getUnityLibs() mismatches the page).
-   */
+  /* Prompt + style-select sheet (card + `.unity-prompt-with-style-select` overrides). Shared primitives come from workflow priorityLoad of `workflow-firefly/widget.css`. */
   await new Promise((resolve) => {
-    loadStyle(`${unityLibs}/core/widgets/style-launcher/style-launcher-full.css`, resolve);
+    loadStyle(`${unityLibs}/core/widgets/prompt-with-style-select/prompt-with-style-select.css`, resolve);
   });
 
   const { el } = widgetInstance;
@@ -379,11 +376,11 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
 
   /*
    * Firefly widget.css only applies under `.unity-enabled .interactive-area .ex-unity-wrap …`.
-   * The launcher is a sibling of the hero, so we recreate that wrapper chain on the root.
+   * This root is a sibling of the hero, so we recreate that wrapper chain for widget.css selectors.
    */
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
-  const root = createTag('div', { class: 'unity-style-launcher-full unity-enabled' });
+  const root = createTag('div', { class: 'unity-prompt-with-style-select unity-enabled' });
   interactiveShell.append(main);
   root.append(interactiveShell);
 
@@ -396,12 +393,26 @@ export async function mountStyleLauncherFullUI(widgetInstance, parsed) {
   el.append(holder);
   el.classList.add('unity-prompt-with-style-host');
 
-  /* Render between hero-marquee and the Unity block (sibling order: … hero, launcher, unity …). */
+  /* Render between hero-marquee and the Unity block (sibling order: … hero, prompt-with-style-select, unity …). */
   if (el.parentNode) {
     el.parentNode.insertBefore(root, el);
   } else {
     el.append(root);
   }
 
-  widgetInstance.styleLauncherRoot = root;
+  widgetInstance.promptWithStyleSelectRoot = root;
+}
+
+/**
+ * Entry point for UnityWidget.initWidget when `targetCfg.mountInUnityBlock` is true.
+ * Parses the Unity block and mounts the prompt-with-style-select UI beside the block.
+ *
+ * @param {*} widgetInstance — UnityWidget (workflow-firefly/widget.js)
+ * @returns {Promise<object>} `targetCfg.actionMap` for ActionBinder
+ */
+export async function initPromptWithStyleSelectWidget(widgetInstance) {
+  const parsed = parsePromptWithStyleSelectAuthoring(widgetInstance.el);
+  if (!parsed.styles.length) return widgetInstance.workflowCfg.targetCfg.actionMap;
+  await mountPromptWithStyleSelectUI(widgetInstance, parsed);
+  return widgetInstance.workflowCfg.targetCfg.actionMap;
 }
