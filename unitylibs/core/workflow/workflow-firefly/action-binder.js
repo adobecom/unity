@@ -227,8 +227,9 @@ export default class ActionBinder {
   }
 
   /**
-   * When Generate runs from the prompt-with-style-select UI, the connector payload should include the selected style name
-   * at the end of the prompt (DOM label under the thumbnail).
+   * When Generate runs from prompt-with-style-select, append the selected style’s connector suffix to the prompt.
+   * If the variant was authored as `Name (description)` before `<br>`, `data-style-connector-suffix` holds `description`
+   * (shown under thumbnail as `Name` only). Legacy rows without parentheses still append the visible label.
    *
    * @param {string} query
    * @returns {string}
@@ -236,9 +237,14 @@ export default class ActionBinder {
   appendSelectedStyleNameForPromptWithStyleSelect(query) {
     const root = this.block;
     if (!root?.classList?.contains('unity-prompt-with-style-select')) return query;
-    const styleName = root.querySelector('.unity-slf-style-item.selected .unity-slf-style-label')?.textContent?.trim();
-    if (!styleName || !query) return query;
-    return `${query} ${styleName}`;
+    if (!query) return query;
+    const selected = root.querySelector('.unity-slf-style-item.selected');
+    if (!selected) return query;
+    const fromData = selected.dataset?.styleConnectorSuffix?.trim();
+    const labelFallback = selected.querySelector('.unity-slf-style-label')?.textContent?.trim() || '';
+    const suffix = fromData || labelFallback;
+    if (!suffix) return query;
+    return `${query} ${suffix}`;
   }
 
   getVerbFromDom() {

@@ -202,12 +202,13 @@
   background: #2c2c2c;
   border-radius: 8px;
   color: #fff;
+  height: 32px;
 }
 
 .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model img,
 .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-link img {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .unity-prompt-with-style-select.unity-enabled .interactive-area .models-container .menu-icon,
@@ -360,6 +361,8 @@
   text-align: center;
   transition: border-color 0.15s ease;
   background: #2C2C2C;
+  text-align: left;
+
 }
 
 .unity-prompt-with-style-select .unity-slf-style-item.selected {
@@ -375,13 +378,14 @@
 }
 
 .unity-prompt-with-style-select .unity-slf-style-label {
-  display: block;
-  margin-top: 6px;
-  font-size: 11px;
-  line-height: 1.2;
   overflow: hidden;
+  color: #F8F8F8;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height:  18px;
 }
 
 .unity-prompt-with-style-select .unity-slf-gen-btn {

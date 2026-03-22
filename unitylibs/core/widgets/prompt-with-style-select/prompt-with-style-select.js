@@ -3,7 +3,9 @@
 /**
  * Parses Unity block authoring for prompt + style selection (Unity block with .widget-prompt-with-style).
  * Row 0 is config (verbs, placeholders, etc.). The style strip is the first following row that contains a `<ul>`.
- * Each `<li>` in that list is a style variant. The next N top-level rows (N = number of `<li>`) are preview rows:
+ * Each `<li>` in that list is a style variant. Before `<br>`, authoring may be `Style name (connector style description)` —
+ * the name shows under the thumbnail; the parenthetical text is appended to the user prompt for the connector, not the name.
+ * After `<br>` is the default textarea prompt. The next N top-level rows (N = number of `<li>`) are preview rows:
  * each row has three column `<div>`s (mobile / tablet / desktop) with a `<picture>` each.
  */
 
@@ -33,8 +35,23 @@ function placeholderRowText(root, iconClass) {
 }
 
 /**
+ * First segment before `<br>` may be `Display name (text appended to prompt for connector)`.
+ *
+ * @param {string} firstLine — plain text (HTML already stripped)
+ * @returns {{ label: string, styleDescription: string }}
+ */
+export function parseStyleLabelAndDescription(firstLine) {
+  const trimmed = firstLine.trim();
+  const m = trimmed.match(/^(.+)\s*\(([^)]+)\)\s*$/);
+  if (m) {
+    return { label: m[1].trim(), styleDescription: m[2].trim() };
+  }
+  return { label: trimmed, styleDescription: '' };
+}
+
+/**
  * @param {HTMLElement} li
- * @returns {{ picture: HTMLPictureElement, label: string, prompt: string } | null}
+ * @returns {{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string } | null}
  */
 export function parseStyleLi(li) {
   const picture = li.querySelector('picture');
@@ -49,9 +66,11 @@ export function parseStyleLi(li) {
       return t.textContent.trim();
     })
     .filter(Boolean);
+  const { label, styleDescription } = parseStyleLabelAndDescription(parts[0] || '');
   return {
     picture: /** @type {HTMLPictureElement} */ (picture.cloneNode(true)),
-    label: parts[0] || '',
+    label,
+    styleDescription,
     prompt: parts.slice(1).join(' ').trim(),
   };
 }
@@ -85,7 +104,7 @@ function topLevelLisInUl(ul) {
 
 /**
  * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
- * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
+ * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
  */
 export function parsePromptWithStyleSelectAuthoring(root) {
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
@@ -153,7 +172,7 @@ function currentPreviewColumn() {
 
 /**
  * @param {*} widgetInstance — UnityWidget instance (workflow-firefly/widget.js)
- * @param {{ styles: Array<{ picture: HTMLPictureElement, label: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }} parsed
+ * @param {{ styles: Array<{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }} parsed
  */
 export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
@@ -265,6 +284,9 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
       tabindex: '0',
       'aria-selected': i === 0 ? 'true' : 'false',
     });
+    if (style.styleDescription) {
+      li.setAttribute('data-style-connector-suffix', style.styleDescription);
+    }
     li.append(style.picture.cloneNode(true));
     li.append(createTag('span', { class: 'unity-slf-style-label' }, style.label));
     return li;
