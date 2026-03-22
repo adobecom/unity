@@ -5,14 +5,14 @@
  * and DOM insertion into `.copy`. Not used for `mountInUnityBlock` (prompt-with-style-select).
  */
 
-import UnityWidget from '../../../workflow/workflow-firefly/widget.js';
+import UnityWidget from '../../workflow/workflow-firefly/widget.js';
 import { createTag, getConfig, getUnityLibs, loadStyle, unityConfig } from '../../../scripts/utils.js';
 
 export class PromptWidget extends UnityWidget {
   async ensureSoundModuleLoaded() {
     if (this.selectedVerbType !== 'sound' || this.soundAugmented) return;
     try {
-      const { default: augmentSound } = await import('../../../workflow/workflow-firefly/sound-utils.js');
+      const { default: augmentSound } = await import('../../workflow/workflow-firefly/sound-utils.js');
       augmentSound(this);
       this.soundAugmented = true;
     } catch (e) {
