@@ -239,9 +239,9 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     }
   }
   actWrap.append(genBtn);
-  actionContainer.append(actWrap);
 
-  inpWrap.append(promptLabel, inpField, actionContainer);
+  /* action-container: verb + model pickers only; act-wrap (Generate) is a sibling — parallel row in CSS grid */
+  inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
 
   const comboboxContainer = createTag('div', { class: 'autocomplete' });
   comboboxContainer.append(inpWrap);
