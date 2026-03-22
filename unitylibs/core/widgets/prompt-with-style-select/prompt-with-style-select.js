@@ -176,17 +176,16 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   unitySprite.classList.add('unity-slf-sprite');
   widgetWrap.append(unitySprite);
 
-  widgetInstance.selectedVerbType = 'image';
-  widgetInstance.selectedVerbText = 'Image';
-  widgetWrap.setAttribute('data-selected-verb', 'image');
-
-  /* modelDropdown() in widget.js requires .icon-placeholder-input in el (reads parentElement.textContent). */
+  /* modelDropdown() / verbDropdown() require .icon-placeholder-input on el (reads parentElement.textContent). */
   const phStub = createTag('div', { hidden: true, 'aria-hidden': 'true' });
   phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
 
-  widgetInstance.hasModelOptions = true;
-  await widgetInstance.getModel();
+  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
+  if (widgetInstance.hasModelOptions) await widgetInstance.getModel();
+
+  const verbParts = widgetInstance.verbDropdown();
+  const modelParts = widgetInstance.modelDropdown();
 
   const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
   const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
@@ -202,9 +201,14 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     rows: '4',
   });
   inpField.value = styles[0].prompt;
+  inpField.addEventListener('focus', () => widgetInstance.hidePromptDropdown());
 
   const actionContainer = createTag('div', { class: 'action-container' });
-  const modelParts = widgetInstance.modelDropdown();
+  if (verbParts.length > 1) {
+    const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
+    verbBtn.append(...verbParts);
+    actionContainer.append(verbBtn);
+  }
   if (modelParts.length > 1) {
     const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
     modelBtn.append(...modelParts);
@@ -218,10 +222,11 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   const generateLi = el.querySelector('.icon-generate')?.closest('li');
   let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
   if (!genBtn) {
+    const verbTag = widgetInstance.selectedVerbType || 'image';
     genBtn = createTag('a', {
       href: '#',
       class: 'unity-act-btn gen-btn unity-slf-gen-btn',
-      'daa-ll': 'Generate--image',
+      'daa-ll': `Generate--${verbTag}`,
       'aria-label': 'Generate',
     });
     genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));

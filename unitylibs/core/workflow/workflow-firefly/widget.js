@@ -3,8 +3,8 @@
 import { createTag, getUnityLibs } from '../../../scripts/utils.js';
 
 /**
- * Shared Firefly widget: model picker, Generate button, dropdown plumbing used by
- * prompt-with-style-select and the hero prompt bar ({@link PromptWidget} adds verb/prompt-dropdown UI).
+ * Shared Firefly widget: verb picker ({@link #verbDropdown}), model picker, Generate button,
+ * and dropdown plumbing for {@link PromptWidget} (hero) and {@link PromptWithStyleSelectWidget}.
  */
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -46,17 +46,115 @@ export default class UnityWidget {
     await Promise.resolve();
   }
 
+  /**
+   * Media-type combobox from authored `[class*="icon-verb"]` + sibling link text.
+   * Used by the hero prompt bar and prompt-with-style-select.
+   *
+   * @returns {HTMLElement[]} `[selectedButton]` when a single verb, else `[selectedButton, verbListUl]`
+   */
+  verbDropdown() {
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
+    const selectedVerbType = verbs[0]?.className.split('-')[2];
+    const selectedVerb = verbs[0]?.nextElementSibling;
+    const selectedElement = createTag('button', {
+      class: 'selected-verb',
+      'aria-expanded': 'false',
+      'aria-controls': 'media-menu',
+      'aria-label': 'media type',
+      'aria-haspopup': 'listbox',
+      role: 'combobox',
+      'aria-labelledby': 'listbox-label',
+      'data-selected-verb': selectedVerbType,
+    }, `${selectedVerb?.textContent.trim()}`);
+    this.selectedVerbType = selectedVerbType;
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    this.selectedVerbText = selectedVerb?.textContent.trim();
+    if (verbs.length <= 1) {
+      selectedElement.setAttribute('disabled', 'true');
+      return [selectedElement];
+    }
+    this.widgetWrap.classList.add('verb-options');
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
+    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
+    verbList.setAttribute('style', 'display: none;');
+    selectedElement.append(menuIcon);
+    const handleDocumentClick = (e) => {
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer.contains(e.target)) {
+        document.removeEventListener('click', handleDocumentClick);
+        this.closeVerbOrModelMenu(selectedElement);
+      }
+    };
+    selectedElement.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.hidePromptDropdown(selectedElement);
+      this.showVerbMenu(selectedElement);
+      document.addEventListener('click', handleDocumentClick);
+    }, true);
+    selectedElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        this.hidePromptDropdown(selectedElement);
+        this.showVerbMenu(selectedElement);
+      }
+      if (e.key === 'Escape' || e.code === 27) {
+        this.closeVerbOrModelMenu(selectedElement);
+        selectedElement.focus();
+      }
+    });
+    verbs[0]?.classList.add('selected');
+    const verbsData = Array.from(verbs).map((verb) => ({
+      name: verb.nextElementSibling?.textContent.trim(),
+      type: verb.classList[1].split('-')[2],
+      icon: verb.nextElementSibling?.href,
+    }));
+    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
+    return [selectedElement, verbList];
+  }
+
+  /**
+   * Collapses a verb or model combobox. Restores inline `display: none` on the `.verb-list`
+   * (opening removes it in `showVerbMenu`; without this the list stays visible when
+   * `.show-menu` is cleared — `display: block` only applies while `.show-menu` is set).
+   *
+   * @param {HTMLElement} selectedElement — `.selected-verb` or `.selected-model`
+   */
+  closeVerbOrModelMenu(selectedElement) {
+    const menuContainer = selectedElement?.parentElement;
+    if (!menuContainer) return;
+    menuContainer.classList.remove('show-menu');
+    selectedElement.setAttribute('aria-expanded', 'false');
+    const list = selectedElement.nextElementSibling;
+    if (list?.classList?.contains('verb-list')) {
+      list.setAttribute('style', 'display: none;');
+    }
+  }
+
   showVerbMenu(selectedElement) {
     const menuContainer = selectedElement.parentElement;
     document.querySelectorAll('.verbs-container').forEach((container) => {
       if (container !== menuContainer) {
-        container.classList.remove('show-menu');
-        container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
+        const sv = container.querySelector('.selected-verb');
+        if (sv) this.closeVerbOrModelMenu(sv);
+      }
+    });
+    document.querySelectorAll('.models-container').forEach((container) => {
+      if (container !== menuContainer) {
+        const sm = container.querySelector('.selected-model');
+        if (sm) this.closeVerbOrModelMenu(sm);
       }
     });
     menuContainer.classList.toggle('show-menu');
-    selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
-    if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
+    const isOpen = menuContainer.classList.contains('show-menu');
+    selectedElement.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    const siblingList = selectedElement.nextElementSibling;
+    if (siblingList?.classList?.contains('verb-list')) {
+      if (isOpen) {
+        siblingList.removeAttribute('style');
+      } else {
+        siblingList.setAttribute('style', 'display: none;');
+      }
+    }
   }
 
   hidePromptDropdown(exceptElement = null) {
@@ -71,15 +169,13 @@ export default class UnityWidget {
     }
     const modelDropdown = this.widget.querySelector('.models-container');
     const modelButton = modelDropdown?.querySelector('.selected-model');
-    if (modelDropdown && modelDropdown.classList.contains('show-menu') && modelButton !== exceptElement) {
-      modelDropdown.classList.remove('show-menu');
-      modelButton?.setAttribute('aria-expanded', 'false');
+    if (modelDropdown && modelDropdown.classList.contains('show-menu') && modelButton && modelButton !== exceptElement) {
+      this.closeVerbOrModelMenu(modelButton);
     }
     const verbDropdown = this.widget.querySelector('.verbs-container');
     const verbButton = verbDropdown?.querySelector('.selected-verb');
-    if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton !== exceptElement) {
-      verbDropdown.classList.remove('show-menu');
-      verbButton?.setAttribute('aria-expanded', 'false');
+    if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton && verbButton !== exceptElement) {
+      this.closeVerbOrModelMenu(verbButton);
     }
   }
 
@@ -114,8 +210,7 @@ export default class UnityWidget {
         if (text) verbLinkTexts.push(text);
       });
       verbLinkTexts.sort((a, b) => b.length - a.length);
-      selectedElement.parentElement.classList.toggle('show-menu');
-      selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
+      this.closeVerbOrModelMenu(selectedElement);
       link.parentElement.classList.add('selected');
       link.setAttribute('aria-selected', 'true');
       if (modelList) {
@@ -261,8 +356,7 @@ export default class UnityWidget {
       const menuContainer = selectedElement.parentElement;
       if (!menuContainer.contains(e.target)) {
         document.removeEventListener('click', handleDocumentClick);
-        menuContainer.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
+        this.closeVerbOrModelMenu(selectedElement);
       }
     };
     selectedElement.addEventListener('click', (e) => {
@@ -277,7 +371,7 @@ export default class UnityWidget {
         this.showVerbMenu(selectedElement);
       }
       if (e.key === 'Escape' || e.code === 27) {
-        selectedElement.parentElement.classList?.remove('show-menu');
+        this.closeVerbOrModelMenu(selectedElement);
         selectedElement.focus();
       }
     });

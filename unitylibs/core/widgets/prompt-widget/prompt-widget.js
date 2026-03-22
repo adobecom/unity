@@ -29,67 +29,6 @@ export class PromptWidget extends UnityWidget {
     );
   }
 
-  verbDropdown() {
-    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
-    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
-    const selectedVerbType = verbs[0]?.className.split('-')[2];
-    const selectedVerb = verbs[0]?.nextElementSibling;
-    const selectedElement = createTag('button', {
-      class: 'selected-verb',
-      'aria-expanded': 'false',
-      'aria-controls': 'media-menu',
-      'aria-label': 'media type',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
-      'aria-labelledby': 'listbox-label',
-      'data-selected-verb': selectedVerbType,
-    }, `${selectedVerb?.textContent.trim()}`);
-    this.selectedVerbType = selectedVerbType;
-    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-    this.selectedVerbText = selectedVerb?.textContent.trim();
-    if (verbs.length <= 1) {
-      selectedElement.setAttribute('disabled', 'true');
-      return [selectedElement];
-    }
-    this.widgetWrap.classList.add('verb-options');
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
-    verbList.setAttribute('style', 'display: none;');
-    selectedElement.append(menuIcon);
-    const handleDocumentClick = (e) => {
-      const menuContainer = selectedElement.parentElement;
-      if (!menuContainer.contains(e.target)) {
-        document.removeEventListener('click', handleDocumentClick);
-        menuContainer.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
-      }
-    };
-    selectedElement.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      document.addEventListener('click', handleDocumentClick);
-    }, true);
-    selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-      }
-      if (e.key === 'Escape' || e.code === 27) {
-        selectedElement.parentElement.classList?.remove('show-menu');
-        selectedElement.focus();
-      }
-    });
-    verbs[0]?.classList.add('selected');
-    const verbsData = Array.from(verbs).map((verb) => ({
-      name: verb.nextElementSibling?.textContent.trim(),
-      type: verb.classList[1].split('-')[2],
-      icon: verb.nextElementSibling?.href,
-    }));
-    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    return [selectedElement, verbList];
-  }
-
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
