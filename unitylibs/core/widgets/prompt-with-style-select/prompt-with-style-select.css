@@ -46,7 +46,8 @@
   min-width: 0;
 }
 
-@media screen and (min-width: 900px) {
+/* Match scripts/utils.js defineDeviceByScreenSize DESKTOP_SIZE (1200): row layout with desktop preview column */
+@media screen and (min-width: 1200px) {
   .unity-prompt-with-style-select .unity-slf-main {
     flex-direction: row;
     gap: 8px;
@@ -399,11 +400,18 @@
  * Below: card chrome + layout fixes so the prompt matches the designed embed (not raw browser defaults).
  */
 
+/* Tablet / mobile: 640px; desktop (aligns with defineDeviceByScreenSize DESKTOP 1200): 1000px */
 .unity-prompt-with-style-select.unity-enabled {
-  max-width: 1200px;
+  max-width: 640px;
   margin-inline: auto;
   margin-block: 24px;
   box-sizing: border-box;
+}
+
+@media screen and (min-width: 1200px) {
+  .unity-prompt-with-style-select.unity-enabled {
+    max-width: 1000px;
+  }
 }
 
 .unity-prompt-with-style-select.unity-enabled > .interactive-area {
@@ -415,9 +423,9 @@
   gap: 8px;
 }
 
-@media screen and (min-width: 900px) {
+@media screen and (min-width: 1200px) {
   .unity-prompt-with-style-select.unity-enabled > .interactive-area {
-    padding: 14px
+    padding: 14px;
   }
 }
 
