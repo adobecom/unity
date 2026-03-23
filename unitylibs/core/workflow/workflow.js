@@ -8,6 +8,62 @@ import {
   priorityLoad,
 } from '../../scripts/utils.js';
 
+/**
+ * Same matching rules as `getTarget` before `intEnbReendered` — computed once in `priorityLibFetch` and reused in `getTarget`.
+ *
+ * @param {Record<string, unknown>} targetConfig — parsed target-config.json
+ * @param {string} workflowName
+ * @param {HTMLElement} el — Unity block
+ * @returns {{ targetCfg: object | null, prevElem: Element | null }}
+ */
+function matchTargetConfigBlock(targetConfig, workflowName, el) {
+  const prevElem = el.previousElementSibling;
+  const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
+  // eslint-disable-next-line no-underscore-dangle -- target-config.json reserved key
+  const defaults = targetConfig._defaults || {};
+  let targetCfg = null;
+  for (let k = 0; k < supportedBlocks.length; k += 1) {
+    const key = supportedBlocks[k];
+    const cfg = targetConfig[key];
+    let matches = false;
+    if (key === 'widget-prompt-with-style') {
+      matches = workflowName === 'workflow-firefly'
+        && el.classList.contains('widget-prompt-with-style');
+    } else {
+      const classes = key.split('.');
+      matches = true;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const c of classes) {
+        const hasClass = prevElem?.classList.contains(c);
+        const hasChild = prevElem?.querySelector(`.${c}`);
+        if (!(hasClass || hasChild)) {
+          matches = false;
+          break;
+        }
+      }
+    }
+    if (matches) {
+      targetCfg = { ...defaults, ...cfg };
+      break;
+    }
+  }
+  return { targetCfg, prevElem };
+}
+
+/**
+ * Which prompt bundle to preload: `widget-prompt-with-style` on the Unity block → style-select, else prompt-widget.
+ *
+ * @param {HTMLElement | null} el
+ * @param {string} widgetsBase
+ * @returns {string | null}
+ */
+function promptWidgetJsPathFromEl(el, widgetsBase) {
+  if (!el) return null;
+  return el.classList.contains('widget-prompt-with-style')
+    ? `${widgetsBase}/prompt-with-style-select/prompt-with-style-select.js`
+    : `${widgetsBase}/prompt-widget/prompt-widget.js`;
+}
+
 class WfInitiator {
   constructor() {
     this.el = null;
@@ -20,8 +76,16 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  static async priorityLibFetch(workflowName) {
+  /**
+   * @param {string} workflowName
+   * @param {HTMLElement | null} [el] — Unity block; prompt bundle variant follows `widget-prompt-with-style` on `el`
+   *   (not `target-config.json`). `target-config.json` loads in the same `priorityLoad` batch as other assets.
+   *   `loadStyle` in the widget dedupes by href.
+   * @returns {Promise<{ targetConfigJson: object, spriteCallRes: Response | null, widgetModulePromise: Promise<object | null>, targetMatch: { targetCfg: object | null, prevElem: Element | null } | null }>}
+   */
+  static async priorityLibFetch(workflowName, el = null) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
+    const widgetsBase = `${getUnityLibs()}/core/widgets`;
     const sharedWfRes = [
       `${baseWfPath}/sprite.svg`,
       `${baseWfPath}/widget.css`,
@@ -35,17 +99,38 @@ class WfInitiator {
       'workflow-ai': sharedWfRes,
       'workflow-firefly': sharedWfRes,
     };
-    const commonResources = [
-      `${baseWfPath}/target-config.json`,
-      `${baseWfPath}/action-binder.js`,
-    ];
     const wfRes = workflowRes[workflowName] || [];
-    const priorityList = [...commonResources, ...wfRes];
+
+    const targetConfigUrl = `${baseWfPath}/target-config.json`;
+    const promptWidgetJsPath = promptWidgetJsPathFromEl(el, widgetsBase);
+
+    const priorityList = [
+      targetConfigUrl,
+      `${baseWfPath}/action-binder.js`,
+      ...wfRes,
+      ...(promptWidgetJsPath
+        ? [promptWidgetJsPath.replace(/\.js$/, '.css'), promptWidgetJsPath]
+        : []),
+    ];
     const pfr = await priorityLoad(priorityList);
+    const targetConfigJson = await pfr[0].json();
+    const targetMatch = el
+      ? matchTargetConfigBlock(targetConfigJson, workflowName, el)
+      : null;
+
+    const spritePath = `${baseWfPath}/sprite.svg`;
+    const spriteIdx = priorityList.indexOf(spritePath);
+    const spriteCallRes = spriteIdx >= 0 ? pfr[spriteIdx] : null;
+
+    const widgetModulePromise = promptWidgetJsPath
+      ? import(promptWidgetJsPath)
+      : Promise.resolve(null);
 
     return {
-      targetConfigCallRes: pfr[0],
-      spriteCallRes: pfr.length > 2 ? pfr[2] : null,
+      targetConfigJson,
+      spriteCallRes,
+      widgetModulePromise,
+      targetMatch,
     };
   }
 
@@ -59,20 +144,35 @@ class WfInitiator {
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
-    [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
+    const {
+      targetConfigJson,
+      spriteCallRes: spriteSvg,
+      widgetModulePromise,
+      targetMatch,
+    } = await WfInitiator.priorityLibFetch(this.workflowCfg.name, this.el);
+    const getTargetPromise = this.getTarget(targetConfigJson, targetMatch);
+    const spritePromise = spriteSvg ? spriteSvg.text() : Promise.resolve('');
+    const [targetTuple, spriteContent, widgetModule] = await Promise.all([
+      getTargetPromise,
+      spritePromise,
+      widgetModulePromise,
+    ]);
+    [this.targetBlock, this.interactiveArea, this.targetConfig] = targetTuple;
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     let unityWidget = null;
-    if (this.targetConfig.renderWidget) {
-      const spriteContent = await spriteSvg.text();
-      let WidgetClass;
-      if (this.targetConfig.promptWithStyleSelect) {
-        ({ PromptWithStyleSelectWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`));
-      } else {
-        ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
+    if (this.targetConfig?.renderWidget) {
+      const widgetsBase = `${getUnityLibs()}/core/widgets`;
+      let mod = widgetModule;
+      if (!mod) {
+        mod = this.el.classList.contains('widget-prompt-with-style')
+          ? await import(`${widgetsBase}/prompt-with-style-select/prompt-with-style-select.js`)
+          : await import(`${widgetsBase}/prompt-widget/prompt-widget.js`);
       }
+      const WidgetClass = this.el.classList.contains('widget-prompt-with-style')
+        ? mod.PromptWithStyleSelectWidget
+        : mod.PromptWidget;
       unityWidget = new WidgetClass(
         this.interactiveArea,
         this.el,
@@ -81,14 +181,14 @@ class WfInitiator {
       );
       this.actionMap = await unityWidget.initWidget();
     } else {
-      this.actionMap = this.targetConfig.actionMap;
+      this.actionMap = this.targetConfig?.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const promptWithStyleSelectRoot = unityWidget?.promptWithStyleSelectRoot ?? null;
-    const actionBinderBlock = this.targetConfig?.promptWithStyleSelect
+    const actionBinderBlock = this.el.classList.contains('widget-prompt-with-style')
       ? (promptWithStyleSelectRoot || this.el)
       : this.targetBlock;
-    const canvasAreaForBinder = this.targetConfig?.promptWithStyleSelect
+    const canvasAreaForBinder = this.el.classList.contains('widget-prompt-with-style')
       ? (promptWithStyleSelectRoot || this.interactiveArea)
       : this.interactiveArea;
     await new ActionBinder(
@@ -114,42 +214,19 @@ class WfInitiator {
     });
   }
 
-  async getTarget(rawTargetConfig) {
-    const targetConfig = await rawTargetConfig.json();
-    const prevElem = this.el.previousElementSibling;
-    // List `widget-prompt-with-style` before `hero-marquee` (etc.) in target-config.json so the loop matches it first.
-    const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
-    // eslint-disable-next-line no-underscore-dangle -- target-config.json reserved key
-    const defaults = targetConfig._defaults || {};
+  /**
+   * @param {Record<string, unknown>} targetConfig — parsed target-config.json (same object as `priorityLibFetch`)
+   * @param {{ targetCfg: object | null, prevElem: Element | null } | null} [targetMatchFromFetch] — from `priorityLibFetch` to avoid a second `matchTargetConfigBlock` pass
+   */
+  async getTarget(targetConfig, targetMatchFromFetch = null) {
+    const { targetCfg: rawCfg, prevElem } = targetMatchFromFetch
+      ?? matchTargetConfigBlock(targetConfig, this.workflowCfg.name, this.el);
 
-    let targetCfg = null;
-    for (let k = 0; k < supportedBlocks.length; k += 1) {
-      const key = supportedBlocks[k];
-      const cfg = targetConfig[key];
-      let matches = false;
-      if (key === 'widget-prompt-with-style') {
-        matches = this.workflowCfg.name === 'workflow-firefly'
-          && this.el.classList.contains('widget-prompt-with-style');
-      } else {
-        const classes = key.split('.');
-        matches = true;
-        // eslint-disable-next-line no-restricted-syntax
-        for (const c of classes) {
-          const hasClass = prevElem?.classList.contains(c);
-          const hasChild = prevElem?.querySelector(`.${c}`);
-          if (!(hasClass || hasChild)) {
-            matches = false;
-            break;
-          }
-        }
-      }
-      if (matches) {
-        targetCfg = { ...defaults, ...cfg };
-        break;
-      }
-    }
-
-    if (!targetCfg || !prevElem) return [null, null, null];
+    if (!rawCfg || !prevElem) return [null, null, null];
+    const targetCfg = {
+      ...rawCfg,
+      promptWithStyleSelect: this.el.classList.contains('widget-prompt-with-style'),
+    };
     await this.intEnbReendered(prevElem, targetCfg.selector);
     const ta = this.createInteractiveArea(prevElem, targetCfg.selector, targetCfg);
     prevElem.classList.add('unity-enabled');

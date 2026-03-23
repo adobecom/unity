@@ -15,8 +15,7 @@
     "selector": ":scope > div",
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",
-    "insert": "before",
-    "promptWithStyleSelect": true
+    "insert": "before"
   },
   "hero-marquee": {
     "selector": ".copy",
