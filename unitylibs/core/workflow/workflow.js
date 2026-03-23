@@ -20,13 +20,18 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  static async priorityLibFetch(workflowName) {
+  static async priorityLibFetch(workflowName, el) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
-    const sharedWfRes = [
-      `${baseWfPath}/sprite.svg`,
-      `${baseWfPath}/widget.css`,
-      `${baseWfPath}/widget.js`,
-    ];
+    /* `.widget-prompt-with-style` uses PromptWithStyleSelectWidget (inlines verb/model UI); skip widget.css + widget.js. */
+    const promptWithStyleSelect = workflowName === 'workflow-firefly'
+      && el?.classList?.contains('widget-prompt-with-style');
+    const sharedWfRes = promptWithStyleSelect
+      ? [`${baseWfPath}/sprite.svg`]
+      : [
+          `${baseWfPath}/sprite.svg`,
+          `${baseWfPath}/widget.css`,
+          `${baseWfPath}/widget.js`,
+        ];
     const workflowRes = {
       'workflow-photoshop': [
         ...sharedWfRes,
@@ -59,7 +64,7 @@ class WfInitiator {
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name);
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name, this.el);
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
     this.callbackMap = {};

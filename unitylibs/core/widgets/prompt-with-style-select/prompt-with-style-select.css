@@ -1,8 +1,11 @@
 /*
- * Prompt + style select (`promptWithStyleSelect`): card chrome, preview, `.unity-slf-*` layout.
- * Shared Firefly primitives live in `workflow-firefly/widget.css` (workflow priorityLoad).
- * Scoped overrides under `.unity-prompt-with-style-select` so this UI does not depend on
- * `prompt-widget/prompt-widget.css` (hero marquee layout).
+ * Prompt + style select (`promptWithStyleSelect`): card chrome, preview, `.unity-slf-*` layout,
+ * and scoped Firefly verb/model/Generate primitives under `.unity-prompt-with-style-select`.
+ * For `.widget-prompt-with-style`, workflow priorityLoad skips `workflow-firefly/widget.css`.
+ *
+ * Note: `workflow-photoshop/widget.css` is Photoshop-only (sliders/changebg, etc.) and does not
+ * define Firefly prompt-bar rules. Baseline prompt-bar rules below are ported from
+ * `workflow-firefly/widget.css` (sections: autocomplete shell, inp-wrap, verb/model menus, Generate).
  */
 
 /* Full UI (sibling between hero-marquee and Unity block, promptWithStyleSelect) */
@@ -518,4 +521,107 @@
 .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
 .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
   width: fit-content;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Ported from workflow-firefly/widget.css — prompt bar parity (no widget.css load) */
+/* -------------------------------------------------------------------------- */
+
+/* Match widget.css: hide model picker when page opts out of video models for video verb */
+:root:has(.hide-video-models) .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap[data-selected-verb='video'] .models-container {
+  display: none;
+}
+
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .unity-sprite-container {
+  display: none;
+}
+
+.unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb > img {
+  position: relative;
+  top: 1px;
+}
+
+.unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb[disabled='true'] {
+  cursor: auto;
+}
+
+/* Wider model dropdown panel (matches workflow-firefly/widget.css verb-options + models) */
+.unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
+  min-width: 270px;
+}
+
+[lang='ja-JP'] .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list,
+[lang='ko-KR'] .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list {
+  margin-top: 6px;
+}
+
+[dir='rtl'] .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list {
+  left: unset;
+  right: 0;
+}
+
+[dir='rtl'] .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+  right: 3px;
+}
+
+/* theme-two / max25: chevron + icon treatment aligned with marquee widget.css */
+:root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
+  filter: brightness(0);
+}
+
+:root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb,
+:root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model {
+  border-radius: 12px;
+  min-height: 36px;
+}
+
+:root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list {
+  border-radius: 14px;
+}
+
+:root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-link {
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  :root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+    font-size: 16px;
+  }
+
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+    padding: 10px;
+  }
+
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 599px) {
+  :root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .models-container .verb-list {
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 30px;
+  }
+
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model .model-name {
+    display: none;
+  }
+
+  :root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container,
+  :root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+  :root:has(meta[name='theme'][content='max25'], .theme-two) .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
+    position: static;
+  }
+}
+
+@keyframes unity-pws-fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
