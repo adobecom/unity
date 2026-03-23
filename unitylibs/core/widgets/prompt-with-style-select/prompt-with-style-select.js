@@ -170,6 +170,35 @@ function currentPreviewColumn() {
   return VIEWPORT_COL[v] ?? 2;
 }
 
+function applyStyleStripImageLoadingPriorities(styleList) {
+  styleList.querySelectorAll('.unity-slf-style-item picture img').forEach((img) => {
+    img.setAttribute('loading', 'eager');
+  });
+  styleList.querySelectorAll('.unity-slf-style-item.selected picture img').forEach((img) => {
+    img.setAttribute('fetchpriority', 'high');
+  });
+  styleList.querySelectorAll('.unity-slf-style-item:not(.selected) picture img').forEach((img) => {
+    img.removeAttribute('fetchpriority');
+  });
+}
+
+function applyAuthoringPreviewGridLoadingPriorities(previewRows, selectedStyleIdx, activeViewportColIndex) {
+  previewRows.forEach((row, styleIdx) => {
+    row.forEach((pic, colIdx) => {
+      if (!pic) return;
+      const img = pic.querySelector('img');
+      if (!img) return;
+      const eager = selectedStyleIdx === 0 && styleIdx === 0 && colIdx === activeViewportColIndex;
+      img.setAttribute('loading', eager ? 'eager' : 'lazy');
+      if (eager) {
+        img.setAttribute('fetchpriority', 'high');
+      } else {
+        img.removeAttribute('fetchpriority');
+      }
+    });
+  });
+}
+
 /**
  * @param {*} widgetInstance — UnityWidget instance (workflow-firefly/widget.js)
  * @param {{ styles: Array<{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }} parsed
@@ -292,6 +321,7 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     return li;
   });
   styleItems.forEach((item) => styleList.append(item));
+  applyStyleStripImageLoadingPriorities(styleList);
 
   const previewArea = createTag('div', { class: 'unity-slf-preview' });
 
@@ -299,7 +329,9 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     if (pic) previewArea.replaceChildren(pic);
   }
 
-  setPreviewPicture(previewForViewport(previewRows[0], currentPreviewColumn()));
+  const initialPreviewCol = currentPreviewColumn();
+  applyAuthoringPreviewGridLoadingPriorities(previewRows, 0, initialPreviewCol);
+  setPreviewPicture(previewForViewport(previewRows[0], initialPreviewCol));
 
   const EMPTY_PROMPT_RESTORE_MS = 5000;
   /** @type {ReturnType<typeof setTimeout> | null} */
@@ -340,10 +372,13 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
       item.classList.toggle('selected', i === idx);
       item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
     });
+    applyStyleStripImageLoadingPriorities(styleList);
     if (stillSyncedWithPreviousStyle) {
       inpField.value = styles[idx].prompt;
     }
-    setPreviewPicture(previewForViewport(previewRows[idx], currentPreviewColumn()));
+    const col = currentPreviewColumn();
+    applyAuthoringPreviewGridLoadingPriorities(previewRows, idx, col);
+    setPreviewPicture(previewForViewport(previewRows[idx], col));
     if (isPromptVisuallyEmpty()) {
       scheduleEmptyPromptRestoreIfStillEmpty();
     }
@@ -371,6 +406,7 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     const col = currentPreviewColumn();
     if (col === lastPreviewCol) return;
     lastPreviewCol = col;
+    applyAuthoringPreviewGridLoadingPriorities(previewRows, currentStyleIdx, col);
     setPreviewPicture(previewForViewport(previewRows[currentStyleIdx], col));
   };
   window.addEventListener('resize', onResize);
