@@ -1,20 +1,17 @@
 # Firefly UI widgets (`core/widgets`)
 
-`workflow-firefly/widget.js` (**UnityWidget**) holds **shared** logic (model picker, generate button, dropdown helpers).
+**UnityWidget** (verb/model pickers, generate button, dropdown plumbing) is **inlined** in each variant bundle so the browser loads **one JS + one CSS** per layout (see `workflow.js` `priorityLibFetch`).
 
-- **PromptWidget** (`prompt-widget/prompt-widget.js`) extends it for the classic hero prompt bar (verbs, prompt suggestions, `createInpWrap`, etc.).
-- **PromptWithStyleSelectWidget** (`prompt-with-style-select/prompt-with-style-select.js`) extends it when the Unity block has class **`widget-prompt-with-style`**: parse Unity block (style thumbnails + previews), mount UI between hero and Unity block.
+- **PromptWidget** (`prompt-widget/prompt-widget.js`) — classic hero prompt bar (`createInpWrap`, prompt suggestions, sound hooks). Exports **UnityWidget** for tests.
+- **PromptWithStyleSelectWidget** (`prompt-with-style-select/prompt-with-style-select.js`) — Unity block class **`widget-prompt-with-style`**: parse authoring, mount card UI between hero and block.
 
-`workflow.js` picks the class: **PromptWidget** (Firefly + hero marquee), **PromptWithStyleSelectWidget** (Firefly + `widget-prompt-with-style`), or the workflow’s default `widget.js` export.
+`workflow.js` picks **PromptWidget** vs **PromptWithStyleSelectWidget** from the block class list (defaults to prompt-widget when `el` is missing).
 
-**`UnityWidget.initWidget()`** delegates to **`initPromptWidget`** (marquee path; used by the base class when a workflow still instantiates **UnityWidget** directly).
+**Keep the two `UnityWidget` copies identical** when changing shared behavior. For CSS, edit the shared block at the top of both merged variant files the same way (or extract a snippet and paste into both).
 
-Add new layouts by exporting a **Widget subclass** and branching in `workflow.js` (or a future registry), reusing methods on **UnityWidget** without duplicating API calls.
-
-## CSS layout (mirrors JS)
+## CSS (mirrors JS)
 
 | Asset | Loaded by | Purpose |
 |-------|-----------|---------|
-| `workflow-firefly/widget.css` | Workflow `priorityLoad` (all Firefly inits) | Shared Firefly prompt bar primitives: dropdowns, sound UI, verb/model menus, autocomplete (no hero-marquee layout). |
-| `widgets/prompt-widget/prompt-widget.css` | `loadStyle` inside **`initPromptWidget`** | Hero / upload / showcase marquee layout, sticky bar, responsive rules for that embed. |
-| `widgets/prompt-with-style-select/prompt-with-style-select.css` | `loadStyle` inside **`mountPromptWithStyleSelectUI`** | Card UI + `.unity-prompt-with-style-select`–scoped widget primitives. |
+| `prompt-widget/prompt-widget.css` | Workflow `priorityLoad` (classic Firefly prompt) | Shared Firefly primitives + hero / upload / showcase layout. |
+| `prompt-with-style-select/prompt-with-style-select.css` | Workflow `priorityLoad` (`widget-prompt-with-style`) | Same shared primitives + `.unity-prompt-with-style-select` layout. |

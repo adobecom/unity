@@ -42,10 +42,12 @@ class WfInitiator {
       ],
       'workflow-ai': () => [...sharedWfRes],
       'workflow-firefly': () => {
-        const promptJs = promptWidgetJsPathFromEl(el, widgetsBase);
+        const promptJs = promptWidgetJsPathFromEl(el, widgetsBase)
+          || `${widgetsBase}/prompt-widget/prompt-widget.js`;
         return [
-          ...sharedWfRes,
-          ...(promptJs ? [promptJs.replace(/\.js$/, '.css'), promptJs] : []),
+          `${baseWfPath}/sprite.svg`,
+          promptJs.replace(/\.js$/, '.css'),
+          promptJs,
         ];
       },
     };

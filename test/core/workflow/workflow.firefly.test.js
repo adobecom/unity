@@ -4,8 +4,7 @@ import sinon from 'sinon';
 import { readFile } from '@web/test-runner-commands';
 import { setUnityLibs } from '../../../unitylibs/scripts/utils.js';
 import ActionBinder from '../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
-import UnityWidget from '../../../unitylibs/core/workflow/workflow-firefly/widget.js';
-import { PromptWidget } from '../../../unitylibs/core/widgets/prompt-widget/prompt-widget.js';
+import { PromptWidget, UnityWidget } from '../../../unitylibs/core/widgets/prompt-widget/prompt-widget.js';
 import augmentSound from '../../../unitylibs/core/workflow/workflow-firefly/sound-utils.js';
 
 describe('Firefly Workflow Tests', () => {
@@ -2696,7 +2695,7 @@ describe('Firefly Workflow Tests', () => {
         { label: 'Var A', url: 'https://u1' },
         { label: 'Var B', url: 'https://u2' },
         { label: 'Var C', url: 'https://u3' },
-        { label: 'Var D', url: 'https://u4' }
+        { label: 'Var D', url: 'https://u4' },
       ]);
       expect(pm.image).to.exist;
       expect(pm.image[0].variations).to.deep.equal([]);
