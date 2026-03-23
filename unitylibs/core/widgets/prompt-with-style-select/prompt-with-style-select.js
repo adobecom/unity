@@ -47,13 +47,13 @@ export class UnityWidget {
   }
 
   /**
-   * Default for Firefly: marquee prompt bar via {@link initPromptWidget}.
-   * Class `widget-prompt-with-style` uses {@link PromptWithStyleSelectWidget} instead (see workflow.js).
+   * Default marquee init (stage-parity {@link UnityWidget#initWidget} on `prompt-widget.js`).
+   * {@link PromptWithStyleSelectWidget} overrides this; kept for duplicate-class symmetry.
    */
   async initWidget() {
     const widgetsBase = `${getUnityLibs()}/core/widgets`;
-    const { initPromptWidget } = await import(`${widgetsBase}/prompt-widget/prompt-widget.js`);
-    return initPromptWidget(this);
+    const { PromptWidget } = await import(`${widgetsBase}/prompt-widget/prompt-widget.js`);
+    return PromptWidget.prototype.initWidget.call(this);
   }
 
   /** No-op on base; marquee subclass loads sound augmentation for the `sound` verb. */
