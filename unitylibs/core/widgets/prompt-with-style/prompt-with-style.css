@@ -191,7 +191,6 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
   background: none;
-  transform: translateY(-100%);
   top: 0;
 }
 
@@ -1067,14 +1066,6 @@
     width: 100%;
     box-sizing: border-box;
     margin-top: 30px;
-  }
-
-  .unity-enabled .interactive-area .ex-unity-wrap .alert-holder {
-    transform: translateY(-100%);
-  }
-
-  .unity-enabled .interactive-area .ex-unity-wrap.verb-options .alert-holder {
-    transform: translateY(-90%);
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item svg {
