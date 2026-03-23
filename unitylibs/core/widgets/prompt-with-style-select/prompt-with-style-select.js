@@ -425,7 +425,7 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
  * Firefly Unity block + `promptWithStyleSelect`: inlines shared verb/model/Generate plumbing from
  * `workflow-firefly/widget.js` (this file does not import it). Parses authoring and mounts UI between hero and Unity block.
  */
-export class PromptWithStyleSelectWidget {
+export default class PromptWithStyleSelectWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
     this.target = target;

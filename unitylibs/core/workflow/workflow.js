@@ -19,6 +19,18 @@ class WfInitiator {
     this.operations = {};
     this.actionMap = {};
   }
+  static getWidgetRegistry() {
+    const base = getUnityLibs();
+    return {
+      'prompt-bar': {
+        loader: () => import(`${base}/core/workflow/workflow-firefly/widget.js`),
+        legacy: true,
+      },
+      'prompt-with-style': {
+        loader: () => import(`${base}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`),
+      },
+    };
+  }
 
   static async priorityLibFetch(workflowName, el) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
@@ -54,6 +66,19 @@ class WfInitiator {
     };
   }
 
+  getWidgetNameFromClass() {
+    const cls = [...this.el.classList].find((c) => c.startsWith('widget-'));
+    return cls ? cls.replace('widget-', '') : 'prompt-bar';
+  }
+
+  async loadWidget() {
+    const widgetName = this.getWidgetNameFromClass();
+    const registry = WfInitiator.getWidgetRegistry();
+    const entry = registry[widgetName] || registry['prompt-bar'];
+    const { default: Widget } = await entry.loader();
+    return new Widget(this.interactiveArea, this.el, this.workflowCfg);
+  }
+
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
     setUnityLibs(unityLibs, project);
     this.el = el;
@@ -71,23 +96,29 @@ class WfInitiator {
     this.workflowCfg.targetCfg = this.targetConfig;
     let unityWidget = null;
     if (this.targetConfig.renderWidget) {
-      const spriteContent = await spriteSvg.text();
-      let WidgetClass;
-      if (this.targetConfig.promptWithStyleSelect) {
-        ({ PromptWithStyleSelectWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`));
-      } else {
-        ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
-      }
-      unityWidget = new WidgetClass(
-        this.interactiveArea,
-        this.el,
-        this.workflowCfg,
-        spriteContent,
-      );
-      this.actionMap = await unityWidget.initWidget();
+      const widgetInstance = await this.loadWidget();
+      this.actionMap = await widgetInstance.initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
+    // if (this.targetConfig.renderWidget) {
+    //   const spriteContent = await spriteSvg.text();
+    //   let WidgetClass;
+    //   if (this.targetConfig.promptWithStyleSelect) {
+    //     ({ PromptWithStyleSelectWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`));
+    //   } else {
+    //     ({ PromptWidget: WidgetClass } = await import(`${getUnityLibs()}/core/widgets/prompt-widget/prompt-widget.js`));
+    //   }
+    //   unityWidget = new WidgetClass(
+    //     this.interactiveArea,
+    //     this.el,
+    //     this.workflowCfg,
+    //     spriteContent,
+    //   );
+    //   this.actionMap = await unityWidget.initWidget();
+    // } else {
+    //   this.actionMap = this.targetConfig.actionMap;
+    // }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const promptWithStyleSelectRoot = unityWidget?.promptWithStyleSelectRoot ?? null;
     const actionBinderBlock = this.targetConfig?.promptWithStyleSelect
