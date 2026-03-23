@@ -426,15 +426,6 @@ function placeholderRowText(root, iconClass) {
   return (icon.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-export function parseStyleLabelAndDescription(firstLine) {
-  const trimmed = firstLine.trim();
-  const m = trimmed.match(/^(.+)\s*\(([^)]+)\)\s*$/);
-  if (m) {
-    return { label: m[1].trim(), styleDescription: m[2].trim() };
-  }
-  return { label: trimmed, styleDescription: '' };
-}
-
 export function parseStyleLi(li) {
   const picture = li.querySelector('picture');
   if (!picture) return null;
@@ -448,12 +439,33 @@ export function parseStyleLi(li) {
       return t.textContent.trim();
     })
     .filter(Boolean);
-  const { label, styleDescription } = parseStyleLabelAndDescription(parts[0] || '');
+
+  let label;
+  let styleDescription;
+  let prompt;
+
+  if (parts.length >= 3) {
+    const [p0, p1, ...rest] = parts;
+    label = p0;
+    styleDescription = p1;
+    prompt = rest.join(' ').trim();
+  } else if (parts.length === 2) {
+    const [first, second] = parts;
+    label = first;
+    styleDescription = '';
+    prompt = second;
+  } else {
+    const [only] = parts;
+    label = only || '';
+    styleDescription = '';
+    prompt = '';
+  }
+
   return {
     picture: /** @type {HTMLPictureElement} */ (picture.cloneNode(true)),
     label,
     styleDescription,
-    prompt: parts.slice(1).join(' ').trim(),
+    prompt,
   };
 }
 
