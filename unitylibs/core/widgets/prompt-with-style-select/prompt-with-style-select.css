@@ -49,8 +49,10 @@
 /* Match scripts/utils.js defineDeviceByScreenSize DESKTOP_SIZE (1200): row layout with desktop preview column */
 @media screen and (min-width: 1200px) {
   .unity-prompt-with-style-select .unity-slf-main {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
+    align-items: stretch;
   }
 }
 
