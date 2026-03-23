@@ -535,18 +535,6 @@ function currentPreviewColumn() {
   return VIEWPORT_COL[v] ?? 2;
 }
 
-function applyStyleStripImageLoadingPriorities(styleList) {
-  styleList.querySelectorAll('.unity-slf-style-item picture img').forEach((img) => {
-    img.setAttribute('loading', 'eager');
-  });
-  styleList.querySelectorAll('.unity-slf-style-item.selected picture img').forEach((img) => {
-    img.setAttribute('fetchpriority', 'high');
-  });
-  styleList.querySelectorAll('.unity-slf-style-item:not(.selected) picture img').forEach((img) => {
-    img.removeAttribute('fetchpriority');
-  });
-}
-
 function applyAuthoringPreviewGridLoadingPriorities(previewRows, selectedStyleIdx, activeViewportColIndex) {
   previewRows.forEach((row, styleIdx) => {
     row.forEach((pic, colIdx) => {
@@ -672,7 +660,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     return li;
   });
   styleItems.forEach((item) => styleList.append(item));
-  applyStyleStripImageLoadingPriorities(styleList);
 
   const previewArea = createTag('div', { class: 'unity-slf-preview' });
 
@@ -717,7 +704,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
       item.classList.toggle('selected', i === idx);
       item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
     });
-    applyStyleStripImageLoadingPriorities(styleList);
     if (stillSyncedWithPreviousStyle) {
       inpField.value = styles[idx].prompt;
     }
