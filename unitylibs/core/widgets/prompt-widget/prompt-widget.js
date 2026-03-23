@@ -151,7 +151,7 @@ export class PromptWidget extends UnityWidget {
   }
 
   addWidget() {
-    if (this.workflowCfg.targetCfg?.promptWithStyleSelect) return;
+    if (this.el.classList.contains('widget-prompt-with-style')) return;
     const interactArea = this.target.querySelector('.copy');
     const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
