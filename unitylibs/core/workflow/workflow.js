@@ -9,7 +9,8 @@ import {
 } from '../../scripts/utils.js';
 
 /**
- * Which prompt bundle to preload: `widget-prompt-with-style` on the Unity block → style-select, else prompt-widget.
+ * Which Firefly prompt bundle to preload: `widget-prompt-with-style` on the Unity block → style-select, else prompt-widget.
+ * Used by the `workflow-firefly` entry in `workflowRes` (see `priorityLibFetch`).
  *
  * @param {HTMLElement | null} el
  * @param {string} widgetsBase
@@ -36,7 +37,7 @@ class WfInitiator {
 
   /**
    * @param {string} workflowName
-   * @param {HTMLElement | null} [el] — Unity block; when set, appends the matching prompt widget `.css` + `.js` to the batch.
+   * @param {HTMLElement | null} [el] — Unity block; for `workflow-firefly` only, appends the matching prompt widget `.css` + `.js` to the batch.
    * @returns {Promise<{ targetConfigCallRes: Response, spriteCallRes: Response | null }>}
    */
   static async priorityLibFetch(workflowName, el = null) {
@@ -47,26 +48,30 @@ class WfInitiator {
       `${baseWfPath}/widget.css`,
       `${baseWfPath}/widget.js`,
     ];
+    /** @type {Record<string, () => string[]>} */
     const workflowRes = {
-      'workflow-photoshop': [
+      'workflow-photoshop': () => [
         ...sharedWfRes,
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       ],
-      'workflow-ai': sharedWfRes,
-      'workflow-firefly': sharedWfRes,
+      'workflow-ai': () => [...sharedWfRes],
+      'workflow-firefly': () => {
+        const promptJs = promptWidgetJsPathFromEl(el, widgetsBase);
+        return [
+          ...sharedWfRes,
+          ...(promptJs ? [promptJs.replace(/\.js$/, '.css'), promptJs] : []),
+        ];
+      },
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
       `${baseWfPath}/action-binder.js`,
     ];
-    const wfRes = workflowRes[workflowName] || [];
-    const promptWidgetJsPath = promptWidgetJsPathFromEl(el, widgetsBase);
+    const wfResGetter = workflowRes[workflowName];
+    const wfRes = wfResGetter ? wfResGetter() : [];
     const priorityList = [
       ...commonResources,
       ...wfRes,
-      ...(promptWidgetJsPath
-        ? [promptWidgetJsPath.replace(/\.js$/, '.css'), promptWidgetJsPath]
-        : []),
     ];
     const pfr = await priorityLoad(priorityList);
 
