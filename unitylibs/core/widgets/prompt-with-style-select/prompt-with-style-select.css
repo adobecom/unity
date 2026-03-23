@@ -1,8 +1,3 @@
-/**
- * Firefly prompt + style select: same shared widget chrome as `prompt-widget.css`,
- * plus `.unity-prompt-with-style-select` layout below. Loaded via workflow `priorityLoad` with `prompt-with-style-select.js`.
- */
-
 :root:has(.hide-video-models) .unity-enabled .interactive-area .ex-unity-wrap[data-selected-verb='video'] .models-container {
   display: none;
 }
