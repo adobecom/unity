@@ -8,14 +8,6 @@ import {
   priorityLoad,
 } from '../../scripts/utils.js';
 
-/**
- * Which Firefly prompt bundle to preload: `widget-prompt-with-style` on the Unity block → style-select, else prompt-widget.
- * Used by the `workflow-firefly` entry in `workflowRes` (see `priorityLibFetch`).
- *
- * @param {HTMLElement | null} el
- * @param {string} widgetsBase
- * @returns {string | null}
- */
 function promptWidgetJsPathFromEl(el, widgetsBase) {
   if (!el) return null;
   return el.classList.contains('widget-prompt-with-style')
@@ -35,11 +27,6 @@ class WfInitiator {
     this.actionMap = {};
   }
 
-  /**
-   * @param {string} workflowName
-   * @param {HTMLElement | null} [el] — Unity block; for `workflow-firefly` only, appends the matching prompt widget `.css` + `.js` to the batch.
-   * @returns {Promise<{ targetConfigCallRes: Response, spriteCallRes: Response | null }>}
-   */
   static async priorityLibFetch(workflowName, el = null) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
     const widgetsBase = `${getUnityLibs()}/core/widgets`;
@@ -48,7 +35,6 @@ class WfInitiator {
       `${baseWfPath}/widget.css`,
       `${baseWfPath}/widget.js`,
     ];
-    /** @type {Record<string, () => string[]>} */
     const workflowRes = {
       'workflow-photoshop': () => [
         ...sharedWfRes,
@@ -152,9 +138,6 @@ class WfInitiator {
     });
   }
 
-  /**
-   * @param {Response} rawTargetConfig — `target-config.json` response from `priorityLibFetch` (body consumed here).
-   */
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
