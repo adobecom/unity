@@ -227,24 +227,21 @@ export default class ActionBinder {
   }
 
   /**
-   * When Generate runs from prompt-with-style-select, append the selected style’s connector suffix to the prompt.
-   * If the variant was authored as `Name (description)` before `<br>`, `data-style-connector-suffix` holds `description`
-   * (shown under thumbnail as `Name` only). Legacy rows without parentheses still append the visible label.
+   * Selected style for the connector `payload.style` object (`name` + `promptPhrase`), when using prompt-with-style-select.
+   * `promptPhrase` matches authoring: parenthetical text after `Name` before `<br>`, or the label when there is no description.
    *
-   * @param {string} query
-   * @returns {string}
+   * @returns {{ name: string, promptPhrase: string } | undefined}
    */
-  appendSelectedStyleNameForPromptWithStyleSelect(query) {
+  getSelectedStylePayloadForConnector() {
     const root = this.block;
-    if (!root?.classList?.contains('unity-prompt-with-style-select')) return query;
-    if (!query) return query;
+    if (!root?.classList?.contains('unity-prompt-with-style-select')) return undefined;
     const selected = root.querySelector('.unity-slf-style-item.selected');
-    if (!selected) return query;
+    if (!selected) return undefined;
+    const name = selected.querySelector('.unity-slf-style-label')?.textContent?.trim() || '';
     const fromData = selected.dataset?.styleConnectorSuffix?.trim();
-    const labelFallback = selected.querySelector('.unity-slf-style-label')?.textContent?.trim() || '';
-    const suffix = fromData || labelFallback;
-    if (!suffix) return query;
-    return `${query} ${suffix}`;
+    const promptPhrase = fromData || name;
+    if (!name && !promptPhrase) return undefined;
+    return { name, promptPhrase };
   }
 
   getVerbFromDom() {
@@ -282,8 +279,9 @@ export default class ActionBinder {
     } else {
       this.query = this.inputField.value.trim();
     }
-    this.query = this.appendSelectedStyleNameForPromptWithStyleSelect(this.query);
     const selectedVerbType = `text-to-${currentVerb}`;
+    const operationVerb = this.getVerbFromDom();
+    const stylePayload = this.getSelectedStylePayloadForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
@@ -300,8 +298,10 @@ export default class ActionBinder {
         additionalQueryParams: queryParams,
         payload: {
           workflow: selectedVerbType,
+          ...(operationVerb ? { verb: operationVerb } : {}),
           ...(modelId ? { modelId } : {}),
           ...(modelVersion ? { modelVersion } : {}),
+          ...(stylePayload ? { style: stylePayload } : {}),
           locale: getLocale(),
           action,
         },
