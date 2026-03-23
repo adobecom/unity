@@ -11,22 +11,29 @@
     },
     "sendSplunkAnalytics": true
   },
+  "widget-prompt-with-style": {
+    "selector": ":scope > div",
+    "source": ".copy .main-copy",
+    "target": ".row-supplemental a",
+    "insert": "before",
+    "promptWithStyleSelect": true
+  },
   "hero-marquee": {
     "selector": ".copy",
     "source": ".copy .main-copy",
     "target": ".row-supplemental a",
     "insert": "before"
   },
-  "showcase-marquee": {
-    "selector": ".text",
-    "source": ".text",
-    "target": "p:last-of-type",
-    "insert": "after"
-  },
   "upload-marquee": {
     "selector": ".copy",
     "source": ".copy",
     "target": ".upload-marquee-prompt-container",
+    "insert": "after"
+  },
+  "showcase-marquee": {
+    "selector": ".text",
+    "source": ".text",
+    "target": "p:last-of-type",
     "insert": "after"
   }
 }

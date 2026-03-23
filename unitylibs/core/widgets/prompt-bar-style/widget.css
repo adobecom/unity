@@ -1,0 +1,521 @@
+/*
+ * Prompt + style select (`promptWithStyleSelect`): card chrome, preview, `.unity-slf-*` layout,
+ * and scoped Firefly verb/model/Generate primitives under `.unity-prompt-with-style-select`.
+ * For `.widget-prompt-with-style`, workflow priorityLoad skips `workflow-firefly/widget.css`.
+ */
+
+/* Full UI (sibling between hero-marquee and Unity block, promptWithStyleSelect) */
+
+/* Screen-reader-only bucket: preserves cgen / icons inside .unity for getCgenQueryParams & error copy */
+.unity-slf-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  .unity.workflow-firefly.widget-prompt-with-style.unity-prompt-with-style-host {
+    position: relative;
+    min-height: 0;
+  }
+  
+  /*
+   * Doodlebug / Figma: host can set --Font-size-100, --Line-height-100, --Letter-spacing on a parent.
+   * Figma dev links are not readable without login; paste inspect values here when the frame changes.
+   */
+  .unity-prompt-with-style-select {
+    width: 100%;
+    box-sizing: border-box;
+    --Font-size-100: 14px;
+    --Line-height-100: 18px;
+    --Letter-spacing: 0;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  @media screen and (min-width: 900px) {
+    .unity-prompt-with-style-select .unity-slf-main {
+      flex-direction: row;
+      gap: 8px;
+    }
+  }
+  
+  /* Left container: unified background for prompt bar + style elements */
+  .unity-prompt-with-style-select .unity-slf-left {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    flex: 1;
+    background: #1b1b1b;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  
+  /* Parent container: prompt bar + style section */
+  .unity-prompt-with-style-select .unity-slf-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+  
+  /* Style section container: heading + style list */
+  .unity-prompt-with-style-select .unity-slf-style-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-right {
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-preview {
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgb(0 0 0 / 20%);
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-preview picture,
+  .unity-prompt-with-style-select .unity-slf-preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  
+  .unity-prompt-with-style-select .ex-unity-wrap {
+    position: relative;
+  }
+  
+  /* -------------------------------------------------------------------------- */
+  /* Isolated widget primitives (aligned with workflow-firefly/widget-common.css) */
+  /* (limited to elements rendered by prompt-with-style-select.js)                   */
+  /* -------------------------------------------------------------------------- */
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+    border: none;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    outline: none;
+    background: transparent;
+    resize: none;
+    margin: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+    color: #7d7d7d;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
+    display: flex;
+    width: fit-content;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn:focus {
+    outline: 2px solid #005fcc;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico {
+    display: flex;
+    align-content: center;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
+    display: flex;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+    border-radius: 25px;
+    background: linear-gradient(90deg, #d73220 0%, #d92361 33%, #7155fa 100%);
+    border: none;
+    padding: 10px 20px;
+    gap: 8px;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+    color: var(--color-white, #fff);
+    font-size: 19px;
+    font-weight: 700;
+    line-height: normal;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
+    position: relative;
+  }
+  
+  /* Verb + model triggers share the same dark pill (marquee widget.css differs for .selected-verb) */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    justify-content: flex-start;
+    padding: 7px 12px;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    width: 100%;
+    min-width: unset;
+    background: #2c2c2c;
+    border-radius: 8px;
+    color: #fff;
+    height: 32px;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model img,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-link img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .models-container .menu-icon,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verbs-container .menu-icon {
+    position: relative;
+    top: 1px;
+    transition: transform 0.15s ease-in;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .models-container.show-menu .menu-icon,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verbs-container.show-menu .menu-icon {
+    transform: rotate(-180deg);
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model .menu-icon,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model .menu-icon svg,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb .menu-icon,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb .menu-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  /* Chevron + verb-type icons: designed for light UI; invert on dark style-select surfaces */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-model .menu-icon svg,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .selected-verb .menu-icon svg {
+    filter: invert(1);
+  }
+  
+  /* Only verb-type thumbnails (img); do not use `.verb-link … svg` — that would invert `.selected-icon` checkmark */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verbs-container .verb-list .verb-link:not(.model-link) img {
+    filter: invert(1);
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
+    color: #fff;
+  }
+  
+  /* Open lists: same panel chrome for media (verb) and model pickers */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container .verb-list {
+    background: #000;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list {
+    padding: 18px;
+    list-style: none;
+    box-shadow: 0 0 10px #0000001c;
+    border-radius: 10px;
+    color: #fff;
+    margin: 0;
+    animation: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .models-container.show-menu .verb-list,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
+    display: block;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-link {
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    padding-inline-start: 25px;
+    text-transform: capitalize;
+    text-decoration: none;
+    text-align: start;
+    position: relative;
+    opacity: 1;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .model-link {
+    font-size: 14px;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
+    display: none;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    transform: translateY(-50%);
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-prompt-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #7d7d7d;
+    font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+    font-size: var(--Font-size-100, 14px);
+    font-style: normal;
+    font-weight: 400;
+    line-height: var(--Line-height-100, 18px);
+    letter-spacing: var(--Letter-spacing, 0);
+  }
+  
+  /*
+   * widget.css sets .interactive-area.dark .inp-field-label to #000 for the marquee (dark chrome + light input).
+   * The prompt-with-style-select card uses a dark shell; without this override the prompt label is effectively invisible.
+   */
+  .unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label,
+  .unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .unity-slf-prompt-label,
+  .unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .unity-slf-styles-heading {
+    color: #7D7D7D;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled > .interactive-area.dark .unity-slf-prompt-label {
+    margin-bottom: 0px;
+  }
+  
+  .unity-prompt-with-style-select .inp-field {
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-styles-heading {
+    margin: 0;
+    color: #7d7d7d;
+    font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+    font-size: var(--Font-size-100, 14px);
+    font-style: normal;
+    font-weight: 400;
+    line-height: var(--Line-height-100, 18px);
+    letter-spacing: var(--Letter-spacing, 0);
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-style-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-style-item {
+    min-width: 0;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    padding: 6px;
+    text-align: center;
+    transition: border-color 0.15s ease;
+    background: #2C2C2C;
+    text-align: left;
+  
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-style-item.selected {
+    border-color: #1473e6;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-style-item picture,
+  .unity-prompt-with-style-select .unity-slf-style-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-style-label {
+    overflow: hidden;
+    color: #F8F8F8;
+    text-overflow: ellipsis;
+    font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height:  18px;
+  }
+  
+  .unity-prompt-with-style-select .unity-slf-gen-btn {
+    white-space: nowrap;
+  }
+  
+  /*
+   * Firefly widget.css scopes almost everything to:
+   *   .unity-enabled .interactive-area .ex-unity-wrap …
+   * This UI is inserted as a sibling of the hero, so we add those wrappers in JS.
+   * Below: card chrome + layout fixes so the prompt matches the designed embed (not raw browser defaults).
+   */
+  
+  .unity-prompt-with-style-select.unity-enabled {
+    max-width: 1200px;
+    margin-inline: auto;
+    margin-block: 24px;
+    box-sizing: border-box;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled > .interactive-area {
+    display: flex;
+    box-sizing: border-box;
+    background: #222;
+    padding: 14px;
+    border-radius: 20px;
+    gap: 8px;
+  }
+  
+  @media screen and (min-width: 900px) {
+    .unity-prompt-with-style-select.unity-enabled > .interactive-area {
+      padding: 14px
+    }
+  }
+  
+  /* Prompt “glass” fills the column (widget.css defaults to 720px fixed width). */
+  /* No separate container for prompt bar — blends with left container #1B1B1B */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 !important;
+    box-sizing: border-box;
+  }
+  
+  /* Remove decorative ::after pseudo-element from widget.css */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
+    content: none !important;
+    display: none !important;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  /* Prompt layout: label + field full width; then action-container (verbs + models) || act-wrap (Generate) */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 8px;
+    align-items: center;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field-label,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
+    grid-column: 1 / -1;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
+    grid-column: 1 / -1;
+    color: #F8F8F8;
+    padding: 10px 0px;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
+    grid-column: 1;
+    margin-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .act-wrap {
+    grid-column: 2;
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    align-self: center;
+  }
+  
+  /* No verb/model UI: hide empty action-container, full-width row for Generate */
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container:empty {
+    display: none;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container:empty + .act-wrap {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .verbs-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    min-width: 0;
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .models-container {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+  }
+  
+  /* Separator before style thumbnails */
+  .unity-prompt-with-style-select .unity-slf-style-container > .unity-slf-styles-heading {
+    margin-top: 4px;
+    padding-top: 20px;
+    border-top: 1px solid rgb(255 255 255 / 12%);
+  }
+  
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+  .unity-prompt-with-style-select.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
+    width: fit-content;
+  }
+  
