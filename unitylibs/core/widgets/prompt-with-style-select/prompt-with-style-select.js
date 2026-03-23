@@ -1,14 +1,5 @@
 /* eslint-disable class-methods-use-this */
-/* eslint-disable max-classes-per-file -- UnityWidget is inlined with PromptWithStyleSelectWidget for a single network fetch */
-
-/**
- * Parses Unity block authoring for prompt + style selection (Unity block with .widget-prompt-with-style).
- * Row 0 is config (verbs, placeholders, etc.). The style strip is the first following row that contains a `<ul>`.
- * Each `<li>` in that list is a style variant. Before `<br>`, authoring may be `Style name (connector style description)` —
- * the name shows under the thumbnail; the parenthetical text is appended to the user prompt for the connector, not the name.
- * After `<br>` is the default textarea prompt. The next N top-level rows (N = number of `<li>`) are preview rows:
- * each row has three column `<div>`s (mobile / tablet / desktop) with a `<picture>` each.
- */
+/* eslint-disable max-classes-per-file -- UnityWidget duplicated alongside PromptWithStyleSelectWidget for a single network bundle */
 
 import {
   createTag,
@@ -16,11 +7,6 @@ import {
   getUnityLibs,
 } from '../../../scripts/utils.js';
 
-/** Duplicated UnityWidget — keep aligned with `prompt-widget/prompt-widget.js`. */
-/**
- * Shared Firefly widget: verb picker ({@link #verbDropdown}), model picker, Generate button,
- * and dropdown plumbing for {@link PromptWidget} (hero) and {@link PromptWithStyleSelectWidget}.
- */
 export class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
@@ -46,27 +32,16 @@ export class UnityWidget {
     this.durationCache = new Map();
   }
 
-  /**
-   * Default marquee init (stage-parity {@link UnityWidget#initWidget} on `prompt-widget.js`).
-   * {@link PromptWithStyleSelectWidget} overrides this; kept for duplicate-class symmetry.
-   */
   async initWidget() {
     const widgetsBase = `${getUnityLibs()}/core/widgets`;
     const { PromptWidget } = await import(`${widgetsBase}/prompt-widget/prompt-widget.js`);
     return PromptWidget.prototype.initWidget.call(this);
   }
 
-  /** No-op on base; marquee subclass loads sound augmentation for the `sound` verb. */
   async ensureSoundModuleLoaded() {
     await Promise.resolve();
   }
 
-  /**
-   * Media-type combobox from authored `[class*="icon-verb"]` + sibling link text.
-   * Used by the hero prompt bar and prompt-with-style-select.
-   *
-   * @returns {HTMLElement[]} `[selectedButton]` when a single verb, else `[selectedButton, verbListUl]`
-   */
   verbDropdown() {
     const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
@@ -127,13 +102,6 @@ export class UnityWidget {
     return [selectedElement, verbList];
   }
 
-  /**
-   * Collapses a verb or model combobox. Restores inline `display: none` on the `.verb-list`
-   * (opening removes it in `showVerbMenu`; without this the list stays visible when
-   * `.show-menu` is cleared — `display: block` only applies while `.show-menu` is set).
-   *
-   * @param {HTMLElement} selectedElement — `.selected-verb` or `.selected-model`
-   */
   closeVerbOrModelMenu(selectedElement) {
     const menuContainer = selectedElement?.parentElement;
     if (!menuContainer) return;
@@ -431,11 +399,6 @@ export class UnityWidget {
     }
   }
 
-  /**
-   * Groups model-picker rows by module (used by tests; marquee uses flat `this.models` from JSON).
-   * @param {Array<object>} data
-   * @returns {Record<string, Array<object>>}
-   */
   createModelMap(data) {
     const modelMap = {};
     if (Array.isArray(data)) {
@@ -449,9 +412,6 @@ export class UnityWidget {
     return modelMap;
   }
 
-  /**
-   * Marquee subclass refreshes prompt suggestions; base is a no-op (style launcher has no suggestions).
-   */
   async updateDropdownForVerb() {
     await Promise.resolve();
   }
@@ -459,14 +419,6 @@ export class UnityWidget {
 
 const VIEWPORT_COL = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
 
-/**
- * Text from the li that contains the given icon class (e.g. icon-placeholder-prompt, icon-placeholder-style).
- * Rendered as-authored; only normalizes whitespace.
- *
- * @param {HTMLElement} root
- * @param {string} iconClass
- * @returns {string}
- */
 function placeholderRowText(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`)
     || root.querySelector(`[class*="${iconClass}"]`);
@@ -474,12 +426,6 @@ function placeholderRowText(root, iconClass) {
   return (icon.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-/**
- * First segment before `<br>` may be `Display name (text appended to prompt for connector)`.
- *
- * @param {string} firstLine — plain text (HTML already stripped)
- * @returns {{ label: string, styleDescription: string }}
- */
 export function parseStyleLabelAndDescription(firstLine) {
   const trimmed = firstLine.trim();
   const m = trimmed.match(/^(.+)\s*\(([^)]+)\)\s*$/);
@@ -489,10 +435,6 @@ export function parseStyleLabelAndDescription(firstLine) {
   return { label: trimmed, styleDescription: '' };
 }
 
-/**
- * @param {HTMLElement} li
- * @returns {{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string } | null}
- */
 export function parseStyleLi(li) {
   const picture = li.querySelector('picture');
   if (!picture) return null;
@@ -515,13 +457,6 @@ export function parseStyleLi(li) {
   };
 }
 
-/**
- * True when `li` belongs to `ul` without crossing a nested list (Franklin may wrap `li` in div/p).
- *
- * @param {HTMLUListElement} ul
- * @param {HTMLLIElement} li
- * @returns {boolean}
- */
 function isDirectLiOfUl(ul, li) {
   let p = li.parentElement;
   while (p) {
@@ -532,20 +467,10 @@ function isDirectLiOfUl(ul, li) {
   return false;
 }
 
-/**
- * All `li` nodes authored under this list (not inside a nested ul).
- *
- * @param {HTMLUListElement} ul
- * @returns {HTMLLIElement[]}
- */
 function topLevelLisInUl(ul) {
   return [...ul.querySelectorAll('li')].filter((li) => isDirectLiOfUl(ul, li));
 }
 
-/**
- * @param {HTMLElement} root — Unity block root (Franklin often wraps rows in a div)
- * @returns {{ styles: Array<{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }}
- */
 export function parsePromptWithStyleSelectAuthoring(root) {
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
   if (topDivs.length === 1) {
@@ -639,16 +564,11 @@ function applyAuthoringPreviewGridLoadingPriorities(previewRows, selectedStyleId
   });
 }
 
-/**
- * @param {*} widgetInstance — {@link UnityWidget} from this module
- * @param {{ styles: Array<{ picture: HTMLPictureElement, label: string, styleDescription: string, prompt: string }>, previewRows: Array<Array<HTMLPictureElement | null>> }} parsed
- */
 export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
   if (!styles.length) return;
 
   const { el } = widgetInstance;
-  /* verb-options: merged variant CSS (incl. former widget.css) enables models-container / action-container flex layout */
   const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options' });
   const [widget, unitySprite] = ['ex-unity-widget', 'unity-sprite-container']
     .map((c) => createTag('div', { class: c }));
@@ -658,7 +578,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   unitySprite.classList.add('unity-slf-sprite');
   widgetWrap.append(unitySprite);
 
-  /* modelDropdown() / verbDropdown() require .icon-placeholder-input on el (reads parentElement.textContent). */
   const phStub = createTag('div', { hidden: true, 'aria-hidden': 'true' });
   phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
@@ -722,7 +641,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   }
   actWrap.append(genBtn);
 
-  /* action-container: verb + model pickers only; act-wrap (Generate) is a sibling — parallel row in CSS grid */
   inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
 
   const comboboxContainer = createTag('div', { class: 'autocomplete' });
@@ -730,7 +648,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   widget.append(comboboxContainer);
   widgetWrap.append(widget);
 
-  /* Style container: wraps heading + list */
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
     'h4',
@@ -768,7 +685,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   setPreviewPicture(previewForViewport(previewRows[0], initialPreviewCol));
 
   const EMPTY_PROMPT_RESTORE_MS = 5000;
-  /** @type {ReturnType<typeof setTimeout> | null} */
   let emptyPromptRestoreTimerId = null;
 
   function isPromptVisuallyEmpty() {
@@ -782,7 +698,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     }
   }
 
-  /** After 5s with an empty field, restore the default prompt for the currently selected style. */
   function scheduleEmptyPromptRestoreIfStillEmpty() {
     clearEmptyPromptRestoreTimer();
     emptyPromptRestoreTimerId = setTimeout(() => {
@@ -792,10 +707,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     }, EMPTY_PROMPT_RESTORE_MS);
   }
 
-  /**
-   * When the prompt still matches the previously selected style’s default, a new style applies its default prompt.
-   * If the user changed the text away from that default, switching style leaves the prompt unchanged.
-   */
   function selectStyle(idx) {
     clearEmptyPromptRestoreTimer();
     const prevIdx = currentStyleIdx;
@@ -845,7 +756,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   };
   window.addEventListener('resize', onResize);
 
-  /* Parent container for prompt bar + style section */
   const controlsContainer = createTag('div', { class: 'unity-slf-controls' });
   styleContainer.append(stylesHeading, styleList);
   controlsContainer.append(widgetWrap, styleContainer);
@@ -859,17 +769,12 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   const main = createTag('div', { class: 'unity-slf-main' });
   main.append(left, right);
 
-  /*
-   * Firefly widget.css only applies under `.unity-enabled .interactive-area .ex-unity-wrap …`.
-   * This root is a sibling of the hero, so we recreate that wrapper chain for widget.css selectors.
-   */
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
   const root = createTag('div', { class: 'unity-prompt-with-style-select unity-enabled' });
   interactiveShell.append(main);
   root.append(interactiveShell);
 
-  /* Keep authored Unity markup (cgen, error icons, model hints) inside the Unity block for query APIs; hide visually. */
   const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only' });
   holder.setAttribute('aria-hidden', 'true');
   while (el.firstChild) {
@@ -878,7 +783,6 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   el.append(holder);
   el.classList.add('unity-prompt-with-style-host');
 
-  /* Render between hero-marquee and the Unity block (sibling order: … hero, prompt-with-style-select, unity …). */
   if (el.parentNode) {
     el.parentNode.insertBefore(root, el);
   } else {
@@ -888,20 +792,12 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
   widgetInstance.promptWithStyleSelectRoot = root;
 }
 
-/**
- * Firefly Unity block + `promptWithStyleSelect`: parse authoring and mount prompt-with-style-select UI
- * (symmetric to {@link PromptWidget} for the hero marquee).
- */
 export class PromptWithStyleSelectWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    /** @type {HTMLElement | null} Set when UI mounts as a sibling of the Unity block */
     this.promptWithStyleSelectRoot = null;
   }
 
-  /**
-   * @returns {Promise<object>} `targetCfg.actionMap` for ActionBinder
-   */
   async initWidget() {
     const parsed = parsePromptWithStyleSelectAuthoring(this.el);
     if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
