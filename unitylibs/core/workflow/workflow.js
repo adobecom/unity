@@ -18,32 +18,45 @@ class WfInitiator {
     this.targetConfig = {};
     this.operations = {};
     this.actionMap = {};
+    this.widgetname = '';
   }
+
+  getWidgetNameFromClass() {
+    const cls = [...this.el.classList].find((c) => c.startsWith('widget-'));
+    return cls ? cls.replace('widget-', '') : 'prompt-bar';
+  }
+
   static getWidgetRegistry() {
     const base = getUnityLibs();
     return {
-      'prompt-bar': {
-        loader: () => import(`${base}/core/workflow/workflow-firefly/widget.js`),
-        legacy: true,
-      },
-      'prompt-with-style': {
-        loader: () => import(`${base}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`),
-      },
+      'prompt-bar': [`${base}/core/workflow/workflow-firefly/widget.js`, `${base}/core/workflow/workflow-firefly/widget.css`],
+      'prompt-with-style': [`${base}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`, `${base}/core/widgets/prompt-with-style-select/prompt-with-style-select.css`]
     };
   }
 
-  static async priorityLibFetch(workflowName, el) {
+  getWidgetPaths() {
+    this.widgetName = this.getWidgetNameFromClass();
+    const registry = WfInitiator.getWidgetRegistry();
+    return registry[this.widgetName] || registry['prompt-bar'];
+  }
+
+  async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
+    const sharedWfRes = [`${baseWfPath}/sprite.svg`, ...this.getWidgetPaths()];
+
     /* `.widget-prompt-with-style` uses PromptWithStyleSelectWidget (inlines verb/model UI); skip widget.css + widget.js. */
-    const promptWithStyleSelect = workflowName === 'workflow-firefly'
-      && el?.classList?.contains('widget-prompt-with-style');
-    const sharedWfRes = promptWithStyleSelect
-      ? [`${baseWfPath}/sprite.svg`]
-      : [
-          `${baseWfPath}/sprite.svg`,
-          `${baseWfPath}/widget.css`,
-          `${baseWfPath}/widget.js`,
-        ];
+    // const promptWithStyleSelect = workflowName === 'workflow-firefly' && el?.classList?.contains('widget-prompt-with-style');
+    // const sharedWfRes = promptWithStyleSelect
+    //   ? [`${baseWfPath}/sprite.svg`, 
+    //     `${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.css`,
+    //     `${getUnityLibs()}/core/widgets/prompt-with-style-select/prompt-with-style-select.js`,
+    //   ]
+    //   : [
+    //       `${baseWfPath}/sprite.svg`,
+    //       `${baseWfPath}/widget.css`,
+    //       `${baseWfPath}/widget.js`,
+    //     ];
+
     const workflowRes = {
       'workflow-photoshop': [
         ...sharedWfRes,
@@ -66,19 +79,6 @@ class WfInitiator {
     };
   }
 
-  getWidgetNameFromClass() {
-    const cls = [...this.el.classList].find((c) => c.startsWith('widget-'));
-    return cls ? cls.replace('widget-', '') : 'prompt-bar';
-  }
-
-  async loadWidget() {
-    const widgetName = this.getWidgetNameFromClass();
-    const registry = WfInitiator.getWidgetRegistry();
-    const entry = registry[widgetName] || registry['prompt-bar'];
-    const { default: Widget } = await entry.loader();
-    return new Widget(this.interactiveArea, this.el, this.workflowCfg);
-  }
-
   async init(el, project = 'unity', unityLibs = '/unitylibs', langRegion = '', langCode = '') {
     setUnityLibs(unityLibs, project);
     this.el = el;
@@ -89,18 +89,35 @@ class WfInitiator {
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
     // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(this.workflowCfg.name, this.el);
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await this.priorityLibFetch(this.workflowCfg.name);
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     let unityWidget = null;
     if (this.targetConfig.renderWidget) {
-      const widgetInstance = await this.loadWidget();
-      this.actionMap = await widgetInstance.initWidget();
+      const widgetPath = WfInitiator.getWidgetRegistry()[this.widgetName][0];
+      const { default: UnityWidget } = await import(widgetPath);
+      const spriteContent = await spriteSvg.text();
+      this.actionMap = await new UnityWidget(
+        this.interactiveArea,
+        this.el,
+        this.workflowCfg,
+        spriteContent,
+      ).initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
+    //   unityWidget = new UnityWidget(
+    //     this.interactiveArea,
+    //     this.el,
+    //     this.workflowCfg,
+    //     spriteContent,
+    //   );
+    //   this.actionMap = await unityWidget.initWidget();
+    // } else {
+    //   this.actionMap = this.targetConfig.actionMap;
+    // }
     // if (this.targetConfig.renderWidget) {
     //   const spriteContent = await spriteSvg.text();
     //   let WidgetClass;
