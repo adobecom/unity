@@ -227,14 +227,14 @@ export default class ActionBinder {
   }
 
   /**
-   * Selected style for the connector `payload.style` object (`name` + `promptPhrase`), when using prompt-with-style-select.
+   * Selected style for the connector `payload.style` object (`name` + `promptPhrase`), when using prompt-with-style.
    * `promptPhrase` matches authoring: parenthetical text after `Name` before `<br>`, or the label when there is no description.
    *
    * @returns {{ name: string, promptPhrase: string } | undefined}
    */
   getSelectedStylePayloadForConnector() {
     const root = this.block;
-    if (!root?.classList?.contains('unity-prompt-with-style-select')) return undefined;
+    if (!root?.classList?.contains('unity-prompt-with-style')) return undefined;
     const selected = root.querySelector('.unity-slf-style-item.selected');
     if (!selected) return undefined;
     const name = selected.querySelector('.unity-slf-style-label')?.textContent?.trim() || '';

@@ -35,8 +35,8 @@ class WfInitiator {
     return {
       'prompt-bar': [`${w}/prompt-widget/prompt-widget.js`, `${w}/prompt-widget/prompt-widget.css`],
       'prompt-with-style': [
-        `${w}/prompt-with-style-select/prompt-with-style-select.js`,
-        `${w}/prompt-with-style-select/prompt-with-style-select.css`,
+        `${w}/prompt-with-style/prompt-with-style.js`,
+        `${w}/prompt-with-style/prompt-with-style.css`,
       ],
     };
   }
@@ -130,7 +130,7 @@ class WfInitiator {
       const spriteContent = spriteSvg ? await spriteSvg.text() : '';
       let WidgetClass;
       if (this.widgetName === 'prompt-with-style') {
-        ({ PromptWithStyleSelectWidget: WidgetClass } = await import(this.widgetJsUrl));
+        ({ PromptWithStyleWidget: WidgetClass } = await import(this.widgetJsUrl));
       } else {
         ({ PromptWidget: WidgetClass } = await import(this.widgetJsUrl));
       }
@@ -145,12 +145,12 @@ class WfInitiator {
       this.actionMap = this.targetConfig?.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    const promptWithStyleSelectRoot = unityWidget?.promptWithStyleSelectRoot ?? null;
+    const promptWithStyleRoot = unityWidget?.promptWithStyleRoot ?? null;
     const actionBinderBlock = this.widgetName === 'prompt-with-style'
-      ? (promptWithStyleSelectRoot || this.el)
+      ? (promptWithStyleRoot || this.el)
       : this.targetBlock;
     const canvasAreaForBinder = this.widgetName === 'prompt-with-style'
-      ? (promptWithStyleSelectRoot || this.interactiveArea)
+      ? (promptWithStyleRoot || this.interactiveArea)
       : this.interactiveArea;
     await new ActionBinder(
       this.el,

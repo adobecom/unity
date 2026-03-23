@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-/* eslint-disable max-classes-per-file -- UnityWidget duplicated alongside PromptWithStyleSelectWidget for a single network bundle */
+/* eslint-disable max-classes-per-file -- UnityWidget duplicated alongside PromptWithStyleWidget for a single network bundle */
 
 import {
   createTag,
@@ -483,7 +483,7 @@ function topLevelLisInUl(ul) {
   return [...ul.querySelectorAll('li')].filter((li) => isDirectLiOfUl(ul, li));
 }
 
-export function parsePromptWithStyleSelectAuthoring(root) {
+export function parsePromptWithStyleAuthoring(root) {
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
   if (topDivs.length === 1) {
     const inner = topDivs[0];
@@ -564,7 +564,7 @@ function applyAuthoringPreviewGridLoadingPriorities(previewRows, selectedStyleId
   });
 }
 
-export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
+export async function mountPromptWithStyleUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
   if (!styles.length) return;
 
@@ -769,7 +769,7 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
 
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
-  const root = createTag('div', { class: 'unity-prompt-with-style-select unity-enabled' });
+  const root = createTag('div', { class: 'unity-prompt-with-style unity-enabled' });
   interactiveShell.append(main);
   root.append(interactiveShell);
 
@@ -787,19 +787,19 @@ export async function mountPromptWithStyleSelectUI(widgetInstance, parsed) {
     el.append(root);
   }
 
-  widgetInstance.promptWithStyleSelectRoot = root;
+  widgetInstance.promptWithStyleRoot = root;
 }
 
-export class PromptWithStyleSelectWidget extends UnityWidget {
+export class PromptWithStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    this.promptWithStyleSelectRoot = null;
+    this.promptWithStyleRoot = null;
   }
 
   async initWidget() {
-    const parsed = parsePromptWithStyleSelectAuthoring(this.el);
+    const parsed = parsePromptWithStyleAuthoring(this.el);
     if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
-    await mountPromptWithStyleSelectUI(this, parsed);
+    await mountPromptWithStyleUI(this, parsed);
     return this.workflowCfg.targetCfg.actionMap;
   }
 }
