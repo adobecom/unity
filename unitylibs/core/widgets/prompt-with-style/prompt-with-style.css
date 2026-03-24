@@ -1314,7 +1314,6 @@
 
 .unity-prompt-with-style .unity-slf-style-item:hover {
   background: #1b1b1b;
-  color: #f8f8f8;
 }
 
 .unity-prompt-with-style .unity-slf-style-item.selected {
@@ -1341,6 +1340,7 @@
   border-radius: 2px 2px 0px 0px;
 }
 
+.unity-prompt-with-style .unity-slf-style-item:hover .unity-slf-style-label,
 .unity-prompt-with-style .unity-slf-style-item.selected .unity-slf-style-label {
   color: #F8F8F8;
   background: #1b1b1b;
@@ -1350,7 +1350,6 @@
   flex-shrink: 0;
   overflow: hidden;
   color: #7D7D7D;
-  /* color: #F8F8F8; */
   text-overflow: ellipsis;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
   font-size: 12px;
