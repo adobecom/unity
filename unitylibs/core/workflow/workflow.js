@@ -91,28 +91,26 @@ class WfInitiator {
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
-    let unityWidget = null;
+    let unityWidgetObject = null;
     if (this.targetConfig.renderWidget) {
       const widgetPath = WfInitiator.getWidgetRegistry()[this.widgetName][0];
       const { default: UnityWidget } = await import(widgetPath);
       const spriteContent = await spriteSvg.text();
-      this.actionMap = await new UnityWidget(
+      unityWidgetObject = new UnityWidget(
         this.interactiveArea,
         this.el,
         this.workflowCfg,
         spriteContent,
-      ).initWidget();
+      );
+      this.actionMap = await unityWidgetObject.initWidget();
     } else {
       this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    const promptWithStyleRoot = unityWidget?.promptWithStyleRoot ?? null;
-    const actionBinderBlock = this.widgetName === 'prompt-with-style'
-      ? (promptWithStyleRoot || this.el)
-      : this.targetBlock;
-    const canvasAreaForBinder = this.widgetName === 'prompt-with-style'
-      ? (promptWithStyleRoot || this.interactiveArea)
-      : this.interactiveArea;
+    const isPromptWithStyle = this.widgetName === 'prompt-with-style';
+    const styleRoot = unityWidgetObject?.promptWithStyleRoot;
+    const actionBinderBlock = isPromptWithStyle ? (styleRoot || this.el) : this.targetBlock;
+    const canvasAreaForBinder = isPromptWithStyle ? (styleRoot || this.interactiveArea) : this.interactiveArea;
     await new ActionBinder(
       this.el,
       this.workflowCfg,
