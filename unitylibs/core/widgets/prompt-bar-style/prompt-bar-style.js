@@ -678,13 +678,15 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
     clearEmptyPromptRestoreTimer();
     const prevIdx = currentStyleIdx;
     const prevDefault = styles[prevIdx]?.prompt ?? '';
-    const stillSyncedWithPreviousStyle = inpField.value === prevDefault;
+    const { value } = inpField;
+    const stillSyncedWithPreviousStyle = value === prevDefault;
+    const promptWasCleared = value.trim() === '';
     currentStyleIdx = idx;
     styleItems.forEach((item, i) => {
       item.classList.toggle('selected', i === idx);
       item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
     });
-    if (stillSyncedWithPreviousStyle) {
+    if (stillSyncedWithPreviousStyle || promptWasCleared) {
       inpField.value = styles[idx].prompt;
     }
     const col = currentPreviewColumn();
