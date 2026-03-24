@@ -683,7 +683,7 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
   applyAuthoringPreviewGridLoadingPriorities(previewRows, 0, initialPreviewCol);
   setPreviewPicture(previewForViewport(previewRows[0], initialPreviewCol));
 
-  const EMPTY_PROMPT_RESTORE_MS = 5000;
+  const EMPTY_PROMPT_RESTORE_MS = 10000;
   let emptyPromptRestoreTimerId = null;
 
   function isPromptVisuallyEmpty() {
