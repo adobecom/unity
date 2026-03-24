@@ -1385,6 +1385,7 @@
 @media screen and (min-width: 1200px) {
   .unity-prompt-with-style.unity-enabled {
     max-width: 1000px;
+    padding-bottom: 76px;
   }
 }
 
