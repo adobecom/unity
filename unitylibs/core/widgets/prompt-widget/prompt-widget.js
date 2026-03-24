@@ -1,8 +1,9 @@
 /* eslint-disable class-methods-use-this */
+/* eslint-disable max-classes-per-file */
 
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
-export default class UnityWidget {
+export class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
     this.target = target;
@@ -57,7 +58,7 @@ export default class UnityWidget {
   async ensureSoundModuleLoaded() {
     if (this.selectedVerbType !== 'sound' || this.soundAugmented) return;
     try {
-      const { default: augmentSound } = await import('./sound-utils.js');
+      const { default: augmentSound } = await import('../../workflow/workflow-firefly/sound-utils.js');
       augmentSound(this);
       this.soundAugmented = true;
     } catch (e) {
@@ -625,3 +626,6 @@ export default class UnityWidget {
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
   }
 }
+
+export class PromptWidget extends UnityWidget {}
+export default UnityWidget;
