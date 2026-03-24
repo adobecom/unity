@@ -564,11 +564,7 @@ function applyAuthoringPreviewGridLoadingPriorities(previewRows, selectedStyleId
   });
 }
 
-export async function mountPromptWithStyleUI(widgetInstance, parsed) {
-  const { styles, previewRows } = parsed;
-  if (!styles.length) return;
-
-  const { el } = widgetInstance;
+async function createPromptInputShell(widgetInstance, el, styles) {
   const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options' });
   const [widget, unitySprite] = ['ex-unity-widget', 'unity-sprite-container']
     .map((c) => createTag('div', { class: c }));
@@ -589,7 +585,6 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
   const modelParts = widgetInstance.modelDropdown();
 
   const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
-  const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
 
   const inpWrap = createTag('div', { class: 'inp-wrap' });
   const labelText = promptLabelText || 'Prompt';
@@ -648,6 +643,10 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
   widget.append(comboboxContainer);
   widgetWrap.append(widget);
 
+  return { widgetWrap, widget, inpField };
+}
+
+function createStylePreviewSection(styles, previewRows, styleSectionHeadingText) {
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
     'h4',
@@ -655,7 +654,6 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
     styleSectionHeadingText || 'Choose a style',
   );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
-  let currentStyleIdx = 0;
 
   const styleItems = styles.map((style, i) => {
     const li = createTag('li', {
@@ -672,19 +670,26 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
     return li;
   });
   styleItems.forEach((item) => styleList.append(item));
+  styleContainer.append(stylesHeading, styleList);
 
   const previewArea = createTag('div', { class: 'unity-slf-preview' });
+  const initialPreviewCol = currentPreviewColumn();
+  applyAuthoringPreviewGridLoadingPriorities(previewRows, 0, initialPreviewCol);
+  const firstPic = previewForViewport(previewRows[0], initialPreviewCol);
+  if (firstPic) previewArea.replaceChildren(firstPic);
+
+  return { styleContainer, styleItems, previewArea };
+}
+
+const EMPTY_PROMPT_RESTORE_MS = 10000;
+
+function attachPromptWithStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea) {
+  let currentStyleIdx = 0;
+  let emptyPromptRestoreTimerId = null;
 
   function setPreviewPicture(pic) {
     if (pic) previewArea.replaceChildren(pic);
   }
-
-  const initialPreviewCol = currentPreviewColumn();
-  applyAuthoringPreviewGridLoadingPriorities(previewRows, 0, initialPreviewCol);
-  setPreviewPicture(previewForViewport(previewRows[0], initialPreviewCol));
-
-  const EMPTY_PROMPT_RESTORE_MS = 10000;
-  let emptyPromptRestoreTimerId = null;
 
   function isPromptVisuallyEmpty() {
     return inpField.value.trim() === '';
@@ -753,9 +758,10 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
     setPreviewPicture(previewForViewport(previewRows[currentStyleIdx], col));
   };
   window.addEventListener('resize', onResize);
+}
 
+function insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea) {
   const controlsContainer = createTag('div', { class: 'unity-slf-controls' });
-  styleContainer.append(stylesHeading, styleList);
   controlsContainer.append(widgetWrap, styleContainer);
 
   const left = createTag('div', { class: 'unity-slf-left' });
@@ -788,6 +794,24 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
   }
 
   widgetInstance.promptWithStyleRoot = root;
+}
+
+async function mountPromptWithStyleUI(widgetInstance, parsed) {
+  const { styles, previewRows } = parsed;
+  if (!styles.length) return;
+
+  const { el } = widgetInstance;
+  const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
+
+  const { widgetWrap, inpField } = await createPromptInputShell(widgetInstance, el, styles);
+  const { styleContainer, styleItems, previewArea } = createStylePreviewSection(
+    styles,
+    previewRows,
+    styleSectionHeadingText,
+  );
+
+  attachPromptWithStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
+  insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
 }
 
 export class PromptWithStyleWidget extends UnityWidget {
