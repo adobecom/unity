@@ -115,6 +115,10 @@ class WfInitiator {
     this.workflowCfg.langCode = langCode;
     if (this.workflowCfg.name === 'workflow-firefly') {
       this.getWidgetPaths();
+    } else {
+      const wfBase = `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}`;
+      this.widgetJsUrl = `${wfBase}/widget.js`;
+      this.widgetCssUrl = `${wfBase}/widget.css`;
     }
     // eslint-disable-next-line max-len
     const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(
@@ -128,12 +132,10 @@ class WfInitiator {
     let unityWidget = null;
     if (this.targetConfig?.renderWidget) {
       const spriteContent = spriteSvg ? await spriteSvg.text() : '';
-      let WidgetClass;
-      if (this.widgetName === 'prompt-with-style') {
-        ({ PromptWithStyleWidget: WidgetClass } = await import(this.widgetJsUrl));
-      } else {
-        ({ PromptWidget: WidgetClass } = await import(this.widgetJsUrl));
-      }
+      const widgetModule = await import(this.widgetJsUrl);
+      const WidgetClass = this.widgetName === 'prompt-with-style'
+        ? widgetModule.PromptWithStyleWidget
+        : (widgetModule.PromptWidget ?? widgetModule.default);
       unityWidget = new WidgetClass(
         this.interactiveArea,
         this.el,
