@@ -1442,7 +1442,6 @@
 }
 
 .unity-prompt-with-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
-  max-width: 173px;
   grid-column: 1;
   margin-top: 24px;
   display: flex;
@@ -1479,6 +1478,7 @@
 
 .unity-prompt-with-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
   min-width: 0;
+  max-width: 173px;
 }
 
 .unity-prompt-with-style.unity-enabled .interactive-area .models-container {
