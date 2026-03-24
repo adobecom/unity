@@ -148,26 +148,23 @@ class WfInitiator {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
-    // eslint-disable-next-line no-underscore-dangle -- target-config.json reserved key
     const defaults = targetConfig._defaults || {};
 
     let targetCfg = null;
     for (let k = 0; k < supportedBlocks.length; k += 1) {
-      const key = supportedBlocks[k];
-      const cfg = targetConfig[key];
-      const classes = key.split('.');
-      let matches = true;
+      const classes = supportedBlocks[k].split('.');
+      let hasAllClasses = true;
       // eslint-disable-next-line no-restricted-syntax
       for (const c of classes) {
         const hasClass = prevElem?.classList.contains(c);
         const hasChild = prevElem?.querySelector(`.${c}`);
         if (!(hasClass || hasChild)) {
-          matches = false;
+          hasAllClasses = false;
           break;
         }
       }
-      if (matches) {
-        targetCfg = { ...defaults, ...cfg };
+      if (hasAllClasses) {
+        targetCfg = { ...defaults, ...targetConfig[supportedBlocks[k]] };
         break;
       }
     }

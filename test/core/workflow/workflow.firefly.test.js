@@ -2695,7 +2695,7 @@ describe('Firefly Workflow Tests', () => {
         { label: 'Var A', url: 'https://u1' },
         { label: 'Var B', url: 'https://u2' },
         { label: 'Var C', url: 'https://u3' },
-        { label: 'Var D', url: 'https://u4' },
+        { label: 'Var D', url: 'https://u4' }
       ]);
       expect(pm.image).to.exist;
       expect(pm.image[0].variations).to.deep.equal([]);
