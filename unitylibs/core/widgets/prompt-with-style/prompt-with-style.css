@@ -1313,7 +1313,6 @@
   background: #000;
 }
 
-/* 2px border + 2px padding = 4px inset (matches unselected padding-only). */
 .unity-prompt-with-style .unity-slf-style-item.selected {
   border: 2px solid #274dea;
   padding: 2px;

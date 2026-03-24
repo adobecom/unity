@@ -226,12 +226,6 @@ export default class ActionBinder {
     return { isValid: true };
   }
 
-  /**
-   * Selected style for the connector `payload.style` object (`name` + `promptPhrase`), when using prompt-with-style.
-   * `promptPhrase` matches authoring: parenthetical text after `Name` before `<br>`, or the label when there is no description.
-   *
-   * @returns {{ name: string, promptPhrase: string } | undefined}
-   */
   getSelectedStylePayloadForConnector() {
     const root = this.block;
     if (!root?.classList?.contains('unity-prompt-with-style')) return undefined;
@@ -263,7 +257,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb, verb: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {

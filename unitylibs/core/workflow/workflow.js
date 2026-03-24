@@ -31,12 +31,12 @@ class WfInitiator {
 
   static getWidgetRegistry() {
     const base = getUnityLibs();
-    const w = `${base}/core/widgets`;
+    const widgetBase = `${base}/core/widgets`;
     return {
-      'prompt-bar': [`${w}/prompt-widget/prompt-widget.js`, `${w}/prompt-widget/prompt-widget.css`],
+      'prompt-bar': [`${widgetBase}/prompt-widget/prompt-widget.js`, `${widgetBase}/prompt-widget/prompt-widget.css`],
       'prompt-with-style': [
-        `${w}/prompt-with-style/prompt-with-style.js`,
-        `${w}/prompt-with-style/prompt-with-style.css`,
+        `${widgetBase}/prompt-with-style/prompt-with-style.js`,
+        `${widgetBase}/prompt-with-style/prompt-with-style.css`,
       ],
     };
   }
@@ -356,7 +356,6 @@ class WfInitiator {
   }
 }
 
-// eslint-disable-next-line no-unused-vars -- reserved API slot (version) for future use
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
   const { imsClientId } = getConfig();
   if (imsClientId) unityConfig.apiKey = imsClientId;
