@@ -180,7 +180,6 @@ class WfInitiator {
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
     const prevElem = this.el.previousElementSibling;
-    // List `widget-prompt-with-style` before `hero-marquee` (etc.) in target-config.json so the loop matches it first.
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
     // eslint-disable-next-line no-underscore-dangle -- target-config.json reserved key
     const defaults = targetConfig._defaults || {};
@@ -189,21 +188,15 @@ class WfInitiator {
     for (let k = 0; k < supportedBlocks.length; k += 1) {
       const key = supportedBlocks[k];
       const cfg = targetConfig[key];
-      let matches = false;
-      if (key === 'widget-prompt-with-style') {
-        matches = this.workflowCfg.name === 'workflow-firefly'
-          && this.widgetName === 'prompt-with-style';
-      } else {
-        const classes = key.split('.');
-        matches = true;
-        // eslint-disable-next-line no-restricted-syntax
-        for (const c of classes) {
-          const hasClass = prevElem?.classList.contains(c);
-          const hasChild = prevElem?.querySelector(`.${c}`);
-          if (!(hasClass || hasChild)) {
-            matches = false;
-            break;
-          }
+      const classes = key.split('.');
+      let matches = true;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const c of classes) {
+        const hasClass = prevElem?.classList.contains(c);
+        const hasChild = prevElem?.querySelector(`.${c}`);
+        if (!(hasClass || hasChild)) {
+          matches = false;
+          break;
         }
       }
       if (matches) {
