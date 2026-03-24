@@ -283,7 +283,6 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
   display: flex;
-  padding: 12px;
   align-items: center;
   background: transparent;
   transition: background 0.3s ease-in-out;
@@ -422,8 +421,8 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
@@ -447,13 +446,13 @@
   border-radius: 25px;
   background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
   border: none;
-  padding: 10px 20px;
+  padding: 10px 20px 10px 18px;
   gap: 8px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
   color: var(--color-white);
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 700;
   line-height: normal;
 }
@@ -1099,7 +1098,6 @@
 .unity-prompt-with-style .unity-slf-preview img {
   display: block;
   width: 100%;
-  height: auto;
   object-fit: cover;
 }
 
@@ -1175,6 +1173,11 @@
   border-radius: 8px;
   color: #fff;
   height: 32px;
+}
+
+.unity-prompt-with-style.unity-enabled .interactive-area .selected-model {
+  padding-left: 4px;
+  padding-right: 11px;
 }
 
 .unity-prompt-with-style.unity-enabled .interactive-area .selected-model img,
@@ -1325,7 +1328,6 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border-radius: 4px;
 }
 
 .unity-prompt-with-style .unity-slf-style-item img {
@@ -1334,14 +1336,18 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
-  border-radius: 4px;
   object-fit: cover;
+}
+
+.unity-prompt-with-style .unity-slf-style-item.selected .unity-slf-style-label {
+  color: #F8F8F8;
 }
 
 .unity-prompt-with-style .unity-slf-style-label {
   flex-shrink: 0;
   overflow: hidden;
-  color: #F8F8F8;
+  color: #7D7D7D;
+  /* color: #F8F8F8; */
   text-overflow: ellipsis;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
   font-size: 12px;
@@ -1372,7 +1378,6 @@
 .unity-prompt-with-style.unity-enabled {
   max-width: 640px;
   margin-inline: auto;
-  margin-block: 24px;
   box-sizing: border-box;
 }
 
@@ -1436,6 +1441,7 @@
 }
 
 .unity-prompt-with-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
+  max-width: 173px;
   grid-column: 1;
   margin-top: 24px;
   display: flex;
@@ -1482,9 +1488,8 @@
 }
 
 .unity-prompt-with-style .unity-slf-style-container > .unity-slf-styles-heading {
-  margin-top: 4px;
-  padding-top: 20px;
-  border-top: 1px solid rgb(255 255 255 / 12%);
+  padding-top: 18px;
+  border-top: 2px solid rgb(255 255 255 / 12%);
 }
 
 .unity-prompt-with-style.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
