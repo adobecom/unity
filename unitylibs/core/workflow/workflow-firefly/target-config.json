@@ -23,16 +23,16 @@
     "target": ".row-supplemental a",
     "insert": "before"
   },
-  "upload-marquee": {
-    "selector": ".copy",
-    "source": ".copy",
-    "target": ".upload-marquee-prompt-container",
-    "insert": "after"
-  },
   "showcase-marquee": {
     "selector": ".text",
     "source": ".text",
     "target": "p:last-of-type",
+    "insert": "after"
+  },
+  "upload-marquee": {
+    "selector": ".copy",
+    "source": ".copy",
+    "target": ".upload-marquee-prompt-container",
     "insert": "after"
   }
 }

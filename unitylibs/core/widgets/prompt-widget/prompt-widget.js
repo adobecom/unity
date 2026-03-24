@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-/* eslint-disable max-classes-per-file -- PromptWidget extends stage-parity UnityWidget for workflow.js */
+/* eslint-disable max-classes-per-file */
 
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
@@ -627,7 +627,5 @@ export class UnityWidget {
   }
 }
 
-/** Marquee prompt bar — same as stage `workflow-firefly/widget.js`; exported for workflow dynamic import. */
 export class PromptWidget extends UnityWidget {}
-
 export default UnityWidget;
