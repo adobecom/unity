@@ -816,7 +816,7 @@ async function mountPromptWithStyleUI(widgetInstance, parsed) {
   insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
 }
 
-export class PromptWithStyleWidget extends UnityWidget {
+export default class PromptWithStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
     this.promptWithStyleRoot = null;
