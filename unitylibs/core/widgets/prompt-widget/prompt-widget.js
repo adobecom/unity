@@ -3,7 +3,7 @@
 
 import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
 
-export class UnityWidget {
+export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
     this.target = target;
@@ -626,6 +626,3 @@ export class UnityWidget {
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
   }
 }
-
-export class PromptWidget extends UnityWidget {}
-export default UnityWidget;
