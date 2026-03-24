@@ -24,36 +24,22 @@ class WfInitiator {
   }
 
   getWidgetNameFromClass() {
-    if (!this.el) return 'prompt-bar';
     const cls = [...this.el.classList].find((c) => c.startsWith('widget-'));
     return cls ? cls.replace(/^widget-/, '') : 'prompt-bar';
   }
 
   static getWidgetRegistry() {
-    const base = getUnityLibs();
-    const widgetBase = `${base}/core/widgets`;
+    const widgetBase = `${getUnityLibs()}/core/widgets`;
     return {
       'prompt-bar': [`${widgetBase}/prompt-widget/prompt-widget.js`, `${widgetBase}/prompt-widget/prompt-widget.css`],
-      'prompt-with-style': [
-        `${widgetBase}/prompt-with-style/prompt-with-style.js`,
-        `${widgetBase}/prompt-with-style/prompt-with-style.css`,
-      ],
+      'prompt-with-style': [`${widgetBase}/prompt-with-style/prompt-with-style.js`,`${widgetBase}/prompt-with-style/prompt-with-style.css`,]
     };
   }
 
   getWidgetPaths() {
+    this.widgetName = this.getWidgetNameFromClass();
     const registry = WfInitiator.getWidgetRegistry();
-    const rawName = this.getWidgetNameFromClass();
-    let paths;
-    if (registry[rawName]) {
-      this.widgetName = rawName;
-      paths = registry[rawName];
-    } else {
-      this.widgetName = 'prompt-bar';
-      paths = registry['prompt-bar'];
-    }
-    [this.widgetJsUrl, this.widgetCssUrl] = paths;
-    return paths;
+    return registry[this.widgetName] || registry['prompt-bar'];
   }
 
   static getWidgetPathsFromEl(el) {
@@ -64,38 +50,24 @@ class WfInitiator {
     return registry[rawName] || registry['prompt-bar'];
   }
 
-  static async priorityLibFetch(workflowName, el = null) {
+  async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
-    const sharedWfRes = [
-      `${baseWfPath}/sprite.svg`,
-      `${baseWfPath}/widget.css`,
-      `${baseWfPath}/widget.js`,
-    ];
+    const sharedWfRes = [`${baseWfPath}/sprite.svg`, ...this.getWidgetPaths()];
+
     const workflowRes = {
       'workflow-photoshop': () => [
         ...sharedWfRes,
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       ],
       'workflow-ai': () => [...sharedWfRes],
-      'workflow-firefly': () => {
-        const [widgetJs, widgetCss] = WfInitiator.getWidgetPathsFromEl(el);
-        return [
-          `${baseWfPath}/sprite.svg`,
-          widgetCss,
-          widgetJs,
-        ];
-      },
+      'workflow-firefly': sharedWfRes,
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
       `${baseWfPath}/action-binder.js`,
     ];
-    const wfResGetter = workflowRes[workflowName];
-    const wfRes = wfResGetter ? wfResGetter() : [];
-    const priorityList = [
-      ...commonResources,
-      ...wfRes,
-    ];
+    const wfRes = workflowRes[workflowName] || [];
+    const priorityList = [...commonResources, ...wfRes];
     const pfr = await priorityLoad(priorityList);
 
     return {
@@ -113,38 +85,25 @@ class WfInitiator {
     this.workflowCfg = this.getWorkFlowInformation();
     this.workflowCfg.langRegion = langRegion;
     this.workflowCfg.langCode = langCode;
-    if (this.workflowCfg.name === 'workflow-firefly') {
-      this.getWidgetPaths();
-    } else {
-      const wfBase = `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}`;
-      this.widgetJsUrl = `${wfBase}/widget.js`;
-      this.widgetCssUrl = `${wfBase}/widget.css`;
-    }
     // eslint-disable-next-line max-len
-    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await WfInitiator.priorityLibFetch(
-      this.workflowCfg.name,
-      this.el,
-    );
+    const { targetConfigCallRes: tcfg, spriteCallRes: spriteSvg } = await this.priorityLibFetch(this.workflowCfg.name);
     [this.targetBlock, this.interactiveArea, this.targetConfig] = await this.getTarget(tcfg);
     this.getEnabledFeatures();
     this.callbackMap = {};
     this.workflowCfg.targetCfg = this.targetConfig;
     let unityWidget = null;
-    if (this.targetConfig?.renderWidget) {
-      const spriteContent = spriteSvg ? await spriteSvg.text() : '';
-      const widgetModule = await import(this.widgetJsUrl);
-      const WidgetClass = this.widgetName === 'prompt-with-style'
-        ? widgetModule.PromptWithStyleWidget
-        : (widgetModule.PromptWidget ?? widgetModule.default);
-      unityWidget = new WidgetClass(
+    if (this.targetConfig.renderWidget) {
+      const widgetPath = WfInitiator.getWidgetRegistry()[this.widgetName][0];
+      const { default: UnityWidget } = await import(widgetPath);
+      const spriteContent = await spriteSvg.text();
+      this.actionMap = await new UnityWidget(
         this.interactiveArea,
         this.el,
         this.workflowCfg,
         spriteContent,
-      );
-      this.actionMap = await unityWidget.initWidget();
+      ).initWidget();
     } else {
-      this.actionMap = this.targetConfig?.actionMap;
+      this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const promptWithStyleRoot = unityWidget?.promptWithStyleRoot ?? null;

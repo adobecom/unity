@@ -790,7 +790,7 @@ export async function mountPromptWithStyleUI(widgetInstance, parsed) {
   widgetInstance.promptWithStyleRoot = root;
 }
 
-export class PromptWithStyleWidget extends UnityWidget {
+export default class PromptWithStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
     this.promptWithStyleRoot = null;
