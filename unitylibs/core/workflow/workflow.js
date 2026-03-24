@@ -32,7 +32,10 @@ class WfInitiator {
     const widgetBase = `${getUnityLibs()}/core/widgets`;
     return {
       'prompt-bar': [`${widgetBase}/prompt-widget/prompt-widget.js`, `${widgetBase}/prompt-widget/prompt-widget.css`],
-      'prompt-with-style': [`${widgetBase}/prompt-with-style/prompt-with-style.js`,`${widgetBase}/prompt-with-style/prompt-with-style.css`,]
+      'prompt-with-style': [
+        `${widgetBase}/prompt-with-style/prompt-with-style.js`,
+        `${widgetBase}/prompt-with-style/prompt-with-style.css`,
+      ],
     };
   }
 
@@ -52,15 +55,20 @@ class WfInitiator {
 
   async priorityLibFetch(workflowName) {
     const baseWfPath = `${getUnityLibs()}/core/workflow/${workflowName}`;
-    const sharedWfRes = [`${baseWfPath}/sprite.svg`, ...this.getWidgetPaths()];
+    const bundledWidgetAssets = [
+      `${baseWfPath}/sprite.svg`,
+      `${baseWfPath}/widget.js`,
+      `${baseWfPath}/widget.css`,
+    ];
+    const fireflyShared = [`${baseWfPath}/sprite.svg`, ...this.getWidgetPaths()];
 
     const workflowRes = {
-      'workflow-photoshop': () => [
-        ...sharedWfRes,
+      'workflow-photoshop': [
+        ...bundledWidgetAssets,
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       ],
-      'workflow-ai': () => [...sharedWfRes],
-      'workflow-firefly': sharedWfRes,
+      'workflow-ai': [...bundledWidgetAssets],
+      'workflow-firefly': fireflyShared,
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -93,7 +101,9 @@ class WfInitiator {
     this.workflowCfg.targetCfg = this.targetConfig;
     let unityWidgetObject = null;
     if (this.targetConfig.renderWidget) {
-      const widgetPath = WfInitiator.getWidgetRegistry()[this.widgetName][0];
+      const widgetPath = (this.workflowCfg.name === 'workflow-photoshop' || this.workflowCfg.name === 'workflow-ai')
+        ? `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`
+        : WfInitiator.getWidgetRegistry()[this.widgetName][0];
       const { default: UnityWidget } = await import(widgetPath);
       const spriteContent = await spriteSvg.text();
       unityWidgetObject = new UnityWidget(
