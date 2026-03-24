@@ -1337,6 +1337,7 @@
   min-width: 0;
   min-height: 0;
   object-fit: cover;
+  border-radius: 2px 2px 0px 0px;
 }
 
 .unity-prompt-with-style .unity-slf-style-item.selected .unity-slf-style-label {
