@@ -1313,7 +1313,8 @@
 }
 
 .unity-prompt-with-style .unity-slf-style-item:hover {
-  background: #000;
+  background: #1b1b1b;
+  color: #f8f8f8;
 }
 
 .unity-prompt-with-style .unity-slf-style-item.selected {
@@ -1342,6 +1343,7 @@
 
 .unity-prompt-with-style .unity-slf-style-item.selected .unity-slf-style-label {
   color: #F8F8F8;
+  background: #1b1b1b;
 }
 
 .unity-prompt-with-style .unity-slf-style-label {
