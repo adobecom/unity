@@ -1,10 +1,9 @@
 /* eslint-disable class-methods-use-this */
-/* eslint-disable max-classes-per-file -- UnityWidget duplicated alongside PromptWithStyleWidget for a single network bundle */
+/* eslint-disable max-classes-per-file -- UnityWidget duplicated alongside PromptBarStyleWidget for a single network bundle */
 
 import {
   createTag,
   defineDeviceByScreenSize,
-  getUnityLibs,
 } from '../../../scripts/utils.js';
 
 export class UnityWidget {
@@ -30,12 +29,6 @@ export class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
-  }
-
-  async initWidget() {
-    const widgetsBase = `${getUnityLibs()}/core/widgets`;
-    const { PromptWidget } = await import(`${widgetsBase}/prompt-widget/prompt-widget.js`);
-    return PromptWidget.prototype.initWidget.call(this);
   }
 
   async ensureSoundModuleLoaded() {
@@ -474,7 +467,7 @@ function topLevelLisInUl(ul) {
   return [...ul.querySelectorAll('li')].filter((li) => isDirectLiOfUl(ul, li));
 }
 
-export function parsePromptWithStyleAuthoring(root) {
+export function parsePromptBarStyleAuthoring(root) {
   let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
   if (topDivs.length === 1) {
     const inner = topDivs[0];
@@ -674,7 +667,7 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
 
 const EMPTY_PROMPT_RESTORE_MS = 10000;
 
-function attachPromptWithStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea) {
+function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea) {
   let currentStyleIdx = 0;
   let emptyPromptRestoreTimerId = null;
 
@@ -759,7 +752,7 @@ function attachPromptWithStyleInteractivity(styles, previewRows, inpField, style
   };
 }
 
-function insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea) {
+function insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea) {
   const controlsContainer = createTag('div', { class: 'unity-slf-controls' });
   controlsContainer.append(widgetWrap, styleContainer);
 
@@ -774,7 +767,7 @@ function insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContaine
 
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
-  const root = createTag('div', { class: 'unity-prompt-with-style unity-enabled' });
+  const root = createTag('div', { class: 'unity-prompt-bar-style unity-enabled' });
   interactiveShell.append(main);
   root.append(interactiveShell);
 
@@ -784,7 +777,7 @@ function insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContaine
     holder.append(el.firstChild);
   }
   el.append(holder);
-  el.classList.add('unity-prompt-with-style-host');
+  el.classList.add('unity-prompt-bar-style-host');
 
   if (el.parentNode) {
     el.parentNode.insertBefore(root, el);
@@ -792,10 +785,10 @@ function insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContaine
     el.append(root);
   }
 
-  widgetInstance.promptWithStyleRoot = root;
+  widgetInstance.promptBarStyleRoot = root;
 }
 
-async function mountPromptWithStyleUI(widgetInstance, parsed) {
+async function mountPromptBarStyleUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
   if (!styles.length) return;
 
@@ -809,39 +802,39 @@ async function mountPromptWithStyleUI(widgetInstance, parsed) {
     styleSectionHeadingText,
   );
 
-  const disconnectInteractivity = attachPromptWithStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
-  insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
+  const disconnectInteractivity = attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
+  insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
 
-  const root = widgetInstance.promptWithStyleRoot;
+  const root = widgetInstance.promptBarStyleRoot;
   let removalObserver = null;
-  const teardownPromptWithStyle = () => {
+  const teardownPromptBarStyle = () => {
     removalObserver?.disconnect();
     removalObserver = null;
     disconnectInteractivity();
-    if (widgetInstance.disconnectPromptWithStyle === teardownPromptWithStyle) {
-      widgetInstance.disconnectPromptWithStyle = null;
+    if (widgetInstance.disconnectPromptBarStyle === teardownPromptBarStyle) {
+      widgetInstance.disconnectPromptBarStyle = null;
     }
   };
   if (root) {
     removalObserver = new MutationObserver(() => {
-      if (!root.isConnected) teardownPromptWithStyle();
+      if (!root.isConnected) teardownPromptBarStyle();
     });
     removalObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
-  widgetInstance.disconnectPromptWithStyle = teardownPromptWithStyle;
+  widgetInstance.disconnectPromptBarStyle = teardownPromptBarStyle;
 }
 
-export default class PromptWithStyleWidget extends UnityWidget {
+export default class PromptBarStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    this.promptWithStyleRoot = null;
-    this.disconnectPromptWithStyle = null;
+    this.promptBarStyleRoot = null;
+    this.disconnectPromptBarStyle = null;
   }
 
   async initWidget() {
-    const parsed = parsePromptWithStyleAuthoring(this.el);
+    const parsed = parsePromptBarStyleAuthoring(this.el);
     if (!parsed.styles.length) return this.workflowCfg.targetCfg.actionMap;
-    await mountPromptWithStyleUI(this, parsed);
+    await mountPromptBarStyleUI(this, parsed);
     return this.workflowCfg.targetCfg.actionMap;
   }
 }

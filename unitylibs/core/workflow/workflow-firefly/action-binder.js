@@ -228,7 +228,7 @@ export default class ActionBinder {
 
   getSelectedStylePayloadForConnector() {
     const root = this.block;
-    if (!root?.classList?.contains('unity-prompt-with-style')) return undefined;
+    if (!root?.classList?.contains('unity-prompt-bar-style')) return undefined;
     const selected = root.querySelector('.unity-slf-style-item.selected');
     if (!selected) return undefined;
     const name = selected.querySelector('.unity-slf-style-label')?.textContent?.trim() || '';
