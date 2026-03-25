@@ -425,9 +425,8 @@ export function parseStyleLi(li) {
       return t.textContent.trim();
     })
     .filter(Boolean);
-
+  // eslint-disable-next-line one-var, one-var-declaration-per-line -- single grouped declaration; assigned in branches below
   let label, styleDescription, prompt;
-
   if (parts.length >= 3) {
     const [p0, p1, ...rest] = parts;
     label = p0;
@@ -444,7 +443,6 @@ export function parseStyleLi(li) {
     styleDescription = '';
     prompt = '';
   }
-
   return {
     picture: /** @type {HTMLPictureElement} */ (picture.cloneNode(true)),
     label,
@@ -474,7 +472,6 @@ export function parsePromptBarStyleAuthoring(root) {
     topDivs = [...inner.children].filter((n) => n.nodeName === 'DIV');
   }
   if (topDivs.length < 2) return { styles: [], previewRows: [] };
-
   /* 1. Skip row 0 (config). First later row that contains a <ul> is the style strip. */
   let styleStripRowIndex = -1;
   let ul = /** @type {HTMLUListElement | null} */ (null);
@@ -487,7 +484,6 @@ export function parsePromptBarStyleAuthoring(root) {
     }
   }
   if (!ul || styleStripRowIndex < 0) return { styles: [], previewRows: [] };
-
   /* 2. Each top-level <li> in that <ul> → one style entry. */
   const styles = [];
   const listItems = topLevelLisInUl(ul);
@@ -499,9 +495,7 @@ export function parsePromptBarStyleAuthoring(root) {
       styles[styles.length - 1].prompt = li.textContent.trim();
     }
   });
-
   if (!styles.length) return { styles: [], previewRows: [] };
-
   /* 3. Next N top-level rows (N = styles.length): each is one preview row (3 column divs × picture). */
   const afterStyleStrip = topDivs.slice(styleStripRowIndex + 1);
   const previewRows = [];
@@ -516,7 +510,6 @@ export function parsePromptBarStyleAuthoring(root) {
       previewRows.push(valid ? pics : []);
     }
   }
-
   return { styles, previewRows };
 }
 
@@ -557,19 +550,14 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   unitySprite.innerHTML = widgetInstance.spriteCon;
   unitySprite.classList.add('unity-slf-sprite');
   widgetWrap.append(unitySprite);
-
   const phStub = createTag('div', { hidden: true, 'aria-hidden': 'true' });
   phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
-
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
   if (widgetInstance.hasModelOptions) await widgetInstance.getModel();
-
   const verbParts = widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
-
   const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
-
   const inpWrap = createTag('div', { class: 'inp-wrap' });
   const labelText = promptLabelText || 'Prompt';
   const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label unity-slf-prompt-label' }, labelText);
@@ -582,7 +570,6 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   });
   inpField.value = styles[0].prompt;
   inpField.addEventListener('focus', () => widgetInstance.hidePromptDropdown());
-
   const actionContainer = createTag('div', { class: 'action-container' });
   if (verbParts.length > 1) {
     const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
@@ -597,7 +584,6 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     widgetWrap.setAttribute('data-selected-model-id', 'adobe-firefly');
     widgetWrap.setAttribute('data-selected-model-version', 'image3');
   }
-
   const actWrap = createTag('div', { class: 'act-wrap' });
   const generateLi = el.querySelector('.icon-generate')?.closest('li');
   let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
@@ -619,14 +605,11 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     }
   }
   actWrap.append(genBtn);
-
   inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
-
   const comboboxContainer = createTag('div', { class: 'autocomplete' });
   comboboxContainer.append(inpWrap);
   widget.append(comboboxContainer);
   widgetWrap.append(widget);
-
   return { widgetWrap, widget, inpField };
 }
 
@@ -638,7 +621,6 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
     styleSectionHeadingText || 'Choose a style',
   );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
-
   const styleItems = styles.map((style, i) => {
     const li = createTag('li', {
       class: `unity-slf-style-item${i === 0 ? ' selected' : ''}`,
@@ -655,13 +637,11 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
   });
   styleItems.forEach((item) => styleList.append(item));
   styleContainer.append(stylesHeading, styleList);
-
   const previewArea = createTag('div', { class: 'unity-slf-preview' });
   const initialPreviewCol = currentPreviewColumn();
   applyAuthoringPreviewGridLoadingPriorities(previewRows, 0, initialPreviewCol);
   const firstPic = previewForViewport(previewRows[0], initialPreviewCol);
   if (firstPic) previewArea.replaceChildren(firstPic);
-
   return { styleContainer, styleItems, previewArea };
 }
 
@@ -670,7 +650,6 @@ const EMPTY_PROMPT_RESTORE_MS = 10000;
 function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea) {
   let currentStyleIdx = 0;
   let emptyPromptRestoreTimerId = null;
-
   function setPreviewPicture(pic) {
     if (pic) previewArea.replaceChildren(pic);
   }
@@ -715,7 +694,6 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
       scheduleEmptyPromptRestoreIfStillEmpty();
     }
   }
-
   styleItems.forEach((item, i) => {
     item.addEventListener('click', () => selectStyle(i));
     item.addEventListener('keydown', (e) => {
@@ -725,14 +703,12 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
       }
     });
   });
-
   inpField.addEventListener('input', () => {
     clearEmptyPromptRestoreTimer();
     if (isPromptVisuallyEmpty()) {
       scheduleEmptyPromptRestoreIfStillEmpty();
     }
   });
-
   let lastPreviewCol = currentPreviewColumn();
   const onResize = () => {
     const col = currentPreviewColumn();
@@ -742,7 +718,6 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
     setPreviewPicture(previewForViewport(previewRows[currentStyleIdx], col));
   };
   window.addEventListener('resize', onResize);
-
   let interactivityTornDown = false;
   return () => {
     if (interactivityTornDown) return;
@@ -755,22 +730,17 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
 function insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea) {
   const controlsContainer = createTag('div', { class: 'unity-slf-controls' });
   controlsContainer.append(widgetWrap, styleContainer);
-
   const left = createTag('div', { class: 'unity-slf-left' });
   left.append(controlsContainer);
-
   const right = createTag('div', { class: 'unity-slf-right' });
   right.append(previewArea);
-
   const main = createTag('div', { class: 'unity-slf-main' });
   main.append(left, right);
-
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
   const root = createTag('div', { class: 'unity-prompt-bar-style unity-enabled' });
   interactiveShell.append(main);
   root.append(interactiveShell);
-
   const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only' });
   holder.setAttribute('aria-hidden', 'true');
   while (el.firstChild) {
@@ -778,33 +748,27 @@ function insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer
   }
   el.append(holder);
   el.classList.add('unity-prompt-bar-style-host');
-
   if (el.parentNode) {
     el.parentNode.insertBefore(root, el);
   } else {
     el.append(root);
   }
-
   widgetInstance.promptBarStyleRoot = root;
 }
 
 async function mountPromptBarStyleUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
   if (!styles.length) return;
-
   const { el } = widgetInstance;
   const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
-
   const { widgetWrap, inpField } = await createPromptInputShell(widgetInstance, el, styles);
   const { styleContainer, styleItems, previewArea } = createStylePreviewSection(
     styles,
     previewRows,
     styleSectionHeadingText,
   );
-
   const disconnectInteractivity = attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
   insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
-
   const root = widgetInstance.promptBarStyleRoot;
   let removalObserver = null;
   const teardownPromptBarStyle = () => {
