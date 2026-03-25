@@ -4,7 +4,6 @@
 import {
   createTag,
   defineDeviceByScreenSize,
-  getUnityLibs,
 } from '../../../scripts/utils.js';
 
 export class UnityWidget {
@@ -30,12 +29,6 @@ export class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
-  }
-
-  async initWidget() {
-    const widgetsBase = `${getUnityLibs()}/core/widgets`;
-    const { default: PromptBarWidget } = await import(`${widgetsBase}/prompt-bar/prompt-bar.js`);
-    return PromptBarWidget.prototype.initWidget.call(this);
   }
 
   async ensureSoundModuleLoaded() {
