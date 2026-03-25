@@ -68,8 +68,10 @@ export default class ActionBinder {
     if (!errorCallbackOptions?.errorToastEl) return;
     const lang = document.querySelector('html').getAttribute('lang');
     const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
-    const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
-    if (promptBarEl) promptBarEl.style.pointerEvents = 'none';
+    const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
+      || this.canvasArea.querySelector('.ex-unity-wrap');
+    if (!promptBarEl) return;
+    promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
     if (!errorToast) return;
     const closeBtn = errorToast.querySelector('.alert-close');
@@ -104,7 +106,9 @@ export default class ActionBinder {
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
       const alertImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/alert.svg` });
       const closeImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/close.svg` });
-      const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap');
+      const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
+        || this.canvasArea.querySelector('.ex-unity-wrap');
+      if (!promptBarEl) return null;
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
       const alertIcon = createTag('div', { class: 'alert-icon' });
       alertIcon.append(alertImg, alertText);
@@ -222,6 +226,18 @@ export default class ActionBinder {
     return { isValid: true };
   }
 
+  getSelectedStylePayloadForConnector() {
+    const root = this.block;
+    if (!root?.classList?.contains('unity-prompt-bar-style')) return undefined;
+    const selected = root.querySelector('.unity-slf-style-item.selected');
+    if (!selected) return undefined;
+    const name = selected.querySelector('.unity-slf-style-label')?.textContent?.trim() || '';
+    const fromData = selected.dataset?.styleConnectorSuffix?.trim();
+    const promptPhrase = fromData || name;
+    if (!name && !promptPhrase) return undefined;
+    return { name, promptPhrase };
+  }
+
   getVerbFromDom() {
     const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
     if (!verbEl) return undefined;
@@ -241,7 +257,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, {...logData, operation: this.verb}, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb}, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {
@@ -258,6 +274,8 @@ export default class ActionBinder {
       this.query = this.inputField.value.trim();
     }
     const selectedVerbType = `text-to-${currentVerb}`;
+    const operationVerb = this.getVerbFromDom();
+    const stylePayload = this.getSelectedStylePayloadForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
@@ -274,8 +292,10 @@ export default class ActionBinder {
         additionalQueryParams: queryParams,
         payload: {
           workflow: selectedVerbType,
+          ...(operationVerb ? { verb: operationVerb } : {}),
           ...(modelId ? { modelId } : {}),
           ...(modelVersion ? { modelVersion } : {}),
+          ...(stylePayload ? { style: stylePayload } : {}),
           locale: getLocale(),
           action,
         },

@@ -57,7 +57,7 @@ export default class UnityWidget {
   async ensureSoundModuleLoaded() {
     if (this.selectedVerbType !== 'sound' || this.soundAugmented) return;
     try {
-      const { default: augmentSound } = await import('./sound-utils.js');
+      const { default: augmentSound } = await import('../../workflow/workflow-firefly/sound-utils.js');
       augmentSound(this);
       this.soundAugmented = true;
     } catch (e) {
