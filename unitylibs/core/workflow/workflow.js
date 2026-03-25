@@ -29,10 +29,10 @@ class WfInitiator {
   static getWidgetRegistry() {
     const widgetBase = `${getUnityLibs()}/core/widgets`;
     return {
-      'prompt-bar': [`${widgetBase}/prompt-widget/prompt-widget.js`, `${widgetBase}/prompt-widget/prompt-widget.css`],
-      'prompt-with-style': [
-        `${widgetBase}/prompt-with-style/prompt-with-style.js`,
-        `${widgetBase}/prompt-with-style/prompt-with-style.css`,
+      'prompt-bar': [`${widgetBase}/prompt-bar/prompt-bar.js`, `${widgetBase}/prompt-bar/prompt-bar.css`],
+      'prompt-bar-style': [
+        `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
+        `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
       ],
     };
   }
@@ -115,10 +115,10 @@ class WfInitiator {
       this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    const isPromptWithStyle = this.widgetName === 'prompt-with-style';
-    const styleRoot = unityWidgetObject?.promptWithStyleRoot;
-    const actionBinderBlock = isPromptWithStyle ? styleRoot : this.targetBlock;
-    const canvasAreaForBinder = isPromptWithStyle ? styleRoot : this.interactiveArea;
+    const isPromptBarStyle = this.widgetName === 'prompt-bar-style';
+    const styleRoot = unityWidgetObject?.promptBarStyleRoot;
+    const actionBinderBlock = isPromptBarStyle ? styleRoot : this.targetBlock;
+    const canvasAreaForBinder = isPromptBarStyle ? styleRoot : this.interactiveArea;
     await new ActionBinder(
       this.el,
       this.workflowCfg,
@@ -183,7 +183,7 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
-    if (this.widgetName === 'prompt-with-style') return this.el;
+    if (this.widgetName === 'prompt-bar-style') return this.el;
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {
