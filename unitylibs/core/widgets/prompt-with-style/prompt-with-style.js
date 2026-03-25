@@ -261,14 +261,7 @@ export class UnityWidget {
   createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
     const fragment = document.createDocumentFragment();
     items.forEach((item, idx) => {
-      const {
-        name,
-        type,
-        icon,
-        module,
-        id,
-        version,
-      } = item;
+      const { name, type, icon, module, id, version } = item;
       const listItem = createTag('li', {
         class: 'verb-item',
         role: 'presentation',
@@ -440,9 +433,7 @@ export function parseStyleLi(li) {
     })
     .filter(Boolean);
 
-  let label;
-  let styleDescription;
-  let prompt;
+  let label, styleDescription, prompt;
 
   if (parts.length >= 3) {
     const [p0, p1, ...rest] = parts;
