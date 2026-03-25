@@ -87,7 +87,7 @@ export class UnityWidget {
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
       }
-      if (e.key === 'Escape' || e.code === 27) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
         this.closeVerbOrModelMenu(selectedElement);
         selectedElement.focus();
       }
@@ -749,6 +749,14 @@ function attachPromptWithStyleInteractivity(styles, previewRows, inpField, style
     setPreviewPicture(previewForViewport(previewRows[currentStyleIdx], col));
   };
   window.addEventListener('resize', onResize);
+
+  let interactivityTornDown = false;
+  return () => {
+    if (interactivityTornDown) return;
+    interactivityTornDown = true;
+    window.removeEventListener('resize', onResize);
+    clearEmptyPromptRestoreTimer();
+  };
 }
 
 function insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea) {
@@ -801,14 +809,33 @@ async function mountPromptWithStyleUI(widgetInstance, parsed) {
     styleSectionHeadingText,
   );
 
-  attachPromptWithStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
+  const disconnectInteractivity = attachPromptWithStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
   insertPromptWithStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
+
+  const root = widgetInstance.promptWithStyleRoot;
+  let removalObserver = null;
+  const teardownPromptWithStyle = () => {
+    removalObserver?.disconnect();
+    removalObserver = null;
+    disconnectInteractivity();
+    if (widgetInstance.disconnectPromptWithStyle === teardownPromptWithStyle) {
+      widgetInstance.disconnectPromptWithStyle = null;
+    }
+  };
+  if (root) {
+    removalObserver = new MutationObserver(() => {
+      if (!root.isConnected) teardownPromptWithStyle();
+    });
+    removalObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  widgetInstance.disconnectPromptWithStyle = teardownPromptWithStyle;
 }
 
 export default class PromptWithStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
     this.promptWithStyleRoot = null;
+    this.disconnectPromptWithStyle = null;
   }
 
   async initWidget() {
