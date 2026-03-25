@@ -4,8 +4,7 @@ export const [setLibs, getLibs] = (() => {
     (prodLibs, location) => {
       libs = (() => {
         const { hostname, search } = location || window.location;
-        if (hostname === 'acrobat.adobe.com') return 'https://milo.adobe.com/libs';
-        if (hostname === 'stage.acrobat.adobe.com') return 'https://milo.stage.adobe.com/libs';
+        if (hostname.endsWith('acrobat.adobe.com')) return '/dc-shared/libs';
         if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
