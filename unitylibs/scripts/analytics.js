@@ -1,4 +1,3 @@
-/** Canonical interaction names for the prompt-with-style UI (`widget-prompt-bar-style`). */
 export const PROMPT_WITH_STYLE_UI = {
   ENTER_PROMPT: 'Enter Prompt|UnityWidget',
   MODEL_SELECT_DROPDOWN: 'Model Select Dropdown|UnityWidget',
@@ -6,19 +5,10 @@ export const PROMPT_WITH_STYLE_UI = {
   MODULE_PICKER: 'Module Picker Select Dropdown|UnityWidget',
 };
 
-/**
- * Interaction name for the selected style when the user clicks Generate (1-based style index).
- * @param {number} styleIndexOneBased - 1 = first style, 2 = second, …
- * @returns {string} e.g. `'Style 1|UnityWidget'`
- */
 export function styleSelectionGenerateEventName(styleIndexOneBased) {
   return `Style ${styleIndexOneBased}|UnityWidget`;
 }
 
-/**
- * Sends an interaction event to Adobe Analytics via Adobe Launch (_satellite).
- * @param {string} eventName - The interaction event name (e.g. 'Enter Prompt|UnityWidget')
- */
 export function sendAdobeAnalytics(eventName) {
   window._satellite?.track('event', { // eslint-disable-line no-underscore-dangle
     xdm: {},

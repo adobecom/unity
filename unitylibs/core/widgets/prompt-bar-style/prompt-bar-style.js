@@ -5,7 +5,6 @@ import {
   createTag,
   defineDeviceByScreenSize,
 } from '../../../scripts/utils.js';
-import { PROMPT_WITH_STYLE_UI } from '../../../scripts/analytics.js';
 
 export class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -51,7 +50,6 @@ export class UnityWidget {
       role: 'combobox',
       'aria-labelledby': 'listbox-label',
       'data-selected-verb': selectedVerbType,
-      'daa-ll': PROMPT_WITH_STYLE_UI.MODULE_PICKER,
     }, `${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
@@ -74,14 +72,34 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
+      const menuContainer = selectedElement.parentElement;
+      const wasOpen = menuContainer.classList.contains('show-menu');
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
+      if (!wasOpen) {
+        this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+          detail: {
+            adobeEventName: this.PROMPT_WITH_STYLE_UI.MODULE_PICKER,
+            splunkData: { action: 'open' },
+          },
+        }));
+      }
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        const menuContainer = selectedElement.parentElement;
+        const wasOpen = menuContainer.classList.contains('show-menu');
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
+        if (!wasOpen) {
+          this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+            detail: {
+              adobeEventName: this.PROMPT_WITH_STYLE_UI.MODULE_PICKER,
+              splunkData: { action: 'open' },
+            },
+          }));
+        }
       }
       if (e.key === 'Escape' || e.keyCode === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -165,7 +183,6 @@ export class UnityWidget {
         item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
       });
     }
-    // genBtn daa-ll is fixed as PROMPT_WITH_STYLE_UI.GENERATE_CTA; no update needed on verb change
   }
 
   clearSelectedModelState() {
@@ -174,6 +191,7 @@ export class UnityWidget {
     this.selectedModelVersion = '';
     this.selectedModelModule = '';
     this.selectedModelText = '';
+    this.widgetWrap?.removeAttribute('data-selected-model-name');
   }
 
   handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
@@ -235,8 +253,13 @@ export class UnityWidget {
         } else this.clearSelectedModelState();
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-      if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-      else this.widgetWrap.removeAttribute('data-selected-model-id');
+      if (this.selectedModelId) {
+        this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+        this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName || '');
+      } else {
+        this.widgetWrap.removeAttribute('data-selected-model-id');
+        this.widgetWrap.removeAttribute('data-selected-model-name');
+      }
       if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
       else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
@@ -306,7 +329,6 @@ export class UnityWidget {
     const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
     const selectedElement = createTag('button', {
       class: 'selected-model',
-      'daa-ll': PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN,
       'aria-expanded': 'false',
       'aria-controls': 'model-menu',
       'aria-label': 'model type',
@@ -323,6 +345,7 @@ export class UnityWidget {
     this.selectedModelName = selectedModelName;
     this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName);
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
@@ -338,16 +361,34 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      // Event 2: Splunk — model dropdown opened (Adobe handled declaratively via daa-ll)
-      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', { detail: { eventName: 'model-dropdown', splunkData: { action: 'open' } } }));
+      const menuContainer = selectedElement.parentElement;
+      const wasOpen = menuContainer.classList.contains('show-menu');
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
+      if (!wasOpen) {
+        this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+          detail: {
+            adobeEventName: this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN,
+            splunkData: { action: 'open' },
+          },
+        }));
+      }
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        const menuContainer = selectedElement.parentElement;
+        const wasOpen = menuContainer.classList.contains('show-menu');
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
+        if (!wasOpen) {
+          this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+            detail: {
+              adobeEventName: this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN,
+              splunkData: { action: 'open' },
+            },
+          }));
+        }
       }
       if (e.key === 'Escape' || e.code === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -366,7 +407,7 @@ export class UnityWidget {
     const btn = createTag('a', {
       href: '#',
       class: `unity-act-btn ${cls}`,
-      'daa-ll': PROMPT_WITH_STYLE_UI.GENERATE_CTA,
+      'daa-ll': this.PROMPT_WITH_STYLE_UI.GENERATE_CTA,
       'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}`,
     });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
@@ -596,25 +637,23 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     'aria-autocomplete': 'list',
     'aria-haspopup': 'listbox',
     rows: '4',
-    'daa-ll': PROMPT_WITH_STYLE_UI.ENTER_PROMPT,
   });
   inpField.value = styles[0].prompt;
-  let promptFocusTracked = false;
-  inpField.addEventListener('focus', () => {
+  let promptEngagedTracked = false;
+  inpField.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target !== inpField) return;
     widgetInstance.hidePromptDropdown();
-    // Event 1: fire once per page load; resets on blur so repeated sessions are each tracked
-    if (!promptFocusTracked) {
-      promptFocusTracked = true;
+    if (!promptEngagedTracked) {
+      promptEngagedTracked = true;
       widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
         detail: {
-          adobeEventName: PROMPT_WITH_STYLE_UI.ENTER_PROMPT,
-          eventName: 'prompt-focus',
+          adobeEventName: widgetInstance.PROMPT_WITH_STYLE_UI.ENTER_PROMPT,
           splunkData: { action: 'enter-prompt' },
         },
       }));
     }
   });
-  inpField.addEventListener('blur', () => { promptFocusTracked = false; });
+  inpField.addEventListener('blur', () => { promptEngagedTracked = false; });
 
   const actionContainer = createTag('div', { class: 'action-container' });
   if (verbParts.length > 1) {
@@ -629,17 +668,21 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   } else {
     widgetWrap.setAttribute('data-selected-model-id', 'adobe-firefly');
     widgetWrap.setAttribute('data-selected-model-version', 'image3');
+    const fallbackName = Array.isArray(widgetInstance.models)
+      ? widgetInstance.models.find((m) => m.id === 'adobe-firefly' && (!m.version || m.version === 'image3'))?.name?.trim()
+        || widgetInstance.models.find((m) => m.id === 'adobe-firefly')?.name?.trim()
+      : '';
+    if (fallbackName) widgetWrap.setAttribute('data-selected-model-name', fallbackName);
   }
 
   const actWrap = createTag('div', { class: 'act-wrap' });
   const generateLi = el.querySelector('.icon-generate')?.closest('li');
   let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
   if (!genBtn) {
-    // const verbTag = widgetInstance.selectedVerbType || 'image';
     genBtn = createTag('a', {
       href: '#',
       class: 'unity-act-btn gen-btn unity-slf-gen-btn',
-      'daa-ll': PROMPT_WITH_STYLE_UI.GENERATE_CTA,
+      'daa-ll': widgetInstance.PROMPT_WITH_STYLE_UI.GENERATE_CTA,
       'aria-label': 'Generate',
     });
     genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));
@@ -826,6 +869,14 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
   if (!styles.length) return;
 
   const { el } = widgetInstance;
+  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
+
+  const [analyticsMod] = await Promise.all([
+    import('../../../scripts/analytics.js'),
+    widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
+  ]);
+  widgetInstance.PROMPT_WITH_STYLE_UI = analyticsMod.PROMPT_WITH_STYLE_UI;
+
   const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
 
   const { widgetWrap, inpField } = await createPromptInputShell(widgetInstance, el, styles);
