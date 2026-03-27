@@ -16,6 +16,7 @@ export class UnityWidget {
     this.spriteCon = spriteCon;
     this.prompts = null;
     this.models = null;
+    this.PROMPT_WITH_STYLE_UI = null;
     this.selectedVerbType = '';
     this.selectedVerbText = '';
     this.selectedModelModule = '';
@@ -608,7 +609,6 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     }
   });
   inpField.addEventListener('blur', () => { promptEngagedTracked = false; });
-
   const actionContainer = createTag('div', { class: 'action-container' });
   if (verbParts.length > 1) {
     const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
@@ -628,7 +628,6 @@ async function createPromptInputShell(widgetInstance, el, styles) {
       : '';
     if (fallbackName) widgetWrap.setAttribute('data-selected-model-name', fallbackName);
   }
-
   const actWrap = createTag('div', { class: 'act-wrap' });
   const generateLi = el.querySelector('.icon-generate')?.closest('li');
   let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
