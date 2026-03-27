@@ -72,34 +72,12 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      const menuContainer = selectedElement.parentElement;
-      const wasOpen = menuContainer.classList.contains('show-menu');
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      if (!wasOpen) {
-        this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
-          detail: {
-            adobeEventName: this.PROMPT_WITH_STYLE_UI.MODULE_PICKER,
-            splunkData: { action: 'open' },
-          },
-        }));
-      }
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODULE_PICKER);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        const menuContainer = selectedElement.parentElement;
-        const wasOpen = menuContainer.classList.contains('show-menu');
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-        if (!wasOpen) {
-          this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
-            detail: {
-              adobeEventName: this.PROMPT_WITH_STYLE_UI.MODULE_PICKER,
-              splunkData: { action: 'open' },
-            },
-          }));
-        }
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODULE_PICKER);
       }
       if (e.key === 'Escape' || e.keyCode === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -151,6 +129,21 @@ export class UnityWidget {
       } else {
         siblingList.setAttribute('style', 'display: none;');
       }
+    }
+  }
+
+  showVerbOrModelMenuAndTrackOpen(selectedElement, adobeEventName) {
+    const menuContainer = selectedElement.parentElement;
+    const wasOpen = menuContainer.classList.contains('show-menu');
+    this.hidePromptDropdown(selectedElement);
+    this.showVerbMenu(selectedElement);
+    if (!wasOpen) {
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+        detail: {
+          adobeEventName,
+          splunkData: { action: 'open' },
+        },
+      }));
     }
   }
 
@@ -359,34 +352,12 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      const menuContainer = selectedElement.parentElement;
-      const wasOpen = menuContainer.classList.contains('show-menu');
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      if (!wasOpen) {
-        this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
-          detail: {
-            adobeEventName: this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN,
-            splunkData: { action: 'open' },
-          },
-        }));
-      }
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        const menuContainer = selectedElement.parentElement;
-        const wasOpen = menuContainer.classList.contains('show-menu');
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-        if (!wasOpen) {
-          this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
-            detail: {
-              adobeEventName: this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN,
-              splunkData: { action: 'open' },
-            },
-          }));
-        }
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN);
       }
       if (e.key === 'Escape' || e.code === 27) {
         this.closeVerbOrModelMenu(selectedElement);
