@@ -285,6 +285,21 @@ export class UnityWidget {
       if (!link) return;
       this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
     });
+    listContainer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer?.classList.contains('show-menu')) return;
+      const links = listContainer.querySelectorAll('.verb-link');
+      if (!links.length) return;
+      const active = document.activeElement;
+      const idx = [...links].findIndex((a) => a === active || a.contains(active));
+      if (idx < 0) return;
+      const atStart = idx === 0;
+      const atEnd = idx === links.length - 1;
+      if ((e.shiftKey && atStart) || (!e.shiftKey && atEnd)) {
+        this.closeVerbOrModelMenu(selectedElement);
+      }
+    });
   }
 
   modelDropdown() {
