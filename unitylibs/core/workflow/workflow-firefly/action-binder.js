@@ -404,6 +404,7 @@ export default class ActionBinder {
   handleKeyDown(ev) {
     if (!ActionBinder.VALID_KEYS.includes(ev.key)) return;
     if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && ev.target?.classList?.contains('inp-field')) return;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
