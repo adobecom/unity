@@ -52,6 +52,15 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
     this.sendAnalyticsToSplunk = null;
+    this.sendAdobeAnalytics = null;
+    this.analyticsModule = null;
+    this.widgetWrap.addEventListener('firefly-analytics', async (ev) => {
+      const { adobeEventName, eventName, splunkData } = ev.detail ?? {};
+      if (!adobeEventName && !eventName) return;
+      await this.initAnalytics();
+      if (adobeEventName) this.sendAdobeAnalytics?.(adobeEventName);
+      if (eventName) this.logAnalytics(eventName, splunkData ?? {});
+    });
     this.addAccessibility();
     this.initAction();
     this.verb = this.getVerbFromDom();
@@ -218,6 +227,12 @@ export default class ActionBinder {
 
   getSelectedModelVersion = () => this.widgetWrap.getAttribute('data-selected-model-version');
 
+  getSelectedModelDisplayName = () => this.widgetWrap.getAttribute('data-selected-model-name');
+
+  // getSelectedModelDisplayName = () => this.block
+  //   .querySelector('.models-container .selected-model .model-name')
+  //   ?.textContent?.trim() ?? '';
+
   validateInput(query) {
     if (query.length > 750) {
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
@@ -238,6 +253,17 @@ export default class ActionBinder {
     return { name, promptPhrase };
   }
 
+  /** 1-based index of the selected style tile (first style = 1), or null if not prompt-bar-style / no selection. */
+  getSelectedStyleIndexOneBased() {
+    const root = this.block;
+    if (!root?.classList?.contains('unity-prompt-bar-style')) return null;
+    const items = Array.from(root.querySelectorAll('.unity-slf-style-list .unity-slf-style-item'));
+    const selected = root.querySelector('.unity-slf-style-item.selected');
+    if (!selected || items.length === 0) return null;
+    const idx = items.indexOf(selected);
+    return idx >= 0 ? idx + 1 : null;
+  }
+
   getVerbFromDom() {
     const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
     if (!verbEl) return undefined;
@@ -246,8 +272,11 @@ export default class ActionBinder {
   }
 
   async initAnalytics() {
-    if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+    if (this.analyticsModule) return;
+    this.analyticsModule = await import(`${getUnityLibs()}/scripts/analytics.js`);
+    this.sendAdobeAnalytics = this.analyticsModule.sendAdobeAnalytics;
+    if (this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+      this.sendAnalyticsToSplunk = this.analyticsModule.default;
     }
   }
 
@@ -257,7 +286,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb}, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {
@@ -278,7 +307,22 @@ export default class ActionBinder {
     const stylePayload = this.getSelectedStylePayloadForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
+    // Event 3: Splunk — generate CTA click (Adobe handled declaratively via daa-ll)
     this.logAnalytics('generate', eventData, { workflowStep: 'start' });
+    // Style strip: Style 1|UnityWidget, Style 2|UnityWidget, … on Generate (Adobe + Splunk)
+    const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
+    if (styleIndexOneBased != null) {
+      const { styleSelectionGenerateEventName } = this.analyticsModule;
+      const styleEventName = styleSelectionGenerateEventName(styleIndexOneBased);
+      this.sendAdobeAnalytics?.(styleEventName);
+      this.logAnalytics(styleEventName, { ...eventData, styleIndex: styleIndexOneBased });
+    }
+    // Event 4: model-resolved name sent to both Adobe + Splunk
+    const modelName = this.getSelectedModelDisplayName();
+    if (modelName) {
+      this.sendAdobeAnalytics?.(`Generate ${modelName}|UnityWidget`);
+      this.logAnalytics('generate-model', { ...eventData, action: modelName });
+    }
     const validation = this.validateInput(this.query);
     if (!validation.isValid) {
       this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });

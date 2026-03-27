@@ -343,7 +343,7 @@ export default class ActionBinder {
 
   async initAnalytics() {
     if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/analytics.js`)).default;
     }
   }
 
