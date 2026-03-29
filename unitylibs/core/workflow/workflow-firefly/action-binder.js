@@ -72,7 +72,7 @@ export default class ActionBinder {
   getNetworkUtils = async () => {
     if (this.networkUtils) return this.networkUtils;
     const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
-    return (this.networkUtils = new NetworkUtils());
+  return (this.networkUtils = new NetworkUtils());
   };
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -307,7 +307,7 @@ export default class ActionBinder {
     const stylePayload = this.getSelectedStylePayloadForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
-    this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_UI.GENERATE_CTA, eventData, { workflowStep: 'start' });
+    this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, eventData, { workflowStep: 'start' });
     const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
     if (styleIndexOneBased != null) {
       const { styleSelectionGenerateEventName } = this.analyticsModule;
@@ -348,7 +348,7 @@ export default class ActionBinder {
         unityConfig.apiKey,
         {
           'x-unity-product': this.workflowCfg.productName,
-          'x-unity-action': `${action}-${this.getSelectedVerbType()}Generation`,
+          'x-unity-action': `${action}-${this.getSelectedVerbType()}Generation-${this.verb}`,
         },
         { body: JSON.stringify(payload) },
       );

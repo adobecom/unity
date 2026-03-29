@@ -2292,7 +2292,7 @@ describe('Firefly Workflow Tests', () => {
       // Mock dependencies
       sinon.stub(testActionBinder, 'initAnalytics').resolves();
       testActionBinder.analyticsModule = {
-        PROMPT_WITH_STYLE_UI: { GENERATE_CTA: 'Click on Generate CTA|UnityWidget' },
+        PROMPT_WITH_STYLE_EVENTS: { GENERATE_CTA: 'Click on Generate CTA|UnityWidget' },
         styleSelectionGenerateEventName: (i) => `Style ${i}|UnityWidget`,
       };
       sinon.stub(testActionBinder, 'validateInput').returns({ isValid: true });
@@ -2318,7 +2318,7 @@ describe('Firefly Workflow Tests', () => {
       // Mock dependencies
       sinon.stub(testActionBinder, 'initAnalytics').resolves();
       testActionBinder.analyticsModule = {
-        PROMPT_WITH_STYLE_UI: { GENERATE_CTA: 'Click on Generate CTA|UnityWidget' },
+        PROMPT_WITH_STYLE_EVENTS: { GENERATE_CTA: 'Click on Generate CTA|UnityWidget' },
         styleSelectionGenerateEventName: (i) => `Style ${i}|UnityWidget`,
       };
       sinon.stub(testActionBinder, 'validateInput').returns({ isValid: true });

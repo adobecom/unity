@@ -1,4 +1,4 @@
-export const PROMPT_WITH_STYLE_UI = {
+export const PROMPT_WITH_STYLE_EVENTS = {
   ENTER_PROMPT: 'Enter Prompt|UnityWidget',
   MODEL_SELECT_DROPDOWN: 'Model Select Dropdown|UnityWidget',
   GENERATE_CTA: 'Click on Generate CTA|UnityWidget',
@@ -59,7 +59,7 @@ function createPayloadForSplunk(metaData) {
   };
 }
 
-export function sendSplunkAnalytics(eventName, product, metaData, splunkEndpoint, sendBeacon = false) {
+export default function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint, sendBeacon = false) {
   try {
     const eventDataPayload = createPayloadForSplunk({ ...metaData, eventName, product });
     if (sendBeacon && navigator.sendBeacon && navigator.sendBeacon(splunkEndpoint, JSON.stringify(eventDataPayload))) return;
@@ -75,5 +75,3 @@ export function sendSplunkAnalytics(eventName, product, metaData, splunkEndpoint
     );
   }
 }
-
-export default sendSplunkAnalytics;

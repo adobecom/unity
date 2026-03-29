@@ -16,7 +16,7 @@ export class UnityWidget {
     this.spriteCon = spriteCon;
     this.prompts = null;
     this.models = null;
-    this.PROMPT_WITH_STYLE_UI = null;
+    this.PROMPT_WITH_STYLE_EVENTS = null;
     this.selectedVerbType = '';
     this.selectedVerbText = '';
     this.selectedModelModule = '';
@@ -73,12 +73,12 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODULE_PICKER);
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_EVENTS.MODULE_PICKER);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODULE_PICKER);
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_EVENTS.MODULE_PICKER);
       }
       if (e.key === 'Escape' || e.keyCode === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -353,12 +353,12 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN);
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_EVENTS.MODEL_SELECT_DROPDOWN);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_UI.MODEL_SELECT_DROPDOWN);
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, this.PROMPT_WITH_STYLE_EVENTS.MODEL_SELECT_DROPDOWN);
       }
       if (e.key === 'Escape' || e.code === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -374,12 +374,7 @@ export class UnityWidget {
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
     if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
-    const btn = createTag('a', {
-      href: '#',
-      class: `unity-act-btn ${cls}`,
-      'daa-ll': this.PROMPT_WITH_STYLE_UI.GENERATE_CTA,
-      'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}`,
-    });
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': this.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
     this.genBtn = btn;
@@ -602,7 +597,7 @@ async function createPromptInputShell(widgetInstance, el, styles) {
       promptEngagedTracked = true;
       widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
         detail: {
-          adobeEventName: widgetInstance.PROMPT_WITH_STYLE_UI.ENTER_PROMPT,
+          adobeEventName: widgetInstance.PROMPT_WITH_STYLE_EVENTS.ENTER_PROMPT,
           splunkData: { action: 'enter-prompt' },
         },
       }));
@@ -635,7 +630,7 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     genBtn = createTag('a', {
       href: '#',
       class: 'unity-act-btn gen-btn unity-slf-gen-btn',
-      'daa-ll': widgetInstance.PROMPT_WITH_STYLE_UI.GENERATE_CTA,
+      'daa-ll': widgetInstance.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA,
       'aria-label': 'Generate',
     });
     genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));
@@ -810,7 +805,7 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
     import('../../../scripts/analytics.js'),
     widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
   ]);
-  widgetInstance.PROMPT_WITH_STYLE_UI = analyticsMod.PROMPT_WITH_STYLE_UI;
+  widgetInstance.PROMPT_WITH_STYLE_EVENTS = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
   const { widgetWrap, inpField } = await createPromptInputShell(widgetInstance, el, styles);
   const { styleContainer, styleItems, previewArea } = createStylePreviewSection(
