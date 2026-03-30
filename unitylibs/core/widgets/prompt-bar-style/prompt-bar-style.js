@@ -598,7 +598,7 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
   const inpWrap = createTag('div', { class: 'inp-wrap' });
   const labelText = promptLabelText || 'Prompt';
-  const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label unity-slf-prompt-label' }, labelText);
+  const promptLabel = createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, labelText);
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
@@ -672,8 +672,8 @@ async function createPromptInputShell(widgetInstance, el, styles) {
 function createStylePreviewSection(styles, previewRows, styleSectionHeadingText) {
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
-    'h4',
-    { class: 'unity-slf-styles-heading' },
+    'label',
+    { class: 'unity-slf-copy-label unity-slf-styles-heading' },
     styleSectionHeadingText || 'Choose a style',
   );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
