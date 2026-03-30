@@ -673,10 +673,7 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
     'label',
-    {
-      id: 'unity-slf-style-list-heading',
-      class: 'unity-slf-copy-label unity-slf-styles-heading',
-    },
+    { class: 'unity-slf-copy-label unity-slf-styles-heading' },
     styleSectionHeadingText || 'Choose a style',
   );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
