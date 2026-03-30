@@ -22,6 +22,15 @@ export default class ActionBinder {
 
   boundOutsideClickHandler = this.handleOutsideClick.bind(this);
 
+  sendFireflyAnalytics = async (ev) => {
+    const { adobeEventName, eventName, splunkData } = ev.detail ?? {};
+    const splunkEventName = adobeEventName ?? eventName;
+    if (!splunkEventName) return;
+    await this.initAnalytics();
+    if (adobeEventName) this.sendAdobeAnalytics?.(adobeEventName);
+    this.logAnalytics(splunkEventName, splunkData ?? {});
+  };
+
   constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}) {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -52,6 +61,9 @@ export default class ActionBinder {
     this.errorToastEl = null;
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF' };
     this.sendAnalyticsToSplunk = null;
+    this.sendAdobeAnalytics = null;
+    this.analyticsModule = null;
+    this.widgetWrap.addEventListener('firefly-analytics', this.sendFireflyAnalytics);
     this.addAccessibility();
     this.initAction();
     this.verb = this.getVerbFromDom();
@@ -60,7 +72,7 @@ export default class ActionBinder {
   getNetworkUtils = async () => {
     if (this.networkUtils) return this.networkUtils;
     const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
-    return (this.networkUtils = new NetworkUtils());
+  return (this.networkUtils = new NetworkUtils());
   };
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -218,6 +230,10 @@ export default class ActionBinder {
 
   getSelectedModelVersion = () => this.widgetWrap.getAttribute('data-selected-model-version');
 
+  getSelectedModelDisplayName = () => this.widgetWrap.getAttribute('data-selected-model-name')
+    || this.block.querySelector('.models-container .selected-model .model-name')?.textContent?.trim()
+    || '';
+
   validateInput(query) {
     if (query.length > 750) {
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
@@ -238,6 +254,16 @@ export default class ActionBinder {
     return { name, promptPhrase };
   }
 
+  getSelectedStyleIndexOneBased() {
+    const root = this.block;
+    if (!root?.classList?.contains('unity-prompt-bar-style')) return null;
+    const items = Array.from(root.querySelectorAll('.unity-slf-style-list .unity-slf-style-item'));
+    const selected = root.querySelector('.unity-slf-style-item.selected');
+    if (!selected || items.length === 0) return null;
+    const idx = items.indexOf(selected);
+    return idx >= 0 ? idx + 1 : null;
+  }
+
   getVerbFromDom() {
     const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
     if (!verbEl) return undefined;
@@ -246,8 +272,11 @@ export default class ActionBinder {
   }
 
   async initAnalytics() {
-    if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+    if (this.analyticsModule) return;
+    this.analyticsModule = await import(`${getUnityLibs()}/scripts/analytics.js`);
+    this.sendAdobeAnalytics = this.analyticsModule.sendAdobeAnalytics;
+    if (this.workflowCfg.targetCfg.sendSplunkAnalytics) {
+      this.sendAnalyticsToSplunk = this.analyticsModule.default;
     }
   }
 
@@ -257,7 +286,7 @@ export default class ActionBinder {
       ...(workflowStep && { workflowStep }),
       ...(typeof statusCode !== 'undefined' && { statusCode }),
     };
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb}, `${unityConfig.apiEndPoint}/log`, true);
+    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
   }
 
   async generateContent() {
@@ -278,7 +307,20 @@ export default class ActionBinder {
     const stylePayload = this.getSelectedStylePayloadForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const eventData = { assetId: this.id, verb: selectedVerbType, action };
-    this.logAnalytics('generate', eventData, { workflowStep: 'start' });
+    this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, eventData, { workflowStep: 'start' });
+    const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
+    if (styleIndexOneBased != null) {
+      const { styleSelectionGenerateEventName } = this.analyticsModule;
+      const styleEventName = styleSelectionGenerateEventName(styleIndexOneBased);
+      this.sendAdobeAnalytics?.(styleEventName);
+      this.logAnalytics(styleEventName, { ...eventData, styleIndex: styleIndexOneBased });
+    }
+    const modelName = this.getSelectedModelDisplayName();
+    if (modelName) {
+      const modelGenEvent = `Generate ${modelName}|UnityWidget`;
+      this.sendAdobeAnalytics?.(modelGenEvent);
+      this.logAnalytics(modelGenEvent, { ...eventData, action: modelName });
+    }
     const validation = this.validateInput(this.query);
     if (!validation.isValid) {
       this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
@@ -306,7 +348,7 @@ export default class ActionBinder {
         unityConfig.apiKey,
         {
           'x-unity-product': this.workflowCfg.productName,
-          'x-unity-action': `${action}-${this.getSelectedVerbType()}Generation`,
+          'x-unity-action': `${action}-${this.getSelectedVerbType()}Generation-${this.verb}`,
         },
         { body: JSON.stringify(payload) },
       );
@@ -362,6 +404,7 @@ export default class ActionBinder {
   handleKeyDown(ev) {
     if (!ActionBinder.VALID_KEYS.includes(ev.key)) return;
     if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && ev.target?.classList?.contains('inp-field')) return;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
