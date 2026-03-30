@@ -2231,7 +2231,7 @@ describe('Firefly Workflow Tests', () => {
       expect(testActionBinder.sendAnalyticsToSplunk).to.be.null;
     });
 
-    describe('boundFireflyAnalytics', () => {
+    describe('sendFireflyAnalytics', () => {
       let initStub;
       let sendAdobeStub;
       let logStub;
@@ -2252,8 +2252,8 @@ describe('Firefly Workflow Tests', () => {
       });
 
       it('should return early when neither adobeEventName nor eventName is present', async () => {
-        await testActionBinder.boundFireflyAnalytics(new CustomEvent('firefly-analytics'));
-        await testActionBinder.boundFireflyAnalytics(new CustomEvent('firefly-analytics', { detail: {} }));
+        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics'));
+        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics', { detail: {} }));
         expect(initStub.called).to.be.false;
         expect(sendAdobeStub.called).to.be.false;
         expect(logStub.called).to.be.false;
@@ -2264,7 +2264,7 @@ describe('Firefly Workflow Tests', () => {
           adobeEventName: 'Module Picker|UnityWidget',
           splunkData: { action: 'open' },
         };
-        await testActionBinder.boundFireflyAnalytics(new CustomEvent('firefly-analytics', { detail }));
+        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics', { detail }));
         expect(initStub.calledOnce).to.be.true;
         expect(sendAdobeStub.calledOnceWithExactly('Module Picker|UnityWidget')).to.be.true;
         expect(logStub.calledOnceWithExactly('Module Picker|UnityWidget', { action: 'open' })).to.be.true;
@@ -2272,14 +2272,14 @@ describe('Firefly Workflow Tests', () => {
 
       it('should log Splunk with eventName and skip sendAdobeAnalytics when only eventName is set', async () => {
         const detail = { eventName: 'Legacy Splunk|UnityWidget', splunkData: { action: 'x' } };
-        await testActionBinder.boundFireflyAnalytics(new CustomEvent('firefly-analytics', { detail }));
+        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics', { detail }));
         expect(initStub.calledOnce).to.be.true;
         expect(sendAdobeStub.called).to.be.false;
         expect(logStub.calledOnceWithExactly('Legacy Splunk|UnityWidget', { action: 'x' })).to.be.true;
       });
 
       it('should pass empty object to logAnalytics when splunkData is omitted', async () => {
-        await testActionBinder.boundFireflyAnalytics(new CustomEvent('firefly-analytics', {
+        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics', {
           detail: { adobeEventName: 'Enter Prompt|UnityWidget' },
         }));
         expect(logStub.calledOnceWithExactly('Enter Prompt|UnityWidget', {})).to.be.true;

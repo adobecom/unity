@@ -22,7 +22,7 @@ export default class ActionBinder {
 
   boundOutsideClickHandler = this.handleOutsideClick.bind(this);
 
-  boundFireflyAnalytics = async (ev) => {
+  sendFireflyAnalytics = async (ev) => {
     const { adobeEventName, eventName, splunkData } = ev.detail ?? {};
     const splunkEventName = adobeEventName ?? eventName;
     if (!splunkEventName) return;
@@ -63,7 +63,7 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
     this.sendAdobeAnalytics = null;
     this.analyticsModule = null;
-    this.widgetWrap.addEventListener('firefly-analytics', this.boundFireflyAnalytics);
+    this.widgetWrap.addEventListener('firefly-analytics', this.sendFireflyAnalytics);
     this.addAccessibility();
     this.initAction();
     this.verb = this.getVerbFromDom();

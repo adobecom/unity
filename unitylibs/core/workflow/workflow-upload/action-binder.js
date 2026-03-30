@@ -97,9 +97,11 @@ export default class ActionBinder {
   }
 
   getAdditionalHeaders() {
+    const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
+    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
-      'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+      'x-unity-action': xUnityAction,
     };
   }
 
