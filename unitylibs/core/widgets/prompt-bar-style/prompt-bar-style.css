@@ -180,13 +180,13 @@
   scrollbar-color: #888 transparent;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .unity-slf-copy-label {
   font-size: var(--type-body-xs-size);
   font-weight: 400;
   margin-inline-start: 2px;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap:not(.verb-options) .ex-unity-widget .inp-wrap .inp-field-label {
+.unity-enabled .interactive-area .ex-unity-wrap:not(.verb-options) .ex-unity-widget .inp-wrap .unity-slf-copy-label {
   width: 100%;
   text-align: start;
 }
@@ -203,7 +203,7 @@
 
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field,
 .unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder,
-.unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label {
+.unity-enabled .interactive-area.light .ex-unity-wrap .ex-unity-widget .inp-wrap .unity-slf-copy-label {
   color: #fff;
 }
 
@@ -1053,8 +1053,7 @@
   transform: translateY(-50%);
 }
 
-.unity-prompt-bar-style .unity-slf-prompt-label,
-.unity-prompt-bar-style .unity-slf-styles-heading {
+.unity-prompt-bar-style .unity-slf-copy-label {
   color: #7d7d7d;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
   font-size: var(--Font-size-100, 14px);
@@ -1076,10 +1075,6 @@
 .unity-prompt-bar-style .inp-field {
   min-height: 100px;
   resize: vertical;
-}
-
-.unity-prompt-bar-style .unity-slf-styles-heading {
-  margin: 0;
 }
 
 .unity-prompt-bar-style .unity-slf-style-list {
@@ -1240,7 +1235,7 @@
   align-items: center;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field-label,
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .unity-slf-copy-label,
 .unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
   grid-column: 1 / -1;
 }
