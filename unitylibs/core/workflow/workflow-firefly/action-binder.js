@@ -322,11 +322,9 @@ export default class ActionBinder {
     this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, eventData, { workflowStep: 'start' });
     if (styleEventName) {
       this.sendAdobeAnalytics?.(styleEventName);
-      this.logAnalytics(styleEventName, eventData);
     }
     if (modelName && modelGenEventName) {
       this.sendAdobeAnalytics?.(modelGenEventName);
-      this.logAnalytics(modelGenEventName, { ...eventData, action: modelName });
     }
     const validation = this.validateInput(this.query);
     if (!validation.isValid) {
