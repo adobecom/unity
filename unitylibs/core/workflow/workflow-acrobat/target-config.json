@@ -70,7 +70,7 @@
     "actionMap": {
       ".foreground": "upload",
       "#file-upload": "upload"
-    }
+    },
     "verb-marquee": {
     "selector": ".foreground",
     "source": ".foreground .verb-marquee-container",
