@@ -671,11 +671,10 @@ async function createPromptInputShell(widgetInstance, el, styles) {
 
 function createStylePreviewSection(styles, previewRows, styleSectionHeadingText) {
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
-  const styleListHeadingId = 'unity-slf-style-list-heading';
   const stylesHeading = createTag(
     'label',
     {
-      id: styleListHeadingId,
+      id: 'unity-slf-style-list-heading',
       class: 'unity-slf-copy-label unity-slf-styles-heading',
     },
     styleSectionHeadingText || 'Choose a style',
