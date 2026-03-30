@@ -97,9 +97,11 @@ export default class ActionBinder {
   }
 
   getAdditionalHeaders() {
+    const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
+    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
-      'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+      'x-unity-action': xUnityAction,
     };
   }
 
@@ -343,7 +345,7 @@ export default class ActionBinder {
 
   async initAnalytics() {
     if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/analytics.js`)).default;
     }
   }
 
