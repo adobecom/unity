@@ -71,5 +71,18 @@
       ".foreground": "upload",
       "#file-upload": "upload"
     }
+    "verb-marquee": {
+    "selector": ".foreground",
+    "source": ".foreground .verb-marquee-container",
+    "target": ".foreground .verb-marquee-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".foreground": "upload",
+      "#file-upload": "upload"
+    }
   }
 }
