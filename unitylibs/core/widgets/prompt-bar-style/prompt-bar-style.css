@@ -888,7 +888,7 @@
 }
 
 .unity-prompt-bar-style .unity-slf-preview {
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   background: rgb(0 0 0 / 20%);
 }
