@@ -3,8 +3,8 @@ export const [setLibs, getLibs] = (() => {
   return [
     (prodLibs, location) => {
       libs = (() => {
-        const { hostname, search } = location || window.location;
-        if (hostname.endsWith('acrobat.adobe.com')) return '/dc-shared/libs';
+        const { hostname, origin, search } = location || window.location;
+        if (hostname.endsWith('acrobat.adobe.com')) return `${origin}/dc-shared/libs`;
         if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
