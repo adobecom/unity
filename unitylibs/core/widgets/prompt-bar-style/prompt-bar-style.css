@@ -1054,7 +1054,7 @@
 }
 
 .unity-prompt-bar-style .unity-slf-copy-label {
-  color: #7d7d7d;
+  color: #d1d1d1;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
   font-size: var(--Font-size-100, 14px);
   font-style: normal;
@@ -1157,7 +1157,7 @@
 .unity-prompt-bar-style .unity-slf-style-label {
   flex-shrink: 0;
   overflow: hidden;
-  color: #7D7D7D;
+  color: #d1d1d1;
   text-overflow: ellipsis;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
   font-size: 12px;
