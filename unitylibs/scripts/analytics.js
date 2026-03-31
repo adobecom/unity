@@ -28,6 +28,7 @@ function getSessionID() {
 function createPayloadForSplunk(metaData) {
   const {
     eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation,
+    styleEventName, modelGenEventName,
   } = metaData;
   return {
     event: {
@@ -39,7 +40,12 @@ function createPayloadForSplunk(metaData) {
       ...(statusCode !== undefined && { statusCode }),
       ...(workflowStep && { workflowStep }),
     },
-    content: { ...(assetId && { assetId }), ...(fileMetaData && { fileMetaData }) },
+    content: {
+      ...(assetId && { assetId }),
+      ...(fileMetaData && { fileMetaData }),
+      ...(styleEventName && { style: styleEventName }),
+      ...(modelGenEventName && { model: modelGenEventName }),
+    },
     source: {
       user_agent: navigator.userAgent,
       lang: document.documentElement.lang,

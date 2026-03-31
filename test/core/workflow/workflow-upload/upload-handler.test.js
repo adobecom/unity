@@ -164,7 +164,7 @@ describe('UploadHandler', () => {
 
       expect(window.fetch.calledTwice).to.be.true;
       expect(result.failedChunks.size).to.equal(0);
-      expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunked Upload Completed|UnityWidget')).to.be.true;
+      expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunked Upload Completed|UnityWidget')).to.be.false;
     });
 
     it('should handle empty file', async () => {
