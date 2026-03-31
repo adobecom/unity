@@ -1302,3 +1302,22 @@
 .unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
   width: fit-content;
 }
+
+.hero-marquee:has(+ .unity-prompt-bar-style) .foreground .copy h1 {
+  font-weight: 800;
+  line-height: 98%;
+}
+
+@media screen and (max-width: 1199px) {
+  .hero-marquee:has(+ .unity-prompt-bar-style) .foreground .copy h1 {
+    font-size: 40px;
+    letter-spacing: -1.8px;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .hero-marquee:has(+ .unity-prompt-bar-style) .foreground .copy h1 {
+    font-size: 64px;
+    letter-spacing: -2.88px;
+  }
+}
