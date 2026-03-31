@@ -218,7 +218,7 @@ export default class ActionBinder {
           });
           throw error;
         }
-        await this.scanImgForSafety(this.assetId, signal);
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);        
         const { createChunkAnalyticsData } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
         const totalChunks = Math.ceil(file.size / blocksize);
         this.logAnalyticsinSplunk(
