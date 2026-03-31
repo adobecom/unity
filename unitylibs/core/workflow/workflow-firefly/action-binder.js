@@ -306,21 +306,22 @@ export default class ActionBinder {
     const operationVerb = this.getVerbFromDom();
     const stylePayload = this.getSelectedStylePayloadForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
-    const eventData = { assetId: this.id, verb: selectedVerbType, action };
-    this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, eventData, { workflowStep: 'start' });
     const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
-    if (styleIndexOneBased != null) {
-      const { styleSelectionGenerateEventName } = this.analyticsModule;
-      const styleEventName = styleSelectionGenerateEventName(styleIndexOneBased);
-      this.sendAdobeAnalytics?.(styleEventName);
-      this.logAnalytics(styleEventName, { ...eventData, styleIndex: styleIndexOneBased });
-    }
     const modelName = this.getSelectedModelDisplayName();
-    if (modelName) {
-      const modelGenEvent = `Generate ${modelName}|UnityWidget`;
-      this.sendAdobeAnalytics?.(modelGenEvent);
-      this.logAnalytics(modelGenEvent, { ...eventData, action: modelName });
-    }
+    const styleEventName = styleIndexOneBased != null
+      ? this.analyticsModule.styleSelectionGenerateEventName(styleIndexOneBased)
+      : undefined;
+    const modelGenEventName = modelName ? `Generate ${modelName}|UnityWidget` : undefined;
+    const eventData = {
+      assetId: this.id,
+      verb: selectedVerbType,
+      action,
+      ...(styleEventName && { styleEventName }),
+      ...(modelGenEventName && { modelGenEventName }),
+    };
+    this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, eventData, { workflowStep: 'start' });
+    if (styleEventName) this.sendAdobeAnalytics?.(styleEventName);
+    if (modelName && modelGenEventName) this.sendAdobeAnalytics?.(modelGenEventName);
     const validation = this.validateInput(this.query);
     if (!validation.isValid) {
       this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
