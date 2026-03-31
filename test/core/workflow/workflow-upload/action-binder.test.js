@@ -6,7 +6,8 @@ import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 setUnityLibs('/unitylibs');
 
 window.adobeIMS = {
-  getAccessToken: () => ({ token: 'token', expire: { valueOf: () => Date.now() + (5 * 60 * 1000) } }),
+  // Expire well beyond getImsToken's 5-minute refresh window so finalize (scan) does not trigger token refresh.
+  getAccessToken: () => ({ token: 'token', expire: { valueOf: () => Date.now() + (60 * 60 * 1000) } }),
   adobeid: { locale: 'en' },
 };
 
@@ -254,6 +255,14 @@ describe('Unity Upload Block', () => {
           return Promise.resolve({
             status: 200,
             ok: true,
+            headers: new Headers({ 'Content-Length': '0' }),
+          });
+        }
+        if (options && options.method === 'POST') {
+          return Promise.resolve({
+            status: 200,
+            ok: true,
+            headers: new Headers({ 'Content-Length': '0' }),
           });
         }
         return originalFetch(url, options);
@@ -920,7 +929,7 @@ describe('Unity Upload Block', () => {
       unityEl.appendChild(cgenElement);
 
       actionBinder.serviceHandler = {
-        postCallToService: async () => ({ status: 200 }),
+        postCallToService: async () => ({ id: 'test-asset-id', href: 'https://test-url.com' }),
         showErrorToast: () => {},
       };
 
@@ -945,6 +954,14 @@ describe('Unity Upload Block', () => {
           return Promise.resolve({
             status: 200,
             ok: true,
+            headers: new Headers({ 'Content-Length': '0' }),
+          });
+        }
+        if (options && options.method === 'POST') {
+          return Promise.resolve({
+            status: 200,
+            ok: true,
+            headers: new Headers({ 'Content-Length': '0' }),
           });
         }
         return originalFetch(url, options);
