@@ -1316,6 +1316,19 @@
 }
 
 @media screen and (min-width: 1200px) {
+  .hero-marquee:has(+ .unity-prompt-bar-style) > .foreground {
+    max-width: 1000px;
+    min-width: unset;
+  }
+
+  .hero-marquee:has(+ .unity-prompt-bar-style) .foreground .main-copy {
+    align-items: center;
+  }
+
+  .hero-marquee:has(+ .unity-prompt-bar-style) .foreground .main-copy p {
+    max-width: 800px;
+  }
+
   .hero-marquee:has(+ .unity-prompt-bar-style) .foreground .copy h1 {
     font-size: 64px;
     letter-spacing: -1.92px;
