@@ -86,6 +86,7 @@ export default class ActionBinder {
     this.assetId = null;
     this.filesData = {};
     this.verb = this.getVerbFromDom();
+    this.uploadAbortController = null;
   }
 
   getApiConfig() {
@@ -97,9 +98,11 @@ export default class ActionBinder {
   }
 
   getAdditionalHeaders() {
+    const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
+    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
-      'x-unity-action': this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+      'x-unity-action': xUnityAction,
     };
   }
 
@@ -115,6 +118,7 @@ export default class ActionBinder {
 
   async cancelUploadOperation() {
     try {
+      this.uploadAbortController?.abort();
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId: this.assetId });
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
@@ -142,11 +146,12 @@ export default class ActionBinder {
     return files;
   }
 
-  async uploadImgToUnity(storageUrl, id, blobData, fileType) {
+  async uploadImgToUnity(storageUrl, id, blobData, fileType, signal) {
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
       body: blobData,
+      ...(signal && { signal }),
     };
     const response = await fetch(storageUrl, uploadOptions);
     if (response.status !== 200) {
@@ -155,12 +160,16 @@ export default class ActionBinder {
       error.status = response.status;
       throw error;
     }
-    this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
   }
 
-  async scanImgForSafety(assetId) {
+  async scanImgForSafety(assetId, signal) {
+    if (signal?.aborted) {
+      const err = new Error('Operation aborted');
+      err.name = 'AbortError';
+      throw err;
+    }
     const assetData = { assetId, targetProduct: this.workflowCfg.productName };
-    const optionsBody = { body: JSON.stringify(assetData) };
+    const optionsBody = { body: JSON.stringify(assetData), ...(signal && { signal }) };
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.endPoint.acmpCheck,
       optionsBody,
@@ -168,7 +177,12 @@ export default class ActionBinder {
       false,
     );
     if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
-      setTimeout(() => { this.scanImgForSafety(assetId); }, 1000);
+      if (signal?.aborted) {
+        const err = new Error('Operation aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
+      setTimeout(() => { this.scanImgForSafety(assetId, signal); }, 1000);
     }
   }
 
@@ -179,6 +193,8 @@ export default class ActionBinder {
       size: file.size,
       format: file.type,
     };
+    this.uploadAbortController = new AbortController();
+    const { signal } = this.uploadAbortController;
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.apiConfig.endPoint.assetUpload,
@@ -188,10 +204,10 @@ export default class ActionBinder {
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
+      const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
+      const uploadHandler = new UploadHandler(this, this.serviceHandler);
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
-        const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
-        const uploadHandler = new UploadHandler(this, this.serviceHandler);
-        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize);
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal);
         if (failedChunks && failedChunks.size > 0) {
           const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
           error.status = 504;
@@ -202,13 +218,29 @@ export default class ActionBinder {
           });
           throw error;
         }
-        await uploadHandler.scanImgForSafetyWithRetry(this.assetId);
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);        
+        const { createChunkAnalyticsData } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
+        const totalChunks = Math.ceil(file.size / blocksize);
+        this.logAnalyticsinSplunk(
+          'Chunked Upload Completed|UnityWidget',
+          createChunkAnalyticsData('Chunked Upload Completed|UnityWidget', {
+            assetId: this.assetId,
+            chunkCount: totalChunks,
+            totalFileSize: file.size,
+            fileType: file.type,
+          }),
+        );
       } else {
-        await this.uploadImgToUnity(href, id, file, file.type);
-        this.scanImgForSafety(this.assetId);
+        await this.uploadImgToUnity(href, id, file, file.type, signal);
+        await this.scanImgForSafety(this.assetId, signal);
+        this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
       }
       return true;
     } catch (e) {
+      if (this.uploadAbortController?.signal.aborted || e.name === 'AbortError') {
+        window.lana?.log(`Message: Upload aborted, Error: ${e.message}`, this.lanaOptions);
+        return false;
+      }
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
       await this.transitionScreen.showSplashScreen();
@@ -343,7 +375,7 @@ export default class ActionBinder {
 
   async initAnalytics() {
     if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
-      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/splunk-analytics.js`)).default;
+      this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/analytics.js`)).default;
     }
   }
 

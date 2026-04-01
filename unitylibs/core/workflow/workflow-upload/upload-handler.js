@@ -76,17 +76,7 @@ export default class UploadHandler {
     );
     const { failedChunks, attemptMap } = result;
     const totalChunks = Math.ceil(file.size / blockSize);
-    if (failedChunks.size === 0) {
-      this.actionBinder.logAnalyticsinSplunk(
-        'Chunked Upload Completed|UnityWidget',
-        createChunkAnalyticsData('Chunked Upload Completed|UnityWidget', {
-          assetId: this.actionBinder.assetId,
-          chunkCount: totalChunks,
-          totalFileSize: file.size,
-          fileType: file.type,
-        }),
-      );
-    } else {
+    if (failedChunks.size > 0) {
       this.actionBinder.logAnalyticsinSplunk(
         'Chunked Upload Failed|UnityWidget',
         createChunkAnalyticsData('Chunked Upload Failed|UnityWidget', {
@@ -100,9 +90,14 @@ export default class UploadHandler {
     return { failedChunks, attemptMap };
   }
 
-  async scanImgForSafetyWithRetry(assetId) {
+  async scanImgForSafetyWithRetry(assetId, signal = null) {
     const assetData = { assetId, targetProduct: this.actionBinder.workflowCfg.productName };
-    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.actionBinder.getAdditionalHeaders() || {}, { body: JSON.stringify(assetData) });
+    const postOpts = await getApiCallOptions(
+      'POST',
+      unityConfig.apiKey,
+      this.actionBinder.getAdditionalHeaders() || {},
+      { body: JSON.stringify(assetData), ...(signal && { signal }) },
+    );
     const retryConfig = {
       retryType: 'polling',
       retryParams: {
