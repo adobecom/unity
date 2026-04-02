@@ -27,10 +27,8 @@ async function loadErrorMessages(verb) {
   let baseUrl;
   if (origin.includes('.aem.') || origin.includes('.hlx.')) {
     baseUrl = `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`;
-  } else if (origin === 'https://stage.acrobat.adobe.com') {
-    baseUrl = 'https://milo.stage.adobe.com';
-  } else if (origin === 'https://acrobat.adobe.com') {
-    baseUrl = 'https://milo.adobe.com';
+  } else if (origin.endsWith('acrobat.adobe.com')) {
+    baseUrl = `${origin}/dc-shared`;
   } else {
     baseUrl = origin;
   }
