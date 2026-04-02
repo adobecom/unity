@@ -672,23 +672,25 @@ async function createPromptInputShell(widgetInstance, el, styles) {
 function createStylePreviewSection(styles, previewRows, styleSectionHeadingText) {
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
-    'label',
+    'p',
     { class: 'unity-slf-copy-label unity-slf-styles-heading' },
     styleSectionHeadingText || 'Choose a style',
   );
-  const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
+  const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants', 'aria-orientation': 'horizontal' });
   const styleItems = styles.map((style, i) => {
+    const optionLabel = (style.label && String(style.label).trim()) || `Style ${i + 1}`;
     const li = createTag('li', {
       class: `unity-slf-style-item${i === 0 ? ' selected' : ''}`,
       role: 'option',
       tabindex: '0',
       'aria-selected': i === 0 ? 'true' : 'false',
+      'aria-label': optionLabel,
     });
     if (style.styleDescription) {
       li.setAttribute('data-style-connector-suffix', style.styleDescription);
     }
     li.append(style.picture.cloneNode(true));
-    li.append(createTag('span', { class: 'unity-slf-style-label' }, style.label));
+    li.append(createTag('span', { class: 'unity-slf-style-label', 'aria-hidden': 'true' }, style.label));
     return li;
   });
   styleItems.forEach((item) => styleList.append(item));
@@ -698,12 +700,12 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
   applyAuthoringPreviewGridLoadingPriorities(previewRows, 0, initialPreviewCol);
   const firstPic = previewForViewport(previewRows[0], initialPreviewCol);
   if (firstPic) previewArea.replaceChildren(firstPic);
-  return { styleContainer, styleItems, previewArea };
+  return { styleContainer, styleItems, previewArea, styleList };
 }
 
 const EMPTY_PROMPT_RESTORE_MS = 10000;
 
-function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea) {
+function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea, styleList) {
   let currentStyleIdx = 0;
   let emptyPromptRestoreTimerId = null;
   function setPreviewPicture(pic) {
@@ -752,13 +754,48 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
       scheduleEmptyPromptRestoreIfStillEmpty();
     }
   }
+
+  const lastIdx = styleItems.length - 1;
+  function focusStyleOption(idx) {
+    const el = styleItems[idx];
+    if (el) el.focus();
+  }
+  styleList.addEventListener('keydown', (e) => {
+    const fromIdx = styleItems.indexOf(/** @type {HTMLElement} */ (e.target));
+    if (fromIdx < 0) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = fromIdx >= lastIdx ? 0 : fromIdx + 1;
+      focusStyleOption(next);
+      return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const next = fromIdx <= 0 ? lastIdx : fromIdx - 1;
+      focusStyleOption(next);
+      return;
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      focusStyleOption(0);
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      focusStyleOption(lastIdx);
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectStyle(fromIdx);
+    }
+  });
+
   styleItems.forEach((item, i) => {
-    item.addEventListener('click', () => selectStyle(i));
-    item.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        selectStyle(i);
-      }
+    item.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      selectStyle(i);
+      item.focus();
     });
   });
   inpField.addEventListener('input', () => {
@@ -826,12 +863,8 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
   promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
   const { widgetWrap, inpField } = await createPromptInputShell(widgetInstance, el, styles);
-  const { styleContainer, styleItems, previewArea } = createStylePreviewSection(
-    styles,
-    previewRows,
-    styleSectionHeadingText,
-  );
-  const disconnectInteractivity = attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea);
+  const { styleContainer, styleItems, previewArea, styleList } = createStylePreviewSection(styles, previewRows, styleSectionHeadingText);
+  const disconnectInteractivity = attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea, styleList);
   insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
   const root = widgetInstance.promptBarStyleRoot;
   let removalObserver = null;
