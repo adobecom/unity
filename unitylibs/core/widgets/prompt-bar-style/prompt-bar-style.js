@@ -6,6 +6,8 @@ import {
   defineDeviceByScreenSize,
 } from '../../../scripts/utils.js';
 
+let promptWithStyleEvents = null;
+
 export class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
@@ -22,6 +24,7 @@ export class UnityWidget {
     this.selectedModelId = '';
     this.selectedModelText = '';
     this.selectedModelVersion = '';
+    this.selectedModelName = '';
     this.promptItems = [];
     this.genBtn = null;
     this.hasPromptSuggestions = false;
@@ -71,14 +74,12 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
       }
       if (e.key === 'Escape' || e.keyCode === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -133,6 +134,21 @@ export class UnityWidget {
     }
   }
 
+  showVerbOrModelMenuAndTrackOpen(selectedElement, adobeEventName) {
+    const menuContainer = selectedElement.parentElement;
+    const wasOpen = menuContainer.classList.contains('show-menu');
+    this.hidePromptDropdown(selectedElement);
+    this.showVerbMenu(selectedElement);
+    if (!wasOpen) {
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+        detail: {
+          adobeEventName,
+          splunkData: { action: 'open' },
+        },
+      }));
+    }
+  }
+
   hidePromptDropdown(exceptElement = null) {
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
     if (dropdown && !dropdown.classList.contains('hidden')) {
@@ -162,16 +178,15 @@ export class UnityWidget {
         item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
       });
     }
-    if (this.genBtn) {
-      this.genBtn.setAttribute('daa-ll', `Generate--${verb}`);
-    }
   }
 
   clearSelectedModelState() {
     this.selectedModelId = '';
+    this.selectedModelName = '';
     this.selectedModelVersion = '';
     this.selectedModelModule = '';
     this.selectedModelText = '';
+    this.widgetWrap?.removeAttribute('data-selected-model-name');
   }
 
   handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
@@ -191,6 +206,7 @@ export class UnityWidget {
       link.setAttribute('aria-selected', 'true');
       if (modelList) {
         this.selectedModelId = link.getAttribute('data-model-id');
+        this.selectedModelName = link.textContent.trim();
         this.selectedModelVersion = link.getAttribute('data-model-version');
         this.selectedModelModule = link.getAttribute('data-model-module');
         this.selectedModelText = link.textContent.trim();
@@ -232,8 +248,13 @@ export class UnityWidget {
         } else this.clearSelectedModelState();
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-      if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
-      else this.widgetWrap.removeAttribute('data-selected-model-id');
+      if (this.selectedModelId) {
+        this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+        this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName || '');
+      } else {
+        this.widgetWrap.removeAttribute('data-selected-model-id');
+        this.widgetWrap.removeAttribute('data-selected-model-name');
+      }
       if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
       else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
@@ -254,7 +275,9 @@ export class UnityWidget {
   createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
     const fragment = document.createDocumentFragment();
     items.forEach((item, idx) => {
-      const { name, type, icon, module, id, version } = item;
+      const {
+        name, type, icon, module, id, version,
+      } = item;
       const listItem = createTag('li', {
         class: 'verb-item',
         role: 'presentation',
@@ -285,6 +308,21 @@ export class UnityWidget {
       if (!link) return;
       this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
     });
+    listContainer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer?.classList.contains('show-menu')) return;
+      const links = listContainer.querySelectorAll('.verb-link');
+      if (!links.length) return;
+      const active = document.activeElement;
+      const idx = [...links].findIndex((a) => a === active || a.contains(active));
+      if (idx < 0) return;
+      const atStart = idx === 0;
+      const atEnd = idx === links.length - 1;
+      if ((e.shiftKey && atStart) || (!e.shiftKey && atEnd)) {
+        this.closeVerbOrModelMenu(selectedElement);
+      }
+    });
   }
 
   modelDropdown() {
@@ -297,6 +335,7 @@ export class UnityWidget {
     const selectedModelType = models[0].id;
     const selectedModelVersion = models[0].version;
     const selectedModelModule = models[0].module;
+    const selectedModelName = models[0].name.trim();
     const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
     const selectedElement = createTag('button', {
       class: 'selected-model',
@@ -313,8 +352,10 @@ export class UnityWidget {
     this.selectedModelModule = selectedModelModule;
     this.selectedModelId = selectedModelType;
     this.selectedModelVersion = selectedModelVersion;
+    this.selectedModelName = selectedModelName;
     this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName);
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
@@ -330,14 +371,12 @@ export class UnityWidget {
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODEL_SELECT_DROPDOWN);
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODEL_SELECT_DROPDOWN);
       }
       if (e.key === 'Escape' || e.code === 27) {
         this.closeVerbOrModelMenu(selectedElement);
@@ -353,7 +392,7 @@ export class UnityWidget {
     const txt = cfg.innerText?.trim();
     const img = cfg.querySelector('img[src*=".svg"]');
     if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': promptWithStyleEvents.GENERATE_CTA, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
     if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
     this.genBtn = btn;
@@ -472,7 +511,6 @@ export function parsePromptBarStyleAuthoring(root) {
     topDivs = [...inner.children].filter((n) => n.nodeName === 'DIV');
   }
   if (topDivs.length < 2) return { styles: [], previewRows: [] };
-  /* 1. Skip row 0 (config). First later row that contains a <ul> is the style strip. */
   let styleStripRowIndex = -1;
   let ul = /** @type {HTMLUListElement | null} */ (null);
   for (let i = 1; i < topDivs.length; i += 1) {
@@ -560,7 +598,7 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
   const inpWrap = createTag('div', { class: 'inp-wrap' });
   const labelText = promptLabelText || 'Prompt';
-  const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label unity-slf-prompt-label' }, labelText);
+  const promptLabel = createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, labelText);
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
@@ -569,7 +607,21 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     rows: '4',
   });
   inpField.value = styles[0].prompt;
-  inpField.addEventListener('focus', () => widgetInstance.hidePromptDropdown());
+  let promptEngagedTracked = false;
+  inpField.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target !== inpField) return;
+    widgetInstance.hidePromptDropdown();
+    if (!promptEngagedTracked) {
+      promptEngagedTracked = true;
+      widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+        detail: {
+          adobeEventName: promptWithStyleEvents.ENTER_PROMPT,
+          splunkData: { action: 'enter-prompt' },
+        },
+      }));
+    }
+  });
+  inpField.addEventListener('blur', () => { promptEngagedTracked = false; });
   const actionContainer = createTag('div', { class: 'action-container' });
   if (verbParts.length > 1) {
     const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
@@ -583,16 +635,20 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   } else {
     widgetWrap.setAttribute('data-selected-model-id', 'adobe-firefly');
     widgetWrap.setAttribute('data-selected-model-version', 'image3');
+    const fallbackName = Array.isArray(widgetInstance.models)
+      ? widgetInstance.models.find((m) => m.id === 'adobe-firefly' && (!m.version || m.version === 'image3'))?.name?.trim()
+        || widgetInstance.models.find((m) => m.id === 'adobe-firefly')?.name?.trim()
+      : '';
+    if (fallbackName) widgetWrap.setAttribute('data-selected-model-name', fallbackName);
   }
   const actWrap = createTag('div', { class: 'act-wrap' });
   const generateLi = el.querySelector('.icon-generate')?.closest('li');
   let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
   if (!genBtn) {
-    const verbTag = widgetInstance.selectedVerbType || 'image';
     genBtn = createTag('a', {
       href: '#',
       class: 'unity-act-btn gen-btn unity-slf-gen-btn',
-      'daa-ll': `Generate--${verbTag}`,
+      'daa-ll': promptWithStyleEvents.GENERATE_CTA,
       'aria-label': 'Generate',
     });
     genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));
@@ -616,8 +672,8 @@ async function createPromptInputShell(widgetInstance, el, styles) {
 function createStylePreviewSection(styles, previewRows, styleSectionHeadingText) {
   const styleContainer = createTag('div', { class: 'unity-slf-style-container' });
   const stylesHeading = createTag(
-    'h4',
-    { class: 'unity-slf-styles-heading' },
+    'label',
+    { class: 'unity-slf-copy-label unity-slf-styles-heading' },
     styleSectionHeadingText || 'Choose a style',
   );
   const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants' });
@@ -678,13 +734,15 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
     clearEmptyPromptRestoreTimer();
     const prevIdx = currentStyleIdx;
     const prevDefault = styles[prevIdx]?.prompt ?? '';
-    const stillSyncedWithPreviousStyle = inpField.value === prevDefault;
+    const { value } = inpField;
+    const stillSyncedWithPreviousStyle = value === prevDefault;
+    const promptWasCleared = value.trim() === '';
     currentStyleIdx = idx;
     styleItems.forEach((item, i) => {
       item.classList.toggle('selected', i === idx);
       item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
     });
-    if (stillSyncedWithPreviousStyle) {
+    if (stillSyncedWithPreviousStyle || promptWasCleared) {
       inpField.value = styles[idx].prompt;
     }
     const col = currentPreviewColumn();
@@ -760,6 +818,12 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
   const { styles, previewRows } = parsed;
   if (!styles.length) return;
   const { el } = widgetInstance;
+  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
+  const [analyticsMod] = await Promise.all([
+    import('../../../scripts/analytics.js'),
+    widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
+  ]);
+  promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const styleSectionHeadingText = placeholderRowText(el, 'icon-placeholder-style');
   const { widgetWrap, inpField } = await createPromptInputShell(widgetInstance, el, styles);
   const { styleContainer, styleItems, previewArea } = createStylePreviewSection(

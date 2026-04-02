@@ -1,3 +1,21 @@
+export const PROMPT_WITH_STYLE_EVENTS = {
+  ENTER_PROMPT: 'Enter Prompt|UnityWidget',
+  MODEL_SELECT_DROPDOWN: 'Model Select Dropdown|UnityWidget',
+  GENERATE_CTA: 'Click on Generate CTA|UnityWidget',
+  MODULE_PICKER: 'Module Picker Select Dropdown|UnityWidget',
+};
+
+export function styleSelectionGenerateEventName(styleIndexOneBased) {
+  return `Style ${styleIndexOneBased}|UnityWidget`;
+}
+
+export function sendAdobeAnalytics(eventName) {
+  window._satellite?.track('event', { // eslint-disable-line no-underscore-dangle
+    xdm: {},
+    data: { web: { webInteraction: { name: eventName } } },
+  });
+}
+
 function getSessionID() {
   const aToken = window.adobeIMS.getAccessToken();
   const arrayToken = aToken?.token.split('.');
@@ -9,7 +27,8 @@ function getSessionID() {
 
 function createPayloadForSplunk(metaData) {
   const {
-    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation
+    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation,
+    styleEventName, modelGenEventName,
   } = metaData;
   return {
     event: {
@@ -21,7 +40,12 @@ function createPayloadForSplunk(metaData) {
       ...(statusCode !== undefined && { statusCode }),
       ...(workflowStep && { workflowStep }),
     },
-    content: { ...(assetId && { assetId }), ...(fileMetaData && { fileMetaData }) },
+    content: {
+      ...(assetId && { assetId }),
+      ...(fileMetaData && { fileMetaData }),
+      ...(styleEventName && { style: styleEventName }),
+      ...(modelGenEventName && { model: modelGenEventName }),
+    },
     source: {
       user_agent: navigator.userAgent,
       lang: document.documentElement.lang,
