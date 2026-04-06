@@ -31,6 +31,7 @@ export default class TransitionScreen {
   }
 
   updateProgressBar(layer, percentage) {
+    if (!layer) return;
     if (!this.progressText && TransitionScreen.lastProgressText) this.progressText = TransitionScreen.lastProgressText;
     const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
