@@ -119,6 +119,7 @@ export default class ActionBinder {
   async cancelUploadOperation() {
     try {
       this.uploadAbortController?.abort();
+      this.uploadAbortController = null;
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId: this.assetId });
       if (!this.transitionScreen) {
@@ -128,6 +129,7 @@ export default class ActionBinder {
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
       const cancelPromise = Promise.reject(e);
+      cancelPromise.catch(() => {});
       this.promiseStack.unshift(cancelPromise);
     } catch (error) {
       await this.transitionScreen?.showSplashScreen();
@@ -211,6 +213,7 @@ export default class ActionBinder {
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
         const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal);
         if (failedChunks && failedChunks.size > 0) {
+          if (signal.aborted) return false;
           const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
           error.status = 504;
           this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', {
@@ -239,7 +242,7 @@ export default class ActionBinder {
       }
       return true;
     } catch (e) {
-      if (this.uploadAbortController?.signal.aborted || e.name === 'AbortError') {
+      if (signal.aborted || e.name === 'AbortError') {
         window.lana?.log(`Message: Upload aborted, Error: ${e.message}`, this.lanaOptions);
         return false;
       }

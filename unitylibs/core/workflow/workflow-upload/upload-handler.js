@@ -47,15 +47,17 @@ export default class UploadHandler {
       throw error;
     };
     const onError = (error) => {
-      this.logError('Upload Chunk Error|UnityWidget', {
-        chunkNumber,
-        size: blobData.size,
-        fileType,
-        errorData: {
-          code: 'upload-chunk-error',
-          desc: `Exception during chunk ${chunkNumber} upload: ${error.message}`,
-        },
-      }, `Message: Exception raised when uploading chunk to Unity, Error: ${error.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
+      if (error.name !== 'AbortError') {
+        this.logError('Upload Chunk Error|UnityWidget', {
+          chunkNumber,
+          size: blobData.size,
+          fileType,
+          errorData: {
+            code: 'upload-chunk-error',
+            desc: `Exception during chunk ${chunkNumber} upload: ${error.message}`,
+          },
+        }, `Message: Exception raised when uploading chunk to Unity, Error: ${error.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
+      }
       throw error;
     };
     return this.networkUtils.fetchFromServiceWithRetry(storageUrl, uploadOptions, retryConfig, onSuccess, onError);
@@ -76,7 +78,7 @@ export default class UploadHandler {
     );
     const { failedChunks, attemptMap } = result;
     const totalChunks = Math.ceil(file.size / blockSize);
-    if (failedChunks.size > 0) {
+    if (failedChunks.size > 0 && !signal?.aborted) {
       this.actionBinder.logAnalyticsinSplunk(
         'Chunked Upload Failed|UnityWidget',
         createChunkAnalyticsData('Chunked Upload Failed|UnityWidget', {
