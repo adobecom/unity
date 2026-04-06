@@ -676,19 +676,22 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
     { class: 'unity-slf-copy-label unity-slf-styles-heading' },
     styleSectionHeadingText || 'Choose a style',
   );
-  const styleList = createTag('ul', { class: 'unity-slf-style-list', role: 'listbox', 'aria-label': 'Style variants', 'aria-orientation': 'horizontal' });
+  const styleList = createTag('ul', {
+    class: 'unity-slf-style-list',
+    'aria-labelledby': 'unity-slf-styles-heading',
+  });
   const styleItems = styles.map((style, i) => {
     const optionLabel = (style.label && String(style.label).trim()) || `Style ${i + 1}`;
     const li = createTag('li', {
       class: `unity-slf-style-item${i === 0 ? ' selected' : ''}`,
-      role: 'option',
       tabindex: '0',
-      'aria-selected': i === 0 ? 'true' : 'false',
-      'aria-label': optionLabel,
+      'aria-labelledby': optionLabel,
     });
+    if (i === 0) li.setAttribute('aria-current', 'true');
     if (style.styleDescription) {
       li.setAttribute('data-style-connector-suffix', style.styleDescription);
     }
+    li.append(createTag('span', { id: optionLabel, class: 'unity-slf-sr-only' }, optionLabel));
     li.append(style.picture.cloneNode(true));
     li.append(createTag('span', { class: 'unity-slf-style-label', 'aria-hidden': 'true' }, style.label));
     return li;
@@ -742,7 +745,8 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
     currentStyleIdx = idx;
     styleItems.forEach((item, i) => {
       item.classList.toggle('selected', i === idx);
-      item.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+      if (i === idx) item.setAttribute('aria-current', 'true');
+      else item.removeAttribute('aria-current');
     });
     if (stillSyncedWithPreviousStyle || promptWasCleared) {
       inpField.value = styles[idx].prompt;
@@ -761,7 +765,8 @@ function attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleI
     if (el) el.focus();
   }
   styleList.addEventListener('keydown', (e) => {
-    const fromIdx = styleItems.indexOf(/** @type {HTMLElement} */ (e.target));
+    const target = e.target instanceof Element ? e.target.closest('.unity-slf-style-item') : null;
+    const fromIdx = target ? styleItems.indexOf((target)) : -1;
     if (fromIdx < 0) return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
