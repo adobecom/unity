@@ -682,6 +682,7 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
   });
   const styleItems = styles.map((style, i) => {
     const optionLabel = (style.label && String(style.label).trim()) || `Style ${i + 1}`;
+    const imgId = `unity-slf-style-img-${i}`;
     const li = createTag('li', {
       class: `unity-slf-style-item${i === 0 ? ' selected' : ''}`,
       tabindex: '0',
@@ -692,7 +693,13 @@ function createStylePreviewSection(styles, previewRows, styleSectionHeadingText)
       li.setAttribute('data-style-connector-suffix', style.styleDescription);
     }
     li.append(createTag('span', { id: optionLabel, class: 'unity-slf-sr-only' }, optionLabel));
-    li.append(style.picture.cloneNode(true));
+    const pic = style.picture.cloneNode(true);
+    const img = pic.querySelector('img');
+    if (img) {
+      img.id = imgId;
+      li.setAttribute('aria-describedby', imgId);
+    }
+    li.append(pic);
     li.append(createTag('span', { class: 'unity-slf-style-label', 'aria-hidden': 'true' }, style.label));
     return li;
   });
