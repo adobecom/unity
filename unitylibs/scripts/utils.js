@@ -297,12 +297,14 @@ export const unityConfig = (() => {
     prod: {
       apiEndPoint: 'https://unity.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity.adobe.io/api/v1/asset/connector',
+      pageConfigEndPoint: 'https://cdn-unity.adobe.com/api/v1/pageConfig',
       env: 'prod',
       ...commoncfg,
     },
     stage: {
       apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
+      pageConfigEndPoint: 'https://cdn-unity.stage.adobe.com/api/v1/pageConfig',
       env: 'stage',
       ...commoncfg,
     },
@@ -334,4 +336,11 @@ export function sendAnalyticsEvent(event) {
 
 export function getMatchedDomain(domainMap = {}, hostname = window.location.hostname) {
   return Object.keys(domainMap).find((domain) => domainMap[domain].some((pattern) => new RegExp(pattern).test(hostname)));
+}
+
+export async function fetchPageConfig({ product, verb }) {
+  const url = `${unityConfig.pageConfigEndPoint}?product=${product}&action=${verb}`;
+  const resp = await fetch(url, { headers: { 'x-api-key': unityConfig.apiKey } });
+  if (!resp.ok) throw new Error(`PageConfig fetch failed: ${resp.statusText}`);
+  return resp.json();
 }
