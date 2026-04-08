@@ -30,7 +30,17 @@ class ServiceHandler {
       headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
       ...options,
     };
-    const response = await fetch(api, postOpts);
+    let response;
+    try {
+      response = await fetch(api, postOpts);
+    } catch (e) {
+      if (e instanceof TypeError) {
+        const error = new Error(`Network error. URL: ${api}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
+      }
+      throw e;
+    }
     if (failOnError && response.status !== 200) {
       const error = new Error('Operation failed');
       error.status = response.status;
@@ -157,7 +167,17 @@ export default class ActionBinder {
       body: blobData,
       ...(signal && { signal }),
     };
-    const response = await fetch(storageUrl, uploadOptions);
+    let response;
+    try {
+      response = await fetch(storageUrl, uploadOptions);
+    } catch (e) {
+      if (e instanceof TypeError) {
+        const error = new Error(`Network error. URL: ${storageUrl}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
+      }
+      throw e;
+    }
     if (response.status !== 200) {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
       const error = new Error('Failed to upload image to Unity');
