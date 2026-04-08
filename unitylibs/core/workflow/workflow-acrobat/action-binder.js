@@ -161,7 +161,7 @@ export default class ActionBinder {
     this.actionMap = actionMap;
     this.limits = {};
     this.operations = [];
-    this.acrobatApiConfig = this.getAcrobatApiConfig();
+    this.acrobatApiConfig = null;
     this.networkUtils = new NetworkUtils();
     this.uploadHandler = null;
     this.splashScreenEl = null;
@@ -182,6 +182,8 @@ export default class ActionBinder {
     this.multiFileValidationFailure = false;
     this.initialize();
     this.experimentData = null;
+    this.pageConfigLocation = null;
+    this.pageConfigFetched = false;
   }
 
   async initialize() {
@@ -224,11 +226,13 @@ export default class ActionBinder {
   }
 
   getAcrobatApiConfig() {
+    const base = this.pageConfigLocation || unityConfig.apiEndPoint;
     unityConfig.acrobatEndpoint = {
-      createAsset: `${unityConfig.apiEndPoint}/asset`,
-      finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      createAsset: `${base}/asset`,
+      finalizeAsset: `${base}/asset/finalize`,
+      getMetadata: `${base}/asset/metadata`,
     };
+    unityConfig.connectorApiEndPoint = `${base}/asset/connector`;
     return unityConfig;
   }
 
@@ -242,17 +246,23 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
-      const { getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
+    if (!this.pageConfigFetched) {
+      this.pageConfigFetched = true;
+      const { fetchPageConfig } = await import('../../../scripts/utils.js');
+      const getExperimentData = (await import('../../../utils/experiment-provider.js')).default;
       try {
-        const decisionScopes = await getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
-        this.experimentData = await getExperimentData(decisionScopes);
+        const pageConfig = await fetchPageConfig({ product: 'acrobat', verb: this.workflowCfg.enabledFeatures[0] });
+        this.pageConfigLocation = pageConfig.location;
+        if (pageConfig.config?.target?.enabled) {
+          this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
+        }
       } catch (error) {
         await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
           code: 'warn_fetch_experiment',
           desc: error.message,
         });
       }
+      this.acrobatApiConfig = this.getAcrobatApiConfig();
     }
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
@@ -486,7 +496,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
-    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData) {
+    if (this.experimentData) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
     await this.getRedirectUrl(cOpts);

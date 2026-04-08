@@ -1,20 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 
-export async function getDecisionScopesForVerb(verb) {
-  const region = await getRegion().catch(() => undefined);
-  const verbScope = `acom_unity_acrobat_${verb}`;
-  return region ? [`${verbScope}_${region}`, verbScope] : [verbScope];
-}
-
-export async function getRegion() {
-  const resp = await fetch('https://geo2.adobe.com/json/', { cache: 'no-cache' });
-  if (!resp.ok) throw new Error(`Failed to resolve region: ${resp.statusText}`);
-  const { country } = await resp.json();
-  if (!country) throw new Error('Failed to resolve region: missing country');
-  return country.toLowerCase();
-}
-
-export async function getExperimentData(decisionScopes) {
+export default async function getExperimentData(decisionScopes) {
   if (!decisionScopes || decisionScopes.length === 0) {
     throw new Error('No decision scopes provided for experiment data fetch');
   }
