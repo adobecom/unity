@@ -146,8 +146,10 @@ export default class NetworkUtils {
       }
       return await this.afterFetchFromService(url, response);
     } catch (error) {
-      if (error) error.message += `, Max retry delay exceeded for URL: ${url}`;
-      else error = new Error(`Max retry delay exceeded for URL: ${url}`);
+      if (timeLapsed >= maxRetryDelay) {
+        if (error) error.message += `, Max retry delay exceeded for URL: ${url}`;
+        else error = new Error(`Max retry delay exceeded for URL: ${url}`);
+      }
       throw error;
     }
   }

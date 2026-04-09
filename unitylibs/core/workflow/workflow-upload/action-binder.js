@@ -30,7 +30,17 @@ class ServiceHandler {
       headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
       ...options,
     };
-    const response = await fetch(api, postOpts);
+    let response;
+    try {
+      response = await fetch(api, postOpts);
+    } catch (e) {
+      if (e instanceof TypeError) {
+        const error = new Error(`Network error. URL: ${api}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
+      }
+      throw e;
+    }
     if (failOnError && response.status !== 200) {
       const error = new Error('Operation failed');
       error.status = response.status;
@@ -119,13 +129,17 @@ export default class ActionBinder {
   async cancelUploadOperation() {
     try {
       this.uploadAbortController?.abort();
+      this.uploadAbortController = null;
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId: this.assetId });
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      if (!this.transitionScreen) {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      }
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
       const cancelPromise = Promise.reject(e);
+      cancelPromise.catch(() => {});
       this.promiseStack.unshift(cancelPromise);
     } catch (error) {
       await this.transitionScreen?.showSplashScreen();
@@ -153,7 +167,17 @@ export default class ActionBinder {
       body: blobData,
       ...(signal && { signal }),
     };
-    const response = await fetch(storageUrl, uploadOptions);
+    let response;
+    try {
+      response = await fetch(storageUrl, uploadOptions);
+    } catch (e) {
+      if (e instanceof TypeError) {
+        const error = new Error(`Network error. URL: ${storageUrl}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
+      }
+      throw e;
+    }
     if (response.status !== 200) {
       window.lana?.log(`Message: Failed to upload image to Unity, Error: ${response.status}`, this.lanaOptions);
       const error = new Error('Failed to upload image to Unity');
@@ -209,6 +233,7 @@ export default class ActionBinder {
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
         const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal);
         if (failedChunks && failedChunks.size > 0) {
+          if (signal.aborted) return false;
           const error = new Error(`One or more chunks failed to upload for asset: ${id}, ${file.size} bytes, ${file.type}`);
           error.status = 504;
           this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', {
@@ -237,12 +262,14 @@ export default class ActionBinder {
       }
       return true;
     } catch (e) {
-      if (this.uploadAbortController?.signal.aborted || e.name === 'AbortError') {
+      if (signal.aborted || e.name === 'AbortError') {
         window.lana?.log(`Message: Upload aborted, Error: ${e.message}`, this.lanaOptions);
         return false;
       }
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      if (!this.transitionScreen) {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      }
       await this.transitionScreen.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
@@ -321,9 +348,12 @@ export default class ActionBinder {
       payload,
     };
     try {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      if (!this.transitionScreen) {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      }
       this.LOADER_LIMIT = 100;
-      this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      this.transitionScreen.LOADER_LIMIT = 100;
       this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       const servicePromise = this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
@@ -415,8 +445,10 @@ export default class ActionBinder {
       const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
       this.desktop = isDesktop();
     }
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+    if (!this.transitionScreen) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+    }
     await this.transitionScreen.showSplashScreen(true);
     const uploadSuccess = await this.uploadAsset(file);
     if (uploadSuccess) await this.continueInApp(this.assetId, file);
