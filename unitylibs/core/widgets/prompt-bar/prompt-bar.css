@@ -410,10 +410,12 @@
   transition: background 0.3s ease-in-out;
   flex-flow: wrap;
   justify-content: end;
+  direction: inherit;
 }
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
-  padding: 20px 22px 18px 26px;
+  padding-block: 20px 18px;
+  padding-inline: 26px 22px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .autocomplete,
@@ -502,7 +504,8 @@
   border: none;
   width: 100%;
   height: 36px;
-  margin: 0 5px 0 0;
+  margin: 0;
+  margin-inline-end: 5px;
   box-sizing: border-box;
   padding-top: 3px;
   border-radius: 3px;
@@ -1295,17 +1298,18 @@
 .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
     width: 100%;
     margin: 40px 0;
-    margin-left: 16px;
+    margin-inline-start: 16px;
 }
 .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
-    padding-left: 0;
-  }
+    padding-inline-start: 0;
+}
 .upload-marquee.unity-enabled .interactive-area .copy .ex-unity-wrap .alert-holder {
     transform: translateY(-70%);
 }
 @media (max-width: 599px) {
   .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
-    margin: 40px 40px 0 0
+    margin-block: 40px 0;
+    margin-inline: 0 40px;
   }
   .upload-marquee.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
     padding: 0px;
