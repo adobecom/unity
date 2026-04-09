@@ -335,7 +335,7 @@ export default class ActionBinder {
         additionalQueryParams: queryParams,
         payload: {
           workflow: selectedVerbType,
-          ...(operationVerb ? { verb: operationVerb } : {}),
+          ...(operationVerb && selectedVerbType !== 'text-to-video' ? { verb: operationVerb } : {}),
           ...(modelId ? { modelId } : {}),
           ...(modelVersion ? { modelVersion } : {}),
           ...(stylePayload ? { style: stylePayload } : {}),
