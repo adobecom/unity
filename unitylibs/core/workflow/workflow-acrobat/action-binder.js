@@ -457,7 +457,9 @@ export default class ActionBinder {
             redirectUrl = url.href;
           }
         }
-        this.redirectUrl = redirectUrl;        
+        const finalUrl = new URL(redirectUrl);
+        finalUrl.searchParams.set('originalVerb', this.workflowCfg.enabledFeatures[0]);
+        this.redirectUrl = finalUrl.href;
       })
       .catch(async (e) => {
         await this.showTransitionScreen();
