@@ -870,6 +870,11 @@
   padding: 17px 16px 17px 16px;
 }
 
+.unity-prompt-bar-style .unity-slf-left:has(.alert-holder.show) .unity-slf-style-container,
+.unity-prompt-bar-style .unity-slf-left:has(.alert-holder.show) .ex-unity-wrap > :not(.alert-holder) {
+  opacity: 0.05;
+}
+
 .unity-prompt-bar-style .unity-slf-controls {
   display: flex;
   flex-direction: column;
