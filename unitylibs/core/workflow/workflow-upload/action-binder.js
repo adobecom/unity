@@ -369,7 +369,11 @@ export default class ActionBinder {
       }
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) return;
-      window.location.href = response.url;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.location.href = response.url;
+        });
+      });
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
