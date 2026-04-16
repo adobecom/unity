@@ -80,8 +80,9 @@ export default class ActionBinder {
     if (!errorCallbackOptions?.errorToastEl) return;
     const lang = document.querySelector('html').getAttribute('lang');
     const msg = lang !== 'ja-JP' ? this.unityEl.querySelector(errorCallbackOptions.errorType)?.nextSibling.textContent : this.unityEl.querySelector(errorCallbackOptions.errorType)?.parentElement.textContent;
-    const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
-      || this.canvasArea.querySelector('.ex-unity-wrap');
+    const promptBarEl = this.canvasArea?.querySelector('.copy .ex-unity-wrap')
+      || this.canvasArea?.querySelector('.ex-unity-wrap')
+      || this.block?.querySelector('.itv-panel');
     if (!promptBarEl) return;
     promptBarEl.style.pointerEvents = 'none';
     const errorToast = promptBarEl.querySelector('.alert-holder');
@@ -118,8 +119,9 @@ export default class ActionBinder {
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
       const alertImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/alert.svg` });
       const closeImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/close.svg` });
-      const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
-        || this.canvasArea.querySelector('.ex-unity-wrap');
+      const promptBarEl = this.canvasArea?.querySelector('.copy .ex-unity-wrap')
+        || this.canvasArea?.querySelector('.ex-unity-wrap')
+        || this.block?.querySelector('.itv-panel');
       if (!promptBarEl) return null;
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
       const alertIcon = createTag('div', { class: 'alert-icon' });
@@ -217,6 +219,8 @@ export default class ActionBinder {
   async handleAction(action, el) {
     const actionMap = {
       generate: () => this.generateContent(),
+      'generate-itv': () => this.generateItvContent(),
+      moreFilters: () => this.navigateToMoreFilters(),
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
@@ -380,6 +384,70 @@ export default class ActionBinder {
       }, { workflowStep: 'complete', statusCode: -1 });
       window.lana?.log(`Content generation failed:, Error: ${err}`, this.lanaOptions);
     }
+  }
+
+  async generateItvContent() {
+    const query = this.inputField?.value?.trim() || '';
+    const modelId = this.widgetWrap?.getAttribute('data-selected-model-id') || '';
+    const modelVersion = this.widgetWrap?.getAttribute('data-selected-model-version') || '';
+    const aspectRatio = this.widgetWrap?.dataset?.selectedAspectRatio || '';
+    const hasUpload = this.widgetWrap?.dataset?.itvHasUpload === 'true';
+
+    if (!hasUpload) {
+      if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+      this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-no-image' }, 'No image uploaded');
+      return;
+    }
+
+    const validation = this.validateInput(query);
+    if (!validation.isValid) return;
+
+    try {
+      const payload = {
+        targetProduct: this.workflowCfg.productName,
+        payload: {
+          workflow: 'image-to-video',
+          ...(modelId ? { modelId } : {}),
+          ...(modelVersion ? { modelVersion } : {}),
+          ...(aspectRatio ? { aspectRatio } : {}),
+          locale: getLocale(),
+          action: 'generate',
+        },
+        ...(query ? { query } : {}),
+      };
+      const postOpts = await getApiCallOptions(
+        'POST',
+        unityConfig.apiKey,
+        {
+          'x-unity-product': this.workflowCfg.productName,
+          'x-unity-action': 'generate-image-to-video',
+        },
+        { body: JSON.stringify(payload) },
+      );
+      const networkUtils = await this.getNetworkUtils();
+      const { url } = await networkUtils.fetchFromService(
+        this.apiConfig.connectorApiEndPoint,
+        postOpts,
+        async (response) => {
+          if (response.status !== 200) {
+            const error = new Error();
+            error.status = response.status;
+            throw error;
+          }
+          return response.json();
+        },
+      );
+      if (url) window.location.href = url;
+    } catch (err) {
+      if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+      this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);
+      window.lana?.log(`ITV generation failed: ${err}`, this.lanaOptions);
+    }
+  }
+
+  navigateToMoreFilters() {
+    const url = this.widgetWrap?.dataset?.moreFiltersUrl || 'https://firefly.adobe.com';
+    window.location.href = url;
   }
 
   setPrompt(el) {

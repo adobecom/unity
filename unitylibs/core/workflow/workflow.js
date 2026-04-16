@@ -34,6 +34,10 @@ class WfInitiator {
         `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
         `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
       ],
+      'image-to-video': [
+        `${widgetBase}/image-to-video/image-to-video.js`,
+        `${widgetBase}/image-to-video/image-to-video.css`,
+      ],
     };
   }
 
