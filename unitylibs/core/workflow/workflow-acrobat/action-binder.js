@@ -457,6 +457,7 @@ export default class ActionBinder {
             redirectUrl = url.href;
           }
         }
+        console.log("redirect url: "+redirectUrl);
         this.redirectUrl = redirectUrl;        
       })
       .catch(async (e) => {
