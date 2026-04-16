@@ -54,6 +54,7 @@ export async function createChunkUploadTasks(uploadUrls, file, blockSize, upload
         throw err;
       }
     })();
+    uploadPromise.catch(() => {});
     uploadPromises.push(uploadPromise);
   }
   if (signal?.aborted) return { failedChunks, attemptMap };
