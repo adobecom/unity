@@ -27,6 +27,12 @@
     "selector": ".copy",
     "source": ".copy",
     "target": ".upload-marquee-prompt-container",
-    "insert": "after"
+    "insert": "after",
+    "renderWidget": true,
+    "actionMap": {
+      ".inp-field": { "actionType": "autocomplete" },
+      ".gen-btn": { "actionType": "generate-itv" },
+      ".itv-more-btn": { "actionType": "moreFilters" }
+    }
   }
 }

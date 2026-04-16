@@ -1,0 +1,232 @@
+.upload-marquee.unity-enabled .interactive-area {
+  position: relative;
+}
+
+.itv-panel {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  background: rgb(27, 27, 27);
+  padding: 16px;
+  border-radius: 10px;
+  position: relative;
+  align-items: stretch;
+}
+
+.itv-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 17px;
+  width: 123px;
+  flex-shrink: 0;
+}
+
+.itv-dz-thumb {
+  width: 123px;
+  height: 123px;
+  background: rgb(233, 233, 233);
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+}
+
+.itv-dz-label {
+  color: rgb(209, 209, 209);
+  font-size: var(--type-body-xs-size, 12px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.itv-divider {
+  width: 2px;
+  background: rgb(39, 39, 39);
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.itv-content-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1 1 0;
+}
+
+.itv-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+}
+
+.itv-prompt label {
+  color: rgb(209, 209, 209);
+  font-size: var(--type-body-xs-size, 12px);
+  display: block;
+}
+
+.itv-prompt .inp-field {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 100%;
+  resize: none;
+  font-family: inherit;
+  font-size: var(--type-body-s-size, 14px);
+  outline: none;
+  min-height: 60px;
+}
+
+.itv-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.itv-model-container {
+  display: flex;
+  align-items: center;
+}
+
+.itv-model-container .models-container {
+  position: relative;
+}
+
+.itv-model-container .selected-model {
+  background: rgb(50, 50, 50);
+  color: rgb(242, 242, 242);
+  border-radius: 16px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.itv-model-container .verb-list {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: rgb(50, 50, 50);
+  border-radius: 8px;
+  list-style: none;
+  padding: 4px 0;
+  margin: 0 0 4px 0;
+  min-width: 140px;
+  z-index: 20;
+}
+
+.itv-model-container .verb-list .verb-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: rgb(242, 242, 242);
+  font-size: 14px;
+}
+
+.itv-model-container .verb-list .verb-item:hover {
+  background: rgb(70, 70, 70);
+}
+
+.itv-aspect-container {
+  position: relative;
+}
+
+.itv-aspect-container .selected-aspect {
+  background: rgb(44, 44, 44);
+  color: rgb(219, 219, 219);
+  border-radius: 16px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.itv-aspect-container .aspect-list {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: rgb(44, 44, 44);
+  border-radius: 8px;
+  list-style: none;
+  padding: 4px 0;
+  margin: 0 0 4px 0;
+  min-width: 100px;
+  z-index: 20;
+  display: none;
+}
+
+.itv-aspect-container.show-menu .aspect-list {
+  display: block;
+}
+
+.itv-aspect-container .aspect-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: rgb(219, 219, 219);
+  font-size: 14px;
+}
+
+.itv-aspect-container .aspect-list li:hover {
+  background: rgb(60, 60, 60);
+}
+
+.itv-more-btn {
+  color: rgb(219, 219, 219);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 0 12px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgb(80, 80, 80);
+  border-radius: 16px;
+  white-space: nowrap;
+}
+
+.itv-footer .unity-act-btn.gen-btn {
+  margin-left: auto;
+}
+
+.itv-panel .alert-holder {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  border-radius: 10px;
+}
+
+.itv-panel .alert-holder.show {
+  display: flex;
+}
+
+@media (max-width: 599px) {
+  .itv-panel {
+    flex-direction: column;
+  }
+
+  .itv-divider {
+    width: 100%;
+    height: 2px;
+  }
+}
