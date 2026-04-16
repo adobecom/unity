@@ -457,7 +457,6 @@ export default class ActionBinder {
             redirectUrl = url.href;
           }
         }
-        console.log("redirect url: "+redirectUrl);
         this.redirectUrl = redirectUrl;        
       })
       .catch(async (e) => {
@@ -635,8 +634,12 @@ export default class ActionBinder {
         document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
       }
       if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
+        console.log("redirect url: "+`${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`);
         window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
-      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
+      } else {
+        console.log("redirect url: "+`${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`);
+        window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
+      }
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
