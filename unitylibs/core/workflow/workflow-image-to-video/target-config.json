@@ -1,0 +1,16 @@
+{
+  "_defaults": {
+    "renderWidget": true,
+    "sendSplunkAnalytics": true,
+    "actionMap": {
+      ".gen-btn": [{ "actionType": "generate" }],
+      ".more-filters-btn": [{ "actionType": "moreFilters" }]
+    }
+  },
+  "upload-marquee": {
+    "selector": ".copy",
+    "source": ".copy",
+    "target": ".row-supplemental",
+    "insert": "before"
+  }
+}
