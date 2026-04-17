@@ -230,6 +230,11 @@ export default class ActionBinder {
 
   getSelectedModelVersion = () => this.widgetWrap.getAttribute('data-selected-model-version');
 
+  getSelectedAspectRatio = () => this.widgetWrap?.getAttribute('data-selected-aspect-ratio');
+
+  getUploadedImageAssetId = () => this.block?.querySelector('.ex-pbu-dropzone[data-asset-id]')
+    ?.getAttribute('data-asset-id') || null;
+
   getSelectedModelDisplayName = () => this.widgetWrap.getAttribute('data-selected-model-name')
     || this.block.querySelector('.models-container .selected-model .model-name')?.textContent?.trim()
     || '';
@@ -330,6 +335,8 @@ export default class ActionBinder {
     try {
       const modelId = this.getSelectedModelId();
       const modelVersion = this.getSelectedModelVersion();
+      const aspectRatio = this.getSelectedAspectRatio();
+      const uploadedImageId = this.getUploadedImageAssetId();
       const payload = {
         targetProduct: this.workflowCfg.productName,
         additionalQueryParams: queryParams,
@@ -339,6 +346,8 @@ export default class ActionBinder {
           ...(modelId ? { modelId } : {}),
           ...(modelVersion ? { modelVersion } : {}),
           ...(stylePayload ? { style: stylePayload } : {}),
+          ...(aspectRatio ? { aspectRatio } : {}),
+          ...(uploadedImageId ? { referenceImageId: uploadedImageId } : {}),
           locale: getLocale(),
           action,
         },
