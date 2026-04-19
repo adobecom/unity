@@ -339,8 +339,12 @@ export function getMatchedDomain(domainMap = {}, hostname = window.location.host
 }
 
 export async function fetchPageConfig({ product, verb }) {
-  const url = `${unityConfig.pageConfigEndPoint}?product=${product}&action=${verb}`;
-  const resp = await fetch(url, { headers: { 'x-api-key': unityConfig.apiKey } });
-  if (!resp.ok) throw new Error(`PageConfig fetch failed: ${resp.statusText}`);
-  return resp.json();
+  try {
+    const url = `${unityConfig.pageConfigEndPoint}?product=${product}&action=${verb}`;
+    const resp = await fetch(url, { headers: { 'x-api-key': unityConfig.apiKey } });
+    if (!resp.ok) throw new Error(`PageConfig fetch failed: ${resp.statusText}`);
+    return resp.json();
+  } catch (e) {
+    return {};
+  }
 }
