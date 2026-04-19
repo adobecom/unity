@@ -182,6 +182,7 @@ export default class ActionBinder {
     this.multiFileValidationFailure = false;
     this.initialize();
     this.experimentData = null;
+    this.experimentViaPageConfig = false;
     this.pageConfigLocation = null;
     this.pageConfigFetched = false;
   }
@@ -266,6 +267,7 @@ export default class ActionBinder {
       this.pageConfigLocation = pageConfig.location;
       if (pageConfig.config?.target?.enabled) {
         this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
+        this.experimentViaPageConfig = true;
       } else if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(verb)) {
         const { getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
         const decisionScopes = await getDecisionScopesForVerb(verb);
@@ -503,7 +505,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
-    if (this.experimentData) {
+    if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
     await this.getRedirectUrl(cOpts);
