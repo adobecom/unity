@@ -34,6 +34,10 @@ class WfInitiator {
         `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
         `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
       ],
+      'prompt-bar-upload': [
+        `${widgetBase}/prompt-bar-upload/prompt-bar-upload.js`,
+        `${widgetBase}/prompt-bar-upload/prompt-bar-upload.css`,
+      ],
     };
   }
 
@@ -67,6 +71,10 @@ class WfInitiator {
       ],
       'workflow-ai': [...bundledWidgetAssets],
       'workflow-firefly': fireflyShared,
+      'workflow-prompt-bar-upload': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+      ],
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -266,6 +274,10 @@ class WfInitiator {
         productName: product,
         sfList: new Set([feature]),
         psw,
+      },
+      'workflow-prompt-bar-upload': {
+        productName: product || 'Firefly',
+        sfList: new Set([feature || 'image-to-video']),
       },
       'workflow-firefly': {
         productName: 'Firefly',
