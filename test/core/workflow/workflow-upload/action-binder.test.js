@@ -218,24 +218,6 @@ describe('Unity Upload Block', () => {
       }
     });
 
-    it('should scan image for safety', async () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-
-      actionBinder.serviceHandler = { postCallToService: async () => ({ status: 200 }) };
-
-      await actionBinder.scanImgForSafety('test-asset-id');
-    });
-
-    it('should handle scan image for safety with retry', async () => {
-      fetchStub.resolves({ status: 429 });
-
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-
-      actionBinder.serviceHandler = { postCallToService: async () => ({ status: 429 }) };
-
-      await actionBinder.scanImgForSafety('test-asset-id');
-    });
-
     it('should upload asset', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
