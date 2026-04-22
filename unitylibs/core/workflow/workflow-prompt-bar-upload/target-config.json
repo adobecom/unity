@@ -1,0 +1,25 @@
+{
+  "_defaults": {
+    "type": "text",
+    "handler": "render",
+    "renderWidget": true,
+    "sendSplunkAnalytics": true,
+    "actionMap": {
+      ".gen-btn": { "actionType": "generate" },
+      ".more-btn": { "actionType": "redirect" }
+    }
+  },
+  "upload-marquee": {
+    "selector": ".copy",
+    "source": ".copy",
+    "target": ".upload-marquee-prompt-container",
+    "insert": "after",
+    "limits-firefly": {
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/webp"],
+      "maxFileSize": 100000000,
+      "minHeight": 512,
+      "minWidth": 512,
+      "maxNumFiles": 1
+    }
+  }
+}

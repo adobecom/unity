@@ -34,6 +34,10 @@ class WfInitiator {
         `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
         `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
       ],
+      'prompt-bar-upload': [
+        `${widgetBase}/prompt-bar-upload/prompt-bar-upload.js`,
+        `${widgetBase}/prompt-bar-upload/prompt-bar-upload.css`,
+      ],
     };
   }
 
@@ -67,6 +71,7 @@ class WfInitiator {
       ],
       'workflow-ai': [...bundledWidgetAssets],
       'workflow-firefly': fireflyShared,
+      'workflow-prompt-bar-upload': fireflyShared,
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -271,6 +276,11 @@ class WfInitiator {
         productName: 'Firefly',
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
+      },
+      'workflow-prompt-bar-upload': {
+        productName: 'Firefly',
+        sfList: new Set(['image-to-animation']),
+        stList: new Set(['prompt', 'generate']),
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
