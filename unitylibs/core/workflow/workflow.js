@@ -34,6 +34,10 @@ class WfInitiator {
         `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
         `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
       ],
+      'image-to-film': [
+        `${widgetBase}/image-to-film/image-to-film.js`,
+        `${widgetBase}/image-to-film/image-to-film.css`,
+      ],
     };
   }
 
@@ -310,6 +314,8 @@ class WfInitiator {
     });
   }
 }
+
+export { WfInitiator };
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
   const { imsClientId } = getConfig();
