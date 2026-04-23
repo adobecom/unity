@@ -20,6 +20,14 @@ export default class TransitionScreen {
     this.isDesktop = isDesktop;
     this.headingElements = [];
     this.progressText = '';
+    this._progressBarTimeout = null;
+  }
+
+  cancelProgressBar() {
+    if (this._progressBarTimeout !== null) {
+      clearTimeout(this._progressBarTimeout);
+      this._progressBarTimeout = null;
+    }
   }
 
   setProgressTextFromDOM() {
@@ -69,7 +77,8 @@ export default class TransitionScreen {
       if (currentValue === 100 || currentValue >= this.LOADER_LIMIT) return;
     }
 
-    setTimeout(() => {
+    this._progressBarTimeout = setTimeout(() => {
+      this._progressBarTimeout = null;
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       if (v === 100) return;
       this.updateProgressBar(s, v + newI);
@@ -207,6 +216,7 @@ export default class TransitionScreen {
 
   splashVisibilityController(displayOn) {
     if (!displayOn) {
+      this.cancelProgressBar();
       this.LOADER_LIMIT = 95;
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');
@@ -215,6 +225,7 @@ export default class TransitionScreen {
       document.querySelector('footer').removeAttribute('aria-hidden');
       return;
     }
+    this.cancelProgressBar();
     this.progressBarHandler(this.splashScreenEl, this.LOADER_DELAY, this.LOADER_INCREMENT, true);
     this.resetSplashVideos();
     this.splashScreenEl.classList.add('show');
