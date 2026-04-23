@@ -529,6 +529,55 @@ describe('Unity Upload Block', () => {
       const files = actionBinder.extractFiles(mockEvent);
       expect(files).to.have.length(1);
     });
+
+    it('should return empty array when dataTransfer has no file items', () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      const mockEvent = {
+        dataTransfer: { items: [{ kind: 'string', getAsFile: () => null }] },
+      };
+      expect(actionBinder.extractFiles(mockEvent)).to.deep.equal([]);
+    });
+
+    it('should return empty array when target has no files', () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      const mockEvent = { dataTransfer: null, target: { files: [] } };
+      expect(actionBinder.extractFiles(mockEvent)).to.deep.equal([]);
+    });
+  });
+
+  describe('preventDefault helper', () => {
+    it('should call preventDefault and stopPropagation on the event', () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      const ev = { preventDefault: sinon.spy(), stopPropagation: sinon.spy() };
+      actionBinder.preventDefault(ev);
+      expect(ev.preventDefault.calledOnce).to.be.true;
+      expect(ev.stopPropagation.calledOnce).to.be.true;
+    });
+  });
+
+  describe('getAdditionalHeaders', () => {
+    it('should append verb to x-unity-action when verb is set', () => {
+      const wf = {
+        ...workflowCfg,
+        supportedFeatures: { values: () => ({ next: () => ({ value: 'remove-object' }) }) },
+      };
+      const actionBinder = new ActionBinder(unityEl, wf, unityEl, [unityEl]);
+      actionBinder.verb = 'v2';
+      const headers = actionBinder.getAdditionalHeaders();
+      expect(headers['x-unity-action']).to.equal('remove-object-v2');
+      expect(headers['x-unity-product']).to.equal(wf.productName);
+    });
+
+    it('should use base action only when verb is unset', () => {
+      const wf = {
+        ...workflowCfg,
+        supportedFeatures: { values: () => ({ next: () => ({ value: 'upload-only' }) }) },
+      };
+      const actionBinder = new ActionBinder(unityEl, wf, unityEl, [unityEl]);
+      actionBinder.verb = undefined;
+      const headers = actionBinder.getAdditionalHeaders();
+      expect(headers['x-unity-action']).to.equal('upload-only');
+    });
   });
 
   describe('Action Maps and Event Handling', () => {
@@ -604,6 +653,20 @@ describe('Unity Upload Block', () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
       await actionBinder.executeActionMaps('unknown', []);
+    });
+
+    it('should log analytics for redirect action', async () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      actionBinder.transitionScreen = { splashScreenEl: document.createElement('div') };
+      actionBinder.errorToastEl = document.createElement('div');
+      sinon.stub(actionBinder, 'loadTransitionScreen').resolves();
+      sinon.stub(actionBinder, 'handlePreloads').resolves();
+      const spy = sinon.stub(actionBinder, 'logAnalyticsinSplunk');
+      await actionBinder.executeActionMaps('redirect');
+      expect(spy.calledWith('Edit Photos CTA|UnityWidget', {})).to.be.true;
+      spy.restore();
+      actionBinder.loadTransitionScreen.restore();
+      actionBinder.handlePreloads.restore();
     });
 
     it('should initialize action listeners', async () => {
