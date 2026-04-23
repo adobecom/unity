@@ -34,6 +34,10 @@ class WfInitiator {
         `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
         `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
       ],
+      'prompt-bar-upload': [
+        `${widgetBase}/prompt-bar-upload/prompt-bar-upload.js`,
+        `${widgetBase}/prompt-bar-upload/prompt-bar-upload.css`,
+      ],
     };
   }
 
