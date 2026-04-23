@@ -156,8 +156,9 @@ export default class PromptBarUploadWidget {
 
     const container = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
     const nameContainer = createTag('span', { class: 'model-name' }, (defaultModel?.name || '').trim());
-    const menuIcon = createTag('span', { class: 'menu-icon' });
-    menuIcon.append(menuChevronSvg());
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
+    // const menuIcon = createTag('span', { class: 'menu-icon' });
+    // menuIcon.append(menuChevronSvg());
 
     const selectedElement = createTag('button', {
       type: 'button',
@@ -309,11 +310,9 @@ export default class PromptBarUploadWidget {
     ac.append(picker);
   }
 
-  // ─── Upload + prompt ───────────────────────────────────────────────────────
-
   buildDropZone() {
-    const uploadText = placeholderText(this.el, 'icon-placeholder-upload') || 'Upload your image';
-    const legalText = placeholderText(this.el, 'icon-placeholder-legal') || '';
+    // const uploadText = placeholderText(this.el, 'icon-placeholder-upload') || 'Upload your image';
+    // const legalText = placeholderText(this.el, 'icon-placeholder-legal') || '';
 
     const fileInput = createTag('input', {
       type: 'file',
@@ -324,13 +323,18 @@ export default class PromptBarUploadWidget {
     });
 
     const dropContent = createTag('div', { class: 'pbu-drop-content' });
-    dropContent.append(
-      svgUse(ICON.upload, 'pbu-upload-svg'),
-      createTag('span', { class: 'pbu-upload-text' }, uploadText),
-    );
-    if (legalText) dropContent.append(createTag('p', { class: 'pbu-legal-text' }, legalText));
+    // const uploadIcon = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` });
+    // dropContent.append(uploadIcon);
+    const uploadIcon = createTag('span', { class: 'pbu-upload-svg' }, '<svg><use xlink:href="#unity-upload-icon"></use></svg>');
+    dropContent.append(uploadIcon);
 
-    const dropZone = createTag('div', { class: 'drop-zone', role: 'button', tabindex: '0', 'aria-label': uploadText });
+    // dropContent.append(
+    //   svgUse(ICON.upload, 'pbu-upload-svg'),
+    //   // createTag('span', { class: 'pbu-upload-text' }, uploadText),
+    // );
+    // if (legalText) dropContent.append(createTag('p', { class: 'pbu-legal-text' }, legalText));
+
+    const dropZone = createTag('div', { class: 'drop-zone', role: 'button', tabindex: '0', 'aria-label': 'Upload image' });
     dropZone.append(fileInput, dropContent);
 
     const preview = createTag('div', { class: 'pbu-preview hidden', 'aria-hidden': 'true' });
@@ -390,8 +394,9 @@ export default class PromptBarUploadWidget {
       class: 'unity-act-btn pbu-more-btn more-btn',
       'aria-label': txt,
     });
-    const ico = createTag('div', { class: 'btn-ico' });
-    ico.append(moreIconSvg());
+    const ico = createTag('span', { class: 'btn-ico' }, '<svg><use xlink:href="#unity-more-icon"></use></svg>');
+    // const ico = createTag('div', { class: 'btn-ico' });
+    // ico.append(moreIconSvg());
     btn.append(ico, createTag('div', { class: 'btn-txt' }, txt));
     return btn;
   }
@@ -455,25 +460,68 @@ export default class PromptBarUploadWidget {
       window.lana?.log(`Message: Failed to load video models, Error: ${e}`, this.lanaOptions);
     }
 
-    // Create the outer structure: root → interactiveShell → main (flex-row)
-    // matching the pattern from prompt-bar-style.js but with flex-direction: row
+    // Build left and right sections
+    const leftSection = this.buildLeftSection();
+    const rightSection = await this.buildRightSection();
+    
+    // Create main container (flex-row) combining left and right sections
+    const main = createTag('div', { class: 'pbu-main' });
+    main.append(leftSection, rightSection);
+    
+    // Create interactive shell wrapper
+    const skin = this.el.classList.contains('light') ? 'light' : 'dark';
+    const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
+    interactiveShell.append(main);
+    
+    // Create root container
+    const root = createTag('div', { class: 'unity-prompt-bar-upload unity-enabled' });
+    root.append(interactiveShell);
+    
+    // Move authoring config to hidden holder
+    const holder = createTag('div', { class: 'unity-pbu-config-holder unity-slf-sr-only' });
+    holder.setAttribute('aria-hidden', 'true');
+    while (this.el.firstChild) {
+      holder.append(this.el.firstChild);
+    }
+    this.el.append(holder);
+    this.el.classList.add('unity-prompt-bar-upload-host');
+    
+    // Insert into page
     const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options pbu-widget' });
     this.widgetWrap = widgetWrap;
-
     const unitySprite = createTag('div', { class: 'unity-sprite-container' });
     unitySprite.innerHTML = this.spriteCon || '';
-
-    // ─── Left section: Dropzone ────────────────────────────────────────
-    const leftSection = createTag('div', { class: 'pbu-left-section' });
-    const uploadHeading = labelForField(this.el, 'icon-label-upload', 'Upload image');
-    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pbu-upload-heading' }, uploadHeading);
-    const dropZoneWrap = this.buildDropZone();
-    leftSection.append(uploadLabel, dropZoneWrap);
-
-    // ─── Right section: Prompt bar ────────────────────────────────────
-    const rightSection = createTag('div', { class: 'pbu-right-section' });
+    widgetWrap.append(unitySprite, root);
     
-    // Prompt input shell (textarea + verb/model dropdowns)
+    // Append to target
+    this.addWidget();
+    this.wireImagePreview();
+
+    // Set up action map
+    this.actionMap = {
+      '.gen-btn': [{ actionType: 'generate' }],
+      '.more-btn': [{ actionType: 'generate' }],
+      '.drop-zone': [{ actionType: 'file-selected' }],
+      '#file-upload': [{ actionType: 'file-selected' }],
+    };
+    
+    return this.actionMap;
+  }
+
+  buildLeftSection() {
+    // const uploadHeading = labelForField(this.el, 'icon-label-upload', 'Upload image');
+    const leftSectionLabel = placeholderText(this.el, 'icon-dropzone-label')
+    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pbu-upload-heading' }, leftSectionLabel);
+    const dropZoneWrap = this.buildDropZone();
+    const leftSection = createTag('div', { class: 'pbu-left-section' });
+    leftSection.append(uploadLabel, dropZoneWrap);
+    return leftSection;
+  }
+
+  async buildRightSection() {
+    const rightSection = createTag('div', { class: 'pbu-right-section' });
+
+    // Prompt input shell (textarea + model/aspect/more controls)
     const promptHeading = placeholderText(this.el, 'icon-placeholder-prompt')
       || labelForField(this.el, 'icon-label-prompt', 'Prompt');
     const promptLabel = createTag('label', {
@@ -483,7 +531,7 @@ export default class PromptBarUploadWidget {
     
     const promptTextarea = this.buildPromptTextarea();
     
-    // Action controls: model picker, aspect ratio, generate button
+    // Action controls: model picker, aspect ratio, more button
     const actionContainer = createTag('div', { class: 'action-container' });
     this.actionContainerEl = actionContainer;
 
@@ -495,54 +543,25 @@ export default class PromptBarUploadWidget {
       const ar = this.buildAspectRatioDropdown(this.selectedModelId);
       if (ar) actionContainer.append(ar);
     }
+    if (this.showMore) {
+      const moreBtn = this.buildMoreButton();
+      if (moreBtn) actionContainer.append(moreBtn);
+    }
 
+    // Build generate button wrapper
     const actWrap = createTag('div', { class: 'act-wrap' });
-    const moreBtn = this.buildMoreButton();
     const genBtn = this.buildGenerateButton();
-    if (moreBtn) actWrap.append(moreBtn);
     actWrap.append(genBtn);
 
+    // Build controls footer
     const controlsFooter = createTag('div', { class: 'pbu-controls-footer' });
     controlsFooter.append(actionContainer, actWrap);
 
-    // Assemble prompt bar: heading + textarea + controls footer
+    // Assemble prompt bar container
     const promptBarContainer = createTag('div', { class: 'pbu-prompt-bar-container' });
     promptBarContainer.append(promptLabel, promptTextarea, controlsFooter);
     rightSection.append(promptBarContainer);
-
-    // ─── Main container with left and right sections (flex-row) ────────
-    const main = createTag('div', { class: 'pbu-main' });
-    main.append(leftSection, rightSection);
-
-    // ─── Interactive shell wrapper ────────────────────────────────────
-    const skin = this.el.classList.contains('light') ? 'light' : 'dark';
-    const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
-    interactiveShell.append(main);
-
-    // ─── Root container (outer structure) ──────────────────────────────
-    const root = createTag('div', { class: 'unity-prompt-bar-upload unity-enabled' });
-    root.append(interactiveShell);
-
-    // Move authoring config to hidden holder
-    const holder = createTag('div', { class: 'unity-pbu-config-holder unity-slf-sr-only' });
-    holder.setAttribute('aria-hidden', 'true');
-    while (this.el.firstChild) {
-      holder.append(this.el.firstChild);
-    }
-    this.el.append(holder);
-    this.el.classList.add('unity-prompt-bar-upload-host');
-
-    // Insert the widget into the page
-    widgetWrap.append(unitySprite, root);
-    this.addWidget();
-    this.wireImagePreview();
-
-    this.actionMap = {
-      '.gen-btn': [{ actionType: 'generate' }],
-      '.more-btn': [{ actionType: 'generate' }],
-      '.drop-zone': [{ actionType: 'file-selected' }],
-      '#file-upload': [{ actionType: 'file-selected' }],
-    };
-    return this.actionMap;
+    
+    return rightSection;
   }
 }

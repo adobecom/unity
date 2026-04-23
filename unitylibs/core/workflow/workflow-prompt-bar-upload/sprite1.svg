@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="pbu-upload-icon" viewBox="0 0 24 24" fill="none">
+    <path d="M12 16V8m0 0L9 11m3-3l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3 15a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="pbu-trash-icon" viewBox="0 0 24 24" fill="none">
+    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="pbu-chevron-icon" viewBox="0 0 24 24" fill="none">
+    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="pbu-check-icon" viewBox="0 0 24 24" fill="none">
+    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>

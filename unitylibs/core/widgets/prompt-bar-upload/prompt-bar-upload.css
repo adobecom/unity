@@ -19,6 +19,7 @@
   border-radius: 20px !important;
   padding: 8px !important;
   box-sizing: border-box !important;
+  max-width: 727px;
 }
 
 @media screen and (min-width: 1200px) {
@@ -30,6 +31,9 @@
 /* ─── Main flex-row container (left upload | right prompt bar) ───────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-main {
+  padding: 16px;
+  border-radius: 10px;
+  background: #1B1B1B;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -44,26 +48,18 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  min-width: 140px;
-  max-width: 200px;
+  gap: 17px;
   flex-shrink: 0;
   border-right: 1px solid rgb(255 255 255 / 12%);
   padding-right: 16px;
   box-sizing: border-box;
 }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-upload-heading {
-  margin: 0;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-drop-zone-wrap {
+/* .unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-drop-zone-wrap {
   width: 100%;
   min-height: 120px;
   flex: 1;
-}
+} */
 
 /* ─── Right section: Prompt bar (heading, textarea, controls) ──────────────── */
 
@@ -221,27 +217,26 @@
 
 /* ─── Upload dropzone styles ──────────────────────────────────────────────── */
 
-.pbu-drop-zone-wrap {
+/* .pbu-drop-zone-wrap {
   position: relative;
   width: 100%;
   min-height: 120px;
-}
+} */
 
 .pbu-drop-zone-wrap .drop-zone {
+  margin-top: 0px;
+  width: 123px;
+  height: 123px;
+  border-radius: 13.667px;
+  border: 1px dashed rgba(198, 198, 198, 0.50);
+  padding: 0;
+  background: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 120px;
-  height: 100%;
-  border: 2px dashed rgb(255 255 255 / 35%);
-  border-radius: 12px;
-  cursor: pointer;
-  padding: 12px 8px;
-  text-align: center;
   box-sizing: border-box;
-  transition: border-color 0.2s, background 0.2s;
 }
 
 .pbu-drop-zone-wrap .drop-zone:hover,
