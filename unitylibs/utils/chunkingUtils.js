@@ -48,9 +48,11 @@ export async function createChunkUploadTasks(uploadUrls, file, blockSize, upload
         if (onChunkComplete) onChunkComplete(i, chunkNumber, result);
         return result;
       } catch (err) {
-        const chunkInfo = { chunkIndex: i, chunkNumber };
-        failedChunks.add(chunkInfo);
-        if (onChunkError) onChunkError(chunkInfo, err);
+        if (err.name !== 'AbortError') {
+          const chunkInfo = { chunkIndex: i, chunkNumber };
+          failedChunks.add(chunkInfo);
+          if (onChunkError) onChunkError(chunkInfo, err);
+        }
         throw err;
       }
     })();

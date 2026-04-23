@@ -33,6 +33,36 @@ describe('TransitionScreen', () => {
       expect(fill.style.width).to.equal('42%');
       expect(status.textContent).to.equal('42%');
     });
+
+    it('should no-op when layer is null', () => {
+      expect(() => screen.updateProgressBar(null, 50)).to.not.throw();
+    });
+
+    it('should restore progressText from lastProgressText when empty', () => {
+      TransitionScreen.lastProgressText = 'Uploading %';
+      screen.progressText = '';
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="0" aria-valuenow="0"></div>
+        <div class="spectrum-ProgressBar-percentage">0%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 0%"></div>
+        <div id="progress-status"></div>
+      `;
+      screen.updateProgressBar(splashScreenEl, 10);
+      const status = splashScreenEl.querySelector('#progress-status');
+      expect(status.textContent).to.equal('Uploading 10%');
+    });
+
+    it('should cap percentage at LOADER_LIMIT', () => {
+      screen.LOADER_LIMIT = 80;
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="0" aria-valuenow="0"></div>
+        <div class="spectrum-ProgressBar-percentage">0%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 0%"></div>
+        <div id="progress-status"></div>
+      `;
+      screen.updateProgressBar(splashScreenEl, 99);
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('80');
+    });
   });
 
   describe('createProgressBar', () => {
@@ -59,6 +89,52 @@ describe('TransitionScreen', () => {
       clock.tick(20);
       expect(spy.called).to.be.true;
       spy.restore();
+      clock.restore();
+    });
+
+    it('should return early when splash element is missing', () => {
+      const clock = sinon.useFakeTimers();
+      const spy = sinon.spy(screen, 'updateProgressBar');
+      screen.progressBarHandler(null, 10, 10, true);
+      clock.tick(100);
+      expect(spy.called).to.be.false;
+      spy.restore();
+      clock.restore();
+    });
+
+    it('should return early when current value already at LOADER_LIMIT', () => {
+      screen.LOADER_LIMIT = 70;
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="70" aria-valuenow="70"></div>
+        <div class="spectrum-ProgressBar-percentage">70%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 70%"></div>
+        <div id="progress-status"></div>
+      `;
+      const clock = sinon.useFakeTimers();
+      const spy = sinon.spy(screen, 'updateProgressBar');
+      screen.progressBarHandler(splashScreenEl, 10, 10, false);
+      clock.tick(100);
+      expect(spy.called).to.be.false;
+      spy.restore();
+      clock.restore();
+    });
+
+    it('should return early inside timeout when value is 100', () => {
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="0" aria-valuenow="0"></div>
+        <div class="spectrum-ProgressBar-percentage">0%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 0%"></div>
+        <div id="progress-status"></div>
+      `;
+      const clock = sinon.useFakeTimers();
+      const stub = sinon.stub(screen, 'updateProgressBar').callsFake((layer, pct) => {
+        if (pct === 10) {
+          layer.querySelector('.spectrum-ProgressBar').setAttribute('value', '100');
+        }
+      });
+      screen.progressBarHandler(splashScreenEl, 10, 10, true);
+      clock.tick(20);
+      stub.restore();
       clock.restore();
     });
   });
@@ -109,6 +185,20 @@ describe('TransitionScreen', () => {
       expect(splashScreenEl.parentElement.classList.contains('hide-splash-overflow')).to.be.true;
       expect(document.querySelector('main').getAttribute('aria-hidden')).to.equal('true');
       stub.restore();
+    });
+
+    it('should focus splash element after short delay when shown', () => {
+      const stubPb = sinon.stub(screen, 'progressBarHandler');
+      sinon.stub(screen, 'resetSplashVideos');
+      splashScreenEl.setAttribute('tabindex', '-1');
+      splashScreenEl.focus = sinon.spy();
+      const clock = sinon.useFakeTimers();
+      screen.splashVisibilityController(true);
+      clock.tick(50);
+      expect(splashScreenEl.focus.calledOnce).to.be.true;
+      stubPb.restore();
+      screen.resetSplashVideos.restore();
+      clock.restore();
     });
   });
 
@@ -214,6 +304,176 @@ describe('TransitionScreen', () => {
         name: 'workflow-acrobat',
       };
       expect(screen.getFragmentLink(undefined)).to.equal(fragmentLink);
+    });
+
+    it('should return themed fragment link for workflow-upload when theme is set', () => {
+      screen.workflowCfg = {
+        name: 'workflow-upload',
+        theme: 'dark',
+        productName: 'Firefly',
+        targetCfg: {
+          splashScreenConfig: {
+            fragmentLink: '/default',
+            'fragmentLink-firefly': '/ff-light',
+            'fragmentLink-firefly-dark': '/ff-dark',
+          },
+        },
+      };
+      expect(screen.getFragmentLink(undefined)).to.equal('/ff-dark');
+    });
+
+    it('should fall back to product fragment when theme set but no themed key exists', () => {
+      screen.workflowCfg = {
+        name: 'workflow-upload',
+        theme: 'dark',
+        productName: 'Firefly',
+        targetCfg: {
+          splashScreenConfig: {
+            fragmentLink: '/default',
+            'fragmentLink-firefly': '/ff-only',
+          },
+        },
+      };
+      expect(screen.getFragmentLink(undefined)).to.equal('/ff-only');
+    });
+  });
+
+  describe('checkForProgressBar', () => {
+    it('should return icon-progress-bar element when present', () => {
+      const icon = document.createElement('div');
+      icon.className = 'icon-progress-bar';
+      splashScreenEl.appendChild(icon);
+      expect(screen.checkForProgressBar()).to.equal(icon);
+    });
+
+    it('should build progress bar from [[progress-bar]] placeholder paragraph', () => {
+      const p = document.createElement('p');
+      p.textContent = 'Status [[progress-bar]] more text';
+      splashScreenEl.appendChild(p);
+      const result = screen.checkForProgressBar();
+      expect(result.classList.contains('progress-bar-area')).to.be.true;
+      expect(result.querySelector('.progress-bar')).to.exist;
+      expect(p.textContent).to.not.include('[[progress-bar]]');
+    });
+
+    it('should return null when no progress UI markers exist', () => {
+      splashScreenEl.innerHTML = '<p>Plain copy only</p>';
+      expect(screen.checkForProgressBar()).to.be.null;
+    });
+  });
+
+  describe('setProgressTextFromDOM', () => {
+    it('should collect text nodes next to progress-bar span', () => {
+      splashScreenEl.innerHTML = `
+        <div class="progress-bar-area">
+          <span class="progress-bar"></span>
+          Uploading your file
+        </div>`;
+      const nodes = screen.setProgressTextFromDOM();
+      expect(nodes.length).to.be.at.least(1);
+      expect(screen.progressText).to.include('Uploading');
+    });
+  });
+
+  describe('resetSplashVideos', () => {
+    it('should return when splashScreenEl is missing', () => {
+      screen.splashScreenEl = null;
+      expect(() => screen.resetSplashVideos()).to.not.throw();
+    });
+
+    it('should reset and play video when readyState is high enough', () => {
+      const video = document.createElement('video');
+      Object.defineProperty(video, 'readyState', { value: 4, configurable: true });
+      sinon.stub(video, 'play').resolves();
+      sinon.stub(video, 'load');
+      splashScreenEl.appendChild(video);
+      screen.resetSplashVideos();
+      expect(video.load.called).to.be.true;
+      video.play.restore();
+      video.load.restore();
+    });
+
+    it('should wait for canplay when video is not ready', () => {
+      const video = document.createElement('video');
+      Object.defineProperty(video, 'readyState', { value: 0, configurable: true });
+      sinon.stub(video, 'load');
+      sinon.stub(video, 'play').resolves();
+      splashScreenEl.appendChild(video);
+      screen.resetSplashVideos();
+      video.dispatchEvent(new Event('canplay'));
+      expect(video.load.called).to.be.true;
+      video.play.restore();
+      video.load.restore();
+    });
+  });
+
+  describe('loadSplashFragment', () => {
+    it('should return immediately when showSplashScreen is false', async () => {
+      screen.workflowCfg = {
+        targetCfg: { showSplashScreen: false, splashScreenConfig: { splashScreenParent: 'body' } },
+        productName: 'test',
+        name: 'workflow-upload',
+      };
+      const fetchSpy = sinon.spy(window, 'fetch');
+      await screen.loadSplashFragment();
+      expect(fetchSpy.called).to.be.false;
+      fetchSpy.restore();
+    });
+  });
+
+  describe('delayedSplashLoader', () => {
+    it('should call loadSplashFragment after idle timeout', async () => {
+      const stub = sinon.stub(screen, 'loadSplashFragment').resolves();
+      const clock = sinon.useFakeTimers();
+      screen.delayedSplashLoader();
+      clock.tick(8000);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(stub.calledOnce).to.be.true;
+      stub.restore();
+      clock.restore();
+    });
+
+    it('should call loadSplashFragment on first pointer interaction', async () => {
+      const stub = sinon.stub(screen, 'loadSplashFragment').resolves();
+      screen.delayedSplashLoader();
+      document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(stub.calledOnce).to.be.true;
+      stub.restore();
+    });
+  });
+
+  describe('showSplashScreen photoshop branch', () => {
+    it('should call updateCopyForDevice when product is Photoshop', async () => {
+      splashScreenEl.classList.add('decorate');
+      const icon = document.createElement('div');
+      icon.className = 'icon-progress-bar';
+      splashScreenEl.appendChild(icon);
+      const h0 = document.createElement('h1');
+      h0.innerText = 'H0';
+      const h1 = document.createElement('h2');
+      h1.innerText = 'H1';
+      const h2 = document.createElement('h3');
+      h2.innerText = 'H2';
+      const h3 = document.createElement('h4');
+      h3.innerText = 'H3';
+      splashScreenEl.appendChild(h0);
+      splashScreenEl.appendChild(h1);
+      splashScreenEl.appendChild(h2);
+      splashScreenEl.appendChild(h3);
+      screen.workflowCfg = {
+        targetCfg: { showSplashScreen: true },
+        productName: 'Photoshop',
+        name: 'workflow-upload',
+      };
+      const stub = sinon.stub(screen, 'updateCopyForDevice');
+      const stubPb = sinon.stub(screen, 'handleSplashProgressBar').resolves();
+      await screen.showSplashScreen();
+      expect(stub.called).to.be.true;
+      stub.restore();
+      stubPb.restore();
     });
   });
 });
