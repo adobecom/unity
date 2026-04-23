@@ -1,175 +1,256 @@
-/* ─── Widget shell ────────────────────────────────────────────────────────── */
+/**
+ * prompt-bar-upload — extends prompt-bar.css + mirrors prompt-bar-style “enabled” chrome:
+ * dark #222 shell on `.autocomplete`, transparent inner, light prompt text,
+ * plus a left-hand upload column.
+ */
 
-.pbu-widget {
+/* ─── Root and interactive-area structure (flex-row layout) ─────────────── */
+
+.unity-prompt-bar-upload.unity-enabled {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area {
+  background: #222 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  padding: 8px !important;
+  box-sizing: border-box !important;
+}
+
+@media screen and (min-width: 1200px) {
+  .unity-prompt-bar-upload.unity-enabled .interactive-area {
+    padding: 14px !important;
+  }
+}
+
+/* ─── Main flex-row container (left upload | right prompt bar) ───────────── */
+
+.unity-prompt-bar-upload.unity-enabled .pbu-main {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ─── Left section: Upload dropzone with heading ───────────────────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .pbu-left-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  position: relative;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 140px;
+  max-width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid rgb(255 255 255 / 12%);
+  padding-right: 16px;
+  box-sizing: border-box;
 }
 
-/* ─── Model picker ────────────────────────────────────────────────────────── */
-
-.pbu-model-picker {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.pbu-model-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--color-gray-300, #ccc);
-  border-radius: 20px;
-  background: transparent;
-  cursor: pointer;
-  font-size: 14px;
-  color: inherit;
-  transition: border-color 0.2s;
-}
-
-.pbu-model-trigger:hover,
-.pbu-model-trigger:focus-visible {
-  border-color: var(--color-accent, #6e6af0);
-  outline: none;
-}
-
-.pbu-chevron {
-  width: 16px;
-  height: 16px;
-  transition: transform 0.2s;
-}
-
-.pbu-model-trigger[aria-expanded="true"] .pbu-chevron {
-  transform: rotate(180deg);
-}
-
-.pbu-model-list {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  list-style: none;
+.unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-upload-heading {
   margin: 0;
-  padding: 6px 0;
-  background: var(--bg-popup, #fff);
-  border: 1px solid var(--color-gray-200, #e0e0e0);
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
-  min-width: 180px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-drop-zone-wrap {
+  width: 100%;
+  min-height: 120px;
+  flex: 1;
+}
+
+/* ─── Right section: Prompt bar (heading, textarea, controls) ──────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .pbu-prompt-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .unity-slf-prompt-label {
+  margin: 0 0 8px 0;
+  padding: 0;
+  display: block;
+  flex-shrink: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field {
+  flex: 1;
+  min-height: 80px;
+  resize: none;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 0;
+  margin: 0 0 12px 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--type-body-s-size, 15px);
+  line-height: 1.45;
+}
+
+/* ─── Controls footer (action container + generate button) ────────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  /* margin-top: 12px; */
+  /* padding-top: 12px; */
+  /* border-top: 1px solid rgb(255 255 255 / 12%); */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  flex: 1;
+  margin-top: 0 !important;
+  min-width: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 0 !important;
+  flex-shrink: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container:empty ~ .act-wrap {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* ─── Typography — prompt-bar-style copy labels ──────────────────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .unity-slf-copy-label {
+  color: #d1d1d1;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .unity-slf-prompt-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ─── Prompt field — light text on dark (prompt-bar-style textarea) ────────── */
+
+.unity-prompt-bar-upload.unity-enabled.interactive-area.dark .inp-field,
+.unity-prompt-bar-upload.unity-enabled.interactive-area.dark .inp-field::placeholder {
+  color: #f8f8f8 !important;
+}
+
+/* ─── Model / aspect dropdowns on dark chrome ────────────────────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .models-container .model-name,
+.unity-prompt-bar-upload.unity-enabled .verb-list .verb-link {
+  color: #292929;
+}
+
+/* ─── More button (secondary action) ───────────────────────────────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn {
+  background: transparent;
+  border: none;
+  padding: 7px 12px;
+  gap: 6px;
+  color: #f8f8f8;
+}
+
+.unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn .btn-ico {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn .btn-ico svg {
+  width: 20px;
+  height: 20px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn .btn-txt {
+  color: #f8f8f8;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* ─── Dropdowns open upward to avoid clipping ──────────────────────────────── */
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container .verb-list,
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container .verb-list {
+  top: auto;
+  bottom: 100%;
+  transform: none;
+  animation: none;
+  margin-bottom: 4px;
+  z-index: 10;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container,
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container {
+  position: relative;
   z-index: 200;
 }
 
-.pbu-model-list.open {
-  display: block;
-}
-
-.pbu-model-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.15s;
-}
-
-.pbu-model-item:hover {
-  background: var(--color-gray-100, #f5f5f5);
-}
-
-.pbu-model-check {
-  display: flex;
-  opacity: 0;
-  width: 16px;
-  height: 16px;
-}
-
-.pbu-model-item.selected .pbu-model-check {
-  opacity: 1;
-}
-
-.pbu-check-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--color-accent, #6e6af0);
-}
-
-/* ─── Aspect ratio picker ─────────────────────────────────────────────────── */
-
-.pbu-aspect-ratio-picker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.pbu-aspect-ratio-label {
-  font-size: 13px;
-  color: var(--color-gray-600, #666);
-  white-space: nowrap;
-}
-
-.pbu-aspect-ratio-btns {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.pbu-ar-btn {
-  padding: 4px 12px;
-  border: 1px solid var(--color-gray-300, #ccc);
-  border-radius: 16px;
-  background: transparent;
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
-}
-
-.pbu-ar-btn.selected,
-.pbu-ar-btn[aria-pressed="true"] {
-  border-color: var(--color-accent, #6e6af0);
-  background: var(--color-accent, #6e6af0);
-  color: #fff;
-}
-
-.pbu-ar-btn:hover:not(.selected) {
-  border-color: var(--color-accent, #6e6af0);
-}
-
-/* ─── Drop zone ───────────────────────────────────────────────────────────── */
+/* ─── Upload dropzone styles ──────────────────────────────────────────────── */
 
 .pbu-drop-zone-wrap {
   position: relative;
   width: 100%;
+  min-height: 120px;
 }
 
-.drop-zone {
+.pbu-drop-zone-wrap .drop-zone {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 140px;
-  border: 2px dashed var(--color-gray-300, #ccc);
+  gap: 8px;
+  min-height: 120px;
+  height: 100%;
+  border: 2px dashed rgb(255 255 255 / 35%);
   border-radius: 12px;
   cursor: pointer;
-  padding: 20px;
+  padding: 12px 8px;
   text-align: center;
+  box-sizing: border-box;
   transition: border-color 0.2s, background 0.2s;
 }
 
-.drop-zone:hover,
-.drop-zone.drag-over {
-  border-color: var(--color-accent, #6e6af0);
-  background: var(--color-accent-tint, rgb(110 106 240 / 6%));
+.pbu-drop-zone-wrap .drop-zone:hover,
+.pbu-drop-zone-wrap .drop-zone.drag-over {
+  border-color: rgb(255 255 255 / 55%);
+  background: rgb(255 255 255 / 4%);
 }
 
-.drop-zone.hidden {
+.pbu-drop-zone-wrap .drop-zone.hidden {
   display: none;
 }
 
@@ -177,35 +258,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   pointer-events: none;
 }
 
 .pbu-upload-svg {
-  width: 32px;
-  height: 32px;
-  color: var(--color-gray-500, #888);
+  width: 28px;
+  height: 28px;
+  color: rgb(255 255 255 / 65%);
 }
 
 .pbu-upload-text {
-  font-size: 14px;
-  color: var(--color-gray-600, #555);
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgb(255 255 255 / 70%);
 }
 
 .pbu-legal-text {
-  font-size: 11px;
-  color: var(--color-gray-400, #999);
+  font-size: 10px;
+  color: rgb(255 255 255 / 45%);
   margin: 0;
 }
 
-/* ─── Image preview ───────────────────────────────────────────────────────── */
-
+/* Preview + spinner */
 .pbu-preview {
-  position: relative;
-  width: 100%;
+  position: absolute;
+  inset: 0;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--color-gray-100, #f0f0f0);
+  background: rgb(0 0 0 / 35%);
 }
 
 .pbu-preview.hidden {
@@ -215,23 +296,18 @@
 .pbu-preview-img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 320px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 12px;
 }
 
 .pbu-delete-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
   border: none;
+  border-radius: 50%;
   background: rgb(0 0 0 / 55%);
   color: #fff;
   cursor: pointer;
@@ -245,13 +321,6 @@
   opacity: 1;
 }
 
-.pbu-trash-svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* ─── Upload spinner (shown inside preview while uploading) ───────────────── */
-
 .pbu-spinner {
   position: absolute;
   inset: 0;
@@ -259,7 +328,6 @@
   align-items: center;
   justify-content: center;
   background: rgb(0 0 0 / 35%);
-  border-radius: 12px;
 }
 
 .pbu-spinner.hidden {
@@ -268,9 +336,9 @@
 
 .pbu-spinner::after {
   content: '';
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgb(255 255 255 / 40%);
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgb(255 255 255 / 35%);
   border-top-color: #fff;
   border-radius: 50%;
   animation: pbu-spin 0.7s linear infinite;
@@ -280,82 +348,8 @@
   to { transform: rotate(360deg); }
 }
 
-/* ─── Prompt textarea ─────────────────────────────────────────────────────── */
-
-.pbu-prompt-wrap {
-  width: 100%;
-}
-
-.inp-field {
-  width: 100%;
-  resize: none;
-  border: 1px solid var(--color-gray-300, #ccc);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 15px;
-  font-family: inherit;
-  line-height: 1.5;
-  background: transparent;
-  color: inherit;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-  min-height: 52px;
-}
-
-.inp-field:focus {
-  border-color: var(--color-accent, #6e6af0);
-  outline: none;
-}
-
-/* ─── Action buttons ──────────────────────────────────────────────────────── */
-
-.pbu-btn-row {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.pbu-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 24px;
-  border-radius: 24px;
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
-  border: none;
-}
-
-.pbu-btn:active {
-  transform: scale(0.97);
-}
-
-.gen-btn {
-  background: var(--color-accent, #6e6af0);
-  color: #fff;
-}
-
-.gen-btn:hover {
-  opacity: 0.88;
-}
-
-.more-btn {
-  background: transparent;
-  color: var(--color-accent, #6e6af0);
-  border: 1px solid var(--color-accent, #6e6af0);
-}
-
-.more-btn:hover {
-  background: var(--color-accent-tint, rgb(110 106 240 / 8%));
-}
-
-/* ─── Alert / error toast ─────────────────────────────────────────────────── */
-
-.alert-holder {
-  display: none;
+/* Alert */
+.ex-unity-wrap.pbu-widget .alert-holder {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
@@ -363,61 +357,44 @@
   z-index: 300;
 }
 
-.alert-holder.show {
-  display: block;
-}
-
-.alert-toast {
-  background: var(--bg-popup, #fff);
-  border: 1px solid var(--color-error, #e53935);
-  border-radius: 10px;
-  padding: 10px 14px;
-}
-
-.alert-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.alert-icon {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex: 1;
-}
-
-.alert-text p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-error, #e53935);
-}
-
-.alert-close {
-  display: flex;
-  align-items: center;
-  color: var(--color-gray-500, #888);
-  text-decoration: none;
-}
-
-.alert-close-text {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-/* ─── Responsive ──────────────────────────────────────────────────────────── */
-
-@media (width <= 600px) {
-  .pbu-btn-row {
-    justify-content: stretch;
+/* Mobile: stack sections vertically, drop right border from left section */
+@media screen and (max-width: 599px) {
+  .unity-prompt-bar-upload.unity-enabled .pbu-main {
+    flex-direction: column;
+    gap: 0;
   }
 
-  .pbu-btn {
+  .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+    padding-right: 0;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgb(255 255 255 / 12%);
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
+    width: 100%;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
     flex: 1;
-    justify-content: center;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
+    flex: 1;
+    justify-content: stretch;
+    gap: 8px;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
+    flex: 1;
   }
 }
