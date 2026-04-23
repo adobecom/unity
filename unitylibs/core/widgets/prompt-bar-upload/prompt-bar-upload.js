@@ -323,10 +323,10 @@ export default class PromptBarUploadWidget {
     });
 
     const dropContent = createTag('div', { class: 'pbu-drop-content' });
-    // const uploadIcon = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` });
-    // dropContent.append(uploadIcon);
-    const uploadIcon = createTag('span', { class: 'pbu-upload-svg' }, '<svg><use xlink:href="#unity-upload-icon"></use></svg>');
+    const uploadIcon = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` });
     dropContent.append(uploadIcon);
+    // const uploadIcon = createTag('span', { class: 'pbu-upload-svg' }, '<svg><use xlink:href="#unity-upload-icon"></use></svg>');
+    // dropContent.append(uploadIcon);
 
     // dropContent.append(
     //   svgUse(ICON.upload, 'pbu-upload-svg'),

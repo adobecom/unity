@@ -352,6 +352,36 @@
   z-index: 300;
 }
 
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn {
+  display: flex;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico {
+  height: 20px;
+  width: 20px;;
+  align-self: center;
+}
+
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico svg {
+  width: 20px;
+  height: 20px;
+}
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-txt {
+  color: #C6C6C6;
+}
+
+.pbu-main .pbu-controls-footer .act-wrap a.gen-btn {
+  border-radius: 25px;
+  background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+  border: none;
+  padding: 10px 20px 10px 18px;
+  gap: 8px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
 /* Mobile: stack sections vertically, drop right border from left section */
 @media screen and (max-width: 599px) {
   .unity-prompt-bar-upload.unity-enabled .pbu-main {
@@ -391,5 +421,20 @@
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
     flex: 1;
+  }
+
+  .action-container > a.unity-act-btn.pbu-more-btn.more-btn {
+    display: flex;
+    gap: 6px;
+    text-decoration: none;
+  }
+
+  .action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico {
+    height: 20px;
+    align-self: center;
+  }
+
+  .action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-txt {
+    color: #C6C6C6;
   }
 }
