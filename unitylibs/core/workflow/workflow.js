@@ -73,6 +73,7 @@ class WfInitiator {
       'workflow-firefly': fireflyShared,
       'workflow-prompt-bar-upload': [
         `${baseWfPath}/sprite.svg`,
+        `${getUnityLibs()}/core/widgets/prompt-bar/prompt-bar.css`,
         ...this.getWidgetPaths(),
       ],
     };
