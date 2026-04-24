@@ -34,6 +34,30 @@ max-width: 727px;
 }
 }
 
+/* ─── Legal line (Terms / Privacy) below the prompt bar ───────────────────── */
+
+.ex-unity-wrap.pbu-widget .pbu-legal-foot {
+font-size: 14px;
+width: fit-content;
+max-width: 727px;
+box-sizing: border-box;
+font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+font-size: 13px;
+font-weight: 400;
+line-height: 1.45;
+color: #f8f8f8;
+text-align: start;
+}
+
+.ex-unity-wrap.pbu-widget .pbu-legal-foot a {
+color: #1473E6;
+text-decoration: none;
+}
+
+.ex-unity-wrap.pbu-widget .pbu-legal-foot a:hover {
+text-decoration: underline;
+}
+
 /* ─── Main flex-row container (left upload | right prompt bar) ───────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-main {
@@ -276,7 +300,7 @@ padding: 8px 12px;
 min-height: 32px;
 width: auto;
 min-width: 27px;
-max-width: 224px;
+max-width: 200px;
 box-sizing: border-box;
 cursor: pointer;
 border: none;

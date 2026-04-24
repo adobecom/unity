@@ -55,6 +55,22 @@ function labelForField(root, iconClass, fallback) {
   return t || fallback;
 }
 
+/** Pull legal copy (Terms / Privacy links) from authoring before the config holder consumes the block. */
+function extractLegalFootFromAuthoring(root) {
+  const marker = root.querySelector('[class*="icon-legal-terms"]');
+  if (!marker) return null;
+  const li = marker.closest('li');
+  const foot = createTag('div', { class: 'pbu-legal-foot' });
+  if (li?.parentElement) {
+    while (li.firstChild) foot.append(li.firstChild);
+    li.remove();
+    return foot;
+  }
+  foot.append(marker.cloneNode(true));
+  marker.remove();
+  return foot;
+}
+
 // ─── Widget ─────────────────────────────────────────────────────────────────
 
 export default class PromptBarUploadWidget {
@@ -192,6 +208,7 @@ export default class PromptBarUploadWidget {
         class: 'verb-link model-link',
         'data-model-id': model.id,
         'data-model-name': (model.name || '').trim(),
+        ...(model.version != null && model.version !== '' ? { 'data-model-version': String(model.version) } : {}),
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
       });
@@ -215,10 +232,13 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const modelId = modelLink.getAttribute('data-model-id') || '';
       const modelName = modelLink.getAttribute('data-model-name') || '';
+      const modelVersion = modelLink.getAttribute('data-model-version') || '';
       this.selectedModelId = modelId;
       nameContainer.textContent = modelName;
       this.widgetWrap?.setAttribute('data-selected-model-id', modelId);
       this.widgetWrap?.setAttribute('data-selected-model-name', modelName);
+      if (modelVersion) this.widgetWrap?.setAttribute('data-selected-model-version', modelVersion);
+      else this.widgetWrap?.removeAttribute('data-selected-model-version');
       list.querySelectorAll('li').forEach((li) => {
         const a = li.querySelector('a');
         li.classList.toggle('selected', a === modelLink);
@@ -235,6 +255,11 @@ export default class PromptBarUploadWidget {
 
     this.widgetWrap?.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap?.setAttribute('data-selected-model-name', (defaultModel?.name || '').trim());
+    if (defaultModel?.version != null && defaultModel.version !== '') {
+      this.widgetWrap?.setAttribute('data-selected-model-version', String(defaultModel.version));
+    } else {
+      this.widgetWrap?.removeAttribute('data-selected-model-version');
+    }
     return container;
   }
 
@@ -320,9 +345,6 @@ export default class PromptBarUploadWidget {
   }
 
   buildDropZone() {
-    // const uploadText = placeholderText(this.el, 'icon-placeholder-upload') || 'Upload your image';
-    // const legalText = placeholderText(this.el, 'icon-placeholder-legal') || '';
-
     const fileInput = createTag('input', {
       type: 'file',
       id: 'file-upload',
@@ -334,22 +356,13 @@ export default class PromptBarUploadWidget {
     const dropContent = createTag('div', { class: 'pbu-drop-content' });
     const uploadIcon = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` });
     dropContent.append(uploadIcon);
-    // const uploadIcon = createTag('span', { class: 'pbu-upload-svg' }, '<svg><use xlink:href="#unity-upload-icon"></use></svg>');
-    // dropContent.append(uploadIcon);
-
-    // dropContent.append(
-    //   svgUse(ICON.upload, 'pbu-upload-svg'),
-    //   // createTag('span', { class: 'pbu-upload-text' }, uploadText),
-    // );
-    // if (legalText) dropContent.append(createTag('p', { class: 'pbu-legal-text' }, legalText));
-
     const dropZone = createTag('div', { class: 'drop-zone', role: 'button', tabindex: '0', 'aria-label': 'Upload image' });
     dropZone.append(fileInput, dropContent);
-
     const preview = createTag('div', { class: 'pbu-preview hidden', 'aria-hidden': 'true' });
     const previewImg = createTag('img', { class: 'pbu-preview-img', alt: 'Selected image preview' });
-    const deleteBtn = createTag('button', { class: 'pbu-delete-btn', 'aria-label': 'Remove image' });
-    deleteBtn.append(svgUse(ICON.trash, 'pbu-trash-svg'));
+    const deleteBtn = createTag('span', { class: 'pbu-delete-btn' }, '<svg><use xlink:href="#unity-trash-icon"></use></svg>');
+    // const deleteBtn = createTag('button', { class: 'pbu-delete-btn', 'aria-label': 'Remove image' });
+    // deleteBtn.append(svgUse(ICON.trash, 'pbu-trash-svg'));
     const spinner = createTag('div', { class: 'pbu-spinner hidden', 'aria-label': 'Uploading', role: 'status' });
     preview.append(previewImg, deleteBtn, spinner);
 
@@ -500,8 +513,10 @@ export default class PromptBarUploadWidget {
     this.widgetWrap = widgetWrap;
     const unitySprite = createTag('div', { class: 'unity-sprite-container' });
     unitySprite.innerHTML = this.spriteCon || '';
+    const legalFoot = extractLegalFootFromAuthoring(this.el);
     widgetWrap.append(unitySprite, root);
-    
+    if (legalFoot) widgetWrap.append(legalFoot);
+
     // Append to target
     this.addWidget();
     this.wireImagePreview();
@@ -509,7 +524,7 @@ export default class PromptBarUploadWidget {
     // Set up action map
     this.actionMap = {
       '.gen-btn': [{ actionType: 'generate' }],
-      '.more-btn': [{ actionType: 'generate' }],
+      '.more-btn': [{ actionType: 'more' }],
       '.drop-zone': [{ actionType: 'file-selected' }],
       '#file-upload': [{ actionType: 'file-selected' }],
     };

@@ -21,7 +21,7 @@
     "sendSplunkAnalytics": true,
     "actionMap": {
       ".gen-btn": [{ "actionType": "generate" }],
-      ".more-btn": [{ "actionType": "generate" }],
+      ".more-btn": [{ "actionType": "more" }],
       ".drop-zone": [{ "actionType": "file-selected" }],
       "#file-upload": [{ "actionType": "file-selected" }]
     }

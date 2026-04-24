@@ -81,6 +81,7 @@ export default class ActionBinder {
     this.filesData = {};
     this.sendAnalyticsToSplunk = null;
     this.analyticsModule = null;
+    this.apiConfig = this.getApiConfig();
     // The widget renders into canvasArea (interactive-area), not the upstream block element.
     const searchRoot = this.canvasArea || this.block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') ?? searchRoot;
@@ -106,7 +107,10 @@ export default class ActionBinder {
 
   getAdditionalHeaders() {
     const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
-    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
+    const v = this.verb;
+    let xUnityAction = baseAction;
+    if (v && baseAction && v !== baseAction) xUnityAction = `${baseAction}-${v}`;
+    else if (v && !baseAction) xUnityAction = v;
     return {
       'x-unity-product': this.workflowCfg?.productName,
       'x-unity-action': xUnityAction,
@@ -115,9 +119,12 @@ export default class ActionBinder {
 
   getVerbFromDom() {
     const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
-    if (!verbEl) return undefined;
-    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-operation-'));
-    return verbClass?.slice('icon-operation-'.length);
+    if (verbEl) {
+      const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-operation-'));
+      const fromDom = verbClass?.slice('icon-operation-'.length);
+      if (fromDom) return fromDom;
+    }
+    return this.workflowCfg?.enabledFeatures?.[0];
   }
 
   // ─── Analytics ─────────────────────────────────────────────────────────────
@@ -179,7 +186,9 @@ export default class ActionBinder {
     sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
     if (!this.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorTypeSelector)?.closest('li')?.textContent?.trim()
-      || this.unityEl.querySelector(errorTypeSelector)?.nextSibling?.textContent?.trim();
+      || this.unityEl.querySelector(errorTypeSelector)?.nextSibling?.textContent?.trim()
+      || (typeof error === 'string' ? error : error?.message)
+      || '';
     if (!msg) return;
     const widgetWrapEl = this.block?.querySelector('.ex-unity-wrap') || this.block;
     if (widgetWrapEl) widgetWrapEl.style.pointerEvents = 'none';
@@ -376,7 +385,10 @@ export default class ActionBinder {
     return true;
   }
 
-  async handleGenerate() {
+  /**
+   * @param {boolean} connectorGenerate — when false (More CTA), connector payload sets `generate: false`; otherwise same as Generate.
+   */
+  async handleGenerate(connectorGenerate = true) {
     await this.initAnalytics();
     const query = this.inputField?.value?.trim() || '';
     if (!this.validatePrompt(query)) return;
@@ -386,16 +398,21 @@ export default class ActionBinder {
 
     this.logAnalytics('Generate CTA|UnityWidget', {
       verb: `image-to-${this.verb || 'video'}`,
-      action: 'generate',
+      action: connectorGenerate ? 'generate' : 'more',
       hasImage: !!this.pendingFile,
       modelId: selectedModelId,
       aspectRatio: selectedAspectRatio,
     });
 
+    const searchRoot = this.canvasArea || this.block;
+    const interactiveShell = searchRoot?.querySelector?.('.interactive-area');
+    this.workflowCfg.theme = interactiveShell?.classList.contains('dark') ? 'dark' : null;
+
     if (!this.transitionScreen) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, false);
     }
+    await this.transitionScreen.loadSplashFragment();
     await this.transitionScreen.showSplashScreen(true);
 
     // Upload image first if one is pending
@@ -407,35 +424,57 @@ export default class ActionBinder {
       }
     }
 
-    // Call Firefly connector with prompt + assetId
-    await this.callConnector(query, selectedModelId, selectedAspectRatio);
+    if (!this.assetId) {
+      await this.transitionScreen?.showSplashScreen();
+      this.showErrorToast('.icon-error-request', new Error('Missing asset'), 'client');
+      return;
+    }
+
+    await this.callConnector(query, selectedModelId, selectedAspectRatio, connectorGenerate);
   }
 
-  async callConnector(query, modelId, aspectRatio) {
-    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
-    const queryParams = getCgenQueryParams(this.unityEl);
-    const payload = {
+  /** e.g. image-to-video → imageToVideo */
+  static workflowSlugToCamelVerb(slug) {
+    if (!slug || typeof slug !== 'string') return 'imageToVideo';
+    return slug.split('-').map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))).join('');
+  }
+
+  async callConnector(query, modelId, aspectRatio, connectorGenerate = true) {
+    const workflowSlug = this.workflowCfg.supportedFeatures?.values()?.next()?.value
+      || this.workflowCfg.enabledFeatures?.[0]
+      || 'image-to-video';
+    const verbCamel = ActionBinder.workflowSlugToCamelVerb(workflowSlug);
+    const modelVersion = this.widgetWrap?.getAttribute('data-selected-model-version') || '';
+    const size = (this.filesData?.width && this.filesData?.height)
+      ? { width: this.filesData.width, height: this.filesData.height }
+      : { width: 1080, height: 1080 };
+
+    const connectorBody = {
       targetProduct: this.workflowCfg.productName,
-      additionalQueryParams: queryParams,
+      assetId: this.assetId,
+      query,
       payload: {
-        workflow: `image-to-${this.verb || 'video'}`,
+        workflow: workflowSlug,
+        verb: verbCamel,
+        action: 'asset-upload',
         locale: getLocale(),
-        action: 'generate',
+        size,
         ...(modelId && { modelId }),
+        ...(modelVersion && { modelVersion }),
         ...(aspectRatio && { aspectRatio }),
-        ...(query && { query }),
+        generate: connectorGenerate,
       },
-      ...(this.assetId ? { assetId: this.assetId } : {}),
     };
     try {
+      const headerExtras = this.getAdditionalHeaders();
       const postOpts = await getApiCallOptions(
         'POST',
         unityConfig.apiKey,
         {
-          'x-unity-product': this.workflowCfg.productName,
-          'x-unity-action': `generate-image-to-${this.verb || 'video'}`,
+          ...headerExtras,
+          'x-unity-action': `${workflowSlug}-asset-upload`,
         },
-        { body: JSON.stringify(payload) },
+        { body: JSON.stringify(connectorBody) },
       );
       const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
       const networkUtils = new NetworkUtils();
@@ -453,6 +492,11 @@ export default class ActionBinder {
         },
       );
       this.logAnalytics('Generate Complete|UnityWidget', { assetId: this.assetId });
+      this.LOADER_LIMIT = 100;
+      if (this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.LOADER_LIMIT = 100;
+        this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
+      }
       if (url) window.location.href = url;
     } catch (err) {
       await this.transitionScreen?.showSplashScreen();
@@ -559,7 +603,10 @@ export default class ActionBinder {
     try {
       switch (actionType) {
         case 'generate':
-          await this.handleGenerate();
+          await this.handleGenerate(true);
+          break;
+        case 'more':
+          await this.handleGenerate(false);
           break;
         case 'file-selected':
           await this.validateAndStoreFile(files);

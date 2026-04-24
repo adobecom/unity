@@ -83,7 +83,7 @@ export default class TransitionScreen {
       return splashScreenConfig[`fragmentLink-${matchedDomain}`];
     }
     const productName = this.workflowCfg.productName.toLowerCase();
-    if (this.workflowCfg.name === 'workflow-upload') {
+    if (this.workflowCfg.name === 'workflow-upload' || this.workflowCfg.name === 'workflow-prompt-bar-upload') {
       const { theme } = this.workflowCfg;
       const themedKey = theme ? `fragmentLink-${productName}-${theme}` : null;
       if (themedKey && splashScreenConfig[themedKey]) return splashScreenConfig[themedKey];
@@ -113,7 +113,9 @@ export default class TransitionScreen {
 
   async loadSplashFragment() {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
+    if (this.splashScreenEl) return;
     const fragmentLink = this.getFragmentLink();
+    if (!fragmentLink) return;
     this.splashFragmentLink = localizeLink(`${window.location.origin}${fragmentLink}`);
     const resp = await fetch(`${this.splashFragmentLink}.plain.html`);
     const html = await resp.text();
