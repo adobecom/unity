@@ -1,355 +1,797 @@
 /**
- * prompt-bar-upload — extends prompt-bar.css + mirrors prompt-bar-style “enabled” chrome:
- * dark #222 shell on `.autocomplete`, transparent inner, light prompt text,
- * plus a left-hand upload column.
+ * prompt-bar-upload — self-contained widget chrome (no prompt-bar.css import).
+ * Model / aspect dropdown rules below are ported from prompt-bar.css for:
+ * `.models-container`, `.selected-model`, `.verb-list`, `.verb-item`, `.verb-link`, `.model-link`, `.menu-icon`.
  */
 
 /* ─── Root and interactive-area structure (flex-row layout) ─────────────── */
 
+.upload-marquee.unity-enabled .interactive-area {
+  display: inherit;
+  background: none;
+}
+
 .unity-prompt-bar-upload.unity-enabled {
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
+width: 100%;
+max-width: 1000px;
+margin-top: 24px;
 }
 
 .unity-prompt-bar-upload.unity-enabled .interactive-area {
-  background: #222 !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 20px !important;
-  padding: 8px !important;
-  box-sizing: border-box !important;
-  max-width: 727px;
+width: 727px;
+background: #222 !important;
+border: none !important;
+box-shadow: none !important;
+border-radius: 20px !important;
+padding: 8px !important;
+box-sizing: border-box !important;
+max-width: 727px;
 }
 
 @media screen and (min-width: 1200px) {
-  .unity-prompt-bar-upload.unity-enabled .interactive-area {
-    padding: 14px !important;
-  }
+.unity-prompt-bar-upload.unity-enabled .interactive-area {
+  padding: 14px !important;
+}
 }
 
 /* ─── Main flex-row container (left upload | right prompt bar) ───────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-main {
-  padding: 16px;
-  border-radius: 10px;
-  background: #1B1B1B;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 16px;
-  width: 100%;
-  box-sizing: border-box;
+padding: 16px;
+border-radius: 10px;
+background: #1B1B1B;
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+gap: 16px;
+width: 100%;
+box-sizing: border-box;
 }
 
 /* ─── Left section: Upload dropzone with heading ───────────────────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 17px;
-  flex-shrink: 0;
-  border-right: 1px solid rgb(255 255 255 / 12%);
-  padding-right: 16px;
-  box-sizing: border-box;
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+gap: 17px;
+flex-shrink: 0;
+border-right: 1px solid rgb(255 255 255 / 12%);
+padding-right: 16px;
+box-sizing: border-box;
 }
 
 /* .unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-drop-zone-wrap {
-  width: 100%;
-  min-height: 120px;
-  flex: 1;
+width: 100%;
+min-height: 120px;
+flex: 1;
 } */
 
 /* ─── Right section: Prompt bar (heading, textarea, controls) ──────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  flex: 1;
-  min-width: 0;
+display: flex;
+flex-direction: column;
+align-items: stretch;
+gap: 0;
+flex: 1;
+min-width: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section .pbu-prompt-bar-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  min-width: 0;
+display: flex;
+flex-direction: column;
+gap: 0;
+width: 100%;
+min-width: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section .unity-slf-prompt-label {
-  margin: 0 0 8px 0;
-  padding: 0;
-  display: block;
-  flex-shrink: 0;
+margin: 0 0 8px 0;
+padding: 0;
+display: block;
+flex-shrink: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field {
-  flex: 1;
-  min-height: 80px;
-  resize: none;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 0;
-  margin: 0 0 12px 0;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: var(--type-body-s-size, 15px);
-  line-height: 1.45;
+flex: 1;
+min-height: 80px;
+resize: none;
+width: 100%;
+box-sizing: border-box;
+padding: 10px 0;
+margin: 0 0 12px 0;
+border: none;
+background: transparent;
+outline: none;
+font-size: var(--type-body-s-size, 15px);
+line-height: 1.45;
 }
 
 /* ─── Controls footer (action container + generate button) ────────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  /* margin-top: 12px; */
-  /* padding-top: 12px; */
-  /* border-top: 1px solid rgb(255 255 255 / 12%); */
-  width: 100%;
-  box-sizing: border-box;
+display: flex;
+flex-direction: row;
+align-items: center;
+gap: 8px;
+/* margin-top: 12px; */
+/* padding-top: 12px; */
+/* border-top: 1px solid rgb(255 255 255 / 12%); */
+width: 100%;
+box-sizing: border-box;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
-  display: flex !important;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-start;
-  flex: 1;
-  margin-top: 0 !important;
-  min-width: 0;
+display: flex !important;
+flex-wrap: wrap;
+align-items: center;
+gap: 8px;
+justify-content: flex-start;
+flex: 1;
+margin-top: 0 !important;
+min-width: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 0 !important;
-  flex-shrink: 0;
+display: flex !important;
+align-items: center;
+gap: 10px;
+justify-content: flex-end;
+margin-top: 0 !important;
+flex-shrink: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container:empty ~ .act-wrap {
-  flex: 1;
-  justify-content: flex-end;
+flex: 1;
+justify-content: flex-end;
 }
 
 /* ─── Typography — prompt-bar-style copy labels ──────────────────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .unity-slf-copy-label {
-  color: #d1d1d1;
-  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 18px;
+color: #d1d1d1;
+font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+font-size: 14px;
+font-weight: 400;
+line-height: 18px;
 }
 
 .unity-prompt-bar-upload.unity-enabled .unity-slf-prompt-label {
-  display: block;
-  margin-bottom: 8px;
+display: block;
+margin-bottom: 8px;
 }
 
 /* ─── Prompt field — light text on dark (prompt-bar-style textarea) ────────── */
 
-.unity-prompt-bar-upload.unity-enabled.interactive-area.dark .inp-field,
-.unity-prompt-bar-upload.unity-enabled.interactive-area.dark .inp-field::placeholder {
-  color: #f8f8f8 !important;
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field::placeholder {
+color: #f8f8f8 !important;
+font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+font-size: 16px;
 }
 
-/* ─── Model / aspect dropdowns on dark chrome ────────────────────────────── */
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .inp-field,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .inp-field::placeholder {
+color: #292929;
+}
 
-.unity-prompt-bar-upload.unity-enabled .models-container .model-name,
-.unity-prompt-bar-upload.unity-enabled .verb-list .verb-link {
-  color: #292929;
+/* ─── Model picker & aspect dropdown (from prompt-bar.css) ─────────────────── */
+
+@keyframes pbu-model-fade-in {
+0% { opacity: 0; }
+100% { opacity: 1; }
+}
+
+@keyframes pbu-model-move-down {
+0% {
+  transform: translateY(33px);
+  opacity: 0;
+  display: none;
+}
+100% {
+  transform: translateY(40px);
+  opacity: 1;
+}
+}
+
+@keyframes pbu-model-move-up {
+0% {
+  transform: translateY(40px);
+  opacity: 1;
+}
+100% {
+  transform: translateY(33px);
+  opacity: 0;
+  display: none;
+}
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .selected-model img,
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-link img {
+width: 22px;
+height: 22px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .selected-model .menu-icon,
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-link .selected-icon {
+font-size: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .selected-model .menu-icon,
+.unity-prompt-bar-upload.unity-enabled .interactive-area .selected-model .menu-icon svg,
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-link .selected-icon,
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-link .selected-icon svg {
+width: 12px;
+height: 12px;
+}
+
+/* Model + aspect triggers: pill chrome (aligned with prompt-bar-style / Firefly reference) */
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .models-container {
+display: flex;
+flex: 0 1 auto;
+max-width: none;
+width: auto;
+position: relative;
+align-items: center;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .pbu-controls-footer .models-container {
+max-width: none;
+}
+
+/* Open list — light shell: dark type on white panel */
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .verb-list .verb-link,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .verb-list .verb-link .model-name {
+color: #292929;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container:not(.pbu-aspect-models) .verb-list {
+min-width: 270px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container .menu-icon {
+position: relative;
+top: 1px;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+transition: transform 0.15s ease-in;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container.show-menu .menu-icon {
+transform: rotate(-180deg);
+}
+
+/* Dark shell: charcoal pill, white type + chevron (model + aspect) */
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model {
+display: inline-flex;
+align-items: center;
+gap: 8px;
+justify-content: flex-start;
+padding: 8px 12px;
+min-height: 32px;
+width: auto;
+min-width: 27px;
+max-width: 224px;
+box-sizing: border-box;
+cursor: pointer;
+border: none;
+font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+font-size: 14px;
+font-weight: 400;
+line-height: 1.2;
+text-transform: none;
+white-space: nowrap;
+background: #353535;
+color: #fff;
+border-radius: 10px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model:hover {
+background: #434343;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model:focus-visible {
+outline: 2px solid #2680eb;
+outline-offset: 2px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model .model-name {
+color: #fff;
+overflow: hidden;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model .menu-icon svg,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .models-container .menu-icon svg {
+filter: brightness(0) invert(1);
+opacity: 0.95;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model img {
+width: 20px;
+height: 20px;
+border-radius: 6px;
+flex-shrink: 0;
+object-fit: cover;
+}
+
+/* Aspect ratio row: frame glyph when there is no model thumbnail */
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-aspect-models .selected-model:not(:has(img))::before {
+content: '';
+display: block;
+width: 22px;
+height: 12px;
+box-sizing: border-box;
+border: 1.5px solid rgb(255 255 255 / 92%);
+border-radius: 2px;
+flex-shrink: 0;
+}
+
+/* Light shell: soft pill + dark text */
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model {
+display: inline-flex;
+align-items: center;
+gap: 8px;
+justify-content: flex-start;
+padding: 8px 12px;
+min-height: 40px;
+width: auto;
+border: none;
+border-radius: 10px;
+background: rgb(0 0 0 / 8%);
+color: #292929;
+font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+font-size: 14px;
+font-weight: 400;
+cursor: pointer;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model .model-name {
+color: #292929;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model .menu-icon svg,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .models-container .menu-icon svg {
+filter: brightness(0);
+opacity: 0.85;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-aspect-models .selected-model:not(:has(img))::before {
+content: '';
+display: block;
+width: 22px;
+height: 12px;
+box-sizing: border-box;
+border: 1.5px solid rgb(0 0 0 / 55%);
+border-radius: 2px;
+flex-shrink: 0;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model,
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model {
+border-radius: 12px;
+min-height: 36px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list {
+padding: 18px;
+list-style: none;
+box-shadow: 0 0 10px #0000001c;
+border-radius: 10px;
+background: rgb(255 255 255 / 100%);
+color: #292929;
+margin: 0;
+min-width: 110px;
+animation: pbu-model-move-up 0.2s ease forwards;
+position: absolute;
+top: 0;
+left: 0;
+z-index: 1;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list {
+border-radius: 14px;
+}
+
+[lang="ja-JP"] .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list,
+[lang="ko-KR"] .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list {
+margin-top: 6px;
+}
+
+[dir="rtl"] .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list {
+left: unset;
+right: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+display: block;
+animation: pbu-model-move-down 0.4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-link {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 10px;
+padding-inline-start: 25px;
+text-transform: capitalize;
+text-decoration: none;
+text-align: start;
+position: relative;
+opacity: 0;
+animation: pbu-model-fade-in 0.5s ease forwards;
+}
+
+/* Dark shell: model/aspect menus match prompt-bar-style (black panel, white type, blue check) */
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .models-container .verb-list,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verbs-container .verb-list {
+background: #000;
+color: #f8f8f8;
+box-shadow: 0 8px 32px rgb(0 0 0 / 55%);
+border: 1px solid rgb(255 255 255 / 10%);
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-link,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-link .model-name {
+color: #f8f8f8;
+text-transform: none;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-link:hover,
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-link:focus-visible {
+background: rgb(255 255 255 / 8%);
+border-radius: 8px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-item.selected .verb-link {
+background: rgb(255 255 255 / 10%);
+border-radius: 8px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-link .selected-icon {
+flex-shrink: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verb-list .verb-link .selected-icon svg {
+width: 12px;
+height: 12px;
+display: block;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-link {
+font-size: 14px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .model-link {
+font-size: 14px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
+display: none;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+display: block;
+position: absolute;
+top: 50%;
+left: 3px;
+transform: translateY(-50%);
+}
+
+[dir="rtl"] .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+right: 3px;
+left: unset;
+}
+
+@media (max-width: 1024px) {
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+  animation: pbu-model-move-down 0.4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
+}
+}
+
+@media screen and (max-width: 599px) {
+.unity-prompt-bar-upload.unity-enabled .interactive-area .models-container {
+  width: auto;
+}
+
+[dir="rtl"] .unity-prompt-bar-upload.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+  left: unset;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area .verb-list {
+  top: unset;
+  left: unset;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area .models-container .verb-list {
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 30px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area .selected-model .model-name {
+  display: none;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .unity-prompt-bar-upload.unity-enabled .interactive-area .models-container {
+  position: static;
+}
 }
 
 /* ─── More button (secondary action) ───────────────────────────────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn {
-  background: transparent;
-  border: none;
-  padding: 7px 12px;
-  gap: 6px;
-  color: #f8f8f8;
+background: transparent;
+border: none;
+padding: 7px 12px;
+gap: 6px;
+color: #f8f8f8;
 }
 
 .unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn .btn-ico {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+display: flex;
+align-items: center;
+flex-shrink: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn .btn-ico svg {
-  width: 20px;
-  height: 20px;
+width: 20px;
+height: 20px;
 }
 
 .unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn .btn-txt {
-  color: #f8f8f8;
-  font-size: 15px;
-  font-weight: 400;
+color: #f8f8f8;
+font-size: 15px;
+font-weight: 400;
 }
 
 /* ─── Dropdowns open upward to avoid clipping ──────────────────────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container .verb-list,
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container .verb-list {
-  top: auto;
-  bottom: 100%;
-  transform: none;
-  animation: none;
-  margin-bottom: 4px;
-  z-index: 10;
+top: auto;
+bottom: 100%;
+transform: none;
+animation: none;
+margin-bottom: 4px;
+z-index: 10;
 }
 
+/* Base z-index keeps sibling order predictable; equal high z-index on every
+   .models-container made the aspect pill paint after (on top of) the model
+   menu, which opens upward into that space. Only lift the open picker. */
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container,
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container {
-  position: relative;
-  z-index: 200;
+position: relative;
+z-index: 1;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container.show-menu,
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container.show-menu {
+z-index: 300;
 }
 
 /* ─── Upload dropzone styles ──────────────────────────────────────────────── */
 
-/* .pbu-drop-zone-wrap {
-  position: relative;
-  width: 100%;
-  min-height: 120px;
-} */
+/* Fixed slot so the preview matches the empty drop target (thumbnail, not full column). */
+.pbu-drop-zone-wrap {
+position: relative;
+width: 123px;
+height: 123px;
+min-height: 123px;
+flex-shrink: 0;
+box-sizing: border-box;
+}
 
 .pbu-drop-zone-wrap .drop-zone {
-  margin-top: 0px;
-  width: 123px;
-  height: 123px;
-  border-radius: 13.667px;
-  border: 1px dashed rgba(198, 198, 198, 0.50);
-  padding: 0;
-  background: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-sizing: border-box;
+margin-top: 0px;
+width: 123px;
+height: 123px;
+border-radius: 13.667px;
+border: 1px dashed rgba(198, 198, 198, 0.50);
+padding: 0;
+background: none;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 8px;
+box-sizing: border-box;
 }
 
 .pbu-drop-zone-wrap .drop-zone:hover,
 .pbu-drop-zone-wrap .drop-zone.drag-over {
-  border-color: rgb(255 255 255 / 55%);
-  background: rgb(255 255 255 / 4%);
+border-color: rgb(255 255 255 / 55%);
+background: rgb(255 255 255 / 4%);
 }
 
 .pbu-drop-zone-wrap .drop-zone.hidden {
-  display: none;
+display: none;
 }
 
 .pbu-drop-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  pointer-events: none;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+pointer-events: none;
 }
 
 .pbu-upload-svg {
-  width: 28px;
-  height: 28px;
-  color: rgb(255 255 255 / 65%);
+width: 28px;
+height: 28px;
+color: rgb(255 255 255 / 65%);
 }
 
 .pbu-upload-text {
-  font-size: 13px;
-  line-height: 1.35;
-  color: rgb(255 255 255 / 70%);
+font-size: 13px;
+line-height: 1.35;
+color: rgb(255 255 255 / 70%);
 }
 
 .pbu-legal-text {
-  font-size: 10px;
-  color: rgb(255 255 255 / 45%);
-  margin: 0;
+font-size: 10px;
+color: rgb(255 255 255 / 45%);
+margin: 0;
 }
 
-/* Preview + spinner */
+/* Preview + spinner — same footprint as .drop-zone (123×123), not full left column */
 .pbu-preview {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgb(0 0 0 / 35%);
+position: absolute;
+top: 0;
+left: 0;
+width: 123px;
+height: 123px;
+box-sizing: border-box;
+border-radius: 13.667px;
+overflow: hidden;
+border: 2px solid #2680eb;
+background: rgb(0 0 0 / 20%);
 }
 
 .pbu-preview.hidden {
-  display: none;
+display: none;
 }
 
 .pbu-preview-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+display: block;
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 
 .pbu-delete-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: rgb(0 0 0 / 55%);
-  color: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 2;
+position: absolute;
+top: 8px;
+right: 8px;
+width: 32px;
+height: 32px;
+border: none;
+border-radius: 50%;
+background: rgb(0 0 0 / 55%);
+color: #fff;
+cursor: pointer;
+opacity: 0;
+transition: opacity 0.2s;
+z-index: 2;
 }
 
 .pbu-preview:hover .pbu-delete-btn,
 .pbu-delete-btn:focus-visible {
-  opacity: 1;
+opacity: 1;
 }
 
 .pbu-spinner {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 35%);
+position: absolute;
+inset: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+background: rgb(0 0 0 / 35%);
 }
 
 .pbu-spinner.hidden {
-  display: none;
+display: none;
 }
 
 .pbu-spinner::after {
-  content: '';
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgb(255 255 255 / 35%);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: pbu-spin 0.7s linear infinite;
+content: '';
+width: 32px;
+height: 32px;
+border: 3px solid rgb(255 255 255 / 35%);
+border-top-color: #fff;
+border-radius: 50%;
+animation: pbu-spin 0.7s linear infinite;
 }
 
 @keyframes pbu-spin {
-  to { transform: rotate(360deg); }
+to { transform: rotate(360deg); }
 }
 
 /* Alert */
 .ex-unity-wrap.pbu-widget .alert-holder {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  z-index: 300;
+position: absolute;
+bottom: calc(100% + 8px);
+left: 0;
+right: 0;
+z-index: 300;
+}
+
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn {
+display: flex;
+gap: 6px;
+text-decoration: none;
+}
+
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico {
+height: 20px;
+width: 20px;;
+padding: 6px 0px 6px 10px;
+align-self: center;
+}
+
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico svg {
+width: 20px;
+height: 20px;
+}
+.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-txt {
+color: #C6C6C6;
+}
+
+.pbu-main .pbu-controls-footer .act-wrap a.gen-btn {
+border-radius: 25px;
+background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+border: none;
+padding: 10px 20px 10px 18px;
+gap: 8px;
+text-decoration: none;
+display: flex;
+align-items: center;
+}
+/* Mobile: stack sections vertically, drop right border from left section */
+@media screen and (max-width: 599px) {
+.unity-prompt-bar-upload.unity-enabled .pbu-main {
+  flex-direction: column;
+  gap: 0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-left-section {
+  width: 100%;
+  max-width: 100%;
+  border-right: none;
+  padding-right: 0;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgb(255 255 255 / 12%);
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section {
+  width: 100%;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
+  flex: 1;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
+  flex: 1;
+  justify-content: stretch;
+  gap: 8px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
+  flex: 1;
 }
 
 .action-container > a.unity-act-btn.pbu-more-btn.more-btn {
@@ -360,81 +802,10 @@
 
 .action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico {
   height: 20px;
-  width: 20px;;
   align-self: center;
 }
 
-.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico svg {
-  width: 20px;
-  height: 20px;
-}
 .action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-txt {
   color: #C6C6C6;
 }
-
-.pbu-main .pbu-controls-footer .act-wrap a.gen-btn {
-  border-radius: 25px;
-  background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
-  border: none;
-  padding: 10px 20px 10px 18px;
-  gap: 8px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
-/* Mobile: stack sections vertically, drop right border from left section */
-@media screen and (max-width: 599px) {
-  .unity-prompt-bar-upload.unity-enabled .pbu-main {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
-    width: 100%;
-    max-width: 100%;
-    border-right: none;
-    padding-right: 0;
-    padding-bottom: 12px;
-    margin-bottom: 8px;
-    border-bottom: 1px solid rgb(255 255 255 / 12%);
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
-    width: 100%;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
-    flex: 1;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
-    flex: 1;
-    justify-content: stretch;
-    gap: 8px;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
-    flex: 1;
-  }
-
-  .action-container > a.unity-act-btn.pbu-more-btn.more-btn {
-    display: flex;
-    gap: 6px;
-    text-decoration: none;
-  }
-
-  .action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico {
-    height: 20px;
-    align-self: center;
-  }
-
-  .action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-txt {
-    color: #C6C6C6;
-  }
 }

@@ -186,6 +186,7 @@ export default class PromptBarUploadWidget {
     this.models.forEach((model, idx) => {
       const li = createTag('li', { class: 'verb-item', role: 'presentation' });
       const nameSpan = createTag('span', { class: 'model-name' }, (model.name || model.id || '').trim());
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const modelLink = createTag('a', {
         href: '#',
         class: 'verb-link model-link',
@@ -194,6 +195,7 @@ export default class PromptBarUploadWidget {
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
       });
+      modelLink.append(selectedIcon);
       if (model.icon) {
         modelLink.append(createTag('img', { src: model.icon, alt: '' }));
       }
@@ -244,8 +246,9 @@ export default class PromptBarUploadWidget {
 
     const container = createTag('div', { class: 'models-container pbu-aspect-models', 'aria-label': 'Aspect ratio' });
     const nameContainer = createTag('span', { class: 'model-name' }, ratios[0]);
-    const menuIcon = createTag('span', { class: 'menu-icon' });
-    menuIcon.append(menuChevronSvg());
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
+    // const menuIcon = createTag('span', { class: 'menu-icon' });
+    // menuIcon.append(menuChevronSvg());
 
     const selectedElement = createTag('button', {
       type: 'button',
@@ -266,13 +269,15 @@ export default class PromptBarUploadWidget {
 
     ratios.forEach((ratio, idx) => {
       const li = createTag('li', { class: 'verb-item', role: 'presentation' });
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const link = createTag('a', {
         href: '#',
         class: 'verb-link model-link',
         'data-ratio': ratio,
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
-      }, ratio);
+      });
+      link.append(selectedIcon, createTag('span', { class: 'model-name' }, ratio));
       if (idx === 0) li.classList.add('selected');
       li.append(link);
       list.append(li);
@@ -307,7 +312,11 @@ export default class PromptBarUploadWidget {
     ac?.querySelector('.pbu-aspect-models')?.remove();
     const picker = this.buildAspectRatioDropdown(modelId);
     if (!picker || !ac) return;
-    ac.append(picker);
+    // Keep order: model → aspect → more (same as buildRightSection). append() would
+    // place aspect after More and make the bar look like it "jumped".
+    const modelPicker = ac.querySelector('.models-container:not(.pbu-aspect-models)');
+    if (modelPicker) modelPicker.after(picker);
+    else ac.append(picker);
   }
 
   buildDropZone() {
