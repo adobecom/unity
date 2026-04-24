@@ -1,4 +1,3 @@
-/* eslint-disable class-methods-use-this */
 /* eslint-disable no-await-in-loop */
 
 import { createTag, getUnityLibs } from '../../../scripts/utils.js';
@@ -10,8 +9,7 @@ function placeholderText(root, iconClass) {
 }
 
 function labelForField(root, iconClass, fallback) {
-  const t = placeholderText(root, iconClass);
-  return t || fallback;
+  return placeholderText(root, iconClass) || fallback;
 }
 
 function extractLegalFootFromAuthoring(root) {
@@ -28,8 +26,86 @@ function extractLegalFootFromAuthoring(root) {
   marker.remove();
   return foot;
 }
+
+function svgIcon(href) {
+  return `<svg><use xlink:href="${href}"></use></svg>`;
+}
+
+function syncDropdownSelection(list, activeLink) {
+  list.querySelectorAll('li').forEach((li) => {
+    const a = li.querySelector('a');
+    const isActive = a === activeLink;
+    li.classList.toggle('selected', isActive);
+    a?.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+}
+
+function closeDropdown(container, triggerBtn, list) {
+  container.classList.remove('show-menu');
+  list.setAttribute('style', 'display: none;');
+  triggerBtn.setAttribute('aria-expanded', 'false');
+}
+
+function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, ariaLabelledBy = null }) {
+  const container = createTag('div', {
+    class: `models-container${extraClass ? ` ${extraClass}` : ''}`,
+    'aria-label': label,
+  });
+
+  const nameContainer = createTag('span', { class: 'model-name' });
+  const menuIcon = createTag('span', { class: 'menu-icon' }, svgIcon('#unity-chevron-icon'));
+
+  const triggerBtn = createTag('button', {
+    type: 'button',
+    class: 'selected-model',
+    'aria-expanded': 'false',
+    'aria-controls': menuId,
+    'aria-haspopup': 'listbox',
+    role: 'combobox',
+  });
+  if (imgEl) triggerBtn.append(imgEl, nameContainer, menuIcon);
+  else triggerBtn.append(nameContainer, menuIcon);
+
+  const listAttrs = { class: 'verb-list', id: menuId, role: 'listbox' };
+  if (ariaLabelledBy) listAttrs['aria-labelledby'] = ariaLabelledBy;
+  const list = createTag('ul', listAttrs);
+  list.setAttribute('style', 'display: none;');
+
+  container.append(triggerBtn, list);
+  return {
+    container, triggerBtn, nameContainer, menuIcon, list,
+  };
+}
+
+/**
+ * Wires open/close behaviour for a dropdown:
+ * - clicking the trigger toggles the menu (closing any other open menus)
+ * - clicking outside closes it
+ */
+function attachDropdownBehavior(container, triggerBtn, list) {
+  triggerBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.models-container.show-menu').forEach((other) => {
+      if (other === container) return;
+      other.classList.remove('show-menu');
+      other.querySelector(':scope > .verb-list')?.setAttribute('style', 'display: none;');
+      other.querySelector('.selected-model')?.setAttribute('aria-expanded', 'false');
+    });
+    const isOpen = container.classList.toggle('show-menu');
+    if (isOpen) list.removeAttribute('style');
+    else list.setAttribute('style', 'display: none;');
+    triggerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!container.contains(/** @type {Node} */ (e.target))) {
+      closeDropdown(container, triggerBtn, list);
+    }
+  });
+}
+
 export default class PromptBarUploadWidget {
-  constructor(target, el, workflowCfg, spriteCon) { 
+  constructor(target, el, workflowCfg, spriteCon) {
     this.target = target;
     this.el = el;
     this.workflowCfg = workflowCfg;
@@ -38,12 +114,12 @@ export default class PromptBarUploadWidget {
     this.actionMap = {};
     this.models = null;
     this.aspectRatioMap = {};
+    this.sizeMap = {};
     this.selectedModelId = '';
     this.selectedAspectRatio = '';
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-FF-PBU' };
     this.showAspectRatio = false;
     this.showMore = false;
-    /** @type {HTMLElement | null} */
     this.actionContainerEl = null;
   }
 
@@ -52,8 +128,7 @@ export default class PromptBarUploadWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-video-sample.json`;
-    const res = await fetch(modelFile);
+    const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video-sample.json`);
     if (!res.ok) throw new Error('Failed to fetch video models.');
     const json = await res.json();
     this.models = json?.content?.data || [];
@@ -62,15 +137,22 @@ export default class PromptBarUploadWidget {
 
   buildAspectRatioMap() {
     this.aspectRatioMap = {};
+    this.sizeMap = {};
     (this.models || []).forEach((item) => {
       const raw = item['aspect-ratio'];
-      if (item.id && raw) {
-        try {
-          this.aspectRatioMap[item.id] = JSON.parse(raw);
-        } catch {
-          this.aspectRatioMap[item.id] = raw.split(',').map((s) => s.trim()).filter(Boolean);
-        }
-      }
+      if (!item.id || !raw) return;
+      const parseList = (str) => {
+        try { return JSON.parse(str); } catch { /* fall through */ }
+        return String(str).split(',').map((s) => s.trim()).filter(Boolean);
+      };
+      const ratios = parseList(raw);
+      this.aspectRatioMap[item.id] = ratios;
+      const widths = item.width ? parseList(item.width) : [];
+      const heights = item.height ? parseList(item.height) : [];
+      this.sizeMap[item.id] = ratios.map((_, i) => ({
+        width: Number(widths[i]) || null,
+        height: Number(heights[i]) || null,
+      }));
     });
   }
 
@@ -78,39 +160,17 @@ export default class PromptBarUploadWidget {
     return this.aspectRatioMap[modelId] || [];
   }
 
-  readAuthoringConfig() {
-    const root = this.el;
-    this.showAspectRatio = !!root.querySelector('[class*="icon-show-aspect-ratio"]');
-    this.showMore = !!root.querySelector('[class*="icon-show-more"]');
+  
+  getSizeForAspectRatio(modelId, ratio) {
+    const sizes = this.sizeMap[modelId] || [];
+    const ratios = this.aspectRatioMap[modelId] || [];
+    const idx = ratios.indexOf(ratio);
+    return idx !== -1 ? sizes[idx] : null;
   }
 
-
-  attachModelsDropdownMenu(container, selectedElement, list) {
-    const closeMenu = () => {
-      container.classList.remove('show-menu');
-      list.setAttribute('style', 'display: none;');
-      selectedElement.setAttribute('aria-expanded', 'false');
-    };
-    selectedElement.addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.querySelectorAll('.models-container.show-menu').forEach((c) => {
-        if (c === container) return;
-        c.classList.remove('show-menu');
-        const ul = c.querySelector(':scope > .verb-list');
-        if (ul) ul.setAttribute('style', 'display: none;');
-        c.querySelector('.selected-model')?.setAttribute('aria-expanded', 'false');
-      });
-      container.classList.toggle('show-menu');
-      if (container.classList.contains('show-menu')) {
-        list.removeAttribute('style');
-      } else {
-        list.setAttribute('style', 'display: none;');
-      }
-      selectedElement.setAttribute('aria-expanded', container.classList.contains('show-menu') ? 'true' : 'false');
-    });
-    document.addEventListener('click', (e) => {
-      if (!container.contains(/** @type {Node} */ (e.target))) closeMenu();
-    });
+  readFeatureFlags() {
+    this.showAspectRatio = !!this.el.querySelector('[class*="icon-show-aspect-ratio"]');
+    this.showMore = !!this.el.querySelector('[class*="icon-show-more"]');
   }
 
   buildModelPicker() {
@@ -118,38 +178,19 @@ export default class PromptBarUploadWidget {
     const defaultModel = this.models.find((m) => m.default === 'true' || m.default === true) || this.models[0];
     this.selectedModelId = defaultModel?.id || '';
 
-    const container = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
-    const nameContainer = createTag('span', { class: 'model-name' }, (defaultModel?.name || '').trim());
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-
-    const selectedElement = createTag('button', {
-      type: 'button',
-      class: 'selected-model',
-      'aria-expanded': 'false',
-      'aria-controls': 'pbu-model-menu',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
+    const imgEl = defaultModel?.icon ? createTag('img', { src: defaultModel.icon, alt: '' }) : null;
+    const { container, triggerBtn, nameContainer, list } = buildDropdownShell({
+      label: 'Model options',
+      menuId: 'pbu-model-menu',
+      imgEl,
+      ariaLabelledBy: 'listbox-label',
     });
-    if (defaultModel?.icon) {
-      const img = createTag('img', { src: defaultModel.icon, alt: '' });
-      selectedElement.append(img, nameContainer, menuIcon);
-    } else {
-      selectedElement.append(nameContainer, menuIcon);
-    }
-
-    const list = createTag('ul', {
-      class: 'verb-list',
-      id: 'pbu-model-menu',
-      role: 'listbox',
-      'aria-labelledby': 'listbox-label',
-    });
-    list.setAttribute('style', 'display: none;');
+    nameContainer.textContent = (defaultModel?.name || '').trim();
 
     this.models.forEach((model, idx) => {
-      const li = createTag('li', { class: 'verb-item', role: 'presentation' });
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon'));
       const nameSpan = createTag('span', { class: 'model-name' }, (model.name || model.id || '').trim());
-      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
-      const modelLink = createTag('a', {
+      const link = createTag('a', {
         href: '#',
         class: 'verb-link model-link',
         'data-model-id': model.id,
@@ -158,47 +199,34 @@ export default class PromptBarUploadWidget {
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
       });
-      modelLink.append(selectedIcon);
-      if (model.icon) {
-        modelLink.append(createTag('img', { src: model.icon, alt: '' }));
-      }
-      modelLink.append(nameSpan);
-      if (idx === 0) {
-        li.classList.add('selected');
-        modelLink.setAttribute('aria-selected', 'true');
-      }
-      li.append(modelLink);
+      link.append(selectedIcon);
+      if (model.icon) link.append(createTag('img', { src: model.icon, alt: '' }));
+      link.append(nameSpan);
+      const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
+      li.append(link);
       list.append(li);
     });
 
     list.addEventListener('click', (e) => {
-      const modelLink = e.target.closest('a.model-link');
-      if (!modelLink) return;
+      const link = e.target.closest('a.model-link');
+      if (!link) return;
       e.preventDefault();
       e.stopPropagation();
-      const modelId = modelLink.getAttribute('data-model-id') || '';
-      const modelName = modelLink.getAttribute('data-model-name') || '';
-      const modelVersion = modelLink.getAttribute('data-model-version') || '';
+      const modelId = link.getAttribute('data-model-id') || '';
+      const modelName = link.getAttribute('data-model-name') || '';
+      const modelVersion = link.getAttribute('data-model-version') || '';
       this.selectedModelId = modelId;
       nameContainer.textContent = modelName;
       this.widgetWrap?.setAttribute('data-selected-model-id', modelId);
       this.widgetWrap?.setAttribute('data-selected-model-name', modelName);
       if (modelVersion) this.widgetWrap?.setAttribute('data-selected-model-version', modelVersion);
       else this.widgetWrap?.removeAttribute('data-selected-model-version');
-      list.querySelectorAll('li').forEach((li) => {
-        const a = li.querySelector('a');
-        li.classList.toggle('selected', a === modelLink);
-        a?.setAttribute('aria-selected', a === modelLink ? 'true' : 'false');
-      });
-      container.classList.remove('show-menu');
-      list.setAttribute('style', 'display: none;');
-      selectedElement.setAttribute('aria-expanded', 'false');
+      syncDropdownSelection(list, link);
+      closeDropdown(container, triggerBtn, list);
       if (this.showAspectRatio) this.updateAspectRatioOptions(modelId);
     });
 
-    this.attachModelsDropdownMenu(container, selectedElement, list);
-    container.append(selectedElement, list);
-
+    attachDropdownBehavior(container, triggerBtn, list);
     this.widgetWrap?.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap?.setAttribute('data-selected-model-name', (defaultModel?.name || '').trim());
     if (defaultModel?.version != null && defaultModel.version !== '') {
@@ -209,38 +237,30 @@ export default class PromptBarUploadWidget {
     return container;
   }
 
+  setSelectedAspectRatio(modelId, ratio) {
+    this.selectedAspectRatio = ratio;
+    this.widgetWrap?.setAttribute('data-selected-aspect-ratio', ratio);
+    const size = this.getSizeForAspectRatio(modelId, ratio);
+    if (size?.width) this.widgetWrap?.setAttribute('data-selected-width', size.width);
+    else this.widgetWrap?.removeAttribute('data-selected-width');
+    if (size?.height) this.widgetWrap?.setAttribute('data-selected-height', size.height);
+    else this.widgetWrap?.removeAttribute('data-selected-height');
+  }
+
   buildAspectRatioDropdown(modelId) {
     const ratios = this.getAspectRatiosForModel(modelId);
     if (!ratios.length) return null;
-    this.selectedAspectRatio = ratios[0];
-    this.widgetWrap?.setAttribute('data-selected-aspect-ratio', this.selectedAspectRatio);
+    this.setSelectedAspectRatio(modelId, ratios[0]);
 
-    const container = createTag('div', { class: 'models-container pbu-aspect-models', 'aria-label': 'Aspect ratio' });
-    const nameContainer = createTag('span', { class: 'model-name' }, ratios[0]);
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    // const menuIcon = createTag('span', { class: 'menu-icon' });
-    // menuIcon.append(menuChevronSvg());
-
-    const selectedElement = createTag('button', {
-      type: 'button',
-      class: 'selected-model',
-      'aria-expanded': 'false',
-      'aria-controls': 'pbu-aspect-menu',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
+    const { container, triggerBtn, nameContainer, list } = buildDropdownShell({
+      label: 'Aspect ratio',
+      menuId: 'pbu-aspect-menu',
+      extraClass: 'pbu-aspect-models',
     });
-    selectedElement.append(nameContainer, menuIcon);
-
-    const list = createTag('ul', {
-      class: 'verb-list',
-      id: 'pbu-aspect-menu',
-      role: 'listbox',
-    });
-    list.setAttribute('style', 'display: none;');
+    nameContainer.textContent = ratios[0];
 
     ratios.forEach((ratio, idx) => {
-      const li = createTag('li', { class: 'verb-item', role: 'presentation' });
-      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon'));
       const link = createTag('a', {
         href: '#',
         class: 'verb-link model-link',
@@ -249,45 +269,84 @@ export default class PromptBarUploadWidget {
         role: 'option',
       });
       link.append(selectedIcon, createTag('span', { class: 'model-name' }, ratio));
-      if (idx === 0) li.classList.add('selected');
+      const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
       li.append(link);
       list.append(li);
     });
 
     list.addEventListener('click', (e) => {
-      const ratioLink = e.target.closest('a.model-link');
-      if (!ratioLink) return;
+      const link = e.target.closest('a.model-link');
+      if (!link) return;
       e.preventDefault();
       e.stopPropagation();
-      const ratio = ratioLink.getAttribute('data-ratio') || '';
-      this.selectedAspectRatio = ratio;
+      const ratio = link.getAttribute('data-ratio') || '';
       nameContainer.textContent = ratio;
-      this.widgetWrap?.setAttribute('data-selected-aspect-ratio', ratio);
-      list.querySelectorAll('li').forEach((li) => {
-        const a = li.querySelector('a');
-        li.classList.toggle('selected', a === ratioLink);
-        a?.setAttribute('aria-selected', a === ratioLink ? 'true' : 'false');
-      });
-      container.classList.remove('show-menu');
-      list.setAttribute('style', 'display: none;');
-      selectedElement.setAttribute('aria-expanded', 'false');
+      this.setSelectedAspectRatio(modelId, ratio);
+      syncDropdownSelection(list, link);
+      closeDropdown(container, triggerBtn, list);
     });
 
-    this.attachModelsDropdownMenu(container, selectedElement, list);
-    container.append(selectedElement, list);
+    attachDropdownBehavior(container, triggerBtn, list);
     return container;
   }
 
   updateAspectRatioOptions(modelId) {
-    const ac = this.actionContainerEl || this.widgetWrap?.querySelector('.action-container');
+    const ac = this.actionContainerEl ?? this.widgetWrap?.querySelector('.action-container');
     ac?.querySelector('.pbu-aspect-models')?.remove();
     const picker = this.buildAspectRatioDropdown(modelId);
     if (!picker || !ac) return;
-    // Keep order: model → aspect → more (same as buildRightSection). append() would
-    // place aspect after More and make the bar look like it "jumped".
     const modelPicker = ac.querySelector('.models-container:not(.pbu-aspect-models)');
     if (modelPicker) modelPicker.after(picker);
     else ac.append(picker);
+  }
+
+  buildLeftSection() {
+    const leftSectionLabel = placeholderText(this.el, 'icon-dropzone-label');
+    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pbu-upload-heading' }, leftSectionLabel);
+    const { wrap: dropZoneWrap, ...dropZoneRefs } = this.buildDropZone();
+    const leftSection = createTag('div', { class: 'pbu-left-section' });
+    leftSection.append(uploadLabel, dropZoneWrap);
+    return { leftSection, dropZoneRefs };
+  }
+
+  buildRightSection() {
+    const promptHeading = placeholderText(this.el, 'icon-placeholder-prompt')
+      || labelForField(this.el, 'icon-label-prompt', 'Prompt');
+    const promptLabel = createTag('label', {
+      for: 'pbuPromptInput',
+      class: 'unity-slf-copy-label unity-slf-prompt-label',
+    }, promptHeading);
+
+    const promptTextarea = this.buildPromptTextarea();
+
+    const actionContainer = createTag('div', { class: 'action-container' });
+    this.actionContainerEl = actionContainer;
+
+    if (this.models?.length) {
+      const mp = this.buildModelPicker();
+      if (mp) actionContainer.append(mp);
+    }
+    if (this.showAspectRatio && this.selectedModelId) {
+      const ar = this.buildAspectRatioDropdown(this.selectedModelId);
+      if (ar) actionContainer.append(ar);
+    }
+    if (this.showMore) {
+      const moreBtn = this.buildMoreButton();
+      if (moreBtn) actionContainer.append(moreBtn);
+    }
+
+    const actWrap = createTag('div', { class: 'act-wrap' });
+    actWrap.append(this.buildGenerateButton());
+
+    const controlsFooter = createTag('div', { class: 'pbu-controls-footer' });
+    controlsFooter.append(actionContainer, actWrap);
+
+    const promptBarContainer = createTag('div', { class: 'pbu-prompt-bar-container' });
+    promptBarContainer.append(promptLabel, promptTextarea, controlsFooter);
+
+    const rightSection = createTag('div', { class: 'pbu-right-section' });
+    rightSection.append(promptBarContainer);
+    return rightSection;
   }
 
   buildDropZone() {
@@ -300,52 +359,49 @@ export default class PromptBarUploadWidget {
     });
 
     const dropContent = createTag('div', { class: 'pbu-drop-content' });
-    const uploadIcon = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` });
-    dropContent.append(uploadIcon);
-    const dropZone = createTag('div', { class: 'drop-zone', role: 'button', tabindex: '0', 'aria-label': 'Upload image' });
+    dropContent.append(createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` }));
+    const dropZone = createTag('div', {
+      class: 'drop-zone',
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Upload image',
+    });
     dropZone.append(fileInput, dropContent);
     const selectSpinner = createTag('div', { class: 'pbu-select-spinner hidden', 'aria-hidden': 'true', role: 'status' });
     selectSpinner.append(createTag('div', { class: 'pbu-select-spinner-ring' }));
-    const preview = createTag('div', { class: 'pbu-preview hidden', 'aria-hidden': 'true' });
+
     const previewImg = createTag('img', { class: 'pbu-preview-img', alt: 'Selected image preview' });
-    const deleteBtn = createTag('button', {
-      type: 'button',
-      class: 'pbu-delete-btn',
-      'aria-label': 'Remove image',
-    });
-    deleteBtn.innerHTML = '<svg><use xlink:href="#unity-trash-icon"></use></svg>';
-    const spinner = createTag('div', { class: 'pbu-spinner hidden', 'aria-label': 'Uploading', role: 'status' });
-    preview.append(previewImg, deleteBtn, spinner);
+    const deleteBtn = createTag('button', { type: 'button', class: 'pbu-delete-btn', 'aria-label': 'Remove image' });
+    deleteBtn.innerHTML = svgIcon('#unity-trash-icon');
+    const uploadSpinner = createTag('div', { class: 'pbu-spinner hidden', 'aria-label': 'Uploading', role: 'status' });
+    const preview = createTag('div', { class: 'pbu-preview hidden', 'aria-hidden': 'true' });
+    preview.append(previewImg, deleteBtn, uploadSpinner);
 
     const wrap = createTag('div', { class: 'pbu-drop-zone-wrap' });
     wrap.append(dropZone, selectSpinner, preview);
-    return wrap;
+    return {
+      wrap, dropZone, preview, previewImg, deleteBtn,
+    };
   }
 
   buildPromptTextarea() {
-    const placeholder = placeholderText(this.el, 'icon-placeholder-input') || 'Describe your video...';
-    return createTag('textarea', {
+    const defaultPrompt = placeholderText(this.el, 'icon-default-prompt') || '';
+    const textarea = createTag('textarea', {
       id: 'pbuPromptInput',
       class: 'inp-field',
-      placeholder,
       rows: '1',
       maxlength: '750',
-      'aria-label': placeholder,
+      'aria-label': defaultPrompt,
       'aria-autocomplete': 'list',
     });
+    textarea.value = defaultPrompt;
+    return textarea;
   }
 
-  /**
-   * Generate CTA — same classes as prompt-bar (`unity-act-btn gen-btn`, optional icon from authoring).
-   */
   buildGenerateButton() {
     const generateLi = this.el.querySelector('[class*="icon-generate"]')?.closest('li');
     const genBtnText = (generateLi?.innerText || 'Generate').trim().split('\n')[0] || 'Generate';
-    const btn = createTag('a', {
-      href: '#',
-      class: 'unity-act-btn gen-btn',
-      'aria-label': genBtnText,
-    });
+    const btn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn', 'aria-label': genBtnText });
     const svgLink = generateLi?.querySelector('a[href$=".svg"]');
     if (svgLink?.href) {
       btn.append(
@@ -362,36 +418,25 @@ export default class PromptBarUploadWidget {
     if (!this.showMore) return null;
     const moreLi = this.el.querySelector('[class*="icon-more"]')?.closest('li');
     const txt = (moreLi?.innerText || 'More').trim().split('\n')[0] || 'More';
-    const btn = createTag('a', {
-      href: '#',
-      class: 'unity-act-btn pbu-more-btn more-btn',
-      'aria-label': txt,
-    });
-    const ico = createTag('span', { class: 'btn-ico' }, '<svg><use xlink:href="#unity-more-icon"></use></svg>');
-    // const ico = createTag('div', { class: 'btn-ico' });
-    // ico.append(moreIconSvg());
-    btn.append(ico, createTag('div', { class: 'btn-txt' }, txt));
+    const btn = createTag('a', { href: '#', class: 'unity-act-btn pbu-more-btn more-btn', 'aria-label': txt });
+    btn.append(
+      createTag('span', { class: 'btn-ico' }, svgIcon('#unity-more-icon')),
+      createTag('div', { class: 'btn-txt' }, txt),
+    );
     return btn;
   }
 
   addWidget() {
     const interactArea = this.target?.querySelector('.copy');
-    const cfg = this.workflowCfg.targetCfg || {};
-    const anchorSelector = cfg.target;
+    const { target: anchorSelector, insert } = this.workflowCfg.targetCfg || {};
     const para = anchorSelector ? interactArea?.querySelector(anchorSelector) : null;
-    if (para && cfg.insert === 'before') para.before(this.widgetWrap);
+    if (para && insert === 'before') para.before(this.widgetWrap);
     else if (para) para.after(this.widgetWrap);
     else interactArea?.appendChild(this.widgetWrap);
   }
 
-  wireImagePreview() {
-    const dropZoneWrap = this.widgetWrap?.querySelector('.pbu-drop-zone-wrap');
-    if (!dropZoneWrap) return;
-    const dropZone = dropZoneWrap.querySelector('.drop-zone');
-    const preview = dropZoneWrap.querySelector('.pbu-preview');
-    const previewImg = dropZoneWrap.querySelector('.pbu-preview-img');
-    const deleteBtn = dropZoneWrap.querySelector('.pbu-delete-btn');
 
+  wireImagePreview({ dropZone, preview, previewImg, deleteBtn }) {
     const showPreview = (file) => {
       const url = URL.createObjectURL(file);
       previewImg.src = url;
@@ -410,14 +455,8 @@ export default class PromptBarUploadWidget {
       previewImg.src = '';
     };
 
-    this.widgetWrap?.addEventListener('pbu-image-selected', (e) => {
-      showPreview(e.detail.file);
-    });
-
-    this.widgetWrap?.addEventListener('pbu-image-deleted', () => {
-      showDropZone();
-    });
-
+    this.widgetWrap?.addEventListener('pbu-image-selected', (e) => showPreview(e.detail.file));
+    this.widgetWrap?.addEventListener('pbu-image-deleted', showDropZone);
     deleteBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-delete-image'));
@@ -425,7 +464,7 @@ export default class PromptBarUploadWidget {
   }
 
   async initWidget() {
-    this.readAuthoringConfig();
+    this.readFeatureFlags();
 
     try {
       await this.loadModels();
@@ -433,110 +472,36 @@ export default class PromptBarUploadWidget {
       window.lana?.log(`Message: Failed to load video models, Error: ${e}`, this.lanaOptions);
     }
 
-    // Build left and right sections
-    const leftSection = this.buildLeftSection();
-    const rightSection = await this.buildRightSection();
-    
-    // Create main container (flex-row) combining left and right sections
+    const { leftSection, dropZoneRefs } = this.buildLeftSection();
+    const rightSection = this.buildRightSection();
     const main = createTag('div', { class: 'pbu-main' });
     main.append(leftSection, rightSection);
-    
-    // Create interactive shell wrapper
     const skin = this.el.classList.contains('light') ? 'light' : 'dark';
     const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
     interactiveShell.append(main);
-    
-    // Create root container
     const root = createTag('div', { class: 'unity-prompt-bar-upload unity-enabled' });
     root.append(interactiveShell);
-    
-    // Move authoring config to hidden holder
     const holder = createTag('div', { class: 'unity-pbu-config-holder unity-slf-sr-only' });
     holder.setAttribute('aria-hidden', 'true');
-    while (this.el.firstChild) {
-      holder.append(this.el.firstChild);
-    }
+    while (this.el.firstChild) holder.append(this.el.firstChild);
     this.el.append(holder);
     this.el.classList.add('unity-prompt-bar-upload-host');
-    
-    // Insert into page
-    const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options pbu-widget' });
-    this.widgetWrap = widgetWrap;
     const unitySprite = createTag('div', { class: 'unity-sprite-container' });
     unitySprite.innerHTML = this.spriteCon || '';
     const legalFoot = extractLegalFootFromAuthoring(this.el);
-    widgetWrap.append(unitySprite, root);
-    if (legalFoot) widgetWrap.append(legalFoot);
+    this.widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options pbu-widget' });
+    this.widgetWrap.append(unitySprite, root);
+    if (legalFoot) this.widgetWrap.append(legalFoot);
 
-    // Append to target
     this.addWidget();
-    this.wireImagePreview();
+    this.wireImagePreview(dropZoneRefs);
 
-    // Set up action map
     this.actionMap = {
       '.gen-btn': [{ actionType: 'generate' }],
       '.more-btn': [{ actionType: 'more' }],
       '.drop-zone': [{ actionType: 'file-selected' }],
       '#file-upload': [{ actionType: 'file-selected' }],
     };
-    
     return this.actionMap;
-  }
-
-  buildLeftSection() {
-    // const uploadHeading = labelForField(this.el, 'icon-label-upload', 'Upload image');
-    const leftSectionLabel = placeholderText(this.el, 'icon-dropzone-label')
-    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pbu-upload-heading' }, leftSectionLabel);
-    const dropZoneWrap = this.buildDropZone();
-    const leftSection = createTag('div', { class: 'pbu-left-section' });
-    leftSection.append(uploadLabel, dropZoneWrap);
-    return leftSection;
-  }
-
-  async buildRightSection() {
-    const rightSection = createTag('div', { class: 'pbu-right-section' });
-
-    // Prompt input shell (textarea + model/aspect/more controls)
-    const promptHeading = placeholderText(this.el, 'icon-placeholder-prompt')
-      || labelForField(this.el, 'icon-label-prompt', 'Prompt');
-    const promptLabel = createTag('label', {
-      for: 'pbuPromptInput',
-      class: 'unity-slf-copy-label unity-slf-prompt-label',
-    }, promptHeading);
-    
-    const promptTextarea = this.buildPromptTextarea();
-    
-    // Action controls: model picker, aspect ratio, more button
-    const actionContainer = createTag('div', { class: 'action-container' });
-    this.actionContainerEl = actionContainer;
-
-    if (this.models?.length) {
-      const mp = this.buildModelPicker();
-      if (mp) actionContainer.append(mp);
-    }
-    if (this.showAspectRatio && this.selectedModelId) {
-      const ar = this.buildAspectRatioDropdown(this.selectedModelId);
-      if (ar) actionContainer.append(ar);
-    }
-    if (this.showMore) {
-      const moreBtn = this.buildMoreButton();
-      if (moreBtn) actionContainer.append(moreBtn);
-    }
-
-    // Build generate button wrapper
-    const actWrap = createTag('div', { class: 'act-wrap' });
-    const genBtn = this.buildGenerateButton();
-    actWrap.append(genBtn);
-
-    // Build controls footer
-    const controlsFooter = createTag('div', { class: 'pbu-controls-footer' });
-    controlsFooter.append(actionContainer, actWrap);
-
-    // Assemble prompt bar container
-    const promptBarContainer = createTag('div', { class: 'pbu-prompt-bar-container' });
-    promptBarContainer.append(promptLabel, promptTextarea, controlsFooter);
-    rightSection.append(promptBarContainer);
-    
-    return rightSection;
   }
 }

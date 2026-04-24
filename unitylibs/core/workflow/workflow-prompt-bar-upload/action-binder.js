@@ -16,6 +16,15 @@ import {
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 
+function normalizeToArray(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value.forEach === 'function' && typeof value.length === 'number') {
+    try { return [...value]; } catch { return [value]; }
+  }
+  return [value];
+}
+
 class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}, getAdditionalHeaders = null) {
     this.renderWidget = renderWidget;
@@ -89,21 +98,13 @@ export default class ActionBinder {
     this.filesData = {};
     this.sendAnalyticsToSplunk = null;
     this.analyticsModule = null;
+    this.promiseStack = [];
+    this.desktop = false;
+    this.toastCanvasAreas = normalizeToArray(canvasArea);
     this.apiConfig = this.getApiConfig();
-    this.toastCanvasAreas = (() => {
-      const ca = canvasArea;
-      if (ca == null) return [];
-      if (Array.isArray(ca)) return ca.filter(Boolean);
-      if (typeof ca.forEach === 'function' && typeof ca.length === 'number') {
-        try {
-          return [...ca];
-        } catch {
-          return [ca];
-        }
-      }
-      return [ca];
-    })();
-    const searchRoot = this.canvasArea || this.block;
+    this.verb = this.getVerbFromDom();
+    this.initActionListeners = this.initActionListeners.bind(this);
+    const searchRoot = canvasArea || block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') ?? searchRoot;
     this.inputField = searchRoot?.querySelector?.('.inp-field');
     const commonLimits = workflowCfg.targetCfg?.limits || {};
@@ -111,10 +112,7 @@ export default class ActionBinder {
     this.limits = { ...commonLimits, ...productLimits };
     const productTag = workflowCfg.targetCfg?.[`productTag-${workflowCfg.productName?.toLowerCase()}`] || 'FF';
     this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-PBU` };
-    this.verb = this.getVerbFromDom();
-    this.initActionListeners = this.initActionListeners.bind(this);
-    this.promiseStack = [];
-    this.desktop = false;
+    
   }
 
   getApiConfig() {
@@ -127,10 +125,7 @@ export default class ActionBinder {
 
   getAdditionalHeaders() {
     const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
-    const v = this.verb;
-    let xUnityAction = baseAction;
-    if (v && baseAction && v !== baseAction) xUnityAction = `${baseAction}-${v}`;
-    else if (v && !baseAction) xUnityAction = v;
+    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
       'x-unity-action': xUnityAction,
@@ -278,7 +273,7 @@ export default class ActionBinder {
     return true;
   }
 
-  async uploadImgToUnity(storageUrl, id, blobData, fileType, signal) {
+  async uploadImgToUnity(storageUrl, _id, blobData, fileType, signal) {
     const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
@@ -304,7 +299,6 @@ export default class ActionBinder {
   }
 
   async uploadAsset(file) {
-    const apiConfig = this.getApiConfig();
     const assetDetails = {
       targetProduct: this.workflowCfg.productName,
       name: file.name,
@@ -315,7 +309,7 @@ export default class ActionBinder {
     const { signal } = this.uploadAbortController;
     try {
       const resJson = await this.serviceHandler.postCallToService(
-        apiConfig.endPoint.assetUpload,
+        this.apiConfig.endPoint.assetUpload,
         { body: JSON.stringify(assetDetails) },
       );
       const { id, href, blocksize, uploadUrls } = resJson;
@@ -373,9 +367,7 @@ export default class ActionBinder {
       this.uploadAbortController.abort();
       this.uploadAbortController = null;
     }
-    if (this.assetId) {
-      this.deleteAsset(this.assetId);
-    }
+    if (this.assetId) this.deleteAsset(this.assetId);
     this.assetId = null;
     this.pendingFile = null;
     this.filesData = {};
@@ -401,6 +393,16 @@ export default class ActionBinder {
     return true;
   }
 
+  async ensureTransitionScreen() {
+    if (!this.transitionScreen) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+    }
+    if (!this.transitionScreen.splashScreenEl) {
+      await this.transitionScreen.loadSplashFragment();
+    }
+  }
+
   async handleGenerate(connectorGenerate = true) {
     this.promiseStack = [];
     await this.initAnalytics();
@@ -422,11 +424,7 @@ export default class ActionBinder {
     const interactiveShell = searchRoot?.querySelector?.('.interactive-area');
     this.workflowCfg.theme = interactiveShell?.classList.contains('dark') ? 'dark' : null;
 
-    if (!this.transitionScreen) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, false);
-    }
-    await this.transitionScreen.loadSplashFragment();
+    await this.ensureTransitionScreen();
     await this.transitionScreen.showSplashScreen(true);
 
     if (this.pendingFile && !this.assetId) {
@@ -451,30 +449,25 @@ export default class ActionBinder {
     await this.callConnector(query, selectedModelId, selectedAspectRatio, connectorGenerate);
   }
 
-  static workflowSlugToCamelVerb(slug) {
-    if (!slug || typeof slug !== 'string') return 'imageToVideo';
-    return slug.split('-').map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))).join('');
-  }
 
   async callConnector(query, modelId, aspectRatio, connectorGenerate = true) {
-    const workflowSlug = this.workflowCfg.supportedFeatures?.values()?.next()?.value
-      || this.workflowCfg.enabledFeatures?.[0]
-      || 'image-to-video';
-    const verbCamel = ActionBinder.workflowSlugToCamelVerb(workflowSlug);
+    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+    const queryParams = getCgenQueryParams(this.unityEl);
     const modelVersion = this.widgetWrap?.getAttribute('data-selected-model-version') || '';
-    const size = (this.filesData?.width && this.filesData?.height)
-      ? { width: this.filesData.width, height: this.filesData.height }
-      : { width: 1080, height: 1080 };
+    const selectedWidth = Number(this.widgetWrap?.getAttribute('data-selected-width')) || null;
+    const selectedHeight = Number(this.widgetWrap?.getAttribute('data-selected-height')) || null;
+    const size = (selectedWidth && selectedHeight) ? { width: selectedWidth, height: selectedHeight } : null;
 
     const connectorBody = {
       targetProduct: this.workflowCfg.productName,
       assetId: this.assetId,
       query,
       payload: {
-        workflow: workflowSlug,
-        verb: verbCamel,
+        workflow: this.workflowCfg.supportedFeatures.values().next().value,
+        verb: this.verb,
         action: 'asset-upload',
         locale: getLocale(),
+        additionalQueryParams: queryParams,
         size,
         ...(modelId && { modelId }),
         ...(modelVersion && { modelVersion }),
@@ -487,17 +480,13 @@ export default class ActionBinder {
       const postOpts = await getApiCallOptions(
         'POST',
         unityConfig.apiKey,
-        {
-          ...headerExtras,
-          'x-unity-action': `${workflowSlug}-asset-upload`,
-        },
+        ...headerExtras,
         { body: JSON.stringify(connectorBody) },
       );
       const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
       const networkUtils = new NetworkUtils();
-      const apiConfig = this.getApiConfig();
       const { url } = await networkUtils.fetchFromService(
-        apiConfig.connectorApiEndPoint,
+        this.apiConfig.connectorApiEndPoint,
         postOpts,
         async (response) => {
           if (response.status !== 200) {
@@ -540,23 +529,13 @@ export default class ActionBinder {
       && Object.values(actMap).every((v) => typeof v === 'string');
   }
 
-  canvasAreaElementsForToast() {
-    return this.toastCanvasAreas.length ? this.toastCanvasAreas : (this.canvasArea ? [this.canvasArea] : []);
-  }
-
   async cancelUploadOperation() {
     try {
       this.uploadAbortController?.abort();
       this.uploadAbortController = null;
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       this.logAnalytics('Cancel|UnityWidget', { assetId: this.assetId });
-      if (!this.transitionScreen) {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
-      }
-      if (!this.transitionScreen.splashScreenEl) {
-        await this.transitionScreen.loadSplashFragment();
-      }
+      await this.ensureTransitionScreen();
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
       const cancelPromise = Promise.reject(e);
@@ -569,20 +548,13 @@ export default class ActionBinder {
     }
   }
 
-  async executeActionMaps(value, files) {
+  async executeActionMaps(value) {
     await this.handlePreloads();
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
-    switch (value) {
-      case 'interrupt':
-        await this.cancelUploadOperation();
-        break;
-      default:
-        break;
-    }
+    if (value === 'interrupt') await this.cancelUploadOperation();
   }
 
   async bindStringActionMap(b, actMap) {
-    const canvasEls = this.canvasAreaElementsForToast();
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
@@ -606,7 +578,7 @@ export default class ActionBinder {
       },
       INPUT: (el, key) => {
         el.addEventListener('click', () => {
-          canvasEls.forEach((element) => {
+          this.toastCanvasAreas.forEach((element) => {
             const errHolder = element.querySelector('.alert-holder');
             if (errHolder?.classList.contains('show')) {
               element.style.pointerEvents = 'auto';
@@ -625,29 +597,30 @@ export default class ActionBinder {
     };
     for (const [key] of Object.entries(actMap)) {
       const elements = b.querySelectorAll(key);
-      if (elements && elements.length > 0) {
+      if (elements?.length) {
         elements.forEach((el) => {
           const actionType = el.nodeName;
-          if (actions[actionType]) {
-            actions[actionType](el, key);
-          }
+          if (actions[actionType]) actions[actionType](el, key);
         });
       }
     }
+  }
+
+  setupServiceHandler() {
+    this.serviceHandler = new ServiceHandler(
+      this.workflowCfg.targetCfg?.renderWidget,
+      this.toastCanvasAreas,
+      this.unityEl,
+      this.workflowCfg,
+      this.getAdditionalHeaders.bind(this),
+    );
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     const searchRoot = this.canvasArea || this.block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
 
-    this.serviceHandler = new ServiceHandler(
-      this.workflowCfg.targetCfg?.renderWidget,
-      this.toastCanvasAreas.length ? this.toastCanvasAreas : (this.canvasArea ? [this.canvasArea] : []),
-      this.unityEl,
-      this.workflowCfg,
-      this.getAdditionalHeaders.bind(this),
-    );
-
+    this.setupServiceHandler();
     await this.initAnalytics();
 
     if (this.isStringActionMap(actMap)) {
@@ -658,8 +631,9 @@ export default class ActionBinder {
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     await this.handlePreloads();
 
-    this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
-    this.inputField = searchRoot?.querySelector?.('.inp-field') || this.inputField;
+    this.inputField = this.widgetWrap?.querySelector('#pbuPromptInput')
+      || this.widgetWrap?.querySelector('.inp-field')
+      || this.inputField;
 
     for (const [selector, actionsList] of Object.entries(actMap)) {
       const elements = (this.widgetWrap || searchRoot)?.querySelectorAll(selector);
@@ -672,7 +646,6 @@ export default class ActionBinder {
     }
 
     this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetImageState());
-
     this.inputField?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -703,9 +676,7 @@ export default class ActionBinder {
           const files = this.extractFiles(e);
           await this.executeAction(primaryAction, el, files);
         });
-        el.addEventListener('click', () => {
-          this.block?.querySelector('#file-upload')?.click();
-        });
+        el.addEventListener('click', () => { this.block?.querySelector('#file-upload')?.click(); });
         break;
       case 'INPUT':
         el.addEventListener('change', async (e) => {
