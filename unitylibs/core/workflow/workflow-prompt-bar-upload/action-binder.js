@@ -17,7 +17,8 @@ import {
 } from '../../../scripts/utils.js';
 
 class ServiceHandler {
-  constructor(canvasArea, unityEl, workflowCfg, getAdditionalHeaders) {
+  constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}, getAdditionalHeaders = null) {
+    this.renderWidget = renderWidget;
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
@@ -50,15 +51,22 @@ class ServiceHandler {
     return response.json();
   }
 
-  showErrorToast(errorType, error, lanaOptions) {
-    sendAnalyticsEvent(new CustomEvent('Upload server error|UnityWidget'));
-    const msg = this.unityEl.querySelector(errorType)?.closest('li')?.textContent?.trim();
-    if (!msg) return;
+  showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
+    const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
+    if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
+    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
+    if (!errorCallbackOptions.errorToastEl) return;
+    const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
-      const alertText = element.querySelector('.alert-holder .alert-text p');
-      if (alertText) alertText.innerText = msg;
-      element.querySelector('.alert-holder')?.classList.add('show');
+      const errorToast = element.querySelector('.alert-holder');
+      if (!errorToast) return;
+      const closeBtn = errorToast.querySelector('.alert-close');
+      if (closeBtn) closeBtn.style.pointerEvents = 'auto';
+      const alertText = errorToast.querySelector('.alert-text p');
+      if (!alertText) return;
+      alertText.innerText = msg;
+      errorToast.classList.add('show');
     });
     window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
   }
@@ -82,6 +90,19 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
     this.analyticsModule = null;
     this.apiConfig = this.getApiConfig();
+    this.toastCanvasAreas = (() => {
+      const ca = canvasArea;
+      if (ca == null) return [];
+      if (Array.isArray(ca)) return ca.filter(Boolean);
+      if (typeof ca.forEach === 'function' && typeof ca.length === 'number') {
+        try {
+          return [...ca];
+        } catch {
+          return [ca];
+        }
+      }
+      return [ca];
+    })();
     // The widget renders into canvasArea (interactive-area), not the upstream block element.
     const searchRoot = this.canvasArea || this.block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') ?? searchRoot;
@@ -93,6 +114,8 @@ export default class ActionBinder {
     this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-PBU` };
     this.verb = this.getVerbFromDom();
     this.initActionListeners = this.initActionListeners.bind(this);
+    this.promiseStack = [];
+    this.desktop = false;
   }
 
   // ─── API config ────────────────────────────────────────────────────────────
@@ -151,51 +174,38 @@ export default class ActionBinder {
 
   async createErrorToast() {
     try {
+      const [alertImg, closeImg] = await Promise.all([
+        fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
+        fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
+      ]);
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
-      const alertImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/alert.svg` });
-      const closeImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/close.svg` });
-      const widgetWrapEl = this.block?.querySelector('.ex-unity-wrap') || this.block;
-      if (!widgetWrapEl) return null;
-      const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, ''));
-      const alertIcon = createTag('div', { class: 'alert-icon' });
-      alertIcon.append(alertImg, alertText);
-      const alertClose = createTag('a', { class: 'alert-close', href: '#' });
-      alertClose.append(closeImg, createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
-      const alertContent = createTag('div', { class: 'alert-content' });
-      alertContent.append(alertIcon, alertClose);
-      const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
-      const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
-      const closeToast = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        errholder.classList.remove('show');
-        if (widgetWrapEl) widgetWrapEl.style.pointerEvents = 'auto';
-      };
-      alertClose.addEventListener('click', closeToast);
-      alertClose.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') closeToast(e); });
-      decorateDefaultLinkAnalytics(errholder);
-      widgetWrapEl.prepend(errholder);
-      return widgetWrapEl.querySelector('.alert-holder');
+      this.toastCanvasAreas.forEach((canvasEl) => {
+        const mount = canvasEl.querySelector('.pbu-main') || canvasEl;
+        const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
+        const alertIcon = createTag('div', { class: 'alert-icon' });
+        alertIcon.innerHTML = alertImg;
+        alertIcon.append(alertText);
+        const alertClose = createTag('a', { class: 'alert-close', href: '#' });
+        alertClose.innerHTML = closeImg;
+        alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
+        const alertContent = createTag('div', { class: 'alert-content' });
+        alertContent.append(alertIcon, alertClose);
+        const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
+        const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
+        alertClose.addEventListener('click', (e) => {
+          this.preventDefault(e);
+          errholder.classList.remove('show');
+          canvasEl.style.pointerEvents = 'auto';
+        });
+        decorateDefaultLinkAnalytics(errholder);
+        mount.append(errholder);
+      });
+      return this.toastCanvasAreas[0]?.querySelector('.pbu-main .alert-holder')
+        || this.toastCanvasAreas[0]?.querySelector('.alert-holder');
     } catch (e) {
       window.lana?.log(`Message: Error creating error toast, Error: ${e}`, this.lanaOptions);
       return null;
     }
-  }
-
-  showErrorToast(errorTypeSelector, error, errorType = 'server') {
-    sendAnalyticsEvent(new CustomEvent(`FF Generate prompt ${errorType} error|UnityWidget`));
-    if (!this.errorToastEl) return;
-    const msg = this.unityEl.querySelector(errorTypeSelector)?.closest('li')?.textContent?.trim()
-      || this.unityEl.querySelector(errorTypeSelector)?.nextSibling?.textContent?.trim()
-      || (typeof error === 'string' ? error : error?.message)
-      || '';
-    if (!msg) return;
-    const widgetWrapEl = this.block?.querySelector('.ex-unity-wrap') || this.block;
-    if (widgetWrapEl) widgetWrapEl.style.pointerEvents = 'none';
-    const alertText = this.errorToastEl.querySelector('.alert-text p');
-    if (alertText) alertText.innerText = msg;
-    this.errorToastEl.classList.add('show');
-    window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, this.lanaOptions);
   }
 
   // ─── File validation ───────────────────────────────────────────────────────
@@ -210,9 +220,28 @@ export default class ActionBinder {
     return files;
   }
 
-  handleClientError(errorTypeSelector, errorCode) {
-    this.showErrorToast(errorTypeSelector, null, 'client');
+  handleClientError(errorTypeSelector, errorCode, message = '') {
+    this.serviceHandler.showErrorToast(
+      {
+        errorToastEl: this.errorToastEl,
+        errorType: errorTypeSelector,
+        errorCode,
+        fileMetaData: this.filesData,
+      },
+      message,
+      this.lanaOptions,
+      'client',
+    );
     this.logAnalytics('Upload client error|UnityWidget', { errorData: { code: errorCode }, fileMetaData: this.filesData });
+  }
+
+  setSelectSpinnerVisible(visible) {
+    const wrap = this.widgetWrap?.querySelector('.pbu-drop-zone-wrap');
+    const el = wrap?.querySelector('.pbu-select-spinner');
+    if (!el) return;
+    el.classList.toggle('hidden', !visible);
+    el.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    wrap?.classList.toggle('pbu-select-processing', !!visible);
   }
 
   async checkImageDimensions(file) {
@@ -243,10 +272,13 @@ export default class ActionBinder {
       this.handleClientError('.icon-error-filesize', 'error-filesize');
       return false;
     }
+    this.setSelectSpinnerVisible(true);
     try {
       await this.checkImageDimensions(file);
     } catch {
       return false;
+    } finally {
+      this.setSelectSpinnerVisible(false);
     }
     this.pendingFile = file;
     sendAnalyticsEvent(new CustomEvent('Image Selected|UnityWidget'));
@@ -338,7 +370,7 @@ export default class ActionBinder {
         window.lana?.log(`Message: Upload aborted, Error: ${e.message}`, this.lanaOptions);
         return false;
       }
-      this.showErrorToast('.icon-error-request', e);
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       this.logAnalytics('Upload server error|UnityWidget', {
         errorData: { code: 'error-request', subCode: `uploadAsset ${e.status}`, desc: e.message },
         assetId: this.assetId,
@@ -374,11 +406,11 @@ export default class ActionBinder {
 
   validatePrompt(query) {
     if (!query && !this.pendingFile) {
-      this.showErrorToast('.icon-error-request', 'No prompt or image', 'client');
+      this.handleClientError('.icon-error-request', 'no-prompt-or-image', 'No prompt or image');
       return false;
     }
     if (query.length > 750) {
-      this.showErrorToast('.icon-error-max-length', 'Prompt too long', 'client');
+      this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
       this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
       return false;
     }
@@ -389,6 +421,7 @@ export default class ActionBinder {
    * @param {boolean} connectorGenerate — when false (More CTA), connector payload sets `generate: false`; otherwise same as Generate.
    */
   async handleGenerate(connectorGenerate = true) {
+    this.promiseStack = [];
     await this.initAnalytics();
     const query = this.inputField?.value?.trim() || '';
     if (!this.validatePrompt(query)) return;
@@ -426,7 +459,12 @@ export default class ActionBinder {
 
     if (!this.assetId) {
       await this.transitionScreen?.showSplashScreen();
-      this.showErrorToast('.icon-error-request', new Error('Missing asset'), 'client');
+      this.serviceHandler.showErrorToast(
+        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
+        new Error('Missing asset'),
+        this.lanaOptions,
+        'client',
+      );
       return;
     }
 
@@ -499,8 +537,9 @@ export default class ActionBinder {
       }
       if (url) window.location.href = url;
     } catch (err) {
+      if (err.message === 'Operation termination requested.') return;
       await this.transitionScreen?.showSplashScreen();
-      this.showErrorToast('.icon-error-request', err);
+      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err, this.lanaOptions);
       this.logAnalytics('Generate Error|UnityWidget', {
         errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
         assetId: this.assetId,
@@ -519,25 +558,135 @@ export default class ActionBinder {
     if (parr.length) await priorityLoad(parr);
   }
 
+  isStringActionMap(actMap) {
+    return actMap && typeof actMap === 'object' && Object.keys(actMap).length > 0
+      && Object.values(actMap).every((v) => typeof v === 'string');
+  }
+
+  canvasAreaElementsForToast() {
+    return this.toastCanvasAreas.length ? this.toastCanvasAreas : (this.canvasArea ? [this.canvasArea] : []);
+  }
+
+  async cancelUploadOperation() {
+    try {
+      this.uploadAbortController?.abort();
+      this.uploadAbortController = null;
+      sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
+      this.logAnalytics('Cancel|UnityWidget', { assetId: this.assetId });
+      if (!this.transitionScreen) {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+      }
+      if (!this.transitionScreen.splashScreenEl) {
+        await this.transitionScreen.loadSplashFragment();
+      }
+      await this.transitionScreen.showSplashScreen();
+      const e = new Error('Operation termination requested.');
+      const cancelPromise = Promise.reject(e);
+      cancelPromise.catch(() => {});
+      this.promiseStack.unshift(cancelPromise);
+    } catch (error) {
+      await this.transitionScreen?.showSplashScreen();
+      window.lana?.log(`Message: Error cancelling upload operation, Error: ${error}`, this.lanaOptions);
+      throw error;
+    }
+  }
+
+  async executeActionMaps(value, files) {
+    await this.handlePreloads();
+    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+    switch (value) {
+      case 'interrupt':
+        await this.cancelUploadOperation();
+        break;
+      default:
+        break;
+    }
+  }
+
+  async bindStringActionMap(b, actMap) {
+    const canvasEls = this.canvasAreaElementsForToast();
+    const actions = {
+      A: (el, key) => {
+        el.addEventListener('click', async (e) => {
+          const action = actMap[key];
+          if (action !== 'redirect') e.preventDefault();
+          await this.executeActionMaps(action);
+        });
+      },
+      DIV: (el, key) => {
+        el.addEventListener('drop', async (e) => {
+          sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
+          this.preventDefault(e);
+          const extracted = this.extractFiles(e);
+          this.filesData = { count: extracted.length, size: extracted[0]?.size, type: extracted[0]?.type };
+          this.logAnalytics('Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
+          await this.executeActionMaps(actMap[key], extracted);
+        });
+        el.addEventListener('click', () => {
+          sendAnalyticsEvent(new CustomEvent('Click Drag and drop|UnityWidget'));
+        });
+      },
+      INPUT: (el, key) => {
+        el.addEventListener('click', () => {
+          canvasEls.forEach((element) => {
+            const errHolder = element.querySelector('.alert-holder');
+            if (errHolder?.classList.contains('show')) {
+              element.style.pointerEvents = 'auto';
+              errHolder.classList.remove('show');
+            }
+          });
+        });
+        el.addEventListener('change', async (e) => {
+          const extracted = this.extractFiles(e);
+          this.filesData = { count: extracted.length, size: extracted[0]?.size, type: extracted[0]?.type };
+          this.logAnalytics('Click Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
+          await this.executeActionMaps(actMap[key], extracted);
+          e.target.value = '';
+        });
+      },
+    };
+    for (const [key] of Object.entries(actMap)) {
+      const elements = b.querySelectorAll(key);
+      if (elements && elements.length > 0) {
+        elements.forEach((el) => {
+          const actionType = el.nodeName;
+          if (actions[actionType]) {
+            actions[actionType](el, key);
+          }
+        });
+      }
+    }
+  }
+
   // ─── Action listeners ──────────────────────────────────────────────────────
 
-  async initActionListeners() {
-    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
-    await this.handlePreloads();
+  async initActionListeners(b = this.block, actMap = this.actionMap) {
+    const searchRoot = this.canvasArea || this.block;
+    this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
 
     this.serviceHandler = new ServiceHandler(
-      Array.isArray(this.canvasArea) ? this.canvasArea : [this.canvasArea],
+      this.workflowCfg.targetCfg?.renderWidget,
+      this.toastCanvasAreas.length ? this.toastCanvasAreas : (this.canvasArea ? [this.canvasArea] : []),
       this.unityEl,
       this.workflowCfg,
       this.getAdditionalHeaders.bind(this),
     );
 
+    await this.initAnalytics();
+
+    if (this.isStringActionMap(actMap)) {
+      await this.bindStringActionMap(b, actMap);
+      return;
+    }
+
+    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+    await this.handlePreloads();
+
     // Re-query widgetWrap and inputField in case widget was re-rendered
-    const searchRoot = this.canvasArea || this.block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
     this.inputField = searchRoot?.querySelector?.('.inp-field') || this.inputField;
 
-    const actMap = this.actionMap;
     for (const [selector, actionsList] of Object.entries(actMap)) {
       const elements = (this.widgetWrap || searchRoot)?.querySelectorAll(selector);
       if (!elements?.length) continue;
@@ -617,5 +766,10 @@ export default class ActionBinder {
     } catch (err) {
       window.lana?.log(`Message: Action "${actionType}" failed, Error: ${err}`, this.lanaOptions);
     }
+  }
+
+  preventDefault(e) {
+    e.preventDefault();
+    e.stopPropagation();
   }
 }

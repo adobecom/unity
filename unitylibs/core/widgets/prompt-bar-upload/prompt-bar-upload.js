@@ -99,7 +99,7 @@ export default class PromptBarUploadWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-video.json`;
+    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker-video-sample.json`;
     const res = await fetch(modelFile);
     if (!res.ok) throw new Error('Failed to fetch video models.');
     const json = await res.json();
@@ -358,16 +358,21 @@ export default class PromptBarUploadWidget {
     dropContent.append(uploadIcon);
     const dropZone = createTag('div', { class: 'drop-zone', role: 'button', tabindex: '0', 'aria-label': 'Upload image' });
     dropZone.append(fileInput, dropContent);
+    const selectSpinner = createTag('div', { class: 'pbu-select-spinner hidden', 'aria-hidden': 'true', role: 'status' });
+    selectSpinner.append(createTag('div', { class: 'pbu-select-spinner-ring' }));
     const preview = createTag('div', { class: 'pbu-preview hidden', 'aria-hidden': 'true' });
     const previewImg = createTag('img', { class: 'pbu-preview-img', alt: 'Selected image preview' });
-    const deleteBtn = createTag('span', { class: 'pbu-delete-btn' }, '<svg><use xlink:href="#unity-trash-icon"></use></svg>');
-    // const deleteBtn = createTag('button', { class: 'pbu-delete-btn', 'aria-label': 'Remove image' });
-    // deleteBtn.append(svgUse(ICON.trash, 'pbu-trash-svg'));
+    const deleteBtn = createTag('button', {
+      type: 'button',
+      class: 'pbu-delete-btn',
+      'aria-label': 'Remove image',
+    });
+    deleteBtn.innerHTML = '<svg><use xlink:href="#unity-trash-icon"></use></svg>';
     const spinner = createTag('div', { class: 'pbu-spinner hidden', 'aria-label': 'Uploading', role: 'status' });
     preview.append(previewImg, deleteBtn, spinner);
 
     const wrap = createTag('div', { class: 'pbu-drop-zone-wrap' });
-    wrap.append(dropZone, preview);
+    wrap.append(dropZone, selectSpinner, preview);
     return wrap;
   }
 
