@@ -3,47 +3,6 @@
 
 import { createTag, getUnityLibs } from '../../../scripts/utils.js';
 
-// ─── Constants ─────────────────────────────────────────────────────────────
-
-export const ICON = {
-  upload: '#pbu-upload-icon',
-  trash: '#pbu-trash-icon',
-  chevron: '#pbu-chevron-icon',
-  check: '#pbu-check-icon',
-};
-
-function svgUse(href, cls = '') {
-  const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  if (cls) el.setAttribute('class', cls);
-  el.setAttribute('aria-hidden', 'true');
-  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-  use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', href);
-  el.appendChild(use);
-  return el;
-}
-
-function menuChevronSvg() {
-  return svgUse(ICON.chevron, 'pbu-menu-chevron-svg');
-}
-
-function moreIconSvg() {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('width', '20');
-  svg.setAttribute('height', '20');
-  svg.setAttribute('viewBox', '0 0 20 20');
-  svg.setAttribute('aria-hidden', 'true');
-  const p1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  p1.setAttribute('d', 'm1.75,6.77148h2.6687c.34064,1.43018,1.62128,2.5,3.15405,2.5s2.81342-1.06982,3.15405-2.5h7.52319c.41406,0,.75-.33594.75-.75s-.33594-.75-.75-.75h-7.52319c-.34064-1.43018-1.62128-2.5-3.15405-2.5s-2.81342,1.06982-3.15405,2.5H1.75c-.41406,0-.75.33594-.75.75s.33594.75.75.75Zm5.82275-2.5c.96484,0,1.75.78516,1.75,1.75s-.78516,1.75-1.75,1.75-1.75-.78516-1.75-1.75.78516-1.75,1.75-1.75Z');
-  p1.setAttribute('fill', 'currentColor');
-  const p2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  p2.setAttribute('d', 'm18.25,13.27148h-2.52319c-.34064-1.43018-1.62128-2.5-3.15405-2.5s-2.81342,1.06982-3.15405,2.5H1.75c-.41406,0-.75.33594-.75.75s.33594.75.75.75h7.6687c.34064,1.43018,1.62128,2.5,3.15405,2.5s2.81342-1.06982,3.15405-2.5h2.52319c.41406,0,.75-.33594.75-.75s-.33594-.75-.75-.75Zm-5.67725,2.5c-.96484,0-1.75-.78516-1.75-1.75s.78516-1.75,1.75-1.75,1.75.78516,1.75,1.75-.78516,1.75-1.75,1.75Z');
-  p2.setAttribute('fill', 'currentColor');
-  svg.append(p1, p2);
-  return svg;
-}
-
-// ─── Authoring helpers ─────────────────────────────────────────────────────
-
 function placeholderText(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`) || root.querySelector(`[class*="${iconClass}"]`);
   if (!icon) return '';
@@ -55,7 +14,6 @@ function labelForField(root, iconClass, fallback) {
   return t || fallback;
 }
 
-/** Pull legal copy (Terms / Privacy links) from authoring before the config holder consumes the block. */
 function extractLegalFootFromAuthoring(root) {
   const marker = root.querySelector('[class*="icon-legal-terms"]');
   if (!marker) return null;
@@ -70,9 +28,6 @@ function extractLegalFootFromAuthoring(root) {
   marker.remove();
   return foot;
 }
-
-// ─── Widget ─────────────────────────────────────────────────────────────────
-
 export default class PromptBarUploadWidget {
   constructor(target, el, workflowCfg, spriteCon) { 
     this.target = target;
@@ -91,8 +46,6 @@ export default class PromptBarUploadWidget {
     /** @type {HTMLElement | null} */
     this.actionContainerEl = null;
   }
-
-  // ─── Model config ─────────────────────────────────────────────────────────
 
   async loadModels() {
     const { origin } = window.location;
@@ -131,12 +84,7 @@ export default class PromptBarUploadWidget {
     this.showMore = !!root.querySelector('[class*="icon-show-more"]');
   }
 
-  // ─── Dropdowns (DOM aligned with prompt-bar models-container / verb-list) ─
 
-  /**
-   * Match prompt-bar behavior: inline `display:none` on `.verb-list` is removed when opening
-   * so `.models-container.show-menu .verb-list { display: block }` can apply.
-   */
   attachModelsDropdownMenu(container, selectedElement, list) {
     const closeMenu = () => {
       container.classList.remove('show-menu');
@@ -173,8 +121,6 @@ export default class PromptBarUploadWidget {
     const container = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
     const nameContainer = createTag('span', { class: 'model-name' }, (defaultModel?.name || '').trim());
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    // const menuIcon = createTag('span', { class: 'menu-icon' });
-    // menuIcon.append(menuChevronSvg());
 
     const selectedElement = createTag('button', {
       type: 'button',

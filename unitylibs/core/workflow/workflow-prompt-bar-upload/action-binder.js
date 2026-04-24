@@ -103,7 +103,6 @@ export default class ActionBinder {
       }
       return [ca];
     })();
-    // The widget renders into canvasArea (interactive-area), not the upstream block element.
     const searchRoot = this.canvasArea || this.block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') ?? searchRoot;
     this.inputField = searchRoot?.querySelector?.('.inp-field');
@@ -117,8 +116,6 @@ export default class ActionBinder {
     this.promiseStack = [];
     this.desktop = false;
   }
-
-  // ─── API config ────────────────────────────────────────────────────────────
 
   getApiConfig() {
     unityConfig.endPoint = {
@@ -150,8 +147,6 @@ export default class ActionBinder {
     return this.workflowCfg?.enabledFeatures?.[0];
   }
 
-  // ─── Analytics ─────────────────────────────────────────────────────────────
-
   async initAnalytics() {
     if (this.analyticsModule) return;
     this.analyticsModule = await import(`${getUnityLibs()}/scripts/analytics.js`);
@@ -169,8 +164,6 @@ export default class ActionBinder {
       true,
     );
   }
-
-  // ─── Error toast ───────────────────────────────────────────────────────────
 
   async createErrorToast() {
     try {
@@ -207,8 +200,6 @@ export default class ActionBinder {
       return null;
     }
   }
-
-  // ─── File validation ───────────────────────────────────────────────────────
 
   extractFiles(e) {
     const files = [];
@@ -286,8 +277,6 @@ export default class ActionBinder {
     this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
     return true;
   }
-
-  // ─── Asset upload (runs at Generate time) ──────────────────────────────────
 
   async uploadImgToUnity(storageUrl, id, blobData, fileType, signal) {
     const uploadOptions = {
@@ -379,8 +368,6 @@ export default class ActionBinder {
     }
   }
 
-  // ─── Delete (local state reset + placeholder backend call) ─────────────────
-
   resetImageState() {
     if (this.uploadAbortController) {
       this.uploadAbortController.abort();
@@ -398,11 +385,8 @@ export default class ActionBinder {
   }
 
   deleteAsset(assetId) {
-    // TODO: Replace with actual DELETE endpoint when available
     window.lana?.log(`Message: Asset delete not yet implemented, assetId: ${assetId}`, this.lanaOptions);
   }
-
-  // ─── Generate flow ─────────────────────────────────────────────────────────
 
   validatePrompt(query) {
     if (!query && !this.pendingFile) {
@@ -417,9 +401,6 @@ export default class ActionBinder {
     return true;
   }
 
-  /**
-   * @param {boolean} connectorGenerate — when false (More CTA), connector payload sets `generate: false`; otherwise same as Generate.
-   */
   async handleGenerate(connectorGenerate = true) {
     this.promiseStack = [];
     await this.initAnalytics();
@@ -448,7 +429,6 @@ export default class ActionBinder {
     await this.transitionScreen.loadSplashFragment();
     await this.transitionScreen.showSplashScreen(true);
 
-    // Upload image first if one is pending
     if (this.pendingFile && !this.assetId) {
       const uploadOk = await this.uploadAsset(this.pendingFile);
       if (!uploadOk) {
@@ -471,7 +451,6 @@ export default class ActionBinder {
     await this.callConnector(query, selectedModelId, selectedAspectRatio, connectorGenerate);
   }
 
-  /** e.g. image-to-video → imageToVideo */
   static workflowSlugToCamelVerb(slug) {
     if (!slug || typeof slug !== 'string') return 'imageToVideo';
     return slug.split('-').map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))).join('');
@@ -547,8 +526,6 @@ export default class ActionBinder {
       window.lana?.log(`Message: Connector call failed, Error: ${err}`, this.lanaOptions);
     }
   }
-
-  // ─── Preloads ──────────────────────────────────────────────────────────────
 
   async handlePreloads() {
     const parr = [];
@@ -659,8 +636,6 @@ export default class ActionBinder {
     }
   }
 
-  // ─── Action listeners ──────────────────────────────────────────────────────
-
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     const searchRoot = this.canvasArea || this.block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
@@ -683,7 +658,6 @@ export default class ActionBinder {
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     await this.handlePreloads();
 
-    // Re-query widgetWrap and inputField in case widget was re-rendered
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
     this.inputField = searchRoot?.querySelector?.('.inp-field') || this.inputField;
 
@@ -697,10 +671,8 @@ export default class ActionBinder {
       });
     }
 
-    // Listen for delete events from widget
     this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetImageState());
 
-    // Enter key on textarea triggers generate
     this.inputField?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -722,7 +694,6 @@ export default class ActionBinder {
         });
         break;
       case 'DIV':
-        // Drop zone: drag-and-drop
         el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
         el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
         el.addEventListener('drop', async (e) => {
