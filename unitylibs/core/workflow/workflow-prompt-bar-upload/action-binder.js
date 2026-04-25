@@ -362,24 +362,6 @@ export default class ActionBinder {
     }
   }
 
-  resetImageState() {
-    if (this.uploadAbortController) {
-      this.uploadAbortController.abort();
-      this.uploadAbortController = null;
-    }
-    if (this.assetId) this.deleteAsset(this.assetId);
-    this.assetId = null;
-    this.pendingFile = null;
-    this.filesData = {};
-    this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-deleted'));
-    sendAnalyticsEvent(new CustomEvent('Image Deleted|UnityWidget'));
-    this.logAnalytics('Image Deleted|UnityWidget', {});
-  }
-
-  deleteAsset(assetId) {
-    window.lana?.log(`Message: Asset delete not yet implemented, assetId: ${assetId}`, this.lanaOptions);
-  }
-
   validatePrompt(query) {
     if (query.length > 750) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
@@ -431,11 +413,11 @@ export default class ActionBinder {
       }
     }
 
-    await this.callConnector(query, selectedModelId, selectedAspectRatio, connectorGenerate);
+    await this.continueInApp(query, selectedModelId, selectedAspectRatio, connectorGenerate);
   }
 
 
-  async callConnector(query, modelId, aspectRatio, connectorGenerate = true) {
+  async continueInApp(query, modelId, aspectRatio, connectorGenerate = true) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
     const modelVersion = this.widgetWrap?.getAttribute('data-selected-model-version') || '';
@@ -612,14 +594,11 @@ export default class ActionBinder {
       await this.bindStringActionMap(b, actMap);
       return;
     }
-
     if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
     await this.handlePreloads();
-
     this.inputField = this.widgetWrap?.querySelector('#pbuPromptInput')
       || this.widgetWrap?.querySelector('.inp-field')
       || this.inputField;
-
     for (const [selector, actionsList] of Object.entries(actMap)) {
       const elements = (this.widgetWrap || searchRoot)?.querySelectorAll(selector);
       if (!elements?.length) continue;
@@ -629,8 +608,6 @@ export default class ActionBinder {
         this.bindElement(el, actionsList);
       });
     }
-
-    this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetImageState());
     this.inputField?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();

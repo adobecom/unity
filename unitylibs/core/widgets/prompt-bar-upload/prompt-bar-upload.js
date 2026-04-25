@@ -475,9 +475,9 @@ export default class PromptBarUploadWidget {
     };
 
     this.widgetWrap?.addEventListener('pbu-image-selected', (e) => showPreview(e.detail.file));
-    this.widgetWrap?.addEventListener('pbu-image-deleted', showDropZone);
     deleteBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
+      showDropZone();
       this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-delete-image'));
     });
   }
@@ -515,13 +515,6 @@ export default class PromptBarUploadWidget {
 
     this.addWidget();
     this.wireImagePreview(dropZoneRefs);
-
-    this.actionMap = {
-      '.gen-btn': [{ actionType: 'generate' }],
-      '.more-btn': [{ actionType: 'more' }],
-      '.drop-zone': [{ actionType: 'file-selected' }],
-      '#file-upload': [{ actionType: 'file-selected' }],
-    };
-    return this.actionMap;
+    return this.workflowCfg.targetCfg.actionMap;
   }
 }
