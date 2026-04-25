@@ -28,7 +28,7 @@
       "minHeight": 512,
       "minWidth": 512
     },
-    "limits-video-upload": {
+    "limits-upload-video": {
       "allowedFileTypes": ["video/mp4", "video/quicktime"],
       "maxFileSize": 200000000,
       "minDuration": 5,

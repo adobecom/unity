@@ -86,7 +86,7 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 95;
     const commonLimits = workflowCfg.targetCfg.limits || {};
     const productLimits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`] || {};
-    const featureLimits = (workflowCfg.enabledFeatures || []).reduce((acc, feature) => ({
+    const featureLimits = Array.from(workflowCfg.enabledFeatures || []).reduce((acc, feature) => ({
       ...acc,
       ...(workflowCfg.targetCfg[`limits-${feature}`] || {}),
     }), {});
