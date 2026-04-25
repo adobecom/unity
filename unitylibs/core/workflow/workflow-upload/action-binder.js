@@ -84,13 +84,7 @@ export default class ActionBinder {
     this.splashScreenEl = null;
     this.transitionScreen = null;
     this.LOADER_LIMIT = 95;
-    const commonLimits = workflowCfg.targetCfg.limits || {};
-    const productLimits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`] || {};
-    const featureLimits = Array.from(workflowCfg.enabledFeatures || []).reduce((acc, feature) => ({
-      ...acc,
-      ...(workflowCfg.targetCfg[`limits-${feature}`] || {}),
-    }), {});
-    this.limits = { ...commonLimits, ...productLimits, ...featureLimits };
+    this.limits = ActionBinder.resolveLimits(workflowCfg);
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
     const productTag = workflowCfg.targetCfg[`productTag-${workflowCfg.productName.toLowerCase()}`] || 'UNKNOWN';
@@ -101,6 +95,18 @@ export default class ActionBinder {
     this.filesData = {};
     this.verb = this.getVerbFromDom();
     this.uploadAbortController = null;
+  }
+
+  static resolveLimits(workflowCfg) {
+    const targetCfg = workflowCfg.targetCfg || {};
+    const commonLimits = targetCfg.limits || {};
+    const productLimits = targetCfg[`limits-${workflowCfg.productName?.toLowerCase()}`] || {};
+    const featureLimits = Array.from(workflowCfg.supportedFeatures || []).reduce((acc, feature) => ({
+      ...acc,
+      ...(targetCfg[`limits-${feature}`] || {}),
+    }), {});
+    const hasFeatureLimits = Object.keys(featureLimits).length > 0;
+    return { ...commonLimits, ...(hasFeatureLimits ? featureLimits : productLimits) };
   }
 
   getApiConfig() {
