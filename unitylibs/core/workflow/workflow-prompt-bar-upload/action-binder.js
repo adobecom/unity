@@ -381,10 +381,6 @@ export default class ActionBinder {
   }
 
   validatePrompt(query) {
-    if (!query && !this.pendingFile) {
-      this.handleClientError('.icon-error-request', 'no-prompt-or-image', 'No prompt or image');
-      return false;
-    }
     if (query.length > 750) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
       this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
@@ -435,17 +431,6 @@ export default class ActionBinder {
       }
     }
 
-    if (!this.assetId) {
-      await this.transitionScreen?.showSplashScreen();
-      this.serviceHandler.showErrorToast(
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
-        new Error('Missing asset'),
-        this.lanaOptions,
-        'client',
-      );
-      return;
-    }
-
     await this.callConnector(query, selectedModelId, selectedAspectRatio, connectorGenerate);
   }
 
@@ -460,8 +445,8 @@ export default class ActionBinder {
 
     const connectorBody = {
       targetProduct: this.workflowCfg.productName,
-      assetId: this.assetId,
-      query,
+      ...(this.assetId && { assetId: this.assetId }),
+      ...(query && { query }),
       payload: {
         workflow: this.workflowCfg.supportedFeatures.values().next().value,
         verb: this.verb,
@@ -480,7 +465,7 @@ export default class ActionBinder {
       const postOpts = await getApiCallOptions(
         'POST',
         unityConfig.apiKey,
-        ...headerExtras,
+        headerExtras,
         { body: JSON.stringify(connectorBody) },
       );
       const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);

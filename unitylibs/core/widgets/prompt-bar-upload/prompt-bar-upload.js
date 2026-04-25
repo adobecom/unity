@@ -138,17 +138,21 @@ export default class PromptBarUploadWidget {
   buildAspectRatioMap() {
     this.aspectRatioMap = {};
     this.sizeMap = {};
+    const parseList = (str) => {
+      const s = String(str);
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch { /* fall through to comma-split */ }
+      return s.split(',').map((v) => v.trim()).filter(Boolean);
+    };
     (this.models || []).forEach((item) => {
       const raw = item['aspect-ratio'];
       if (!item.id || !raw) return;
-      const parseList = (str) => {
-        try { return JSON.parse(str); } catch { /* fall through */ }
-        return String(str).split(',').map((s) => s.trim()).filter(Boolean);
-      };
       const ratios = parseList(raw);
       this.aspectRatioMap[item.id] = ratios;
-      const widths = item.width ? parseList(item.width) : [];
-      const heights = item.height ? parseList(item.height) : [];
+      const widths = item.width != null ? parseList(item.width) : [];
+      const heights = item.height != null ? parseList(item.height) : [];
       this.sizeMap[item.id] = ratios.map((_, i) => ({
         width: Number(widths[i]) || null,
         height: Number(heights[i]) || null,
@@ -245,6 +249,21 @@ export default class PromptBarUploadWidget {
     else this.widgetWrap?.removeAttribute('data-selected-width');
     if (size?.height) this.widgetWrap?.setAttribute('data-selected-height', size.height);
     else this.widgetWrap?.removeAttribute('data-selected-height');
+  }
+
+  syncDefaultAttributes() {
+    if (!this.widgetWrap || !this.selectedModelId) return;
+    const defaultModel = this.models?.find((m) => m.id === this.selectedModelId);
+    this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+    this.widgetWrap.setAttribute('data-selected-model-name', (defaultModel?.name || '').trim());
+    if (defaultModel?.version != null && defaultModel.version !== '') {
+      this.widgetWrap.setAttribute('data-selected-model-version', String(defaultModel.version));
+    } else {
+      this.widgetWrap.removeAttribute('data-selected-model-version');
+    }
+    if (this.selectedAspectRatio) {
+      this.setSelectedAspectRatio(this.selectedModelId, this.selectedAspectRatio);
+    }
   }
 
   buildAspectRatioDropdown(modelId) {
@@ -492,6 +511,7 @@ export default class PromptBarUploadWidget {
     this.widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options pbu-widget' });
     this.widgetWrap.append(unitySprite, root);
     if (legalFoot) this.widgetWrap.append(legalFoot);
+    this.syncDefaultAttributes();
 
     this.addWidget();
     this.wireImagePreview(dropZoneRefs);

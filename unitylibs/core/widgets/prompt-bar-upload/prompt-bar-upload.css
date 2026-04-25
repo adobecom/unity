@@ -1,11 +1,3 @@
-/**
- * prompt-bar-upload — self-contained widget chrome (no prompt-bar.css import).
- * Model / aspect dropdown rules below are ported from prompt-bar.css for:
- * `.models-container`, `.selected-model`, `.verb-list`, `.verb-item`, `.verb-link`, `.model-link`, `.menu-icon`.
- */
-
-/* ─── Root and interactive-area structure (flex-row layout) ─────────────── */
-
 .upload-marquee.unity-enabled .interactive-area {
   display: inherit;
   background: none;
@@ -34,8 +26,6 @@ max-width: 727px;
 }
 }
 
-/* ─── Legal line (Terms / Privacy) below the prompt bar ───────────────────── */
-
 .ex-unity-wrap.pbu-widget .pbu-legal-foot {
 font-size: 14px;
 width: fit-content;
@@ -59,8 +49,6 @@ text-decoration: none;
 text-decoration: underline;
 }
 
-/* ─── Main flex-row container (left upload | right prompt bar) ───────────── */
-
 .unity-prompt-bar-upload.unity-enabled .pbu-main {
 position: relative;
 padding: 16px;
@@ -74,8 +62,6 @@ width: 100%;
 box-sizing: border-box;
 }
 
-/* ─── Left section: Upload dropzone with heading ───────────────────────────── */
-
 .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
 display: flex;
 flex-direction: column;
@@ -86,14 +72,6 @@ border-right: 1px solid rgb(255 255 255 / 12%);
 padding-right: 16px;
 box-sizing: border-box;
 }
-
-/* .unity-prompt-bar-upload.unity-enabled .pbu-left-section .pbu-drop-zone-wrap {
-width: 100%;
-min-height: 120px;
-flex: 1;
-} */
-
-/* ─── Right section: Prompt bar (heading, textarea, controls) ──────────────── */
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
 display: flex;
@@ -112,7 +90,6 @@ width: 100%;
 min-width: 0;
 }
 
-/* Error toast: full card (upload + prompt), centered banner + dimmed backdrop (design image 1) */
 .unity-prompt-bar-upload.unity-enabled .pbu-main .alert-holder {
 position: absolute;
 inset: 0;
@@ -167,16 +144,11 @@ font-size: var(--type-body-s-size, 15px);
 line-height: 1.45;
 }
 
-/* ─── Controls footer (action container + generate button) ────────────────── */
-
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
 display: flex;
 flex-direction: row;
 align-items: center;
 gap: 8px;
-/* margin-top: 12px; */
-/* padding-top: 12px; */
-/* border-top: 1px solid rgb(255 255 255 / 12%); */
 width: 100%;
 box-sizing: border-box;
 }
@@ -206,8 +178,6 @@ flex: 1;
 justify-content: flex-end;
 }
 
-/* ─── Typography — prompt-bar-style copy labels ──────────────────────────── */
-
 .unity-prompt-bar-upload.unity-enabled .unity-slf-copy-label {
 color: #d1d1d1;
 font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
@@ -221,8 +191,6 @@ display: block;
 margin-bottom: 8px;
 }
 
-/* ─── Prompt field — light text on dark (prompt-bar-style textarea) ────────── */
-
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field,
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field::placeholder {
 color: #f8f8f8 !important;
@@ -234,8 +202,6 @@ font-size: 16px;
 .unity-prompt-bar-upload.unity-enabled .interactive-area.light .inp-field::placeholder {
 color: #292929;
 }
-
-/* ─── Model picker & aspect dropdown (from prompt-bar.css) ─────────────────── */
 
 @keyframes pbu-model-fade-in {
 0% { opacity: 0; }
@@ -285,8 +251,6 @@ width: 12px;
 height: 12px;
 }
 
-/* Model + aspect triggers: pill chrome (aligned with prompt-bar-style / Firefly reference) */
-
 .unity-prompt-bar-upload.unity-enabled .interactive-area .models-container,
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .models-container {
 display: flex;
@@ -301,7 +265,6 @@ align-items: center;
 max-width: none;
 }
 
-/* Open list — light shell: dark type on white panel */
 .unity-prompt-bar-upload.unity-enabled .interactive-area.light .verb-list .verb-link,
 .unity-prompt-bar-upload.unity-enabled .interactive-area.light .verb-list .verb-link .model-name {
 color: #292929;
@@ -325,7 +288,6 @@ transition: transform 0.15s ease-in;
 transform: rotate(-180deg);
 }
 
-/* Dark shell: charcoal pill, white type + chevron (model + aspect) */
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model {
 display: inline-flex;
 align-items: center;
@@ -378,7 +340,6 @@ flex-shrink: 0;
 object-fit: cover;
 }
 
-/* Aspect ratio row: frame glyph when there is no model thumbnail */
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-aspect-models .selected-model:not(:has(img))::before {
 content: '';
 display: block;
@@ -390,7 +351,6 @@ border-radius: 2px;
 flex-shrink: 0;
 }
 
-/* Light shell: soft pill + dark text */
 .unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model {
 display: inline-flex;
 align-items: center;
@@ -485,7 +445,6 @@ opacity: 0;
 animation: pbu-model-fade-in 0.5s ease forwards;
 }
 
-/* Dark shell: model/aspect menus match prompt-bar-style (black panel, white type, blue check) */
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .models-container .verb-list,
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .verbs-container .verb-list {
 background: #000;
@@ -582,8 +541,6 @@ left: unset;
 }
 }
 
-/* ─── More button (secondary action) ───────────────────────────────────────── */
-
 .unity-prompt-bar-upload.unity-enabled .act-wrap .pbu-more-btn {
 background: transparent;
 border: none;
@@ -609,8 +566,6 @@ font-size: 15px;
 font-weight: 400;
 }
 
-/* ─── Dropdowns open upward to avoid clipping ──────────────────────────────── */
-
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container .verb-list,
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container .verb-list {
 top: auto;
@@ -621,9 +576,6 @@ margin-bottom: 4px;
 z-index: 10;
 }
 
-/* Base z-index keeps sibling order predictable; equal high z-index on every
-   .models-container made the aspect pill paint after (on top of) the model
-   menu, which opens upward into that space. Only lift the open picker. */
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container,
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container {
 position: relative;
@@ -635,9 +587,6 @@ z-index: 1;
 z-index: 300;
 }
 
-/* ─── Upload dropzone styles ──────────────────────────────────────────────── */
-
-/* Fixed slot so the preview matches the empty drop target (thumbnail, not full column). */
 .pbu-drop-zone-wrap {
 position: relative;
 width: 123px;
@@ -699,7 +648,6 @@ color: rgb(255 255 255 / 45%);
 margin: 0;
 }
 
-/* Preview + spinner — same footprint as .drop-zone (123×123), not full left column */
 .pbu-preview {
 position: absolute;
 top: 0;
@@ -754,7 +702,6 @@ width: 18px;
 height: 18px;
 }
 
-/* Shown over drop zone while file is validated / dimensions read (before preview) */
 .pbu-drop-zone-wrap .pbu-select-spinner {
 position: absolute;
 top: 0;
@@ -770,7 +717,6 @@ background: rgb(0 0 0 / 35%);
 z-index: 3;
 }
 
-/* Processing state: solid black slot + solid border, upload chrome hidden (spinner only) */
 .pbu-drop-zone-wrap.pbu-select-processing .drop-zone {
 background: #000;
 border: 2px solid #4069FD;
@@ -862,59 +808,87 @@ text-decoration: none;
 display: flex;
 align-items: center;
 }
-/* Mobile: stack sections vertically, drop right border from left section */
+
 @media screen and (max-width: 599px) {
-.unity-prompt-bar-upload.unity-enabled .pbu-main {
-  flex-direction: column;
-  gap: 0;
-}
+  .unity-prompt-bar-upload.unity-enabled .interactive-area {
+    width: 100%;
+    max-width: 100%;
+  }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-left-section {
-  width: 100%;
-  max-width: 100%;
-  border-right: none;
-  padding-right: 0;
-  padding-bottom: 12px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgb(255 255 255 / 12%);
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-main {
+    flex-direction: column;
+    gap: 0;
+  }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-right-section {
-  width: 100%;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+    padding-right: 0;
+    padding-bottom: 16px;
+    margin-bottom: 0;
+    border-bottom: 1px solid rgb(255 255 255 / 12%);
+  }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap {
+    width: 100%;
+    height: 160px;
+    min-height: 160px;
+  }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
-  flex: 1;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap .drop-zone {
+    width: 100%;
+    height: 160px;
+  }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
-  flex: 1;
-  justify-content: stretch;
-  gap: 8px;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-preview {
+    width: 100%;
+    height: 160px;
+  }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
-  flex: 1;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap .pbu-select-spinner {
+    width: 100%;
+    height: 160px;
+  }
 
-.action-container > a.unity-act-btn.pbu-more-btn.more-btn {
-  display: flex;
-  gap: 6px;
-  text-decoration: none;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
+    width: 100%;
+    padding-top: 12px;
+  }
 
-.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-ico {
-  height: 20px;
-  align-self: center;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
 
-.action-container > a.unity-act-btn.pbu-more-btn.more-btn .btn-txt {
-  color: #C6C6C6;
-}
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .action-container {
+    flex: 0 0 auto;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .interactive-area .pbu-controls-footer .pbu-aspect-models {
+    display: none;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-more-btn .btn-txt {
+    display: none;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .selected-model:hover,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .selected-model:hover {
+    background: transparent;
+    padding: 4px 6px;
+  }
 }
