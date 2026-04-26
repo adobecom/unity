@@ -93,8 +93,7 @@ describe('Headers and Token', () => {
     });
   });
 
-  it.skip('Should return headers with empty string if refresh token fails', async function () {
-    this.timeout(5000); // Increase timeout to handle retry delay
+  it.skip('Should return headers with empty string if refresh token fails', async () => {
     const token = { token: 'guest-token', expire: Date.now() - (10 * 60 * 1000) };
     adobeIMSStub.returns(token);
     const refreshTokenStub = sinon.stub(window.adobeIMS, 'refreshToken').rejects(new Error('Refresh token failed'));

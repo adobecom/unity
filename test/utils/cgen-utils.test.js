@@ -66,4 +66,3 @@ describe('cgen-utils.getCgenQueryParams', () => {
     expect(params).to.deep.equal({ bar: 'baz', ok: '1' });
   });
 });
-

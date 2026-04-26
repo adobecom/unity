@@ -211,7 +211,7 @@ describe('UploadHandler', () => {
     it('should handle abort signal', async () => {
       const controller = new AbortController();
       controller.abort();
-      const signal = controller.signal;
+      const { signal } = controller;
       const file = new File(['test data'], 'test.txt', { type: 'text/plain' });
       const uploadUrls = ['http://upload1.com'];
       const blockSize = 20;

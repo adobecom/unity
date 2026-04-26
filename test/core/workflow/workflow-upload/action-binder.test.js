@@ -335,7 +335,7 @@ describe('Unity Upload Block', () => {
       const blob = await new Promise((resolve) => {
         canvas.toBlob(resolve);
       });
-      const objectUrl = URL.createObjectURL(blob);
+      URL.createObjectURL(blob);
     });
 
     it('should handle checkImageDimensions with dimensions exceeding limits using image file', async () => {
@@ -532,9 +532,7 @@ describe('Unity Upload Block', () => {
 
     it('should return empty array when dataTransfer has no file items', () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      const mockEvent = {
-        dataTransfer: { items: [{ kind: 'string', getAsFile: () => null }] },
-      };
+      const mockEvent = { dataTransfer: { items: [{ kind: 'string', getAsFile: () => null }] } };
       expect(actionBinder.extractFiles(mockEvent)).to.deep.equal([]);
     });
 
@@ -956,9 +954,8 @@ describe('Unity Upload Block', () => {
       const blob = await new Promise((resolve) => {
         canvas.toBlob(resolve, 'image/jpeg');
       });
-      const objectUrl = URL.createObjectURL(blob);
+      URL.createObjectURL(blob);
     });
-
 
     it('should handle continueInApp with query parameters parsing', async () => {
       const testWorkflowCfg = {

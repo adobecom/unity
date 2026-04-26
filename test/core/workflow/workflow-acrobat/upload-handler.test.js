@@ -8,18 +8,6 @@ describe('UploadHandler', () => {
   let mockNetworkUtils;
   let mockTransitionScreen;
 
-  async function runWithFakeTimers(testFn, tickMs = 500) {
-    const clock = sinon.useFakeTimers();
-    try {
-      const promise = testFn();
-      clock.tick(tickMs);
-      await clock.runAllAsync();
-      return await promise;
-    } finally {
-      clock.restore();
-    }
-  }
-
   before(async () => {
     const originalImport = window.import;
 
@@ -687,14 +675,12 @@ describe('UploadHandler', () => {
 
   describe('deleteFailedAssets', () => {
     let assetsToDelete;
-    let accessToken;
 
     beforeEach(() => {
       assetsToDelete = [
         { id: 'asset1' },
         { id: 'asset2' },
       ];
-      accessToken = 'test-token';
       mockNetworkUtils.fetchFromServiceWithRetry = sinon.stub().resolves({ response: {} });
     });
 

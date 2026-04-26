@@ -108,12 +108,14 @@ describe('FileUtils', () => {
       arr.set([0x56, 0x50, 0x38, 0x58], 12);
       const wMinus1 = width - 1;
       const hMinus1 = height - 1;
+      /* eslint-disable no-bitwise */
       arr[24] = wMinus1 & 0xFF;
       arr[25] = (wMinus1 >> 8) & 0xFF;
       arr[26] = (wMinus1 >> 16) & 0xFF;
       arr[27] = hMinus1 & 0xFF;
       arr[28] = (hMinus1 >> 8) & 0xFF;
       arr[29] = (hMinus1 >> 16) & 0xFF;
+      /* eslint-enable no-bitwise */
       const file = makeFile('image/webp', buffer);
       const dims = await getImageDimensions(file);
       expect(dims).to.deep.equal({ width, height });

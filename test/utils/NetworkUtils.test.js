@@ -21,7 +21,7 @@ describe('NetworkUtils', () => {
       const options = { signal: { aborted: true } };
 
       expect(() => networkUtils.handleAbortedRequest(url, options)).to.throw('Request to https://example.com/api aborted by user.');
-      
+
       try {
         networkUtils.handleAbortedRequest(url, options);
       } catch (error) {
@@ -86,7 +86,7 @@ describe('NetworkUtils', () => {
     it('should return response for successful 200 status', async () => {
       const mockResponse = {
         status: 200,
-        headers: { get: sinon.stub().withArgs('Content-Length').returns('100') }
+        headers: { get: sinon.stub().withArgs('Content-Length').returns('100') },
       };
 
       const result = await networkUtils.afterFetchFromService('https://example.com/api', mockResponse);
@@ -96,7 +96,7 @@ describe('NetworkUtils', () => {
     it('should return empty object for 200 status with Content-Length 0', async () => {
       const mockResponse = {
         status: 200,
-        headers: { get: sinon.stub().withArgs('Content-Length').returns('0') }
+        headers: { get: sinon.stub().withArgs('Content-Length').returns('0') },
       };
 
       const result = await networkUtils.afterFetchFromService('https://example.com/api', mockResponse);
@@ -107,7 +107,7 @@ describe('NetworkUtils', () => {
       const mockResponse = {
         status: 400,
         headers: { get: sinon.stub().withArgs('Content-Length').returns('50') },
-        json: sinon.stub().resolves({ reason: 'quotaexceeded' })
+        json: sinon.stub().resolves({ reason: 'quotaexceeded' }),
       };
 
       try {
@@ -123,7 +123,7 @@ describe('NetworkUtils', () => {
       const mockResponse = {
         status: 403,
         headers: { get: sinon.stub().withArgs('Content-Length').returns('50') },
-        json: sinon.stub().resolves({ reason: 'user notentitled' })
+        json: sinon.stub().resolves({ reason: 'user notentitled' }),
       };
 
       try {
@@ -139,7 +139,7 @@ describe('NetworkUtils', () => {
       const mockResponse = {
         status: 500,
         headers: { get: sinon.stub().withArgs('Content-Length').returns('50') },
-        json: sinon.stub().rejects(new Error('Invalid JSON'))
+        json: sinon.stub().rejects(new Error('Invalid JSON')),
       };
 
       try {
@@ -157,7 +157,7 @@ describe('NetworkUtils', () => {
       const mockResponse = {
         body: 'some body',
         headers: { get: sinon.stub().withArgs('Content-Length').returns('50') },
-        json: sinon.stub().resolves({ data: 'test' })
+        json: sinon.stub().resolves({ data: 'test' }),
       };
 
       const result = await networkUtils.getResponseJson(mockResponse);
@@ -167,7 +167,7 @@ describe('NetworkUtils', () => {
     it('should return fallback for empty body', async () => {
       const mockResponse = {
         body: null,
-        headers: { get: sinon.stub().returns(null) }
+        headers: { get: sinon.stub().returns(null) },
       };
 
       const result = await networkUtils.getResponseJson(mockResponse, { default: 'fallback' });
@@ -177,7 +177,7 @@ describe('NetworkUtils', () => {
     it('should return fallback for Content-Length 0', async () => {
       const mockResponse = {
         body: 'some body',
-        headers: { get: sinon.stub().withArgs('Content-Length').returns('0') }
+        headers: { get: sinon.stub().withArgs('Content-Length').returns('0') },
       };
 
       const result = await networkUtils.getResponseJson(mockResponse, { empty: true });
@@ -188,7 +188,7 @@ describe('NetworkUtils', () => {
       const mockResponse = {
         body: 'some body',
         headers: { get: sinon.stub().withArgs('Content-Length').returns('50') },
-        json: sinon.stub().rejects(new Error('Invalid JSON'))
+        json: sinon.stub().rejects(new Error('Invalid JSON')),
       };
 
       const result = await networkUtils.getResponseJson(mockResponse, { error: 'fallback' });
@@ -198,7 +198,7 @@ describe('NetworkUtils', () => {
     it('should use default fallback when none provided', async () => {
       const mockResponse = {
         body: null,
-        headers: { get: sinon.stub().returns(null) }
+        headers: { get: sinon.stub().returns(null) },
       };
 
       const result = await networkUtils.getResponseJson(mockResponse);
@@ -387,7 +387,7 @@ describe('NetworkUtils', () => {
     it('should handle successful exponential retry on first attempt', async () => {
       sinon.stub(networkUtils, 'fetchFromService');
       sinon.stub(networkUtils, 'getResponseJson');
-      
+
       const mockResponse = { status: 200 };
       const responseData = { data: 'success' };
       networkUtils.fetchFromService.resolves(mockResponse);
@@ -405,11 +405,11 @@ describe('NetworkUtils', () => {
       sinon.stub(networkUtils, 'fetchFromService');
       sinon.stub(networkUtils, 'getResponseJson');
       sinon.stub(networkUtils, 'handleAbortedRequest');
-      
+
       const mockResponse = { status: 200, headers: { get: sinon.stub().returns(null) } };
       const responseData = { data: 'success' };
       const onSuccess = sinon.stub().resolves('success result');
-      
+
       networkUtils.fetchFromService.resolves(mockResponse);
       networkUtils.getResponseJson.resolves(responseData);
 
@@ -424,10 +424,10 @@ describe('NetworkUtils', () => {
       sinon.stub(networkUtils, 'fetchFromService');
       sinon.stub(networkUtils, 'getResponseJson');
       sinon.stub(networkUtils, 'handleAbortedRequest');
-      
+
       const mockResponse = { status: 200, headers: { get: sinon.stub().returns(null) } };
       const responseData = { data: 'success' };
-      
+
       networkUtils.fetchFromService.resolves(mockResponse);
       networkUtils.getResponseJson.resolves(responseData);
 
@@ -444,13 +444,13 @@ describe('NetworkUtils', () => {
         status: 200,
         body: 'response body',
         headers: { get: sinon.stub().withArgs('Content-Length').returns('50') },
-        json: sinon.stub().resolves({ data: 'success' })
+        json: sinon.stub().resolves({ data: 'success' }),
       };
       fetchStub.resolves(mockResponse);
 
-      const retryConfig = { 
+      const retryConfig = {
         retryType: 'exponential',
-        retryParams: { maxRetries: 1, retryDelay: 100 }
+        retryParams: { maxRetries: 1, retryDelay: 100 },
       };
 
       const result = await networkUtils.fetchFromServiceWithRetry('https://example.com/api', {}, retryConfig);
@@ -466,14 +466,14 @@ describe('NetworkUtils', () => {
         status: 200,
         body: 'response body',
         headers: { get: sinon.stub().returns(null) },
-        json: sinon.stub().resolves({ status: 'complete' })
+        json: sinon.stub().resolves({ status: 'complete' }),
       };
       fetchStub.resolves(mockResponse);
 
       const onSuccess = sinon.stub().resolves('processed result');
-      const retryConfig = { 
+      const retryConfig = {
         retryType: 'polling',
-        retryParams: { maxRetryDelay: 100, defaultRetryDelay: 10 }
+        retryParams: { maxRetryDelay: 100, defaultRetryDelay: 10 },
       };
 
       const result = await networkUtils.fetchFromServiceWithRetry('https://example.com/api', {}, retryConfig, onSuccess);
