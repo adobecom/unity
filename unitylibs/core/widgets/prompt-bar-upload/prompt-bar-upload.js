@@ -77,11 +77,6 @@ function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, aria
   };
 }
 
-/**
- * Wires open/close behaviour for a dropdown:
- * - clicking the trigger toggles the menu (closing any other open menus)
- * - clicking outside closes it
- */
 function attachDropdownBehavior(container, triggerBtn, list) {
   triggerBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -164,7 +159,6 @@ export default class PromptBarUploadWidget {
     return this.aspectRatioMap[modelId] || [];
   }
 
-  
   getSizeForAspectRatio(modelId, ratio) {
     const sizes = this.sizeMap[modelId] || [];
     const ratios = this.aspectRatioMap[modelId] || [];
@@ -369,10 +363,11 @@ export default class PromptBarUploadWidget {
   }
 
   buildDropZone() {
+    const allowedFileTypes = this.workflowCfg?.targetCfg?.limits?.allowedFileTypes;
     const fileInput = createTag('input', {
       type: 'file',
       id: 'file-upload',
-      accept: 'image/jpeg,image/jpg,image/png,image/webp',
+      accept: allowedFileTypes.join(','),
       hidden: '',
       'aria-hidden': 'true',
     });
@@ -405,11 +400,12 @@ export default class PromptBarUploadWidget {
 
   buildPromptTextarea() {
     const defaultPrompt = placeholderText(this.el, 'icon-default-prompt') || '';
+    const maxCharLimit = this.workflowCfg?.targetCfg?.limits?.['max-char-limit'] ?? 750;
     const textarea = createTag('textarea', {
       id: 'pbuPromptInput',
       class: 'inp-field',
       rows: '1',
-      maxlength: '750',
+      maxlength: String(maxCharLimit),
       'aria-label': defaultPrompt,
       'aria-autocomplete': 'list',
     });

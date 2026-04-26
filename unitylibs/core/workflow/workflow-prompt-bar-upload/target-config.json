@@ -1,7 +1,6 @@
 {
   "_defaults": {
     "renderWidget": true,
-    "connectorApiEndPoint": "https://unity.adobe.io/api/v1/asset/connector",
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink-firefly": "/cc-shared/fragments/products/firefly/unity/splash-page",
@@ -9,13 +8,12 @@
       "splashScreenParent": "body"
     },
     "limits": {
-      "maxNumFiles": 1
-    },
-    "limits-firefly": {
+      "maxNumFiles": 1,
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
       "maxFileSize": 50000000,
       "minHeight": 512,
-      "minWidth": 512
+      "minWidth": 512,
+      "max-char-limit": 750
     },
     "productTag-firefly": "FF",
     "sendSplunkAnalytics": true,

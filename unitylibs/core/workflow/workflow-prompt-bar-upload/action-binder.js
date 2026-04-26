@@ -61,9 +61,7 @@ class ServiceHandler {
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
-    const isLightroomServerError = this.workflowCfg.productName.toLowerCase() === 'lightroom' && errorType === 'server';
-    if (isLightroomServerError) sendAnalyticsEvent(new CustomEvent('Upload or Transition error|UnityWidget'));
-    else sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
+    sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -107,9 +105,7 @@ export default class ActionBinder {
     const searchRoot = canvasArea || block;
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') ?? searchRoot;
     this.inputField = searchRoot?.querySelector?.('.inp-field');
-    const commonLimits = workflowCfg.targetCfg?.limits || {};
-    const productLimits = workflowCfg.targetCfg?.[`limits-${workflowCfg.productName?.toLowerCase()}`] || {};
-    this.limits = { ...commonLimits, ...productLimits };
+    this.limits = workflowCfg.targetCfg?.limits || {};
     const productTag = workflowCfg.targetCfg?.[`productTag-${workflowCfg.productName?.toLowerCase()}`] || 'FF';
     this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-PBU` };
     
@@ -362,8 +358,9 @@ export default class ActionBinder {
     }
   }
 
-  validatePrompt(query) {
-    if (query.length > 750) {
+  validateInput(query) {
+    const maxCharLimit = this.limits?.['max-char-limit'] ?? 750;
+    if (query.length > maxCharLimit) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
       this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
       return false;
@@ -385,7 +382,7 @@ export default class ActionBinder {
     this.promiseStack = [];
     await this.initAnalytics();
     const query = this.inputField?.value?.trim() || '';
-    if (!this.validatePrompt(query)) return;
+    if (!this.validateInput(query)) return;
 
     const selectedModelId = this.widgetWrap?.getAttribute('data-selected-model-id') || '';
     const selectedAspectRatio = this.widgetWrap?.getAttribute('data-selected-aspect-ratio') || '';
