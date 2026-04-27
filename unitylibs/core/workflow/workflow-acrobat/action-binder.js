@@ -161,7 +161,7 @@ export default class ActionBinder {
     this.actionMap = actionMap;
     this.limits = {};
     this.operations = [];
-    this.acrobatApiConfig = this.getAcrobatApiConfig();
+    this.acrobatApiConfig = null;
     this.networkUtils = new NetworkUtils();
     this.uploadHandler = null;
     this.splashScreenEl = null;
@@ -182,6 +182,9 @@ export default class ActionBinder {
     this.multiFileValidationFailure = false;
     this.initialize();
     this.experimentData = null;
+    this.experimentViaPageConfig = false;
+    this.pageConfigLocation = null;
+    this.pageConfigFetched = false;
   }
 
   async initialize() {
@@ -224,11 +227,13 @@ export default class ActionBinder {
   }
 
   getAcrobatApiConfig() {
+    const base = this.pageConfigLocation || unityConfig.apiEndPoint;
     unityConfig.acrobatEndpoint = {
-      createAsset: `${unityConfig.apiEndPoint}/asset`,
-      finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
-      getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      createAsset: `${base}/asset`,
+      finalizeAsset: `${base}/asset/finalize`,
+      getMetadata: `${base}/asset/metadata`,
     };
+    unityConfig.connectorApiEndPoint = `${base}/asset/connector`;
     return unityConfig;
   }
 
@@ -242,18 +247,6 @@ export default class ActionBinder {
   }
 
   async handlePreloads() {
-    if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0])) {
-      const { getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
-      try {
-        const decisionScopes = await getDecisionScopesForVerb(this.workflowCfg.enabledFeatures[0]);
-        this.experimentData = await getExperimentData(decisionScopes);
-      } catch (error) {
-        await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
-          code: 'warn_fetch_experiment',
-          desc: error.message,
-        });
-      }
-    }
     const parr = [];
     if (this.workflowCfg.targetCfg.showSplashScreen) {
       parr.push(
@@ -261,6 +254,32 @@ export default class ActionBinder {
       );
     }
     await priorityLoad(parr);
+  }
+
+  async ensurePageConfig() {
+    if (this.pageConfigFetched) return;
+    this.pageConfigFetched = true;
+    const verb = this.workflowCfg.enabledFeatures[0];
+    try {
+      const { fetchPageConfig } = await import('../../../scripts/utils.js');
+      const { default: getExperimentData } = await import('../../../utils/experiment-provider.js');
+      const pageConfig = await fetchPageConfig({ product: 'acrobat', verb });
+      this.pageConfigLocation = pageConfig.location;
+      if (pageConfig.config?.target?.enabled) {
+        this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
+        this.experimentViaPageConfig = true;
+      } else if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(verb)) {
+        const { getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
+        const decisionScopes = await getDecisionScopesForVerb(verb);
+        this.experimentData = await getExperimentData(decisionScopes);
+      }
+    } catch (error) {
+      await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
+        code: 'warn_fetch_experiment',
+        desc: error.message,
+      });
+    }
+    this.acrobatApiConfig = this.getAcrobatApiConfig();
   }
 
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
@@ -457,7 +476,7 @@ export default class ActionBinder {
             redirectUrl = url.href;
           }
         }
-        this.redirectUrl = redirectUrl;        
+        this.redirectUrl = redirectUrl;
       })
       .catch(async (e) => {
         await this.showTransitionScreen();
@@ -486,7 +505,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
-    if (this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]) && this.experimentData) {
+    if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
     await this.getRedirectUrl(cOpts);
@@ -556,6 +575,7 @@ export default class ActionBinder {
     if (prevalidatedFiles.length === 0) return;
     const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
     if (!isValid) return;
+    await this.ensurePageConfig();
     await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
