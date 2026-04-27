@@ -462,11 +462,8 @@ export default class ActionBinder {
     }
     const isVideo = file.type.startsWith('video/');
     try {
-      if (isVideo) {
-        await this.checkVideoDuration(file);
-      } else {
-        await this.checkImageDimensions(file);
-      }
+      if (isVideo) { await this.checkVideoDuration(file);} 
+      else { await this.checkImageDimensions(file);}
     } catch (error) {
       window.lana?.log(`Message: Error checking file constraints, Error: ${error}`, this.lanaOptions);
       return;
