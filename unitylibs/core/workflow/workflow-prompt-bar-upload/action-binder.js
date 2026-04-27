@@ -270,8 +270,6 @@ export default class ActionBinder {
     finally {this.setSelectSpinnerVisible(false);}
     this.resetUploadedAssetState();
     this.pendingFile = file;
-    sendAnalyticsEvent(new CustomEvent('Image Selected|UnityWidget'));
-    this.logAnalytics('Image Selected|UnityWidget', { fileMetaData: this.filesData });
     this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
     return true;
   }
@@ -387,21 +385,28 @@ export default class ActionBinder {
 
   async handleGenerate(connectorGenerate = true) {
     this.promiseStack = [];
-    await this.initAnalytics();
+    if (!this.analyticsModule) await this.initAnalytics();
+    const pbuEvents = this.analyticsModule.PROMPT_BAR_EVENTS;
     const query = this.inputField?.value?.trim() || '';
     if (!this.validateInput(query)) return;
 
     const selectedModelId = this.widgetWrap?.getAttribute('data-selected-model-id') || '';
     const selectedAspectRatio = this.widgetWrap?.getAttribute('data-selected-aspect-ratio') || '';
-
-    this.logAnalytics('Generate CTA|UnityWidget', {
-      verb: `image-to-${this.verb || 'video'}`,
-      action: connectorGenerate ? 'generate' : 'more',
-      hasImage: !!this.pendingFile,
-      modelId: selectedModelId,
+    const selectedModelName = this.widgetWrap?.getAttribute('data-selected-model-name') || selectedModelId;
+    const ctaEventName = connectorGenerate ? pbuEvents.GENERATE_CTA : pbuEvents.MORE;
+    sendAnalyticsEvent(new CustomEvent(pbuEvents.UPLOAD_STARTED));
+    sendAnalyticsEvent(new CustomEvent(ctaEventName));
+    if (selectedModelName) sendAnalyticsEvent(new CustomEvent(pbuEvents.generateModel(selectedModelName)));
+    if (selectedAspectRatio) sendAnalyticsEvent(new CustomEvent(pbuEvents.ratioSelect(selectedAspectRatio)));
+    this.logAnalytics(pbuEvents.UPLOAD_STARTED, { fileMetaData: this.filesData });
+    this.logAnalytics(ctaEventName, {
+      ...(selectedModelName && {
+        modelGenEventName: pbuEvents.generateModel(selectedModelName),
+      }),
+      assetId: this.assetId,
       aspectRatio: selectedAspectRatio,
+      hasImage: !!this.pendingFile,
     });
-
     const searchRoot = this.canvasArea || this.block;
     const interactiveShell = searchRoot?.querySelector?.('.interactive-area');
     this.workflowCfg.theme = interactiveShell?.classList.contains('dark') ? 'dark' : null;
@@ -416,7 +421,6 @@ export default class ActionBinder {
         return;
       }
     }
-
     await this.continueInApp(query, selectedModelId, selectedAspectRatio, connectorGenerate);
   }
 
@@ -619,13 +623,11 @@ export default class ActionBinder {
       }
     });
 
-    const wrap = this.widgetWrap;
-    if (wrap && wrap.dataset.pbuDeleteImageBound !== 'true') {
-      wrap.dataset.pbuDeleteImageBound = 'true';
-      wrap.addEventListener('pbu-delete-image', () => {
-        this.resetUploadedAssetState({ dropPendingImage: true });
-      });
-    }
+    const pbuEvents = this.analyticsModule.PROMPT_BAR_EVENTS;
+    this.bindWidgetInteractionEvent('pbu-enter-prompt', pbuEvents.ENTER_PROMPT, 'enter-prompt');
+    this.bindWidgetInteractionEvent('pbu-model-dropdown-open', pbuEvents.MODEL_SELECT_DROPDOWN, 'open');
+    this.bindWidgetInteractionEvent('pbu-ratio-dropdown-open', pbuEvents.RATIO_DROPDOWN, 'open');
+    this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetUploadedAssetState({ dropPendingImage: true }));
   }
 
   bindElement(el, actionsList) {
@@ -682,6 +684,13 @@ export default class ActionBinder {
     } catch (err) {
       window.lana?.log(`Message: Action "${actionType}" failed, Error: ${err}`, this.lanaOptions);
     }
+  }
+
+  bindWidgetInteractionEvent(domEventName, analyticsEventName, action) {
+    this.widgetWrap?.addEventListener(domEventName, () => {
+      sendAnalyticsEvent(new CustomEvent(analyticsEventName));
+      this.logAnalytics(analyticsEventName, { action });
+    });
   }
 
   preventDefault(e) {

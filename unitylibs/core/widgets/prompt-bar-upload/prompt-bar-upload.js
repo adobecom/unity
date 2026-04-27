@@ -224,6 +224,7 @@ export default class PromptBarUploadWidget {
       if (this.showAspectRatio) this.updateAspectRatioOptions(modelId);
     });
 
+    triggerBtn.addEventListener('click', () => triggerBtn.dispatchEvent(new CustomEvent('pbu-model-dropdown-open', { bubbles: true })));
     attachDropdownBehavior(container, triggerBtn, list);
     this.widgetWrap?.setAttribute('data-selected-model-id', this.selectedModelId);
     this.widgetWrap?.setAttribute('data-selected-model-name', (defaultModel?.name || '').trim());
@@ -299,6 +300,7 @@ export default class PromptBarUploadWidget {
       closeDropdown(container, triggerBtn, list);
     });
 
+    triggerBtn.addEventListener('click', () => triggerBtn.dispatchEvent(new CustomEvent('pbu-ratio-dropdown-open', { bubbles: true })));
     attachDropdownBehavior(container, triggerBtn, list);
     return container;
   }
@@ -410,6 +412,7 @@ export default class PromptBarUploadWidget {
       'aria-autocomplete': 'list',
     });
     textarea.value = defaultPrompt;
+    textarea.addEventListener('input', () => textarea.dispatchEvent(new CustomEvent('pbu-enter-prompt', { bubbles: true })), { once: true });
     return textarea;
   }
 
@@ -438,6 +441,7 @@ export default class PromptBarUploadWidget {
       createTag('span', { class: 'btn-ico' }, svgIcon('#unity-more-icon')),
       createTag('div', { class: 'btn-txt' }, txt),
     );
+    btn.addEventListener('click', () => btn.dispatchEvent(new CustomEvent('pbu-more-click', { bubbles: true })));
     return btn;
   }
 
