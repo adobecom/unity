@@ -227,7 +227,7 @@ export default class ActionBinder {
   }
 
   getAcrobatApiConfig() {
-    const base = this.pageConfigLocation || unityConfig.apiEndPoint;
+    const base = this.pageConfigLocation ? `${this.pageConfigLocation}/api/v1` : unityConfig.apiEndPoint;
     unityConfig.acrobatEndpoint = {
       createAsset: `${base}/asset`,
       finalizeAsset: `${base}/asset/finalize`,
