@@ -156,6 +156,16 @@ export default class ActionBinder {
     );
   }
 
+  resetUploadedAssetState({ dropPendingImage = false } = {}) {
+    this.uploadAbortController?.abort();
+    this.uploadAbortController = null;
+    this.assetId = null;
+    if (dropPendingImage) {
+      this.pendingFile = null;
+      this.filesData = {};
+    }
+  }
+
   async createErrorToast() {
     try {
       const [alertImg, closeImg] = await Promise.all([
@@ -255,13 +265,10 @@ export default class ActionBinder {
       return false;
     }
     this.setSelectSpinnerVisible(true);
-    try {
-      await this.checkImageDimensions(file);
-    } catch {
-      return false;
-    } finally {
-      this.setSelectSpinnerVisible(false);
-    }
+    try {await this.checkImageDimensions(file);} 
+    catch {return false;} 
+    finally {this.setSelectSpinnerVisible(false);}
+    this.resetUploadedAssetState();
     this.pendingFile = file;
     sendAnalyticsEvent(new CustomEvent('Image Selected|UnityWidget'));
     this.logAnalytics('Image Selected|UnityWidget', { fileMetaData: this.filesData });
@@ -611,6 +618,14 @@ export default class ActionBinder {
         (this.widgetWrap || searchRoot)?.querySelector('.gen-btn')?.click();
       }
     });
+
+    const wrap = this.widgetWrap;
+    if (wrap && wrap.dataset.pbuDeleteImageBound !== 'true') {
+      wrap.dataset.pbuDeleteImageBound = 'true';
+      wrap.addEventListener('pbu-delete-image', () => {
+        this.resetUploadedAssetState({ dropPendingImage: true });
+      });
+    }
   }
 
   bindElement(el, actionsList) {
