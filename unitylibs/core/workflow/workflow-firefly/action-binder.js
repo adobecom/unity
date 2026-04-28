@@ -244,6 +244,11 @@ export default class ActionBinder {
 
   getSelectedStylePayloadForConnector() {
     const root = this.block;
+    if (root?.classList?.contains('unity-prompt-bar-audio')) {
+      const name = this.widgetWrap.getAttribute('data-selected-voice-name')?.trim() || '';
+      if (!name) return undefined;
+      return { name, promptPhrase: name };
+    }
     if (!root?.classList?.contains('unity-prompt-bar-style')) return undefined;
     const selected = root.querySelector('.unity-slf-style-item.selected');
     if (!selected) return undefined;
@@ -256,6 +261,11 @@ export default class ActionBinder {
 
   getSelectedStyleIndexOneBased() {
     const root = this.block;
+    if (root?.classList?.contains('unity-prompt-bar-audio')) {
+      const raw = this.widgetWrap.getAttribute('data-selected-voice-index');
+      const idx = raw != null ? parseInt(raw, 10) : NaN;
+      return Number.isFinite(idx) ? idx + 1 : null;
+    }
     if (!root?.classList?.contains('unity-prompt-bar-style')) return null;
     const items = Array.from(root.querySelectorAll('.unity-slf-style-list .unity-slf-style-item'));
     const selected = root.querySelector('.unity-slf-style-item.selected');

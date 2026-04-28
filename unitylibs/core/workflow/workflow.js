@@ -110,10 +110,11 @@ class WfInitiator {
       this.actionMap = this.targetConfig.actionMap;
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
-    const isPromptBarStyle = this.widgetName === 'prompt-bar-style';
-    const styleRoot = unityWidgetObject?.promptBarStyleRoot;
-    const actionBinderBlock = isPromptBarStyle ? styleRoot : this.targetBlock;
-    const canvasAreaForBinder = isPromptBarStyle ? styleRoot : this.interactiveArea;
+    const isPromptBarExtended = this.widgetName === 'prompt-bar-style' || this.widgetName === 'prompt-bar-audio';
+    const extendedLayoutRoot = unityWidgetObject?.promptBarStyleRoot
+      || unityWidgetObject?.promptBarAudioRoot;
+    const actionBinderBlock = isPromptBarExtended ? extendedLayoutRoot : this.targetBlock;
+    const canvasAreaForBinder = isPromptBarExtended ? extendedLayoutRoot : this.interactiveArea;
     await new ActionBinder(
       this.el,
       this.workflowCfg,
@@ -178,7 +179,7 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
-    if (this.widgetName === 'prompt-bar-style') return this.el;
+    if (this.widgetName === 'prompt-bar-style' || this.widgetName === 'prompt-bar-audio') return this.el;
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {

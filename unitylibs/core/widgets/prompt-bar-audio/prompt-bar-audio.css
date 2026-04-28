@@ -1,0 +1,499 @@
+.unity-slf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.unity.workflow-firefly.widget-prompt-bar-audio.unity-prompt-bar-audio-host {
+  position: relative;
+  min-height: 0;
+}
+
+.unity-prompt-bar-audio {
+  width: 100%;
+  box-sizing: border-box;
+  --Font-size-100: 14px;
+  --Line-height-100: 18px;
+  --Letter-spacing: 0;
+}
+
+.unity-prompt-bar-audio .unity-paf-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
+.unity-prompt-bar-audio .unity-slf-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+  background: #1b1b1b;
+  border-radius: 10px;
+  padding: 17px 16px 20px;
+  box-sizing: border-box;
+}
+
+.unity-prompt-bar-audio .unity-slf-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 4px;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-heading {
+  padding-top: 18px;
+  margin: 0;
+  border-top: 2px solid rgb(255 255 255 / 12%);
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-row {
+  display: flex;
+  flex-flow: row nowrap;
+  gap: 8px;
+  align-items: stretch;
+  justify-content: space-between;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 0;
+  box-sizing: border-box;
+  padding: 10px 10px 10px 12px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: #2c2c2c;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile:hover {
+  background: #333;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile:focus {
+  outline: none;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #274dea;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile.selected {
+  border: 2px solid #274dea;
+  background: #1b1b1b;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-name {
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #f8f8f8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-desc {
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 14px;
+  color: #a3a3a3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-player {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+}
+
+.unity-prompt-bar-audio .unity-paf-progress-svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+.unity-prompt-bar-audio .unity-paf-ring-bg {
+  stroke: rgb(255 255 255 / 22%);
+}
+
+.unity-prompt-bar-audio .unity-paf-ring-fg {
+  stroke: #f8f8f8;
+  transition: stroke-dashoffset 0.05s linear;
+}
+
+.unity-prompt-bar-audio .unity-paf-pp-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.unity-prompt-bar-audio .unity-paf-pp-center .unity-paf-pp-svg {
+  display: block;
+}
+
+.unity-prompt-bar-audio .unity-paf-pp-center .unity-paf-pp-svg use {
+  filter: brightness(0) invert(1);
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-footer {
+  margin: 4px 0 0;
+  text-align: center;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: #a3a3a3;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-footer-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-footer-link:hover {
+  color: #f8f8f8;
+}
+
+.unity-prompt-bar-audio .unity-slf-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+  border: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+  background: transparent;
+  resize: none;
+  margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+  color: #7d7d7d;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .action-container {
+  position: relative;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-verb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: flex-start;
+  padding: 7px 12px;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 400;
+  width: 100%;
+  min-width: unset;
+  background: #2c2c2c;
+  border-radius: 8px;
+  color: #fff;
+  height: 32px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model {
+  padding-left: 4px;
+  padding-right: 11px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model img,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link img {
+  width: 20px;
+  height: 20px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model .menu-icon svg,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-verb .menu-icon svg {
+  filter: invert(1);
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verbs-container .verb-list .verb-link:not(.model-link) img {
+  filter: invert(1);
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
+  color: #fff;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container .verb-list {
+  background: #000;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list {
+  padding: 18px;
+  list-style: none;
+  box-shadow: 0 0 10px #0000001c;
+  border-radius: 10px;
+  color: #fff;
+  margin: 0;
+  animation: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .models-container.show-menu .verb-list,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
+  display: block;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link {
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  padding-inline-start: 25px;
+  text-transform: capitalize;
+  text-decoration: none;
+  text-align: start;
+  position: relative;
+  opacity: 1;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .model-link {
+  font-size: 14px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
+  display: none;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+}
+
+.unity-prompt-bar-audio .unity-slf-copy-label {
+  color: #d1d1d1;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: var(--Font-size-100, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--Line-height-100, 18px);
+  letter-spacing: var(--Letter-spacing, 0);
+}
+
+.unity-prompt-bar-audio .unity-slf-prompt-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.unity-prompt-bar-audio.unity-enabled > .interactive-area.dark .unity-slf-prompt-label {
+  margin-bottom: 0;
+}
+
+.unity-prompt-bar-audio .inp-field {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.unity-prompt-bar-audio .unity-slf-gen-btn {
+  white-space: nowrap;
+}
+
+.unity-prompt-bar-audio.unity-enabled {
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding-bottom: 76px;
+}
+
+.unity-prompt-bar-audio.unity-enabled > .interactive-area {
+  display: flex;
+  box-sizing: border-box;
+  background: #222;
+  padding: 8px;
+  border-radius: 20px;
+  gap: 8px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  max-width: 100%;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete::after {
+  content: none !important;
+  display: none !important;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap:not(.sticky) .ex-unity-widget {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .unity-slf-copy-label,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
+  grid-column: 1 / -1;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
+  grid-column: 1 / -1;
+  color: #f8f8f8;
+  padding: 10px 0;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
+  grid-column: 1;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .act-wrap {
+  grid-column: 2;
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  align-self: center;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container:empty {
+  display: none;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container:empty + .act-wrap {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .verbs-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
+  min-width: 0;
+  max-width: 173px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .models-container {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container,
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
+  width: fit-content;
+}
+
+@media screen and (min-width: 1200px) {
+  .unity-prompt-bar-audio.unity-enabled {
+    max-width: 1000px;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled > .interactive-area {
+    padding: 14px;
+  }
+}
+
+@media screen and (max-width: 599px) {
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+    padding: 10px;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .hero-marquee:has(+ .unity-prompt-bar-audio) > .foreground {
+    max-width: 1000px;
+    min-width: unset;
+  }
+
+  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy {
+    align-items: center;
+  }
+
+  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy p {
+    max-width: 800px;
+  }
+}
