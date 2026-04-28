@@ -186,6 +186,30 @@ export default class ActionBinder {
     }
   }
 
+  async scanImgForSafety(assetId, signal) {
+    if (signal?.aborted) {
+      const err = new Error('Operation aborted');
+      err.name = 'AbortError';
+      throw err;
+    }
+    const assetData = { assetId, targetProduct: this.workflowCfg.productName };
+    const optionsBody = { body: JSON.stringify(assetData), ...(signal && { signal }) };
+    const res = await this.serviceHandler.postCallToService(
+      this.apiConfig.endPoint.acmpCheck,
+      optionsBody,
+      {},
+      false,
+    );
+    if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+      if (signal?.aborted) {
+        const err = new Error('Operation aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
+      setTimeout(() => { this.scanImgForSafety(assetId, signal); }, 1000);
+    }
+  }
+
   async uploadAsset(file) {
     const assetDetails = {
       targetProduct: this.workflowCfg.productName,
@@ -233,7 +257,7 @@ export default class ActionBinder {
         );
       } else {
         await this.uploadImgToUnity(href, id, file, file.type, signal);
-        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
+        await this.scanImgForSafety(this.assetId, signal);
         this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
       }
       return true;

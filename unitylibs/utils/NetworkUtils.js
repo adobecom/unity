@@ -10,10 +10,8 @@ export default class NetworkUtils {
   async fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const mergedSignal = options.signal
-      ? AbortSignal.any([controller.signal, options.signal])
-      : controller.signal;
-    const mergedOptions = { ...options, signal: mergedSignal };
+    const passedSignal = options.signal || controller.signal;
+    const mergedOptions = { ...options, signal: passedSignal };
     try {
       const response = await fetch(url, mergedOptions);
       clearTimeout(timeout);
@@ -21,7 +19,6 @@ export default class NetworkUtils {
     } catch (e) {
       clearTimeout(timeout);
       if (e.name === 'AbortError') {
-        if (options.signal?.aborted) throw e;
         const error = new Error(`Request timed out after ${timeoutMs}ms`);
         error.name = 'TimeoutError';
         throw error;
@@ -104,15 +101,6 @@ export default class NetworkUtils {
         const onSuccessWithAttempt = onSuccess ? (response) => onSuccess(response, attempt) : null;
         const onErrorWithAttempt = onError ? (error) => onError(error, attempt) : null;
         let response = await this.fetchFromService(url, options, onSuccessWithAttempt, onErrorWithAttempt);
-        if (!response) {
-          if (attempt < maxRetries) {
-            const delay = retryDelay;
-            await new Promise((resolve) => { setTimeout(resolve, delay); });
-            retryDelay *= 2;
-            continue;
-          }
-          break;
-        }
         const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(response);
         if ((customRetryCheckResult || response.status === 202 || (response.status >= 500 && response.status < 600) || response.status === 429)) {
           if (attempt < maxRetries) {

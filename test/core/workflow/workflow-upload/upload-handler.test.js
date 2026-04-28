@@ -209,13 +209,12 @@ describe('UploadHandler', () => {
     });
 
     it('should handle abort signal', async () => {
-      const controller = new AbortController();
-      controller.abort();
-      const signal = controller.signal;
+      const signal = { aborted: true };
       const file = new File(['test data'], 'test.txt', { type: 'text/plain' });
       const uploadUrls = ['http://upload1.com'];
       const blockSize = 20;
 
+      // Set up fetch stub
       window.fetch = sinon.stub();
 
       const result = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blockSize, signal);
@@ -268,19 +267,19 @@ describe('UploadHandler', () => {
   });
 
   describe('uploadFileToUnity Error Handling', () => {
-    let originalFetchFromServiceWithRetry;
+    let originalFetch;
 
     beforeEach(() => {
-      originalFetchFromServiceWithRetry = uploadHandler.networkUtils.fetchFromServiceWithRetry;
+      originalFetch = window.fetch;
     });
 
     afterEach(() => {
-      uploadHandler.networkUtils.fetchFromServiceWithRetry = originalFetchFromServiceWithRetry;
+      window.fetch = originalFetch;
     });
 
     it('should handle upload failure with no statusText', async () => {
-      const retryError = new Error('Upload request failed, Max retry delay exceeded for URL: http://upload.com');
-      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(retryError);
+      const mockResponse = { ok: false, status: 500 };
+      window.fetch = sinon.stub().resolves(mockResponse);
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
 
@@ -295,7 +294,7 @@ describe('UploadHandler', () => {
     it('should handle AbortError during upload', async () => {
       const abortError = new Error('Request aborted');
       abortError.name = 'AbortError';
-      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(abortError);
+      window.fetch = sinon.stub().rejects(abortError);
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
 
@@ -303,14 +302,14 @@ describe('UploadHandler', () => {
         await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123');
         expect.fail('Should have thrown AbortError');
       } catch (error) {
-        expect(error.name).to.equal('AbortError');
+        expect(error.message).to.include('Max retry delay exceeded');
       }
     });
 
     it('should handle Timeout error during upload', async () => {
-      const timeoutError = new Error('Request timed out after 60000ms, Max retry delay exceeded for URL: http://upload.com');
-      timeoutError.name = 'TimeoutError';
-      uploadHandler.networkUtils.fetchFromServiceWithRetry = sinon.stub().rejects(timeoutError);
+      const timeoutError = new Error('Request timed out');
+      timeoutError.name = 'Timeout';
+      window.fetch = sinon.stub().rejects(timeoutError);
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
 
@@ -318,40 +317,29 @@ describe('UploadHandler', () => {
         await uploadHandler.uploadFileToUnity('http://upload.com', blob, 'text/plain', 'asset-123');
         expect.fail('Should have thrown error');
       } catch (error) {
-        expect(error.message).to.include('Request timed out');
+        expect(error.message).to.include('Max retry delay exceeded');
       }
     });
   });
 
   describe('uploadChunksToUnity Error Handling', () => {
-    let originalUploadFileToUnity;
+    let originalFetch;
 
     beforeEach(() => {
-      originalUploadFileToUnity = uploadHandler.uploadFileToUnity;
+      originalFetch = window.fetch;
     });
 
     afterEach(() => {
-      uploadHandler.uploadFileToUnity = originalUploadFileToUnity;
+      window.fetch = originalFetch;
     });
 
     it('should log chunk errors when upload fails', async () => {
-      const networkError = new Error('Network error');
-      networkError.status = 0;
-
-      uploadHandler.uploadFileToUnity = async () => {
-        mockActionBinder.logAnalyticsinSplunk('Upload Chunk Error|UnityWidget', {
-          errorData: { code: 'upload-error-chunk-upload', subCode: 0, desc: 'Network error' },
-          assetId: mockActionBinder.assetId,
-        });
-        throw networkError;
-      };
-
+      const mockError = new Error('Network error');
+      window.fetch = sinon.stub().rejects(mockError);
       const file = new File(['test data'], 'test.txt', { type: 'text/plain' });
       const uploadUrls = ['http://upload1.com'];
       const blockSize = 10;
-
       const result = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blockSize);
-
       expect(result.failedChunks.size).to.equal(1);
       expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Upload Chunk Error|UnityWidget')).to.be.true;
       expect(mockActionBinder.logAnalyticsinSplunk.calledWith('Chunked Upload Failed|UnityWidget')).to.be.true;
