@@ -84,9 +84,7 @@ export default class ActionBinder {
     this.splashScreenEl = null;
     this.transitionScreen = null;
     this.LOADER_LIMIT = 95;
-    const commonLimits = workflowCfg.targetCfg.limits || {};
-    const productLimits = workflowCfg.targetCfg[`limits-${workflowCfg.productName.toLowerCase()}`] || {};
-    this.limits = { ...commonLimits, ...productLimits };
+    this.limits = ActionBinder.resolveLimits(workflowCfg);
     this.promiseStack = [];
     this.initActionListeners = this.initActionListeners.bind(this);
     const productTag = workflowCfg.targetCfg[`productTag-${workflowCfg.productName.toLowerCase()}`] || 'UNKNOWN';
@@ -97,6 +95,18 @@ export default class ActionBinder {
     this.filesData = {};
     this.verb = this.getVerbFromDom();
     this.uploadAbortController = null;
+  }
+
+  static resolveLimits(workflowCfg) {
+    const targetCfg = workflowCfg.targetCfg || {};
+    const commonLimits = targetCfg.limits || {};
+    const productLimits = targetCfg[`limits-${workflowCfg.productName?.toLowerCase()}`] || {};
+    const featureLimits = Array.from(workflowCfg.supportedFeatures || []).reduce((acc, feature) => ({
+      ...acc,
+      ...(targetCfg[`limits-${feature}`] || {}),
+    }), {});
+    const hasFeatureLimits = Object.keys(featureLimits).length > 0;
+    return { ...commonLimits, ...(hasFeatureLimits ? featureLimits : productLimits) };
   }
 
   getApiConfig() {
@@ -186,6 +196,30 @@ export default class ActionBinder {
     }
   }
 
+  async scanImgForSafety(assetId, signal) {
+    if (signal?.aborted) {
+      const err = new Error('Operation aborted');
+      err.name = 'AbortError';
+      throw err;
+    }
+    const assetData = { assetId, targetProduct: this.workflowCfg.productName };
+    const optionsBody = { body: JSON.stringify(assetData), ...(signal && { signal }) };
+    const res = await this.serviceHandler.postCallToService(
+      this.apiConfig.endPoint.acmpCheck,
+      optionsBody,
+      {},
+      false,
+    );
+    if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+      if (signal?.aborted) {
+        const err = new Error('Operation aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
+      setTimeout(() => { this.scanImgForSafety(assetId, signal); }, 1000);
+    }
+  }
+
   async uploadAsset(file) {
     const assetDetails = {
       targetProduct: this.workflowCfg.productName,
@@ -233,7 +267,7 @@ export default class ActionBinder {
         );
       } else {
         await this.uploadImgToUnity(href, id, file, file.type, signal);
-        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
+        await this.scanImgForSafety(this.assetId, signal);
         this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
       }
       return true;
@@ -345,11 +379,7 @@ export default class ActionBinder {
       }
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) return;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.location.href = response.url;
-        });
-      });
+      window.location.href = response.url;
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
@@ -383,6 +413,21 @@ export default class ActionBinder {
     return { width, height };
   }
 
+  async checkVideoDuration(file) {
+    const { getVideoDuration } = await import(`${getUnityLibs()}/utils/FileUtils.js`);
+    const duration = await getVideoDuration(file);
+    this.filesData = { ...this.filesData, duration };
+    if (this.limits.minDuration && duration < this.limits.minDuration) {
+      this.handleClientUploadError('.icon-error-videominduration', 'error-minVideoduration', 'Video is too short');
+      throw new Error('Video is too short');
+    }
+    if (this.limits.maxDuration && duration > this.limits.maxDuration) {
+      this.handleClientUploadError('.icon-error-videomaxduration', 'error-maxVideoduration', 'Video is too long');
+      throw new Error('Video is too long');
+    }
+    return duration;
+  }
+
   async initAnalytics() {
     if (!this.sendAnalyticsToSplunk && this.workflowCfg.targetCfg.sendSplunkAnalytics) {
       this.sendAnalyticsToSplunk = (await import(`${getUnityLibs()}/scripts/analytics.js`)).default;
@@ -400,14 +445,14 @@ export default class ActionBinder {
     this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode }, fileMetaData: this.filesData, action: 'upload' });
   }
 
-  async uploadImage(files) {
+  async uploadFile(files) {
     if (!files) return;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
       this.handleClientUploadError('.icon-error-filecount', 'error-filecount');
       return;
     }
-    if (!this.limits.allowedFileTypes.includes(file.type)) {
+    if (!this.limits.allowedFileTypes?.includes(file.type)) {
       this.handleClientUploadError('.icon-error-filetype', 'error-filetype');
       return;
     }
@@ -415,8 +460,12 @@ export default class ActionBinder {
       this.handleClientUploadError('.icon-error-filesize', 'error-filesize');
       return;
     }
-    try { await this.checkImageDimensions(file); } catch (error) {
-      window.lana?.log(`Message: Error checking image dimensions, Error: ${error}`, this.lanaOptions);
+    const isVideo = file.type.startsWith('video/');
+    try {
+      if (isVideo) { await this.checkVideoDuration(file);} 
+      else { await this.checkImageDimensions(file);}
+    } catch (error) {
+      window.lana?.log(`Message: Error checking file constraints, Error: ${error}`, this.lanaOptions);
       return;
     }
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
@@ -455,7 +504,7 @@ export default class ActionBinder {
     switch (value) {
       case 'upload':
         this.promiseStack = [];
-        await this.uploadImage(files);
+        await this.uploadFile(files);
         break;
       case 'interrupt':
         await this.cancelUploadOperation();
@@ -499,20 +548,10 @@ export default class ActionBinder {
         });
       },
       INPUT: (el, key) => {
-        let isFilePickerOpen = false;
-        el.addEventListener('click', (e) => {
-          if (isFilePickerOpen) {
-            e.preventDefault();
-            return;
-          }
-          isFilePickerOpen = true;
-          const releaseFilePickerLock = () => { isFilePickerOpen = false; };
-          window.addEventListener('focus', releaseFilePickerLock, { once: true });
-          document.addEventListener('visibilitychange', function onPageVisible() {
-            if (document.visibilityState !== 'visible') return;
-            releaseFilePickerLock();
-            document.removeEventListener('visibilitychange', onPageVisible);
-          });
+        if (this.limits.allowedFileTypes?.length) {
+          el.setAttribute('accept', this.limits.allowedFileTypes.join(','));
+        }
+        el.addEventListener('click', () => {
           this.canvasArea.forEach((element) => {
             const errHolder = element.querySelector('.alert-holder');
             if (errHolder?.classList.contains('show')) {
@@ -522,7 +561,6 @@ export default class ActionBinder {
           });
         });
         el.addEventListener('change', async (e) => {
-          isFilePickerOpen = false;
           const files = this.extractFiles(e);
           this.filesData = { count: files.length, size: files[0].size, type: files[0].type };
           this.logAnalyticsinSplunk('Click Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });

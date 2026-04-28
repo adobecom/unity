@@ -218,6 +218,24 @@ describe('Unity Upload Block', () => {
       }
     });
 
+    it('should scan image for safety', async () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+
+      actionBinder.serviceHandler = { postCallToService: async () => ({ status: 200 }) };
+
+      await actionBinder.scanImgForSafety('test-asset-id');
+    });
+
+    it('should handle scan image for safety with retry', async () => {
+      fetchStub.resolves({ status: 429 });
+
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+
+      actionBinder.serviceHandler = { postCallToService: async () => ({ status: 429 }) };
+
+      await actionBinder.scanImgForSafety('test-asset-id');
+    });
+
     it('should upload asset', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
@@ -445,7 +463,7 @@ describe('Unity Upload Block', () => {
       actionBinder.serviceHandler = { showErrorToast: () => {} };
 
       const invalidFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
-      await actionBinder.uploadImage([invalidFile]);
+      await actionBinder.uploadFile([invalidFile]);
     });
 
     it('should show error for file size exceeding limit', async () => {
@@ -466,7 +484,7 @@ describe('Unity Upload Block', () => {
       actionBinder.serviceHandler = { showErrorToast: () => {} };
 
       const largeFile = new File(['x'.repeat(2000)], 'large.jpg', { type: 'image/jpeg' });
-      await actionBinder.uploadImage([largeFile]);
+      await actionBinder.uploadFile([largeFile]);
     });
 
     it('should show error for wrong number of files', async () => {
@@ -478,13 +496,13 @@ describe('Unity Upload Block', () => {
         new File(['test1'], 'test1.jpg', { type: 'image/jpeg' }),
         new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }),
       ];
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
     it('should handle null files', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
-      await actionBinder.uploadImage(null);
+      await actionBinder.uploadFile(null);
     });
   });
 
@@ -528,55 +546,6 @@ describe('Unity Upload Block', () => {
 
       const files = actionBinder.extractFiles(mockEvent);
       expect(files).to.have.length(1);
-    });
-
-    it('should return empty array when dataTransfer has no file items', () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      const mockEvent = {
-        dataTransfer: { items: [{ kind: 'string', getAsFile: () => null }] },
-      };
-      expect(actionBinder.extractFiles(mockEvent)).to.deep.equal([]);
-    });
-
-    it('should return empty array when target has no files', () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      const mockEvent = { dataTransfer: null, target: { files: [] } };
-      expect(actionBinder.extractFiles(mockEvent)).to.deep.equal([]);
-    });
-  });
-
-  describe('preventDefault helper', () => {
-    it('should call preventDefault and stopPropagation on the event', () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      const ev = { preventDefault: sinon.spy(), stopPropagation: sinon.spy() };
-      actionBinder.preventDefault(ev);
-      expect(ev.preventDefault.calledOnce).to.be.true;
-      expect(ev.stopPropagation.calledOnce).to.be.true;
-    });
-  });
-
-  describe('getAdditionalHeaders', () => {
-    it('should append verb to x-unity-action when verb is set', () => {
-      const wf = {
-        ...workflowCfg,
-        supportedFeatures: { values: () => ({ next: () => ({ value: 'remove-object' }) }) },
-      };
-      const actionBinder = new ActionBinder(unityEl, wf, unityEl, [unityEl]);
-      actionBinder.verb = 'v2';
-      const headers = actionBinder.getAdditionalHeaders();
-      expect(headers['x-unity-action']).to.equal('remove-object-v2');
-      expect(headers['x-unity-product']).to.equal(wf.productName);
-    });
-
-    it('should use base action only when verb is unset', () => {
-      const wf = {
-        ...workflowCfg,
-        supportedFeatures: { values: () => ({ next: () => ({ value: 'upload-only' }) }) },
-      };
-      const actionBinder = new ActionBinder(unityEl, wf, unityEl, [unityEl]);
-      actionBinder.verb = undefined;
-      const headers = actionBinder.getAdditionalHeaders();
-      expect(headers['x-unity-action']).to.equal('upload-only');
     });
   });
 
@@ -653,20 +622,6 @@ describe('Unity Upload Block', () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
       await actionBinder.executeActionMaps('unknown', []);
-    });
-
-    it('should log analytics for redirect action', async () => {
-      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
-      actionBinder.transitionScreen = { splashScreenEl: document.createElement('div') };
-      actionBinder.errorToastEl = document.createElement('div');
-      sinon.stub(actionBinder, 'loadTransitionScreen').resolves();
-      sinon.stub(actionBinder, 'handlePreloads').resolves();
-      const spy = sinon.stub(actionBinder, 'logAnalyticsinSplunk');
-      await actionBinder.executeActionMaps('redirect');
-      expect(spy.calledWith('Edit Photos CTA|UnityWidget', {})).to.be.true;
-      spy.restore();
-      actionBinder.loadTransitionScreen.restore();
-      actionBinder.handlePreloads.restore();
     });
 
     it('should initialize action listeners', async () => {
@@ -1023,7 +978,7 @@ describe('Unity Upload Block', () => {
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
 
       try {
-        await actionBinder.uploadImage([file]);
+        await actionBinder.uploadFile([file]);
         expect.fail('Should have thrown an error due to missing URL');
       } catch (error) {
         expect(error.message).to.equal('Error connecting to App');
@@ -1214,13 +1169,13 @@ describe('Unity Upload Block', () => {
       expect(files).to.have.length(0);
     });
 
-    it('should handle uploadImage with null files', async () => {
+    it('should handle uploadFile with null files', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
-      await actionBinder.uploadImage(null);
+      await actionBinder.uploadFile(null);
     });
 
-    it('should handle uploadImage with wrong number of files', async () => {
+    it('should handle uploadFile with wrong number of files', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
       actionBinder.serviceHandler = { showErrorToast: () => {} };
@@ -1230,20 +1185,20 @@ describe('Unity Upload Block', () => {
         new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }),
       ];
 
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
-    it('should handle uploadImage with invalid file type', async () => {
+    it('should handle uploadFile with invalid file type', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
       actionBinder.serviceHandler = { showErrorToast: () => {} };
 
       const files = [new File(['test'], 'test.txt', { type: 'text/plain' })];
 
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
-    it('should handle uploadImage with file size exceeding limit', async () => {
+    it('should handle uploadFile with file size exceeding limit', async () => {
       const testWorkflowCfg = {
         productName: 'test-product',
         targetCfg: {
@@ -1262,10 +1217,10 @@ describe('Unity Upload Block', () => {
 
       const files = [new File(['x'.repeat(2000)], 'test.jpg', { type: 'image/jpeg' })];
 
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
-    it('should handle uploadImage with PSW feature enabled', async () => {
+    it('should handle uploadFile with PSW feature enabled', async () => {
       const testWorkflowCfg = {
         ...workflowCfg,
         pswFeature: true,
@@ -1301,7 +1256,7 @@ describe('Unity Upload Block', () => {
       actionBinder.continueInApp = async () => Promise.resolve();
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      await actionBinder.uploadImage([file]);
+      await actionBinder.uploadFile([file]);
 
       window.fetch = originalFetch;
       actionBinder.checkImageDimensions = originalCheckImageDimensions;

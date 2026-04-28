@@ -26,29 +26,20 @@ class WfInitiator {
     return cls ? cls.replace(/^widget-/, '') : 'prompt-bar';
   }
 
-  static getWidgetRegistry() {
-    const widgetBase = `${getUnityLibs()}/core/widgets`;
-    return {
-      'prompt-bar': [`${widgetBase}/prompt-bar/prompt-bar.js`, `${widgetBase}/prompt-bar/prompt-bar.css`],
-      'prompt-bar-style': [
-        `${widgetBase}/prompt-bar-style/prompt-bar-style.js`,
-        `${widgetBase}/prompt-bar-style/prompt-bar-style.css`,
-      ],
-    };
+  static widgetPathsForName(name) {
+    const widgetBase = `${getUnityLibs()}/core/widgets/${name}`;
+    return [`${widgetBase}/${name}.js`, `${widgetBase}/${name}.css`];
   }
 
   getWidgetPaths() {
     this.widgetName = this.getWidgetNameFromClass();
-    const registry = WfInitiator.getWidgetRegistry();
-    return registry[this.widgetName] || registry['prompt-bar'];
+    return WfInitiator.widgetPathsForName(this.widgetName);
   }
 
   static getWidgetPathsFromEl(el) {
-    const registry = WfInitiator.getWidgetRegistry();
-    if (!el) return registry['prompt-bar'];
-    const cls = [...el.classList].find((c) => c.startsWith('widget-'));
-    const rawName = cls ? cls.replace(/^widget-/, '') : 'prompt-bar';
-    return registry[rawName] || registry['prompt-bar'];
+    const cls = el && [...el.classList].find((c) => c.startsWith('widget-'));
+    const name = cls ? cls.replace(/^widget-/, '') : 'prompt-bar';
+    return WfInitiator.widgetPathsForName(name);
   }
 
   async priorityLibFetch(workflowName) {
@@ -67,6 +58,10 @@ class WfInitiator {
       ],
       'workflow-ai': [...bundledWidgetAssets],
       'workflow-firefly': fireflyShared,
+      'workflow-prompt-bar-upload': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+      ],
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -101,7 +96,7 @@ class WfInitiator {
     if (this.targetConfig.renderWidget) {
       const widgetPath = (this.workflowCfg.name === 'workflow-photoshop' || this.workflowCfg.name === 'workflow-ai')
         ? `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/widget.js`
-        : WfInitiator.getWidgetRegistry()[this.widgetName][0];
+        : WfInitiator.widgetPathsForName(this.widgetName)[0];
       const { default: UnityWidget } = await import(widgetPath);
       const spriteContent = await spriteSvg.text();
       unityWidgetObject = new UnityWidget(
@@ -266,6 +261,10 @@ class WfInitiator {
         productName: product,
         sfList: new Set([feature]),
         psw,
+      },
+      'workflow-prompt-bar-upload': {
+        productName: product || 'Firefly',
+        sfList: new Set([feature || 'image-to-video']),
       },
       'workflow-firefly': {
         productName: 'Firefly',
