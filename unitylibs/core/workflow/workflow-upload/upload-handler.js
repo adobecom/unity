@@ -46,37 +46,24 @@ export default class UploadHandler {
       error.status = response.status;
       throw error;
     };
-    const onError = (error, attempt) => {
+    const onError = (error) => {
       if (error.name !== 'AbortError') {
-        const isFinalAttempt = attempt >= retryConfig.retryParams.maxRetries;
-        const eventName = isFinalAttempt ? 'Upload Chunk Error|UnityWidget' : 'Upload Chunk Warn|UnityWidget';
-        const code = isFinalAttempt ? 'upload-error-chunk-upload' : 'upload-warn-chunk-upload';
-        this.logError(eventName, {
+        this.logError('Upload Chunk Error|UnityWidget', {
           chunkNumber,
           size: blobData.size,
           fileType,
           errorData: {
-            code,
-            subCode: error.status ?? (error.name === 'TimeoutError' ? 504 : 0),
-            desc: `Exception during chunk ${chunkNumber} upload (attempt ${attempt}): ${error.message}`,
+            code: 'upload-chunk-error',
+            desc: `Exception during chunk ${chunkNumber} upload: ${error.message}`,
           },
         }, `Message: Exception raised when uploading chunk to Unity, Error: ${error.message}, Asset ID: ${assetId}, ${blobData.size} bytes`);
-        if (isFinalAttempt) {
-          this.chunkAbortController?.abort();
-          throw error;
-        }
-      } else {
-        throw error;
       }
+      throw error;
     };
     return this.networkUtils.fetchFromServiceWithRetry(storageUrl, uploadOptions, retryConfig, onSuccess, onError);
   }
 
   async uploadChunksToUnity(uploadUrls, file, blockSize, signal = null) {
-    this.chunkAbortController = new AbortController();
-    const mergedSignal = signal
-      ? AbortSignal.any([signal, this.chunkAbortController.signal])
-      : this.chunkAbortController.signal;
     const options = {
       assetId: this.actionBinder.assetId,
       fileType: file.type,
@@ -86,10 +73,9 @@ export default class UploadHandler {
       file,
       blockSize,
       this.uploadFileToUnity.bind(this),
-      mergedSignal,
+      signal,
       options,
     );
-    this.chunkAbortController = null;
     const { failedChunks, attemptMap } = result;
     const totalChunks = Math.ceil(file.size / blockSize);
     if (failedChunks.size > 0 && !signal?.aborted) {
