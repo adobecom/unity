@@ -3,10 +3,428 @@
 
 import { createTag } from '../../../scripts/utils.js';
 
-import {
-  UnityWidget,
-  assignPromptWithStyleEvents,
-} from '../prompt-bar-style/prompt-bar-style.js';
+let promptWithStyleEvents = null;
+
+class UnityWidget {
+  constructor(target, el, workflowCfg, spriteCon) {
+    this.el = el;
+    this.target = target;
+    this.workflowCfg = workflowCfg;
+    this.widget = null;
+    this.actionMap = {};
+    this.spriteCon = spriteCon;
+    this.prompts = null;
+    this.models = null;
+    this.selectedVerbType = '';
+    this.selectedVerbText = '';
+    this.selectedModelModule = '';
+    this.selectedModelId = '';
+    this.selectedModelText = '';
+    this.selectedModelVersion = '';
+    this.selectedModelName = '';
+    this.promptItems = [];
+    this.genBtn = null;
+    this.hasPromptSuggestions = false;
+    this.hasModelOptions = false;
+    this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
+    this.sound = { audio: null, currentTile: null, currentUrl: '' };
+    this.durationCache = new Map();
+  }
+
+  async ensureSoundModuleLoaded() {
+    await Promise.resolve();
+  }
+
+  verbDropdown() {
+    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
+    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
+    const selectedVerbType = verbs[0]?.className.split('-')[2];
+    const selectedVerb = verbs[0]?.nextElementSibling;
+    const selectedElement = createTag('button', {
+      class: 'selected-verb',
+      'aria-expanded': 'false',
+      'aria-controls': 'media-menu',
+      'aria-label': 'media type',
+      'aria-haspopup': 'listbox',
+      role: 'combobox',
+      'aria-labelledby': 'listbox-label',
+      'data-selected-verb': selectedVerbType,
+    }, `${selectedVerb?.textContent.trim()}`);
+    this.selectedVerbType = selectedVerbType;
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    this.selectedVerbText = selectedVerb?.textContent.trim();
+    if (verbs.length <= 1) {
+      selectedElement.setAttribute('disabled', 'true');
+      return [selectedElement];
+    }
+    this.widgetWrap.classList.add('verb-options');
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
+    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
+    verbList.setAttribute('style', 'display: none;');
+    selectedElement.append(menuIcon);
+    const handleDocumentClick = (e) => {
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer.contains(e.target)) {
+        document.removeEventListener('click', handleDocumentClick);
+        this.closeVerbOrModelMenu(selectedElement);
+      }
+    };
+    selectedElement.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
+      document.addEventListener('click', handleDocumentClick);
+    }, true);
+    selectedElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
+      }
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        this.closeVerbOrModelMenu(selectedElement);
+        selectedElement.focus();
+      }
+    });
+    verbs[0]?.classList.add('selected');
+    const verbsData = Array.from(verbs).map((verb) => ({
+      name: verb.nextElementSibling?.textContent.trim(),
+      type: verb.classList[1].split('-')[2],
+      icon: verb.nextElementSibling?.href,
+    }));
+    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
+    return [selectedElement, verbList];
+  }
+
+  closeVerbOrModelMenu(selectedElement) {
+    const menuContainer = selectedElement?.parentElement;
+    if (!menuContainer) return;
+    menuContainer.classList.remove('show-menu');
+    selectedElement.setAttribute('aria-expanded', 'false');
+    const list = selectedElement.nextElementSibling;
+    if (list?.classList?.contains('verb-list')) {
+      list.setAttribute('style', 'display: none;');
+    }
+  }
+
+  showVerbMenu(selectedElement) {
+    const menuContainer = selectedElement.parentElement;
+    document.querySelectorAll('.verbs-container').forEach((container) => {
+      if (container !== menuContainer) {
+        const sv = container.querySelector('.selected-verb');
+        if (sv) this.closeVerbOrModelMenu(sv);
+      }
+    });
+    document.querySelectorAll('.models-container').forEach((container) => {
+      if (container !== menuContainer) {
+        const sm = container.querySelector('.selected-model');
+        if (sm) this.closeVerbOrModelMenu(sm);
+      }
+    });
+    menuContainer.classList.toggle('show-menu');
+    const isOpen = menuContainer.classList.contains('show-menu');
+    selectedElement.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    const siblingList = selectedElement.nextElementSibling;
+    if (siblingList?.classList?.contains('verb-list')) {
+      if (isOpen) {
+        siblingList.removeAttribute('style');
+      } else {
+        siblingList.setAttribute('style', 'display: none;');
+      }
+    }
+  }
+
+  showVerbOrModelMenuAndTrackOpen(selectedElement, adobeEventName) {
+    const menuContainer = selectedElement.parentElement;
+    const wasOpen = menuContainer.classList.contains('show-menu');
+    this.hidePromptDropdown(selectedElement);
+    this.showVerbMenu(selectedElement);
+    if (!wasOpen) {
+      this.widgetWrap.dispatchEvent(new CustomEvent('firefly-analytics', {
+        detail: {
+          adobeEventName,
+          splunkData: { action: 'open' },
+        },
+      }));
+    }
+  }
+
+  hidePromptDropdown(exceptElement = null) {
+    const dropdown = this.widget.querySelector('.prompt-dropdown-container');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+      dropdown.setAttribute('inert', '');
+      dropdown.setAttribute('aria-hidden', 'true');
+    }
+    if (this.selectedVerbType === 'sound') {
+      this.resetAllSoundVariations?.(dropdown);
+    }
+    const modelDropdown = this.widget.querySelector('.models-container');
+    const modelButton = modelDropdown?.querySelector('.selected-model');
+    if (modelDropdown && modelDropdown.classList.contains('show-menu') && modelButton && modelButton !== exceptElement) {
+      this.closeVerbOrModelMenu(modelButton);
+    }
+    const verbDropdown = this.widget.querySelector('.verbs-container');
+    const verbButton = verbDropdown?.querySelector('.selected-verb');
+    if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton && verbButton !== exceptElement) {
+      this.closeVerbOrModelMenu(verbButton);
+    }
+  }
+
+  updateAnalytics(verb) {
+    if (this.promptItems && this.promptItems.length > 0) {
+      this.promptItems.forEach((item) => {
+        const ariaLabel = item.getAttribute('aria-label') || '';
+        item.setAttribute('daa-ll', `${ariaLabel.slice(0, 20)}--${verb}--Prompt suggestion`);
+      });
+    }
+  }
+
+  clearSelectedModelState() {
+    this.selectedModelId = '';
+    this.selectedModelName = '';
+    this.selectedModelVersion = '';
+    this.selectedModelModule = '';
+    this.selectedModelText = '';
+    this.widgetWrap?.removeAttribute('data-selected-model-name');
+  }
+
+  handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
+    return (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const verbLinkTexts = [];
+      verbList.querySelectorAll('.verb-link').forEach((listLink) => {
+        listLink.parentElement.classList.remove('selected');
+        listLink.setAttribute('aria-selected', 'false');
+        const text = listLink.textContent.trim();
+        if (text) verbLinkTexts.push(text);
+      });
+      verbLinkTexts.sort((a, b) => b.length - a.length);
+      this.closeVerbOrModelMenu(selectedElement);
+      link.parentElement.classList.add('selected');
+      link.setAttribute('aria-selected', 'true');
+      if (modelList) {
+        this.selectedModelId = link.getAttribute('data-model-id');
+        this.selectedModelName = link.textContent.trim();
+        this.selectedModelVersion = link.getAttribute('data-model-version');
+        this.selectedModelModule = link.getAttribute('data-model-module');
+        this.selectedModelText = link.textContent.trim();
+        const copiedNodes = link.cloneNode(true).childNodes;
+        copiedNodes[0].remove();
+        selectedElement.replaceChildren(...copiedNodes, menuIcon);
+        selectedElement.dataset.selectedModelId = this.selectedModelId;
+        selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
+      } else {
+        this.selectedVerbType = link.getAttribute('data-verb-type');
+        this.selectedVerbText = link.textContent.trim();
+        selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
+        selectedElement.dataset.selectedVerb = this.selectedVerbType;
+      }
+      selectedElement.focus();
+      this.ensureSoundModuleLoaded();
+      const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
+      if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
+      else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
+      if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
+        const oldModelContainer = this.widget.querySelector('.models-container');
+        const modelDropdown = this.modelDropdown();
+        if (oldModelContainer) {
+          if (modelDropdown.length > 1) {
+            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
+            newModelContainer.append(...modelDropdown);
+            oldModelContainer.replaceWith(newModelContainer);
+          } else {
+            oldModelContainer.remove();
+            this.clearSelectedModelState();
+          }
+        } else if (modelDropdown.length > 1) {
+          const actionContainer = this.widget.querySelector('.action-container');
+          if (actionContainer) {
+            const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
+            newModelContainer.append(...modelDropdown);
+            actionContainer.append(newModelContainer);
+          }
+        } else this.clearSelectedModelState();
+      }
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      if (this.selectedModelId) {
+        this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+        this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName || '');
+      } else {
+        this.widgetWrap.removeAttribute('data-selected-model-id');
+        this.widgetWrap.removeAttribute('data-selected-model-name');
+      }
+      if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+      else this.widgetWrap.removeAttribute('data-selected-model-version');
+      this.updateAnalytics(this.selectedVerbType);
+      if (this.genBtn) {
+        const img = this.genBtn.querySelector('img[src*=".svg"]');
+        this.genBtn.setAttribute(
+          'aria-label',
+          (this.genBtn.getAttribute('aria-label') || '').replace(
+            new RegExp(`\\b(${verbLinkTexts.join('|')})\\b`),
+            this.selectedVerbText,
+          ),
+        );
+        if (img) img.setAttribute('alt', `${this.genBtn.getAttribute('aria-label') || ''}`);
+      }
+    };
+  }
+
+  createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
+    const fragment = document.createDocumentFragment();
+    items.forEach((item, idx) => {
+      const {
+        name, type, icon, module, id, version,
+      } = item;
+      const listItem = createTag('li', {
+        class: 'verb-item',
+        role: 'presentation',
+      });
+      const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
+      const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
+      const link = createTag('a', {
+        href: '#',
+        class: isModelList ? 'verb-link model-link' : 'verb-link',
+        ...(!isModelList && { 'data-verb-type': type }),
+        ...(isModelList && { 'data-model-module': module }),
+        ...(isModelList && { 'data-model-id': id }),
+        ...(isModelList && { 'data-model-version': version }),
+        'aria-selected': 'false',
+        role: 'option',
+      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`);
+      if (idx === 0) {
+        listItem.classList.add('selected');
+        link.setAttribute('aria-selected', 'true');
+      }
+      link.prepend(selectedIcon);
+      listItem.append(link);
+      fragment.append(listItem);
+    });
+    listContainer.append(fragment);
+    listContainer.addEventListener('click', (e) => {
+      const link = e.target.closest('.verb-link');
+      if (!link) return;
+      this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
+    });
+    listContainer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer?.classList.contains('show-menu')) return;
+      const links = listContainer.querySelectorAll('.verb-link');
+      if (!links.length) return;
+      const active = document.activeElement;
+      const idx = [...links].findIndex((a) => a === active || a.contains(active));
+      if (idx < 0) return;
+      const atStart = idx === 0;
+      const atEnd = idx === links.length - 1;
+      if ((e.shiftKey && atStart) || (!e.shiftKey && atEnd)) {
+        this.closeVerbOrModelMenu(selectedElement);
+      }
+    });
+  }
+
+  modelDropdown() {
+    if (!this.hasModelOptions) return [];
+    const models = Array.isArray(this.models)
+      ? this.models.filter((obj) => obj.module === this.selectedVerbType)
+      : [];
+    if (!Array.isArray(models) || models.length === 0) return [];
+    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
+    const selectedModelType = models[0].id;
+    const selectedModelVersion = models[0].version;
+    const selectedModelModule = models[0].module;
+    const selectedModelName = models[0].name.trim();
+    const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
+    const selectedElement = createTag('button', {
+      class: 'selected-model',
+      'aria-expanded': 'false',
+      'aria-controls': 'model-menu',
+      'aria-label': 'model type',
+      'aria-haspopup': 'listbox',
+      role: 'combobox',
+      'aria-labelledby': 'listbox-label',
+      'data-selected-model-id': selectedModelType,
+      'data-selected-model-version': selectedModelVersion,
+      'data-selected-model-module': selectedModelModule,
+    }, `<img src="${models[0].icon}" alt="" />${nameContainer.outerHTML}`);
+    this.selectedModelModule = selectedModelModule;
+    this.selectedModelId = selectedModelType;
+    this.selectedModelVersion = selectedModelVersion;
+    this.selectedModelName = selectedModelName;
+    this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
+    this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
+    this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName);
+    this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+    this.selectedModelText = models[0].name.trim();
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
+    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
+    listItems.setAttribute('style', 'display: none;');
+    selectedElement.append(menuIcon);
+    const handleDocumentClick = (e) => {
+      const menuContainer = selectedElement.parentElement;
+      if (!menuContainer.contains(e.target)) {
+        document.removeEventListener('click', handleDocumentClick);
+        this.closeVerbOrModelMenu(selectedElement);
+      }
+    };
+    selectedElement.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODEL_SELECT_DROPDOWN);
+      document.addEventListener('click', handleDocumentClick);
+    }, true);
+    selectedElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODEL_SELECT_DROPDOWN);
+      }
+      if (e.key === 'Escape' || e.code === 27) {
+        this.closeVerbOrModelMenu(selectedElement);
+        selectedElement.focus();
+      }
+    });
+    this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
+    return [selectedElement, listItems];
+  }
+
+  createActBtn(cfg, cls) {
+    if (!cfg) return null;
+    const txt = cfg.innerText?.trim();
+    const img = cfg.querySelector('img[src*=".svg"]');
+    if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
+    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': promptWithStyleEvents.GENERATE_CTA, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
+    if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
+    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
+    this.genBtn = btn;
+    return btn;
+  }
+
+  async loadModels() {
+    const { origin } = window.location;
+    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
+      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
+      : origin;
+    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker.json`;
+    const results = await fetch(modelFile);
+    if (!results.ok) {
+      throw new Error('Failed to fetch models.');
+    }
+    const modelJson = await results.json();
+    this.models = modelJson?.content?.data;
+  }
+
+  async getModel() {
+    if (!this.hasModelOptions) return [];
+    try {
+      if (!this.models || Object.keys(this.models).length === 0) await this.loadModels();
+      return this.models;
+    } catch (e) {
+      window.lana?.log(`Message: Error loading models, Error: ${e}`, this.lanaOptions);
+      return [];
+    }
+  }
+
+  async updateDropdownForVerb() {
+    await Promise.resolve();
+  }
+}
 
 const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
@@ -501,7 +919,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     import('../../../scripts/analytics.js'),
     widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
   ]);
-  assignPromptWithStyleEvents(analyticsMod);
+  promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const { el } = widgetInstance;
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
   const defaultPrompt = voices[0]?.defaultPrompt ?? '';
