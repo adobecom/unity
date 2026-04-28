@@ -617,6 +617,50 @@ export default class ActionBinder {
     this.bindWidgetInteractionEvent('pbu-model-dropdown-open', pbuEvents.MODEL_SELECT_DROPDOWN, 'open');
     this.bindWidgetInteractionEvent('pbu-ratio-dropdown-open', pbuEvents.RATIO_DROPDOWN, 'open');
     this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetUploadedAssetState({ dropPendingImage: true }));
+    this.bindOuterMarqueeDropTarget();
+  }
+
+  bindOuterMarqueeDropTarget() {
+    const outerMarquee = this.block?.querySelector('.upload-marquee-layout') || this.block;
+    const dropZone = this.widgetWrap?.querySelector('.drop-zone');
+    if (!outerMarquee || outerMarquee.dataset.pbuOuterDropBound === 'true') return;
+    outerMarquee.dataset.pbuOuterDropBound = 'true';
+
+    let dragDepth = 0;
+    const hasFilePayload = (e) => !!e?.dataTransfer?.types
+      && Array.from(e.dataTransfer.types).includes('Files');
+    const setDropzoneHighlight = (isOn) => dropZone?.classList.toggle('drag-over', !!isOn);
+
+    outerMarquee.addEventListener('dragenter', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth += 1;
+      setDropzoneHighlight(true);
+    });
+
+    outerMarquee.addEventListener('dragover', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      setDropzoneHighlight(true);
+    });
+
+    outerMarquee.addEventListener('dragleave', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) setDropzoneHighlight(false);
+    });
+
+    outerMarquee.addEventListener('drop', async (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth = 0;
+      setDropzoneHighlight(false);
+      sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
+      const files = this.extractFiles(e);
+      await this.executeAction('file-selected', outerMarquee, files);
+    });
   }
 
   bindElement(el, actionsList) {
