@@ -24,6 +24,23 @@ export function getMimeType(fileName) {
   return extToTypeMap[getExtension(fileName)];
 }
 
+export function getVideoDuration(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`Unable to read video metadata for: ${file.name}`));
+    };
+    video.src = url;
+  });
+}
+
 export async function getImageDimensions(file) {
   const buffer = await file.slice(0, 256 * 1024).arrayBuffer();
   const view = new DataView(buffer);
