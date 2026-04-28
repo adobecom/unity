@@ -123,6 +123,15 @@ function attachDropdownBehavior(container, triggerBtn, list) {
     const options = getOptions();
     if (!options.length) return;
     const idx = options.findIndex((option) => option === document.activeElement);
+    if (e.key === 'Tab') {
+      if (idx < 0) return;
+      const atStart = idx === 0;
+      const atEnd = idx === options.length - 1;
+      if ((e.shiftKey && atStart) || (!e.shiftKey && atEnd)) {
+        closeDropdown(container, triggerBtn, list);
+      }
+      return;
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       closeDropdown(container, triggerBtn, list);

@@ -602,7 +602,7 @@ margin-top: 0px;
 width: 123px;
 height: 123px;
 border-radius: 13.667px;
-border: 1px dashed rgba(198, 198, 198, 0.50);
+border: 2px dashed rgba(198, 198, 198, 0.50);
 padding: 0;
 background: none;
 display: flex;
@@ -621,6 +621,7 @@ background: rgb(255 255 255 / 4%);
 
 .pbu-drop-zone-wrap .drop-zone.drag-over {
 border-color: #4069FD;
+border: 2px solid;
 background: rgb(64 105 253 / 14%);
 }
 
