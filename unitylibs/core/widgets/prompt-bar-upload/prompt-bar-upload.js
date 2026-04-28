@@ -395,9 +395,7 @@ export default class PromptBarUploadWidget {
 
     const wrap = createTag('div', { class: 'pbu-drop-zone-wrap' });
     wrap.append(dropZone, selectSpinner, preview);
-    return {
-      wrap, dropZone, preview, previewImg, deleteBtn,
-    };
+    return { wrap, dropZone, preview, previewImg, deleteBtn,};
   }
 
   buildPromptTextarea() {
