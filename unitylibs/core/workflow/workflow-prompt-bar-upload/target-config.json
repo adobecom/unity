@@ -11,7 +11,7 @@
       "maxNumFiles": 1,
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
       "maxFileSize": 50000000,
-      "max-char-limit": 750
+      "max-char-limit": 1024
     },
     "productTag-firefly": "FF",
     "sendSplunkAnalytics": true,

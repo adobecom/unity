@@ -78,6 +78,14 @@ function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, aria
 }
 
 function attachDropdownBehavior(container, triggerBtn, list) {
+  const getOptions = () => [...list.querySelectorAll('a.model-link')];
+  const focusSelectedOrFirst = () => {
+    const options = getOptions();
+    if (!options.length) return;
+    const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
+    (selected || options[0])?.focus();
+  };
+
   triggerBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     document.querySelectorAll('.models-container.show-menu').forEach((other) => {
@@ -90,6 +98,64 @@ function attachDropdownBehavior(container, triggerBtn, list) {
     if (isOpen) list.removeAttribute('style');
     else list.setAttribute('style', 'display: none;');
     triggerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  triggerBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown(container, triggerBtn, list);
+      triggerBtn.focus();
+      return;
+    }
+
+    if (!['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const isOpen = container.classList.contains('show-menu');
+    if (!isOpen) {
+      container.classList.add('show-menu');
+      list.removeAttribute('style');
+      triggerBtn.setAttribute('aria-expanded', 'true');
+    }
+    focusSelectedOrFirst();
+  });
+
+  list.addEventListener('keydown', (e) => {
+    const options = getOptions();
+    if (!options.length) return;
+    const idx = options.findIndex((option) => option === document.activeElement);
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown(container, triggerBtn, list);
+      triggerBtn.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = idx < 0 ? 0 : (idx + 1) % options.length;
+      options[next]?.focus();
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const next = idx < 0 ? options.length - 1 : (idx - 1 + options.length) % options.length;
+      options[next]?.focus();
+      return;
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      options[0]?.focus();
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      options[options.length - 1]?.focus();
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const active = idx >= 0 ? options[idx] : options[0];
+      active?.click();
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -395,6 +461,11 @@ export default class PromptBarUploadWidget {
       'aria-label': 'Upload image',
     });
     dropZone.append(fileInput, dropContent);
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      fileInput.click();
+    });
     const selectSpinner = createTag('div', { class: 'pbu-select-spinner hidden', 'aria-hidden': 'true', role: 'status' });
     selectSpinner.append(createTag('div', { class: 'pbu-select-spinner-ring' }));
 
