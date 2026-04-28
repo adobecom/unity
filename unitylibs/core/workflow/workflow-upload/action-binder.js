@@ -345,11 +345,7 @@ export default class ActionBinder {
       }
       const finalResults = await Promise.allSettled(this.promiseStack);
       if (finalResults.some((result) => result.status === 'rejected')) return;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.location.href = response.url;
-        });
-      });
+      window.location.href = response.url;
     } catch (e) {
       if (e.message === 'Operation termination requested.') return;
       await this.transitionScreen.showSplashScreen();
@@ -499,20 +495,7 @@ export default class ActionBinder {
         });
       },
       INPUT: (el, key) => {
-        let isFilePickerOpen = false;
-        el.addEventListener('click', (e) => {
-          if (isFilePickerOpen) {
-            e.preventDefault();
-            return;
-          }
-          isFilePickerOpen = true;
-          const releaseFilePickerLock = () => { isFilePickerOpen = false; };
-          window.addEventListener('focus', releaseFilePickerLock, { once: true });
-          document.addEventListener('visibilitychange', function onPageVisible() {
-            if (document.visibilityState !== 'visible') return;
-            releaseFilePickerLock();
-            document.removeEventListener('visibilitychange', onPageVisible);
-          });
+        el.addEventListener('click', () => {
           this.canvasArea.forEach((element) => {
             const errHolder = element.querySelector('.alert-holder');
             if (errHolder?.classList.contains('show')) {
@@ -522,7 +505,6 @@ export default class ActionBinder {
           });
         });
         el.addEventListener('change', async (e) => {
-          isFilePickerOpen = false;
           const files = this.extractFiles(e);
           this.filesData = { count: files.length, size: files[0].size, type: files[0].type };
           this.logAnalyticsinSplunk('Click Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
