@@ -194,6 +194,7 @@ margin-bottom: 8px;
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field,
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field::placeholder {
 color: #f8f8f8 !important;
+margin-bottom: 18px;
 font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
 font-size: 16px;
 }
@@ -618,6 +619,11 @@ border-color: rgb(255 255 255 / 55%);
 background: rgb(255 255 255 / 4%);
 }
 
+.pbu-drop-zone-wrap .drop-zone.drag-over {
+border-color: #4069FD;
+background: rgb(64 105 253 / 14%);
+}
+
 .pbu-drop-zone-wrap .drop-zone.hidden {
 display: none;
 }
@@ -807,6 +813,23 @@ gap: 8px;
 text-decoration: none;
 display: flex;
 align-items: center;
+}
+
+.pbu-main .pbu-controls-footer .act-wrap a.gen-btn .btn-ico {
+height: fit-content;
+display: flex;
+}
+
+.pbu-main .pbu-controls-footer .act-wrap a.gen-btn .btn-ico img {
+width: 22px;
+height: 22px;
+}
+
+.pbu-main .pbu-controls-footer .act-wrap a.gen-btn .btn-txt{
+color: var(--color-white);
+font-size: 16px;
+font-weight: 700;
+line-height: normal;
 }
 
 @media screen and (max-width: 599px) {

@@ -428,17 +428,14 @@ export default class PromptBarUploadWidget {
 
   buildGenerateButton() {
     const generateLi = this.el.querySelector('[class*="icon-generate"]')?.closest('li');
-    const genBtnText = (generateLi?.innerText || 'Generate').trim().split('\n')[0] || 'Generate';
-    const btn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn', 'aria-label': genBtnText });
-    const svgLink = generateLi?.querySelector('a[href$=".svg"]');
-    if (svgLink?.href) {
-      btn.append(
-        createTag('div', { class: 'btn-ico' }, createTag('img', { src: svgLink.href, alt: '' })),
-        createTag('div', { class: 'btn-txt' }, genBtnText),
-      );
-    } else {
-      btn.append(createTag('div', { class: 'btn-txt' }, genBtnText));
+    const genBtnText = (generateLi?.innerText).trim().split('\n')[0] || 'Generate';
+    const img = generateLi?.querySelector('img[src*=".svg"]');
+    const btn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn', 'daa-ll': 'Generate-video', 'aria-label': genBtnText });
+    if (img) {
+      img.setAttribute('alt', 'Generate video');
+      btn.append(createTag('div', { class: 'btn-ico' }, img));
     }
+    if (genBtnText) btn.append(createTag('div', { class: 'btn-txt' }, genBtnText.split('\n')[0]));
     return btn;
   }
 
