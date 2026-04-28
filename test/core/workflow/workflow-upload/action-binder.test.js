@@ -463,7 +463,7 @@ describe('Unity Upload Block', () => {
       actionBinder.serviceHandler = { showErrorToast: () => {} };
 
       const invalidFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
-      await actionBinder.uploadImage([invalidFile]);
+      await actionBinder.uploadFile([invalidFile]);
     });
 
     it('should show error for file size exceeding limit', async () => {
@@ -484,7 +484,7 @@ describe('Unity Upload Block', () => {
       actionBinder.serviceHandler = { showErrorToast: () => {} };
 
       const largeFile = new File(['x'.repeat(2000)], 'large.jpg', { type: 'image/jpeg' });
-      await actionBinder.uploadImage([largeFile]);
+      await actionBinder.uploadFile([largeFile]);
     });
 
     it('should show error for wrong number of files', async () => {
@@ -496,13 +496,13 @@ describe('Unity Upload Block', () => {
         new File(['test1'], 'test1.jpg', { type: 'image/jpeg' }),
         new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }),
       ];
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
     it('should handle null files', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
-      await actionBinder.uploadImage(null);
+      await actionBinder.uploadFile(null);
     });
   });
 
@@ -978,7 +978,7 @@ describe('Unity Upload Block', () => {
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
 
       try {
-        await actionBinder.uploadImage([file]);
+        await actionBinder.uploadFile([file]);
         expect.fail('Should have thrown an error due to missing URL');
       } catch (error) {
         expect(error.message).to.equal('Error connecting to App');
@@ -1169,13 +1169,13 @@ describe('Unity Upload Block', () => {
       expect(files).to.have.length(0);
     });
 
-    it('should handle uploadImage with null files', async () => {
+    it('should handle uploadFile with null files', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
-      await actionBinder.uploadImage(null);
+      await actionBinder.uploadFile(null);
     });
 
-    it('should handle uploadImage with wrong number of files', async () => {
+    it('should handle uploadFile with wrong number of files', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
       actionBinder.serviceHandler = { showErrorToast: () => {} };
@@ -1185,20 +1185,20 @@ describe('Unity Upload Block', () => {
         new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }),
       ];
 
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
-    it('should handle uploadImage with invalid file type', async () => {
+    it('should handle uploadFile with invalid file type', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
       actionBinder.serviceHandler = { showErrorToast: () => {} };
 
       const files = [new File(['test'], 'test.txt', { type: 'text/plain' })];
 
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
-    it('should handle uploadImage with file size exceeding limit', async () => {
+    it('should handle uploadFile with file size exceeding limit', async () => {
       const testWorkflowCfg = {
         productName: 'test-product',
         targetCfg: {
@@ -1217,10 +1217,10 @@ describe('Unity Upload Block', () => {
 
       const files = [new File(['x'.repeat(2000)], 'test.jpg', { type: 'image/jpeg' })];
 
-      await actionBinder.uploadImage(files);
+      await actionBinder.uploadFile(files);
     });
 
-    it('should handle uploadImage with PSW feature enabled', async () => {
+    it('should handle uploadFile with PSW feature enabled', async () => {
       const testWorkflowCfg = {
         ...workflowCfg,
         pswFeature: true,
@@ -1256,7 +1256,7 @@ describe('Unity Upload Block', () => {
       actionBinder.continueInApp = async () => Promise.resolve();
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      await actionBinder.uploadImage([file]);
+      await actionBinder.uploadFile([file]);
 
       window.fetch = originalFetch;
       actionBinder.checkImageDimensions = originalCheckImageDimensions;
