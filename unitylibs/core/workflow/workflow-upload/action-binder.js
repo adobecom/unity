@@ -418,11 +418,11 @@ export default class ActionBinder {
     const duration = await getVideoDuration(file);
     this.filesData = { ...this.filesData, duration };
     if (this.limits.minDuration && duration < this.limits.minDuration) {
-      this.handleClientUploadError('.icon-error-videoduration', 'error-videoduration', 'Video is too short');
+      this.handleClientUploadError('.icon-error-videominduration', 'error-minVideoduration', 'Video is too short');
       throw new Error('Video is too short');
     }
     if (this.limits.maxDuration && duration > this.limits.maxDuration) {
-      this.handleClientUploadError('.icon-error-videoduration', 'error-videoduration', 'Video is too long');
+      this.handleClientUploadError('.icon-error-videomaxduration', 'error-maxVideoduration', 'Video is too long');
       throw new Error('Video is too long');
     }
     return duration;

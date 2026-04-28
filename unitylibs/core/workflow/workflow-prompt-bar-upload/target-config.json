@@ -11,8 +11,6 @@
       "maxNumFiles": 1,
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
       "maxFileSize": 50000000,
-      "minHeight": 512,
-      "minWidth": 512,
       "max-char-limit": 750
     },
     "productTag-firefly": "FF",

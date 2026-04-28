@@ -236,42 +236,31 @@ export default class ActionBinder {
     wrap?.classList.toggle('pbu-select-processing', !!visible);
   }
 
-  async checkImageDimensions(file) {
-    const { getImageDimensions } = await import(`${getUnityLibs()}/utils/FileUtils.js`);
-    const { width, height } = await getImageDimensions(file);
-    this.filesData = { ...this.filesData, width, height };
-    if (this.limits.minWidth && this.limits.minHeight) {
-      if (width < this.limits.minWidth || height < this.limits.minHeight) {
-        this.handleClientError('.icon-error-filemindimension', 'error-filemindimension');
-        throw new Error('Image below minimum dimensions');
-      }
-    }
-  }
-
   async validateAndStoreFile(files) {
-    if (!files?.length) return false;
-    if (files.length > (this.limits.maxNumFiles || 1)) {
-      this.handleClientError('.icon-error-filecount', 'error-filecount');
-      return false;
-    }
-    const file = files[0];
-    this.filesData = { count: files.length, size: file.size, type: file.type };
-    if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
-      this.handleClientError('.icon-error-filetype', 'error-filetype');
-      return false;
-    }
-    if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
-      this.handleClientError('.icon-error-filesize', 'error-filesize');
-      return false;
-    }
     this.setSelectSpinnerVisible(true);
-    try {await this.checkImageDimensions(file);} 
-    catch {return false;} 
-    finally {this.setSelectSpinnerVisible(false);}
-    this.resetUploadedAssetState();
-    this.pendingFile = file;
-    this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
-    return true;
+    try {
+      if (!files?.length) return false;
+      if (files.length > (this.limits.maxNumFiles || 1)) {
+        this.handleClientError('.icon-error-filecount', 'error-filecount');
+        return false;
+      }
+      const file = files[0];
+      this.filesData = { count: files.length, size: file.size, type: file.type };
+      if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
+        this.handleClientError('.icon-error-filetype', 'error-filetype');
+        return false;
+      }
+      if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
+        this.handleClientError('.icon-error-filesize', 'error-filesize');
+        return false;
+      }
+      this.resetUploadedAssetState();
+      this.pendingFile = file;
+      this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
+      return true;
+    } finally {
+      this.setSelectSpinnerVisible(false);
+    }
   }
 
   async uploadImgToUnity(storageUrl, _id, blobData, fileType, signal) {

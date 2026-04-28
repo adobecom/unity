@@ -123,7 +123,7 @@ export default class PromptBarUploadWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video-sample.json`);
+    const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video.json`);
     if (!res.ok) throw new Error('Failed to fetch video models.');
     const json = await res.json();
     this.models = json?.content?.data || [];
@@ -193,6 +193,7 @@ export default class PromptBarUploadWidget {
         class: 'verb-link model-link',
         'data-model-id': model.id,
         'data-model-name': (model.name || '').trim(),
+        'data-model-icon': model.icon || '',
         ...(model.version != null && model.version !== '' ? { 'data-model-version': String(model.version) } : {}),
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
@@ -212,9 +213,20 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const modelId = link.getAttribute('data-model-id') || '';
       const modelName = link.getAttribute('data-model-name') || '';
+      const modelIcon = link.getAttribute('data-model-icon') || '';
       const modelVersion = link.getAttribute('data-model-version') || '';
       this.selectedModelId = modelId;
       nameContainer.textContent = modelName;
+      const triggerIcon = triggerBtn.querySelector(':scope > img');
+      if (modelIcon) {
+        if (triggerIcon) {
+          triggerIcon.setAttribute('src', modelIcon);
+        } else {
+          triggerBtn.prepend(createTag('img', { src: modelIcon, alt: '' }));
+        }
+      } else if (triggerIcon) {
+        triggerIcon.remove();
+      }
       this.widgetWrap?.setAttribute('data-selected-model-id', modelId);
       this.widgetWrap?.setAttribute('data-selected-model-name', modelName);
       if (modelVersion) this.widgetWrap?.setAttribute('data-selected-model-version', modelVersion);
