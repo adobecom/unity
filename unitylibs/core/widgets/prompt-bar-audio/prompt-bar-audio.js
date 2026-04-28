@@ -854,6 +854,7 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
  */
 function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance) {
+  if (!voices.length) return { section: null, tiles: [] };
   const section = createTag('div', { class: 'unity-paf-voice-section' });
   const heading = createTag(
     'p',
@@ -883,7 +884,8 @@ function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance) {
  */
 function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection) {
   const controls = createTag('div', { class: 'unity-slf-controls' });
-  controls.append(widgetWrap, voiceSection);
+  controls.append(widgetWrap);
+  if (voiceSection) controls.append(voiceSection);
   const left = createTag('div', { class: 'unity-slf-left' });
   left.append(controls);
   const main = createTag('div', { class: 'unity-paf-main' });
@@ -914,7 +916,6 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection) 
  */
 async function mountPromptBarAudioUI(widgetInstance, parsed) {
   const { voices, footerLink, sectionHeading } = parsed;
-  if (!voices.length) return;
   const [analyticsMod] = await Promise.all([
     import('../../../scripts/analytics.js'),
     widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
@@ -935,7 +936,9 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     footerLink,
     widgetInstance,
   );
-  const disconnectVoices = attachVoiceInteractivity(tiles, widgetInstance, inpField, voices);
+  const disconnectVoices = voices.length
+    ? attachVoiceInteractivity(tiles, widgetInstance, inpField, voices)
+    : () => {};
   insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection);
   const root = widgetInstance.promptBarAudioRoot;
   let removalObserver = null;
@@ -969,7 +972,6 @@ export default class PromptBarAudioWidget extends UnityWidget {
 
   async initWidget() {
     const parsed = parsePromptBarAudioAuthoring(this.el);
-    if (!parsed.voices.length) return this.workflowCfg.targetCfg.actionMap;
     const { el } = this;
     this.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
     await mountPromptBarAudioUI(this, parsed);
