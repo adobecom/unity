@@ -1,9 +1,223 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable max-classes-per-file */
 
-import { createTag } from '../../../scripts/utils.js';
+import { createTag, getConfig } from '../../../scripts/utils.js';
+
+/** Authoring: `icon-operation-<name>`; `<name>` is the current page key → `unity/configs/prompt/<name>.json`. */
+const CURRENT_PAGE_ICON_PREFIX = 'icon-operation-';
 
 let promptWithStyleEvents = null;
+
+/**
+ * Same `baseUrl` + `/unity/configs/prompt/...` pattern as `loadPrompts` / `loadModels` in
+ * `prompt-bar.js` (e.g. firefly-prompt.json, model-picker.json).
+ *
+ * @returns {string}
+ */
+function getUnityPromptConfigsBaseUrl() {
+  const { origin } = window.location;
+  if (origin.includes('.aem.') || origin.includes('.hlx.')) {
+    return `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`;
+  }
+  return origin;
+}
+
+/**
+ * Read `<name>` from the first `icon-operation-<name>` class in the document (e.g. `Text2Speech`).
+ *
+ * @param {HTMLElement} root
+ * @returns {string | null}
+ */
+function findCurrentPageName(root) {
+  const el = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
+  if (!el) return null;
+  const { className } = el;
+  if (typeof className !== 'string' || !className) return null;
+  const token = className.split(/\s+/).find(
+    (c) => c.startsWith(CURRENT_PAGE_ICON_PREFIX) && c.length > CURRENT_PAGE_ICON_PREFIX.length,
+  );
+  if (!token) return null;
+  return token.slice(CURRENT_PAGE_ICON_PREFIX.length) || null;
+}
+
+/**
+ * Safe file basename for `unity/configs/prompt/{base}.json` (current page key from authoring).
+ * Whitespace becomes `-` (e.g. `My Page` → `my-page`); other unsafe chars are removed.
+ * The result is lowercased: paths on the host are case-sensitive, while authoring may use
+ * `Text2Speech` for a file published as `text2speech.json` (see main Unity prompt configs).
+ *
+ * @param {string} name
+ * @returns {string | null}
+ */
+function sanitizeCurrentPageFileBase(name) {
+  if (!name || !name.trim()) return null;
+  const normalized = name.trim().replace(/\s+/g, '-');
+  const base = normalized.replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!base) return null;
+  return base.toLowerCase();
+}
+
+/**
+ * Default `/{name}.json` under prompt configs; same locale rules as `loadPrompts` in `prompt-bar.js`.
+ *
+ * @param {string} pageName From `icon-operation-<pageName>` (current page / config key)
+ * @returns {string | null}
+ */
+function getDefaultCurrentPageJsonUrl(pageName) {
+  const fileBase = sanitizeCurrentPageFileBase(pageName);
+  if (!fileBase) return null;
+  const baseUrl = getUnityPromptConfigsBaseUrl();
+  const { locale } = getConfig();
+  return locale.prefix && locale.prefix !== '/'
+    ? `${baseUrl}${locale.prefix}/unity/configs/prompt/${fileBase}.json`
+    : `${baseUrl}/unity/configs/prompt/${fileBase}.json`;
+}
+
+/**
+ * @param {Record<string, unknown>} item
+ * @param {string} k
+ * @returns {string}
+ */
+function currentPageConfigField(item, k) {
+  const v = item[k];
+  return v == null ? '' : String(v).trim();
+}
+
+/** U+2022 BULLET (•) reads heavier than middot (·) in most fonts; spaces keep rhythm. */
+const VOICE_DESC_SEP = ' • ';
+
+/** Authoring: row with `placeholder-prompt-label` / `placeholder-prompt-default` (see `placeholderRowText`); `icon-placeholder-voice` for section heading. */
+const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
+const PLACEHOLDER_DEFAULT_PROMPT = 'placeholder-prompt-default';
+/** Subcopy below the voice tile row (order: explore, then terms). */
+const PLACEHOLDER_EXPLORE = 'placeholder-explore';
+const PLACEHOLDER_TERMS = 'placeholder-terms';
+
+/**
+ * @param {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>} voices
+ * @param {string} selectedModelId From model dropdown (`data-model-id` / `selectedModelId`)
+ * @returns {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>}
+ */
+function filterVoicesByModelId(voices, selectedModelId) {
+  const id = (selectedModelId || '').trim();
+  if (!id) return voices;
+  return voices.filter((v) => {
+    const m = v.modelId;
+    if (m == null || String(m).trim() === '') return true;
+    return String(m).trim().toLowerCase() === id.toLowerCase();
+  });
+}
+
+/**
+ * Fills in `defaultPrompt` from authoring when JSON omits a non-empty `defaultPrompt` per row.
+ * JSON / sheet `defaultPrompt` wins when present and non-empty after trim.
+ * @param {Array<Record<string, unknown>>} voices
+ * @param {string} domDefault
+ * @returns {Array<Record<string, unknown>>}
+ */
+function mergeVoicesWithAuthoringDefault(voices, domDefault) {
+  const d = (domDefault || '').trim();
+  if (!d || !Array.isArray(voices) || !voices.length) return voices;
+  return voices.map((v) => {
+    const fromJson = v?.defaultPrompt != null && String(v.defaultPrompt).trim() !== ''
+      ? String(v.defaultPrompt).trim()
+      : '';
+    if (fromJson) return { ...v, defaultPrompt: fromJson };
+    return { ...v, defaultPrompt: d };
+  });
+}
+
+/**
+ * Map one JSON row to a voice tile entry.
+ *
+ * @param {Record<string, unknown>} item
+ * @returns {{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string } | null}
+ */
+function currentPageConfigItemToVoice(item) {
+  if (!item || typeof item !== 'object') return null;
+  const name = currentPageConfigField(item, 'displayName')
+    || currentPageConfigField(item, 'name')
+    || currentPageConfigField(item, 'Display Name');
+  const url = currentPageConfigField(item, 'url') || currentPageConfigField(item, 'URL');
+  if (!name || !url) return null;
+  if (!/^https:\/\//i.test(url)) return null;
+  const voiceIdRaw = currentPageConfigField(item, 'voiceId') || currentPageConfigField(item, 'VoiceId');
+  const modelIdRaw = currentPageConfigField(item, 'Model') || currentPageConfigField(item, 'model');
+  const defaultPrompt = currentPageConfigField(item, 'defaultPrompt');
+  const descDirect = currentPageConfigField(item, 'description');
+  // Sheet columns: "Age Group" / "Gender" (e.g. text2speech.json); subtext uses `VOICE_DESC_SEP`
+  const ageGroup = currentPageConfigField(item, 'ageGroup')
+    || currentPageConfigField(item, 'age group')
+    || currentPageConfigField(item, 'Age Group');
+  const gender = currentPageConfigField(item, 'gender') || currentPageConfigField(item, 'Gender');
+  const ethnicity = currentPageConfigField(item, 'ethnicity') || currentPageConfigField(item, 'Ethnicity');
+  const accent = currentPageConfigField(item, 'accent') || currentPageConfigField(item, 'Accent');
+  const descParts = [ageGroup, gender, ethnicity, accent].filter(Boolean);
+  const description = descDirect || (descParts.length ? descParts.join(VOICE_DESC_SEP) : '');
+  return {
+    name: name || 'Voice',
+    description,
+    defaultPrompt,
+    url,
+    ...(voiceIdRaw ? { voiceId: voiceIdRaw } : {}),
+    ...(modelIdRaw ? { modelId: modelIdRaw } : {}),
+  };
+}
+
+/**
+ * Same as `loadPrompts` / `loadModels`: `fetch` + `res.json()`, then `content.data` (array) or `content.data.voices`.
+ *
+ * @param {string} sourceUrl Absolute URL to the current page config JSON
+ * @returns {Promise<Array<{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>>}
+ */
+async function loadVoicesFromCurrentPageJson(sourceUrl) {
+  const finalUrl = sourceUrl?.trim();
+  if (!finalUrl) return [];
+  const res = await fetch(finalUrl);
+  if (!res.ok) {
+    throw new Error(`Current page config fetch failed: ${res.status}`);
+  }
+  const json = await res.json();
+  const data = json?.content?.data;
+  let rows = [];
+  if (Array.isArray(data)) {
+    rows = data;
+  } else if (data && typeof data === 'object' && Array.isArray(data.voices)) {
+    rows = data.voices;
+  }
+  if (!rows.length) return [];
+  return rows
+    .map((row) => currentPageConfigItemToVoice(/** @type {Record<string, unknown>} */ (row)))
+    .filter((v) => v != null);
+}
+
+/**
+ * If authoring includes `icon-operation-<name>`, load voices from
+ * `unity/configs/prompt/<name>.json` (with locale prefix like `loadPrompts`), or from the
+ * list item’s `a[href]` when it points at a `.json` file.
+ *
+ * @param {HTMLElement} root
+ * @returns {string | null}
+ */
+function resolveCurrentPageSourceFromAuthoring(root) {
+  const pageName = findCurrentPageName(root);
+  if (!pageName) return null;
+  const icon = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
+  const li = icon?.closest('li');
+  const a = li?.querySelector('a[href]');
+  const href = a?.getAttribute('href')?.trim();
+  if (href) {
+    try {
+      const u = new URL(href, window.location.href);
+      if (/\.json$/i.test(u.pathname || '')) {
+        return u.href;
+      }
+    } catch {
+      /* invalid href */
+    }
+  }
+  return getDefaultCurrentPageJsonUrl(pageName);
+}
 
 class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -26,6 +240,12 @@ class UnityWidget {
     this.genBtn = null;
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
+    this.hasVoiceOptions = false;
+    this.voices = null;
+    /** @type {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }> | null} */
+    this.voiceConfigAll = null;
+    /** Filled in init; `placeholderRowText` for {@link PLACEHOLDER_DEFAULT_PROMPT} */
+    this.defaultPromptFromAuthoring = '';
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
@@ -190,6 +410,7 @@ class UnityWidget {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
+      let previousModelId = '';
       const verbLinkTexts = [];
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
@@ -202,6 +423,7 @@ class UnityWidget {
       link.parentElement.classList.add('selected');
       link.setAttribute('aria-selected', 'true');
       if (modelList) {
+        previousModelId = this.selectedModelId || '';
         this.selectedModelId = link.getAttribute('data-model-id');
         this.selectedModelName = link.textContent.trim();
         this.selectedModelVersion = link.getAttribute('data-model-version');
@@ -255,6 +477,9 @@ class UnityWidget {
       if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
       else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
+      if (modelList && typeof this.refreshVoiceTilesForModel === 'function') {
+        this.refreshVoiceTilesForModel(previousModelId);
+      }
       if (this.genBtn) {
         const img = this.genBtn.querySelector('img[src*=".svg"]');
         this.genBtn.setAttribute(
@@ -401,7 +626,7 @@ class UnityWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker.json`;
+    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker1.json`;
     const results = await fetch(modelFile);
     if (!results.ok) {
       throw new Error('Failed to fetch models.');
@@ -421,6 +646,46 @@ class UnityWidget {
     }
   }
 
+  /**
+   * Loads voice tiles from the current page JSON (same source as in `initWidget` when
+   * `icon-operation-<name>` / authoring `a[href$=".json"]` is present).
+   */
+  async loadVoices() {
+    const currentPageSourceUrl = resolveCurrentPageSourceFromAuthoring(this.el);
+    if (!currentPageSourceUrl) {
+      this.voices = [];
+      this.voiceConfigAll = [];
+      return;
+    }
+    const raw = await loadVoicesFromCurrentPageJson(currentPageSourceUrl);
+    const domDef = (this.defaultPromptFromAuthoring || '').trim();
+    this.voices = mergeVoicesWithAuthoringDefault(raw, domDef);
+    this.voiceConfigAll = this.voices;
+  }
+
+  /**
+   * Returns voice list for the current page config (filtered by selected model when `Model` is set in JSON);
+   * loads on first use (see `getPrompt` / `getModel`).
+   * @returns {Promise<Array<{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string }>>}
+   */
+  async getVoice() {
+    if (!this.hasVoiceOptions) return [];
+    try {
+      if (this.voices == null) {
+        await this.loadVoices();
+      }
+      const all = this.voiceConfigAll != null ? this.voiceConfigAll : (this.voices || []);
+      const list = Array.isArray(all) ? all : [];
+      const mid = (this.selectedModelId
+        || this.widgetWrap?.getAttribute('data-selected-model-id')
+        || '').trim();
+      return filterVoicesByModelId(list, mid);
+    } catch (e) {
+      window.lana?.log(`Message: Error loading voices, Error: ${e}`, this.lanaOptions);
+      return [];
+    }
+  }
+
   async updateDropdownForVerb() {
     await Promise.resolve();
   }
@@ -432,20 +697,6 @@ const RING_C = 2 * Math.PI * RING_R;
 /** @type {WeakMap<object, { audio: HTMLAudioElement, ringFg: SVGCircleElement, playing: boolean }>} */
 const voiceTileState = new WeakMap();
 
-function isDirectLiOfUl(ul, li) {
-  let p = li.parentElement;
-  while (p) {
-    if (p === ul) return true;
-    if (p.tagName === 'UL' || p.tagName === 'OL') return false;
-    p = p.parentElement;
-  }
-  return false;
-}
-
-function topLevelLisInUl(ul) {
-  return [...ul.querySelectorAll('li')].filter((li) => isDirectLiOfUl(ul, li));
-}
-
 function placeholderRowText(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`)
     || root.querySelector(`[class*="${iconClass}"]`);
@@ -453,82 +704,76 @@ function placeholderRowText(root, iconClass) {
   return (icon.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-function stripTags(html) {
-  const t = document.createElement('div');
-  t.innerHTML = html;
-  return t.textContent?.trim() ?? '';
-}
-
 /**
- * @param {HTMLLIElement} li
- * @returns {{ name: string, description: string, defaultPrompt: string, url: string } | null}
+ * Markup in the placeholder row after the icon (keeps &lt;a&gt; from authoring). Treated as author HTML.
+ * @param {Element} root
+ * @param {string} iconClass
+ * @returns {string}
  */
-export function parseVoiceLi(li) {
-  const link = li.querySelector('a[href]');
-  if (!link) return null;
-  const url = link.getAttribute('href')?.trim() ?? '';
-  if (!url || !/^https:\/\//i.test(url)) return null;
+function placeholderRowHtmlAfterIcon(root, iconClass) {
+  if (!root) return '';
+  const icon = root.querySelector(`.${iconClass}`)
+    || root.querySelector(`[class*="${iconClass}"]`);
+  if (!icon) return '';
+  const li = icon.closest('li');
+  if (!li) return '';
   const clone = li.cloneNode(true);
-  clone.querySelectorAll('a').forEach((a) => a.remove());
-  const parts = clone.innerHTML
-    .split(/<br\s*\/?>/i)
-    .map((p) => stripTags(p))
-    .filter(Boolean);
-  const name = parts[0] || 'Voice';
-  const description = parts[1] || '';
-  const defaultPrompt = parts[2] || '';
-  return { name, description, defaultPrompt, url };
+  const rm = clone.querySelector(`.${iconClass}`) || clone.querySelector(`[class*="${iconClass}"]`);
+  if (rm) rm.remove();
+  return (clone.innerHTML || '').replace(/^\s+/, '').trim();
 }
 
 /**
+ * First non-config https link in authoring (skips `.json` URLs), for optional footer.
+ *
  * @param {HTMLElement} root
+ * @returns {{ href: string, text: string } | null }
+ */
+function findFooterLinkInRoot(root) {
+  const anchors = Array.from(root.querySelectorAll('a[href^="https://"]'));
+  const a = anchors.find((el) => {
+    const href = el.getAttribute('href')?.trim() ?? '';
+    if (!href) return false;
+    try {
+      if (/\.json$/i.test(new URL(href, window.location.href).pathname)) return false;
+    } catch {
+      return false;
+    }
+    return true;
+  });
+  if (!a) return null;
+  const href = a.getAttribute('href')?.trim() ?? '';
+  return { href, text: a.textContent?.trim() || href };
+}
+
+/**
+ * Read section heading, current-page JSON URL, default prompt, explore/terms subcopy (see {@link PLACEHOLDER_EXPLORE} / {@link PLACEHOLDER_TERMS}), and optional legacy footer link.
+ * Voice tiles and `defaultPrompt` per row (when in JSON) come from `loadVoicesFromCurrentPageJson` in `initWidget`
+ * when `currentPageSourceUrl` is set; when a row has no `defaultPrompt`, the DOM `defaultPromptFromAuthoring` is used.
+ *
+ * @param {HTMLElement} root
+ * @returns {{
+ *   footerLink: { href: string, text: string } | null,
+ *   sectionHeading: string,
+ *   currentPageSourceUrl: string | null,
+ *   defaultPromptFromAuthoring: string,
+ *   exploreHtml: string,
+ *   termsHtml: string
+ * }}
  */
 export function parsePromptBarAudioAuthoring(root) {
-  let topDivs = [...root.children].filter((n) => n.nodeName === 'DIV');
-  if (topDivs.length === 1) {
-    const inner = topDivs[0];
-    topDivs = [...inner.children].filter((n) => n.nodeName === 'DIV');
-  }
-  if (topDivs.length < 2) {
-    return { voices: [], footerLink: null, sectionHeading: '' };
-  }
-  let voiceListRowIndex = -1;
-  let ul = /** @type {HTMLUListElement | null} */ (null);
-  for (let i = 1; i < topDivs.length; i += 1) {
-    const row = topDivs[i];
-    const found = row.querySelector(':scope > ul') || row.querySelector('ul');
-    if (found) {
-      ul = /** @type {HTMLUListElement} */ (found);
-      voiceListRowIndex = i;
-      break;
-    }
-  }
-  if (!ul || voiceListRowIndex < 0) {
-    return { voices: [], footerLink: null, sectionHeading: '' };
-  }
-  const sectionHeading = placeholderRowText(root, 'icon-placeholder-voice')
-    || 'Choose a voice';
-  const voices = [];
-  topLevelLisInUl(ul).forEach((li) => {
-    const v = parseVoiceLi(li);
-    if (v) voices.push(v);
-  });
-  let footerLink = null;
-  const after = topDivs.slice(voiceListRowIndex + 1);
-  for (let j = 0; j < after.length; j += 1) {
-    const a = after[j].querySelector('a[href^="https://"]');
-    if (a) {
-      const href = a.getAttribute('href')?.trim() ?? '';
-      const text = a.textContent?.trim() || '';
-      if (href) footerLink = { href, text: text || href };
-      break;
-    }
-  }
-  return { voices, footerLink, sectionHeading };
+  return {
+    footerLink: findFooterLinkInRoot(root),
+    sectionHeading: placeholderRowText(root, 'icon-placeholder-voice') || 'Choose a voice',
+    currentPageSourceUrl: resolveCurrentPageSourceFromAuthoring(root),
+    defaultPromptFromAuthoring: placeholderRowText(root, PLACEHOLDER_DEFAULT_PROMPT) || '',
+    exploreHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_EXPLORE) || '',
+    termsHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_TERMS) || '',
+  };
 }
 
 function buildVoiceTile(voice, index, row, widgetInstance) {
-  const { name, description, url } = voice;
+  const { name, description, url, voiceId } = voice;
   const tile = createTag('div', {
     class: `unity-paf-voice-tile${index === 0 ? ' selected' : ''}`,
     role: 'listitem',
@@ -537,6 +782,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     'data-voice-index': String(index),
     'data-voice-name': name,
   });
+  if (voiceId) tile.setAttribute('data-voice-id', voiceId);
   if (index === 0) tile.setAttribute('aria-current', 'true');
 
   const textCol = createTag('div', { class: 'unity-paf-voice-tile-text' });
@@ -663,7 +909,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
  * @param {HTMLElement[]} tiles
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
  * @param {HTMLTextAreaElement} inpField
- * @param {Array<{ defaultPrompt: string }>} voices
+ * @param {Array<{ defaultPrompt: string, voiceId?: string }>} voices
  */
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   const tilesArr = tiles;
@@ -674,6 +920,9 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     selectedIdx = idx;
     widgetInstance.widgetWrap.setAttribute('data-selected-voice-index', String(idx));
     widgetInstance.widgetWrap.setAttribute('data-selected-voice-name', voices[idx]?.name ?? '');
+    const voiceId = voices[idx]?.voiceId;
+    if (voiceId) widgetInstance.widgetWrap.setAttribute('data-selected-voice-id', voiceId);
+    else widgetInstance.widgetWrap.removeAttribute('data-selected-voice-id');
     tilesArr.forEach((t, i) => {
       t.classList.toggle('selected', i === idx);
       if (i === idx) t.setAttribute('aria-current', 'true');
@@ -777,10 +1026,9 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   if (widgetInstance.hasModelOptions) await widgetInstance.getModel();
   const verbParts = widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
-  const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
+  const promptLabelText = placeholderRowText(el, PLACEHOLDER_PROMPT_LABEL);
   const inpWrap = createTag('div', { class: 'inp-wrap' });
-  const labelText = promptLabelText || 'Edit, enter, or paste your own text';
-  const promptLabel = createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, labelText);
+  const promptLabel = createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, promptLabelText);
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
@@ -848,13 +1096,78 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
 }
 
 /**
- * @param {ReturnType<typeof parsePromptBarAudioAuthoring>['voices']} voices
+ * @param {HTMLElement} container
+ */
+function enhanceSubfootExternalLinks(container) {
+  if (!container) return;
+  container.querySelectorAll('a[href]').forEach((a) => {
+    const href = a.getAttribute('href')?.trim() || '';
+    if (!href) return;
+    if (/^javascript:/i.test(href)) return;
+    if (/^https?:\/\//i.test(href) || href.startsWith('//')) {
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
+}
+
+/**
+ * @param {HTMLElement} section
+ * @param {string} exploreHtml
+ * @param {string} termsHtml
+ * @param {{ href: string, text: string } | null} footerLink Legacy: used when no explore/terms markup
+ */
+function appendVoiceSubfootIfAny(section, exploreHtml, termsHtml, footerLink) {
+  const ex = (exploreHtml || '').trim();
+  const te = (termsHtml || '').trim();
+  if (ex || te) {
+    const wrap = createTag('div', { class: 'unity-paf-voice-subfoot' });
+    if (ex) {
+      const p = createTag('p', { class: 'unity-paf-voice-subfoot-line' });
+      p.innerHTML = ex;
+      enhanceSubfootExternalLinks(p);
+      wrap.append(p);
+    }
+    if (te) {
+      const p = createTag('p', { class: 'unity-paf-voice-subfoot-line' });
+      p.innerHTML = te;
+      enhanceSubfootExternalLinks(p);
+      wrap.append(p);
+    }
+    section.append(wrap);
+  } else if (footerLink) {
+    const foot = createTag('p', { class: 'unity-paf-voice-footer' });
+    const a = createTag('a', { href: footerLink.href, class: 'unity-paf-voice-footer-link' });
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = footerLink.text;
+    foot.append(a);
+    section.append(foot);
+  }
+}
+
+/**
+ * @param {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>} voices
  * @param {string} sectionHeading
  * @param {{ href: string, text: string } | null} footerLink
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
+ * @param {{ serverVoiceRowCount?: number, exploreHtml?: string, termsHtml?: string }=} opts When the sheet has rows but none match the current model, still show the section with an empty row.
  */
-function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance) {
-  if (!voices.length) return { section: null, tiles: [] };
+function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, opts = {}) {
+  const { serverVoiceRowCount = 0, exploreHtml = '', termsHtml = '' } = opts;
+  if (serverVoiceRowCount === 0) return { section: null, tiles: [] };
+  if (!voices.length) {
+    const sectionEmpty = createTag('div', { class: 'unity-paf-voice-section' });
+    const headingEmpty = createTag(
+      'p',
+      { class: 'unity-slf-copy-label unity-paf-voice-heading' },
+      sectionHeading,
+    );
+    const rowEmpty = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
+    sectionEmpty.append(headingEmpty, rowEmpty);
+    appendVoiceSubfootIfAny(sectionEmpty, exploreHtml, termsHtml, footerLink);
+    return { section: sectionEmpty, tiles: [] };
+  }
   const section = createTag('div', { class: 'unity-paf-voice-section' });
   const heading = createTag(
     'p',
@@ -864,15 +1177,7 @@ function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance) {
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
   const tiles = voices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
   section.append(heading, row);
-  if (footerLink) {
-    const foot = createTag('p', { class: 'unity-paf-voice-footer' });
-    const a = createTag('a', { href: footerLink.href, class: 'unity-paf-voice-footer-link' });
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.textContent = footerLink.text;
-    foot.append(a);
-    section.append(foot);
-  }
+  appendVoiceSubfootIfAny(section, exploreHtml, termsHtml, footerLink);
   return { section, tiles };
 }
 
@@ -912,10 +1217,23 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection) 
 
 /**
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
- * @param {ReturnType<typeof parsePromptBarAudioAuthoring>} parsed
+ * @param {ReturnType<typeof parsePromptBarAudioAuthoring> & {
+ *   voices: Array<{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string }>
+ * }} parsed
  */
 async function mountPromptBarAudioUI(widgetInstance, parsed) {
-  const { voices, footerLink, sectionHeading } = parsed;
+  const {
+    voices,
+    footerLink,
+    sectionHeading,
+    defaultPromptFromAuthoring: domAuthoring = '',
+    exploreHtml = '',
+    termsHtml = '',
+  } = parsed;
+  const allVoices = Array.isArray(voices) ? voices : [];
+  const domDef = (domAuthoring || '').trim();
+  widgetInstance.defaultPromptFromAuthoring = domDef;
+  widgetInstance.voiceConfigAll = allVoices;
   const [analyticsMod] = await Promise.all([
     import('../../../scripts/analytics.js'),
     widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
@@ -923,22 +1241,81 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const { el } = widgetInstance;
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
-  const defaultPrompt = voices[0]?.defaultPrompt ?? '';
   const { widgetWrap, inpField } = await createPromptAudioInputShell(
     widgetInstance,
     el,
-    defaultPrompt,
+    '',
     analyticsMod,
   );
+  const selectedModelId = (widgetInstance.selectedModelId
+    || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
+    || '').trim();
+  const visibleVoices = filterVoicesByModelId(allVoices, selectedModelId);
+  if (inpField) {
+    inpField.value = visibleVoices[0]?.defaultPrompt
+      ?? allVoices[0]?.defaultPrompt
+      ?? domDef
+      ?? '';
+  }
   const { section: voiceSection, tiles } = createVoiceStrip(
-    voices,
+    visibleVoices,
     sectionHeading,
     footerLink,
     widgetInstance,
+    {
+      serverVoiceRowCount: allVoices.length,
+      exploreHtml: exploreHtml || '',
+      termsHtml: termsHtml || '',
+    },
   );
-  const disconnectVoices = voices.length
-    ? attachVoiceInteractivity(tiles, widgetInstance, inpField, voices)
+  const disconnectFirst = visibleVoices.length
+    ? attachVoiceInteractivity(tiles, widgetInstance, inpField, visibleVoices)
     : () => {};
+  widgetInstance.voicePromptInpField = inpField;
+  widgetInstance.teardownVoiceTiles = disconnectFirst;
+  /**
+   * @param {string} [previousModelId] Model id before a dropdown change (for prompt default heuristics)
+   */
+  widgetInstance.refreshVoiceTilesForModel = function refreshVoiceTilesForModel(previousModelId) {
+    const all = this.voiceConfigAll;
+    if (!all || !all.length) return;
+    const root = this.promptBarAudioRoot;
+    const row = root?.querySelector?.('.unity-paf-voice-row') ?? null;
+    if (!row) return;
+    if (this.teardownVoiceTiles) {
+      try { this.teardownVoiceTiles(); } catch (err) { /* noop */ }
+      this.teardownVoiceTiles = null;
+    }
+    const mid = (this.selectedModelId || this.widgetWrap?.getAttribute('data-selected-model-id') || '').trim();
+    const oldVisible = filterVoicesByModelId(all, (previousModelId || '').trim());
+    const oldFirstDef = oldVisible[0]?.defaultPrompt ?? this.defaultPromptFromAuthoring ?? '';
+    row.replaceChildren();
+    const visible = filterVoicesByModelId(all, mid);
+    if (this.voicePromptInpField) {
+      const cur = (this.voicePromptInpField.value || '').trim();
+      if (visible.length > 0 && (cur === '' || cur === oldFirstDef)) {
+        this.voicePromptInpField.value = visible[0].defaultPrompt
+          ?? (this.defaultPromptFromAuthoring || '')
+          ?? '';
+      } else if (!visible.length) {
+        this.voicePromptInpField.value = '';
+      }
+    }
+    if (visible.length === 0) {
+      this.widgetWrap?.setAttribute('data-selected-voice-index', '0');
+      this.widgetWrap?.removeAttribute('data-selected-voice-name');
+      this.widgetWrap?.removeAttribute('data-selected-voice-id');
+      return;
+    }
+    const newTiles = visible.map((v, i) => buildVoiceTile(v, i, row, this));
+    this.teardownVoiceTiles = attachVoiceInteractivity(
+      newTiles,
+      this,
+      this.voicePromptInpField,
+      visible,
+    );
+  };
+
   insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection);
   const root = widgetInstance.promptBarAudioRoot;
   let removalObserver = null;
@@ -948,7 +1325,11 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     interactivityTornDown = true;
     removalObserver?.disconnect();
     removalObserver = null;
-    disconnectVoices();
+    if (widgetInstance.teardownVoiceTiles) {
+      try { widgetInstance.teardownVoiceTiles(); } catch (e) { /* noop */ }
+      widgetInstance.teardownVoiceTiles = null;
+    }
+    delete widgetInstance.refreshVoiceTilesForModel;
     if (widgetInstance.disconnectPromptBarAudio === teardown) {
       widgetInstance.disconnectPromptBarAudio = null;
     }
@@ -971,10 +1352,41 @@ export default class PromptBarAudioWidget extends UnityWidget {
   }
 
   async initWidget() {
-    const parsed = parsePromptBarAudioAuthoring(this.el);
+    const meta = parsePromptBarAudioAuthoring(this.el);
+    const {
+      footerLink,
+      sectionHeading,
+      currentPageSourceUrl,
+      defaultPromptFromAuthoring,
+      exploreHtml,
+      termsHtml,
+    } = meta;
+    const domDef = (defaultPromptFromAuthoring || '').trim();
+    this.defaultPromptFromAuthoring = domDef;
+    this.hasVoiceOptions = !!currentPageSourceUrl;
+    let voices = null;
+    if (currentPageSourceUrl) {
+      try {
+        voices = await loadVoicesFromCurrentPageJson(currentPageSourceUrl);
+      } catch (e) {
+        window.lana?.log(`Message: current page config json load failed, Error: ${e}`, this.lanaOptions);
+        voices = [];
+      }
+    }
+    const raw = Array.isArray(voices) ? voices : [];
+    const merged = mergeVoicesWithAuthoringDefault(raw, domDef);
+    this.voices = merged;
+    this.voiceConfigAll = merged;
     const { el } = this;
     this.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
-    await mountPromptBarAudioUI(this, parsed);
+    await mountPromptBarAudioUI(this, {
+      voices: merged,
+      footerLink,
+      sectionHeading,
+      defaultPromptFromAuthoring: domDef,
+      exploreHtml: exploreHtml || '',
+      termsHtml: termsHtml || '',
+    });
     return this.workflowCfg.targetCfg.actionMap;
   }
 }
