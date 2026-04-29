@@ -910,6 +910,7 @@ line-height: normal;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
+    max-width: 130px;
     flex: 1;
     justify-content: center;
   }
