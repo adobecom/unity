@@ -353,7 +353,7 @@ export default class ActionBinder {
   }
 
   validateInput(query) {
-    const maxCharLimit = this.limits?.['max-char-limit'] ?? 750;
+    const maxCharLimit = this.limits?.['max-char-limit'] ?? 1024;
     if (query.length > maxCharLimit) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
       this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
