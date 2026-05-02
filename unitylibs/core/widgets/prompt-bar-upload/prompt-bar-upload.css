@@ -590,12 +590,19 @@ font-weight: 400;
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container .verb-list,
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container .verb-list {
-top: auto;
-bottom: 100%;
+top: 100%;
+bottom: auto;
+left: 0;
 transform: none;
 animation: none;
-margin-bottom: 4px;
-z-index: 10;
+margin-top: 4px;
+margin-bottom: 0;
+}
+
+[dir="rtl"] .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container .verb-list,
+[dir="rtl"] .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container .verb-list {
+left: auto;
+right: 0;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container,
@@ -604,9 +611,9 @@ position: relative;
 z-index: 1;
 }
 
-.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container.show-menu,
-.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container.show-menu {
-z-index: 300;
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container.show-menu .verb-list,
+.unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .verbs-container.show-menu .verb-list {
+animation: none;
 }
 
 .pbu-drop-zone-wrap {

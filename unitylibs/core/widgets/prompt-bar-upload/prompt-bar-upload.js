@@ -31,7 +31,6 @@ function svgIcon(href) {
   return `<svg><use xlink:href="${href}"></use></svg>`;
 }
 
-/** Landscape / square ratios use horizontal frame; portrait uses vertical frame. */
 function getAspectRatioIconHref(ratio) {
   const parts = String(ratio).split(':').map((s) => parseFloat(String(s).trim(), 10));
   if (parts.length !== 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1]) || parts[1] === 0) {
