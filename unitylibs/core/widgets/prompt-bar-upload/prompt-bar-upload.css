@@ -5,23 +5,30 @@
 
 .unity-prompt-bar-upload.unity-enabled {
 width: 100%;
-max-width: 1000px;
+max-width: 100%;
 margin-top: 24px;
+box-sizing: border-box;
 }
 
 .unity-prompt-bar-upload.unity-enabled .interactive-area {
-width: 727px;
+width: 100%;
+max-width: 100%;
 background: #222 !important;
 border: none !important;
 box-shadow: none !important;
 border-radius: 20px !important;
 padding: 8px !important;
 box-sizing: border-box !important;
-max-width: 727px;
 }
 
 @media screen and (min-width: 1200px) {
+.unity-prompt-bar-upload.unity-enabled {
+  max-width: 1000px;
+}
+
 .unity-prompt-bar-upload.unity-enabled .interactive-area {
+  width: 727px;
+  max-width: 727px;
   padding: 14px !important;
 }
 }
@@ -29,7 +36,7 @@ max-width: 727px;
 .ex-unity-wrap.pbu-widget .pbu-legal-foot {
 font-size: 14px;
 width: fit-content;
-max-width: 727px;
+max-width: 100%;
 box-sizing: border-box;
 font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
 font-size: 13px;
