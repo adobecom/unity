@@ -3,17 +3,10 @@
 
 import { createTag, getConfig } from '../../../scripts/utils.js';
 
-/** Authoring: `icon-operation-<name>`; `<name>` is the current page key → `unity/configs/prompt/<name>.json`. */
 const CURRENT_PAGE_ICON_PREFIX = 'icon-operation-';
 
 let promptWithStyleEvents = null;
 
-/**
- * Same `baseUrl` + `/unity/configs/prompt/...` pattern as `loadPrompts` / `loadModels` in
- * `prompt-bar.js` (e.g. firefly-prompt.json, model-picker.json).
- *
- * @returns {string}
- */
 function getUnityPromptConfigsBaseUrl() {
   const { origin } = window.location;
   if (origin.includes('.aem.') || origin.includes('.hlx.')) {
@@ -22,15 +15,6 @@ function getUnityPromptConfigsBaseUrl() {
   return origin;
 }
 
-/**
- * Safe file basename for `unity/configs/prompt/{base}.json` (current page key from authoring).
- * Whitespace becomes `-` (e.g. `My Page` → `my-page`); other unsafe chars are removed.
- * The result is lowercased: paths on the host are case-sensitive, while authoring may use
- * `Text2Speech` for a file published as `text2speech.json` (see main Unity prompt configs).
- *
- * @param {string} name
- * @returns {string | null}
- */
 function sanitizeCurrentPageFileBase(name) {
   if (!name || !name.trim()) return null;
   const normalized = name.trim().replace(/\s+/g, '-');
@@ -39,18 +23,11 @@ function sanitizeCurrentPageFileBase(name) {
   return base.toLowerCase();
 }
 
-/** Authoring: row with `placeholder-prompt-label` / `placeholder-prompt-default` (see `placeholderRowText`); `icon-placeholder-voice` for section heading. */
 const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
 const PLACEHOLDER_PROMPT_DEFAULT = 'placeholder-prompt-default';
-/** Subcopy below the voice tile row (order: explore, then terms). */
 const PLACEHOLDER_EXPLORE = 'placeholder-explore';
 const PLACEHOLDER_TERMS = 'placeholder-terms';
 
-/**
- * @param {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }>} voices
- * @param {string} selectedModelId From model dropdown (`data-model-id` / `selectedModelId`)
- * @returns {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }>}
- */
 function filterVoicesByModelId(voices, selectedModelId) {
   const id = (selectedModelId || '').trim();
   if (!id) return voices;
@@ -61,26 +38,6 @@ function filterVoicesByModelId(voices, selectedModelId) {
   });
 }
 
-/**
- * Trimmed `defaultPrompt` on a voice when non-empty; otherwise authoring placeholder text.
- * (Voice rows often use `""` for missing prompts — `??` alone would not fall through to authoring.)
- * @param {{ defaultPrompt?: unknown } | null | undefined} voice
- * @param {string} authoringFallback
- */
-function effectiveDefaultPromptForVoice(voice, authoringFallback) {
-  const fb = (authoringFallback ?? '').trim();
-  if (!voice) return fb;
-  const t = (voice.defaultPrompt != null ? String(voice.defaultPrompt) : '').trim();
-  return t || fb;
-}
-
-/**
- * Map one JSON / sheet row to a voice tile entry.
- * Expected columns: `Name`, `url`, `VoiceId`, `Model`, `Description` (exact keys).
- *
- * @param {Record<string, unknown>} item
- * @returns {{ name: string, description: string, url: string, voiceId: string, modelId: string } | null}
- */
 function currentPageConfigItemToVoice(item) {
   if (!item || typeof item !== 'object') return null;
   return {
@@ -92,12 +49,6 @@ function currentPageConfigItemToVoice(item) {
   };
 }
 
-/**
- * Same as `loadPrompts` / `loadModels`: `fetch` + `res.json()`, then `content.data` (array) or `content.data.voices`.
- *
- * @param {string} sourceUrl Absolute URL to the current page config JSON
- * @returns {Promise<Array<{ name: string, description: string, url: string, voiceId?: string, modelId?: string }>>}
- */
 async function loadVoicesFromCurrentPageJson(sourceUrl) {
   const finalUrl = sourceUrl?.trim();
   if (!finalUrl) return [];
@@ -119,13 +70,6 @@ async function loadVoicesFromCurrentPageJson(sourceUrl) {
     .filter((v) => v != null);
 }
 
-/**
- * Voice config URL from authoring `icon-operation-<name>` → `unity/configs/prompt/<sanitized>.json`
- * (locale prefix like `loadPrompts` in `prompt-bar.js`).
- *
- * @param {HTMLElement} root
- * @returns {string | null}
- */
 function resolveCurrentPageSourceUrl(root) {
   const icon = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
   if (!icon) return null;
@@ -163,71 +107,20 @@ class UnityWidget {
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
     this.voices = null;
-    /** @type {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }> | null} */
+    /** @type {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string }> | null} */
     this.voiceConfigAll = null;
-    /** Filled in init; `placeholderRowText` for {@link PLACEHOLDER_PROMPT_DEFAULT} */
-    this.defaultPrompt = '';
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
   }
 
+  /** Audio prompt bar authoring exposes a single verb; no media-type dropdown or DOM control. */
   verbDropdown() {
-    const verbs = this.el.querySelectorAll('[class*="icon-verb"]');
-    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
-    const selectedVerbType = verbs[0]?.className.split('-')[2];
-    const selectedVerb = verbs[0]?.nextElementSibling;
-    const selectedElement = createTag('button', {
-      class: 'selected-verb',
-      'aria-expanded': 'false',
-      'aria-controls': 'media-menu',
-      'aria-label': 'media type',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
-      'aria-labelledby': 'listbox-label',
-      'data-selected-verb': selectedVerbType,
-    }, `${selectedVerb?.textContent.trim()}`);
-    this.selectedVerbType = selectedVerbType;
+    const verb = this.el.querySelector('[class*="icon-verb"]');
+    const selectedVerb = verb?.nextElementSibling;
+    this.selectedVerbType = verb?.className.split('-')[2];
+    this.selectedVerbText = selectedVerb?.textContent.trim() ?? '';
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-    this.selectedVerbText = selectedVerb?.textContent.trim();
-    if (verbs.length <= 1) {
-      selectedElement.setAttribute('disabled', 'true');
-      return [selectedElement];
-    }
-    this.widgetWrap.classList.add('verb-options');
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
-    verbList.setAttribute('style', 'display: none;');
-    selectedElement.append(menuIcon);
-    const handleDocumentClick = (e) => {
-      const menuContainer = selectedElement.parentElement;
-      if (!menuContainer.contains(e.target)) {
-        document.removeEventListener('click', handleDocumentClick);
-        this.closeVerbOrModelMenu(selectedElement);
-      }
-    };
-    selectedElement.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
-      document.addEventListener('click', handleDocumentClick);
-    }, true);
-    selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
-      }
-      if (e.key === 'Escape') {
-        this.closeVerbOrModelMenu(selectedElement);
-        selectedElement.focus();
-      }
-    });
-    verbs[0]?.classList.add('selected');
-    const verbsData = Array.from(verbs).map((verb) => ({
-      name: verb.nextElementSibling?.textContent.trim(),
-      type: verb.classList[1].split('-')[2],
-      icon: verb.nextElementSibling?.href,
-    }));
-    this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    return [selectedElement, verbList];
   }
 
   closeVerbOrModelMenu(selectedElement) {
@@ -243,12 +136,6 @@ class UnityWidget {
 
   showVerbMenu(selectedElement) {
     const menuContainer = selectedElement.parentElement;
-    document.querySelectorAll('.verbs-container').forEach((container) => {
-      if (container !== menuContainer) {
-        const sv = container.querySelector('.selected-verb');
-        if (sv) this.closeVerbOrModelMenu(sv);
-      }
-    });
     document.querySelectorAll('.models-container').forEach((container) => {
       if (container !== menuContainer) {
         const sm = container.querySelector('.selected-model');
@@ -298,11 +185,6 @@ class UnityWidget {
     if (modelDropdown && modelDropdown.classList.contains('show-menu') && modelButton && modelButton !== exceptElement) {
       this.closeVerbOrModelMenu(modelButton);
     }
-    const verbDropdown = this.widget.querySelector('.verbs-container');
-    const verbButton = verbDropdown?.querySelector('.selected-verb');
-    if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton && verbButton !== exceptElement) {
-      this.closeVerbOrModelMenu(verbButton);
-    }
   }
 
   updateAnalytics(verb) {
@@ -323,13 +205,12 @@ class UnityWidget {
     this.widgetWrap?.removeAttribute('data-selected-model-name');
   }
 
-  handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, modelList) {
+  handleModelLinkClick(link, listContainer, selectedElement, menuIcon) {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
-      let previousModelId = '';
       const verbLinkTexts = [];
-      verbList.querySelectorAll('.verb-link').forEach((listLink) => {
+      listContainer.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
         listLink.setAttribute('aria-selected', 'false');
         const text = listLink.textContent.trim();
@@ -339,24 +220,16 @@ class UnityWidget {
       this.closeVerbOrModelMenu(selectedElement);
       link.parentElement.classList.add('selected');
       link.setAttribute('aria-selected', 'true');
-      if (modelList) {
-        previousModelId = this.selectedModelId || '';
-        this.selectedModelId = link.getAttribute('data-model-id');
-        this.selectedModelName = link.textContent.trim();
-        this.selectedModelVersion = link.getAttribute('data-model-version');
-        this.selectedModelModule = link.getAttribute('data-model-module');
-        this.selectedModelText = link.textContent.trim();
-        const copiedNodes = link.cloneNode(true).childNodes;
-        copiedNodes[0].remove();
-        selectedElement.replaceChildren(...copiedNodes, menuIcon);
-        selectedElement.dataset.selectedModelId = this.selectedModelId;
-        selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
-      } else {
-        this.selectedVerbType = link.getAttribute('data-verb-type');
-        this.selectedVerbText = link.textContent.trim();
-        selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
-        selectedElement.dataset.selectedVerb = this.selectedVerbType;
-      }
+      this.selectedModelId = link.getAttribute('data-model-id');
+      this.selectedModelName = link.textContent.trim();
+      this.selectedModelVersion = link.getAttribute('data-model-version');
+      this.selectedModelModule = link.getAttribute('data-model-module');
+      this.selectedModelText = link.textContent.trim();
+      const copiedNodes = link.cloneNode(true).childNodes;
+      copiedNodes[0].remove();
+      selectedElement.replaceChildren(...copiedNodes, menuIcon);
+      selectedElement.dataset.selectedModelId = this.selectedModelId;
+      selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
       selectedElement.focus();
       const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
       if (verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) {
@@ -394,8 +267,8 @@ class UnityWidget {
       if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
       else this.widgetWrap.removeAttribute('data-selected-model-version');
       this.updateAnalytics(this.selectedVerbType);
-      if (modelList && typeof this.refreshVoiceTilesForModel === 'function') {
-        this.refreshVoiceTilesForModel(previousModelId);
+      if (typeof this.refreshVoiceTilesForModel === 'function') {
+        this.refreshVoiceTilesForModel();
       }
       if (this.genBtn) {
         const img = this.genBtn.querySelector('img[src*=".svg"]');
@@ -411,28 +284,25 @@ class UnityWidget {
     };
   }
 
-  createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
+  createDropdownItems(items, listContainer, selectedElement, menuIcon) {
     const fragment = document.createDocumentFragment();
     items.forEach((item, idx) => {
-      const {
-        name, type, icon, module, id, version,
-      } = item;
+      const { name, icon, module, id, version } = item;
       const listItem = createTag('li', {
         class: 'verb-item',
         role: 'presentation',
       });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
-      const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
+      const nameContainer = createTag('span', { class: 'model-name' }, name.trim());
       const link = createTag('a', {
         href: '#',
-        class: isModelList ? 'verb-link model-link' : 'verb-link',
-        ...(!isModelList && { 'data-verb-type': type }),
-        ...(isModelList && { 'data-model-module': module }),
-        ...(isModelList && { 'data-model-id': id }),
-        ...(isModelList && { 'data-model-version': version }),
+        class: 'verb-link model-link',
+        'data-model-module': module,
+        'data-model-id': id,
+        'data-model-version': version,
         'aria-selected': 'false',
         role: 'option',
-      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`);
+      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer.outerHTML}`);
       if (idx === 0) {
         listItem.classList.add('selected');
         link.setAttribute('aria-selected', 'true');
@@ -445,7 +315,7 @@ class UnityWidget {
     listContainer.addEventListener('click', (e) => {
       const link = e.target.closest('.verb-link');
       if (!link) return;
-      this.handleVerbLinkClick(link, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList)(e);
+      this.handleModelLinkClick(link, listContainer, selectedElement, menuIcon)(e);
     });
     listContainer.addEventListener('keydown', (e) => {
       if (e.key !== 'Tab') return;
@@ -470,7 +340,6 @@ class UnityWidget {
       ? this.models.filter((obj) => obj.module === this.selectedVerbType)
       : [];
     if (models.length === 0) return [];
-    const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedModelType = models[0].id;
     const selectedModelVersion = models[0].version;
     const selectedModelModule = models[0].module;
@@ -522,7 +391,7 @@ class UnityWidget {
         selectedElement.focus();
       }
     });
-    this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
+    this.createDropdownItems(models, listItems, selectedElement, menuIcon);
     return [selectedElement, listItems];
   }
 
@@ -562,18 +431,12 @@ class UnityWidget {
 
 const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
-
 const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
 const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
 
-/** @type {WeakMap<object, { audio: HTMLAudioElement, ringFg: SVGCircleElement, playing: boolean }>} */
+/** Per voice tile: audio element, progress ring, and playing flag (tile el → state). */
 const voiceTileState = new WeakMap();
 
-/**
- * @param {HTMLElement} root
- * @param {string} iconClass
- * @returns {HTMLElement | null}
- */
 function findPlaceholderIconLi(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`)
     || root.querySelector(`[class*="${iconClass}"]`);
@@ -586,12 +449,6 @@ function placeholderRowText(root, iconClass) {
   return (li.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Markup in the placeholder row after the icon (keeps &lt;a&gt; from authoring). Treated as author HTML.
- * @param {Element} root
- * @param {string} iconClass
- * @returns {string}
- */
 function placeholderRowHtmlAfterIcon(root, iconClass) {
   const li = findPlaceholderIconLi(root, iconClass);
   if (!li) return '';
@@ -601,12 +458,6 @@ function placeholderRowHtmlAfterIcon(root, iconClass) {
   return (clone.innerHTML || '').replace(/^\s+/, '').trim();
 }
 
-/**
- * First non-config https link in authoring (skips `.json` URLs), for optional footer.
- *
- * @param {HTMLElement} root
- * @returns {{ href: string, text: string } | null }
- */
 function findFooterLinkInRoot(root) {
   const anchors = Array.from(root.querySelectorAll('a[href^="https://"]'));
   const a = anchors.find((el) => {
@@ -624,33 +475,12 @@ function findFooterLinkInRoot(root) {
   return { href, text: a.textContent?.trim() || href };
 }
 
-/**
- * @param {HTMLElement | undefined} widgetWrap
- */
 function dispatchAudioPlaybackFailed(widgetWrap) {
   try {
     widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
 }
 
-/**
- * Read section heading, current-page JSON URL, default prompt, explore (`{@link PLACEHOLDER_EXPLORE}`) and terms (`{@link PLACEHOLDER_TERMS}`) markup, and optional legacy footer link.
- * Explore renders inside the voice card; terms render below `.interactive-area` (still inside `.unity-prompt-bar-audio`).
- * Voice tiles come from `loadVoicesFromCurrentPageJson` in `initWidget` when `currentPageSourceUrl` is set.
- * Default prompt text is not read from that JSON; `defaultPromptFromAuthoring` from the placeholder row is used for the field and tile switching.
- *
- * @param {HTMLElement} root
- * @returns {{
- *   footerLink: { href: string, text: string } | null,
- *   sectionHeading: string,
- *   currentPageSourceUrl: string | null,
- *   defaultPrompt: string,
- *   exploreHtml: string,
- *   termsHtml: string
- * }}
- */
 export function parsePromptBarAudioAuthoring(root) {
   return {
     footerLink: findFooterLinkInRoot(root),
@@ -786,19 +616,11 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   return tile;
 }
 
-/**
- * @param {HTMLElement[]} tiles
- * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
- * @param {HTMLTextAreaElement} inpField
- * @param {Array<{ defaultPrompt?: string, voiceId?: string }>} voices
- */
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   const wrap = widgetInstance.widgetWrap;
   /** @type {number} First tile selected on mount; use -1 only when clearing selection */
   let selectedIdx = 0;
   const authoring = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
-  const defaultFor = (i) => effectiveDefaultPromptForVoice(voices[i], authoring);
-  const baselinePromptWhenNoneSelected = () => defaultFor(0);
 
   function setSelectedVisual(idx) {
     selectedIdx = idx;
@@ -836,12 +658,10 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     tile.setAttribute('aria-pressed', 'false');
   }
 
-  function syncPromptIfStuckToDefaults(prevIdx, newIdx) {
-    const prevDef = prevIdx >= 0 ? defaultFor(prevIdx) : baselinePromptWhenNoneSelected();
-    const nextDef = defaultFor(newIdx);
+  function syncPromptIfStuckToDefaults() {
     const { value } = inpField;
-    if (value === prevDef || value.trim() === '') {
-      inpField.value = nextDef;
+    if (value === authoring || value.trim() === '') {
+      inpField.value = authoring;
     }
   }
 
@@ -860,7 +680,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
 
   function onTileActivate(idx) {
     if (idx !== selectedIdx) {
-      syncPromptIfStuckToDefaults(selectedIdx, idx);
+      syncPromptIfStuckToDefaults();
       setSelectedVisual(idx);
       tiles.forEach((t, i) => { if (i !== idx) resetTileIdle(t); });
       voiceTileState.get(tiles[idx]).audio.play().catch(() => dispatchAudioPlaybackFailed(wrap));
@@ -887,14 +707,6 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   return () => { tiles.forEach(resetTileIdle); };
 }
 
-/**
- * When `hasModelOptions`, caller must await `getModel()` before this (see `mountPromptBarAudioUI`).
- *
- * @param {InstanceType<typeof import('../prompt-bar-style/prompt-bar-style.js').UnityWidget>} widgetInstance
- * @param {HTMLElement} el
- * @param {string} defaultPrompt
- * @param {{ PROMPT_WITH_STYLE_EVENTS?: { GENERATE_CTA?: string, ENTER_PROMPT?: string } }} analyticsMod
- */
 async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analyticsMod) {
   const pws = analyticsMod?.PROMPT_WITH_STYLE_EVENTS;
   const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options' });
@@ -909,7 +721,7 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
-  const verbParts = widgetInstance.verbDropdown();
+  widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
   const promptLabelText = placeholderRowText(el, PLACEHOLDER_PROMPT_LABEL);
   const inpWrap = createTag('div', { class: 'inp-wrap' });
@@ -934,11 +746,6 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   });
   inpField.addEventListener('blur', () => { promptEngagedTracked = false; });
   const actionContainer = createTag('div', { class: 'action-container' });
-  if (verbParts.length > 1) {
-    const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
-    verbBtn.append(...verbParts);
-    actionContainer.append(verbBtn);
-  }
   if (modelParts.length > 1) {
     const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
     modelBtn.append(...modelParts);
@@ -980,9 +787,6 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   return { widgetWrap, widget, inpField };
 }
 
-/**
- * @param {HTMLElement} container
- */
 function enhanceSubfootExternalLinks(container) {
   if (!container) return;
   container.querySelectorAll('a[href]').forEach((a) => {
@@ -996,12 +800,6 @@ function enhanceSubfootExternalLinks(container) {
   });
 }
 
-/**
- * Explore link (and legacy single footer link) stay inside the rounded prompt card, below the tile row.
- * @param {HTMLElement} section Voice section inside `.unity-slf-left`
- * @param {string} exploreHtml
- * @param {{ href: string, text: string } | null} footerLink Legacy: used when no explore markup
- */
 function appendVoiceExploreSubfoot(section, exploreHtml, footerLink) {
   const ex = (exploreHtml || '').trim();
   if (ex) {
@@ -1022,11 +820,6 @@ function appendVoiceExploreSubfoot(section, exploreHtml, footerLink) {
   }
 }
 
-/**
- * Terms copy from `placeholder-terms`: rendered outside `.interactive-area`, below it (sibling under `.unity-prompt-bar-audio`).
- * @param {string} termsHtml
- * @returns {HTMLElement | null}
- */
 function buildTermsBannerElement(termsHtml) {
   const te = (termsHtml || '').trim();
   if (!te) return null;
@@ -1041,17 +834,10 @@ function buildTermsBannerElement(termsHtml) {
   return outer;
 }
 
-/**
- * @param {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }>} voices
- * @param {string} sectionHeading
- * @param {{ href: string, text: string } | null} footerLink
- * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
- * @param {{ serverVoiceRowCount?: number, exploreHtml?: string }=} opts When the sheet has rows but none match the current model, still show the section with an empty row.
- */
-function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, opts = {}) {
-  const { serverVoiceRowCount = 0, exploreHtml = '' } = opts;
-  if (serverVoiceRowCount === 0) return { section: null, tiles: [] };
-  if (!voices.length) {
+function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, widgetInstance, opts = {}) {
+  const { exploreHtml = '' } = opts;
+  if (!allVoices.length) return { section: null, tiles: [] };
+  if (!visibleVoices.length) {
     const sectionEmpty = createTag('div', { class: 'unity-paf-voice-section' });
     const headingEmpty = createTag(
       'p',
@@ -1070,19 +856,12 @@ function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, op
     sectionHeading,
   );
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
-  const tiles = voices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
+  const tiles = visibleVoices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
   section.append(heading, row);
   appendVoiceExploreSubfoot(section, exploreHtml, footerLink);
   return { section, tiles };
 }
 
-/**
- * @param {HTMLElement} el
- * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
- * @param {HTMLElement} widgetWrap
- * @param {HTMLElement | null} voiceSection
- * @param {HTMLElement | null} termsBanner Below `.interactive-area`, sibling under `.unity-prompt-bar-audio` (`placeholder-terms`)
- */
 function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner) {
   const controls = createTag('div', { class: 'unity-slf-controls' });
   controls.append(widgetWrap);
@@ -1112,12 +891,6 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, 
   widgetInstance.promptBarAudioRoot = root;
 }
 
-/**
- * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
- * @param {ReturnType<typeof parsePromptBarAudioAuthoring> & {
- *   voices: Array<{ name: string, description: string, url: string, voiceId?: string, modelId?: string, defaultPrompt?: string }>
- * }} parsed Caller supplies `parsed.voices` as a normalized array (see `initWidget`). `defaultPromptFromAuthoring` on `widgetInstance` is set before mount.
- */
 async function mountPromptBarAudioUI(widgetInstance, parsed) {
   const {
     voices,
@@ -1143,17 +916,14 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
     || '').trim();
   const visibleVoices = filterVoicesByModelId(voices, selectedModelId);
-  inpField.value = effectiveDefaultPromptForVoice(visibleVoices[0], authoring)
-    || effectiveDefaultPromptForVoice(voices[0], authoring);
+  inpField.value = authoring;
   const { section: voiceSection, tiles } = createVoiceStrip(
+    voices,
     visibleVoices,
     sectionHeading,
     footerLink,
     widgetInstance,
-    {
-      serverVoiceRowCount: voices.length,
-      exploreHtml: exploreHtml || '',
-    },
+    { exploreHtml: exploreHtml || '' },
   );
   const termsBanner = buildTermsBannerElement(termsHtml || '');
   const disconnectFirst = visibleVoices.length
@@ -1161,10 +931,8 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     : () => {};
   widgetInstance.voicePromptInpField = inpField;
   widgetInstance.teardownVoiceTiles = disconnectFirst;
-  /**
-   * @param {string} [previousModelId] Model id before a dropdown change (for prompt default heuristics)
-   */
-  widgetInstance.refreshVoiceTilesForModel = function refreshVoiceTilesForModel(previousModelId) {
+  /** Rebuilds voice tiles for the current model; prompt text stays unless empty or still the authoring default. */
+  widgetInstance.refreshVoiceTilesForModel = function refreshVoiceTilesForModel() {
     const all = this.voiceConfigAll;
     if (!all || !all.length) return;
     const root = this.promptBarAudioRoot;
@@ -1175,15 +943,13 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
       this.teardownVoiceTiles = null;
     }
     const mid = (this.selectedModelId || this.widgetWrap?.getAttribute('data-selected-model-id') || '').trim();
-    const oldVisible = filterVoicesByModelId(all, (previousModelId || '').trim());
     const auth = (this.defaultPromptFromAuthoring ?? '').trim();
-    const oldFirstDef = effectiveDefaultPromptForVoice(oldVisible[0], auth);
     row.replaceChildren();
     const visible = filterVoicesByModelId(all, mid);
     if (this.voicePromptInpField) {
       const cur = (this.voicePromptInpField.value || '').trim();
-      if (visible.length > 0 && (cur === '' || cur === oldFirstDef)) {
-        this.voicePromptInpField.value = effectiveDefaultPromptForVoice(visible[0], auth);
+      if (visible.length > 0 && (cur === '' || cur === auth)) {
+        this.voicePromptInpField.value = auth;
       } else if (!visible.length) {
         this.voicePromptInpField.value = '';
       }
