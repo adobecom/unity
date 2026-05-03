@@ -39,43 +39,17 @@ function sanitizeCurrentPageFileBase(name) {
   return base.toLowerCase();
 }
 
-/**
- * Default `/{name}.json` under prompt configs; same locale rules as `loadPrompts` in `prompt-bar.js`.
- *
- * @param {string} pageName From `icon-operation-<pageName>` (current page / config key)
- * @returns {string | null}
- */
-function getDefaultCurrentPageJsonUrl(pageName) {
-  const fileBase = sanitizeCurrentPageFileBase(pageName);
-  if (!fileBase) return null;
-  const baseUrl = getUnityPromptConfigsBaseUrl();
-  const { locale } = getConfig();
-  return locale.prefix && locale.prefix !== '/'
-    ? `${baseUrl}${locale.prefix}/unity/configs/prompt/${fileBase}.json`
-    : `${baseUrl}/unity/configs/prompt/${fileBase}.json`;
-}
-
-/**
- * @param {Record<string, unknown>} item
- * @param {string} k
- * @returns {string}
- */
-function currentPageConfigField(item, k) {
-  const v = item[k];
-  return v == null ? '' : String(v).trim();
-}
-
 /** Authoring: row with `placeholder-prompt-label` / `placeholder-prompt-default` (see `placeholderRowText`); `icon-placeholder-voice` for section heading. */
 const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
-const PLACEHOLDER_DEFAULT_PROMPT = 'placeholder-prompt-default';
+const PLACEHOLDER_PROMPT_DEFAULT = 'placeholder-prompt-default';
 /** Subcopy below the voice tile row (order: explore, then terms). */
 const PLACEHOLDER_EXPLORE = 'placeholder-explore';
 const PLACEHOLDER_TERMS = 'placeholder-terms';
 
 /**
- * @param {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>} voices
+ * @param {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }>} voices
  * @param {string} selectedModelId From model dropdown (`data-model-id` / `selectedModelId`)
- * @returns {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>}
+ * @returns {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }>}
  */
 function filterVoicesByModelId(voices, selectedModelId) {
   const id = (selectedModelId || '').trim();
@@ -88,52 +62,33 @@ function filterVoicesByModelId(voices, selectedModelId) {
 }
 
 /**
- * Fills in `defaultPrompt` from authoring when JSON omits a non-empty `defaultPrompt` per row.
- * JSON / sheet `defaultPrompt` wins when present and non-empty after trim.
- * @param {Array<Record<string, unknown>>} voices
- * @param {string} domDefault
- * @returns {Array<Record<string, unknown>>}
+ * Trimmed `defaultPrompt` on a voice when non-empty; otherwise authoring placeholder text.
+ * (Voice rows often use `""` for missing prompts — `??` alone would not fall through to authoring.)
+ * @param {{ defaultPrompt?: unknown } | null | undefined} voice
+ * @param {string} authoringFallback
  */
-function mergeVoicesWithAuthoringDefault(voices, domDefault) {
-  const d = (domDefault || '').trim();
-  if (!d || !Array.isArray(voices) || !voices.length) return voices;
-  return voices.map((v) => {
-    const fromJson = v?.defaultPrompt != null && String(v.defaultPrompt).trim() !== ''
-      ? String(v.defaultPrompt).trim()
-      : '';
-    if (fromJson) return { ...v, defaultPrompt: fromJson };
-    return { ...v, defaultPrompt: d };
-  });
+function effectiveDefaultPromptForVoice(voice, authoringFallback) {
+  const fb = (authoringFallback ?? '').trim();
+  if (!voice) return fb;
+  const t = (voice.defaultPrompt != null ? String(voice.defaultPrompt) : '').trim();
+  return t || fb;
 }
 
 /**
  * Map one JSON / sheet row to a voice tile entry.
- * Expected columns: `Model`, `Name`, `Description`, `VoiceId`, `url` (optional `defaultPrompt`).
- * Legacy keys (`displayName`, `name`, etc.) are still accepted for older configs.
+ * Expected columns: `Name`, `url`, `VoiceId`, `Model`, `Description` (exact keys).
  *
  * @param {Record<string, unknown>} item
- * @returns {{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string } | null}
+ * @returns {{ name: string, description: string, url: string, voiceId: string, modelId: string } | null}
  */
 function currentPageConfigItemToVoice(item) {
   if (!item || typeof item !== 'object') return null;
-  const name = currentPageConfigField(item, 'Name')
-    || currentPageConfigField(item, 'name')
-    || currentPageConfigField(item, 'displayName')
-    || currentPageConfigField(item, 'Display Name');
-  const url = currentPageConfigField(item, 'url') || currentPageConfigField(item, 'URL');
-  if (!name || !url) return null;
-  if (!/^https:\/\//i.test(url)) return null;
-  const voiceIdRaw = currentPageConfigField(item, 'VoiceId') || currentPageConfigField(item, 'voiceId');
-  const modelIdRaw = currentPageConfigField(item, 'Model') || currentPageConfigField(item, 'model');
-  const description = currentPageConfigField(item, 'Description') || currentPageConfigField(item, 'description');
-  const defaultPrompt = currentPageConfigField(item, 'defaultPrompt') || currentPageConfigField(item, 'DefaultPrompt');
   return {
-    name,
-    description,
-    defaultPrompt,
-    url,
-    ...(voiceIdRaw ? { voiceId: voiceIdRaw } : {}),
-    ...(modelIdRaw ? { modelId: modelIdRaw } : {}),
+    name: String(item.Name ?? '').trim(),
+    description: String(item.Description ?? '').trim(),
+    url: String(item.url ?? '').trim(),
+    voiceId: String(item.VoiceId ?? '').trim(),
+    modelId: String(item.Model ?? '').trim(),
   };
 }
 
@@ -141,7 +96,7 @@ function currentPageConfigItemToVoice(item) {
  * Same as `loadPrompts` / `loadModels`: `fetch` + `res.json()`, then `content.data` (array) or `content.data.voices`.
  *
  * @param {string} sourceUrl Absolute URL to the current page config JSON
- * @returns {Promise<Array<{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>>}
+ * @returns {Promise<Array<{ name: string, description: string, url: string, voiceId?: string, modelId?: string }>>}
  */
 async function loadVoicesFromCurrentPageJson(sourceUrl) {
   const finalUrl = sourceUrl?.trim();
@@ -165,38 +120,25 @@ async function loadVoicesFromCurrentPageJson(sourceUrl) {
 }
 
 /**
- * If authoring includes `icon-operation-<name>`, load voices from
- * `unity/configs/prompt/<name>.json` (with locale prefix like `loadPrompts`), or from the
- * list item’s `a[href]` when it points at a `.json` file.
+ * Voice config URL from authoring `icon-operation-<name>` → `unity/configs/prompt/<sanitized>.json`
+ * (locale prefix like `loadPrompts` in `prompt-bar.js`).
  *
  * @param {HTMLElement} root
  * @returns {string | null}
  */
-function resolveCurrentPageSourceFromAuthoring(root) {
+function resolveCurrentPageSourceUrl(root) {
   const icon = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
   if (!icon) return null;
-  const { className } = icon;
-  if (typeof className !== 'string' || !className) return null;
-  const token = className.split(/\s+/).find(
-    (c) => c.startsWith(CURRENT_PAGE_ICON_PREFIX) && c.length > CURRENT_PAGE_ICON_PREFIX.length,
-  );
-  if (!token) return null;
-  const pageName = token.slice(CURRENT_PAGE_ICON_PREFIX.length) || null;
-  if (!pageName) return null;
-  const li = icon.closest('li');
-  const a = li?.querySelector('a[href]');
-  const href = a?.getAttribute('href')?.trim();
-  if (href) {
-    try {
-      const u = new URL(href, window.location.href);
-      if (/\.json$/i.test(u.pathname || '')) {
-        return u.href;
-      }
-    } catch {
-      /* invalid href */
-    }
-  }
-  return getDefaultCurrentPageJsonUrl(pageName);
+  const classAttr = icon.getAttribute('class') || '';
+  const re = new RegExp(`(?:^|\\s)${CURRENT_PAGE_ICON_PREFIX}(\\S+)`);
+  const m = classAttr.match(re);
+  const fileBase = sanitizeCurrentPageFileBase(m?.[1]);
+  if (!fileBase) return null;
+  const baseUrl = getUnityPromptConfigsBaseUrl();
+  const { locale } = getConfig();
+  return locale.prefix && locale.prefix !== '/'
+    ? `${baseUrl}${locale.prefix}/unity/configs/prompt/${fileBase}.json`
+    : `${baseUrl}/unity/configs/prompt/${fileBase}.json`;
 }
 
 class UnityWidget {
@@ -221,10 +163,10 @@ class UnityWidget {
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
     this.voices = null;
-    /** @type {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }> | null} */
+    /** @type {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }> | null} */
     this.voiceConfigAll = null;
-    /** Filled in init; `placeholderRowText` for {@link PLACEHOLDER_DEFAULT_PROMPT} */
-    this.defaultPromptFromAuthoring = '';
+    /** Filled in init; `placeholderRowText` for {@link PLACEHOLDER_PROMPT_DEFAULT} */
+    this.defaultPrompt = '';
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
@@ -696,15 +638,15 @@ function dispatchAudioPlaybackFailed(widgetWrap) {
 /**
  * Read section heading, current-page JSON URL, default prompt, explore (`{@link PLACEHOLDER_EXPLORE}`) and terms (`{@link PLACEHOLDER_TERMS}`) markup, and optional legacy footer link.
  * Explore renders inside the voice card; terms render below `.interactive-area` (still inside `.unity-prompt-bar-audio`).
- * Voice tiles and `defaultPrompt` per row (when in JSON) come from `loadVoicesFromCurrentPageJson` in `initWidget`
- * when `currentPageSourceUrl` is set; when a row has no `defaultPrompt`, the DOM `defaultPromptFromAuthoring` is used.
+ * Voice tiles come from `loadVoicesFromCurrentPageJson` in `initWidget` when `currentPageSourceUrl` is set.
+ * Default prompt text is not read from that JSON; `defaultPromptFromAuthoring` from the placeholder row is used for the field and tile switching.
  *
  * @param {HTMLElement} root
  * @returns {{
  *   footerLink: { href: string, text: string } | null,
  *   sectionHeading: string,
  *   currentPageSourceUrl: string | null,
- *   defaultPromptFromAuthoring: string,
+ *   defaultPrompt: string,
  *   exploreHtml: string,
  *   termsHtml: string
  * }}
@@ -713,8 +655,8 @@ export function parsePromptBarAudioAuthoring(root) {
   return {
     footerLink: findFooterLinkInRoot(root),
     sectionHeading: placeholderRowText(root, 'icon-placeholder-voice') || 'Choose a voice',
-    currentPageSourceUrl: resolveCurrentPageSourceFromAuthoring(root),
-    defaultPromptFromAuthoring: placeholderRowText(root, PLACEHOLDER_DEFAULT_PROMPT) || '',
+    currentPageSourceUrl: resolveCurrentPageSourceUrl(root),
+    defaultPrompt: placeholderRowText(root, PLACEHOLDER_PROMPT_DEFAULT) || '',
     exploreHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_EXPLORE),
     termsHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_TERMS),
   };
@@ -848,16 +790,15 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
  * @param {HTMLElement[]} tiles
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
  * @param {HTMLTextAreaElement} inpField
- * @param {Array<{ defaultPrompt: string, voiceId?: string }>} voices
+ * @param {Array<{ defaultPrompt?: string, voiceId?: string }>} voices
  */
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   const wrap = widgetInstance.widgetWrap;
   /** @type {number} First tile selected on mount; use -1 only when clearing selection */
   let selectedIdx = 0;
-  const defaultFor = (i) => voices[i]?.defaultPrompt ?? '';
-  const baselinePromptWhenNoneSelected = () => defaultFor(0)
-    || (widgetInstance.voiceConfigAll?.[0]?.defaultPrompt ?? '')
-    || (widgetInstance.defaultPromptFromAuthoring ?? '');
+  const authoring = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
+  const defaultFor = (i) => effectiveDefaultPromptForVoice(voices[i], authoring);
+  const baselinePromptWhenNoneSelected = () => defaultFor(0);
 
   function setSelectedVisual(idx) {
     selectedIdx = idx;
@@ -947,6 +888,8 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
 }
 
 /**
+ * When `hasModelOptions`, caller must await `getModel()` before this (see `mountPromptBarAudioUI`).
+ *
  * @param {InstanceType<typeof import('../prompt-bar-style/prompt-bar-style.js').UnityWidget>} widgetInstance
  * @param {HTMLElement} el
  * @param {string} defaultPrompt
@@ -966,7 +909,6 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
-  if (widgetInstance.hasModelOptions) await widgetInstance.getModel();
   const verbParts = widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
   const promptLabelText = placeholderRowText(el, PLACEHOLDER_PROMPT_LABEL);
@@ -1100,7 +1042,7 @@ function buildTermsBannerElement(termsHtml) {
 }
 
 /**
- * @param {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>} voices
+ * @param {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string, defaultPrompt?: string }>} voices
  * @param {string} sectionHeading
  * @param {{ href: string, text: string } | null} footerLink
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
@@ -1173,22 +1115,18 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, 
 /**
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
  * @param {ReturnType<typeof parsePromptBarAudioAuthoring> & {
- *   voices: Array<{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string }>
- * }} parsed
+ *   voices: Array<{ name: string, description: string, url: string, voiceId?: string, modelId?: string, defaultPrompt?: string }>
+ * }} parsed Caller supplies `parsed.voices` as a normalized array (see `initWidget`). `defaultPromptFromAuthoring` on `widgetInstance` is set before mount.
  */
 async function mountPromptBarAudioUI(widgetInstance, parsed) {
   const {
     voices,
     footerLink,
     sectionHeading,
-    defaultPromptFromAuthoring: domAuthoring = '',
     exploreHtml = '',
     termsHtml = '',
   } = parsed;
-  const allVoices = Array.isArray(voices) ? voices : [];
-  const domDef = (domAuthoring || '').trim();
-  widgetInstance.defaultPromptFromAuthoring = domDef;
-  widgetInstance.voiceConfigAll = allVoices;
+  const authoring = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
   const [analyticsMod] = await Promise.all([
     import('../../../scripts/analytics.js'),
     widgetInstance.hasModelOptions ? widgetInstance.getModel() : Promise.resolve(),
@@ -1204,18 +1142,16 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   const selectedModelId = (widgetInstance.selectedModelId
     || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
     || '').trim();
-  const visibleVoices = filterVoicesByModelId(allVoices, selectedModelId);
-  inpField.value = visibleVoices[0]?.defaultPrompt
-    ?? allVoices[0]?.defaultPrompt
-    ?? domDef
-    ?? '';
+  const visibleVoices = filterVoicesByModelId(voices, selectedModelId);
+  inpField.value = effectiveDefaultPromptForVoice(visibleVoices[0], authoring)
+    || effectiveDefaultPromptForVoice(voices[0], authoring);
   const { section: voiceSection, tiles } = createVoiceStrip(
     visibleVoices,
     sectionHeading,
     footerLink,
     widgetInstance,
     {
-      serverVoiceRowCount: allVoices.length,
+      serverVoiceRowCount: voices.length,
       exploreHtml: exploreHtml || '',
     },
   );
@@ -1240,15 +1176,14 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     }
     const mid = (this.selectedModelId || this.widgetWrap?.getAttribute('data-selected-model-id') || '').trim();
     const oldVisible = filterVoicesByModelId(all, (previousModelId || '').trim());
-    const oldFirstDef = oldVisible[0]?.defaultPrompt ?? this.defaultPromptFromAuthoring ?? '';
+    const auth = (this.defaultPromptFromAuthoring ?? '').trim();
+    const oldFirstDef = effectiveDefaultPromptForVoice(oldVisible[0], auth);
     row.replaceChildren();
     const visible = filterVoicesByModelId(all, mid);
     if (this.voicePromptInpField) {
       const cur = (this.voicePromptInpField.value || '').trim();
       if (visible.length > 0 && (cur === '' || cur === oldFirstDef)) {
-        this.voicePromptInpField.value = visible[0].defaultPrompt
-          ?? (this.defaultPromptFromAuthoring || '')
-          ?? '';
+        this.voicePromptInpField.value = effectiveDefaultPromptForVoice(visible[0], auth);
       } else if (!visible.length) {
         this.voicePromptInpField.value = '';
       }
@@ -1309,32 +1244,27 @@ export default class PromptBarAudioWidget extends UnityWidget {
       footerLink,
       sectionHeading,
       currentPageSourceUrl,
-      defaultPromptFromAuthoring,
+      defaultPrompt,
       exploreHtml,
       termsHtml,
     } = meta;
-    const domDef = (defaultPromptFromAuthoring || '').trim();
-    this.defaultPromptFromAuthoring = domDef;
-    let voices = null;
+    this.defaultPromptFromAuthoring = (defaultPrompt ?? '').trim();
+    let voices = [];
     if (currentPageSourceUrl) {
       try {
         voices = await loadVoicesFromCurrentPageJson(currentPageSourceUrl);
       } catch (e) {
         window.lana?.log(`Message: current page config json load failed, Error: ${e}`, this.lanaOptions);
-        voices = [];
       }
     }
-    const raw = Array.isArray(voices) ? voices : [];
-    const merged = mergeVoicesWithAuthoringDefault(raw, domDef);
-    this.voices = merged;
-    this.voiceConfigAll = merged;
+    this.voices = voices;
+    this.voiceConfigAll = voices;
     const { el } = this;
     this.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
     await mountPromptBarAudioUI(this, {
-      voices: merged,
+      voices,
       footerLink,
       sectionHeading,
-      defaultPromptFromAuthoring: domDef,
       exploreHtml: exploreHtml || '',
       termsHtml: termsHtml || '',
     });
