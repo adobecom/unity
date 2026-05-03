@@ -723,7 +723,7 @@ export function parsePromptBarAudioAuthoring(root) {
 function buildVoiceTile(voice, index, row, widgetInstance) {
   const { name, description, url, voiceId } = voice;
   const tile = createTag('div', {
-    class: 'unity-paf-voice-tile',
+    class: `unity-paf-voice-tile${index === 0 ? ' selected' : ''}`,
     role: 'listitem',
     tabindex: '0',
     'aria-pressed': 'false',
@@ -731,6 +731,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     'data-voice-name': name,
   });
   if (voiceId) tile.setAttribute('data-voice-id', voiceId);
+  if (index === 0) tile.setAttribute('aria-current', 'true');
 
   const textCol = createTag('div', { class: 'unity-paf-voice-tile-text' });
   textCol.append(
@@ -851,8 +852,8 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
  */
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   const wrap = widgetInstance.widgetWrap;
-  /** @type {number} No tile selected until user activates one */
-  let selectedIdx = -1;
+  /** @type {number} First tile selected on mount; use -1 only when clearing selection */
+  let selectedIdx = 0;
   const defaultFor = (i) => voices[i]?.defaultPrompt ?? '';
   const baselinePromptWhenNoneSelected = () => defaultFor(0)
     || (widgetInstance.voiceConfigAll?.[0]?.defaultPrompt ?? '')
@@ -941,7 +942,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     });
   });
 
-  setSelectedVisual(-1);
+  setSelectedVisual(0);
   return () => { tiles.forEach(resetTileIdle); };
 }
 
@@ -1337,6 +1338,10 @@ export default class PromptBarAudioWidget extends UnityWidget {
       exploreHtml: exploreHtml || '',
       termsHtml: termsHtml || '',
     });
-    return this.workflowCfg.targetCfg.actionMap;
+    const baseMap = this.workflowCfg.targetCfg.actionMap || {};
+    return {
+      ...baseMap,
+      '.unity-paf-voice-subfoot a': { actionType: 'generate' },
+    };
   }
 }

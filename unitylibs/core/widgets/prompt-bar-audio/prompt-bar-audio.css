@@ -342,6 +342,14 @@
   padding-right: 11px;
 }
 
+.unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model .model-name {
+  /* Closed control grows with the selected label (prompt-bar-style uses flex:1 + ellipsis) */
+  flex: 0 1 auto;
+  min-width: min-content;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model img,
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link img {
   width: 20px;
@@ -425,11 +433,14 @@
   transform: none;
 }
 
-/* Model menu: compact height, no extra bottom gap */
 .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container .verb-list {
+  /* Model menu: compact height; width ≥ trigger and ≥ longest option label */
   padding: 10px 12px;
   min-height: 0;
   box-sizing: border-box;
+  min-width: 100%;
+  width: max-content;
+  max-width: 100vw;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item {
@@ -467,6 +478,7 @@
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link.model-link .model-name {
   align-self: center;
   line-height: 20px;
+  white-space: nowrap;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
@@ -659,8 +671,9 @@
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
+  /* Grow with widest model name (173px max-width used to cap the open list to the trigger) */
   min-width: 0;
-  max-width: 173px;
+  max-width: 100%;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container {
