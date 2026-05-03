@@ -83,9 +83,6 @@ function currentPageConfigField(item, k) {
   return v == null ? '' : String(v).trim();
 }
 
-/** U+2022 BULLET (•) reads heavier than middot (·) in most fonts; spaces keep rhythm. */
-const VOICE_DESC_SEP = ' • ';
-
 /** Authoring: row with `placeholder-prompt-label` / `placeholder-prompt-default` (see `placeholderRowText`); `icon-placeholder-voice` for section heading. */
 const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
 const PLACEHOLDER_DEFAULT_PROMPT = 'placeholder-prompt-default';
@@ -128,32 +125,26 @@ function mergeVoicesWithAuthoringDefault(voices, domDefault) {
 }
 
 /**
- * Map one JSON row to a voice tile entry.
+ * Map one JSON / sheet row to a voice tile entry.
+ * Expected columns: `Model`, `Name`, `Description`, `VoiceId`, `url` (optional `defaultPrompt`).
+ * Legacy keys (`displayName`, `name`, etc.) are still accepted for older configs.
  *
  * @param {Record<string, unknown>} item
  * @returns {{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string } | null}
  */
 function currentPageConfigItemToVoice(item) {
   if (!item || typeof item !== 'object') return null;
-  const name = currentPageConfigField(item, 'displayName')
+  const name = currentPageConfigField(item, 'Name')
     || currentPageConfigField(item, 'name')
+    || currentPageConfigField(item, 'displayName')
     || currentPageConfigField(item, 'Display Name');
   const url = currentPageConfigField(item, 'url') || currentPageConfigField(item, 'URL');
   if (!name || !url) return null;
   if (!/^https:\/\//i.test(url)) return null;
-  const voiceIdRaw = currentPageConfigField(item, 'voiceId') || currentPageConfigField(item, 'VoiceId');
+  const voiceIdRaw = currentPageConfigField(item, 'VoiceId') || currentPageConfigField(item, 'voiceId');
   const modelIdRaw = currentPageConfigField(item, 'Model') || currentPageConfigField(item, 'model');
-  const defaultPrompt = currentPageConfigField(item, 'defaultPrompt');
-  const descDirect = currentPageConfigField(item, 'description');
-  // Sheet columns: "Age Group" / "Gender" (e.g. text2speech.json); subtext uses `VOICE_DESC_SEP`
-  const ageGroup = currentPageConfigField(item, 'ageGroup')
-    || currentPageConfigField(item, 'age group')
-    || currentPageConfigField(item, 'Age Group');
-  const gender = currentPageConfigField(item, 'gender') || currentPageConfigField(item, 'Gender');
-  const ethnicity = currentPageConfigField(item, 'ethnicity') || currentPageConfigField(item, 'Ethnicity');
-  const accent = currentPageConfigField(item, 'accent') || currentPageConfigField(item, 'Accent');
-  const descParts = [ageGroup, gender, ethnicity, accent].filter(Boolean);
-  const description = descDirect || (descParts.length ? descParts.join(VOICE_DESC_SEP) : '');
+  const description = currentPageConfigField(item, 'Description') || currentPageConfigField(item, 'description');
+  const defaultPrompt = currentPageConfigField(item, 'defaultPrompt') || currentPageConfigField(item, 'DefaultPrompt');
   return {
     name: name || 'Voice',
     description,
@@ -747,7 +738,8 @@ function findFooterLinkInRoot(root) {
 }
 
 /**
- * Read section heading, current-page JSON URL, default prompt, explore/terms subcopy (see {@link PLACEHOLDER_EXPLORE} / {@link PLACEHOLDER_TERMS}), and optional legacy footer link.
+ * Read section heading, current-page JSON URL, default prompt, explore (`{@link PLACEHOLDER_EXPLORE}`) and terms (`{@link PLACEHOLDER_TERMS}`) markup, and optional legacy footer link.
+ * Explore renders inside the voice card; terms render below `.interactive-area` (still inside `.unity-prompt-bar-audio`).
  * Voice tiles and `defaultPrompt` per row (when in JSON) come from `loadVoicesFromCurrentPageJson` in `initWidget`
  * when `currentPageSourceUrl` is set; when a row has no `defaultPrompt`, the DOM `defaultPromptFromAuthoring` is used.
  *
@@ -775,7 +767,7 @@ export function parsePromptBarAudioAuthoring(root) {
 function buildVoiceTile(voice, index, row, widgetInstance) {
   const { name, description, url, voiceId } = voice;
   const tile = createTag('div', {
-    class: `unity-paf-voice-tile${index === 0 ? ' selected' : ''}`,
+    class: 'unity-paf-voice-tile',
     role: 'listitem',
     tabindex: '0',
     'aria-pressed': 'false',
@@ -783,7 +775,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     'data-voice-name': name,
   });
   if (voiceId) tile.setAttribute('data-voice-id', voiceId);
-  if (index === 0) tile.setAttribute('aria-current', 'true');
 
   const textCol = createTag('div', { class: 'unity-paf-voice-tile-text' });
   textCol.append(
@@ -795,8 +786,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'unity-paf-progress-svg');
   svg.setAttribute('viewBox', '0 0 48 48');
-  svg.setAttribute('width', '48');
-  svg.setAttribute('height', '48');
   svg.setAttribute('aria-hidden', 'true');
   const ringBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   ringBg.setAttribute('class', 'unity-paf-ring-bg');
@@ -913,11 +902,25 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
  */
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   const tilesArr = tiles;
-  let selectedIdx = 0;
+  /** @type {number} No tile selected until user activates one */
+  let selectedIdx = -1;
   const defaultFor = (i) => voices[i]?.defaultPrompt ?? '';
+  const baselinePromptWhenNoneSelected = () => defaultFor(0)
+    || (widgetInstance.voiceConfigAll?.[0]?.defaultPrompt ?? '')
+    || (widgetInstance.defaultPromptFromAuthoring ?? '');
 
   function setSelectedVisual(idx) {
     selectedIdx = idx;
+    if (idx < 0) {
+      widgetInstance.widgetWrap.removeAttribute('data-selected-voice-index');
+      widgetInstance.widgetWrap.removeAttribute('data-selected-voice-name');
+      widgetInstance.widgetWrap.removeAttribute('data-selected-voice-id');
+      tilesArr.forEach((t) => {
+        t.classList.remove('selected');
+        t.removeAttribute('aria-current');
+      });
+      return;
+    }
     widgetInstance.widgetWrap.setAttribute('data-selected-voice-index', String(idx));
     widgetInstance.widgetWrap.setAttribute('data-selected-voice-name', voices[idx]?.name ?? '');
     const voiceId = voices[idx]?.voiceId;
@@ -945,7 +948,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   }
 
   function syncPromptIfStuckToDefaults(prevIdx, newIdx) {
-    const prevDef = defaultFor(prevIdx);
+    const prevDef = prevIdx >= 0 ? defaultFor(prevIdx) : baselinePromptWhenNoneSelected();
     const nextDef = defaultFor(newIdx);
     const { value } = inpField;
     if (value === prevDef || value.trim() === '') {
@@ -999,7 +1002,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     });
   });
 
-  setSelectedVisual(0);
+  setSelectedVisual(-1);
   return () => { tilesArr.forEach(resetTileIdle); };
 }
 
@@ -1112,28 +1115,19 @@ function enhanceSubfootExternalLinks(container) {
 }
 
 /**
- * @param {HTMLElement} section
+ * Explore link (and legacy single footer link) stay inside the rounded prompt card, below the tile row.
+ * @param {HTMLElement} section Voice section inside `.unity-slf-left`
  * @param {string} exploreHtml
- * @param {string} termsHtml
- * @param {{ href: string, text: string } | null} footerLink Legacy: used when no explore/terms markup
+ * @param {{ href: string, text: string } | null} footerLink Legacy: used when no explore markup
  */
-function appendVoiceSubfootIfAny(section, exploreHtml, termsHtml, footerLink) {
+function appendVoiceExploreSubfoot(section, exploreHtml, footerLink) {
   const ex = (exploreHtml || '').trim();
-  const te = (termsHtml || '').trim();
-  if (ex || te) {
+  if (ex) {
     const wrap = createTag('div', { class: 'unity-paf-voice-subfoot' });
-    if (ex) {
-      const p = createTag('p', { class: 'unity-paf-voice-subfoot-line' });
-      p.innerHTML = ex;
-      enhanceSubfootExternalLinks(p);
-      wrap.append(p);
-    }
-    if (te) {
-      const p = createTag('p', { class: 'unity-paf-voice-subfoot-line' });
-      p.innerHTML = te;
-      enhanceSubfootExternalLinks(p);
-      wrap.append(p);
-    }
+    const p = createTag('p', { class: 'unity-paf-voice-subfoot-line' });
+    p.innerHTML = ex;
+    enhanceSubfootExternalLinks(p);
+    wrap.append(p);
     section.append(wrap);
   } else if (footerLink) {
     const foot = createTag('p', { class: 'unity-paf-voice-footer' });
@@ -1147,14 +1141,33 @@ function appendVoiceSubfootIfAny(section, exploreHtml, termsHtml, footerLink) {
 }
 
 /**
+ * Terms copy from `placeholder-terms`: rendered outside `.interactive-area`, below it (sibling under `.unity-prompt-bar-audio`).
+ * @param {string} termsHtml
+ * @returns {HTMLElement | null}
+ */
+function buildTermsBannerElement(termsHtml) {
+  const te = (termsHtml || '').trim();
+  if (!te) return null;
+  const outer = createTag('div', {
+    class: 'unity-paf-terms-banner',
+    role: 'note',
+  });
+  const p = createTag('p', { class: 'unity-paf-terms-banner-line' });
+  p.innerHTML = te;
+  enhanceSubfootExternalLinks(p);
+  outer.append(p);
+  return outer;
+}
+
+/**
  * @param {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }>} voices
  * @param {string} sectionHeading
  * @param {{ href: string, text: string } | null} footerLink
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
- * @param {{ serverVoiceRowCount?: number, exploreHtml?: string, termsHtml?: string }=} opts When the sheet has rows but none match the current model, still show the section with an empty row.
+ * @param {{ serverVoiceRowCount?: number, exploreHtml?: string }=} opts When the sheet has rows but none match the current model, still show the section with an empty row.
  */
 function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, opts = {}) {
-  const { serverVoiceRowCount = 0, exploreHtml = '', termsHtml = '' } = opts;
+  const { serverVoiceRowCount = 0, exploreHtml = '' } = opts;
   if (serverVoiceRowCount === 0) return { section: null, tiles: [] };
   if (!voices.length) {
     const sectionEmpty = createTag('div', { class: 'unity-paf-voice-section' });
@@ -1165,7 +1178,7 @@ function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, op
     );
     const rowEmpty = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
     sectionEmpty.append(headingEmpty, rowEmpty);
-    appendVoiceSubfootIfAny(sectionEmpty, exploreHtml, termsHtml, footerLink);
+    appendVoiceExploreSubfoot(sectionEmpty, exploreHtml, footerLink);
     return { section: sectionEmpty, tiles: [] };
   }
   const section = createTag('div', { class: 'unity-paf-voice-section' });
@@ -1177,7 +1190,7 @@ function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, op
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
   const tiles = voices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
   section.append(heading, row);
-  appendVoiceSubfootIfAny(section, exploreHtml, termsHtml, footerLink);
+  appendVoiceExploreSubfoot(section, exploreHtml, footerLink);
   return { section, tiles };
 }
 
@@ -1185,9 +1198,10 @@ function createVoiceStrip(voices, sectionHeading, footerLink, widgetInstance, op
  * @param {HTMLElement} el
  * @param {import('../prompt-bar-style/prompt-bar-style.js').UnityWidget} widgetInstance
  * @param {HTMLElement} widgetWrap
- * @param {HTMLElement} voiceSection
+ * @param {HTMLElement | null} voiceSection
+ * @param {HTMLElement | null} termsBanner Below `.interactive-area`, sibling under `.unity-prompt-bar-audio` (`placeholder-terms`)
  */
-function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection) {
+function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner) {
   const controls = createTag('div', { class: 'unity-slf-controls' });
   controls.append(widgetWrap);
   if (voiceSection) controls.append(voiceSection);
@@ -1200,6 +1214,7 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection) 
   const root = createTag('div', { class: 'unity-prompt-bar-audio unity-enabled' });
   interactiveShell.append(main);
   root.append(interactiveShell);
+  if (termsBanner) root.append(termsBanner);
   const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only' });
   holder.setAttribute('aria-hidden', 'true');
   while (el.firstChild) {
@@ -1265,9 +1280,9 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     {
       serverVoiceRowCount: allVoices.length,
       exploreHtml: exploreHtml || '',
-      termsHtml: termsHtml || '',
     },
   );
+  const termsBanner = buildTermsBannerElement(termsHtml || '');
   const disconnectFirst = visibleVoices.length
     ? attachVoiceInteractivity(tiles, widgetInstance, inpField, visibleVoices)
     : () => {};
@@ -1302,7 +1317,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
       }
     }
     if (visible.length === 0) {
-      this.widgetWrap?.setAttribute('data-selected-voice-index', '0');
+      this.widgetWrap?.removeAttribute('data-selected-voice-index');
       this.widgetWrap?.removeAttribute('data-selected-voice-name');
       this.widgetWrap?.removeAttribute('data-selected-voice-id');
       return;
@@ -1316,7 +1331,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     );
   };
 
-  insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection);
+  insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner);
   const root = widgetInstance.promptBarAudioRoot;
   let removalObserver = null;
   let interactivityTornDown = false;

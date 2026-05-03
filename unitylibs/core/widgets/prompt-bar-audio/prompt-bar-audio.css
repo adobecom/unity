@@ -40,7 +40,7 @@
   flex: 1;
   background: #1b1b1b;
   border-radius: 10px;
-  padding: 17px 16px 20px;
+  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -56,19 +56,18 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  margin-top: 4px;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-heading {
-  padding-top: 18px;
-  margin: 0;
+  margin: 18px 0 0;
+  padding-top: 16px;
   border-top: 2px solid rgb(255 255 255 / 12%);
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-row {
   display: flex;
   flex-flow: row nowrap;
-  gap: 8px;
+  gap: 4.76px;
   align-items: stretch;
   justify-content: flex-start;
   width: 100%;
@@ -80,22 +79,27 @@
   padding-bottom: 2px;
 }
 
+/* Voice tile — Doodlebug Wave 2 / Figma 8426:13771 (Dark mode card) */
 .unity-prompt-bar-audio .unity-paf-voice-tile {
   --unity-paf-voice-tile-width: 231px;
+  --paf-voice-tile-border-width: 1.78px;
+
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 5px;
   box-sizing: border-box;
   width: var(--unity-paf-voice-tile-width);
   min-width: var(--unity-paf-voice-tile-width);
   max-width: var(--unity-paf-voice-tile-width);
   flex: 0 0 var(--unity-paf-voice-tile-width);
-  padding: 10px 10px 10px 12px;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background: #2c2c2c;
+  padding: 14px;
+  border-radius: 9.51px;
+  border: var(--paf-voice-tile-border-width) solid transparent;
+  background: #292929;
+  backdrop-filter: blur(29.72px);
+  overflow: hidden;
   cursor: pointer;
   text-align: start;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -109,30 +113,36 @@
   outline: none;
 }
 
+/* Keyboard focus: same blue keyline as selected card (Figma) */
 .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #274dea;
+  border-color: #274dea;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile.selected {
-  border: 2px solid #274dea;
-  background: #1b1b1b;
+  border-color: #274dea;
+  background: #292929;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile.selected:hover {
+  background: #2f2f2f;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
   flex: 1 1 auto;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-name {
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 18px;
-  color: #f8f8f8;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.48px;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -140,26 +150,43 @@
 
 .unity-prompt-bar-audio .unity-paf-voice-desc {
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
-  line-height: 14px;
-  color: #a3a3a3;
+  line-height: 1.2;
+  letter-spacing: 0.14px;
+  color: rgb(255 255 255 / 92%);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Figma S2_Icon_PlayCircle ~37.17px frame */
 .unity-prompt-bar-audio .unity-paf-voice-player {
   position: relative;
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 37.17px;
+  height: 37.17px;
+  flex: 0 0 37.17px;
+}
+
+/* Fine pointer + hover: hide play/pause until hover, keyboard focus, while playing (aria-pressed), or the tile is selected (stays visible after pause). Touch stays always visible. */
+@media (hover: hover) and (pointer: fine) {
+  .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-tile:hover .unity-paf-voice-player,
+  .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible .unity-paf-voice-player,
+  .unity-prompt-bar-audio .unity-paf-voice-tile[aria-pressed="true"] .unity-paf-voice-player,
+  .unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player {
+    opacity: 1;
+  }
 }
 
 .unity-prompt-bar-audio .unity-paf-progress-svg {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: 37.17px;
+  height: 37.17px;
 }
 
 .unity-prompt-bar-audio .unity-paf-ring-bg {
@@ -182,6 +209,8 @@
 
 .unity-prompt-bar-audio .unity-paf-pp-center .unity-paf-pp-svg {
   display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .unity-prompt-bar-audio .unity-paf-pp-center .unity-paf-pp-svg use {
@@ -214,6 +243,43 @@
 
 .unity-prompt-bar-audio .unity-paf-voice-subfoot-line a:hover {
   color: #f8f8f8;
+}
+
+/* `placeholder-terms`: sibling below `.interactive-area`, inside `.unity-prompt-bar-audio` */
+.unity-prompt-bar-audio .unity-paf-terms-banner {
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
+  margin: 24px 0 0;
+  padding: 0 8px;
+  text-align: center;
+  font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
+  font-size: 12px;
+  line-height: 18px;
+  color: rgb(245 245 245 / 92%);
+}
+
+.unity-prompt-bar-audio:has(.interactive-area.light) .unity-paf-terms-banner {
+  color: rgb(46 46 46 / 92%);
+}
+
+.unity-prompt-bar-audio .unity-paf-terms-banner-line {
+  margin: 0 auto;
+  max-width: 56rem;
+}
+
+.unity-prompt-bar-audio .unity-paf-terms-banner-line a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.unity-prompt-bar-audio .unity-paf-terms-banner-line a:hover {
+  color: #fff;
+}
+
+.unity-prompt-bar-audio:has(.interactive-area.light) .unity-paf-terms-banner-line a:hover {
+  color: #000;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-footer {
@@ -369,6 +435,21 @@
 .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container.show-menu .verb-list,
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
   display: block;
+  /* prompt-bar-style animates with translateY(40px), which leaves dead space in the dark menu */
+  animation: none;
+  transform: none;
+}
+
+/* Model menu: compact height, no extra bottom gap */
+.unity-prompt-bar-audio.unity-enabled .interactive-area .models-container .verb-list {
+  padding: 10px 12px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item {
+  margin: 0;
+  padding: 0;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link {
@@ -385,20 +466,50 @@
   opacity: 1;
 }
 
-.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .model-link {
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link.model-link {
+  padding: 8px 12px 8px 30px;
+  gap: 10px;
+  line-height: 1.25;
   font-size: 14px;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link.model-link img {
+  object-fit: contain;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-link.model-link .model-name {
+  align-self: center;
+  line-height: 20px;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item .selected-icon {
   display: none;
 }
 
-.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
-  display: block;
+/* Checkmark sits in the gutter; flex + block margins align with row better than translateY(-50%) alone */
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item.selected .verb-link .selected-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
-  top: 50%;
-  left: 3px;
-  transform: translateY(-50%);
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  width: 14px;
+  height: 14px;
+  transform: none;
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item.selected .verb-link .selected-icon svg {
+  display: block;
+}
+
+[dir="rtl"] .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item.selected .verb-link .selected-icon {
+  left: auto;
+  right: 8px;
 }
 
 .unity-prompt-bar-audio .unity-slf-copy-label {
@@ -529,7 +640,7 @@
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
   grid-column: 1;
-  margin-top: 24px;
+  margin-top: 32px;
   display: flex;
   align-items: center;
   gap: 8px;
