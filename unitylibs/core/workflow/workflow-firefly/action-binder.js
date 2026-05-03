@@ -72,7 +72,7 @@ export default class ActionBinder {
   getNetworkUtils = async () => {
     if (this.networkUtils) return this.networkUtils;
     const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
-  return (this.networkUtils = new NetworkUtils());
+    return (this.networkUtils = new NetworkUtils());
   };
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -242,13 +242,15 @@ export default class ActionBinder {
     return { isValid: true };
   }
 
+  /** @returns {string | undefined} */
+  getSelectedVoiceIdForConnector() {
+    if (!this.block?.classList?.contains('unity-prompt-bar-audio')) return undefined;
+    const id = this.widgetWrap.getAttribute('data-selected-voice-id')?.trim();
+    return id || undefined;
+  }
+
   getSelectedStylePayloadForConnector() {
     const root = this.block;
-    if (root?.classList?.contains('unity-prompt-bar-audio')) {
-      const name = this.widgetWrap.getAttribute('data-selected-voice-name')?.trim() || '';
-      if (!name) return undefined;
-      return { name, promptPhrase: name };
-    }
     if (!root?.classList?.contains('unity-prompt-bar-style')) return undefined;
     const selected = root.querySelector('.unity-slf-style-item.selected');
     if (!selected) return undefined;
@@ -314,7 +316,9 @@ export default class ActionBinder {
     }
     const selectedVerbType = `text-to-${currentVerb}`;
     const operationVerb = this.getVerbFromDom();
-    const stylePayload = this.getSelectedStylePayloadForConnector();
+    const isPromptBarAudio = this.block?.classList?.contains('unity-prompt-bar-audio');
+    const stylePayload = isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
+    const voiceId = this.getSelectedVoiceIdForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
     const modelName = this.getSelectedModelDisplayName();
@@ -349,6 +353,7 @@ export default class ActionBinder {
           ...(modelId ? { modelId } : {}),
           ...(modelVersion ? { modelVersion } : {}),
           ...(stylePayload ? { style: stylePayload } : {}),
+          ...(voiceId ? { voiceId } : {}),
           locale: getLocale(),
           action,
         },

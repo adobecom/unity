@@ -23,24 +23,6 @@ function getUnityPromptConfigsBaseUrl() {
 }
 
 /**
- * Read `<name>` from the first `icon-operation-<name>` class in the document (e.g. `Text2Speech`).
- *
- * @param {HTMLElement} root
- * @returns {string | null}
- */
-function findCurrentPageName(root) {
-  const el = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
-  if (!el) return null;
-  const { className } = el;
-  if (typeof className !== 'string' || !className) return null;
-  const token = className.split(/\s+/).find(
-    (c) => c.startsWith(CURRENT_PAGE_ICON_PREFIX) && c.length > CURRENT_PAGE_ICON_PREFIX.length,
-  );
-  if (!token) return null;
-  return token.slice(CURRENT_PAGE_ICON_PREFIX.length) || null;
-}
-
-/**
  * Safe file basename for `unity/configs/prompt/{base}.json` (current page key from authoring).
  * Whitespace becomes `-` (e.g. `My Page` → `my-page`); other unsafe chars are removed.
  * The result is lowercased: paths on the host are case-sensitive, while authoring may use
@@ -146,7 +128,7 @@ function currentPageConfigItemToVoice(item) {
   const description = currentPageConfigField(item, 'Description') || currentPageConfigField(item, 'description');
   const defaultPrompt = currentPageConfigField(item, 'defaultPrompt') || currentPageConfigField(item, 'DefaultPrompt');
   return {
-    name: name || 'Voice',
+    name,
     description,
     defaultPrompt,
     url,
@@ -191,10 +173,17 @@ async function loadVoicesFromCurrentPageJson(sourceUrl) {
  * @returns {string | null}
  */
 function resolveCurrentPageSourceFromAuthoring(root) {
-  const pageName = findCurrentPageName(root);
-  if (!pageName) return null;
   const icon = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
-  const li = icon?.closest('li');
+  if (!icon) return null;
+  const { className } = icon;
+  if (typeof className !== 'string' || !className) return null;
+  const token = className.split(/\s+/).find(
+    (c) => c.startsWith(CURRENT_PAGE_ICON_PREFIX) && c.length > CURRENT_PAGE_ICON_PREFIX.length,
+  );
+  if (!token) return null;
+  const pageName = token.slice(CURRENT_PAGE_ICON_PREFIX.length) || null;
+  if (!pageName) return null;
+  const li = icon.closest('li');
   const a = li?.querySelector('a[href]');
   const href = a?.getAttribute('href')?.trim();
   if (href) {
@@ -231,7 +220,6 @@ class UnityWidget {
     this.genBtn = null;
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
-    this.hasVoiceOptions = false;
     this.voices = null;
     /** @type {Array<{ modelId?: string, name: string, description: string, defaultPrompt: string, url: string, voiceId?: string }> | null} */
     this.voiceConfigAll = null;
@@ -240,10 +228,6 @@ class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
-  }
-
-  async ensureSoundModuleLoaded() {
-    await Promise.resolve();
   }
 
   verbDropdown() {
@@ -289,7 +273,7 @@ class UnityWidget {
       if (e.key === 'Enter' || e.key === ' ') {
         this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODULE_PICKER);
       }
-      if (e.key === 'Escape' || e.keyCode === 27) {
+      if (e.key === 'Escape') {
         this.closeVerbOrModelMenu(selectedElement);
         selectedElement.focus();
       }
@@ -432,10 +416,10 @@ class UnityWidget {
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
       }
       selectedElement.focus();
-      this.ensureSoundModuleLoaded();
       const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
-      if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
-      else this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
+      if (verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) {
+        this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
+      }
       if (link.getAttribute('data-model-module') !== this.selectedVerbType) {
         const oldModelContainer = this.widget.querySelector('.models-container');
         const modelDropdown = this.modelDropdown();
@@ -543,7 +527,7 @@ class UnityWidget {
     const models = Array.isArray(this.models)
       ? this.models.filter((obj) => obj.module === this.selectedVerbType)
       : [];
-    if (!Array.isArray(models) || models.length === 0) return [];
+    if (models.length === 0) return [];
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedModelType = models[0].id;
     const selectedModelVersion = models[0].version;
@@ -591,7 +575,7 @@ class UnityWidget {
       if (e.key === 'Enter' || e.key === ' ') {
         this.showVerbOrModelMenuAndTrackOpen(selectedElement, promptWithStyleEvents.MODEL_SELECT_DROPDOWN);
       }
-      if (e.key === 'Escape' || e.code === 27) {
+      if (e.key === 'Escape') {
         this.closeVerbOrModelMenu(selectedElement);
         selectedElement.focus();
       }
@@ -613,11 +597,7 @@ class UnityWidget {
   }
 
   async loadModels() {
-    const { origin } = window.location;
-    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-      : origin;
-    const modelFile = `${baseUrl}/unity/configs/prompt/model-picker1.json`;
+    const modelFile = `${getUnityPromptConfigsBaseUrl()}/unity/configs/prompt/model-picker1.json`;
     const results = await fetch(modelFile);
     if (!results.ok) {
       throw new Error('Failed to fetch models.');
@@ -636,63 +616,32 @@ class UnityWidget {
       return [];
     }
   }
-
-  /**
-   * Loads voice tiles from the current page JSON (same source as in `initWidget` when
-   * `icon-operation-<name>` / authoring `a[href$=".json"]` is present).
-   */
-  async loadVoices() {
-    const currentPageSourceUrl = resolveCurrentPageSourceFromAuthoring(this.el);
-    if (!currentPageSourceUrl) {
-      this.voices = [];
-      this.voiceConfigAll = [];
-      return;
-    }
-    const raw = await loadVoicesFromCurrentPageJson(currentPageSourceUrl);
-    const domDef = (this.defaultPromptFromAuthoring || '').trim();
-    this.voices = mergeVoicesWithAuthoringDefault(raw, domDef);
-    this.voiceConfigAll = this.voices;
-  }
-
-  /**
-   * Returns voice list for the current page config (filtered by selected model when `Model` is set in JSON);
-   * loads on first use (see `getPrompt` / `getModel`).
-   * @returns {Promise<Array<{ name: string, description: string, defaultPrompt: string, url: string, voiceId?: string, modelId?: string }>>}
-   */
-  async getVoice() {
-    if (!this.hasVoiceOptions) return [];
-    try {
-      if (this.voices == null) {
-        await this.loadVoices();
-      }
-      const all = this.voiceConfigAll != null ? this.voiceConfigAll : (this.voices || []);
-      const list = Array.isArray(all) ? all : [];
-      const mid = (this.selectedModelId
-        || this.widgetWrap?.getAttribute('data-selected-model-id')
-        || '').trim();
-      return filterVoicesByModelId(list, mid);
-    } catch (e) {
-      window.lana?.log(`Message: Error loading voices, Error: ${e}`, this.lanaOptions);
-      return [];
-    }
-  }
-
-  async updateDropdownForVerb() {
-    await Promise.resolve();
-  }
 }
 
 const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
 
+const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
+const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
+
 /** @type {WeakMap<object, { audio: HTMLAudioElement, ringFg: SVGCircleElement, playing: boolean }>} */
 const voiceTileState = new WeakMap();
 
-function placeholderRowText(root, iconClass) {
+/**
+ * @param {HTMLElement} root
+ * @param {string} iconClass
+ * @returns {HTMLElement | null}
+ */
+function findPlaceholderIconLi(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`)
     || root.querySelector(`[class*="${iconClass}"]`);
-  if (!icon) return '';
-  return (icon.closest('li')?.innerText || '').replace(/\s+/g, ' ').trim();
+  return icon?.closest('li') ?? null;
+}
+
+function placeholderRowText(root, iconClass) {
+  const li = findPlaceholderIconLi(root, iconClass);
+  if (!li) return '';
+  return (li.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -702,11 +651,7 @@ function placeholderRowText(root, iconClass) {
  * @returns {string}
  */
 function placeholderRowHtmlAfterIcon(root, iconClass) {
-  if (!root) return '';
-  const icon = root.querySelector(`.${iconClass}`)
-    || root.querySelector(`[class*="${iconClass}"]`);
-  if (!icon) return '';
-  const li = icon.closest('li');
+  const li = findPlaceholderIconLi(root, iconClass);
   if (!li) return '';
   const clone = li.cloneNode(true);
   const rm = clone.querySelector(`.${iconClass}`) || clone.querySelector(`[class*="${iconClass}"]`);
@@ -738,6 +683,17 @@ function findFooterLinkInRoot(root) {
 }
 
 /**
+ * @param {HTMLElement | undefined} widgetWrap
+ */
+function dispatchAudioPlaybackFailed(widgetWrap) {
+  try {
+    widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
  * Read section heading, current-page JSON URL, default prompt, explore (`{@link PLACEHOLDER_EXPLORE}`) and terms (`{@link PLACEHOLDER_TERMS}`) markup, and optional legacy footer link.
  * Explore renders inside the voice card; terms render below `.interactive-area` (still inside `.unity-prompt-bar-audio`).
  * Voice tiles and `defaultPrompt` per row (when in JSON) come from `loadVoicesFromCurrentPageJson` in `initWidget`
@@ -759,8 +715,8 @@ export function parsePromptBarAudioAuthoring(root) {
     sectionHeading: placeholderRowText(root, 'icon-placeholder-voice') || 'Choose a voice',
     currentPageSourceUrl: resolveCurrentPageSourceFromAuthoring(root),
     defaultPromptFromAuthoring: placeholderRowText(root, PLACEHOLDER_DEFAULT_PROMPT) || '',
-    exploreHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_EXPLORE) || '',
-    termsHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_TERMS) || '',
+    exploreHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_EXPLORE),
+    termsHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_TERMS),
   };
 }
 
@@ -807,9 +763,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   svg.append(ringBg, ringFg);
 
   const center = createTag('div', { class: 'unity-paf-pp-center' });
-  const iconPlay = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
-  const iconPause = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
-  center.innerHTML = iconPlay;
+  center.innerHTML = PAF_PP_PLAY_SVG;
 
   const audioObj = new Audio(url);
   audioObj.preload = 'auto';
@@ -826,8 +780,8 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     ringFg.style.strokeDashoffset = String(RING_C * (1 - p));
   };
 
-  const showPlayIcon = () => { center.innerHTML = iconPlay; };
-  const showPauseIcon = () => { center.innerHTML = iconPause; };
+  const showPlayIcon = () => { center.innerHTML = PAF_PP_PLAY_SVG; };
+  const showPauseIcon = () => { center.innerHTML = PAF_PP_PAUSE_SVG; };
 
   let rafId = null;
   const tick = () => {
@@ -856,16 +810,14 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     setRingProgress(0);
   });
   audioObj.addEventListener('play', () => {
-    const st = voiceTileState.get(tile);
-    if (st) st.playing = true;
+    voiceTileState.get(tile).playing = true;
     showPauseIcon();
     tile.setAttribute('aria-pressed', 'true');
     startRaf();
   });
   audioObj.addEventListener('pause', () => {
     const atEnd = audioObj.ended || (Number.isFinite(audioObj.duration) && audioObj.currentTime >= audioObj.duration - 0.25);
-    const stPause = voiceTileState.get(tile);
-    if (stPause) stPause.playing = !atEnd && audioObj.currentTime > 0;
+    voiceTileState.get(tile).playing = !atEnd && audioObj.currentTime > 0;
     showPlayIcon();
     if (atEnd) {
       setRingProgress(0);
@@ -877,8 +829,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     stopRaf();
   });
   audioObj.addEventListener('ended', () => {
-    const stEnd = voiceTileState.get(tile);
-    if (stEnd) stEnd.playing = false;
+    voiceTileState.get(tile).playing = false;
     showPlayIcon();
     setRingProgress(0);
     ringFg.style.strokeDashoffset = String(RING_C);
@@ -887,9 +838,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     stopRaf();
   });
   audioObj.addEventListener('error', () => {
-    try {
-      widgetInstance.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
-    } catch (e) { /* noop */ }
+    dispatchAudioPlaybackFailed(widgetInstance.widgetWrap);
   });
   return tile;
 }
@@ -901,7 +850,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
  * @param {Array<{ defaultPrompt: string, voiceId?: string }>} voices
  */
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
-  const tilesArr = tiles;
+  const wrap = widgetInstance.widgetWrap;
   /** @type {number} No tile selected until user activates one */
   let selectedIdx = -1;
   const defaultFor = (i) => voices[i]?.defaultPrompt ?? '';
@@ -912,21 +861,21 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   function setSelectedVisual(idx) {
     selectedIdx = idx;
     if (idx < 0) {
-      widgetInstance.widgetWrap.removeAttribute('data-selected-voice-index');
-      widgetInstance.widgetWrap.removeAttribute('data-selected-voice-name');
-      widgetInstance.widgetWrap.removeAttribute('data-selected-voice-id');
-      tilesArr.forEach((t) => {
+      wrap.removeAttribute('data-selected-voice-index');
+      wrap.removeAttribute('data-selected-voice-name');
+      wrap.removeAttribute('data-selected-voice-id');
+      tiles.forEach((t) => {
         t.classList.remove('selected');
         t.removeAttribute('aria-current');
       });
       return;
     }
-    widgetInstance.widgetWrap.setAttribute('data-selected-voice-index', String(idx));
-    widgetInstance.widgetWrap.setAttribute('data-selected-voice-name', voices[idx]?.name ?? '');
+    wrap.setAttribute('data-selected-voice-index', String(idx));
+    wrap.setAttribute('data-selected-voice-name', voices[idx]?.name ?? '');
     const voiceId = voices[idx]?.voiceId;
-    if (voiceId) widgetInstance.widgetWrap.setAttribute('data-selected-voice-id', voiceId);
-    else widgetInstance.widgetWrap.removeAttribute('data-selected-voice-id');
-    tilesArr.forEach((t, i) => {
+    if (voiceId) wrap.setAttribute('data-selected-voice-id', voiceId);
+    else wrap.removeAttribute('data-selected-voice-id');
+    tiles.forEach((t, i) => {
       t.classList.toggle('selected', i === idx);
       if (i === idx) t.setAttribute('aria-current', 'true');
       else t.removeAttribute('aria-current');
@@ -936,14 +885,12 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   function resetTileIdle(tile) {
     const p = voiceTileState.get(tile);
     if (!p) return;
-    try { p.audio.pause(); } catch (e) { /* noop */ }
-    try { p.audio.currentTime = 0; } catch (e) { /* noop */ }
+    try { p.audio.pause(); } catch { /* ignore */ }
+    try { p.audio.currentTime = 0; } catch { /* ignore */ }
     p.playing = false;
     p.ringFg.style.strokeDashoffset = String(RING_C);
     const center = tile.querySelector('.unity-paf-pp-center');
-    if (center) {
-      center.innerHTML = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
-    }
+    if (center) center.innerHTML = PAF_PP_PLAY_SVG;
     tile.setAttribute('aria-pressed', 'false');
   }
 
@@ -957,7 +904,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   }
 
   function toggleTile(idx) {
-    const tile = tilesArr[idx];
+    const tile = tiles[idx];
     const p = tile && voiceTileState.get(tile);
     if (!p) return;
     const { audio } = p;
@@ -966,29 +913,21 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       audio.pause();
       return;
     }
-    audio.play().catch(() => {
-      try {
-        widgetInstance.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
-      } catch (e) { /* noop */ }
-    });
+    audio.play().catch(() => dispatchAudioPlaybackFailed(wrap));
   }
 
   function onTileActivate(idx) {
     if (idx !== selectedIdx) {
       syncPromptIfStuckToDefaults(selectedIdx, idx);
       setSelectedVisual(idx);
-      tilesArr.forEach((t, i) => { if (i !== idx) resetTileIdle(t); });
-      voiceTileState.get(tilesArr[idx])?.audio.play().catch(() => {
-        try {
-          widgetInstance.widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
-        } catch (e) { /* noop */ }
-      });
+      tiles.forEach((t, i) => { if (i !== idx) resetTileIdle(t); });
+      voiceTileState.get(tiles[idx]).audio.play().catch(() => dispatchAudioPlaybackFailed(wrap));
       return;
     }
     toggleTile(idx);
   }
 
-  tilesArr.forEach((tile, idx) => {
+  tiles.forEach((tile, idx) => {
     tile.addEventListener('click', (ev) => {
       if (ev.target?.closest && ev.target.closest('a[href]')) return;
       ev.preventDefault();
@@ -1003,7 +942,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   });
 
   setSelectedVisual(-1);
-  return () => { tilesArr.forEach(resetTileIdle); };
+  return () => { tiles.forEach(resetTileIdle); };
 }
 
 /**
@@ -1255,7 +1194,6 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   ]);
   promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const { el } = widgetInstance;
-  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
   const { widgetWrap, inpField } = await createPromptAudioInputShell(
     widgetInstance,
     el,
@@ -1266,12 +1204,10 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
     || '').trim();
   const visibleVoices = filterVoicesByModelId(allVoices, selectedModelId);
-  if (inpField) {
-    inpField.value = visibleVoices[0]?.defaultPrompt
-      ?? allVoices[0]?.defaultPrompt
-      ?? domDef
-      ?? '';
-  }
+  inpField.value = visibleVoices[0]?.defaultPrompt
+    ?? allVoices[0]?.defaultPrompt
+    ?? domDef
+    ?? '';
   const { section: voiceSection, tiles } = createVoiceStrip(
     visibleVoices,
     sectionHeading,
@@ -1295,7 +1231,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     const all = this.voiceConfigAll;
     if (!all || !all.length) return;
     const root = this.promptBarAudioRoot;
-    const row = root?.querySelector?.('.unity-paf-voice-row') ?? null;
+    const row = root?.querySelector('.unity-paf-voice-row') ?? null;
     if (!row) return;
     if (this.teardownVoiceTiles) {
       try { this.teardownVoiceTiles(); } catch (err) { /* noop */ }
@@ -1378,7 +1314,6 @@ export default class PromptBarAudioWidget extends UnityWidget {
     } = meta;
     const domDef = (defaultPromptFromAuthoring || '').trim();
     this.defaultPromptFromAuthoring = domDef;
-    this.hasVoiceOptions = !!currentPageSourceUrl;
     let voices = null;
     if (currentPageSourceUrl) {
       try {

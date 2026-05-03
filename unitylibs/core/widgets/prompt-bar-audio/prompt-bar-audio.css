@@ -18,9 +18,6 @@
 .unity-prompt-bar-audio {
   width: 100%;
   box-sizing: border-box;
-  --Font-size-100: 14px;
-  --Line-height-100: 18px;
-  --Letter-spacing: 0;
 }
 
 .unity-prompt-bar-audio .unity-paf-main {
@@ -115,13 +112,11 @@
 
 /* Keyboard focus: same blue keyline as selected card (Figma) */
 .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible {
-  outline: none;
   border-color: #274dea;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile.selected {
   border-color: #274dea;
-  background: #292929;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile.selected:hover {
@@ -235,16 +230,6 @@
   max-width: 100%;
 }
 
-.unity-prompt-bar-audio .unity-paf-voice-subfoot-line a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.unity-prompt-bar-audio .unity-paf-voice-subfoot-line a:hover {
-  color: #f8f8f8;
-}
-
 /* `placeholder-terms`: sibling below `.interactive-area`, inside `.unity-prompt-bar-audio` */
 .unity-prompt-bar-audio .unity-paf-terms-banner {
   box-sizing: border-box;
@@ -268,10 +253,16 @@
   max-width: 56rem;
 }
 
-.unity-prompt-bar-audio .unity-paf-terms-banner-line a {
+.unity-prompt-bar-audio .unity-paf-voice-subfoot-line a,
+.unity-prompt-bar-audio .unity-paf-terms-banner-line a,
+.unity-prompt-bar-audio .unity-paf-voice-footer-link {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-subfoot-line a:hover {
+  color: #f8f8f8;
 }
 
 .unity-prompt-bar-audio .unity-paf-terms-banner-line a:hover {
@@ -289,12 +280,6 @@
   font-size: 12px;
   line-height: 16px;
   color: #a3a3a3;
-}
-
-.unity-prompt-bar-audio .unity-paf-voice-footer-link {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-footer-link:hover {
@@ -515,11 +500,11 @@
 .unity-prompt-bar-audio .unity-slf-copy-label {
   color: #d1d1d1;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: var(--Font-size-100, 14px);
+  font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: var(--Line-height-100, 18px);
-  letter-spacing: var(--Letter-spacing, 0);
+  line-height: 18px;
+  letter-spacing: 0;
 }
 
 .unity-prompt-bar-audio .unity-slf-prompt-label {
@@ -690,16 +675,6 @@
   width: fit-content;
 }
 
-@media screen and (min-width: 1200px) {
-  .unity-prompt-bar-audio.unity-enabled {
-    max-width: 1000px;
-  }
-
-  .unity-prompt-bar-audio.unity-enabled > .interactive-area {
-    padding: 14px;
-  }
-}
-
 @media screen and (max-width: 599px) {
   .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
     padding: 10px;
@@ -711,6 +686,14 @@
 }
 
 @media screen and (min-width: 1200px) {
+  .unity-prompt-bar-audio.unity-enabled {
+    max-width: 1000px;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled > .interactive-area {
+    padding: 14px;
+  }
+
   .hero-marquee:has(+ .unity-prompt-bar-audio) > .foreground {
     max-width: 1000px;
     min-width: unset;
