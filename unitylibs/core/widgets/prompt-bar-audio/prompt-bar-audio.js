@@ -3,8 +3,6 @@
 
 import { createTag, getConfig } from '../../../scripts/utils.js';
 
-const CURRENT_PAGE_ICON_PREFIX = 'icon-operation-';
-
 let promptWithStyleEvents = null;
 
 function getUnityPromptConfigsBaseUrl() {
@@ -23,6 +21,7 @@ function sanitizeCurrentPageFileBase(name) {
   return base.toLowerCase();
 }
 
+const CURRENT_PAGE_ICON_PREFIX = 'icon-operation-';
 const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
 const PLACEHOLDER_PROMPT_DEFAULT = 'placeholder-prompt-default';
 const PLACEHOLDER_EXPLORE = 'placeholder-explore';
@@ -107,7 +106,6 @@ class UnityWidget {
     this.hasPromptSuggestions = false;
     this.hasModelOptions = false;
     this.voices = null;
-    /** @type {Array<{ modelId?: string, name: string, description: string, url: string, voiceId?: string }> | null} */
     this.voiceConfigAll = null;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
@@ -433,26 +431,10 @@ const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
 const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
 const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
-/** Full-player loading ring (viewBox matches progress ring; r matches {@link RING_R}). */
 const PAF_PLAYER_LOADING_SVG = '<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
   + '<circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="rotate(-90 24 24)" />'
   + '</svg>';
 
-/**
- * Per voice tile: audio (src deferred until first play — saves LCP vs eager `Audio(url)` + preload auto),
- * player shell, progress svg, loading shell (detached until buffering), center hub, ring fg, playing flag, clip URL.
- * @type {WeakMap<Element, {
- *   audio: HTMLAudioElement,
- *   ringFg: SVGElement,
- *   player: HTMLElement,
- *   bufferLayer: HTMLElement,
- *   progressSvg: Element,
- *   center: HTMLElement,
- *   playing: boolean,
- *   url: string,
- *   bufferingUi: boolean
- * }>}
- */
 const voiceTileState = new WeakMap();
 
 function setVoiceTilePlayerBuffering(tile, isBuffering) {
@@ -486,7 +468,6 @@ function setVoiceTileCenterPauseIcon(tile) {
   p.center.innerHTML = PAF_PP_PAUSE_SVG;
 }
 
-/** Assign `src` and enable buffering on first user-driven play; no-op once attached. */
 function primeVoiceAudioForPlayback(tile) {
   const p = voiceTileState.get(tile);
   if (!p || p.audio.src) return;
@@ -696,7 +677,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
 
 function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   const wrap = widgetInstance.widgetWrap;
-  /** @type {number} First tile selected on mount; use -1 only when clearing selection */
   let selectedIdx = 0;
   const authoring = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
 
@@ -992,12 +972,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   ]);
   promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const { el } = widgetInstance;
-  const { widgetWrap, inpField } = await createPromptAudioInputShell(
-    widgetInstance,
-    el,
-    '',
-    analyticsMod,
-  );
+  const { widgetWrap, inpField } = await createPromptAudioInputShell(widgetInstance, el, '', analyticsMod);
   const selectedModelId = (widgetInstance.selectedModelId
     || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
     || '').trim();
