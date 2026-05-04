@@ -620,7 +620,6 @@
 
 .unity-prompt-bar-audio.unity-enabled {
   margin-inline: auto;
-  box-sizing: border-box;
   padding-bottom: 76px;
 }
 
@@ -723,7 +722,21 @@
   width: fit-content;
 }
 
-@media screen and (max-width: 599px) {
+@media screen and (max-width: 1199px) {
+  .unity-prompt-bar-audio.unity-enabled {
+    width: var(--grid-container-width);
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-row {
+    gap: 10px;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-tile {
+    --unity-paf-voice-tile-width: 201px;
+  }
+}
+
+@media screen and (max-width: 600px) {
   .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
     padding: 10px;
   }
