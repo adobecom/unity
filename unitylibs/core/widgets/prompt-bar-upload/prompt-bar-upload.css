@@ -92,6 +92,8 @@ min-width: 0;
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section .pbu-prompt-bar-container {
 display: flex;
 flex-direction: column;
+align-items: stretch;
+align-content: stretch;
 gap: 0;
 width: 100%;
 min-width: 0;
@@ -131,9 +133,18 @@ max-width: 100%;
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section .unity-slf-prompt-label {
 margin-bottom: 0px;
+margin-inline: 0;
 padding: 0;
+padding-inline: 0;
+-webkit-padding-start: 0;
+-webkit-padding-end: 0;
 display: block;
 flex-shrink: 0;
+align-self: stretch;
+width: 100%;
+max-width: 100%;
+box-sizing: border-box;
+text-align: start;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field {
@@ -141,14 +152,56 @@ flex: 1;
 min-height: 80px;
 resize: none;
 width: 100%;
+max-width: 100%;
+align-self: stretch;
 box-sizing: border-box;
-padding-bottom: 10px;
+padding: 0;
+padding-inline: 0;
+padding-block: 0 10px;
+-webkit-padding-start: 0;
+-webkit-padding-end: 0;
 margin: 0 0 12px 0;
+margin-inline: 0;
 border: none;
 background: transparent;
 outline: none;
 font-size: var(--type-body-s-size, 15px);
 line-height: 1.45;
+text-align: start;
+-webkit-appearance: none;
+appearance: none;
+scrollbar-width: thin;
+scrollbar-color: #888 transparent;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field::-webkit-scrollbar {
+width: 6px;
+height: 6px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field::-webkit-scrollbar-track {
+background: transparent;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field::-webkit-scrollbar-thumb {
+background-color: #888;
+border-radius: 6px;
+}
+
+.unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field::-webkit-scrollbar-thumb:hover {
+background-color: #a0a0a0;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-right-section .inp-field {
+scrollbar-color: #6a6a6a rgb(0 0 0 / 12%);
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-right-section .inp-field::-webkit-scrollbar-thumb {
+background-color: #6a6a6a;
+}
+
+.unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-right-section .inp-field::-webkit-scrollbar-thumb:hover {
+background-color: #555;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
@@ -196,6 +249,12 @@ line-height: 18px;
 .unity-prompt-bar-upload.unity-enabled .unity-slf-prompt-label {
 display: block;
 margin-bottom: 8px;
+margin-inline: 0;
+padding-inline: 0;
+text-align: start;
+width: 100%;
+max-width: 100%;
+box-sizing: border-box;
 }
 
 .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .inp-field,
