@@ -26,6 +26,7 @@ const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
 const PLACEHOLDER_PROMPT_DEFAULT = 'placeholder-prompt-default';
 const PLACEHOLDER_EXPLORE = 'placeholder-explore';
 const PLACEHOLDER_TERMS = 'placeholder-terms';
+const EMPTY_PROMPT_RESTORE_MS = 10000;
 
 function filterVoicesByModelId(voices, selectedModelId) {
   const id = (selectedModelId || '').trim();
@@ -812,6 +813,30 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
     }
   });
   inpField.addEventListener('blur', () => { promptEngagedTracked = false; });
+
+  let emptyPromptRestoreTimerId = null;
+  const clearEmptyPromptRestoreTimer = () => {
+    if (emptyPromptRestoreTimerId != null) {
+      clearTimeout(emptyPromptRestoreTimerId);
+      emptyPromptRestoreTimerId = null;
+    }
+  };
+  widgetInstance.clearEmptyPromptRestoreTimer = clearEmptyPromptRestoreTimer;
+  inpField.addEventListener('input', () => {
+    const trimmed = (inpField.value || '').trim();
+    if (trimmed !== '') {
+      clearEmptyPromptRestoreTimer();
+      return;
+    }
+    clearEmptyPromptRestoreTimer();
+    emptyPromptRestoreTimerId = window.setTimeout(() => {
+      emptyPromptRestoreTimerId = null;
+      if (!inpField.isConnected) return;
+      if ((inpField.value || '').trim() !== '') return;
+      inpField.value = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
+    }, EMPTY_PROMPT_RESTORE_MS);
+  });
+
   const actionContainer = createTag('div', { class: 'action-container' });
   if (modelParts.length > 1) {
     const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
@@ -1038,6 +1063,8 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   const teardown = () => {
     if (interactivityTornDown) return;
     interactivityTornDown = true;
+    widgetInstance.clearEmptyPromptRestoreTimer?.();
+    delete widgetInstance.clearEmptyPromptRestoreTimer;
     removalObserver?.disconnect();
     removalObserver = null;
     if (widgetInstance.teardownVoiceTiles) {
