@@ -45,7 +45,7 @@ function currentPageConfigItemToVoice(item) {
     description: String(item.Description ?? '').trim(),
     url: String(item.url ?? '').trim(),
     voiceId: String(item.VoiceId ?? '').trim(),
-    modelId: String(item.Model ?? '').trim(),
+    modelId: String(item.ModelId ?? '').trim(),
   };
 }
 
@@ -433,9 +433,67 @@ const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
 const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
 const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
+/** Full-player loading ring (viewBox matches progress ring; r matches {@link RING_R}). */
+const PAF_PLAYER_LOADING_SVG = '<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
+  + '<circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="rotate(-90 24 24)" />'
+  + '</svg>';
 
-/** Per voice tile: audio element, progress ring, and playing flag (tile el → state). */
+/**
+ * Per voice tile: audio (src deferred until first play — saves LCP vs eager `Audio(url)` + preload auto),
+ * player shell, progress svg, loading shell (detached until buffering), center hub, ring fg, playing flag, clip URL.
+ * @type {WeakMap<Element, {
+ *   audio: HTMLAudioElement,
+ *   ringFg: SVGElement,
+ *   player: HTMLElement,
+ *   bufferLayer: HTMLElement,
+ *   progressSvg: Element,
+ *   center: HTMLElement,
+ *   playing: boolean,
+ *   url: string,
+ *   bufferingUi: boolean
+ * }>}
+ */
 const voiceTileState = new WeakMap();
+
+function setVoiceTilePlayerBuffering(tile, isBuffering) {
+  const p = voiceTileState.get(tile);
+  if (!p?.player || !p.bufferLayer || !p.progressSvg || !p.center) return;
+  const on = Boolean(isBuffering);
+  if (on === p.bufferingUi) return;
+  p.bufferingUi = on;
+  if (on) {
+    p.player.classList.add('unity-paf-voice-player--buffering');
+    p.bufferLayer.setAttribute('aria-busy', 'true');
+    p.player.replaceChildren(p.bufferLayer);
+  } else {
+    p.player.classList.remove('unity-paf-voice-player--buffering');
+    p.bufferLayer.removeAttribute('aria-busy');
+    p.player.replaceChildren(p.progressSvg, p.center);
+  }
+}
+
+function setVoiceTileCenterPlayIcon(tile) {
+  const p = voiceTileState.get(tile);
+  if (!p?.center) return;
+  setVoiceTilePlayerBuffering(tile, false);
+  p.center.innerHTML = PAF_PP_PLAY_SVG;
+}
+
+function setVoiceTileCenterPauseIcon(tile) {
+  const p = voiceTileState.get(tile);
+  if (!p?.center) return;
+  setVoiceTilePlayerBuffering(tile, false);
+  p.center.innerHTML = PAF_PP_PAUSE_SVG;
+}
+
+/** Assign `src` and enable buffering on first user-driven play; no-op once attached. */
+function primeVoiceAudioForPlayback(tile) {
+  const p = voiceTileState.get(tile);
+  if (!p || p.audio.src) return;
+  setVoiceTilePlayerBuffering(tile, true);
+  p.audio.preload = 'auto';
+  p.audio.src = p.url;
+}
 
 function findPlaceholderIconLi(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`)
@@ -538,9 +596,22 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   const center = createTag('div', { class: 'unity-paf-pp-center' });
   center.innerHTML = PAF_PP_PLAY_SVG;
 
-  const audioObj = new Audio(url);
-  audioObj.preload = 'auto';
-  voiceTileState.set(tile, { audio: audioObj, ringFg, playing: false });
+  const bufferLayer = createTag('div', { class: 'unity-paf-voice-player-loading' });
+  bufferLayer.innerHTML = PAF_PLAYER_LOADING_SVG;
+
+  const audioObj = new Audio();
+  audioObj.preload = 'none';
+  voiceTileState.set(tile, {
+    audio: audioObj,
+    ringFg,
+    player,
+    bufferLayer,
+    progressSvg: svg,
+    center,
+    playing: false,
+    url,
+    bufferingUi: false,
+  });
   player.append(svg, center);
 
   tile.append(textCol, player);
@@ -553,8 +624,8 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     ringFg.style.strokeDashoffset = String(RING_C * (1 - p));
   };
 
-  const showPlayIcon = () => { center.innerHTML = PAF_PP_PLAY_SVG; };
-  const showPauseIcon = () => { center.innerHTML = PAF_PP_PAUSE_SVG; };
+  const showPlayIcon = () => setVoiceTileCenterPlayIcon(tile);
+  const showPauseIcon = () => setVoiceTileCenterPauseIcon(tile);
 
   let rafId = null;
   const tick = () => {
@@ -611,7 +682,14 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     stopRaf();
   });
   audioObj.addEventListener('error', () => {
+    setVoiceTileCenterPlayIcon(tile);
     dispatchAudioPlaybackFailed(widgetInstance.widgetWrap);
+  });
+  audioObj.addEventListener('waiting', () => {
+    if (!audioObj.paused) setVoiceTilePlayerBuffering(tile, true);
+  });
+  audioObj.addEventListener('playing', () => {
+    if (!audioObj.paused) showPauseIcon();
   });
   return tile;
 }
@@ -653,8 +731,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     try { p.audio.currentTime = 0; } catch { /* ignore */ }
     p.playing = false;
     p.ringFg.style.strokeDashoffset = String(RING_C);
-    const center = tile.querySelector('.unity-paf-pp-center');
-    if (center) center.innerHTML = PAF_PP_PLAY_SVG;
+    setVoiceTileCenterPlayIcon(tile);
     tile.setAttribute('aria-pressed', 'false');
   }
 
@@ -675,7 +752,11 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       audio.pause();
       return;
     }
-    audio.play().catch(() => dispatchAudioPlaybackFailed(wrap));
+    primeVoiceAudioForPlayback(tile);
+    audio.play().catch(() => {
+      setVoiceTileCenterPlayIcon(tile);
+      dispatchAudioPlaybackFailed(wrap);
+    });
   }
 
   function onTileActivate(idx) {
@@ -683,7 +764,12 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       syncPromptIfStuckToDefaults();
       setSelectedVisual(idx);
       tiles.forEach((t, i) => { if (i !== idx) resetTileIdle(t); });
-      voiceTileState.get(tiles[idx]).audio.play().catch(() => dispatchAudioPlaybackFailed(wrap));
+      const nextTile = tiles[idx];
+      primeVoiceAudioForPlayback(nextTile);
+      voiceTileState.get(nextTile).audio.play().catch(() => {
+        setVoiceTileCenterPlayIcon(nextTile);
+        dispatchAudioPlaybackFailed(wrap);
+      });
       return;
     }
     toggleTile(idx);

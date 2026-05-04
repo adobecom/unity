@@ -173,7 +173,8 @@
   .unity-prompt-bar-audio .unity-paf-voice-tile:hover .unity-paf-voice-player,
   .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible .unity-paf-voice-player,
   .unity-prompt-bar-audio .unity-paf-voice-tile[aria-pressed="true"] .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player {
+  .unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player,
+  .unity-prompt-bar-audio .unity-paf-voice-tile:has(.unity-paf-voice-player--buffering) .unity-paf-voice-player {
     opacity: 1;
   }
 }
@@ -210,6 +211,44 @@
 
 .unity-prompt-bar-audio .unity-paf-pp-center .unity-paf-pp-svg use {
   filter: brightness(0) invert(1);
+}
+
+/* Sole child of `.unity-paf-voice-player` while buffering (ring + hub are detached). */
+.unity-prompt-bar-audio .unity-paf-voice-player-loading {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #f8f8f8;
+  pointer-events: none;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-player-loading-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 2πr for r=20 (matches progress ring) */
+.unity-prompt-bar-audio .unity-paf-voice-player-loading-circle {
+  stroke-dasharray: 125.664;
+  stroke-dashoffset: 125.664;
+  animation: unity-paf-voice-player-loading-sweep 1s ease-in-out infinite;
+}
+
+@keyframes unity-paf-voice-player-loading-sweep {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unity-prompt-bar-audio .unity-paf-voice-player-loading-circle {
+    animation: none;
+    stroke-dashoffset: 62.8;
+  }
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-subfoot {
