@@ -795,6 +795,7 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
+    maxlength: '5000',
     'aria-autocomplete': 'list',
     'aria-haspopup': 'listbox',
     rows: '4',

@@ -76,7 +76,6 @@
   padding-bottom: 2px;
 }
 
-/* Voice tile — Doodlebug Wave 2 / Figma 8426:13771 (Dark mode card) */
 .unity-prompt-bar-audio .unity-paf-voice-tile {
   --unity-paf-voice-tile-width: 231px;
   --paf-voice-tile-border-width: 1.78px;
@@ -110,7 +109,6 @@
   outline: none;
 }
 
-/* Keyboard focus: same blue keyline as selected card (Figma) */
 .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible {
   border-color: #274dea;
 }
@@ -155,7 +153,6 @@
   text-overflow: ellipsis;
 }
 
-/* Figma S2_Icon_PlayCircle ~37.17px frame */
 .unity-prompt-bar-audio .unity-paf-voice-player {
   position: relative;
   width: 37.17px;
@@ -163,7 +160,6 @@
   flex: 0 0 37.17px;
 }
 
-/* Fine pointer + hover: hide play/pause until hover, keyboard focus, while playing (aria-pressed), or the tile is selected (stays visible after pause). Touch stays always visible. */
 @media (hover: hover) and (pointer: fine) {
   .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
     opacity: 0;
@@ -213,7 +209,6 @@
   filter: brightness(0) invert(1);
 }
 
-/* Sole child of `.unity-paf-voice-player` while buffering (ring + hub are detached). */
 .unity-prompt-bar-audio .unity-paf-voice-player-loading {
   box-sizing: border-box;
   display: flex;
@@ -231,7 +226,6 @@
   height: 100%;
 }
 
-/* 2πr for r=20 (matches progress ring) */
 .unity-prompt-bar-audio .unity-paf-voice-player-loading-circle {
   stroke-dasharray: 125.664;
   stroke-dashoffset: 125.664;
@@ -269,7 +263,6 @@
   max-width: 100%;
 }
 
-/* `placeholder-terms`: sibling below `.interactive-area`, inside `.unity-prompt-bar-audio` */
 .unity-prompt-bar-audio .unity-paf-terms-banner {
   box-sizing: border-box;
   width: 100%;
@@ -293,23 +286,33 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-subfoot-line a,
-.unity-prompt-bar-audio .unity-paf-terms-banner-line a,
 .unity-prompt-bar-audio .unity-paf-voice-footer-link {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
+.unity-prompt-bar-audio .unity-paf-terms-banner-line a {
+  color: var(--highlight-blue, #1473e6);
+  text-decoration: none;
+}
+
+.unity-prompt-bar-audio .unity-paf-terms-banner-line a:hover {
+  color: #378ef0;
+}
+
+.unity-prompt-bar-audio .unity-paf-terms-banner-line a:focus-visible {
+  outline: 2px solid var(--highlight-blue, #1473e6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .unity-prompt-bar-audio .unity-paf-voice-subfoot-line a:hover {
   color: #f8f8f8;
 }
 
-.unity-prompt-bar-audio .unity-paf-terms-banner-line a:hover {
-  color: #fff;
-}
-
 .unity-prompt-bar-audio:has(.interactive-area.light) .unity-paf-terms-banner-line a:hover {
-  color: #000;
+  color: #095aba;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-footer {
@@ -382,7 +385,6 @@
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model .model-name {
-  /* Closed control grows with the selected label (prompt-bar-style uses flex:1 + ellipsis) */
   flex: 0 1 auto;
   min-width: min-content;
   overflow: visible;
@@ -395,7 +397,6 @@
   height: 20px;
 }
 
-/* Match prompt-bar-style: chevron / menu icon size (avoids huge SVG from sprite) */
 .unity-prompt-bar-audio.unity-enabled .interactive-area .selected-verb .menu-icon,
 .unity-prompt-bar-audio.unity-enabled .interactive-area .selected-model .menu-icon {
   font-size: 0;
@@ -467,13 +468,11 @@
 .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container.show-menu .verb-list,
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verbs-container.show-menu .verb-list {
   display: block;
-  /* prompt-bar-style animates with translateY(40px), which leaves dead space in the dark menu */
   animation: none;
   transform: none;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container .verb-list {
-  /* Model menu: compact height; width ≥ trigger and ≥ longest option label */
   padding: 10px 12px;
   min-height: 0;
   box-sizing: border-box;
@@ -524,7 +523,6 @@
   display: none;
 }
 
-/* Checkmark sits in the gutter; flex + block margins align with row better than translateY(-50%) alone */
 .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list .verb-item.selected .verb-link .selected-icon {
   display: flex;
   align-items: center;
@@ -576,7 +574,6 @@
   white-space: nowrap;
 }
 
-/* Self-contained: same generate CTA as prompt-bar-style (flex row, pill, no link underline) */
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap {
   display: flex;
   width: fit-content;
@@ -710,7 +707,6 @@
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
-  /* Grow with widest model name (173px max-width used to cap the open list to the trigger) */
   min-width: 0;
   max-width: 100%;
 }

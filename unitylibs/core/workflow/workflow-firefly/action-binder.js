@@ -235,7 +235,8 @@ export default class ActionBinder {
     || '';
 
   validateInput(query) {
-    if (query.length > 750) {
+    const maxLen = this.block?.classList?.contains('unity-prompt-bar-audio') ? 5000 : 750;
+    if (query.length > maxLen) {
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
     }
