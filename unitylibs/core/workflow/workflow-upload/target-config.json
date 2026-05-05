@@ -26,6 +26,12 @@
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/webp"],
       "maxFileSize": 100000000
     },
+    "limits-upload-video": {
+      "allowedFileTypes": ["video/mp4", "video/quicktime"],
+      "maxFileSize": 200000000,
+      "minDuration": 5,
+      "maxDuration": 20
+    },
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink-photoshop": "/cc-shared/fragments/products/photoshop/unity/splash-page/splashscreen",

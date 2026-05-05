@@ -5,9 +5,10 @@ export const [setLibs, getLibs] = (() => {
       libs = (() => {
         const { hostname, origin, search } = location || window.location;
         if (hostname.endsWith('acrobat.adobe.com')) return `${origin}/dc-shared/libs`;
-        if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
+        if (!['.aem.', '.hlx.', '.stage.', 'localhost', '.da.'].some((i) => hostname.includes(i))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
+        if (branch === 'main' && hostname.includes('.stage.')) return prodLibs;
         const env = hostname.includes('.hlx.') ? 'hlx' : 'aem';
         return branch.includes('--') ? `https://${branch}.${env}.live/libs` : `https://${branch}--milo--adobecom.${env}.live/libs`;
       })();
@@ -29,7 +30,7 @@ export const [setUnityLibs, getUnityLibs] = (() => {
 
 export function decorateArea() {}
 
-const miloLibs = setLibs('/libs');
+const miloLibs = setLibs(`${window.location.origin}/libs`);
 
 const {
   createTag, getConfig, loadStyle, loadLink, loadScript, localizeLink, loadArea,
@@ -297,12 +298,14 @@ export const unityConfig = (() => {
     prod: {
       apiEndPoint: 'https://unity.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity.adobe.io/api/v1/asset/connector',
+      pageConfigEndPoint: 'https://cdn-unity.adobe.com/api/v1/pageConfig',
       env: 'prod',
       ...commoncfg,
     },
     stage: {
       apiEndPoint: 'https://unity-stage.adobe.io/api/v1',
       connectorApiEndPoint: 'https://unity-stage.adobe.io/api/v1/asset/connector',
+      pageConfigEndPoint: 'https://cdn-unity.stage.adobe.com/api/v1/pageConfig',
       env: 'stage',
       ...commoncfg,
     },
@@ -334,4 +337,15 @@ export function sendAnalyticsEvent(event) {
 
 export function getMatchedDomain(domainMap = {}, hostname = window.location.hostname) {
   return Object.keys(domainMap).find((domain) => domainMap[domain].some((pattern) => new RegExp(pattern).test(hostname)));
+}
+
+export async function fetchPageConfig({ product, verb }) {
+  try {
+    const url = `${unityConfig.pageConfigEndPoint}?product=${product}&verb=${verb}`;
+    const resp = await fetch(url, { headers: { 'x-api-key': unityConfig.apiKey } });
+    if (!resp.ok) throw new Error(`PageConfig fetch failed: ${resp.statusText}`);
+    return resp.json();
+  } catch (e) {
+    return {};
+  }
 }
