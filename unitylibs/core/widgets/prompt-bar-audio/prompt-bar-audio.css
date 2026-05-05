@@ -624,10 +624,64 @@
 .unity-prompt-bar-audio.unity-enabled > .interactive-area {
   display: flex;
   box-sizing: border-box;
-  background: #222;
-  padding: 8px;
+  padding: 14px;
   border-radius: 20px;
   gap: 8px;
+  isolation: isolate;
+}
+
+.unity-prompt-bar-audio.unity-enabled > .interactive-area.dark {
+  background: rgb(24 24 24 / 48%);
+  backdrop-filter: blur(32px) saturate(165%);
+  -webkit-backdrop-filter: blur(32px) saturate(165%);
+  border: 1px solid rgb(255 255 255 / 14%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 16px 48px rgb(0 0 0 / 28%);
+}
+
+.unity-prompt-bar-audio.unity-enabled > .interactive-area.light {
+  background: rgb(255 255 255 / 52%);
+  backdrop-filter: blur(32px) saturate(165%);
+  -webkit-backdrop-filter: blur(32px) saturate(165%);
+  border: 1px solid rgb(0 0 0 / 8%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 85%),
+    0 16px 48px rgb(0 0 0 / 10%);
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area.dark .unity-slf-left {
+  background: rgb(255 255 255 / 5%);
+}
+
+.unity-prompt-bar-audio.unity-enabled .interactive-area.light .unity-slf-left {
+  background: rgb(0 0 0 / 4%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .unity-prompt-bar-audio.unity-enabled > .interactive-area.dark {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: #222;
+    border: 1px solid rgb(255 255 255 / 10%);
+    box-shadow: none;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled > .interactive-area.light {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: #eaeaea;
+    border: 1px solid rgb(0 0 0 / 10%);
+    box-shadow: none;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled .interactive-area.dark .unity-slf-left {
+    background: #1b1b1b;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled .interactive-area.light .unity-slf-left {
+    background: #fff;
+  }
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
@@ -738,10 +792,6 @@
 @media screen and (min-width: 1200px) {
   .unity-prompt-bar-audio.unity-enabled {
     max-width: 1000px;
-  }
-
-  .unity-prompt-bar-audio.unity-enabled > .interactive-area {
-    padding: 14px;
   }
 
   .hero-marquee:has(+ .unity-prompt-bar-audio) > .foreground {
