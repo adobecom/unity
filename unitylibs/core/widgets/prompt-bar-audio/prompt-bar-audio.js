@@ -26,6 +26,8 @@ const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
 const PLACEHOLDER_PROMPT_DEFAULT = 'placeholder-prompt-default';
 const PLACEHOLDER_EXPLORE = 'placeholder-explore';
 const PLACEHOLDER_TERMS = 'placeholder-terms';
+const VOICE_ROW_PEEK_CLASS = 'unity-paf-voice-row-peek';
+const VOICE_ROW_PEEK_SCROLLED_CLASS = 'unity-paf-voice-row-peek-scrolled';
 const EMPTY_PROMPT_RESTORE_MS = 10000;
 
 function filterVoicesByModelId(voices, selectedModelId) {
@@ -927,6 +929,30 @@ function buildTermsBannerElement(termsHtml) {
   return outer;
 }
 
+function syncVoiceRowPeekClasses(row, shouldPeek) {
+  if (!row) return;
+  row.classList.toggle(VOICE_ROW_PEEK_CLASS, shouldPeek);
+  row.classList.toggle(VOICE_ROW_PEEK_SCROLLED_CLASS, shouldPeek && row.scrollLeft > 0);
+}
+
+function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
+  if (widgetInstance.detachVoiceRowPeekTracking) {
+    try { widgetInstance.detachVoiceRowPeekTracking(); } catch (e) { /* noop */ }
+    widgetInstance.detachVoiceRowPeekTracking = null;
+  }
+  if (!row) {
+    syncVoiceRowPeekClasses(null, false);
+    return;
+  }
+  const onScroll = () => {
+    const active = row.classList.contains(VOICE_ROW_PEEK_CLASS);
+    syncVoiceRowPeekClasses(row, active);
+  };
+  row.addEventListener('scroll', onScroll, { passive: true });
+  widgetInstance.detachVoiceRowPeekTracking = () => row.removeEventListener('scroll', onScroll);
+  syncVoiceRowPeekClasses(row, shouldPeek);
+}
+
 function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, widgetInstance, opts = {}) {
   const { exploreHtml = '' } = opts;
   if (!allVoices.length) return { section: null, tiles: [] };
@@ -949,6 +975,7 @@ function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, 
     sectionHeading,
   );
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
+  syncVoiceRowPeekClasses(row, visibleVoices.length > 4);
   const tiles = visibleVoices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
   section.append(heading, row);
   appendVoiceExploreSubfoot(section, exploreHtml, footerLink);
@@ -1034,6 +1061,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     const auth = (this.defaultPromptFromAuthoring ?? '').trim();
     row.replaceChildren();
     const visible = filterVoicesByModelId(all, mid);
+    syncVoiceRowPeekClasses(row, visible.length > 4);
     if (this.voicePromptInpField) {
       const cur = (this.voicePromptInpField.value || '').trim();
       if (visible.length > 0 && (cur === '' || cur === auth)) {
@@ -1059,6 +1087,8 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
 
   insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner);
   const root = widgetInstance.promptBarAudioRoot;
+  const initialRow = root?.querySelector('.unity-paf-voice-row') ?? null;
+  wireVoiceRowPeekTracking(widgetInstance, initialRow, visibleVoices.length > 4);
   let removalObserver = null;
   let interactivityTornDown = false;
   const teardown = () => {
@@ -1071,6 +1101,10 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     if (widgetInstance.teardownVoiceTiles) {
       try { widgetInstance.teardownVoiceTiles(); } catch (e) { /* noop */ }
       widgetInstance.teardownVoiceTiles = null;
+    }
+    if (widgetInstance.detachVoiceRowPeekTracking) {
+      try { widgetInstance.detachVoiceRowPeekTracking(); } catch (e) { /* noop */ }
+      widgetInstance.detachVoiceRowPeekTracking = null;
     }
     delete widgetInstance.refreshVoiceTilesForModel;
     if (widgetInstance.disconnectPromptBarAudio === teardown) {
