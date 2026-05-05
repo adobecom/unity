@@ -430,11 +430,11 @@ class UnityWidget {
 
 const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
+const RING_STROKE_WIDTH = (2.78751 * 48) / 33;
+const RING_STROKE_ATTR = String(RING_STROKE_WIDTH);
 const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
 const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
-const PAF_PLAYER_LOADING_SVG = '<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
-  + '<circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="rotate(-90 24 24)" />'
-  + '</svg>';
+const PAF_PLAYER_LOADING_SVG = `<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)" /></svg>`;
 
 const voiceTileState = new WeakMap();
 
@@ -562,14 +562,16 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   ringBg.setAttribute('cy', '24');
   ringBg.setAttribute('r', String(RING_R));
   ringBg.setAttribute('fill', 'none');
-  ringBg.setAttribute('stroke-width', '2');
+  ringBg.setAttribute('stroke-width', RING_STROKE_ATTR);
+  ringBg.setAttribute('stroke-linecap', 'round');
   const ringFg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   ringFg.setAttribute('class', 'unity-paf-ring-fg');
   ringFg.setAttribute('cx', '24');
   ringFg.setAttribute('cy', '24');
   ringFg.setAttribute('r', String(RING_R));
   ringFg.setAttribute('fill', 'none');
-  ringFg.setAttribute('stroke-width', '2');
+  ringFg.setAttribute('stroke-width', RING_STROKE_ATTR);
+  ringFg.setAttribute('stroke-linecap', 'round');
   ringFg.setAttribute('transform', 'rotate(-90 24 24)');
   ringFg.style.strokeDasharray = String(RING_C);
   ringFg.style.strokeDashoffset = String(RING_C);
@@ -796,7 +798,6 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
-    maxlength: '5000',
     'aria-autocomplete': 'list',
     'aria-haspopup': 'listbox',
     rows: '4',
