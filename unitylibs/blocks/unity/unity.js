@@ -9,6 +9,7 @@ function getUnityLibs(prodLibs, project = 'unity') {
     return prodLibs;
   }
   const branch = new URLSearchParams(window.location.search).get('unitylibs') || 'main';
+  if (!/^[a-zA-Z0-9_-]+$/.test(branch)) throw new Error('Invalid branch name.');
   const helixVersion = hostname.includes('.hlx.') ? 'hlx' : 'aem';
   return branch.indexOf('--') > -1
     ? `https://${branch}.${helixVersion}.live/unitylibs`
