@@ -236,42 +236,31 @@ export default class ActionBinder {
     wrap?.classList.toggle('pbu-select-processing', !!visible);
   }
 
-  async checkImageDimensions(file) {
-    const { getImageDimensions } = await import(`${getUnityLibs()}/utils/FileUtils.js`);
-    const { width, height } = await getImageDimensions(file);
-    this.filesData = { ...this.filesData, width, height };
-    if (this.limits.minWidth && this.limits.minHeight) {
-      if (width < this.limits.minWidth || height < this.limits.minHeight) {
-        this.handleClientError('.icon-error-filemindimension', 'error-filemindimension');
-        throw new Error('Image below minimum dimensions');
-      }
-    }
-  }
-
   async validateAndStoreFile(files) {
-    if (!files?.length) return false;
-    if (files.length > (this.limits.maxNumFiles || 1)) {
-      this.handleClientError('.icon-error-filecount', 'error-filecount');
-      return false;
-    }
-    const file = files[0];
-    this.filesData = { count: files.length, size: file.size, type: file.type };
-    if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
-      this.handleClientError('.icon-error-filetype', 'error-filetype');
-      return false;
-    }
-    if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
-      this.handleClientError('.icon-error-filesize', 'error-filesize');
-      return false;
-    }
     this.setSelectSpinnerVisible(true);
-    try {await this.checkImageDimensions(file);} 
-    catch {return false;} 
-    finally {this.setSelectSpinnerVisible(false);}
-    this.resetUploadedAssetState();
-    this.pendingFile = file;
-    this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
-    return true;
+    try {
+      if (!files?.length) return false;
+      if (files.length > (this.limits.maxNumFiles || 1)) {
+        this.handleClientError('.icon-error-filecount', 'error-filecount');
+        return false;
+      }
+      const file = files[0];
+      this.filesData = { count: files.length, size: file.size, type: file.type };
+      if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
+        this.handleClientError('.icon-error-filetype', 'error-filetype');
+        return false;
+      }
+      if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
+        this.handleClientError('.icon-error-filesize', 'error-filesize');
+        return false;
+      }
+      this.resetUploadedAssetState();
+      this.pendingFile = file;
+      this.widgetWrap?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
+      return true;
+    } finally {
+      this.setSelectSpinnerVisible(false);
+    }
   }
 
   async uploadImgToUnity(storageUrl, _id, blobData, fileType, signal) {
@@ -364,7 +353,7 @@ export default class ActionBinder {
   }
 
   validateInput(query) {
-    const maxCharLimit = this.limits?.['max-char-limit'] ?? 750;
+    const maxCharLimit = this.limits?.['max-char-limit'] ?? 1024;
     if (query.length > maxCharLimit) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
       this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
@@ -383,7 +372,7 @@ export default class ActionBinder {
     }
   }
 
-  async handleGenerate(connectorGenerate = true) {
+  async handleGenerate(isGenerateCta = true) {
     this.promiseStack = [];
     if (!this.analyticsModule) await this.initAnalytics();
     const pbuEvents = this.analyticsModule.PROMPT_BAR_EVENTS;
@@ -393,7 +382,7 @@ export default class ActionBinder {
     const selectedModelId = this.widgetWrap?.getAttribute('data-selected-model-id') || '';
     const selectedAspectRatio = this.widgetWrap?.getAttribute('data-selected-aspect-ratio') || '';
     const selectedModelName = this.widgetWrap?.getAttribute('data-selected-model-name') || selectedModelId;
-    const ctaEventName = connectorGenerate ? pbuEvents.GENERATE_CTA : pbuEvents.MORE;
+    const ctaEventName = isGenerateCta ? pbuEvents.GENERATE_CTA : pbuEvents.MORE;
     sendAnalyticsEvent(new CustomEvent(pbuEvents.UPLOAD_STARTED));
     sendAnalyticsEvent(new CustomEvent(ctaEventName));
     if (selectedModelName) sendAnalyticsEvent(new CustomEvent(pbuEvents.generateModel(selectedModelName)));
@@ -421,11 +410,11 @@ export default class ActionBinder {
         return;
       }
     }
-    await this.continueInApp(query, selectedModelId, selectedAspectRatio, connectorGenerate);
+    await this.continueInApp(query, selectedModelId, selectedAspectRatio);
   }
 
 
-  async continueInApp(query, modelId, aspectRatio, connectorGenerate = true) {
+  async continueInApp(query, modelId, aspectRatio) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
     const modelVersion = this.widgetWrap?.getAttribute('data-selected-model-version') || '';
@@ -447,7 +436,7 @@ export default class ActionBinder {
         ...(modelId && { modelId }),
         ...(modelVersion && { modelVersion }),
         ...(aspectRatio && { aspectRatio }),
-        generate: connectorGenerate,
+        generate: false,
       },
     };
     try {
@@ -628,6 +617,50 @@ export default class ActionBinder {
     this.bindWidgetInteractionEvent('pbu-model-dropdown-open', pbuEvents.MODEL_SELECT_DROPDOWN, 'open');
     this.bindWidgetInteractionEvent('pbu-ratio-dropdown-open', pbuEvents.RATIO_DROPDOWN, 'open');
     this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetUploadedAssetState({ dropPendingImage: true }));
+    this.bindOuterMarqueeDropTarget();
+  }
+
+  bindOuterMarqueeDropTarget() {
+    const outerMarquee = this.block?.querySelector('.upload-marquee-layout') || this.block;
+    const dropZone = this.widgetWrap?.querySelector('.drop-zone');
+    if (!outerMarquee || outerMarquee.dataset.pbuOuterDropBound === 'true') return;
+    outerMarquee.dataset.pbuOuterDropBound = 'true';
+
+    let dragDepth = 0;
+    const hasFilePayload = (e) => !!e?.dataTransfer?.types
+      && Array.from(e.dataTransfer.types).includes('Files');
+    const setDropzoneHighlight = (isOn) => dropZone?.classList.toggle('drag-over', !!isOn);
+
+    outerMarquee.addEventListener('dragenter', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth += 1;
+      setDropzoneHighlight(true);
+    });
+
+    outerMarquee.addEventListener('dragover', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      setDropzoneHighlight(true);
+    });
+
+    outerMarquee.addEventListener('dragleave', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) setDropzoneHighlight(false);
+    });
+
+    outerMarquee.addEventListener('drop', async (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth = 0;
+      setDropzoneHighlight(false);
+      sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
+      const files = this.extractFiles(e);
+      await this.executeAction('file-selected', outerMarquee, files);
+    });
   }
 
   bindElement(el, actionsList) {

@@ -31,6 +31,21 @@ function svgIcon(href) {
   return `<svg><use xlink:href="${href}"></use></svg>`;
 }
 
+function getAspectRatioIconHref(ratio) {
+  const parts = String(ratio).split(':').map((s) => parseFloat(String(s).trim(), 10));
+  if (parts.length !== 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1]) || parts[1] === 0) {
+    return '#unity-aspect-ratio-horizontal-icon';
+  }
+  const [w, h] = parts;
+  if (w > h) return '#unity-aspect-ratio-horizontal-icon';
+  if (h > w) return '#unity-aspect-ratio-vertical-icon';
+  return '#unity-aspect-ratio-horizontal-icon';
+}
+
+function createAspectRatioIconSpan(ratio) {
+  return createTag('span', { class: 'pbu-aspect-ratio-icon', 'aria-hidden': 'true' }, svgIcon(getAspectRatioIconHref(ratio)));
+}
+
 function syncDropdownSelection(list, activeLink) {
   list.querySelectorAll('li').forEach((li) => {
     const a = li.querySelector('a');
@@ -78,6 +93,14 @@ function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, aria
 }
 
 function attachDropdownBehavior(container, triggerBtn, list) {
+  const getOptions = () => [...list.querySelectorAll('a.model-link')];
+  const focusSelectedOrFirst = () => {
+    const options = getOptions();
+    if (!options.length) return;
+    const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
+    (selected || options[0])?.focus();
+  };
+
   triggerBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     document.querySelectorAll('.models-container.show-menu').forEach((other) => {
@@ -90,6 +113,73 @@ function attachDropdownBehavior(container, triggerBtn, list) {
     if (isOpen) list.removeAttribute('style');
     else list.setAttribute('style', 'display: none;');
     triggerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  triggerBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown(container, triggerBtn, list);
+      triggerBtn.focus();
+      return;
+    }
+
+    if (!['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const isOpen = container.classList.contains('show-menu');
+    if (!isOpen) {
+      container.classList.add('show-menu');
+      list.removeAttribute('style');
+      triggerBtn.setAttribute('aria-expanded', 'true');
+    }
+    focusSelectedOrFirst();
+  });
+
+  list.addEventListener('keydown', (e) => {
+    const options = getOptions();
+    if (!options.length) return;
+    const idx = options.findIndex((option) => option === document.activeElement);
+    if (e.key === 'Tab') {
+      if (idx < 0) return;
+      const atStart = idx === 0;
+      const atEnd = idx === options.length - 1;
+      if ((e.shiftKey && atStart) || (!e.shiftKey && atEnd)) {
+        closeDropdown(container, triggerBtn, list);
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown(container, triggerBtn, list);
+      triggerBtn.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = idx < 0 ? 0 : (idx + 1) % options.length;
+      options[next]?.focus();
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const next = idx < 0 ? options.length - 1 : (idx - 1 + options.length) % options.length;
+      options[next]?.focus();
+      return;
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      options[0]?.focus();
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      options[options.length - 1]?.focus();
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const active = idx >= 0 ? options[idx] : options[0];
+      active?.click();
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -123,7 +213,7 @@ export default class PromptBarUploadWidget {
     const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
       ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
       : origin;
-    const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video-sample.json`);
+    const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video.json`);
     if (!res.ok) throw new Error('Failed to fetch video models.');
     const json = await res.json();
     this.models = json?.content?.data || [];
@@ -193,6 +283,7 @@ export default class PromptBarUploadWidget {
         class: 'verb-link model-link',
         'data-model-id': model.id,
         'data-model-name': (model.name || '').trim(),
+        'data-model-icon': model.icon || '',
         ...(model.version != null && model.version !== '' ? { 'data-model-version': String(model.version) } : {}),
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
@@ -212,9 +303,20 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const modelId = link.getAttribute('data-model-id') || '';
       const modelName = link.getAttribute('data-model-name') || '';
+      const modelIcon = link.getAttribute('data-model-icon') || '';
       const modelVersion = link.getAttribute('data-model-version') || '';
       this.selectedModelId = modelId;
       nameContainer.textContent = modelName;
+      const triggerIcon = triggerBtn.querySelector(':scope > img');
+      if (modelIcon) {
+        if (triggerIcon) {
+          triggerIcon.setAttribute('src', modelIcon);
+        } else {
+          triggerBtn.prepend(createTag('img', { src: modelIcon, alt: '' }));
+        }
+      } else if (triggerIcon) {
+        triggerIcon.remove();
+      }
       this.widgetWrap?.setAttribute('data-selected-model-id', modelId);
       this.widgetWrap?.setAttribute('data-selected-model-name', modelName);
       if (modelVersion) this.widgetWrap?.setAttribute('data-selected-model-version', modelVersion);
@@ -266,10 +368,12 @@ export default class PromptBarUploadWidget {
     if (!ratios.length) return null;
     this.setSelectedAspectRatio(modelId, ratios[0]);
 
+    const triggerAspectIcon = createAspectRatioIconSpan(ratios[0]);
     const { container, triggerBtn, nameContainer, list } = buildDropdownShell({
       label: 'Aspect ratio',
       menuId: 'pbu-aspect-menu',
       extraClass: 'pbu-aspect-models',
+      imgEl: triggerAspectIcon,
     });
     nameContainer.textContent = ratios[0];
 
@@ -282,7 +386,7 @@ export default class PromptBarUploadWidget {
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
       });
-      link.append(selectedIcon, createTag('span', { class: 'model-name' }, ratio));
+      link.append(selectedIcon, createAspectRatioIconSpan(ratio), createTag('span', { class: 'model-name' }, ratio));
       const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
       li.append(link);
       list.append(li);
@@ -295,6 +399,7 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const ratio = link.getAttribute('data-ratio') || '';
       nameContainer.textContent = ratio;
+      triggerAspectIcon.innerHTML = svgIcon(getAspectRatioIconHref(ratio));
       this.setSelectedAspectRatio(modelId, ratio);
       syncDropdownSelection(list, link);
       closeDropdown(container, triggerBtn, list);
@@ -383,6 +488,11 @@ export default class PromptBarUploadWidget {
       'aria-label': 'Upload image',
     });
     dropZone.append(fileInput, dropContent);
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      fileInput.click();
+    });
     const selectSpinner = createTag('div', { class: 'pbu-select-spinner hidden', 'aria-hidden': 'true', role: 'status' });
     selectSpinner.append(createTag('div', { class: 'pbu-select-spinner-ring' }));
 
@@ -400,12 +510,10 @@ export default class PromptBarUploadWidget {
 
   buildPromptTextarea() {
     const defaultPrompt = placeholderText(this.el, 'icon-default-prompt') || '';
-    const maxCharLimit = this.workflowCfg?.targetCfg?.limits?.['max-char-limit'] ?? 750;
     const textarea = createTag('textarea', {
       id: 'pbuPromptInput',
       class: 'inp-field',
       rows: '1',
-      maxlength: String(maxCharLimit),
       'aria-label': defaultPrompt,
       'aria-autocomplete': 'list',
     });
@@ -416,17 +524,14 @@ export default class PromptBarUploadWidget {
 
   buildGenerateButton() {
     const generateLi = this.el.querySelector('[class*="icon-generate"]')?.closest('li');
-    const genBtnText = (generateLi?.innerText || 'Generate').trim().split('\n')[0] || 'Generate';
-    const btn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn', 'aria-label': genBtnText });
-    const svgLink = generateLi?.querySelector('a[href$=".svg"]');
-    if (svgLink?.href) {
-      btn.append(
-        createTag('div', { class: 'btn-ico' }, createTag('img', { src: svgLink.href, alt: '' })),
-        createTag('div', { class: 'btn-txt' }, genBtnText),
-      );
-    } else {
-      btn.append(createTag('div', { class: 'btn-txt' }, genBtnText));
+    const genBtnText = (generateLi?.innerText).trim().split('\n')[0] || 'Generate';
+    const img = generateLi?.querySelector('img[src*=".svg"]');
+    const btn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn', 'daa-ll': 'Generate-video', 'aria-label': genBtnText });
+    if (img) {
+      img.setAttribute('alt', 'Generate video');
+      btn.append(createTag('div', { class: 'btn-ico' }, img));
     }
+    if (genBtnText) btn.append(createTag('div', { class: 'btn-txt' }, genBtnText.split('\n')[0]));
     return btn;
   }
 
