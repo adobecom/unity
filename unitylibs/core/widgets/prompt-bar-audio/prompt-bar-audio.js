@@ -409,7 +409,7 @@ class UnityWidget {
   }
 
   async loadModels() {
-    const modelFile = `${getUnityPromptConfigsBaseUrl()}/unity/configs/prompt/model-picker1.json`;
+    const modelFile = `${getUnityPromptConfigsBaseUrl()}/unity/configs/prompt/model-picker.json`;
     const results = await fetch(modelFile);
     if (!results.ok) {
       throw new Error('Failed to fetch models.');
