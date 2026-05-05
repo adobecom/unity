@@ -353,7 +353,7 @@ export default class ActionBinder {
   }
 
   validateInput(query) {
-    const maxCharLimit = this.limits?.['max-char-limit'] ?? 750;
+    const maxCharLimit = this.limits?.['max-char-limit'] ?? 1024;
     if (query.length > maxCharLimit) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
       this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
@@ -372,7 +372,7 @@ export default class ActionBinder {
     }
   }
 
-  async handleGenerate(connectorGenerate = true) {
+  async handleGenerate(isGenerateCta = true) {
     this.promiseStack = [];
     if (!this.analyticsModule) await this.initAnalytics();
     const pbuEvents = this.analyticsModule.PROMPT_BAR_EVENTS;
@@ -382,7 +382,7 @@ export default class ActionBinder {
     const selectedModelId = this.widgetWrap?.getAttribute('data-selected-model-id') || '';
     const selectedAspectRatio = this.widgetWrap?.getAttribute('data-selected-aspect-ratio') || '';
     const selectedModelName = this.widgetWrap?.getAttribute('data-selected-model-name') || selectedModelId;
-    const ctaEventName = connectorGenerate ? pbuEvents.GENERATE_CTA : pbuEvents.MORE;
+    const ctaEventName = isGenerateCta ? pbuEvents.GENERATE_CTA : pbuEvents.MORE;
     sendAnalyticsEvent(new CustomEvent(pbuEvents.UPLOAD_STARTED));
     sendAnalyticsEvent(new CustomEvent(ctaEventName));
     if (selectedModelName) sendAnalyticsEvent(new CustomEvent(pbuEvents.generateModel(selectedModelName)));
@@ -410,11 +410,11 @@ export default class ActionBinder {
         return;
       }
     }
-    await this.continueInApp(query, selectedModelId, selectedAspectRatio, connectorGenerate);
+    await this.continueInApp(query, selectedModelId, selectedAspectRatio);
   }
 
 
-  async continueInApp(query, modelId, aspectRatio, connectorGenerate = true) {
+  async continueInApp(query, modelId, aspectRatio) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
     const modelVersion = this.widgetWrap?.getAttribute('data-selected-model-version') || '';
@@ -436,7 +436,7 @@ export default class ActionBinder {
         ...(modelId && { modelId }),
         ...(modelVersion && { modelVersion }),
         ...(aspectRatio && { aspectRatio }),
-        generate: connectorGenerate,
+        generate: false,
       },
     };
     try {

@@ -31,6 +31,21 @@ function svgIcon(href) {
   return `<svg><use xlink:href="${href}"></use></svg>`;
 }
 
+function getAspectRatioIconHref(ratio) {
+  const parts = String(ratio).split(':').map((s) => parseFloat(String(s).trim(), 10));
+  if (parts.length !== 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1]) || parts[1] === 0) {
+    return '#unity-aspect-ratio-horizontal-icon';
+  }
+  const [w, h] = parts;
+  if (w > h) return '#unity-aspect-ratio-horizontal-icon';
+  if (h > w) return '#unity-aspect-ratio-vertical-icon';
+  return '#unity-aspect-ratio-horizontal-icon';
+}
+
+function createAspectRatioIconSpan(ratio) {
+  return createTag('span', { class: 'pbu-aspect-ratio-icon', 'aria-hidden': 'true' }, svgIcon(getAspectRatioIconHref(ratio)));
+}
+
 function syncDropdownSelection(list, activeLink) {
   list.querySelectorAll('li').forEach((li) => {
     const a = li.querySelector('a');
@@ -353,10 +368,12 @@ export default class PromptBarUploadWidget {
     if (!ratios.length) return null;
     this.setSelectedAspectRatio(modelId, ratios[0]);
 
+    const triggerAspectIcon = createAspectRatioIconSpan(ratios[0]);
     const { container, triggerBtn, nameContainer, list } = buildDropdownShell({
       label: 'Aspect ratio',
       menuId: 'pbu-aspect-menu',
       extraClass: 'pbu-aspect-models',
+      imgEl: triggerAspectIcon,
     });
     nameContainer.textContent = ratios[0];
 
@@ -369,7 +386,7 @@ export default class PromptBarUploadWidget {
         'aria-selected': idx === 0 ? 'true' : 'false',
         role: 'option',
       });
-      link.append(selectedIcon, createTag('span', { class: 'model-name' }, ratio));
+      link.append(selectedIcon, createAspectRatioIconSpan(ratio), createTag('span', { class: 'model-name' }, ratio));
       const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
       li.append(link);
       list.append(li);
@@ -382,6 +399,7 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const ratio = link.getAttribute('data-ratio') || '';
       nameContainer.textContent = ratio;
+      triggerAspectIcon.innerHTML = svgIcon(getAspectRatioIconHref(ratio));
       this.setSelectedAspectRatio(modelId, ratio);
       syncDropdownSelection(list, link);
       closeDropdown(container, triggerBtn, list);
@@ -492,12 +510,10 @@ export default class PromptBarUploadWidget {
 
   buildPromptTextarea() {
     const defaultPrompt = placeholderText(this.el, 'icon-default-prompt') || '';
-    const maxCharLimit = this.workflowCfg?.targetCfg?.limits?.['max-char-limit'] ?? 750;
     const textarea = createTag('textarea', {
       id: 'pbuPromptInput',
       class: 'inp-field',
       rows: '1',
-      maxlength: String(maxCharLimit),
       'aria-label': defaultPrompt,
       'aria-autocomplete': 'list',
     });
