@@ -36,6 +36,7 @@ export default class ActionBinder {
     this.workflowCfg = workflowCfg;
     this.block = block;
     this.isPromptBarAudio = !!block?.classList?.contains('unity-prompt-bar-audio');
+    this.limits = ActionBinder.resolveLimits(workflowCfg, unityEl, block);
     this.canvasArea = canvasArea;
     this.actions = actionMap;
     this.query = '';
@@ -68,6 +69,23 @@ export default class ActionBinder {
     this.addAccessibility();
     this.initAction();
     this.verb = this.getVerbFromDom();
+  }
+
+  static getLimitsSuffix(unityEl, block) {
+    const widgetCls = [...(unityEl?.classList || [])].find((c) => c.startsWith('widget-'));
+    if (widgetCls) return widgetCls.replace(/^widget-/, '').trim();
+    const promptBarCls = [...(block?.classList || [])].find(
+      (c) => c.startsWith('unity-prompt-bar-') && !c.endsWith('-host'),
+    );
+    return promptBarCls ? promptBarCls.replace(/^unity-/, '').trim() : '';
+  }
+
+  static resolveLimits(workflowCfg, unityEl, block) {
+    const targetCfg = workflowCfg?.targetCfg || {};
+    const commonLimits = targetCfg.limits || {};
+    const widgetSuffix = ActionBinder.getLimitsSuffix(unityEl, block);
+    const widgetLimits = targetCfg[`limits-${widgetSuffix}`] || {};
+    return { ...commonLimits, ...widgetLimits };
   }
 
   getNetworkUtils = async () => {
@@ -236,10 +254,7 @@ export default class ActionBinder {
     || '';
 
   getMaxPromptCharLimit() {
-    const key = this.isPromptBarAudio
-      ? 'max-char-limit-audio'
-      : 'max-char-limit';
-    const n = Number(this.workflowCfg.targetCfg?.limits?.[key]);
+    const n = Number(this.limits?.['max-char-limit']);
     return Number.isFinite(n) && n > 0 ? n : undefined;
   }
 

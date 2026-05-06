@@ -4,8 +4,10 @@
     "handler": "render",
     "renderWidget": true,
     "limits": {
-      "max-char-limit": 750,
-      "max-char-limit-audio": 5000
+      "max-char-limit": 750
+    },
+    "limits-prompt-bar-audio": {
+      "max-char-limit": 5000
     },
     "verbsWithoutPromptSuggestions": ["vector"],
     "actionMap": {

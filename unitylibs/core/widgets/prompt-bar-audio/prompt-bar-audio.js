@@ -547,7 +547,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   if (!progressSvg || !ringFg) return tile;
   ringFg.style.strokeDasharray = String(RING_C);
   ringFg.style.strokeDashoffset = String(RING_C);
-
   const center = createTag('div', { class: 'unity-paf-pp-center' });
   center.innerHTML = PAF_PP_PLAY_SVG;
   const bufferLayer = createTag('div', { class: 'unity-paf-voice-player-loading' });
@@ -738,8 +737,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
   return () => { tiles.forEach(resetTileIdle); };
 }
 
-async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analyticsMod) {
-  const pws = analyticsMod?.PROMPT_WITH_STYLE_EVENTS;
+function createPromptAudioShellBase(widgetInstance, el) {
   const widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options' });
   const [widget, unitySprite] = ['ex-unity-widget', 'unity-sprite-container']
     .map((c) => createTag('div', { class: c }));
@@ -751,12 +749,10 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
   const phStub = createTag('div', { hidden: true, 'aria-hidden': 'true' });
   phStub.innerHTML = '<ul><li><span class="icon icon-placeholder-input"></span> </li></ul>';
   el.append(phStub);
-  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
-  widgetInstance.verbDropdown();
-  const modelParts = widgetInstance.modelDropdown();
-  const promptLabelText = placeholderRowText(el, PLACEHOLDER_PROMPT_LABEL);
-  const inpWrap = createTag('div', { class: 'inp-wrap' });
-  const promptLabel = createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, promptLabelText);
+  return { widgetWrap, widget };
+}
+
+function createPromptAudioInputField(widgetInstance, defaultPrompt, pws) {
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
@@ -798,22 +794,28 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
       inpField.value = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
     }, EMPTY_PROMPT_RESTORE_MS);
   });
+  return inpField;
+}
 
+function createPromptAudioActionContainer(widgetInstance, widgetWrap, modelParts) {
   const actionContainer = createTag('div', { class: 'action-container' });
   if (modelParts.length > 1) {
     const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
     modelBtn.append(...modelParts);
     actionContainer.append(modelBtn);
-  } else {
-    widgetWrap.setAttribute('data-selected-model-id', 'adobe-firefly');
-    widgetWrap.setAttribute('data-selected-model-version', 'image3');
-    const fallbackName = Array.isArray(widgetInstance.models)
-      ? widgetInstance.models.find((m) => m.id === 'adobe-firefly' && (!m.version || m.version === 'image3'))?.name?.trim()
-        || widgetInstance.models.find((m) => m.id === 'adobe-firefly')?.name?.trim()
-      : '';
-    if (fallbackName) widgetWrap.setAttribute('data-selected-model-name', fallbackName);
+    return actionContainer;
   }
-  const actWrap = createTag('div', { class: 'act-wrap' });
+  widgetWrap.setAttribute('data-selected-model-id', 'adobe-firefly');
+  widgetWrap.setAttribute('data-selected-model-version', 'image3');
+  const fallbackName = Array.isArray(widgetInstance.models)
+    ? widgetInstance.models.find((m) => m.id === 'adobe-firefly' && (!m.version || m.version === 'image3'))?.name?.trim()
+      || widgetInstance.models.find((m) => m.id === 'adobe-firefly')?.name?.trim()
+    : '';
+  if (fallbackName) widgetWrap.setAttribute('data-selected-model-name', fallbackName);
+  return actionContainer;
+}
+
+function createPromptAudioGenerateButton(widgetInstance, el, pws) {
   const generateLi = el.querySelector('.icon-generate')?.closest('li');
   let genBtn = widgetInstance.createActBtn(generateLi, 'gen-btn unity-slf-gen-btn');
   if (!genBtn) {
@@ -825,18 +827,41 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
     });
     genBtn.append(createTag('div', { class: 'btn-txt' }, 'Generate'));
     widgetInstance.genBtn = genBtn;
-  } else if (!genBtn.querySelector('.btn-ico') && generateLi) {
-    const svgLink = generateLi.querySelector('a[href$=".svg"]');
-    if (svgLink?.href) {
-      const img = createTag('img', { src: svgLink.href, alt: 'Generate' });
-      genBtn.prepend(createTag('div', { class: 'btn-ico' }, img));
-    }
+    return genBtn;
   }
+  if (!genBtn.querySelector('.btn-ico') && generateLi) {
+    const svgHref = generateLi.querySelector('a[href$=".svg"]')?.href;
+    if (svgHref) genBtn.prepend(createTag('div', { class: 'btn-ico' }, createTag('img', { src: svgHref, alt: 'Generate' })));
+  }
+  return genBtn;
+}
+
+function composePromptAudioInputLayout(widget, promptLabelText, inpField, actionContainer, genBtn) {
+  const inpWrap = createTag('div', { class: 'inp-wrap' });
+  const promptLabel = createTag(
+    'label',
+    { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' },
+    promptLabelText,
+  );
+  const actWrap = createTag('div', { class: 'act-wrap' });
   actWrap.append(genBtn);
   inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
   const comboboxContainer = createTag('div', { class: 'autocomplete' });
   comboboxContainer.append(inpWrap);
   widget.append(comboboxContainer);
+}
+
+function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analyticsMod) {
+  const pws = analyticsMod?.PROMPT_WITH_STYLE_EVENTS;
+  const { widgetWrap, widget } = createPromptAudioShellBase(widgetInstance, el);
+  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
+  widgetInstance.verbDropdown();
+  const modelParts = widgetInstance.modelDropdown();
+  const promptLabelText = placeholderRowText(el, PLACEHOLDER_PROMPT_LABEL);
+  const inpField = createPromptAudioInputField(widgetInstance, defaultPrompt, pws);
+  const actionContainer = createPromptAudioActionContainer(widgetInstance, widgetWrap, modelParts);
+  const genBtn = createPromptAudioGenerateButton(widgetInstance, el, pws);
+  composePromptAudioInputLayout(widget, promptLabelText, inpField, actionContainer, genBtn);
   widgetWrap.append(widget);
   return { widgetWrap, widget, inpField };
 }
@@ -845,8 +870,7 @@ function enhanceSubfootExternalLinks(container) {
   if (!container) return;
   container.querySelectorAll('a[href]').forEach((a) => {
     const href = a.getAttribute('href')?.trim() || '';
-    if (!href) return;
-    if (/^javascript:/i.test(href)) return;
+    if (!href || /^javascript:/i.test(href)) return;
     if (/^https?:\/\//i.test(href) || href.startsWith('//')) {
       a.setAttribute('target', '_blank');
       a.setAttribute('rel', 'noopener noreferrer');
@@ -985,7 +1009,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   ]);
   promptWithStyleEvents = analyticsMod.PROMPT_WITH_STYLE_EVENTS;
   const { el } = widgetInstance;
-  const { widgetWrap, inpField } = await createPromptAudioInputShell(widgetInstance, el, '', analyticsMod);
+  const { widgetWrap, inpField } = createPromptAudioInputShell(widgetInstance, el, '', analyticsMod);
   const selectedModelId = (widgetInstance.selectedModelId
     || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
     || '').trim();
@@ -1081,7 +1105,6 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
 export default class PromptBarAudioWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    /** @type {HTMLElement | null} */
     this.promptBarAudioRoot = null;
     this.disconnectPromptBarAudio = null;
   }
