@@ -260,12 +260,6 @@ display: none;
 display: flex;
 }
 
-/*
- * Footer control density by viewport (design: 1400–1600, 1600–1800, 1800+).
- * <1600: model icon, aspect icon + layers glyph, More icon, Generate full.
- * 1600–1799: model icon, aspect full + ratio icon, More icon, Generate full.
- * ≥1800: model + aspect + More text, Generate full.
- */
 @media screen and (max-width: 1799px) {
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model .model-name {
     display: none !important;
@@ -373,7 +367,6 @@ display: flex;
   }
 }
 
-/* Tablet: full model + aspect labels and pills (layout stacks with hero; compact tiers above 1200 still apply). */
 @media screen and (min-width: 600px) and (max-width: 1200px) {
   .unity-prompt-bar-upload.unity-enabled .interactive-area .pbu-controls-footer .pbu-aspect-models {
     display: flex !important;
