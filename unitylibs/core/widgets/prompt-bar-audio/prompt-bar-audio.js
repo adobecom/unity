@@ -428,6 +428,7 @@ const RING_STROKE_WIDTH = (2.78751 * 48) / 33;
 const RING_STROKE_ATTR = String(RING_STROKE_WIDTH);
 const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-filled-icon"></use></svg>';
 const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-filled-icon"></use></svg>';
+const PAF_PROGRESS_SVG = `<svg class="unity-paf-progress-svg" viewBox="0 0 48 48" aria-hidden="true"><use class="unity-paf-ring-bg" xlink:href="#unity-audio-progress-ring" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round"></use><use class="unity-paf-ring-fg" xlink:href="#unity-audio-progress-ring" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)"></use></svg>`;
 const PAF_PLAYER_LOADING_SVG = `<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)" /></svg>`;
 const voiceTileState = new WeakMap();
 
@@ -540,30 +541,12 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   );
 
   const player = createTag('div', { class: 'unity-paf-voice-player' });
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'unity-paf-progress-svg');
-  svg.setAttribute('viewBox', '0 0 48 48');
-  svg.setAttribute('aria-hidden', 'true');
-  const ringBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  ringBg.setAttribute('class', 'unity-paf-ring-bg');
-  ringBg.setAttribute('cx', '24');
-  ringBg.setAttribute('cy', '24');
-  ringBg.setAttribute('r', String(RING_R));
-  ringBg.setAttribute('fill', 'none');
-  ringBg.setAttribute('stroke-width', RING_STROKE_ATTR);
-  ringBg.setAttribute('stroke-linecap', 'round');
-  const ringFg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  ringFg.setAttribute('class', 'unity-paf-ring-fg');
-  ringFg.setAttribute('cx', '24');
-  ringFg.setAttribute('cy', '24');
-  ringFg.setAttribute('r', String(RING_R));
-  ringFg.setAttribute('fill', 'none');
-  ringFg.setAttribute('stroke-width', RING_STROKE_ATTR);
-  ringFg.setAttribute('stroke-linecap', 'round');
-  ringFg.setAttribute('transform', 'rotate(-90 24 24)');
+  player.insertAdjacentHTML('beforeend', PAF_PROGRESS_SVG);
+  const progressSvg = player.querySelector('.unity-paf-progress-svg');
+  const ringFg = progressSvg?.querySelector('.unity-paf-ring-fg');
+  if (!progressSvg || !ringFg) return tile;
   ringFg.style.strokeDasharray = String(RING_C);
   ringFg.style.strokeDashoffset = String(RING_C);
-  svg.append(ringBg, ringFg);
 
   const center = createTag('div', { class: 'unity-paf-pp-center' });
   center.innerHTML = PAF_PP_PLAY_SVG;
@@ -576,13 +559,13 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     ringFg,
     player,
     bufferLayer,
-    progressSvg: svg,
+    progressSvg,
     center,
     playing: false,
     url,
     bufferingUi: false,
   });
-  player.append(svg, center);
+  player.append(progressSvg, center);
   tile.append(textCol, player);
   row.append(tile);
   const setRingProgress = (t) => {

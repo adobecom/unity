@@ -37,4 +37,7 @@
   <symbol fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" id="unity-play-filled-icon">
     <path d="M15.2 9.13397C15.8667 9.51888 15.8667 10.4811 15.2 10.866L6.7 15.7735C6.03333 16.1584 5.2 15.6773 5.2 14.9075V5.0925C5.2 4.3227 6.03333 3.84156 6.7 4.22646L15.2 9.13397Z" fill="#292929"/>
   </symbol>
+  <symbol fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" id="unity-audio-progress-ring">
+    <circle cx="24" cy="24" r="20" fill="none"/>
+  </symbol>
 </svg>
