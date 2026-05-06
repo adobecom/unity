@@ -108,7 +108,6 @@ export default class ActionBinder {
     this.limits = workflowCfg.targetCfg?.limits || {};
     const productTag = workflowCfg.targetCfg?.[`productTag-${workflowCfg.productName?.toLowerCase()}`] || 'FF';
     this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-PBU` };
-    
   }
 
   getApiConfig() {
@@ -413,7 +412,6 @@ export default class ActionBinder {
     await this.continueInApp(query, selectedModelId, selectedAspectRatio);
   }
 
-
   async continueInApp(query, modelId, aspectRatio) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
@@ -499,6 +497,7 @@ export default class ActionBinder {
       this.uploadAbortController = null;
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       this.logAnalytics('Cancel|UnityWidget', { assetId: this.assetId });
+      this.assetId = null;
       await this.ensureTransitionScreen();
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
