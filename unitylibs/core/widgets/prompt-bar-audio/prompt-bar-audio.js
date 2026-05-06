@@ -60,7 +60,7 @@ async function loadVoicesFromCurrentPageJson(sourceUrl) {
   }
   if (!rows.length) return [];
   return rows
-    .map((row) => currentPageConfigItemToVoice(/** @type {Record<string, unknown>} */ (row)))
+    .map((row) => currentPageConfigItemToVoice(row))
     .filter((v) => v != null);
 }
 
@@ -426,10 +426,9 @@ const RING_R = 20;
 const RING_C = 2 * Math.PI * RING_R;
 const RING_STROKE_WIDTH = (2.78751 * 48) / 33;
 const RING_STROKE_ATTR = String(RING_STROKE_WIDTH);
-const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-icon"></use></svg>';
-const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-icon"></use></svg>';
+const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-filled-icon"></use></svg>';
+const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-filled-icon"></use></svg>';
 const PAF_PLAYER_LOADING_SVG = `<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)" /></svg>`;
-
 const voiceTileState = new WeakMap();
 
 function setVoiceTilePlayerBuffering(tile, isBuffering) {
@@ -449,18 +448,11 @@ function setVoiceTilePlayerBuffering(tile, isBuffering) {
   }
 }
 
-function setVoiceTileCenterPlayIcon(tile) {
+function setVoiceTileCenterIcon(tile, iconSvg) {
   const p = voiceTileState.get(tile);
   if (!p?.center) return;
   setVoiceTilePlayerBuffering(tile, false);
-  p.center.innerHTML = PAF_PP_PLAY_SVG;
-}
-
-function setVoiceTileCenterPauseIcon(tile) {
-  const p = voiceTileState.get(tile);
-  if (!p?.center) return;
-  setVoiceTilePlayerBuffering(tile, false);
-  p.center.innerHTML = PAF_PP_PAUSE_SVG;
+  p.center.innerHTML = iconSvg;
 }
 
 function primeVoiceAudioForPlayback(tile) {
@@ -512,7 +504,9 @@ function findFooterLinkInRoot(root) {
 function dispatchAudioPlaybackFailed(widgetWrap) {
   try {
     widgetWrap?.dispatchEvent(new CustomEvent('firefly-audio-error', { detail: { error: 'audio-playback-failed' } }));
-  } catch { /* ignore */ }
+  } catch (e) {
+    window.lana?.log(`Message: Error dispatching audio playback failed event, Error: ${e}`, this.lanaOptions);
+  }
 }
 
 export function parsePromptBarAudioAuthoring(root) {
@@ -573,10 +567,8 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
 
   const center = createTag('div', { class: 'unity-paf-pp-center' });
   center.innerHTML = PAF_PP_PLAY_SVG;
-
   const bufferLayer = createTag('div', { class: 'unity-paf-voice-player-loading' });
   bufferLayer.innerHTML = PAF_PLAYER_LOADING_SVG;
-
   const audioObj = new Audio();
   audioObj.preload = 'none';
   voiceTileState.set(tile, {
@@ -591,20 +583,16 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     bufferingUi: false,
   });
   player.append(svg, center);
-
   tile.append(textCol, player);
   row.append(tile);
-
   const setRingProgress = (t) => {
     const a = audioObj;
     if (!Number.isFinite(a.duration) || a.duration <= 0) return;
     const p = t / a.duration;
     ringFg.style.strokeDashoffset = String(RING_C * (1 - p));
   };
-
-  const showPlayIcon = () => setVoiceTileCenterPlayIcon(tile);
-  const showPauseIcon = () => setVoiceTileCenterPauseIcon(tile);
-
+  const showPlayIcon = () => setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
+  const showPauseIcon = () => setVoiceTileCenterIcon(tile, PAF_PP_PAUSE_SVG);
   let rafId = null;
   const tick = () => {
     if (audioObj.paused && !audioObj.ended) {
@@ -614,7 +602,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     setRingProgress(audioObj.currentTime);
     rafId = requestAnimationFrame(tick);
   };
-
   const startRaf = () => {
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(tick);
@@ -625,7 +612,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
       rafId = null;
     }
   };
-
   audioObj.addEventListener('loadedmetadata', () => {
     const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
     if (dur > 0) widgetInstance.durationCache.set(url, dur);
@@ -660,7 +646,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     stopRaf();
   });
   audioObj.addEventListener('error', () => {
-    setVoiceTileCenterPlayIcon(tile);
+    setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
     dispatchAudioPlaybackFailed(widgetInstance.widgetWrap);
   });
   audioObj.addEventListener('waiting', () => {
@@ -708,7 +694,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     try { p.audio.currentTime = 0; } catch { /* ignore */ }
     p.playing = false;
     p.ringFg.style.strokeDashoffset = String(RING_C);
-    setVoiceTileCenterPlayIcon(tile);
+    setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
     tile.setAttribute('aria-pressed', 'false');
   }
 
@@ -731,7 +717,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     }
     primeVoiceAudioForPlayback(tile);
     audio.play().catch(() => {
-      setVoiceTileCenterPlayIcon(tile);
+      setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
       dispatchAudioPlaybackFailed(wrap);
     });
   }
@@ -744,7 +730,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       const nextTile = tiles[idx];
       primeVoiceAudioForPlayback(nextTile);
       voiceTileState.get(nextTile).audio.play().catch(() => {
-        setVoiceTileCenterPlayIcon(nextTile);
+        setVoiceTileCenterIcon(nextTile, PAF_PP_PLAY_SVG);
         dispatchAudioPlaybackFailed(wrap);
       });
       return;
@@ -765,7 +751,6 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       }
     });
   });
-
   setSelectedVisual(0);
   return () => { tiles.forEach(resetTileIdle); };
 }
@@ -808,7 +793,6 @@ async function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, an
     }
   });
   inpField.addEventListener('blur', () => { promptEngagedTracked = false; });
-
   let emptyPromptRestoreTimerId = null;
   const clearEmptyPromptRestoreTimer = () => {
     if (emptyPromptRestoreTimerId != null) {
@@ -1038,7 +1022,6 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     : () => {};
   widgetInstance.voicePromptInpField = inpField;
   widgetInstance.teardownVoiceTiles = disconnectFirst;
-  /** Rebuilds voice tiles for the current model; prompt text stays unless empty or still the authoring default. */
   widgetInstance.refreshVoiceTilesForModel = function refreshVoiceTilesForModel() {
     const all = this.voiceConfigAll;
     if (!all || !all.length) return;
