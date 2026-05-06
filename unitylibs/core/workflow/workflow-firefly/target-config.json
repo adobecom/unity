@@ -3,6 +3,10 @@
     "type": "text",
     "handler": "render",
     "renderWidget": true,
+    "limits": {
+      "max-char-limit": 750,
+      "max-char-limit-audio": 5000
+    },
     "verbsWithoutPromptSuggestions": ["vector"],
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },

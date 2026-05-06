@@ -1,17 +1,9 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable max-classes-per-file */
 
-import { createTag, getConfig } from '../../../scripts/utils.js';
+import { createTag, getConfig, getUnityPromptConfigsBaseUrl } from '../../../scripts/utils.js';
 
 let promptWithStyleEvents = null;
-
-function getUnityPromptConfigsBaseUrl() {
-  const { origin } = window.location;
-  if (origin.includes('.aem.') || origin.includes('.hlx.')) {
-    return `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`;
-  }
-  return origin;
-}
 
 function sanitizeCurrentPageFileBase(name) {
   if (!name || !name.trim()) return null;

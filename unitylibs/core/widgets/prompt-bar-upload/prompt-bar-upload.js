@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 
-import { createTag, getUnityLibs } from '../../../scripts/utils.js';
+import { createTag, getUnityLibs, getUnityPromptConfigsBaseUrl } from '../../../scripts/utils.js';
 
 function placeholderText(root, iconClass) {
   const icon = root.querySelector(`.${iconClass}`) || root.querySelector(`[class*="${iconClass}"]`);
@@ -209,10 +209,7 @@ export default class PromptBarUploadWidget {
   }
 
   async loadModels() {
-    const { origin } = window.location;
-    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-      : origin;
+    const baseUrl = getUnityPromptConfigsBaseUrl();
     const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video.json`);
     if (!res.ok) throw new Error('Failed to fetch video models.');
     const json = await res.json();

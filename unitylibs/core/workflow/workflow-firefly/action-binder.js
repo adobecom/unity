@@ -35,6 +35,7 @@ export default class ActionBinder {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
     this.block = block;
+    this.isPromptBarAudio = !!block?.classList?.contains('unity-prompt-bar-audio');
     this.canvasArea = canvasArea;
     this.actions = actionMap;
     this.query = '';
@@ -234,20 +235,27 @@ export default class ActionBinder {
     || this.block.querySelector('.models-container .selected-model .model-name')?.textContent?.trim()
     || '';
 
+  getMaxPromptCharLimit() {
+    const key = this.isPromptBarAudio
+      ? 'max-char-limit-audio'
+      : 'max-char-limit';
+    const n = Number(this.workflowCfg.targetCfg?.limits?.[key]);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  }
+
   validateInput(query) {
-    const maxLen = this.block?.classList?.contains('unity-prompt-bar-audio') ? 5000 : 750;
-    if (query.length > maxLen) {
+    const maxLen = this.getMaxPromptCharLimit();
+    if (maxLen !== undefined && query.length > maxLen) {
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
     }
     return { isValid: true };
   }
 
-  /** @returns {string | undefined} */
   getSelectedVoiceIdForConnector() {
-    if (!this.block?.classList?.contains('unity-prompt-bar-audio')) return undefined;
+    if (!this.isPromptBarAudio) return undefined;
     const id = this.widgetWrap.getAttribute('data-selected-voice-id')?.trim();
-    return id || undefined;
+    return id;
   }
 
   getSelectedStylePayloadForConnector() {
@@ -264,7 +272,7 @@ export default class ActionBinder {
 
   getSelectedStyleIndexOneBased() {
     const root = this.block;
-    if (root?.classList?.contains('unity-prompt-bar-audio')) {
+    if (this.isPromptBarAudio) {
       const raw = this.widgetWrap.getAttribute('data-selected-voice-index');
       const idx = raw != null ? parseInt(raw, 10) : NaN;
       return Number.isFinite(idx) ? idx + 1 : null;
@@ -317,8 +325,7 @@ export default class ActionBinder {
     }
     const selectedVerbType = `text-to-${currentVerb}`;
     const operationVerb = this.getVerbFromDom();
-    const isPromptBarAudio = this.block?.classList?.contains('unity-prompt-bar-audio');
-    const stylePayload = isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
+    const stylePayload = this.isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
     const voiceId = this.getSelectedVoiceIdForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const styleIndexOneBased = this.getSelectedStyleIndexOneBased();

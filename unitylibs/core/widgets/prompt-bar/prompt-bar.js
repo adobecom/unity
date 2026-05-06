@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 
-import { createTag, getConfig, unityConfig } from '../../../scripts/utils.js';
+import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from '../../../scripts/utils.js';
 
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -516,10 +516,7 @@ export default class UnityWidget {
 
   async loadPrompts() {
     const { locale } = getConfig();
-    const { origin } = window.location;
-    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-      : origin;
+    const baseUrl = getUnityPromptConfigsBaseUrl();
     const promptFile = locale.prefix && locale.prefix !== '/'
       ? `${baseUrl}${locale.prefix}/unity/configs/prompt/firefly-prompt.json`
       : `${baseUrl}/unity/configs/prompt/firefly-prompt.json`;
@@ -543,10 +540,7 @@ export default class UnityWidget {
   }
 
   async loadModels() {
-    const { origin } = window.location;
-    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-      : origin;
+    const baseUrl = getUnityPromptConfigsBaseUrl();
     const modelFile = `${baseUrl}/unity/configs/prompt/model-picker.json`;
     const results = await fetch(modelFile);
     if (!results.ok) {

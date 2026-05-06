@@ -26,7 +26,12 @@ describe('Firefly Workflow Tests', () => {
     unityElement = document.querySelector('.unity');
     workflowCfg = {
       name: 'workflow-firefly',
-      targetCfg: { renderWidget: true, insert: 'before', target: 'a:last-of-type' },
+      targetCfg: {
+        renderWidget: true,
+        insert: 'before',
+        target: 'a:last-of-type',
+        limits: { 'max-char-limit': 750, 'max-char-limit-audio': 5000 },
+      },
     };
     spriteContainer = '<svg></svg>';
     block = document.querySelector('.unity-enabled');

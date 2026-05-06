@@ -284,6 +284,14 @@ export function updateQueryParameter(url, paramName = 'format', oldValue = 'webp
   }
 }
 
+export function getUnityPromptConfigsBaseUrl() {
+  const { origin } = window.location;
+  if (origin.includes('.aem.') || origin.includes('.hlx.')) {
+    return `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`;
+  }
+  return origin;
+}
+
 export const unityConfig = (() => {
   const { host } = window.location;
   const commoncfg = {
