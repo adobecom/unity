@@ -39,7 +39,7 @@ function getAspectRatioIconHref(ratio) {
   const [w, h] = parts;
   if (w > h) return '#unity-aspect-ratio-horizontal-icon';
   if (h > w) return '#unity-aspect-ratio-vertical-icon';
-  return '#unity-aspect-ratio-horizontal-icon';
+  return '#unity-aspect-ratio-square-icon';
 }
 
 function createAspectRatioIconSpan(ratio, dualTrigger = false) {
