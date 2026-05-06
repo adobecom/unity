@@ -78,6 +78,7 @@ export default class ActionBinder {
     'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'quiz-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
+    'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
