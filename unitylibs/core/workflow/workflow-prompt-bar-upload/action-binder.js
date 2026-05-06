@@ -301,6 +301,7 @@ export default class ActionBinder {
         this.apiConfig.endPoint.assetUpload,
         { body: JSON.stringify(assetDetails) },
       );
+      if (signal.aborted) return false;
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalytics('Asset Created|UnityWidget', { assetId: this.assetId });
@@ -459,6 +460,7 @@ export default class ActionBinder {
           return response.json();
         },
       );
+      if (this.promiseStack.length > 0) return;
       this.logAnalytics('Generate Complete|UnityWidget', { assetId: this.assetId });
       this.LOADER_LIMIT = 100;
       if (this.transitionScreen?.splashScreenEl) {
