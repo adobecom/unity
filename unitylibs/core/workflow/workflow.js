@@ -178,7 +178,7 @@ class WfInitiator {
   }
 
   createInteractiveArea(block, selector, targetCfg) {
-    if ((this.targetConfig?.extendedWidgets ?? []).includes(this.widgetName)) return this.el;
+    if ((targetCfg?.extendedWidgets ?? []).includes(this.widgetName)) return this.el;
     const iArea = createTag('div', { class: 'interactive-area' });
     const asset = block.querySelector(selector);
     if (asset.nodeName === 'PICTURE') {
