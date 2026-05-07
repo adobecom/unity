@@ -35,6 +35,8 @@ export default class ActionBinder {
     this.unityEl = unityEl;
     this.workflowCfg = workflowCfg;
     this.block = block;
+    this.isPromptBarAudio = !!block?.classList?.contains('unity-prompt-bar-audio');
+    this.limits = ActionBinder.resolveLimits(workflowCfg, unityEl, block);
     this.canvasArea = canvasArea;
     this.actions = actionMap;
     this.query = '';
@@ -69,10 +71,27 @@ export default class ActionBinder {
     this.verb = this.getVerbFromDom();
   }
 
+  static getLimitsSuffix(unityEl, block) {
+    const widgetCls = [...(unityEl?.classList || [])].find((c) => c.startsWith('widget-'));
+    if (widgetCls) return widgetCls.replace(/^widget-/, '').trim();
+    const promptBarCls = [...(block?.classList || [])].find(
+      (c) => c.startsWith('unity-prompt-bar-') && !c.endsWith('-host'),
+    );
+    return promptBarCls ? promptBarCls.replace(/^unity-/, '').trim() : '';
+  }
+
+  static resolveLimits(workflowCfg, unityEl, block) {
+    const targetCfg = workflowCfg?.targetCfg || {};
+    const commonLimits = targetCfg.limits || {};
+    const widgetSuffix = ActionBinder.getLimitsSuffix(unityEl, block);
+    const widgetLimits = targetCfg[`limits-${widgetSuffix}`] || {};
+    return { ...commonLimits, ...widgetLimits };
+  }
+
   getNetworkUtils = async () => {
     if (this.networkUtils) return this.networkUtils;
     const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
-  return (this.networkUtils = new NetworkUtils());
+    return (this.networkUtils = new NetworkUtils());
   };
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -234,12 +253,24 @@ export default class ActionBinder {
     || this.block.querySelector('.models-container .selected-model .model-name')?.textContent?.trim()
     || '';
 
+  getMaxPromptCharLimit() {
+    const n = Number(this.limits?.['max-char-limit']);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  }
+
   validateInput(query) {
-    if (query.length > 750) {
+    const maxLen = this.getMaxPromptCharLimit();
+    if (maxLen !== undefined && query.length > maxLen) {
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
     }
     return { isValid: true };
+  }
+
+  getSelectedVoiceIdForConnector() {
+    if (!this.isPromptBarAudio) return undefined;
+    const id = this.widgetWrap.getAttribute('data-selected-voice-id')?.trim();
+    return id;
   }
 
   getSelectedStylePayloadForConnector() {
@@ -256,6 +287,11 @@ export default class ActionBinder {
 
   getSelectedStyleIndexOneBased() {
     const root = this.block;
+    if (this.isPromptBarAudio) {
+      const raw = this.widgetWrap.getAttribute('data-selected-voice-index');
+      const idx = raw != null ? parseInt(raw, 10) : NaN;
+      return Number.isFinite(idx) ? idx + 1 : null;
+    }
     if (!root?.classList?.contains('unity-prompt-bar-style')) return null;
     const items = Array.from(root.querySelectorAll('.unity-slf-style-list .unity-slf-style-item'));
     const selected = root.querySelector('.unity-slf-style-item.selected');
@@ -304,7 +340,8 @@ export default class ActionBinder {
     }
     const selectedVerbType = `text-to-${currentVerb}`;
     const operationVerb = this.getVerbFromDom();
-    const stylePayload = this.getSelectedStylePayloadForConnector();
+    const stylePayload = this.isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
+    const voiceId = this.getSelectedVoiceIdForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
     const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
     const modelName = this.getSelectedModelDisplayName();
@@ -339,6 +376,7 @@ export default class ActionBinder {
           ...(modelId ? { modelId } : {}),
           ...(modelVersion ? { modelVersion } : {}),
           ...(stylePayload ? { style: stylePayload } : {}),
+          ...(voiceId ? { voiceId } : {}),
           locale: getLocale(),
           action,
         },
