@@ -408,14 +408,12 @@ class UnityWidget {
   }
 }
 
-const RING_R = 20;
-const RING_C = 2 * Math.PI * RING_R;
-const RING_STROKE_WIDTH = (2.78751 * 48) / 33;
-const RING_STROKE_ATTR = String(RING_STROKE_WIDTH);
-const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-play-filled-icon"></use></svg>';
-const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" width="20" height="20" aria-hidden="true"><use xlink:href="#unity-pause-filled-icon"></use></svg>';
+const RING_C = 2 * Math.PI * 20;
+const RING_STROKE_ATTR = `${(2.78751 * 48) / 33}`;
+const PAF_PP_PLAY_SVG = '<svg class="unity-paf-pp-svg" aria-hidden="true"><use xlink:href="#unity-play-filled-icon"></use></svg>';
+const PAF_PP_PAUSE_SVG = '<svg class="unity-paf-pp-svg" aria-hidden="true"><use xlink:href="#unity-pause-filled-icon"></use></svg>';
 const PAF_PROGRESS_SVG = `<svg class="unity-paf-progress-svg" viewBox="0 0 48 48" aria-hidden="true"><use class="unity-paf-ring-bg" xlink:href="#unity-audio-progress-ring" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round"></use><use class="unity-paf-ring-fg" xlink:href="#unity-audio-progress-ring" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)"></use></svg>`;
-const PAF_PLAYER_LOADING_SVG = `<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="unity-paf-voice-player-loading-circle" cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)" /></svg>`;
+const PAF_PLAYER_LOADING_SVG = `<svg class="unity-paf-voice-player-loading-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use class="unity-paf-voice-player-loading-circle" xlink:href="#unity-audio-loading-ring" stroke="currentColor" stroke-width="${RING_STROKE_ATTR}" stroke-linecap="round" transform="rotate(-90 24 24)"></use></svg>`;
 const voiceTileState = new WeakMap();
 
 function setVoiceTilePlayerBuffering(tile, isBuffering) {
