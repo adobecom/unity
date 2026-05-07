@@ -9,6 +9,7 @@
     "limits-prompt-bar-audio": {
       "max-char-limit": 5000
     },
+    "extendedWidgets": ["prompt-bar-style", "prompt-bar-audio"],
     "verbsWithoutPromptSuggestions": ["vector"],
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },

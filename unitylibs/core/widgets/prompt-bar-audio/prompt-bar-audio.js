@@ -961,7 +961,7 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, 
   } else {
     el.append(root);
   }
-  widgetInstance.promptBarAudioRoot = root;
+  widgetInstance.promptBarExtendedRoot = root;
 }
 
 async function mountPromptBarAudioUI(widgetInstance, parsed) {
@@ -1002,7 +1002,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   widgetInstance.refreshVoiceTilesForModel = function refreshVoiceTilesForModel() {
     const all = this.voiceConfigAll;
     if (!all || !all.length) return;
-    const root = this.promptBarAudioRoot;
+    const root = this.promptBarExtendedRoot;
     const row = root?.querySelector('.unity-paf-voice-row') ?? null;
     if (!row) return;
     if (this.teardownVoiceTiles) {
@@ -1038,7 +1038,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   };
 
   insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner);
-  const root = widgetInstance.promptBarAudioRoot;
+  const root = widgetInstance.promptBarExtendedRoot;
   const initialRow = root?.querySelector('.unity-paf-voice-row') ?? null;
   wireVoiceRowPeekTracking(widgetInstance, initialRow, visibleVoices.length > 4);
   let removalObserver = null;
@@ -1075,7 +1075,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
 export default class PromptBarAudioWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    this.promptBarAudioRoot = null;
+    this.promptBarExtendedRoot = null;
     this.disconnectPromptBarAudio = null;
   }
 
