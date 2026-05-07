@@ -39,11 +39,29 @@ function getAspectRatioIconHref(ratio) {
   const [w, h] = parts;
   if (w > h) return '#unity-aspect-ratio-horizontal-icon';
   if (h > w) return '#unity-aspect-ratio-vertical-icon';
-  return '#unity-aspect-ratio-horizontal-icon';
+  return '#unity-aspect-ratio-square-icon';
 }
 
-function createAspectRatioIconSpan(ratio) {
-  return createTag('span', { class: 'pbu-aspect-ratio-icon', 'aria-hidden': 'true' }, svgIcon(getAspectRatioIconHref(ratio)));
+function createAspectRatioIconSpan(ratio, dualTrigger = false) {
+  if (!dualTrigger) {
+    return createTag('span', { class: 'pbu-aspect-ratio-icon', 'aria-hidden': 'true' }, svgIcon(getAspectRatioIconHref(ratio)));
+  }
+  const span = createTag('span', { class: 'pbu-aspect-ratio-icon', 'aria-hidden': 'true' });
+  const standard = createTag('span', { class: 'pbu-aspect-ratio-svg pbu-aspect-ratio-svg--standard' });
+  standard.innerHTML = svgIcon(getAspectRatioIconHref(ratio));
+  const layers = createTag('span', { class: 'pbu-aspect-ratio-svg pbu-aspect-ratio-svg--layers' });
+  layers.innerHTML = svgIcon('#unity-aspect-ratio-layers-icon');
+  span.append(standard, layers);
+  return span;
+}
+
+function setAspectRatioTriggerIconSvg(triggerAspectIcon, ratio) {
+  const standard = triggerAspectIcon?.querySelector?.('.pbu-aspect-ratio-svg--standard');
+  if (standard) {
+    standard.innerHTML = svgIcon(getAspectRatioIconHref(ratio));
+  } else {
+    triggerAspectIcon.innerHTML = svgIcon(getAspectRatioIconHref(ratio));
+  }
 }
 
 function syncDropdownSelection(list, activeLink) {
@@ -368,7 +386,7 @@ export default class PromptBarUploadWidget {
     if (!ratios.length) return null;
     this.setSelectedAspectRatio(modelId, ratios[0]);
 
-    const triggerAspectIcon = createAspectRatioIconSpan(ratios[0]);
+    const triggerAspectIcon = createAspectRatioIconSpan(ratios[0], true);
     const { container, triggerBtn, nameContainer, list } = buildDropdownShell({
       label: 'Aspect ratio',
       menuId: 'pbu-aspect-menu',
@@ -399,7 +417,7 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const ratio = link.getAttribute('data-ratio') || '';
       nameContainer.textContent = ratio;
-      triggerAspectIcon.innerHTML = svgIcon(getAspectRatioIconHref(ratio));
+      setAspectRatioTriggerIconSvg(triggerAspectIcon, ratio);
       this.setSelectedAspectRatio(modelId, ratio);
       syncDropdownSelection(list, link);
       closeDropdown(container, triggerBtn, list);
