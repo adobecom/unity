@@ -26,7 +26,13 @@ describe('Firefly Workflow Tests', () => {
     unityElement = document.querySelector('.unity');
     workflowCfg = {
       name: 'workflow-firefly',
-      targetCfg: { renderWidget: true, insert: 'before', target: 'a:last-of-type' },
+      targetCfg: {
+        renderWidget: true,
+        insert: 'before',
+        target: 'a:last-of-type',
+        limits: { 'max-char-limit': 750 },
+        'limits-prompt-bar-audio': { 'max-char-limit': 5000 },
+      },
     };
     spriteContainer = '<svg></svg>';
     block = document.querySelector('.unity-enabled');
@@ -2279,9 +2285,7 @@ describe('Firefly Workflow Tests', () => {
       });
 
       it('should pass empty object to logAnalytics when splunkData is omitted', async () => {
-        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics', {
-          detail: { adobeEventName: 'Enter Prompt|UnityWidget' },
-        }));
+        await testActionBinder.sendFireflyAnalytics(new CustomEvent('firefly-analytics', { detail: { adobeEventName: 'Enter Prompt|UnityWidget' } }));
         expect(logStub.calledOnceWithExactly('Enter Prompt|UnityWidget', {})).to.be.true;
       });
     });
@@ -2758,7 +2762,7 @@ describe('Firefly Workflow Tests', () => {
         { label: 'Var A', url: 'https://u1' },
         { label: 'Var B', url: 'https://u2' },
         { label: 'Var C', url: 'https://u3' },
-        { label: 'Var D', url: 'https://u4' }
+        { label: 'Var D', url: 'https://u4' },
       ]);
       expect(pm.image).to.exist;
       expect(pm.image[0].variations).to.deep.equal([]);

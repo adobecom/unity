@@ -4,6 +4,7 @@
 import {
   createTag,
   defineDeviceByScreenSize,
+  getUnityPromptConfigsBaseUrl,
 } from '../../../scripts/utils.js';
 
 let promptWithStyleEvents = null;
@@ -400,10 +401,7 @@ export class UnityWidget {
   }
 
   async loadModels() {
-    const { origin } = window.location;
-    const baseUrl = (origin.includes('.aem.') || origin.includes('.hlx.'))
-      ? `https://main--unity--adobecom.${origin.includes('.hlx.') ? 'hlx' : 'aem'}.live`
-      : origin;
+    const baseUrl = getUnityPromptConfigsBaseUrl();
     const modelFile = `${baseUrl}/unity/configs/prompt/model-picker.json`;
     const results = await fetch(modelFile);
     if (!results.ok) {
@@ -860,7 +858,7 @@ function insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer
   } else {
     el.append(root);
   }
-  widgetInstance.promptBarStyleRoot = root;
+  widgetInstance.promptBarExtendedRoot = root;
 }
 
 async function mountPromptBarStyleUI(widgetInstance, parsed) {
@@ -878,7 +876,7 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
   const { styleContainer, styleItems, previewArea, styleList } = createStylePreviewSection(styles, previewRows, styleSectionHeadingText);
   const disconnectInteractivity = attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea, styleList);
   insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
-  const root = widgetInstance.promptBarStyleRoot;
+  const root = widgetInstance.promptBarExtendedRoot;
   let removalObserver = null;
   const teardownPromptBarStyle = () => {
     removalObserver?.disconnect();
@@ -900,7 +898,7 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
 export default class PromptBarStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    this.promptBarStyleRoot = null;
+    this.promptBarExtendedRoot = null;
     this.disconnectPromptBarStyle = null;
   }
 

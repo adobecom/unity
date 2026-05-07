@@ -3,6 +3,13 @@
     "type": "text",
     "handler": "render",
     "renderWidget": true,
+    "limits": {
+      "max-char-limit": 750
+    },
+    "limits-prompt-bar-audio": {
+      "max-char-limit": 5000
+    },
+    "extendedWidgets": ["prompt-bar-style", "prompt-bar-audio"],
     "verbsWithoutPromptSuggestions": ["vector"],
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
