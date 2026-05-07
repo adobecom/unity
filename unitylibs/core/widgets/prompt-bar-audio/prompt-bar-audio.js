@@ -5,42 +5,22 @@ import { createTag, getConfig, getUnityPromptConfigsBaseUrl } from '../../../scr
 
 let promptWithStyleEvents = null;
 
-function sanitizeCurrentPageFileBase(name) {
-  if (!name || !name.trim()) return null;
-  const normalized = name.trim().replace(/\s+/g, '-');
-  const base = normalized.replace(/[^a-zA-Z0-9._-]/g, '');
-  if (!base) return null;
-  return base.toLowerCase();
-}
-
-const CURRENT_PAGE_ICON_PREFIX = 'icon-operation-';
-const PLACEHOLDER_PROMPT_LABEL = 'placeholder-prompt-label';
-const PLACEHOLDER_PROMPT_DEFAULT = 'placeholder-prompt-default';
-const PLACEHOLDER_EXPLORE = 'placeholder-explore';
-const PLACEHOLDER_TERMS = 'placeholder-terms';
-const VOICE_ROW_PEEK_CLASS = 'unity-paf-voice-row-peek';
-const VOICE_ROW_PEEK_SCROLLED_CLASS = 'unity-paf-voice-row-peek-scrolled';
-const EMPTY_PROMPT_RESTORE_MS = 10000;
-
-function filterVoicesByModelId(voices, selectedModelId) {
-  const id = (selectedModelId || '').trim();
-  if (!id) return voices;
-  return voices.filter((v) => {
-    const m = v.modelId;
-    if (m == null || String(m).trim() === '') return true;
-    return String(m).trim().toLowerCase() === id.toLowerCase();
+function buildVoiceModelIndex(voices) {
+  const indexMap = new Map();
+  voices.forEach((voice) => {
+    const modelId = `${voice?.modelId ?? ''}`.trim().toLowerCase();
+    if (!indexMap.has(modelId)) indexMap.set(modelId, []);
+    indexMap.get(modelId).push(voice);
   });
+  return indexMap;
 }
 
-function currentPageConfigItemToVoice(item) {
-  if (!item || typeof item !== 'object') return null;
-  return {
-    name: String(item.Name ?? '').trim(),
-    description: String(item.Description ?? '').trim(),
-    url: String(item.url ?? '').trim(),
-    voiceId: String(item.VoiceId ?? '').trim(),
-    modelId: String(item.ModelId ?? '').trim(),
-  };
+function filterVoicesByModelId(voices, voiceModelIndex, selectedModelId) {
+  const id = (selectedModelId || '').trim().toLowerCase();
+  if (!id) return voices;
+  const shared = voiceModelIndex?.get('') || [];
+  const specific = voiceModelIndex?.get(id) || [];
+  return [...shared, ...specific];
 }
 
 async function loadVoicesFromCurrentPageJson(sourceUrl) {
@@ -60,17 +40,23 @@ async function loadVoicesFromCurrentPageJson(sourceUrl) {
   }
   if (!rows.length) return [];
   return rows
-    .map((row) => currentPageConfigItemToVoice(row))
-    .filter((v) => v != null);
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => ({
+      name: `${row.Name ?? ''}`.trim(),
+      description: `${row.Description ?? ''}`.trim(),
+      url: `${row.url ?? ''}`.trim(),
+      voiceId: `${row.VoiceId ?? ''}`.trim(),
+      modelId: `${row.ModelId ?? ''}`.trim(),
+    }));
 }
 
-function resolveCurrentPageSourceUrl(root) {
-  const icon = root.querySelector(`[class*="${CURRENT_PAGE_ICON_PREFIX}"]`);
-  if (!icon) return null;
-  const classAttr = icon.getAttribute('class') || '';
-  const re = new RegExp(`(?:^|\\s)${CURRENT_PAGE_ICON_PREFIX}(\\S+)`);
-  const m = classAttr.match(re);
-  const fileBase = sanitizeCurrentPageFileBase(m?.[1]);
+function resolveCurrentPageVariationFileUrl(root) {
+  const el = root?.querySelector?.('[class*="icon-operation-"]');
+  const token = el && [...el.classList].find((c) => c.startsWith('icon-operation-'));
+  const rawSuffix = token ? token.slice('icon-operation-'.length) : '';
+  const normalized = rawSuffix.trim().replace(/\s+/g, '-');
+  const base = normalized.replace(/[^a-zA-Z0-9._-]/g, '');
+  const fileBase = base ? base.toLowerCase() : null;
   if (!fileBase) return null;
   const baseUrl = getUnityPromptConfigsBaseUrl();
   const { locale } = getConfig();
@@ -102,12 +88,12 @@ class UnityWidget {
     this.hasModelOptions = false;
     this.voices = null;
     this.voiceConfigAll = null;
+    this.voiceModelIndex = null;
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
   }
 
-  /** Audio prompt bar authoring exposes a single verb; no media-type dropdown or DOM control. */
   verbDropdown() {
     const verb = this.el.querySelector('[class*="icon-verb"]');
     const selectedVerb = verb?.nextElementSibling;
@@ -514,10 +500,10 @@ export function parsePromptBarAudioAuthoring(root) {
   return {
     footerLink: findFooterLinkInRoot(root),
     sectionHeading: placeholderRowText(root, 'icon-placeholder-voice') || 'Choose a voice',
-    currentPageSourceUrl: resolveCurrentPageSourceUrl(root),
-    defaultPrompt: placeholderRowText(root, PLACEHOLDER_PROMPT_DEFAULT) || '',
-    exploreHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_EXPLORE),
-    termsHtml: placeholderRowHtmlAfterIcon(root, PLACEHOLDER_TERMS),
+    currentPageSourceUrl: resolveCurrentPageVariationFileUrl(root),
+    defaultPrompt: placeholderRowText(root, 'placeholder-prompt-default') || '',
+    exploreHtml: placeholderRowHtmlAfterIcon(root, 'placeholder-explore'),
+    termsHtml: placeholderRowHtmlAfterIcon(root, 'placeholder-terms'),
   };
 }
 
@@ -792,7 +778,7 @@ function createPromptAudioInputField(widgetInstance, defaultPrompt, pws) {
       if (!inpField.isConnected) return;
       if ((inpField.value || '').trim() !== '') return;
       inpField.value = (widgetInstance.defaultPromptFromAuthoring ?? '').trim();
-    }, EMPTY_PROMPT_RESTORE_MS);
+    }, 10000);
   });
   return inpField;
 }
@@ -857,7 +843,7 @@ function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analytic
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
   widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
-  const promptLabelText = placeholderRowText(el, PLACEHOLDER_PROMPT_LABEL);
+  const promptLabelText = placeholderRowText(el, 'placeholder-prompt-label');
   const inpField = createPromptAudioInputField(widgetInstance, defaultPrompt, pws);
   const actionContainer = createPromptAudioActionContainer(widgetInstance, widgetWrap, modelParts);
   const genBtn = createPromptAudioGenerateButton(widgetInstance, el, pws);
@@ -866,25 +852,12 @@ function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analytic
   return { widgetWrap, widget, inpField };
 }
 
-function enhanceSubfootExternalLinks(container) {
-  if (!container) return;
-  container.querySelectorAll('a[href]').forEach((a) => {
-    const href = a.getAttribute('href')?.trim() || '';
-    if (!href || /^javascript:/i.test(href)) return;
-    if (/^https?:\/\//i.test(href) || href.startsWith('//')) {
-      a.setAttribute('target', '_blank');
-      a.setAttribute('rel', 'noopener noreferrer');
-    }
-  });
-}
-
 function appendVoiceExploreSubfoot(section, exploreHtml, footerLink) {
   const ex = (exploreHtml || '').trim();
   if (ex) {
     const wrap = createTag('div', { class: 'unity-paf-voice-subfoot' });
     const p = createTag('p', { class: 'unity-paf-voice-subfoot-line' });
     p.innerHTML = ex;
-    enhanceSubfootExternalLinks(p);
     wrap.append(p);
     section.append(wrap);
   } else if (footerLink) {
@@ -907,15 +880,14 @@ function buildTermsBannerElement(termsHtml) {
   });
   const p = createTag('p', { class: 'unity-paf-terms-banner-line' });
   p.innerHTML = te;
-  enhanceSubfootExternalLinks(p);
   outer.append(p);
   return outer;
 }
 
 function syncVoiceRowPeekClasses(row, shouldPeek) {
   if (!row) return;
-  row.classList.toggle(VOICE_ROW_PEEK_CLASS, shouldPeek);
-  row.classList.toggle(VOICE_ROW_PEEK_SCROLLED_CLASS, shouldPeek && row.scrollLeft > 0);
+  row.classList.toggle('unity-paf-voice-row-peek', shouldPeek);
+  row.classList.toggle('unity-paf-voice-row-peek-scrolled', shouldPeek && row.scrollLeft > 0);
 }
 
 function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
@@ -928,7 +900,7 @@ function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
     return;
   }
   const onScroll = () => {
-    const active = row.classList.contains(VOICE_ROW_PEEK_CLASS);
+    const active = row.classList.contains('unity-paf-voice-row-peek');
     syncVoiceRowPeekClasses(row, active);
   };
   row.addEventListener('scroll', onScroll, { passive: true });
@@ -1013,7 +985,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   const selectedModelId = (widgetInstance.selectedModelId
     || widgetInstance.widgetWrap?.getAttribute('data-selected-model-id')
     || '').trim();
-  const visibleVoices = filterVoicesByModelId(voices, selectedModelId);
+  const visibleVoices = filterVoicesByModelId(voices, widgetInstance.voiceModelIndex, selectedModelId);
   inpField.value = authoring;
   const { section: voiceSection, tiles } = createVoiceStrip(
     voices,
@@ -1042,7 +1014,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     const mid = (this.selectedModelId || this.widgetWrap?.getAttribute('data-selected-model-id') || '').trim();
     const auth = (this.defaultPromptFromAuthoring ?? '').trim();
     row.replaceChildren();
-    const visible = filterVoicesByModelId(all, mid);
+    const visible = filterVoicesByModelId(all, this.voiceModelIndex, mid);
     syncVoiceRowPeekClasses(row, visible.length > 4);
     if (this.voicePromptInpField) {
       const cur = (this.voicePromptInpField.value || '').trim();
@@ -1130,6 +1102,7 @@ export default class PromptBarAudioWidget extends UnityWidget {
     }
     this.voices = voices;
     this.voiceConfigAll = voices;
+    this.voiceModelIndex = buildVoiceModelIndex(voices);
     const { el } = this;
     this.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
     await mountPromptBarAudioUI(this, {
