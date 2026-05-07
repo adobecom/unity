@@ -302,6 +302,14 @@ describe('ActionBinder', () => {
       it('should return false for flashcard-maker with image/jpeg', () => {
         expect(actionBinder.isSameFileType('flashcard-maker', 'image/jpeg')).to.be.false;
       });
+
+      it('should return false for mindmap-maker with application/pdf', () => {
+        expect(actionBinder.isSameFileType('mindmap-maker', 'application/pdf')).to.be.false;
+      });
+
+      it('should return false for mindmap-maker with image/jpeg', () => {
+        expect(actionBinder.isSameFileType('mindmap-maker', 'image/jpeg')).to.be.false;
+      });
     });
 
     describe('validateFiles', () => {
@@ -1034,6 +1042,21 @@ describe('ActionBinder', () => {
           expect(result).to.be.true;
         });
 
+        it('should handle redirect for returning user for mindmap-maker', async () => {
+          actionBinder.workflowCfg.enabledFeatures = ['mindmap-maker'];
+          localStorage.setItem('unity.user', 'test-user');
+          localStorage.setItem('mindmap-maker_attempts', '2');
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.newUser).to.be.false;
+          expect(cOpts.payload.attempts).to.equal('2+');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
         it('should handle redirect with feedback for multi-file validation failure', async () => {
           actionBinder.multiFileValidationFailure = true;
           const cOpts = { payload: {} };
@@ -1286,6 +1309,29 @@ describe('ActionBinder', () => {
           name: 'workflow-acrobat',
           enabledFeatures: ['flashcard-maker'],
           targetCfg: { verbsWithoutMfuToSfuFallback: ['compress-pdf', 'flashcard-maker'] },
+        };
+        const files = [
+          { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
+          { name: 'test2.pdf', type: 'application/pdf', size: 2097152 },
+        ];
+        const validFile = [files[0]];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: validFile });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.sanitizeFileName.calledTwice).to.be.true;
+        expect(actionBinder.filterFilesWithPdflite.called).to.be.true;
+        expect(actionBinder.validateFiles.called).to.be.true;
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleMultiFileUpload.calledWith(validFile)).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.called).to.be.false;
+      });
+
+      it('should handle verbs that require multi-file upload for mindmap-maker', async () => {
+        actionBinder.workflowCfg = {
+          name: 'workflow-acrobat',
+          enabledFeatures: ['mindmap-maker'],
+          targetCfg: { verbsWithoutMfuToSfuFallback: ['compress-pdf', 'mindmap-maker'] },
         };
         const files = [
           { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
@@ -1556,6 +1602,35 @@ describe('ActionBinder', () => {
         extractSpy.restore();
       });
 
+      it('should handle input change event with single file for mindmap-maker', async () => {
+        const el = document.createElement('input');
+        el.type = 'file';
+        const addEventListenerSpy = sinon.spy(el, 'addEventListener');
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { input: 'upload' };
+        const extractSpy = sinon.spy(actionBinder, 'extractFiles');
+        const spy = sinon.spy(actionBinder, 'acrobatActionMaps');
+
+        await actionBinder.initActionListeners(block, actMap);
+
+        const handler = addEventListenerSpy.getCalls().find((call) => call.args[0] === 'change').args[1];
+        actionBinder.signedOut = false;
+        actionBinder.tokenError = null;
+        actionBinder.workflowCfg.enabledFeatures = ['mindmap-maker'];
+
+        const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+        const event = { target: { files: [file], value: '' } };
+
+        await handler(event);
+
+        expect(extractSpy.called).to.be.true;
+        expect(spy.called).to.be.true;
+        expect(spy.firstCall.args).to.deep.equal(['upload', [file], file.size, 'change']);
+
+        spy.restore();
+        extractSpy.restore();
+      });
+
       it('should handle input element not found', async () => {
         const block = { querySelector: sinon.stub().returns(null) };
         const actMap = { 'nonexistent-input': 'upload' };
@@ -1802,6 +1877,26 @@ describe('ActionBinder', () => {
             { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
         });
+
+        it('should not dispatch error when enabledFeatures[0] is mindmap-maker', async () => {
+          actionBinder.dispatchErrorToast.resetHistory();
+          actionBinder.processSingleFile = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.workflowCfg.enabledFeatures = ['mindmap-maker'];
+          const validFiles = [
+            { name: 'test.pdf', type: 'application/pdf', size: 1048576 },
+          ];
+          const totalFileSize = validFiles.reduce((sum, file) => sum + file.size, 0);
+          await actionBinder.acrobatActionMaps('upload', validFiles, totalFileSize, 'test-event');
+          expect(actionBinder.dispatchErrorToast.neverCalledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
       });
     });
 
@@ -1989,6 +2084,26 @@ describe('ActionBinder', () => {
 
       it('should handle localStorage access error for flashcard-maker', async () => {
         actionBinder.workflowCfg.enabledFeatures = ['flashcard-maker'];
+        const localStorageStub = sinon.stub(window.localStorage, 'getItem');
+        localStorageStub.throws(new Error('localStorage not available'));
+
+        const cOpts = { payload: {} };
+        const filesData = { type: 'application/pdf', size: 123, count: 1 };
+        sinon.stub(actionBinder, 'getRedirectUrl').resolves();
+        actionBinder.redirectUrl = 'https://test-redirect.com';
+
+        const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+        expect(result).to.be.true;
+        expect(cOpts.payload.newUser).to.be.true;
+        expect(cOpts.payload.attempts).to.equal('1st');
+
+        localStorageStub.restore();
+        actionBinder.getRedirectUrl.restore();
+      });
+
+      it('should handle localStorage access error for mindmap-maker', async () => {
+        actionBinder.workflowCfg.enabledFeatures = ['mindmap-maker'];
         const localStorageStub = sinon.stub(window.localStorage, 'getItem');
         localStorageStub.throws(new Error('localStorage not available'));
 
