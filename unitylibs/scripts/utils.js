@@ -7,6 +7,7 @@ export const [setLibs, getLibs] = (() => {
         if (hostname.endsWith('acrobat.adobe.com')) return `${origin}/dc-shared/libs`;
         if (!['.aem.', '.hlx.', '.stage.', 'localhost', '.da.'].some((i) => hostname.includes(i))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
+        if (!/^[a-zA-Z0-9_-]+$/.test(branch)) throw new Error('Invalid branch name.');
         if (branch === 'local') return 'http://localhost:6456/libs';
         if (branch === 'main' && hostname.includes('.stage.')) return prodLibs;
         const env = hostname.includes('.hlx.') ? 'hlx' : 'aem';

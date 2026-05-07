@@ -251,6 +251,7 @@ class WfInitiator {
           'heic-to-pdf',
           'quiz-maker',
           'flashcard-maker',
+          'mindmap-maker',
         ]),
       },
       'workflow-ai': {
