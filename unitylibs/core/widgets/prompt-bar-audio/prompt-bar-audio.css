@@ -18,6 +18,7 @@
 .unity-prompt-bar-audio {
   width: 100%;
   box-sizing: border-box;
+  text-align: start;
 }
 
 .unity-prompt-bar-audio .unity-paf-main {
@@ -45,7 +46,12 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  box-sizing: border-box;
+  height: 340px;
+  max-height: 100%;
+  min-height: 0;
   min-width: 0;
+  overflow: visible;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-section {
@@ -94,7 +100,7 @@
 
 .unity-prompt-bar-audio .unity-paf-voice-tile {
   --unity-paf-voice-tile-width: 231px;
-  --paf-voice-tile-border-width: 1.78px;
+  --paf-voice-tile-border-width: 1.783px;
 
   display: flex;
   flex-direction: row;
@@ -107,18 +113,20 @@
   max-width: var(--unity-paf-voice-tile-width);
   flex: 0 0 var(--unity-paf-voice-tile-width);
   padding: 14px;
-  border-radius: 9.51px;
-  border: var(--paf-voice-tile-border-width) solid transparent;
-  background: #292929;
-  backdrop-filter: blur(29.72px);
-  overflow: hidden;
+  border-radius: 9.511px;
+  border: var(--paf-voice-tile-border-width) solid #323232;
+  background: transparent;
+  backdrop-filter: blur(29.722px);
+  -webkit-backdrop-filter: blur(29.722px);
+  overflow: clip;
   cursor: pointer;
   text-align: start;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile:hover {
-  background: #333;
+  background: #292929;
+  border-color: #323232;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile:focus {
@@ -130,11 +138,13 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile.selected {
+  background: #292929;
   border-color: #274dea;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile.selected:hover {
-  background: #2f2f2f;
+  background: #292929;
+  border-color: #274dea;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile-text {
@@ -640,11 +650,17 @@
 .unity-prompt-bar-audio.unity-enabled > .interactive-area {
   display: flex;
   box-sizing: border-box;
+  height: 400px;
   padding: 14px;
   border-radius: 20px;
   gap: 8px;
   isolation: isolate;
   overflow-x: clip;
+  overflow-y: auto;
+}
+
+.unity-prompt-bar-audio.unity-enabled > .interactive-area > .unity-paf-main {
+  min-height: 0;
 }
 
 .unity-prompt-bar-audio.unity-enabled > .interactive-area.dark {
@@ -667,8 +683,9 @@
     0 16px 48px rgb(0 0 0 / 10%);
 }
 
-.unity-prompt-bar-audio.unity-enabled .interactive-area.dark .unity-slf-left {
-  background: rgb(255 255 255 / 5%);
+.unity-prompt-bar-audio.unity-enabled .interactive-area .unity-slf-left {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area.light .unity-slf-left {
@@ -698,6 +715,11 @@
 
   .unity-prompt-bar-audio.unity-enabled .interactive-area.light .unity-slf-left {
     background: #fff;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-tile {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
@@ -737,11 +759,12 @@
   grid-column: 1 / -1;
   color: #f8f8f8;
   padding: 10px 0;
+  font-size: 16px;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
   grid-column: 1;
-  margin-top: 32px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -751,7 +774,6 @@
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .act-wrap {
   grid-column: 2;
-  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -811,16 +833,19 @@
     max-width: 1000px;
   }
 
-  .hero-marquee:has(+ .unity-prompt-bar-audio) > .foreground {
+  .hero-marquee:has(+ .unity-prompt-bar-audio) > .foreground,
+  .hero-marquee:has(.copy > .unity-prompt-bar-audio) > .foreground {
     max-width: 1000px;
     min-width: unset;
   }
 
-  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy {
+  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy,
+  .hero-marquee:has(.copy > .unity-prompt-bar-audio) .foreground .main-copy {
     align-items: center;
   }
 
-  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy p {
+  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy p,
+  .hero-marquee:has(.copy > .unity-prompt-bar-audio) .foreground .main-copy p {
     max-width: 800px;
   }
 }

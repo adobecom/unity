@@ -956,11 +956,8 @@ function insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, 
   }
   el.append(holder);
   el.classList.add('unity-prompt-bar-audio-host');
-  if (el.parentNode) {
-    el.parentNode.insertBefore(root, el);
-  } else {
-    el.append(root);
-  }
+  const interactArea = widgetInstance.target?.querySelector('.copy');
+  interactArea.append(root);
   widgetInstance.promptBarExtendedRoot = root;
 }
 

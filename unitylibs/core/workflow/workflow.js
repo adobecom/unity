@@ -100,7 +100,7 @@ class WfInitiator {
       const { default: UnityWidget } = await import(widgetPath);
       const spriteContent = await spriteSvg.text();
       unityWidgetObject = new UnityWidget(
-        this.interactiveArea,
+        this.targetBlock,
         this.el,
         this.workflowCfg,
         spriteContent,
