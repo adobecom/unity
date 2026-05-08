@@ -5,6 +5,7 @@ export const PROMPT_BAR_EVENTS = {
   MODULE_PICKER: 'Module Picker Select Dropdown|UnityWidget',
   RATIO_DROPDOWN: 'Ratio Dropdown Select|UnityWidget',
   MORE: 'More|UnityWidget',
+  UPLOAD_FILE_ATTEMPT: 'Upload file attempt|UnityWidget',
   UPLOAD_STARTED: 'Uploading started|UnityWidget',
   UPLOAD_ERROR: 'Upload error|UnityWidget',
   generateModel: (modelName) => `Generate ${modelName}|UnityWidget`,
