@@ -1311,3 +1311,26 @@
     padding: 0px;
   }
 }
+
+/* Fix: MWPW-194183 — prompt-bar truncation on mobile landscape */
+@media screen and (max-width: 926px) and (orientation: landscape) {
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap .widget-bg {
+    height: 5rem;
+  }
+
+  .hero-marquee.unity-enabled .interactive-area .ex-unity-wrap.sticky {
+    bottom: 8px;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+    padding: 6px 12px;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer {
+    display: none;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+    height: 36px;
+  }
+}
