@@ -19,6 +19,7 @@
   width: 100%;
   box-sizing: border-box;
   text-align: start;
+  margin-top: 24px;
 }
 
 .unity-prompt-bar-audio .unity-paf-main {
