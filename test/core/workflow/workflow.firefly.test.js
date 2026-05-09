@@ -1194,7 +1194,7 @@ describe('Firefly Workflow Tests', () => {
     let event;
 
     beforeEach(() => {
-      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget = new UnityWidget(block, unityElement, { ...workflowCfg, targetCfg: { ...workflowCfg.targetCfg } }, spriteContainer);
       testWidget.widgetWrap = document.createElement('div');
       testWidget.widget = document.createElement('div');
       testWidget.updateDropdownForVerb = sinon.stub();
