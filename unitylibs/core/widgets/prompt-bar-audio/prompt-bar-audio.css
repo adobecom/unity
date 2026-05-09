@@ -176,7 +176,11 @@
   flex: 0 0 37.17px;
 }
 
-@media (hover: hover) and (pointer: fine) {
+.unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) and (not (any-pointer: coarse)) {
   .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
     opacity: 0;
     transition: opacity 0.15s ease;
