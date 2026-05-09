@@ -108,7 +108,6 @@ export default class ActionBinder {
     this.limits = workflowCfg.targetCfg?.limits || {};
     const productTag = workflowCfg.targetCfg?.[`productTag-${workflowCfg.productName?.toLowerCase()}`] || 'FF';
     this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-PBU` };
-    
   }
 
   getApiConfig() {
@@ -302,6 +301,7 @@ export default class ActionBinder {
         this.apiConfig.endPoint.assetUpload,
         { body: JSON.stringify(assetDetails) },
       );
+      if (signal.aborted) return false;
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalytics('Asset Created|UnityWidget', { assetId: this.assetId });
@@ -413,7 +413,6 @@ export default class ActionBinder {
     await this.continueInApp(query, selectedModelId, selectedAspectRatio);
   }
 
-
   async continueInApp(query, modelId, aspectRatio) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
@@ -461,6 +460,7 @@ export default class ActionBinder {
           return response.json();
         },
       );
+      if (this.promiseStack.length > 0) return;
       this.logAnalytics('Generate Complete|UnityWidget', { assetId: this.assetId });
       this.LOADER_LIMIT = 100;
       if (this.transitionScreen?.splashScreenEl) {
@@ -499,6 +499,7 @@ export default class ActionBinder {
       this.uploadAbortController = null;
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
       this.logAnalytics('Cancel|UnityWidget', { assetId: this.assetId });
+      this.assetId = null;
       await this.ensureTransitionScreen();
       await this.transitionScreen.showSplashScreen();
       const e = new Error('Operation termination requested.');
