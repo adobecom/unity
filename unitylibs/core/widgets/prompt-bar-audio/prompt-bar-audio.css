@@ -824,6 +824,16 @@
     width: var(--grid-container-width);
   }
 
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container:not(.show-menu) .selected-model .model-name {
+    display: none;
+  }
+
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container:not(.show-menu) .selected-model {
+    width: auto;
+    justify-content: center;
+    gap: 6px;
+  }
+
   .unity-prompt-bar-audio .unity-paf-voice-row {
     gap: 10px;
   }
