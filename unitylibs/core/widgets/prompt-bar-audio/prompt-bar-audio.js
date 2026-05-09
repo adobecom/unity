@@ -733,6 +733,16 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         onTileActivate(idx);
+        return;
+      }
+      if (tiles.length < 2) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const step = e.key === 'ArrowRight' ? 1 : -1;
+        const nextIdx = (idx + step + tiles.length) % tiles.length;
+        const next = tiles[nextIdx];
+        next.focus();
+        next.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
     });
   });

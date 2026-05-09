@@ -70,10 +70,15 @@
   width: 100%;
   min-width: 0;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  padding-bottom: 2px;
+  padding-inline: 3px;
+  padding-top: 4px;
+  padding-bottom: 10px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(72 72 72 / 90%) transparent;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-row.unity-paf-voice-row-peek {
@@ -112,7 +117,7 @@
   overflow: hidden;
   cursor: pointer;
   text-align: start;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile:hover {
@@ -124,12 +129,24 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible {
-  border-color: #274dea;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile.selected {
   background: #292929;
   border-color: #274dea;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile.selected:focus-visible {
+  box-shadow: 0 0 0 1px #fff;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible:not(.selected) {
+  box-shadow:
+    0 0 0 1px #274dea,
+    0 0 0 2px #fff;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile-text {
@@ -265,11 +282,11 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   text-align: center;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 14px;
+  line-height: 136%;
   color: #fff;
 }
 
@@ -644,6 +661,10 @@
   gap: 8px;
   isolation: isolate;
   overflow-x: clip;
+}
+
+.unity-prompt-bar-audio.unity-enabled > .interactive-area:has(.unity-paf-voice-tile:focus-visible) {
+  overflow: visible;
 }
 
 .unity-prompt-bar-audio.unity-enabled > .interactive-area.dark {
