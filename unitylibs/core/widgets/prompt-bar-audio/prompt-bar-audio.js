@@ -704,6 +704,25 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     toggleTile(idx);
   }
 
+  const visibilityObserver = typeof IntersectionObserver !== 'undefined'
+    ? new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) return;
+        const tile = entry.target;
+        const p = voiceTileState.get(tile);
+        if (!p?.audio) return;
+        if (p.audio.paused || p.audio.ended) return;
+        try {
+          p.audio.pause();
+        } catch { /* ignore */ }
+      });
+    }, { root: null, threshold: 0 })
+    : null;
+
+  if (visibilityObserver) {
+    tiles.forEach((tile) => visibilityObserver.observe(tile));
+  }
+
   tiles.forEach((tile, idx) => {
     tile.addEventListener('click', (ev) => {
       if (ev.target?.closest && ev.target.closest('a[href]')) return;
@@ -718,7 +737,13 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     });
   });
   setSelectedVisual(0);
-  return () => { tiles.forEach(resetTileIdle); };
+  return () => {
+    if (visibilityObserver) {
+      tiles.forEach((tile) => visibilityObserver.unobserve(tile));
+      visibilityObserver.disconnect();
+    }
+    tiles.forEach(resetTileIdle);
+  };
 }
 
 function createPromptAudioShellBase(widgetInstance, el) {
