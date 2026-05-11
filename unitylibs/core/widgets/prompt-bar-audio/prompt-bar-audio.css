@@ -796,8 +796,14 @@
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast {
   box-sizing: border-box;
-  max-width: min(363px, 100%);
+  max-width: min(239px, 100%);
   width: 100%;
+}
+
+@media screen and (min-width: 600px) {
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast {
+    max-width: min(363px, 100%);
+  }
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast .alert-content {
