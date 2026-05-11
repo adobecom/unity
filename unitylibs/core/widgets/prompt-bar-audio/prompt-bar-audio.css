@@ -486,12 +486,17 @@
   box-shadow: 0 0 10px #0000001c;
   border-radius: 10px;
   color: #fff;
-  margin: 0;
   animation: none;
   position: absolute;
-  top: 0;
+  top: 100%;
   left: 0;
   z-index: 5;
+  margin: 6px 0 0;
+}
+
+[dir="rtl"] .unity-prompt-bar-audio.unity-enabled .interactive-area .verb-list {
+  left: unset;
+  right: 0;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container.show-menu .verb-list,
