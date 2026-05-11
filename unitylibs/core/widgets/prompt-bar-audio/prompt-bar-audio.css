@@ -235,10 +235,11 @@
   display: block;
   width: 18px;
   height: 18px;
+  color: #fff;
 }
 
 .unity-prompt-bar-audio .unity-paf-pp-center .unity-paf-pp-svg use {
-  filter: brightness(0) invert(1);
+  color: #fff;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-player-loading {
@@ -828,11 +829,11 @@
     width: var(--grid-container-width);
   }
 
-  .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container:not(.show-menu) .selected-model .model-name {
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container .selected-model .model-name {
     display: none;
   }
 
-  .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container:not(.show-menu) .selected-model {
+  .unity-prompt-bar-audio.unity-enabled .interactive-area .models-container .selected-model {
     width: auto;
     justify-content: center;
     gap: 6px;
