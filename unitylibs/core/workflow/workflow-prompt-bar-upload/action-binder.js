@@ -149,7 +149,9 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk?.(
       eventName,
       this.workflowCfg.productName,
-      { ...data, operation: this.verb },
+      { ...data, 
+        operation: this.verb,
+        action: 'upload-generate' },
       `${unityConfig.apiEndPoint}/log`,
       true,
     );
@@ -345,7 +347,11 @@ export default class ActionBinder {
       }
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       this.logAnalytics('Upload server error|UnityWidget', {
-        errorData: { code: 'error-request', subCode: `uploadAsset ${e.status}`, desc: e.message },
+        errorData: {
+          code: 'error-request',
+          subCode: `uploadAsset ${e.status}`,
+          desc: e.message || undefined,
+        },
         assetId: this.assetId,
       });
       return false;
@@ -356,10 +362,20 @@ export default class ActionBinder {
     const maxCharLimit = this.limits?.['max-char-limit'] ?? 1024;
     if (query.length > maxCharLimit) {
       this.handleClientError('.icon-error-max-length', 'max-prompt-characters-exceeded', 'Prompt too long');
-      this.logAnalytics('generate', { errorData: { code: 'max-prompt-characters-exceeded' } });
       return false;
     }
     return true;
+  }
+
+  async trackUploadFileAttempt(uploadMethod) {
+    try {
+      if (!this.analyticsModule) await this.initAnalytics();
+      const eventName = this.analyticsModule.PROMPT_BAR_EVENTS.UPLOAD_FILE_ATTEMPT;
+      sendAnalyticsEvent(new CustomEvent(eventName));
+      this.logAnalytics(eventName, { action: uploadMethod });
+    } catch (e) {
+      window.lana?.log(`Message: Upload file attempt analytics failed, Error: ${e}`, this.lanaOptions);
+    }
   }
 
   async ensureTransitionScreen() {
@@ -472,8 +488,12 @@ export default class ActionBinder {
       if (err.message === 'Operation termination requested.') return;
       await this.transitionScreen?.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err, this.lanaOptions);
-      this.logAnalytics('Generate Error|UnityWidget', {
-        errorData: { code: 'request-failed', subCode: err.status, desc: err.message },
+      this.logAnalytics('Upload server error|UnityWidget', {
+        errorData: {
+          code: 'error-request',
+          subCode: `continueInApp ${err.status}`,
+          desc: err.message || undefined,
+        },
         assetId: this.assetId,
       });
       window.lana?.log(`Message: Connector call failed, Error: ${err}`, this.lanaOptions);
@@ -658,6 +678,7 @@ export default class ActionBinder {
       e.preventDefault();
       dragDepth = 0;
       setDropzoneHighlight(false);
+      void this.trackUploadFileAttempt('drop');
       sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
       const files = this.extractFiles(e);
       await this.executeAction('file-selected', outerMarquee, files);
@@ -682,11 +703,15 @@ export default class ActionBinder {
         el.addEventListener('drop', async (e) => {
           e.preventDefault();
           el.classList.remove('drag-over');
+          void this.trackUploadFileAttempt('drop');
           sendAnalyticsEvent(new CustomEvent('Drag and drop|UnityWidget'));
           const files = this.extractFiles(e);
           await this.executeAction(primaryAction, el, files);
         });
-        el.addEventListener('click', () => { this.block?.querySelector('#file-upload')?.click(); });
+        el.addEventListener('click', () => {
+          void this.trackUploadFileAttempt('drop-zone-click');
+          this.block?.querySelector('#file-upload')?.click();
+        });
         break;
       case 'INPUT':
         el.addEventListener('change', async (e) => {
