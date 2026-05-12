@@ -53,7 +53,7 @@ export default class ActionBinder {
       const run = async () => {
         try {
           if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
-          this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-audio-fail' }, ev?.detail?.error, this.lanaOptions, 'client');
+          this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, ev?.detail?.error, this.lanaOptions, 'client');
         } catch (e) { /* noop */ }
       };
       run();
