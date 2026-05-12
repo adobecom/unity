@@ -682,8 +682,9 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       return;
     }
     primeVoiceAudioForPlayback(tile);
-    audio.play().catch(() => {
+    audio.play().catch((err) => {
       setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
+      if (err?.name === 'AbortError') return;
       dispatchAudioPlaybackFailed(wrap);
     });
   }
@@ -695,8 +696,9 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       tiles.forEach((t, i) => { if (i !== idx) resetTileIdle(t); });
       const nextTile = tiles[idx];
       primeVoiceAudioForPlayback(nextTile);
-      voiceTileState.get(nextTile).audio.play().catch(() => {
+      voiceTileState.get(nextTile).audio.play().catch((err) => {
         setVoiceTileCenterIcon(nextTile, PAF_PP_PLAY_SVG);
+        if (err?.name === 'AbortError') return;
         dispatchAudioPlaybackFailed(wrap);
       });
       return;
