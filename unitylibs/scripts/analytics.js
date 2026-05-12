@@ -2,6 +2,7 @@ export const PROMPT_BAR_EVENTS = {
   ENTER_PROMPT: 'Enter Prompt|UnityWidget',
   MODEL_SELECT_DROPDOWN: 'Model Select Dropdown|UnityWidget',
   GENERATE_CTA: 'Click on Generate CTA|UnityWidget',
+  EXPLORE_OTHER: 'Explore Other|UnityWidget',
   MODULE_PICKER: 'Module Picker Select Dropdown|UnityWidget',
   RATIO_DROPDOWN: 'Ratio Dropdown Select|UnityWidget',
   MORE: 'More|UnityWidget',
@@ -15,6 +16,12 @@ export const PROMPT_WITH_STYLE_EVENTS = PROMPT_BAR_EVENTS;
 
 export function styleSelectionGenerateEventName(styleIndexOneBased) {
   return `Style ${styleIndexOneBased}|UnityWidget`;
+}
+
+/** Prompt-bar-audio: voice row index (1-based) + selected model display name. */
+export function voiceModelGenerateEventName(voiceIndexOneBased, modelName) {
+  const m = (modelName || '').trim() || 'Unknown';
+  return `Voice ${voiceIndexOneBased} ${m} Generate|UnityWidget`;
 }
 
 export function sendAdobeAnalytics(eventName) {
@@ -36,7 +43,7 @@ function getSessionID() {
 function createPayloadForSplunk(metaData) {
   const {
     eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation,
-    styleEventName, modelGenEventName, aspectRatio, hasImage,
+    styleEventName, voiceEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
   return {
     event: {
@@ -52,6 +59,7 @@ function createPayloadForSplunk(metaData) {
       ...(assetId && { assetId }),
       ...(fileMetaData && { fileMetaData }),
       ...(styleEventName && { style: styleEventName }),
+      ...(voiceEventName && { voice: voiceEventName }),
       ...(modelGenEventName && { model: modelGenEventName }),
       ...(aspectRatio && { aspectRatio }),
       ...(hasImage !== undefined && hasImage !== null && { hasImage }),

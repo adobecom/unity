@@ -225,9 +225,13 @@ export default class ActionBinder {
     });
   }
 
-  async execActions(action, el = null) {
+  async execActions(actionsList, el = null) {
     try {
-      await this.handleAction(action, el);
+      const actions = Array.isArray(actionsList) ? actionsList : [actionsList];
+      for (const action of actions) {
+        if (!action?.actionType) continue;
+        await this.handleAction(action, el);
+      }
     } catch (err) {
       window.lana?.log(`Message: Actions failed, Error: ${err}`, this.lanaOptions);
     }
@@ -235,7 +239,7 @@ export default class ActionBinder {
 
   async handleAction(action, el) {
     const actionMap = {
-      generate: () => this.generateContent(),
+      generate: () => this.generateContent(el),
       setPromptValue: () => this.setPrompt(el),
       closeDropdown: () => this.resetDropdown(),
     };
@@ -285,13 +289,16 @@ export default class ActionBinder {
     return { name, promptPhrase };
   }
 
+  getSelectedVoiceIndexOneBased() {
+    if (!this.isPromptBarAudio) return null;
+    const raw = this.widgetWrap.getAttribute('data-selected-voice-index');
+    const idx = raw != null ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(idx) ? idx + 1 : null;
+  }
+
   getSelectedStyleIndexOneBased() {
     const root = this.block;
-    if (this.isPromptBarAudio) {
-      const raw = this.widgetWrap.getAttribute('data-selected-voice-index');
-      const idx = raw != null ? parseInt(raw, 10) : NaN;
-      return Number.isFinite(idx) ? idx + 1 : null;
-    }
+    if (this.isPromptBarAudio) return null;
     if (!root?.classList?.contains('unity-prompt-bar-style')) return null;
     const items = Array.from(root.querySelectorAll('.unity-slf-style-list .unity-slf-style-item'));
     const selected = root.querySelector('.unity-slf-style-item.selected');
@@ -325,7 +332,7 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
   }
 
-  async generateContent() {
+  async generateContent(clickSourceEl = null) {
     await this.initAnalytics();
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const queryParams = getCgenQueryParams(this.unityEl);
@@ -343,22 +350,38 @@ export default class ActionBinder {
     const stylePayload = this.isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
     const voiceId = this.getSelectedVoiceIdForConnector();
     const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
-    const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
     const modelName = this.getSelectedModelDisplayName();
-    const styleEventName = styleIndexOneBased != null
-      ? this.analyticsModule.styleSelectionGenerateEventName(styleIndexOneBased)
-      : undefined;
+    const fromExploreSubfoot = this.isPromptBarAudio
+      && clickSourceEl?.closest?.('.unity-paf-voice-subfoot');
+    const ctaSplunkAdobeName = fromExploreSubfoot
+      ? this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.EXPLORE_OTHER
+      : this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA;
+
+    const styleIndexOneBased = this.getSelectedStyleIndexOneBased();
+    const voiceIndexOneBased = this.getSelectedVoiceIndexOneBased();
+    let styleEventName;
+    let voiceEventName;
+    if (this.isPromptBarAudio) {
+      if (voiceIndexOneBased != null) {
+        voiceEventName = this.analyticsModule.voiceModelGenerateEventName(voiceIndexOneBased, modelName);
+      }
+    } else if (styleIndexOneBased != null) {
+      styleEventName = this.analyticsModule.styleSelectionGenerateEventName(styleIndexOneBased);
+    }
     const modelGenEventName = modelName ? `Generate ${modelName}|UnityWidget` : undefined;
     const eventData = {
       assetId: this.id,
       verb: selectedVerbType,
       action,
       ...(styleEventName && { styleEventName }),
+      ...(voiceEventName && { voiceEventName }),
       ...(modelGenEventName && { modelGenEventName }),
     };
-    this.logAnalytics(this.analyticsModule.PROMPT_WITH_STYLE_EVENTS.GENERATE_CTA, eventData, { workflowStep: 'start' });
-    if (styleEventName) this.sendAdobeAnalytics?.(styleEventName);
+    this.logAnalytics(ctaSplunkAdobeName, eventData, { workflowStep: 'start' });
+    this.sendAdobeAnalytics?.(ctaSplunkAdobeName);
     if (modelName && modelGenEventName) this.sendAdobeAnalytics?.(modelGenEventName);
+    if (styleEventName) this.sendAdobeAnalytics?.(styleEventName);
+    if (voiceEventName) this.sendAdobeAnalytics?.(voiceEventName);
     const validation = this.validateInput(this.query);
     if (!validation.isValid) {
       this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
