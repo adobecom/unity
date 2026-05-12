@@ -332,24 +332,7 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...logData, operation: this.verb }, `${unityConfig.apiEndPoint}/log`, true);
   }
 
-  async generateContent(clickSourceEl = null) {
-    await this.initAnalytics();
-    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
-    const queryParams = getCgenQueryParams(this.unityEl);
-    const currentVerb = this.getSelectedVerbType();
-    const genBtn = this.block.querySelector('.gen-btn');
-    const override = genBtn?.dataset?.soundPrompt;
-    if (currentVerb === 'sound' && override) {
-      this.query = override.trim();
-      try { delete genBtn.dataset.soundPrompt; } catch (e) { /* noop */ }
-    } else {
-      this.query = this.inputField.value.trim();
-    }
-    const selectedVerbType = `text-to-${currentVerb}`;
-    const operationVerb = this.getVerbFromDom();
-    const stylePayload = this.isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
-    const voiceId = this.getSelectedVoiceIdForConnector();
-    const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
+  emitGenerateStartAnalytics(clickSourceEl, selectedVerbType, action) {
     const modelName = this.getSelectedModelDisplayName();
     const fromExploreSubfoot = this.isPromptBarAudio
       && clickSourceEl?.closest?.('.unity-paf-voice-subfoot');
@@ -382,6 +365,28 @@ export default class ActionBinder {
     if (modelName && modelGenEventName) this.sendAdobeAnalytics?.(modelGenEventName);
     if (styleEventName) this.sendAdobeAnalytics?.(styleEventName);
     if (voiceEventName) this.sendAdobeAnalytics?.(voiceEventName);
+    return eventData;
+  }
+
+  async generateContent(clickSourceEl = null) {
+    await this.initAnalytics();
+    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+    const queryParams = getCgenQueryParams(this.unityEl);
+    const currentVerb = this.getSelectedVerbType();
+    const genBtn = this.block.querySelector('.gen-btn');
+    const override = genBtn?.dataset?.soundPrompt;
+    if (currentVerb === 'sound' && override) {
+      this.query = override.trim();
+      try { delete genBtn.dataset.soundPrompt; } catch (e) { /* noop */ }
+    } else {
+      this.query = this.inputField.value.trim();
+    }
+    const selectedVerbType = `text-to-${currentVerb}`;
+    const operationVerb = this.getVerbFromDom();
+    const stylePayload = this.isPromptBarAudio ? undefined : this.getSelectedStylePayloadForConnector();
+    const voiceId = this.getSelectedVoiceIdForConnector();
+    const action = (this.id || !!override ? 'prompt-suggestion' : 'generate');
+    const eventData = this.emitGenerateStartAnalytics(clickSourceEl, selectedVerbType, action);
     const validation = this.validateInput(this.query);
     if (!validation.isValid) {
       this.logAnalytics('generate', { ...eventData, errorData: { code: validation.errorCode } }, { workflowStep: 'complete', statusCode: -1 });
