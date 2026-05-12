@@ -19,7 +19,6 @@ export function styleSelectionGenerateEventName(styleIndexOneBased) {
   return `Style ${styleIndexOneBased}|UnityWidget`;
 }
 
-/** Prompt-bar-audio: voice row index (1-based) + selected model display name. */
 export function voiceModelGenerateEventName(voiceIndexOneBased, modelName) {
   const m = (modelName || '').trim() || 'Unknown';
   return `Voice ${voiceIndexOneBased} ${m} Generate|UnityWidget`;
