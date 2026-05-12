@@ -511,7 +511,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     class: `unity-paf-voice-tile${index === 0 ? ' selected' : ''}`,
     role: 'listitem',
     tabindex: '0',
-    'aria-pressed': 'false',
     'data-voice-index': String(index),
     'data-voice-name': name,
   });
@@ -586,7 +585,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   audioObj.addEventListener('play', () => {
     voiceTileState.get(tile).playing = true;
     showPauseIcon();
-    tile.setAttribute('aria-pressed', 'true');
+    tile.dataset.audioPlaying = 'true';
     startRaf();
   });
   audioObj.addEventListener('pause', () => {
@@ -599,7 +598,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     } else {
       setRingProgress(audioObj.currentTime);
     }
-    tile.setAttribute('aria-pressed', 'false');
+    delete tile.dataset.audioPlaying;
     stopRaf();
   });
   audioObj.addEventListener('ended', () => {
@@ -607,7 +606,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     showPlayIcon();
     setRingProgress(0);
     ringFg.style.strokeDashoffset = String(RING_C);
-    tile.setAttribute('aria-pressed', 'false');
+    delete tile.dataset.audioPlaying;
     try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
     stopRaf();
   });
@@ -661,7 +660,7 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     p.playing = false;
     p.ringFg.style.strokeDashoffset = String(RING_C);
     setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
-    tile.setAttribute('aria-pressed', 'false');
+    delete tile.dataset.audioPlaying;
   }
 
   function syncPromptIfStuckToDefaults() {
