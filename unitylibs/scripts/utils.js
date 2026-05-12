@@ -5,9 +5,11 @@ export const [setLibs, getLibs] = (() => {
       libs = (() => {
         const { hostname, origin, search } = location || window.location;
         if (hostname.endsWith('acrobat.adobe.com')) return `${origin}/dc-shared/libs`;
-        if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
+        if (!['.aem.', '.hlx.', '.stage.', 'localhost', '.da.'].some((i) => hostname.includes(i))) return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
+        if (!/^[a-zA-Z0-9_-]+$/.test(branch)) throw new Error('Invalid branch name.');
         if (branch === 'local') return 'http://localhost:6456/libs';
+        if (branch === 'main' && hostname.includes('.stage.')) return prodLibs;
         const env = hostname.includes('.hlx.') ? 'hlx' : 'aem';
         return branch.includes('--') ? `https://${branch}.${env}.live/libs` : `https://${branch}--milo--adobecom.${env}.live/libs`;
       })();
@@ -29,7 +31,7 @@ export const [setUnityLibs, getUnityLibs] = (() => {
 
 export function decorateArea() {}
 
-const miloLibs = setLibs('/libs');
+const miloLibs = setLibs(`${window.location.origin}/libs`);
 
 const {
   createTag, getConfig, loadStyle, loadLink, loadScript, localizeLink, loadArea,

@@ -1,9 +1,18 @@
-export const PROMPT_WITH_STYLE_EVENTS = {
+export const PROMPT_BAR_EVENTS = {
   ENTER_PROMPT: 'Enter Prompt|UnityWidget',
   MODEL_SELECT_DROPDOWN: 'Model Select Dropdown|UnityWidget',
   GENERATE_CTA: 'Click on Generate CTA|UnityWidget',
   MODULE_PICKER: 'Module Picker Select Dropdown|UnityWidget',
+  RATIO_DROPDOWN: 'Ratio Dropdown Select|UnityWidget',
+  MORE: 'More|UnityWidget',
+  UPLOAD_FILE_ATTEMPT: 'Upload file attempt|UnityWidget',
+  UPLOAD_STARTED: 'Uploading started|UnityWidget',
+  UPLOAD_ERROR: 'Upload error|UnityWidget',
+  generateModel: (modelName) => `Generate ${modelName}|UnityWidget`,
+  ratioSelect: (ratio) => `${ratio}|UnityWidget`,
 };
+
+export const PROMPT_WITH_STYLE_EVENTS = PROMPT_BAR_EVENTS;
 
 export function styleSelectionGenerateEventName(styleIndexOneBased) {
   return `Style ${styleIndexOneBased}|UnityWidget`;
@@ -28,7 +37,7 @@ function getSessionID() {
 function createPayloadForSplunk(metaData) {
   const {
     eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation,
-    styleEventName, modelGenEventName,
+    styleEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
   return {
     event: {
@@ -45,6 +54,8 @@ function createPayloadForSplunk(metaData) {
       ...(fileMetaData && { fileMetaData }),
       ...(styleEventName && { style: styleEventName }),
       ...(modelGenEventName && { model: modelGenEventName }),
+      ...(aspectRatio && { aspectRatio }),
+      ...(hasImage !== undefined && hasImage !== null && { hasImage }),
     },
     source: {
       user_agent: navigator.userAgent,

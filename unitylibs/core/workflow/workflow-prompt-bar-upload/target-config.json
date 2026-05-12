@@ -1,0 +1,31 @@
+{
+  "_defaults": {
+    "renderWidget": true,
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink-firefly": "/cc-shared/fragments/products/firefly/unity/splash-page",
+      "fragmentLink-firefly-dark": "/cc-shared/fragments/products/firefly/unity/splash-page-dark",
+      "splashScreenParent": "body"
+    },
+    "limits": {
+      "maxNumFiles": 1,
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
+      "maxFileSize": 50000000,
+      "max-char-limit": 1024
+    },
+    "productTag-firefly": "FF",
+    "sendSplunkAnalytics": true,
+    "actionMap": {
+      ".gen-btn": [{ "actionType": "generate" }],
+      ".more-btn": [{ "actionType": "more" }],
+      ".drop-zone": [{ "actionType": "file-selected" }],
+      "#file-upload": [{ "actionType": "file-selected" }]
+    }
+  },
+  "upload-marquee": {
+    "selector": ".copy",
+    "source": ".copy",
+    "target": ".upload-marquee-prompt-container",
+    "insert": "after"
+  }
+}
