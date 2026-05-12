@@ -405,7 +405,7 @@
   min-width: unset;
   background: #2c2c2c;
   border-radius: 8px;
-  color: #fff;
+  color: #dbdbdb;
   height: 32px;
 }
 
@@ -473,7 +473,7 @@
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
-  color: #fff;
+  color: #dbdbdb;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list,
@@ -486,7 +486,7 @@
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
   border-radius: 10px;
-  color: #fff;
+  color: #dbdbdb;
   animation: none;
   position: absolute;
   top: 100%;
