@@ -824,7 +824,17 @@
   overflow-wrap: break-word;
 }
 
+.hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .copy h1 {
+  font-weight: 800;
+  line-height: 98%;
+}
+
 @media screen and (max-width: 1199px) {
+  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .copy h1 {
+    font-size: 40px;
+    letter-spacing: -1.8px;
+  }
+
   .unity-prompt-bar-audio.unity-enabled {
     width: var(--grid-container-width);
   }
@@ -864,5 +874,10 @@
 
   .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .main-copy p {
     max-width: 800px;
+  }
+
+  .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .copy h1 {
+    font-size: 64px;
+    letter-spacing: -1.92px;
   }
 }
