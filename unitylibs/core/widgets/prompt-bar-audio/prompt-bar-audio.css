@@ -189,20 +189,20 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile:hover .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile[data-audio-playing="true"] .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile:has(.unity-paf-voice-player--buffering) .unity-paf-voice-player {
   opacity: 1;
 }
 
-@media (hover: hover) and (pointer: fine) and (not (any-pointer: coarse)) {
+@media (hover: none) {
   .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .unity-prompt-bar-audio .unity-paf-voice-tile:hover .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile[aria-pressed="true"] .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile:has(.unity-paf-voice-player--buffering) .unity-paf-voice-player {
     opacity: 1;
   }
 }
@@ -405,7 +405,7 @@
   min-width: unset;
   background: #2c2c2c;
   border-radius: 8px;
-  color: #fff;
+  color: #dbdbdb;
   height: 32px;
 }
 
@@ -473,7 +473,7 @@
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
-  color: #fff;
+  color: #dbdbdb;
 }
 
 .unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list,
@@ -486,7 +486,7 @@
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
   border-radius: 10px;
-  color: #fff;
+  color: #dbdbdb;
   animation: none;
   position: absolute;
   top: 100%;
@@ -818,10 +818,12 @@
   width: auto;
 }
 
-.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast .alert-text {
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast .alert-content .alert-text {
+  flex: 1 1 auto;
   max-width: 100%;
   min-width: 0;
   overflow-wrap: break-word;
+  text-align: center;
 }
 
 .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .copy h1 {

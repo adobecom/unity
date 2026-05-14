@@ -511,7 +511,6 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     class: `unity-paf-voice-tile${index === 0 ? ' selected' : ''}`,
     role: 'listitem',
     tabindex: '0',
-    'aria-pressed': 'false',
     'data-voice-index': String(index),
     'data-voice-name': name,
   });
@@ -530,7 +529,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   const ringFg = progressSvg?.querySelector('.unity-paf-ring-fg');
   if (!progressSvg || !ringFg) return tile;
   ringFg.style.strokeDasharray = String(RING_C);
-  ringFg.style.strokeDashoffset = String(RING_C);
+  ringFg.style.strokeDashoffset = '0';
   const center = createTag('div', { class: 'unity-paf-pp-center' });
   center.innerHTML = PAF_PP_PLAY_SVG;
   const bufferLayer = createTag('div', { class: 'unity-paf-voice-player-loading' });
@@ -581,12 +580,12 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   audioObj.addEventListener('loadedmetadata', () => {
     const dur = Number.isFinite(audioObj.duration) && audioObj.duration > 0 ? audioObj.duration : 0;
     if (dur > 0) widgetInstance.durationCache.set(url, dur);
-    setRingProgress(0);
   });
   audioObj.addEventListener('play', () => {
+    ringFg.style.strokeDashoffset = String(RING_C);
     voiceTileState.get(tile).playing = true;
     showPauseIcon();
-    tile.setAttribute('aria-pressed', 'true');
+    tile.dataset.audioPlaying = 'true';
     startRaf();
   });
   audioObj.addEventListener('pause', () => {
@@ -594,20 +593,18 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
     voiceTileState.get(tile).playing = !atEnd && audioObj.currentTime > 0;
     showPlayIcon();
     if (atEnd) {
-      setRingProgress(0);
-      ringFg.style.strokeDashoffset = String(RING_C);
+      ringFg.style.strokeDashoffset = '0';
     } else {
       setRingProgress(audioObj.currentTime);
     }
-    tile.setAttribute('aria-pressed', 'false');
+    delete tile.dataset.audioPlaying;
     stopRaf();
   });
   audioObj.addEventListener('ended', () => {
     voiceTileState.get(tile).playing = false;
     showPlayIcon();
-    setRingProgress(0);
-    ringFg.style.strokeDashoffset = String(RING_C);
-    tile.setAttribute('aria-pressed', 'false');
+    ringFg.style.strokeDashoffset = '0';
+    delete tile.dataset.audioPlaying;
     try { audioObj.currentTime = 0; } catch (e) { /* noop */ }
     stopRaf();
   });
@@ -659,9 +656,9 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
     try { p.audio.pause(); } catch { /* ignore */ }
     try { p.audio.currentTime = 0; } catch { /* ignore */ }
     p.playing = false;
-    p.ringFg.style.strokeDashoffset = String(RING_C);
+    p.ringFg.style.strokeDashoffset = '0';
     setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
-    tile.setAttribute('aria-pressed', 'false');
+    delete tile.dataset.audioPlaying;
   }
 
   function syncPromptIfStuckToDefaults() {
@@ -682,8 +679,9 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       return;
     }
     primeVoiceAudioForPlayback(tile);
-    audio.play().catch(() => {
+    audio.play().catch((err) => {
       setVoiceTileCenterIcon(tile, PAF_PP_PLAY_SVG);
+      if (err?.name === 'AbortError') return;
       dispatchAudioPlaybackFailed(wrap);
     });
   }
@@ -695,8 +693,9 @@ function attachVoiceInteractivity(tiles, widgetInstance, inpField, voices) {
       tiles.forEach((t, i) => { if (i !== idx) resetTileIdle(t); });
       const nextTile = tiles[idx];
       primeVoiceAudioForPlayback(nextTile);
-      voiceTileState.get(nextTile).audio.play().catch(() => {
+      voiceTileState.get(nextTile).audio.play().catch((err) => {
         setVoiceTileCenterIcon(nextTile, PAF_PP_PLAY_SVG);
+        if (err?.name === 'AbortError') return;
         dispatchAudioPlaybackFailed(wrap);
       });
       return;
