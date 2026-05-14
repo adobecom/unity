@@ -189,20 +189,20 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.unity-prompt-bar-audio .unity-paf-voice-tile:hover .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile[data-audio-playing="true"] .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player,
+.unity-prompt-bar-audio .unity-paf-voice-tile:has(.unity-paf-voice-player--buffering) .unity-paf-voice-player {
   opacity: 1;
 }
 
-@media (hover: hover) and (pointer: fine) and (not (any-pointer: coarse)) {
+@media (hover: none) {
   .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .unity-prompt-bar-audio .unity-paf-voice-tile:hover .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile:focus-visible .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile[data-audio-playing="true"] .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile.selected .unity-paf-voice-player,
-  .unity-prompt-bar-audio .unity-paf-voice-tile:has(.unity-paf-voice-player--buffering) .unity-paf-voice-player {
     opacity: 1;
   }
 }
