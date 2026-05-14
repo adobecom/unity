@@ -818,10 +818,12 @@
   width: auto;
 }
 
-.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast .alert-text {
+.unity-prompt-bar-audio.unity-enabled .interactive-area .ex-unity-wrap .alert-holder .alert-toast .alert-content .alert-text {
+  flex: 1 1 auto;
   max-width: 100%;
   min-width: 0;
   overflow-wrap: break-word;
+  text-align: center;
 }
 
 .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .copy h1 {
