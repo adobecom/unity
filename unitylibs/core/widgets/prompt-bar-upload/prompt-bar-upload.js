@@ -79,9 +79,16 @@ function closeDropdown(container, triggerBtn, list) {
   triggerBtn.setAttribute('aria-expanded', 'false');
 }
 
+function setComboboxTriggerAriaLabel(triggerBtn, nameContainer) {
+  const v = (nameContainer.textContent || '').trim();
+  const prefix = triggerBtn.dataset.comboboxLabel || '';
+  triggerBtn.setAttribute('aria-label', v ? `${prefix}, ${v}` : prefix);
+}
+
 function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, ariaLabelledBy = null }) {
   const container = createTag('div', {
     class: `models-container${extraClass ? ` ${extraClass}` : ''}`,
+    role: 'group',
     'aria-label': label,
   });
 
@@ -96,6 +103,7 @@ function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, aria
     'aria-haspopup': 'listbox',
     role: 'combobox',
   });
+  triggerBtn.dataset.comboboxLabel = label;
   if (imgEl) triggerBtn.append(imgEl, nameContainer, menuIcon);
   else triggerBtn.append(nameContainer, menuIcon);
 
@@ -105,9 +113,7 @@ function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, aria
   list.setAttribute('style', 'display: none;');
 
   container.append(triggerBtn, list);
-  return {
-    container, triggerBtn, nameContainer, menuIcon, list,
-  };
+  return { container, triggerBtn, nameContainer, menuIcon, list };
 }
 
 function attachDropdownBehavior(container, triggerBtn, list) {
@@ -289,6 +295,7 @@ export default class PromptBarUploadWidget {
       ariaLabelledBy: 'listbox-label',
     });
     nameContainer.textContent = (defaultModel?.name || '').trim();
+    setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
 
     this.models.forEach((model, idx) => {
       const selectedIcon = createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon'));
@@ -322,6 +329,7 @@ export default class PromptBarUploadWidget {
       const modelVersion = link.getAttribute('data-model-version') || '';
       this.selectedModelId = modelId;
       nameContainer.textContent = modelName;
+      setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
       const triggerIcon = triggerBtn.querySelector(':scope > img');
       if (modelIcon) {
         if (triggerIcon) {
@@ -391,6 +399,7 @@ export default class PromptBarUploadWidget {
       imgEl: triggerAspectIcon,
     });
     nameContainer.textContent = ratios[0];
+    setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
 
     ratios.forEach((ratio, idx) => {
       const selectedIcon = createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon'));
@@ -414,6 +423,7 @@ export default class PromptBarUploadWidget {
       e.stopPropagation();
       const ratio = link.getAttribute('data-ratio') || '';
       nameContainer.textContent = ratio;
+      setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
       setAspectRatioTriggerIconSvg(triggerAspectIcon, ratio);
       this.setSelectedAspectRatio(modelId, ratio);
       syncDropdownSelection(list, link);
@@ -495,7 +505,11 @@ export default class PromptBarUploadWidget {
     });
 
     const dropContent = createTag('div', { class: 'pbu-drop-content' });
-    dropContent.append(createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/upload.svg` }));
+    dropContent.append(createTag('img', {
+      loading: 'lazy',
+      src: `${getUnityLibs()}/img/icons/upload.svg`,
+      alt: 'Upload image',
+    }));
     const dropZone = createTag('div', {
       class: 'drop-zone',
       role: 'button',
