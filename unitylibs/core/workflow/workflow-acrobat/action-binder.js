@@ -188,6 +188,7 @@ export default class ActionBinder {
     this.experimentViaPageConfig = false;
     this.pageConfigLocation = null;
     this.pageConfigFetched = false;
+    this.pageConfigPromise = null;
   }
 
   async initialize() {
@@ -579,7 +580,7 @@ export default class ActionBinder {
     if (prevalidatedFiles.length === 0) return;
     const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
     if (!isValid) return;
-    await this.ensurePageConfig();
+    await (this.pageConfigPromise || this.ensurePageConfig());
     await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
@@ -811,6 +812,7 @@ export default class ActionBinder {
     }
     if (b === this.block) {
       this.loadTransitionScreen();
+      this.pageConfigPromise = this.ensurePageConfig();
     }
   }
 }
