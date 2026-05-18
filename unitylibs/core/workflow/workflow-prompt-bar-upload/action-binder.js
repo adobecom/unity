@@ -145,11 +145,11 @@ export default class ActionBinder {
     }
   }
 
-  logAnalytics(eventName, data) {
+  logAnalyticsinSplunk(eventName, data = {}) {
     this.sendAnalyticsToSplunk?.(
       eventName,
       this.workflowCfg.productName,
-      { ...data, 
+      { ...data,
         operation: this.verb,
         action: 'upload-generate' },
       `${unityConfig.apiEndPoint}/log`,
@@ -225,7 +225,7 @@ export default class ActionBinder {
       this.lanaOptions,
       'client',
     );
-    this.logAnalytics('Upload client error|UnityWidget', { errorData: { code: errorCode }, fileMetaData: this.filesData });
+    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorCode }, fileMetaData: this.filesData });
   }
 
   setSelectSpinnerVisible(visible) {
@@ -306,7 +306,7 @@ export default class ActionBinder {
       if (signal.aborted) return false;
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
-      this.logAnalytics('Asset Created|UnityWidget', { assetId: this.assetId });
+      this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
       const uploadHandler = new UploadHandler(this, this.serviceHandler);
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
@@ -315,7 +315,7 @@ export default class ActionBinder {
           if (signal.aborted) return false;
           const error = new Error(`One or more chunks failed for asset: ${id}`);
           error.status = 504;
-          this.logAnalytics('Chunked Upload Failed|UnityWidget', {
+          this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', {
             assetId: this.assetId,
             failedChunks: failedChunks.size,
             maxRetryCount: Math.max(...Array.from(attemptMap.values())),
@@ -325,7 +325,7 @@ export default class ActionBinder {
         await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
         const { createChunkAnalyticsData } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
         const totalChunks = Math.ceil(file.size / blocksize);
-        this.logAnalytics(
+        this.logAnalyticsinSplunk(
           'Chunked Upload Completed|UnityWidget',
           createChunkAnalyticsData('Chunked Upload Completed|UnityWidget', {
             assetId: this.assetId,
@@ -337,7 +337,7 @@ export default class ActionBinder {
       } else {
         await this.uploadImgToUnity(href, id, file, file.type, signal);
         await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
-        this.logAnalytics('Upload Completed|UnityWidget', { assetId: this.assetId });
+        this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
       }
       return true;
     } catch (e) {
@@ -346,7 +346,7 @@ export default class ActionBinder {
         return false;
       }
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      this.logAnalytics('Upload server error|UnityWidget', {
+      this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
           subCode: `uploadAsset ${e.status}`,
@@ -372,7 +372,7 @@ export default class ActionBinder {
       if (!this.analyticsModule) await this.initAnalytics();
       const eventName = this.analyticsModule.PROMPT_BAR_EVENTS.UPLOAD_FILE_ATTEMPT;
       sendAnalyticsEvent(new CustomEvent(eventName));
-      this.logAnalytics(eventName, { action: uploadMethod });
+      this.logAnalyticsinSplunk(eventName, { action: uploadMethod });
     } catch (e) {
       window.lana?.log(`Message: Upload file attempt analytics failed, Error: ${e}`, this.lanaOptions);
     }
@@ -403,8 +403,8 @@ export default class ActionBinder {
     sendAnalyticsEvent(new CustomEvent(ctaEventName));
     if (selectedModelName) sendAnalyticsEvent(new CustomEvent(pbuEvents.generateModel(selectedModelName)));
     if (selectedAspectRatio) sendAnalyticsEvent(new CustomEvent(pbuEvents.ratioSelect(selectedAspectRatio)));
-    this.logAnalytics(pbuEvents.UPLOAD_STARTED, { fileMetaData: this.filesData });
-    this.logAnalytics(ctaEventName, {
+    this.logAnalyticsinSplunk(pbuEvents.UPLOAD_STARTED, { fileMetaData: this.filesData });
+    this.logAnalyticsinSplunk(ctaEventName, {
       ...(selectedModelName && {
         modelGenEventName: pbuEvents.generateModel(selectedModelName),
       }),
@@ -477,7 +477,7 @@ export default class ActionBinder {
         },
       );
       if (this.promiseStack.length > 0) return;
-      this.logAnalytics('Generate Complete|UnityWidget', { assetId: this.assetId });
+      this.logAnalyticsinSplunk('Generate Complete|UnityWidget', { assetId: this.assetId });
       this.LOADER_LIMIT = 100;
       if (this.transitionScreen?.splashScreenEl) {
         this.transitionScreen.LOADER_LIMIT = 100;
@@ -488,7 +488,7 @@ export default class ActionBinder {
       if (err.message === 'Operation termination requested.') return;
       await this.transitionScreen?.showSplashScreen();
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err, this.lanaOptions);
-      this.logAnalytics('Upload server error|UnityWidget', {
+      this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
         errorData: {
           code: 'error-request',
           subCode: `continueInApp ${err.status}`,
@@ -518,7 +518,7 @@ export default class ActionBinder {
       this.uploadAbortController?.abort();
       this.uploadAbortController = null;
       sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
-      this.logAnalytics('Cancel|UnityWidget', { assetId: this.assetId });
+      this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId: this.assetId });
       this.assetId = null;
       await this.ensureTransitionScreen();
       await this.transitionScreen.showSplashScreen();
@@ -554,7 +554,7 @@ export default class ActionBinder {
           this.preventDefault(e);
           const extracted = this.extractFiles(e);
           this.filesData = { count: extracted.length, size: extracted[0]?.size, type: extracted[0]?.type };
-          this.logAnalytics('Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
+          this.logAnalyticsinSplunk('Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
           await this.executeActionMaps(actMap[key], extracted);
         });
         el.addEventListener('click', () => {
@@ -574,7 +574,7 @@ export default class ActionBinder {
         el.addEventListener('change', async (e) => {
           const extracted = this.extractFiles(e);
           this.filesData = { count: extracted.length, size: extracted[0]?.size, type: extracted[0]?.type };
-          this.logAnalytics('Click Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
+          this.logAnalyticsinSplunk('Click Drag and drop|UnityWidget', { assetId: this.assetId, fileMetaData: this.filesData });
           await this.executeActionMaps(actMap[key], extracted);
           e.target.value = '';
         });
@@ -748,7 +748,7 @@ export default class ActionBinder {
   bindWidgetInteractionEvent(domEventName, analyticsEventName, action) {
     this.widgetWrap?.addEventListener(domEventName, () => {
       sendAnalyticsEvent(new CustomEvent(analyticsEventName));
-      this.logAnalytics(analyticsEventName, { action });
+      this.logAnalyticsinSplunk(analyticsEventName, { action });
     });
   }
 
