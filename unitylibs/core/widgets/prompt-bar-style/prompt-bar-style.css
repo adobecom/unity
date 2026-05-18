@@ -840,7 +840,7 @@
   .unity-prompt-bar-style .unity-slf-preview {
     width: 508px;
     max-width: 100%;
-    height: 368px;
+    height: 370px;
     box-sizing: border-box;
   }
 
@@ -871,14 +871,13 @@
 .unity-prompt-bar-style .unity-slf-controls {
   display: flex;
   flex-direction: column;
-  gap: 20px;
   min-width: 0;
 }
 
 .unity-prompt-bar-style .unity-slf-style-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
