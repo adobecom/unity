@@ -171,6 +171,7 @@ export default class ActionBinder {
     this.signedOut = undefined;
     this.tokenError = null;
     this.redirectUrl = '';
+    this.redirectUrlPromise = null;
     this.filesData = {};
     this.errorData = {};
     this.redirectWithoutUpload = false;
@@ -510,12 +511,13 @@ export default class ActionBinder {
     if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
-    await this.getRedirectUrl(cOpts);
-    if (!this.redirectUrl) return false;
-    const [baseUrl, queryString] = this.redirectUrl.split('?');
-    const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
-    this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
-    this.dispatchAnalyticsEvent('redirectUrl', { ...filesData, redirectUrl: this.redirectUrl });
+    this.redirectUrlPromise = this.getRedirectUrl(cOpts).then(() => {
+      if (!this.redirectUrl) return;
+      const [baseUrl, queryString] = this.redirectUrl.split('?');
+      const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
+      this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
+      this.dispatchAnalyticsEvent('redirectUrl', { ...filesData, redirectUrl: this.redirectUrl });
+    });
     return true;
   }
 
@@ -644,6 +646,7 @@ export default class ActionBinder {
   }
 
   async continueInApp() {
+    if (this.redirectUrlPromise) await this.redirectUrlPromise;
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
