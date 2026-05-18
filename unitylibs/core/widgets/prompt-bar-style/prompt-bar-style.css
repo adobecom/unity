@@ -1154,7 +1154,10 @@
 }
 
 .unity-prompt-bar-style .unity-slf-style-label {
-  flex-shrink: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  box-sizing: border-box;
   overflow: hidden;
   color: #d1d1d1;
   text-overflow: ellipsis;
@@ -1162,8 +1165,6 @@
   font-size: 12px;
   font-style: normal;
   font-weight: 400;
-  line-height: 14px;
-  white-space: nowrap;
 }
 
 .unity-prompt-bar-style .unity-slf-gen-btn {
