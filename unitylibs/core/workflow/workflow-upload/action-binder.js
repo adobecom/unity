@@ -398,7 +398,13 @@ export default class ActionBinder {
 
   async checkImageDimensions(file) {
     const { getImageDimensions } = await import(`${getUnityLibs()}/utils/FileUtils.js`);
-    const { width, height } = await getImageDimensions(file);
+    let { width, height } = {};
+    try {
+      ({ width, height } = await getImageDimensions(file));
+    } catch (e) {
+      window.lana?.log(`Message: Skipping image dimension check (unreadable), Error: ${e}`, this.lanaOptions);
+      return null;
+    }
     const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
     const isMinLimits = this.limits.minWidth && this.limits.minHeight;
     this.filesData = { ...this.filesData, width, height };
