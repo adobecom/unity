@@ -211,6 +211,7 @@ export default class UploadHandler {
         this.actionBinder.getAdditionalHeaders() || {},
         { body: JSON.stringify(finalAssetData), signal },
       );
+      finalizeOpts.keepalive = true;
       this.networkUtils.fetchFromServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         finalizeOpts,
