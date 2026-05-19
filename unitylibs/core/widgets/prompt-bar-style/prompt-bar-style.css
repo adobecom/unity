@@ -877,7 +877,7 @@
 .unity-prompt-bar-style .unity-slf-style-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
 }
 
