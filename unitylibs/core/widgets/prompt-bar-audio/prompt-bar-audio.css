@@ -201,7 +201,7 @@
   opacity: 1;
 }
 
-@media (hover: none) {
+@media (hover: none), (pointer: coarse) {
   .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
     opacity: 1;
   }
