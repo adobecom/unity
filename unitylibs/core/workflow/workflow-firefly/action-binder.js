@@ -435,7 +435,7 @@ export default class ActionBinder {
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
       this.query = '';
       this.id = '';
-      this.resetDropdown();
+      this.resetDropdown({ restoreFocus: false });
       if (url) window.location.href = url;
     } catch (err) {
       this.query = '';
@@ -671,8 +671,9 @@ export default class ActionBinder {
     if (!this.widget?.contains(event.target)) this.hideDropdown();
   }
 
-  resetDropdown() {
-    this.inputField.focus();
+  resetDropdown(options = {}) {
+    const { restoreFocus = true } = options;
+    if (restoreFocus) this.inputField.focus();
     if (!this.query) this.inputField.value = '';
     this.hideDropdown();
   }
