@@ -211,46 +211,13 @@ export default class UploadHandler {
         this.actionBinder.getAdditionalHeaders() || {},
         { body: JSON.stringify(finalAssetData), signal },
       );
-      const finalizeJson = await this.networkUtils.fetchFromServiceWithRetry(
+      finalizeOpts.keepalive = true;
+      this.networkUtils.fetchFromServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         finalizeOpts,
         this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset,
-      );
-      if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
-        if (this.actionBinder.MULTI_FILE) {
-          await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson || {})}`, false, true, {
-            code: 'upload_error_finalize_asset',
-            desc: `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson || {})}`,
-          });
-          return false;
-        }
-        await this.showSplashScreen();
-        await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', 500, `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`, false, true, {
-          code: 'upload_error_finalize_asset',
-          desc: `Unexpected response from finalize call: ${assetData.id}, ${JSON.stringify(finalizeJson)}`,
-        });
-        this.actionBinder.operations = [];
-        return false;
-      }
-    } catch (e) {
-      if (e.name === 'AbortError') return false;
-      if (this.actionBinder.MULTI_FILE) {
-        await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
-          code: 'upload_error_finalize_asset',
-          subCode: e.status,
-          desc: `Exception thrown when verifying content: ${e.message}, ${assetData.id}`,
-        });
-        return false;
-      }
-      await this.showSplashScreen();
-      await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
-        code: 'upload_error_finalize_asset',
-        subCode: e.status,
-        desc: `Exception thrown when verifying content: ${e.message}, ${assetData.id}`,
-      });
-      this.actionBinder.operations = [];
-      return false;
-    }
+      ).catch(() => {});
+    } catch (e) { /* fire-and-forget */ }
     return true;
   }
 
