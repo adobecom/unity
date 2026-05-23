@@ -103,6 +103,28 @@ function svgUse(id) {
   return `<svg aria-hidden="true"><use xlink:href="#${id}"></use></svg>`;
 }
 
+function insertInlineActionRoot(el, widgetInstance, widgetEl) {
+  const skin = el.classList.contains('light') ? 'light' : 'dark';
+  const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
+  interactiveShell.append(widgetEl);
+  const root = createTag('div', { class: 'unity-inline-action unity-enabled' });
+  root.append(interactiveShell);
+  const holder = createTag('div', { class: 'ia-config-holder ia-sr-only' });
+  holder.setAttribute('aria-hidden', 'true');
+  while (el.firstChild) {
+    holder.append(el.firstChild);
+  }
+  el.append(holder);
+  el.classList.add('unity-inline-action-host');
+  if (el.parentNode) {
+    el.parentNode.insertBefore(root, el);
+  } else {
+    el.append(root);
+  }
+  widgetInstance.promptBarExtendedRoot = root;
+  return root;
+}
+
 export default class InlineActionWidget {
   constructor(target, unityEl, workflowCfg, spriteContent = '') {
     this.target = target;
@@ -138,8 +160,6 @@ export default class InlineActionWidget {
   }
 
   async initWidget() {
-    this.el.querySelectorAll(':scope > div:not(.interactive-area)').forEach((d) => d.classList.add('ia-source-hidden'));
-
     const root = createTag('div', { class: 'ia-widget', 'data-state': 'initial' });
     const left = createTag('div', { class: 'ia-panel ia-panel-left' });
     const right = createTag('div', { class: 'ia-panel ia-panel-right' });
@@ -222,7 +242,7 @@ export default class InlineActionWidget {
       root.append(sprite);
     }
     root.append(left, right);
-    this.target.append(root);
+    insertInlineActionRoot(this.el, this, root);
     this.widget = root;
 
     dropzone.addEventListener('click', (e) => {

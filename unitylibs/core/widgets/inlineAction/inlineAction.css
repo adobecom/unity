@@ -1,6 +1,30 @@
-.unity.workflow-inline-action > .ia-source-hidden,
-.unity.workflow-inline-action > div.ia-source-hidden {
-  display: none;
+.ia-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.unity.workflow-inline-action.widget-inline-action.unity-inline-action-host {
+  position: relative;
+  min-height: 0;
+}
+
+.unity-inline-action {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.unity-inline-action.unity-enabled > .interactive-area {
+  background: transparent;
+  background-image: none;
+  height: auto;
+  max-height: none;
 }
 
 .interactive-area.dark .ia-widget,

@@ -2,7 +2,7 @@
   "_defaults": {
     "renderWidget": true,
     "showSplashScreen": true,
-    "mountOnUnityEl": true,
+    "extendedWidgets": ["inline-action"],
     "productTag-firefly": "FF",
     "limits-firefly": {
       "allowedFileTypes": ["image/jpeg", "image/jpg", "image/png", "image/webp"],
@@ -15,5 +15,11 @@
       "splashScreenParent": "body"
     },
     "sendSplunkAnalytics": true
+  },
+  "hero-marquee": {
+    "selector": ".copy",
+    "source": ".copy .main-copy",
+    "target": ".row-supplemental a",
+    "insert": "before"
   }
 }
