@@ -1,0 +1,241 @@
+import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
+
+const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
+
+function getImgSrc(pic) {
+  const viewport = defineDeviceByScreenSize();
+  let source = '';
+  if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
+  else source = pic.querySelector('source[type="image/webp"][media]');
+  return source ? source.srcset.split(' ')[0] : pic.querySelector('img')?.src;
+}
+
+function textBeforeBr(el) {
+  const parts = [];
+  el.childNodes.forEach((n) => {
+    if (n.nodeName === 'BR') return;
+    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
+    else if (n.nodeName !== 'PICTURE' && n.nodeName !== 'SPAN') parts.push(n.textContent);
+  });
+  return parts.join('').replace(/\s+/g, ' ').trim();
+}
+
+function textAfterIcon(li) {
+  const icon = li.querySelector('[class*="icon-nba-"]');
+  if (!icon) return '';
+  let found = false;
+  const parts = [];
+  li.childNodes.forEach((n) => {
+    if (n === icon) { found = true; return; }
+    if (!found) return;
+    if (n.nodeName === 'BR') return;
+    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
+  });
+  return parts.join('').replace(/\s+/g, ' ').trim();
+}
+
+function parseNbaIcon(li) {
+  const icon = li.querySelector('[class*="icon-nba-"]');
+  if (!icon) return null;
+  const cls = [...icon.classList].find((c) => c.startsWith('icon-nba-'));
+  return cls?.replace('icon-nba-', '') || null;
+}
+
+export function parseInlineAuthoring(unityEl) {
+  const sections = unityEl.querySelectorAll(':scope > div');
+  const viewportBlocks = sections[0]?.querySelectorAll(':scope > div') || [];
+  const idx = VIEWPORT_IDX[defineDeviceByScreenSize()] ?? 2;
+  const vp = viewportBlocks[idx] || viewportBlocks[viewportBlocks.length - 1] || sections[0];
+  const configUl = [...unityEl.querySelectorAll(':scope > div ul')].find((ul) => ul.querySelector('[class*="icon-error"], [class*="icon-operation"]'));
+  const nbaUl = [...unityEl.querySelectorAll(':scope > div ul')].find((ul) => ul.querySelector('[class*="icon-nba-"]'));
+
+  const heroPic = vp?.querySelector('picture');
+  const uploadIconHref = vp?.querySelector('p a[href]')?.getAttribute('href');
+  const paras = vp ? [...vp.querySelectorAll('p')] : [];
+  const uploadLabel = textBeforeBr(paras[0] || vp) || 'Upload your image';
+  const dragHint = paras[1]?.textContent?.trim() || '';
+  const fileLimit = paras[2]?.textContent?.trim() || '';
+  const legalHtml = paras[3]?.innerHTML || '';
+
+  let operation = 'removeBackground';
+  let downloadLabel = 'Download';
+  let editLabel = 'Edit in Firefly';
+  let nbaHeading = 'Do more with this image.';
+  configUl?.querySelectorAll('li').forEach((li) => {
+    const icon = li.querySelector('[class*="icon-"]');
+    if (!icon) return;
+    const cls = [...icon.classList].find((c) => c.startsWith('icon-'));
+    if (!cls) return;
+    if (cls.startsWith('icon-operation-')) operation = cls.replace('icon-operation-', '');
+    else if (cls === 'icon-download') downloadLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || downloadLabel;
+    else if (cls === 'icon-editInFirefly') editLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || editLabel;
+    else if (cls === 'icon-placeholder-nba') nbaHeading = li.textContent.trim();
+  });
+
+  const nbaCards = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
+    const pic = li.querySelector('picture');
+    const nba = parseNbaIcon(li);
+    if (!nba) return null;
+    return {
+      label: textBeforeBr(li),
+      nba,
+      defaultPrompt: textAfterIcon(li),
+      src: pic ? getImgSrc(pic) : '',
+    };
+  }).filter(Boolean);
+
+  return {
+    heroSrc: heroPic ? getImgSrc(heroPic) : '',
+    uploadIconHref,
+    uploadLabel,
+    dragHint,
+    fileLimit,
+    legalHtml,
+    operation,
+    downloadLabel,
+    editLabel,
+    nbaHeading,
+    nbaCards,
+  };
+}
+
+function svgUse(id) {
+  return `<svg aria-hidden="true"><use xlink:href="#${id}"></use></svg>`;
+}
+
+export default class InlineActionWidget {
+  constructor(target, unityEl, workflowCfg, spriteContent = '') {
+    this.target = target;
+    this.el = unityEl;
+    this.workflowCfg = workflowCfg;
+    this.spriteContent = spriteContent;
+    this.widget = null;
+    this.meta = parseInlineAuthoring(unityEl);
+    this.state = 'initial';
+  }
+
+  setState(state) {
+    this.state = state;
+    if (this.widget) this.widget.dataset.state = state;
+  }
+
+  setProgress(pct) {
+    const fill = this.widget?.querySelector('.ia-progress-fill');
+    const label = this.widget?.querySelector('.ia-progress-pct');
+    const val = Math.min(100, Math.max(0, Math.round(pct)));
+    if (fill) fill.style.width = `${val}%`;
+    if (label) label.textContent = `${val}%`;
+  }
+
+  setResultUrl(url) {
+    const img = this.widget?.querySelector('.ia-result-img');
+    if (img) img.src = url;
+  }
+
+  resetFileInput() {
+    const input = this.widget?.querySelector('.ia-file-input');
+    if (input) input.value = '';
+  }
+
+  async initWidget() {
+    this.el.querySelectorAll(':scope > div:not(.interactive-area)').forEach((d) => d.classList.add('ia-source-hidden'));
+
+    const root = createTag('div', { class: 'ia-widget', 'data-state': 'initial' });
+    const left = createTag('div', { class: 'ia-panel ia-panel-left' });
+    const right = createTag('div', { class: 'ia-panel ia-panel-right' });
+
+    const preview = createTag('div', { class: 'ia-preview' });
+    preview.append(
+      createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }),
+      createTag('span', { class: 'ia-preview-badge' }, 'Remove background'),
+    );
+
+    const ghost = createTag('div', { class: 'ia-ghost' });
+    const result = createTag('div', { class: 'ia-result' });
+    const checker = createTag('div', { class: 'ia-checker' });
+    checker.append(createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
+    const resultActions = createTag('div', { class: 'ia-result-actions' });
+    const reuploadBtn = createTag('button', { type: 'button', class: 'ia-reupload-btn', 'aria-label': 'Upload another image' });
+    reuploadBtn.innerHTML = svgUse('ia-upload-icon');
+    const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
+    downloadBtn.innerHTML = `${svgUse('ia-download-icon')}<span>${this.meta.downloadLabel}</span>`;
+    resultActions.append(reuploadBtn, downloadBtn);
+    result.append(checker, resultActions);
+
+    left.append(preview, ghost, result);
+
+    const dropIcon = createTag('p', { class: 'ia-drop-icon' });
+    if (this.meta.uploadIconHref) {
+      dropIcon.append(createTag('img', { src: this.meta.uploadIconHref, alt: '', width: 20, height: 20 }));
+    } else {
+      dropIcon.innerHTML = svgUse('ia-upload-icon');
+    }
+
+    const dropzone = createTag('div', { class: 'ia-dropzone drop-zone' });
+    dropzone.append(
+      dropIcon,
+      createTag('button', { type: 'button', class: 'ia-upload-btn con-button blue' }, this.meta.uploadLabel),
+      createTag('p', { class: 'ia-drag-hint' }, this.meta.dragHint),
+      createTag('p', { class: 'ia-file-limit' }, this.meta.fileLimit),
+    );
+    const fileInput = createTag('input', {
+      type: 'file', class: 'ia-file-input hide', accept: 'image/jpeg,image/jpg,image/png,image/webp', tabindex: -1,
+    });
+    const legal = createTag('p', { class: 'ia-legal' });
+    legal.innerHTML = this.meta.legalHtml;
+
+    const loading = createTag('div', { class: 'ia-loading' });
+    loading.append(
+      createTag('p', { class: 'ia-loading-text' }, 'Uploading image, loading remove background'),
+      createTag('div', { class: 'ia-progress' },
+        createTag('div', { class: 'ia-progress-track' }, createTag('div', { class: 'ia-progress-fill' })),
+        createTag('span', { class: 'ia-progress-pct' }, '0%'),
+      ),
+      legal.cloneNode(true),
+    );
+
+    const complete = createTag('div', { class: 'ia-complete' });
+    complete.append(createTag('p', { class: 'ia-nba-heading' }, this.meta.nbaHeading));
+    const grid = createTag('div', { class: 'ia-nba-grid' });
+    this.meta.nbaCards.forEach((card) => {
+      const cardEl = createTag('button', {
+        type: 'button',
+        class: 'ia-nba-card',
+        'data-nba': card.nba,
+        'data-default-prompt': card.defaultPrompt,
+      });
+      cardEl.append(
+        createTag('img', { src: card.src, alt: '', class: 'ia-nba-img' }),
+        createTag('span', { class: 'ia-nba-label' }, card.label),
+        createTag('span', { class: 'ia-nba-arrow' }, svgUse('ia-arrow-icon')),
+      );
+      grid.append(cardEl);
+    });
+    const editBtn = createTag('button', { type: 'button', class: 'ia-edit-firefly' });
+    editBtn.innerHTML = `${svgUse('ia-external-icon')}<span>${this.meta.editLabel}</span>`;
+    complete.append(grid, editBtn);
+
+    right.append(dropzone, fileInput, legal, loading, complete);
+    if (this.spriteContent) {
+      const sprite = createTag('div', { class: 'ia-sprite hide' });
+      sprite.innerHTML = this.spriteContent;
+      root.append(sprite);
+    }
+    root.append(left, right);
+    this.target.append(root);
+    this.widget = root;
+
+    dropzone.addEventListener('click', (e) => {
+      if (e.target.closest('.ia-upload-btn') || e.target === dropzone) fileInput.click();
+    });
+
+    return {
+      '.ia-dropzone': 'upload',
+      '.ia-file-input': 'upload',
+      '.ia-nba-card': 'connector',
+      '.ia-edit-firefly': 'connector',
+      '.ia-download-btn': 'download',
+      '.ia-reupload-btn': 'reupload',
+    };
+  }
+}

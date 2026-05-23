@@ -27,8 +27,12 @@ class WfInitiator {
   }
 
   static widgetPathsForName(name) {
-    const widgetBase = `${getUnityLibs()}/core/widgets/${name}`;
-    return [`${widgetBase}/${name}.js`, `${widgetBase}/${name}.css`];
+    const folderMap = { 'inline-action': 'inlineAction' };
+    const fileMap = { 'inline-action': 'inlineAction' };
+    const folder = folderMap[name] || name;
+    const file = fileMap[name] || name;
+    const widgetBase = `${getUnityLibs()}/core/widgets/${folder}`;
+    return [`${widgetBase}/${file}.js`, `${widgetBase}/${file}.css`];
   }
 
   getWidgetPaths() {
@@ -59,6 +63,10 @@ class WfInitiator {
       'workflow-ai': [...bundledWidgetAssets],
       'workflow-firefly': fireflyShared,
       'workflow-prompt-bar-upload': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+      ],
+      'workflow-inline-action': [
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
       ],
@@ -120,6 +128,7 @@ class WfInitiator {
       actionBinderBlock,
       canvasAreaForBinder,
       this.actionMap,
+      unityWidgetObject,
     ).initActionListeners();
   }
 
@@ -139,9 +148,17 @@ class WfInitiator {
 
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
+    const defaults = targetConfig._defaults || {};
+    if (defaults.mountOnUnityEl) {
+      const iArea = createTag('div', { class: 'interactive-area' });
+      if (this.el.classList.contains('light')) iArea.classList.add('light');
+      else iArea.classList.add('dark');
+      this.el.prepend(iArea);
+      this.el.classList.add('unity-enabled');
+      return [this.el, iArea, { ...defaults }];
+    }
     const prevElem = this.el.previousElementSibling;
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
-    const defaults = targetConfig._defaults || {};
 
     let targetCfg = null;
     for (let k = 0; k < supportedBlocks.length; k += 1) {
@@ -272,6 +289,16 @@ class WfInitiator {
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
       },
+      'workflow-inline-action': {
+        productName: product || 'Firefly',
+        sfList: new Set([
+          'remove-background',
+          'upscale',
+          'remove',
+          'generate-new-bg',
+          'studio-lighting',
+        ]),
+      },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
@@ -301,6 +328,9 @@ class WfInitiator {
       if (supportedFeatures.has(fn)) {
         if (!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
+      } else if (cfName.startsWith('icon-nba-') && this.workflowCfg.name === 'workflow-inline-action') {
+        const nbaFn = cfName.replace('icon-nba-', '');
+        if (!this.workflowCfg.enabledFeatures.includes(nbaFn)) this.workflowCfg.enabledFeatures.push(nbaFn);
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       } else if (supportedTexts && supportedTexts.has(fn)) {
