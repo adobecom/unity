@@ -52,6 +52,8 @@ export default class UploadHandler {
 
   async directUploadSingleFile(file, fileData, isPdf = true) {
     const abortSignal = this.actionBinder.getAbortSignal();
+    this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
+    this.actionBinder.setIsUploading(true);
     let assetData;
     try {
       assetData = await this.directUploadAsset(file, abortSignal);
@@ -78,6 +80,7 @@ export default class UploadHandler {
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
     if (!redirectSuccess) return false;
 
+    this.actionBinder.operations.push(assetData.id);
     this.actionBinder.uploadTimestamp = Date.now();
     this.actionBinder.dispatchAnalyticsEvent('uploaded', {
       ...fileData,
