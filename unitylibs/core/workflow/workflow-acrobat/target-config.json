@@ -22,6 +22,7 @@
     "fetchApiConfig": {
       "finalizeAsset": {
         "retryType": "polling",
+        "retryOn202": false,
         "retryParams": {
           "maxRetryDelay": 300000,
           "defaultRetryDelay": 5000
