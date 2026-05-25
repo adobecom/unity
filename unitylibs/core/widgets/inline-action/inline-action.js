@@ -20,6 +20,18 @@ function textBeforeBr(el) {
   return parts.join('').replace(/\s+/g, ' ').trim();
 }
 
+function nbaLabelFromLi(li) {
+  const icon = li.querySelector('[class*="icon-nba-"]');
+  const parts = [];
+  for (const n of li.childNodes) {
+    if (n === icon) break;
+    if (n.nodeName === 'BR') break;
+    if (n.nodeName === 'PICTURE') continue;
+    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
+  }
+  return parts.join('').replace(/\s+/g, ' ').trim();
+}
+
 function textAfterIcon(li) {
   const icon = li.querySelector('[class*="icon-nba-"]');
   if (!icon) return '';
@@ -77,7 +89,7 @@ export function parseInlineAuthoring(unityEl) {
     const nba = parseNbaIcon(li);
     if (!nba) return null;
     return {
-      label: textBeforeBr(li),
+      label: nbaLabelFromLi(li),
       nba,
       defaultPrompt: textAfterIcon(li),
       src: pic ? getImgSrc(pic) : '',
@@ -165,10 +177,7 @@ export default class InlineActionWidget {
     const right = createTag('div', { class: 'ia-panel ia-panel-right' });
 
     const preview = createTag('div', { class: 'ia-preview' });
-    preview.append(
-      createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }),
-      createTag('span', { class: 'ia-preview-badge' }, 'Remove background'),
-    );
+    preview.append(createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }));
 
     const ghost = createTag('div', { class: 'ia-ghost' });
     const result = createTag('div', { class: 'ia-result' });
@@ -180,7 +189,8 @@ export default class InlineActionWidget {
     const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
     downloadBtn.innerHTML = `${svgUse('ia-download-icon')}<span>${this.meta.downloadLabel}</span>`;
     resultActions.append(reuploadBtn, downloadBtn);
-    result.append(checker, resultActions);
+    checker.append(resultActions);
+    result.append(checker);
 
     left.append(preview, ghost, result);
 

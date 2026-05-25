@@ -15,6 +15,7 @@ import {
   loadImg,
 } from '../../../scripts/utils.js';
 import { createChunkUploadTasks } from '../../../utils/chunkingUtils.js';
+import { removeExtension } from '../../../utils/FileUtils.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -57,8 +58,9 @@ class ServiceHandler {
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
-      element.style.pointerEvents = 'none';
-      const errorToast = element.querySelector('.alert-holder');
+      const mount = element.querySelector('.ia-widget') || element;
+      mount.style.pointerEvents = 'none';
+      const errorToast = mount.querySelector('.alert-holder');
       if (!errorToast) return;
       const alertText = errorToast.querySelector('.alert-text p');
       if (alertText) alertText.innerText = msg;
@@ -89,6 +91,7 @@ export default class ActionBinder {
     this.assetId = null;
     this.resultAssetId = null;
     this.resultUrl = null;
+    this.resultBlob = null;
     this.filesData = {};
     this.uploadAbortController = null;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
@@ -157,6 +160,7 @@ export default class ActionBinder {
   }
 
   async validateFile(files) {
+    if (!files?.length) return null;
     const file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
       this.handleClientUploadError('.icon-error-filecount', 'error-filecount');
@@ -306,11 +310,103 @@ export default class ActionBinder {
     return res;
   }
 
-  triggerDownload(url) {
-    const a = createTag('a', { href: url, download: 'image.png', target: '_blank' });
+  static downloadFilename(originalName, mimeType = 'image/png') {
+    const extMap = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/webp': 'webp',
+    };
+    const ext = extMap[mimeType] || 'png';
+    if (originalName) {
+      const base = removeExtension(originalName) || 'image';
+      return `${base}-nobg.${ext}`;
+    }
+    return `image.${ext}`;
+  }
+
+  getImageBlobData(url) {
+    return new Promise((res, rej) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url);
+      xhr.responseType = 'blob';
+      xhr.onload = () => {
+        if (xhr.status === 200) res(xhr.response);
+        else rej(new Error(`Failed to fetch image (${xhr.status})`));
+      };
+      xhr.onerror = () => rej(new Error('Failed to fetch image'));
+      xhr.send();
+    });
+  }
+
+  loadCrossOriginImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Failed to load image for download'));
+      img.src = url;
+    });
+  }
+
+  exportImageToBlob(img, mimeType = 'image/png') {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to export image'));
+      }, mimeType);
+    });
+  }
+
+  async resolveDownloadBlob(url) {
+    if (this.resultBlob) return this.resultBlob;
+    try {
+      return await this.getImageBlobData(url);
+    } catch {
+      const previewImg = this.widgetRef?.widget?.querySelector('.ia-result-img');
+      if (previewImg?.complete && previewImg.naturalWidth) {
+        try {
+          return await this.exportImageToBlob(previewImg);
+        } catch {
+          // Preview image may be tainted without CORS; retry with crossOrigin load.
+        }
+      }
+      const img = await this.loadCrossOriginImage(url);
+      return this.exportImageToBlob(img);
+    }
+  }
+
+  async cacheResultBlob(url) {
+    try {
+      this.resultBlob = await this.resolveDownloadBlob(url);
+    } catch {
+      this.resultBlob = null;
+    }
+  }
+
+  downloadBlob(blob, mimeType = 'image/png') {
+    const filename = ActionBinder.downloadFilename(this.filesData?.name, mimeType);
+    const objUrl = URL.createObjectURL(blob);
+    const a = createTag('a', {
+      href: objUrl,
+      download: filename,
+    });
     document.body.append(a);
     a.click();
-    a.remove();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+    }, 200);
+  }
+
+  async triggerDownload(url) {
+    const blob = await this.resolveDownloadBlob(url);
+    const mimeType = blob.type || 'image/png';
+    this.downloadBlob(blob, mimeType);
   }
 
   async signedInFlow(file) {
@@ -337,6 +433,7 @@ export default class ActionBinder {
       await this.removeBackground();
       this.widgetRef?.setResultUrl(this.resultUrl);
       await loadImg(this.widgetRef.widget.querySelector('.ia-result-img'));
+      await this.cacheResultBlob(this.resultUrl);
       this.widgetRef?.setState('complete');
     } catch (e) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
@@ -347,7 +444,7 @@ export default class ActionBinder {
   async uploadFile(files) {
     const file = await this.validateFile(files);
     if (!file) return;
-    this.filesData = { type: file.type };
+    this.filesData = { type: file.type, name: file.name };
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { isGuest } = await isGuestUser();
     if (isGuest === false) await this.signedInFlow(file);
@@ -358,9 +455,14 @@ export default class ActionBinder {
     let userCount = this.getUserCount();
     const nba = el?.dataset?.nba;
     const defaultPrompt = el?.dataset?.defaultPrompt;
-    if (isDownload && userCount === 0) {
+    if (isDownload && userCount < 100) {
       userCount = this.incrementUserCount();
-      this.triggerDownload(this.resultUrl);
+      try {
+        await this.triggerDownload(this.resultUrl);
+      } catch (e) {
+        this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
+        return;
+      }
     }
     await this.callConnector(await this.buildConnectorPayload(this.filesData, { nba, defaultPrompt, userCount }));
   }
@@ -372,26 +474,29 @@ export default class ActionBinder {
         fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
       ]);
       this.canvasArea.forEach((element) => {
+        const mount = element.querySelector('.ia-widget') || element;
+        if (mount.querySelector('.alert-holder')) return;
         const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
         const alertIcon = createTag('div', { class: 'alert-icon' });
         alertIcon.innerHTML = alertImg;
         alertIcon.append(alertText);
         const alertClose = createTag('a', { class: 'alert-close', href: '#' });
         alertClose.innerHTML = closeImg;
+        alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
+        const alertContent = createTag('div', { class: 'alert-content' });
+        alertContent.append(alertIcon, alertClose);
+        const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
+        const holder = createTag('div', { class: 'alert-holder' }, alertToast);
         alertClose.addEventListener('click', (e) => {
           this.preventDefault(e);
-          element.querySelector('.alert-holder')?.classList.remove('show');
-          element.style.pointerEvents = 'auto';
+          holder.classList.remove('show');
+          mount.style.pointerEvents = 'auto';
         });
-        const holder = createTag('div', { class: 'alert-holder' });
-        const content = createTag('div', { class: 'alert-content' });
-        const toast = createTag('div', { class: 'alert-toast' });
-        content.append(alertIcon, alertClose);
-        toast.append(content);
-        holder.append(toast);
-        element.append(holder);
+        mount.append(holder);
       });
-      return this.canvasArea[0]?.querySelector('.alert-holder');
+      const root = this.canvasArea[0];
+      const mount = root?.querySelector('.ia-widget') || root;
+      return mount?.querySelector('.alert-holder');
     } catch (e) {
       return null;
     }
@@ -413,6 +518,7 @@ export default class ActionBinder {
         this.assetId = null;
         this.resultAssetId = null;
         this.resultUrl = null;
+        this.resultBlob = null;
         this.widgetRef?.resetFileInput();
         this.widgetRef?.setState('initial');
         this.widgetRef?.setProgress(0);
@@ -431,23 +537,34 @@ export default class ActionBinder {
     Object.keys(actMap).forEach((key) => {
       b.querySelectorAll(key).forEach((el) => {
         const action = actMap[key];
-        el.addEventListener('click', async (e) => {
-          if (action !== 'upload') this.preventDefault(e);
-          const files = action === 'upload' ? this.extractFiles(e) : null;
-          await this.executeActionMaps(action, files, el);
-        });
         if (el.classList.contains('ia-dropzone')) {
           el.addEventListener('drop', async (e) => {
             this.preventDefault(e);
             await this.executeActionMaps('upload', this.extractFiles(e));
           });
+          return;
         }
         if (el.type === 'file') {
+          el.addEventListener('click', () => {
+            this.canvasArea.forEach((element) => {
+              const mount = element.querySelector('.ia-widget') || element;
+              const errHolder = mount.querySelector('.alert-holder');
+              if (errHolder?.classList.contains('show')) {
+                mount.style.pointerEvents = 'auto';
+                errHolder.classList.remove('show');
+              }
+            });
+          });
           el.addEventListener('change', async (e) => {
             await this.executeActionMaps('upload', this.extractFiles(e));
             e.target.value = '';
           });
+          return;
         }
+        el.addEventListener('click', async (e) => {
+          if (action !== 'upload') this.preventDefault(e);
+          await this.executeActionMaps(action, null, el);
+        });
       });
     });
     window.addEventListener('dragover', this.preventDefault.bind(this), false);

@@ -27,12 +27,8 @@ class WfInitiator {
   }
 
   static widgetPathsForName(name) {
-    const folderMap = { 'inline-action': 'inlineAction' };
-    const fileMap = { 'inline-action': 'inlineAction' };
-    const folder = folderMap[name] || name;
-    const file = fileMap[name] || name;
-    const widgetBase = `${getUnityLibs()}/core/widgets/${folder}`;
-    return [`${widgetBase}/${file}.js`, `${widgetBase}/${file}.css`];
+    const widgetBase = `${getUnityLibs()}/core/widgets/${name}`;
+    return [`${widgetBase}/${name}.js`, `${widgetBase}/${name}.css`];
   }
 
   getWidgetPaths() {
