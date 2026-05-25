@@ -212,7 +212,7 @@ export default class UploadHandler {
         { body: JSON.stringify(finalAssetData), signal },
       );
       finalizeOpts.keepalive = true;
-      this.networkUtils.fetchFromService(
+      await this.networkUtils.fetchFromService(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         finalizeOpts
       ).catch(() => {});
