@@ -14,7 +14,7 @@
     },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
-    "fireAndForgetFinalize": ["word-to-pdf"],
+    "awaitFinalizeVerbs": ["word-to-pdf"],
     "directUploadVerbs": ["word-to-pdf"],
     "directUploadMaxSize": 1048576,
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],

@@ -269,10 +269,22 @@ export default class UploadHandler {
     return { failedFiles, attemptMap };
   }
 
+  isAwaitFinalizeVerb(verb) {
+    const awaitFinalizeVerbs = this.actionBinder.workflowCfg.targetCfg.awaitFinalizeVerbs || [];
+    return awaitFinalizeVerbs.includes(verb);
+  }
+
+  getFinalizeRetryConfig(verb) {
+    const baseConfig = this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset;
+    if (this.isAwaitFinalizeVerb(verb)) {
+      return { ...baseConfig, retryOn202: false };
+    }
+    return baseConfig;
+  }
+
   async verifyContent(assetData, signal) {
     const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
-    const fireAndForgetVerbs = this.actionBinder.workflowCfg.targetCfg.fireAndForgetFinalize || [];
-    const isFireAndForget = fireAndForgetVerbs.includes(verb);
+    const finalizeRetryConfig = this.getFinalizeRetryConfig(verb);
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
@@ -285,19 +297,11 @@ export default class UploadHandler {
         this.actionBinder.getAdditionalHeaders() || {},
         { body: JSON.stringify(finalAssetData), signal },
       );
-      if (isFireAndForget) {
-        finalizeOpts.keepalive = true;
-        this.networkUtils.fetchFromServiceWithRetry(
-          this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
-          finalizeOpts,
-          this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset,
-        ).catch(() => {});
-        return true;
-      }
       const finalizeJson = await this.networkUtils.fetchFromServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         finalizeOpts,
-        this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset,
+        finalizeRetryConfig,
+        (responseJson) => responseJson,
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -316,7 +320,6 @@ export default class UploadHandler {
         return false;
       }
     } catch (e) {
-      if (isFireAndForget) return true;
       if (e.name === 'AbortError') return false;
       if (this.actionBinder.MULTI_FILE) {
         await this.actionBinder.dispatchErrorToast('upload_error_finalize_asset', e.status || 500, `Exception thrown when verifying content: ${e.message}, ${assetData.id}`, false, e.showError, {
