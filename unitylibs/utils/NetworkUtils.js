@@ -122,14 +122,6 @@ export default class NetworkUtils {
     }
   }
 
-  shouldRetryPollingRequest(status, retryConfig, customRetryCheckResult) {
-    if (customRetryCheckResult) return true;
-    if (status >= 500 && status < 600) return true;
-    if (status === 429) return true;
-    if (status === 202 && retryConfig.retryOn202 !== false) return true;
-    return false;
-  }
-
   async fetchFromServiceWithServerPollingRetry(url, options, retryConfig, onSuccess, onError) {
     const maxRetryDelay = retryConfig.retryParams?.maxRetryDelay || 300000;
     let timeLapsed = 0;
@@ -141,7 +133,7 @@ export default class NetworkUtils {
         const { status, headers } = response;
         const responseJson = await this.getResponseJson(response);
         const customRetryCheckResult = retryConfig.extraRetryCheck && await retryConfig.extraRetryCheck(status, responseJson);
-        if (this.shouldRetryPollingRequest(status, retryConfig, customRetryCheckResult)) {
+        if (customRetryCheckResult || status === 202 || (status >= 500 && status < 600) || status === 429) {
           const retryDelay = (parseInt(headers.get('retry-after'), 10) * 1000) || retryConfig.retryParams?.defaultRetryDelay || 5000;
           await new Promise((resolve) => { setTimeout(resolve, retryDelay); });
           timeLapsed += retryDelay;
