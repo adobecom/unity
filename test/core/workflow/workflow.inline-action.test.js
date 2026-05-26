@@ -13,12 +13,62 @@ describe('Inline Action workflow', () => {
     const unityEl = document.querySelector('.unity.workflow-inline-action');
     const meta = parseInlineAuthoring(unityEl);
     expect(meta.uploadLabel).to.include('Upload your image');
+    expect(meta.uploadIconHref).to.include('s2-icon-upload');
+    expect(meta.uploadIconHref).to.not.include('terms.html');
+    expect(meta.dragHint).to.equal('Or drag and drop here');
+    expect(meta.fileLimit).to.include('JPEG');
+    expect(meta.legalHtml).to.include('Terms of Use');
     expect(meta.operation).to.equal('removeBackground');
     expect(meta.nbaCards).to.have.length(2);
     expect(meta.nbaCards[0].nba).to.equal('upscale');
     expect(meta.nbaCards[0].label).to.equal('Upscale');
     expect(meta.nbaCards[0].defaultPrompt).to.equal('Prompt');
     expect(meta.nbaHeading).to.equal('Do more with this image.');
+  });
+
+  it('parses production-style HTML (3 viewport blocks + 4 NBA cards)', async () => {
+    document.body.innerHTML = await readFile({ path: './mocks/inline-action-authored.html' });
+    const unityEl = document.querySelector('.unity.workflow-inline-action');
+    const meta = parseInlineAuthoring(unityEl);
+    expect(meta.uploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-n.svg');
+    expect(meta.uploadLabel).to.equal('Upload your image');
+    expect(meta.fileLimit).to.include('100MB');
+    expect(meta.legalHtml).to.include('Terms of Use');
+    expect(meta.downloadLabel).to.equal('Download');
+    expect(meta.editLabel).to.include('Edit in Firefly');
+    expect(meta.nbaCards).to.have.length(4);
+    expect(meta.nbaCards[0].nba).to.equal('upscale');
+    expect(meta.nbaCards[2].nba).to.equal('generate-new-bg');
+    expect(meta.nbaCards[2].label).to.equal('Generate new background');
+    expect(meta.nbaCards[2].defaultPrompt).to.equal('Generate prompt');
+    expect(['Or tap here', 'Or drag and drop here']).to.include(meta.dragHint);
+    expect(meta.heroSrc).to.match(/media_(mobile|tablet|desktop)/);
+  });
+
+  it('parses split upload paragraphs (icon row + label row)', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p><picture><img src="/hero.jpg" alt=""></picture></p>
+          <p><a href="/cc-shared/assets/svg/s2-icon-upload-20-n.svg">icon</a> Upload your image</p>
+          <p>Or drag and drop here</p>
+          <p>File must be JPEG(JPG), PNG, or WEBP and up to 100MB.</p>
+          <p>Adobe <a href="https://www.adobe.com/legal/terms.html">Terms of Use</a></p>
+        </div></div>
+      </div>`;
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.uploadIconHref).to.include('s2-icon-upload');
+    expect(meta.uploadLabel).to.equal('Upload your image');
+    expect(meta.dragHint).to.equal('Or drag and drop here');
+    expect(meta.fileLimit).to.include('100MB');
+    expect(meta.legalHtml).to.include('Terms of Use');
+  });
+
+  it('uses desktop column when three viewport divs are section children', async () => {
+    document.body.innerHTML = await readFile({ path: './mocks/inline-action-three-columns.html' });
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(['Or tap here', 'Or drag and drop here']).to.include(meta.dragHint);
+    expect(meta.fileLimit).to.match(/Limits (mobile|tablet|desktop)/);
   });
 
   it('initializes widget and action binder', async () => {

@@ -53,21 +53,148 @@ function parseNbaIcon(li) {
   return cls?.replace('icon-nba-', '') || null;
 }
 
+function uploadLabelFromPara(para) {
+  const parts = [];
+  para?.childNodes.forEach((n) => {
+    if (n.nodeName === 'BR' || n.nodeName === 'PICTURE' || n.nodeName === 'A' || n.nodeName === 'IMG') return;
+    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
+    else if (n.nodeName !== 'SPAN') parts.push(n.textContent);
+  });
+  return parts.join('').replace(/\s+/g, ' ').trim();
+}
+
+function hasUploadMarker(para) {
+  return para?.querySelector(
+    'span[class*=icon-share], span[class*=icon-upload], a[href*=".svg"], img[src$=".svg"]:not(.video-container img)',
+  );
+}
+
+function getUploadIconHref(uploadPara) {
+  if (!uploadPara) return undefined;
+  const svgLink = uploadPara.querySelector('a[href*=".svg"]');
+  if (svgLink) return svgLink.getAttribute('href');
+  const iconImg = uploadPara.querySelector('img[src$=".svg"]');
+  if (iconImg) return iconImg.getAttribute('src');
+  return undefined;
+}
+
+function isViewportColumn(el) {
+  if (el?.tagName !== 'DIV' || !el.querySelector('picture, p')) return false;
+  const childColumns = [...el.children].filter(
+    (child) => child.tagName === 'DIV' && child.querySelector('picture, p'),
+  );
+  return childColumns.length < 2;
+}
+
+function collectViewportColumns(root) {
+  if (!root?.children) return [];
+  return [...root.children].filter(isViewportColumn);
+}
+
+function findViewportColumnContainer(section) {
+  if (!section) return null;
+  let bestNode = null;
+  let bestCount = 0;
+  const queue = [section];
+  while (queue.length) {
+    const node = queue.shift();
+    const cols = collectViewportColumns(node);
+    if (cols.length > bestCount) {
+      bestCount = cols.length;
+      bestNode = node;
+    }
+    [...node.children].filter((child) => child.tagName === 'DIV').forEach((child) => queue.push(child));
+  }
+  return bestNode;
+}
+
+function getViewportBlocks(unityEl) {
+  const section = unityEl.querySelector(':scope > div');
+  if (!section) return [];
+
+  const classRoot = section.querySelector('.mobile-up, .tablet-up, .desktop-up')?.parentElement;
+  if (classRoot?.querySelector('.desktop-up')) {
+    return ['mobile-up', 'tablet-up', 'desktop-up']
+      .map((name) => classRoot.querySelector(
+        `:scope > .${name}, :scope > .${name}.tablet-up, :scope > .${name}.desktop-up`,
+      ))
+      .filter(Boolean);
+  }
+
+  const container = findViewportColumnContainer(section);
+  if (!container) return [];
+  return collectViewportColumns(container);
+}
+
+function resolveViewportBlock(viewportBlocks) {
+  const device = defineDeviceByScreenSize();
+  const idx = VIEWPORT_IDX[device] ?? 2;
+  if (viewportBlocks[idx]) return viewportBlocks[idx];
+
+  if (idx >= 2) {
+    const desktopBlock = viewportBlocks.find((block) => /drag and drop/i.test(block.textContent));
+    if (desktopBlock) return desktopBlock;
+  }
+
+  return viewportBlocks[Math.min(idx, viewportBlocks.length - 1)];
+}
+
+function parseViewportCopy(vp) {
+  if (!vp) {
+    return {
+      heroPic: null,
+      uploadIconHref: undefined,
+      uploadLabel: 'Upload your image',
+      dragHint: '',
+      fileLimit: '',
+      legalHtml: '',
+    };
+  }
+
+  const paragraphs = [...vp.querySelectorAll(':scope > p')];
+  const terms = paragraphs[paragraphs.length - 1];
+  const heroPic = vp.querySelector(':scope > picture, :scope > p picture');
+  const mediaPara = heroPic?.closest('p');
+
+  const candidateParagraphs = paragraphs.slice(0, -1).filter(
+    (para) => para.textContent.trim() !== '' || para.querySelector('img, svg, a, picture'),
+  );
+
+  const uploadPara = candidateParagraphs.find(hasUploadMarker)
+    || candidateParagraphs.find((para) => para.querySelector('picture') && uploadLabelFromPara(para))
+    || candidateParagraphs.find((para) => para !== mediaPara)
+    || candidateParagraphs[0];
+
+  const uploadIconHref = getUploadIconHref(uploadPara);
+  const uploadLabel = (uploadPara && uploadLabelFromPara(uploadPara))
+    || (uploadPara && textBeforeBr(uploadPara))
+    || 'Upload your image';
+
+  const textParas = candidateParagraphs.filter((para) => {
+    if (para === uploadPara) return false;
+    if (para === mediaPara && !uploadLabelFromPara(para) && !textBeforeBr(para)) return false;
+    return true;
+  });
+
+  return {
+    heroPic,
+    uploadIconHref,
+    uploadLabel,
+    dragHint: textParas[0]?.textContent?.trim() || '',
+    fileLimit: textParas[1]?.textContent?.trim() || '',
+    legalHtml: terms?.innerHTML || '',
+  };
+}
+
 export function parseInlineAuthoring(unityEl) {
-  const sections = unityEl.querySelectorAll(':scope > div');
-  const viewportBlocks = sections[0]?.querySelectorAll(':scope > div') || [];
-  const idx = VIEWPORT_IDX[defineDeviceByScreenSize()] ?? 2;
-  const vp = viewportBlocks[idx] || viewportBlocks[viewportBlocks.length - 1] || sections[0];
+  const viewportBlocks = getViewportBlocks(unityEl);
+  const vp = resolveViewportBlock(viewportBlocks);
   const configUl = [...unityEl.querySelectorAll(':scope > div ul')].find((ul) => ul.querySelector('[class*="icon-error"], [class*="icon-operation"]'));
   const nbaUl = [...unityEl.querySelectorAll(':scope > div ul')].find((ul) => ul.querySelector('[class*="icon-nba-"]'));
 
-  const heroPic = vp?.querySelector('picture');
-  const uploadIconHref = vp?.querySelector('p a[href]')?.getAttribute('href');
-  const paras = vp ? [...vp.querySelectorAll('p')] : [];
-  const uploadLabel = textBeforeBr(paras[0] || vp) || 'Upload your image';
-  const dragHint = paras[1]?.textContent?.trim() || '';
-  const fileLimit = paras[2]?.textContent?.trim() || '';
-  const legalHtml = paras[3]?.innerHTML || '';
+  const {
+    heroPic, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
+  } = parseViewportCopy(vp);
 
   let operation = 'removeBackground';
   let downloadLabel = 'Download';
@@ -144,7 +271,7 @@ export default class InlineActionWidget {
     this.workflowCfg = workflowCfg;
     this.spriteContent = spriteContent;
     this.widget = null;
-    this.meta = parseInlineAuthoring(unityEl);
+    this.meta = null;
     this.state = 'initial';
   }
 
@@ -172,6 +299,7 @@ export default class InlineActionWidget {
   }
 
   async initWidget() {
+    this.meta = parseInlineAuthoring(this.el);
     const root = createTag('div', { class: 'ia-widget', 'data-state': 'initial' });
     const left = createTag('div', { class: 'ia-panel ia-panel-left' });
     const right = createTag('div', { class: 'ia-panel ia-panel-right' });
