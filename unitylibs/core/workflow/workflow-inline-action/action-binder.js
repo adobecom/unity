@@ -492,7 +492,7 @@ export default class ActionBinder {
       defaultPrompt,
       userCount,
       verb,
-      connectorAssetId: this.formatRemoveBgAssetIdForConnector(this.resultAssetId),
+      connectorAssetId: this.resultAssetId,
     }));
   }
 
