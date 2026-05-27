@@ -287,13 +287,7 @@ class WfInitiator {
       },
       'workflow-inline-action': {
         productName: product || 'Firefly',
-        sfList: new Set([
-          'remove-background',
-          'upscale',
-          'remove',
-          'generate-new-bg',
-          'studio-lighting',
-        ]),
+        sfList: new Set([feature]),
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];

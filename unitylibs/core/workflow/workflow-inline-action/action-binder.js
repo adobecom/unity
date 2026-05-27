@@ -95,6 +95,7 @@ export default class ActionBinder {
     this.filesData = {};
     this.uploadAbortController = null;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
+    this.verb = this.getVerbFromDom();
     this.initActionListeners = this.initActionListeners.bind(this);
   }
 
@@ -113,10 +114,19 @@ export default class ActionBinder {
     return unityConfig;
   }
 
+  getVerbFromDom() {
+    const verbEl = this.unityEl?.querySelector('[class*="icon-verb-"]') || this.unityEl?.querySelector('[class*="icon-operation-"]');
+    if (!verbEl) return undefined;
+    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-verb-'));
+    return verbClass?.slice('icon-verb-'.length);
+  }
+
   getAdditionalHeaders() {
+    const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
+    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
-      'x-unity-action': `${WORKFLOW_NAME}-${this.operation}`,
+      'x-unity-action': xUnityAction,
     };
   }
 
@@ -274,22 +284,33 @@ export default class ActionBinder {
     return res;
   }
 
-  async buildConnectorPayload(file, { nba, defaultPrompt, userCount } = {}) {
+  resolveConnectorVerb(el, isDownload = false) {
+    if (isDownload) return 'download';
+    if (el?.classList?.contains('ia-edit-firefly')) return 'aiPhotoEditor';
+    if (el?.dataset?.nba) return el.dataset.nba;
+    return undefined;
+  }
+
+  getConnectorWorkflow() {
+    return this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
+  }
+
+  async buildConnectorPayload(file, { defaultPrompt, userCount, verb, connectorAssetId } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+    const connectorVerb = verb ?? this.operation;
+    const query = defaultPrompt?.trim();
     return {
-      assetId: this.resultAssetId || this.assetId,
+      assetId: connectorAssetId,
       targetProduct: this.workflowCfg.productName,
+      ...(query && { query }),
       payload: {
-        workflow: WORKFLOW_NAME,
+        workflow: this.getConnectorWorkflow(),
         action: 'asset-upload',
         operation: this.operation,
+        verb: connectorVerb,
         locale: getLocale(),
         additionalQueryParams: getCgenQueryParams(this.unityEl),
         type: file?.type,
-        ...(this.resultAssetId && { finalAssetId: this.resultAssetId }),
-        ...(this.resultUrl && { finalAssetUrl: this.resultUrl }),
-        ...(nba && { nba }),
-        ...(defaultPrompt && { defaultPrompt }),
         ...(userCount != null && { userCount }),
       },
     };
@@ -418,7 +439,10 @@ export default class ActionBinder {
     const ok = await this.uploadAsset(file, false);
     if (!ok) return;
     this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
-    await this.callConnector(await this.buildConnectorPayload(file));
+    await this.callConnector(await this.buildConnectorPayload(file, {
+      verb: this.operation,
+      connectorAssetId: this.assetId,
+    }));
   }
 
   async anonymousFlow(file) {
@@ -453,8 +477,8 @@ export default class ActionBinder {
 
   async handleConnector(el, isDownload = false) {
     let userCount = this.getUserCount();
-    const nba = el?.dataset?.nba;
     const defaultPrompt = el?.dataset?.defaultPrompt;
+    const verb = this.resolveConnectorVerb(el, isDownload);
     if (isDownload && userCount < 100) {
       userCount = this.incrementUserCount();
       try {
@@ -464,7 +488,12 @@ export default class ActionBinder {
         return;
       }
     }
-    await this.callConnector(await this.buildConnectorPayload(this.filesData, { nba, defaultPrompt, userCount }));
+    await this.callConnector(await this.buildConnectorPayload(this.filesData, {
+      defaultPrompt,
+      userCount,
+      verb,
+      connectorAssetId: this.formatRemoveBgAssetIdForConnector(this.resultAssetId),
+    }));
   }
 
   async createErrorToast() {
