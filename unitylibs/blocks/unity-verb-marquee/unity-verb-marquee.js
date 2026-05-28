@@ -1,21 +1,11 @@
 import { setLibs } from '../../scripts/utils.js';
-import { localeMap } from '../unity/unity.js';
 
 function getAppEnv() {
   const { hostname } = window.location;
   if (['www.adobe.com', 'sign.ing', 'edit.ing'].includes(hostname)) return 'prod';
   if (
-    [
-      'stage--dc--adobecom.hlx.page',
-      'main--dc--adobecom.hlx.page',
-      'stage--dc--adobecom.hlx.live',
-      'main--dc--adobecom.hlx.live',
-      'stage--dc--adobecom.aem.page',
-      'main--dc--adobecom.aem.page',
-      'stage--dc--adobecom.aem.live',
-      'main--dc--adobecom.aem.live',
-      'www.stage.adobe.com',
-    ].includes(hostname)
+    /--[^.]+--adobecom\.(hlx|aem)\.(page|live)$/.test(hostname)
+    || hostname === 'www.stage.adobe.com'
   ) return 'stage';
   return 'dev';
 }
@@ -82,7 +72,6 @@ let getConfig;
 let loadStyle;
 let decorateBlockBg;
 
-const DC_ENV = ['www.adobe.com', 'sign.ing', 'edit.ing'].includes(window.location.hostname) ? 'prod' : 'stage';
 
 const EOLBrowserPage = 'https://acrobat.adobe.com/home/index-browser-eol.html';
 
@@ -232,14 +221,6 @@ function initiatePrefetch(url) {
   }
 }
 
-function buildWordToPdfEarlyPrefetchUrl() {
-  const langFromPath = window.location.pathname.split('/')[1];
-  const locale = localeMap[langFromPath] || 'en-us';
-  const [languageCode, languageRegion] = locale.split('-');
-  const domain = DC_ENV === 'prod' ? 'acrobat.adobe.com' : 'stage.acrobat.adobe.com';
-  const dummyAssets = 'urn%3Aaaid%3Asc%3AUS%3A1111111%7CSample%20word%20file_WordtoPDF.docx%7C386919%7Capplication%2Fvnd.openxmlformats-officedocument.wordprocessingml.document';
-  return `https://${domain}/${languageRegion}/${languageCode}/word-to-pdf/av?x_api_client_id=unity&x_api_client_location=word-to-pdf&user=frictionless_return_user&attempts=2%2B#assets=${dummyAssets}`;
-}
 
 function handleExit(event, verb, userObj, unloadFlag, workflowStep) {
   if (exitFlag || tabClosureSent || (isUploading && workflowStep === 'preuploading')) { return; }
@@ -305,8 +286,6 @@ window.addEventListener('analyticsLoad', async ({ detail }) => {
   }
   await loadAnalyticsAfterLCP(detail);
 
-  if (detail.verb === 'word-to-pdf') initiatePrefetch(buildWordToPdfEarlyPrefetchUrl());
-
   const {
     verbAnalytics,
     reviewAnalytics,
@@ -353,7 +332,7 @@ export default async function init(element) {
     return;
   }
   window.mph = window.mph || {};
-  await loadPlaceholders(['unity-verb-marquee', 'verb-widget']);
+  await loadPlaceholders(['verb-marquee', 'verb-widget']);
   const rawVerb = element.classList[1];
   const VERB = rawVerb === 'ai-summary-generator' ? 'summarize-pdf' : rawVerb;
   const limits = LIMITS[VERB];
@@ -468,14 +447,14 @@ export default async function init(element) {
   const headingEl = createTag('h1', { class: 'unity-verb-marquee-heading' }, heading);
   const isMobileOrTabletViewport = window.innerWidth < 1200;
   const copy1Text = isMobileOrTabletViewport
-    ? (window.mph?.[`unity-verb-marquee-${VERB}-mobile-copy`] || window.mph?.[`unity-verb-marquee-${VERB}-copy`] || '')
-    : (window.mph?.[`unity-verb-marquee-${VERB}-copy`] || '');
+    ? (window.mph?.[`verb-marquee-${VERB}-mobile-copy`] || window.mph?.[`verb-marquee-${VERB}-copy`] || '')
+    : (window.mph?.[`verb-marquee-${VERB}-copy`] || '');
   const subCopies = ['', '-2']
     .map((suffix) => {
       const subCopyText = isMobileOrTabletViewport
-        ? (window.mph?.[`unity-verb-marquee-${VERB}-mobile-sub-copy${suffix}`]
-          || window.mph?.[`unity-verb-marquee-${VERB}-sub-copy${suffix}`] || '')
-        : (window.mph?.[`unity-verb-marquee-${VERB}-sub-copy${suffix}`] || '');
+        ? (window.mph?.[`verb-marquee-${VERB}-mobile-sub-copy${suffix}`]
+          || window.mph?.[`verb-marquee-${VERB}-sub-copy${suffix}`] || '')
+        : (window.mph?.[`verb-marquee-${VERB}-sub-copy${suffix}`] || '');
       if (!subCopyText) return null;
       const el = createTag('p', { class: 'unity-verb-marquee-copy-sub' });
       const icon = createSvgElement('SUBCOPY_CHECK');
@@ -601,12 +580,12 @@ export default async function init(element) {
   const touURL = window.mph?.['verb-widget-terms-of-use-url'] || `https://www.adobe.com${locale.prefix}/legal/terms.html`;
   const genAIurl = window.mph?.['verb-widget-genai-terms-url'] || `https://www.adobe.com${locale.prefix}/legal/licenses-terms/adobe-gen-ai-user-guidelines.html`;
   const mph = window.mph || {};
-  const legalPart1 = mph['unity-verb-marquee-legal'] || mph['verb-widget-legal'] || '';
+  const legalPart1 = mph['verb-marquee-legal'] || mph['verb-widget-legal'] || '';
   const legalPart2 = limits?.genAI
-    ? (mph['unity-verb-marquee-legal-2-ai'] || mph['verb-widget-legal-2-ai'] || '')
-    : (mph['unity-verb-marquee-legal-2'] || mph['verb-widget-legal-2'] || '');
+    ? (mph['verb-marquee-legal-2-ai'] || mph['verb-widget-legal-2-ai'] || '')
+    : (mph['verb-marquee-legal-2'] || mph['verb-widget-legal-2'] || '');
   const legalCombined = [legalPart1, legalPart2].filter(Boolean).join(' ').trim();
-  const legalInitial = legalCombined || (mph['unity-verb-marquee-legal-text'] || '');
+  const legalInitial = legalCombined || (mph['verb-marquee-legal-text'] || '');
   const legalText = createTag('p', { class: 'unity-verb-marquee-legal' }, legalInitial);
   const omitFooterForMobileStore = limits?.mobileApp && mobileOrTabletTouch;
   if (!omitFooterForMobileStore && !(limits?.mobileApp && isMobile)) {
