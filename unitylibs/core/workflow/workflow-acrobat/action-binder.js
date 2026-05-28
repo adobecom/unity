@@ -91,6 +91,7 @@ export default class ActionBinder {
     pre_upload_error_create_asset: -55,
     pre_upload_error_missing_verb_config: -56,
     pre_upload_error_transition_screen: -57,
+    pre_upload_error_direct_upload: -58,
     validation_error_validate_files: -100,
     validation_error_unsupported_type: -101,
     validation_error_empty_file: -102,
@@ -229,6 +230,7 @@ export default class ActionBinder {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
       getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      directUpload: `${unityConfig.apiEndPoint}/asset/upload`,
     };
     return unityConfig;
   }
