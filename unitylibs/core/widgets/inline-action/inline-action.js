@@ -23,12 +23,11 @@ function textBeforeBr(el) {
 function nbaLabelFromLi(li) {
   const icon = li.querySelector('[class*="icon-nba-"]');
   const parts = [];
-  for (const n of li.childNodes) {
-    if (n === icon) break;
-    if (n.nodeName === 'BR') break;
-    if (n.nodeName === 'PICTURE') continue;
+  [...li.childNodes].some((n) => {
+    if (n === icon || n.nodeName === 'BR') return true;
     if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
-  }
+    return false;
+  });
   return parts.join('').replace(/\s+/g, ' ').trim();
 }
 
@@ -74,6 +73,15 @@ function getUploadIconHref(uploadPara) {
   const svgLink = uploadPara.querySelector('a[href*=".svg"]');
   if (svgLink) return svgLink.getAttribute('href');
   const iconImg = uploadPara.querySelector('img[src$=".svg"]');
+  if (iconImg) return iconImg.getAttribute('src');
+  return undefined;
+}
+
+function getIconHrefFromLi(li) {
+  if (!li) return undefined;
+  const svgLink = li.querySelector('a[href*=".svg"]');
+  if (svgLink) return svgLink.getAttribute('href');
+  const iconImg = li.querySelector('img[src$=".svg"]');
   if (iconImg) return iconImg.getAttribute('src');
   return undefined;
 }
@@ -198,6 +206,8 @@ export function parseInlineAuthoring(unityEl) {
 
   let operation = 'removeBackground';
   let downloadLabel = 'Download';
+  let downloadIconHref;
+  let editIconHref;
   let editLabel = 'Edit in Firefly';
   let nbaHeading = 'Do more with this image.';
   configUl?.querySelectorAll('li').forEach((li) => {
@@ -206,9 +216,13 @@ export function parseInlineAuthoring(unityEl) {
     const cls = [...icon.classList].find((c) => c.startsWith('icon-'));
     if (!cls) return;
     if (cls.startsWith('icon-operation-')) operation = cls.replace('icon-operation-', '');
-    else if (cls === 'icon-download') downloadLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || downloadLabel;
-    else if (cls === 'icon-editInFirefly') editLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || editLabel;
-    else if (cls === 'icon-placeholder-nba') nbaHeading = li.textContent.trim();
+    else if (cls === 'icon-download') {
+      downloadLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || downloadLabel;
+      downloadIconHref = getIconHrefFromLi(li) || downloadIconHref;
+    } else if (cls === 'icon-editInFirefly') {
+      editLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || editLabel;
+      editIconHref = getIconHrefFromLi(li) || editIconHref;
+    } else if (cls === 'icon-placeholder-nba') nbaHeading = li.textContent.trim();
   });
 
   const nbaCards = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
@@ -232,6 +246,8 @@ export function parseInlineAuthoring(unityEl) {
     legalHtml,
     operation,
     downloadLabel,
+    downloadIconHref,
+    editIconHref,
     editLabel,
     nbaHeading,
     nbaCards,
@@ -313,9 +329,28 @@ export default class InlineActionWidget {
     checker.append(createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
     const resultActions = createTag('div', { class: 'ia-result-actions' });
     const reuploadBtn = createTag('button', { type: 'button', class: 'ia-reupload-btn', 'aria-label': 'Upload another image' });
-    reuploadBtn.innerHTML = svgUse('ia-upload-icon');
+    if (this.meta.uploadIconHref) {
+      reuploadBtn.append(createTag('img', {
+        src: this.meta.uploadIconHref,
+        alt: '',
+        width: 20,
+        height: 20,
+      }));
+    } else {
+      reuploadBtn.innerHTML = svgUse('ia-upload-icon');
+    }
     const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
-    downloadBtn.innerHTML = `${svgUse('ia-download-icon')}<span>${this.meta.downloadLabel}</span>`;
+    if (this.meta.downloadIconHref) {
+      downloadBtn.append(createTag('img', {
+        src: this.meta.downloadIconHref,
+        alt: '',
+        width: 18,
+        height: 18,
+      }));
+    } else {
+      downloadBtn.innerHTML = svgUse('ia-download-icon');
+    }
+    downloadBtn.append(createTag('span', {}, this.meta.downloadLabel));
     resultActions.append(reuploadBtn, downloadBtn);
     checker.append(resultActions);
     result.append(checker);
@@ -336,16 +371,16 @@ export default class InlineActionWidget {
       createTag('p', { class: 'ia-drag-hint' }, this.meta.dragHint),
       createTag('p', { class: 'ia-file-limit' }, this.meta.fileLimit),
     );
-    const fileInput = createTag('input', {
-      type: 'file', class: 'ia-file-input hide', accept: 'image/jpeg,image/jpg,image/png,image/webp', tabindex: -1,
-    });
+    const fileInput = createTag('input', { type: 'file', class: 'ia-file-input hide', accept: 'image/jpeg,image/jpg,image/png,image/webp', tabindex: -1 });
     const legal = createTag('p', { class: 'ia-legal' });
     legal.innerHTML = this.meta.legalHtml;
 
     const loading = createTag('div', { class: 'ia-loading' });
     loading.append(
       createTag('p', { class: 'ia-loading-text' }, 'Uploading image, loading remove background'),
-      createTag('div', { class: 'ia-progress' },
+      createTag(
+        'div',
+        { class: 'ia-progress' },
         createTag('div', { class: 'ia-progress-track' }, createTag('div', { class: 'ia-progress-fill' })),
         createTag('span', { class: 'ia-progress-pct' }, '0%'),
       ),
@@ -370,7 +405,17 @@ export default class InlineActionWidget {
       grid.append(cardEl);
     });
     const editBtn = createTag('button', { type: 'button', class: 'ia-edit-firefly' });
-    editBtn.innerHTML = `${svgUse('ia-external-icon')}<span>${this.meta.editLabel}</span>`;
+    if (this.meta.editIconHref) {
+      editBtn.append(createTag('img', {
+        src: this.meta.editIconHref,
+        alt: '',
+        width: 18,
+        height: 18,
+      }));
+    } else {
+      editBtn.innerHTML = svgUse('ia-external-icon');
+    }
+    editBtn.append(createTag('span', {}, this.meta.editLabel));
     complete.append(grid, editBtn);
 
     right.append(dropzone, fileInput, legal, loading, complete);
