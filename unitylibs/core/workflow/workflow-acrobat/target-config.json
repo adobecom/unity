@@ -88,5 +88,19 @@
       ".foreground": "upload",
       "#file-upload": "upload"
     }
+  },
+  "unity-verb-marquee": {
+    "selector": ".foreground",
+    "source": ".foreground .unity-verb-marquee-container",
+    "target": ".foreground .unity-verb-marquee-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".foreground": "upload",
+      "#file-upload": "upload"
+    }
   }
 }
