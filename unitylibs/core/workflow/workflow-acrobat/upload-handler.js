@@ -340,7 +340,7 @@ export default class UploadHandler {
     }
     return true;
   }
-
+  
   async dispatchGenericError(info = null, showError = true) {
     this.actionBinder.operations = [];
     await this.showSplashScreen();
