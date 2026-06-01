@@ -1057,6 +1057,21 @@ describe('ActionBinder', () => {
           expect(result).to.be.true;
         });
 
+        it('should handle redirect for returning user for resume-builder', async () => {
+          actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+          localStorage.setItem('unity.user', 'test-user');
+          localStorage.setItem('resume-builder_attempts', '2');
+
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.newUser).to.be.false;
+          expect(cOpts.payload.attempts).to.equal('2+');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
         it('should handle redirect with feedback for multi-file validation failure', async () => {
           actionBinder.multiFileValidationFailure = true;
           const cOpts = { payload: {} };
@@ -1631,6 +1646,64 @@ describe('ActionBinder', () => {
         extractSpy.restore();
       });
 
+      it('should handle input change event with PDF file for resume-builder', async () => {
+        const el = document.createElement('input');
+        el.type = 'file';
+        const addEventListenerSpy = sinon.spy(el, 'addEventListener');
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { input: 'upload' };
+        const extractSpy = sinon.spy(actionBinder, 'extractFiles');
+        const spy = sinon.spy(actionBinder, 'acrobatActionMaps');
+
+        await actionBinder.initActionListeners(block, actMap);
+
+        const handler = addEventListenerSpy.getCalls().find((call) => call.args[0] === 'change').args[1];
+        actionBinder.signedOut = false;
+        actionBinder.tokenError = null;
+        actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+
+        const file = new File(['test content'], 'resume.pdf', { type: 'application/pdf' });
+        const event = { target: { files: [file], value: '' } };
+
+        await handler(event);
+
+        expect(extractSpy.called).to.be.true;
+        expect(spy.called).to.be.true;
+        expect(spy.firstCall.args).to.deep.equal(['upload', [file], file.size, 'change']);
+
+        spy.restore();
+        extractSpy.restore();
+      });
+
+      it('should handle input change event with Word doc file for resume-builder', async () => {
+        const el = document.createElement('input');
+        el.type = 'file';
+        const addEventListenerSpy = sinon.spy(el, 'addEventListener');
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { input: 'upload' };
+        const extractSpy = sinon.spy(actionBinder, 'extractFiles');
+        const spy = sinon.spy(actionBinder, 'acrobatActionMaps');
+
+        await actionBinder.initActionListeners(block, actMap);
+
+        const handler = addEventListenerSpy.getCalls().find((call) => call.args[0] === 'change').args[1];
+        actionBinder.signedOut = false;
+        actionBinder.tokenError = null;
+        actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+
+        const file = new File(['test content'], 'resume.doc', { type: 'application/msword' });
+        const event = { target: { files: [file], value: '' } };
+
+        await handler(event);
+
+        expect(extractSpy.called).to.be.true;
+        expect(spy.called).to.be.true;
+        expect(spy.firstCall.args).to.deep.equal(['upload', [file], file.size, 'change']);
+
+        spy.restore();
+        extractSpy.restore();
+      });
+
       it('should handle input element not found', async () => {
         const block = { querySelector: sinon.stub().returns(null) };
         const actMap = { 'nonexistent-input': 'upload' };
@@ -1885,6 +1958,26 @@ describe('ActionBinder', () => {
           actionBinder.workflowCfg.enabledFeatures = ['mindmap-maker'];
           const validFiles = [
             { name: 'test.pdf', type: 'application/pdf', size: 1048576 },
+          ];
+          const totalFileSize = validFiles.reduce((sum, file) => sum + file.size, 0);
+          await actionBinder.acrobatActionMaps('upload', validFiles, totalFileSize, 'test-event');
+          expect(actionBinder.dispatchErrorToast.neverCalledWith(
+            'error_generic',
+            500,
+            'Invalid or missing verb configuration on Unity',
+            false,
+            true,
+            { code: 'pre_upload_error_missing_verb_config' },
+          )).to.be.true;
+        });
+
+        it('should not dispatch error when enabledFeatures[0] is resume-builder', async () => {
+          actionBinder.dispatchErrorToast.resetHistory();
+          actionBinder.processSingleFile = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+          const validFiles = [
+            { name: 'resume.pdf', type: 'application/pdf', size: 1048576 },
           ];
           const totalFileSize = validFiles.reduce((sum, file) => sum + file.size, 0);
           await actionBinder.acrobatActionMaps('upload', validFiles, totalFileSize, 'test-event');
@@ -2538,6 +2631,94 @@ describe('ActionBinder', () => {
     it('should support pdf-word-ppt-txt file types for pdf-ai', () => {
       const pdfAiLimits = ActionBinder.LIMITS_MAP['pdf-ai'];
       expect(pdfAiLimits).to.include('allowed-filetypes-pdf-word-ppt-txt');
+    });
+  });
+
+  describe('resume-builder verb configuration', () => {
+    it('should have correct limits configuration for resume-builder in LIMITS_MAP', () => {
+      const resumeLimits = ActionBinder.LIMITS_MAP['resume-builder'];
+      expect(resumeLimits).to.exist;
+      expect(resumeLimits).to.deep.equal([
+        'single',
+        'allowed-filetypes-resume',
+        'page-limit-10',
+        'max-filesize-20-mb',
+      ]);
+    });
+
+    it('should configure resume-builder as single file mode', () => {
+      const resumeLimits = ActionBinder.LIMITS_MAP['resume-builder'];
+      expect(resumeLimits[0]).to.equal('single');
+    });
+
+    it('should have allowed-filetypes-resume for resume-builder', () => {
+      const resumeLimits = ActionBinder.LIMITS_MAP['resume-builder'];
+      expect(resumeLimits).to.include('allowed-filetypes-resume');
+    });
+
+    it('should have page-limit-10 for resume-builder', () => {
+      const resumeLimits = ActionBinder.LIMITS_MAP['resume-builder'];
+      expect(resumeLimits).to.include('page-limit-10');
+    });
+
+    it('should have max-filesize-20-mb for resume-builder', () => {
+      const resumeLimits = ActionBinder.LIMITS_MAP['resume-builder'];
+      expect(resumeLimits).to.include('max-filesize-20-mb');
+    });
+
+    it('should process resume-builder as single file upload', async () => {
+      actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+      actionBinder.dispatchErrorToast = sinon.stub().resolves();
+      actionBinder.handleFileUpload = sinon.stub().resolves();
+      actionBinder.limits = {
+        maxNumFiles: 1,
+        allowedFileTypes: ['application/pdf', 'application/msword'],
+        maxFileSize: 20971520,
+      };
+      actionBinder.loadVerbLimits = sinon.stub().resolves(actionBinder.limits);
+
+      const files = [new File(['content'], 'resume.pdf', { type: 'application/pdf' })];
+      await actionBinder.processSingleFile(files);
+
+      expect(actionBinder.handleFileUpload.calledWith(files)).to.be.true;
+    });
+
+    it('should reject more than one file for resume-builder', async () => {
+      actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+      actionBinder.dispatchErrorToast = sinon.stub().resolves();
+      actionBinder.handleFileUpload = sinon.stub().resolves();
+      actionBinder.limits = {
+        maxNumFiles: 1,
+        allowedFileTypes: ['application/pdf', 'application/msword'],
+        maxFileSize: 20971520,
+      };
+      actionBinder.loadVerbLimits = sinon.stub().resolves(actionBinder.limits);
+
+      const files = [
+        new File(['content'], 'resume1.pdf', { type: 'application/pdf' }),
+        new File(['content'], 'resume2.pdf', { type: 'application/pdf' }),
+      ];
+      await actionBinder.processSingleFile(files);
+
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_only_accept_one_file')).to.be.true;
+      expect(actionBinder.handleFileUpload.called).to.be.false;
+    });
+
+    it('should accept Word document for resume-builder', async () => {
+      actionBinder.workflowCfg.enabledFeatures = ['resume-builder'];
+      actionBinder.dispatchErrorToast = sinon.stub().resolves();
+      actionBinder.handleFileUpload = sinon.stub().resolves();
+      actionBinder.limits = {
+        maxNumFiles: 1,
+        allowedFileTypes: ['application/pdf', 'application/msword'],
+        maxFileSize: 20971520,
+      };
+      actionBinder.loadVerbLimits = sinon.stub().resolves(actionBinder.limits);
+
+      const files = [new File(['content'], 'resume.doc', { type: 'application/msword' })];
+      await actionBinder.processSingleFile(files);
+
+      expect(actionBinder.handleFileUpload.calledWith(files)).to.be.true;
     });
   });
 

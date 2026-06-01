@@ -79,6 +79,7 @@ export default class ActionBinder {
     'quiz-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
+    'resume-builder': ['single', 'allowed-filetypes-resume', 'page-limit-10', 'max-filesize-20-mb'],
   };
 
   static ERROR_MAP = {
