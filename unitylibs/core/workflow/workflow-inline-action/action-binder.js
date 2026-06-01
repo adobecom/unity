@@ -566,7 +566,7 @@ export default class ActionBinder {
     Object.keys(actMap).forEach((key) => {
       b.querySelectorAll(key).forEach((el) => {
         const action = actMap[key];
-        if (el.classList.contains('ia-dropzone')) {
+        if (el.classList.contains('drop-zone') || el.classList.contains('ia-dropzone')) {
           el.addEventListener('drop', async (e) => {
             this.preventDefault(e);
             await this.executeActionMaps('upload', this.extractFiles(e));

@@ -82,7 +82,11 @@ describe('Inline Action workflow', () => {
     expect(host).to.exist;
     expect(host.nextElementSibling?.classList.contains('unity-inline-action-host')).to.be.true;
     expect(document.querySelector('.ia-widget')).to.exist;
-    expect(document.querySelector('.ia-dropzone')).to.exist;
+    expect(document.querySelector('.drop-zone-container')).to.exist;
+    expect(document.querySelector('.drop-zone.ia-dropzone')).to.exist;
+    expect(document.querySelector('.upload-action-container .action-button')).to.exist;
+    expect(document.querySelector('.drop-zone-default-icon img')).to.exist;
+    expect(document.querySelector('.upload-action-container .action-button picture img')).to.exist;
     expect(document.querySelectorAll('.ia-nba-card')).to.have.length(2);
     expect(document.querySelector('.ia-widget').dataset.state).to.equal('initial');
   });
