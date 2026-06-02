@@ -74,7 +74,6 @@ let getConfig;
 let loadStyle;
 let decorateBlockBg;
 
-
 const EOLBrowserPage = 'https://acrobat.adobe.com/home/index-browser-eol.html';
 
 const lanaOptions = {
@@ -224,7 +223,6 @@ function initiatePrefetch(url) {
     window.prefetchTargetUrl = url;
   }
 }
-
 
 function handleExit(event, verb, userObj, unloadFlag, workflowStep) {
   if (exitFlag || tabClosureSent || (isUploading && workflowStep === 'preuploading')) { return; }
@@ -459,7 +457,7 @@ export default async function init(element) {
       widgetIconSvg.setAttribute('aria-hidden', 'true');
       iconWrapper.appendChild(widgetIconSvg);
     }
-    const title = createTag('div', { class: 'verb-marquee-title' });
+    const title = createTag('div', { class: 'unity-verb-marquee-title' });
     const adobeText = createTag('span', {}, 'Adobe');
     const studySpaceText = createTag('span', {}, ' Acrobat');
     title.append(adobeText, studySpaceText);
@@ -983,5 +981,4 @@ export default async function init(element) {
       window.location.reload();
     }
   });
-
 }
