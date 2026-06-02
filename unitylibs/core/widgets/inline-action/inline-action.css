@@ -747,7 +747,7 @@
   }
 
   .unity-inline-action.unity-enabled > .interactive-area {
-    padding: 14px 10px 14px 16px  ;
+    padding: 14px;
   }
 
   .interactive-area.dark .ia-widget,
@@ -769,9 +769,9 @@
   .interactive-area .ia-widget[data-state="loading"],
   .ia-widget[data-state="initial"],
   .ia-widget[data-state="loading"] {
-    height: 368px;
-    min-height: 368px;
-    max-height: 368px;
+    height: 370px;
+    min-height: 370px;
+    max-height: 370px;
   }
 
   .interactive-area.dark .ia-widget[data-state="complete"],

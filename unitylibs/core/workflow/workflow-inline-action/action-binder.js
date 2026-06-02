@@ -15,7 +15,6 @@ import {
   loadImg,
 } from '../../../scripts/utils.js';
 import { createChunkUploadTasks } from '../../../utils/chunkingUtils.js';
-import { removeExtension } from '../../../utils/FileUtils.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -331,7 +330,7 @@ export default class ActionBinder {
     return res;
   }
 
-  static downloadFilename(originalName, mimeType = 'image/png') {
+  static downloadFilename(mimeType = 'image/png') {
     const extMap = {
       'image/png': 'png',
       'image/jpeg': 'jpg',
@@ -339,11 +338,7 @@ export default class ActionBinder {
       'image/webp': 'webp',
     };
     const ext = extMap[mimeType] || 'png';
-    if (originalName) {
-      const base = removeExtension(originalName) || 'image';
-      return `${base}-nobg.${ext}`;
-    }
-    return `image.${ext}`;
+    return `Firefly_RemoveBackground.${ext}`;
   }
 
   getImageBlobData(url) {
@@ -360,45 +355,9 @@ export default class ActionBinder {
     });
   }
 
-  loadCrossOriginImage(url) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('Failed to load image for download'));
-      img.src = url;
-    });
-  }
-
-  exportImageToBlob(img, mimeType = 'image/png') {
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    canvas.getContext('2d').drawImage(img, 0, 0);
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('Failed to export image'));
-      }, mimeType);
-    });
-  }
-
   async resolveDownloadBlob(url) {
     if (this.resultBlob) return this.resultBlob;
-    try {
-      return await this.getImageBlobData(url);
-    } catch {
-      const previewImg = this.widgetRef?.widget?.querySelector('.ia-result-img');
-      if (previewImg?.complete && previewImg.naturalWidth) {
-        try {
-          return await this.exportImageToBlob(previewImg);
-        } catch {
-          // Preview image may be tainted without CORS; retry with crossOrigin load.
-        }
-      }
-      const img = await this.loadCrossOriginImage(url);
-      return this.exportImageToBlob(img);
-    }
+    return this.getImageBlobData(url);
   }
 
   async cacheResultBlob(url) {
@@ -410,7 +369,7 @@ export default class ActionBinder {
   }
 
   downloadBlob(blob, mimeType = 'image/png') {
-    const filename = ActionBinder.downloadFilename(this.filesData?.name, mimeType);
+    const filename = ActionBinder.downloadFilename(mimeType);
     const objUrl = URL.createObjectURL(blob);
     const a = createTag('a', {
       href: objUrl,
@@ -457,8 +416,8 @@ export default class ActionBinder {
       await this.removeBackground();
       this.widgetRef?.setResultUrl(this.resultUrl);
       await loadImg(this.widgetRef.widget.querySelector('.ia-result-img'));
-      await this.cacheResultBlob(this.resultUrl);
       this.widgetRef?.setState('complete');
+      this.cacheResultBlob(this.resultUrl).catch(() => {});
     } catch (e) {
       this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
       this.widgetRef?.setState('initial');
@@ -468,6 +427,10 @@ export default class ActionBinder {
   async uploadFile(files) {
     const file = await this.validateFile(files);
     if (!file) return;
+    this.assetId = null;
+    this.resultAssetId = null;
+    this.resultUrl = null;
+    this.resultBlob = null;
     this.filesData = { type: file.type, name: file.name };
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { isGuest } = await isGuestUser();
@@ -480,9 +443,9 @@ export default class ActionBinder {
     const defaultPrompt = el?.dataset?.defaultPrompt;
     const verb = this.resolveConnectorVerb(el, isDownload);
     if (isDownload && userCount < 100) {
-      userCount = this.incrementUserCount();
       try {
         await this.triggerDownload(this.resultUrl);
+        userCount = this.incrementUserCount();
       } catch (e) {
         this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
         return;
@@ -544,13 +507,7 @@ export default class ActionBinder {
         await this.handleConnector(el, true);
         break;
       case 'reupload':
-        this.assetId = null;
-        this.resultAssetId = null;
-        this.resultUrl = null;
-        this.resultBlob = null;
-        this.widgetRef?.resetFileInput();
-        this.widgetRef?.setState('initial');
-        this.widgetRef?.setProgress(0);
+        this.widgetRef?.openFilePicker();
         break;
       default:
         break;
@@ -567,10 +524,6 @@ export default class ActionBinder {
       b.querySelectorAll(key).forEach((el) => {
         const action = actMap[key];
         if (el.classList.contains('drop-zone') || el.classList.contains('ia-dropzone')) {
-          el.addEventListener('drop', async (e) => {
-            this.preventDefault(e);
-            await this.executeActionMaps('upload', this.extractFiles(e));
-          });
           return;
         }
         if (el.type === 'file') {

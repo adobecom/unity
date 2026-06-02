@@ -299,6 +299,64 @@ function buildUploadActionButton(uploadIconHref, uploadLabel) {
   return button;
 }
 
+/**
+ * Drag-over the interactive shell; only the drop-zone gets `.active` (upload-marquee pattern).
+ */
+function setupInteractiveAreaDragAndDrop(dragTargetEl, widgetEl, dropZone, fileInput) {
+  let activeDropZone;
+  const isInitial = () => widgetEl.dataset.state === 'initial';
+  const setActiveDropZone = () => {
+    if (!isInitial()) return;
+    if (activeDropZone !== dropZone) {
+      activeDropZone?.classList.remove('active');
+      activeDropZone = dropZone;
+      activeDropZone?.classList.add('active');
+    }
+  };
+  const clearActiveDropZone = () => {
+    activeDropZone?.classList.remove('active');
+    activeDropZone = null;
+  };
+
+  dragTargetEl.addEventListener('dragenter', (event) => {
+    if (!isInitial()) return;
+    event.preventDefault();
+    setActiveDropZone();
+  });
+  dragTargetEl.addEventListener('dragover', (event) => {
+    if (!isInitial()) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setActiveDropZone();
+  });
+  dragTargetEl.addEventListener('dragleave', (event) => {
+    if (!isInitial()) return;
+    event.preventDefault();
+    clearActiveDropZone();
+  });
+  dragTargetEl.addEventListener('drop', (event) => {
+    if (!isInitial()) return;
+    event.preventDefault();
+    setActiveDropZone();
+    const files = event.dataTransfer?.files;
+    if (files?.length && fileInput) {
+      try {
+        fileInput.files = files;
+      } catch {
+        // Some browsers may not allow assigning FileList directly.
+      }
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    clearActiveDropZone();
+  });
+  dropZone.addEventListener('drop', () => {
+    clearActiveDropZone();
+  });
+  document.addEventListener('dragend', clearActiveDropZone);
+  window.addEventListener('drop', clearActiveDropZone);
+  window.addEventListener('dragend', clearActiveDropZone);
+}
+
 function wireDropZoneUpload(dropZone, uploadButton, fileInput) {
   dropZone.setAttribute('tabindex', '-1');
   dropZone.addEventListener('click', (event) => {
@@ -402,6 +460,11 @@ export default class InlineActionWidget {
     if (input) input.value = '';
   }
 
+  openFilePicker() {
+    this.resetFileInput();
+    this.widget?.querySelector('.ia-file-input')?.click();
+  }
+
   async initWidget() {
     this.meta = parseInlineAuthoring(this.el);
     const root = createTag('div', { class: 'ia-widget', 'data-state': 'initial' });
@@ -445,7 +508,7 @@ export default class InlineActionWidget {
 
     left.append(preview, ghost, result);
 
-    const { dropZoneContainer, legal } = buildDropZoneContainer(this.meta);
+    const { dropZoneContainer, dropZone, fileInput, legal } = buildDropZoneContainer(this.meta);
 
     const loading = createTag('div', { class: 'ia-loading' });
     const loadingPanel = createTag('div', { class: 'ia-loading-panel' });
@@ -496,7 +559,11 @@ export default class InlineActionWidget {
       root.append(sprite);
     }
     root.append(left, right);
-    insertInlineActionRoot(this.el, this, root);
+    const unityRoot = insertInlineActionRoot(this.el, this, root);
+    const interactiveArea = unityRoot.querySelector('.interactive-area');
+    if (interactiveArea) {
+      setupInteractiveAreaDragAndDrop(interactiveArea, root, dropZone, fileInput);
+    }
     this.widget = root;
 
     return {
