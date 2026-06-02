@@ -1,4 +1,5 @@
 import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
+import TransitionScreen from '../../../scripts/transition-screen.js';
 
 const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
 const DEFAULT_DROPZONE_ICON_IMAGE = '/cc-shared/assets/svg/s2-icon-default-image-20-n.svg';
@@ -86,6 +87,18 @@ function getIconHrefFromLi(li) {
   const iconImg = li.querySelector('img[src$=".svg"]');
   if (iconImg) return iconImg.getAttribute('src');
   return undefined;
+}
+
+function findPlaceholderIconLi(root, iconClass) {
+  const icon = root.querySelector(`.${iconClass}`)
+    || root.querySelector(`[class*="${iconClass}"]`);
+  return icon?.closest('li') ?? null;
+}
+
+function placeholderRowText(root, iconClass) {
+  const li = findPlaceholderIconLi(root, iconClass);
+  if (!li) return '';
+  return (li.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
 function isViewportColumn(el) {
@@ -227,6 +240,10 @@ export function parseInlineAuthoring(unityEl) {
     } else if (cls === 'icon-placeholder-nba') nbaHeading = li.textContent.trim();
   });
 
+  const loadingText = placeholderRowText(unityEl, 'icon-placeholder-loading')
+    || placeholderRowText(unityEl, 'placeholder-loading')
+    || 'Uploading image, loading remove background';
+
   const nbaCards = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
     const pic = li.querySelector('picture');
     const nba = parseNbaIcon(li);
@@ -253,6 +270,7 @@ export function parseInlineAuthoring(unityEl) {
     editLabel,
     nbaHeading,
     nbaCards,
+    loadingText,
   };
 }
 
@@ -359,6 +377,7 @@ export default class InlineActionWidget {
     this.widget = null;
     this.meta = null;
     this.state = 'initial';
+    this.progressScreen = null;
   }
 
   setState(state) {
@@ -367,11 +386,10 @@ export default class InlineActionWidget {
   }
 
   setProgress(pct) {
-    const fill = this.widget?.querySelector('.ia-progress-fill');
-    const label = this.widget?.querySelector('.ia-progress-pct');
+    const holder = this.widget?.querySelector('.ia-loading-panel .progress-holder');
+    if (!holder || !this.progressScreen) return;
     const val = Math.min(100, Math.max(0, Math.round(pct)));
-    if (fill) fill.style.width = `${val}%`;
-    if (label) label.textContent = `${val}%`;
+    this.progressScreen.updateProgressBar(holder, val);
   }
 
   setResultUrl(url) {
@@ -431,16 +449,14 @@ export default class InlineActionWidget {
 
     const loading = createTag('div', { class: 'ia-loading' });
     const loadingPanel = createTag('div', { class: 'ia-loading-panel' });
+    const progressHolder = TransitionScreen.createProgressBar();
     loadingPanel.append(
-      createTag('p', { class: 'ia-loading-text' }, 'Uploading image, loading remove background'),
-      createTag(
-        'div',
-        { class: 'ia-progress' },
-        createTag('div', { class: 'ia-progress-track' }, createTag('div', { class: 'ia-progress-fill' })),
-        createTag('span', { class: 'ia-progress-pct' }, '0%'),
-      ),
+      createTag('p', { class: 'ia-loading-text' }, this.meta.loadingText),
+      progressHolder,
     );
     loading.append(loadingPanel, legal.cloneNode(true));
+    this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
+    this.progressScreen.progressText = this.meta.loadingText;
 
     const complete = createTag('div', { class: 'ia-complete' });
     complete.append(createTag('p', { class: 'ia-nba-heading' }, this.meta.nbaHeading));

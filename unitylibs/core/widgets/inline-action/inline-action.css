@@ -460,38 +460,46 @@
   color: var(--ia-white);
 }
 
-.ia-progress {
-  display: flex;
+/* Spectrum progress bar (TransitionScreen.createProgressBar) on blue loading panel */
+.ia-loading-panel .progress-holder {
+  width: 100%;
+}
+
+.ia-loading-panel .progress-holder .spectrum-ProgressBar {
+  width: 100%;
+  inline-size: 100%;
+}
+
+.ia-loading-panel .progress-holder .spectrum-ProgressBar--sideLabel {
+  flex-flow: row wrap;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  max-width: 100%;
 }
 
-.ia-progress-track {
-  flex: 1;
-  height: 4px;
-  background: rgb(255 255 255 / 35%);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.ia-progress-fill {
-  height: 100%;
-  width: 0;
-  background: var(--ia-white);
-  border-radius: 2px;
-  transition: width 0.2s ease;
-}
-
-.ia-progress-pct {
+.ia-loading-panel .progress-holder .spectrum-ProgressBar-percentage {
+  order: unset;
   flex-shrink: 0;
+  margin: 0;
   font-size: 14px;
   font-weight: 400;
   line-height: 1;
   color: var(--ia-white);
-  min-width: 36px;
   text-align: end;
+  min-width: 36px;
+}
+
+.ia-loading-panel .progress-holder .spectrum-ProgressBar-track {
+  flex: 1;
+  block-size: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 35%);
+}
+
+.ia-loading-panel .progress-holder .spectrum-ProgressBar-fill {
+  block-size: 4px;
+  border-radius: 2px;
+  background: var(--ia-white);
+  transition: width 0.2s ease;
 }
 
 .ia-nba-heading {

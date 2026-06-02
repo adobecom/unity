@@ -64,6 +64,7 @@ class WfInitiator {
       ],
       'workflow-inline-action': [
         `${baseWfPath}/sprite.svg`,
+        `${getUnityLibs()}/core/styles/splash-screen.css`,
         ...this.getWidgetPaths(),
       ],
     };

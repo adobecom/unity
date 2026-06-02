@@ -24,6 +24,7 @@ describe('Inline Action workflow', () => {
     expect(meta.nbaCards[0].label).to.equal('Upscale');
     expect(meta.nbaCards[0].defaultPrompt).to.equal('Prompt');
     expect(meta.nbaHeading).to.equal('Do more with this image.');
+    expect(meta.loadingText).to.equal('Uploading image, loading remove background');
   });
 
   it('parses production-style HTML (3 viewport blocks + 4 NBA cards)', async () => {
@@ -87,6 +88,7 @@ describe('Inline Action workflow', () => {
     expect(document.querySelector('.upload-action-container .action-button')).to.exist;
     expect(document.querySelector('.drop-zone-default-icon img')).to.exist;
     expect(document.querySelector('.upload-action-container .action-button picture img')).to.exist;
+    expect(document.querySelector('.ia-loading-panel .progress-holder .spectrum-ProgressBar')).to.exist;
     expect(document.querySelectorAll('.ia-nba-card')).to.have.length(2);
     expect(document.querySelector('.ia-widget').dataset.state).to.equal('initial');
   });
