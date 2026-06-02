@@ -54,6 +54,7 @@ async function loadPlaceholders(prefix) {
 }
 
 const MB100 = 104857600;
+const MB20 = 20971520;
 const PDF_ONLY = ['.pdf'];
 const ALL_FILES = ['.pdf', '.doc', '.docx', '.xml', '.ppt', '.pptx', '.xls', '.xlsx', '.rtf', '.txt', '.text', '.ai', '.form', '.bmp', '.gif', '.indd', '.jpeg', '.jpg', '.png', '.psd', '.tif', '.tiff'];
 const SINGLE_PDF = { maxFileSize: MB100, acceptedFiles: PDF_ONLY, maxNumFiles: 1 };
@@ -63,6 +64,7 @@ const group = (verbs, config) => verbs.reduce((acc, v) => { acc[v] = config; ret
 export const LIMITS = {
   fillsign: { ...SINGLE_PDF, mobileApp: true },
   'summarize-pdf': { maxFileSize: MB100, acceptedFiles: ALL_FILES, maxNumFiles: 1, genAI: true },
+  'resume-builder': { maxFileSize: MB20, acceptedFiles: ALL_FILES, maxNumFiles: 1, genAI: true },
   ...group(['word-to-pdf', 'jpg-to-pdf'], MULTI_ALL),
 };
 
@@ -77,7 +79,7 @@ const EOLBrowserPage = 'https://acrobat.adobe.com/home/index-browser-eol.html';
 
 const lanaOptions = {
   sampleRate: 1,
-  tags: 'DC_Milo,Project Unity (DC)',
+  tags: 'Express_Milo,Project Unity (Express)',
   severity: 'error',
 };
 
@@ -105,7 +107,9 @@ function createSvgElement(iconName) {
 
 const getCTA = (verb) => {
   const verbConfig = LIMITS[verb];
-  return window.mph?.[`verb-widget-cta-${verbConfig?.uploadType}`] || window.mph?.['verb-widget-cta'] || '';
+  return window.mph?.[`verb-marquee-${verb}-upload-cta`]
+    || window.mph?.[`verb-widget-cta-${verbConfig?.uploadType}`]
+    || window.mph?.['verb-widget-cta'] || '';
 };
 
 function isMobileDevice() {
@@ -322,6 +326,22 @@ function processMedia(mediaDiv) {
   return mediaDiv;
 }
 
+function getAuthoredSvgInfo(foregroundEl) {
+  if (!foregroundEl) return null;
+  const svgImg = foregroundEl.querySelector('img[src$=".svg"]');
+  if (!svgImg) return null;
+  const url = svgImg.getAttribute('src');
+  let altText = '';
+  const pEl = svgImg.closest('p');
+  pEl?.childNodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const match = node.nodeValue.match(/\|(.+)/);
+      if (match) altText = match[1].trim();
+    }
+  });
+  return { url, altText };
+}
+
 export default async function init(element) {
   ({ createTag, getConfig, loadStyle } = (await import(`${miloLibs}/utils/utils.js`)));
   ({ decorateBlockBg } = (await import(`${miloLibs}/utils/decorate.js`)));
@@ -423,6 +443,7 @@ export default async function init(element) {
   if (text) {
     text.classList.add('text');
   }
+  const authoredSvg = getAuthoredSvgInfo(foreground);
   const media = foreground.querySelector(':scope > div:not([class])');
   if (media) {
     processMedia(media);
@@ -432,18 +453,27 @@ export default async function init(element) {
   const leftCol = createTag('div', { class: 'unity-verb-marquee-col unity-verb-marquee-col-left' });
   const rightCol = createTag('div', { class: 'unity-verb-marquee-col unity-verb-marquee-col-right' });
   const header = createTag('div', { class: 'unity-verb-marquee-header' });
-  const iconWrapper = createTag('div', { class: 'acrobat-icon' });
-  const widgetIconSvg = createSvgElement('WIDGET_ICON');
-  if (widgetIconSvg) {
-    widgetIconSvg.classList.add('icon-acrobat');
-    widgetIconSvg.setAttribute('aria-hidden', 'true');
-    iconWrapper.appendChild(widgetIconSvg);
+  if (authoredSvg) {
+    const svgImg = createTag('img', {
+      src: authoredSvg.url,
+      alt: authoredSvg.altText,
+      class: 'verb-marquee-title-svg',
+    });
+    header.append(svgImg);
+  } else {
+    const iconWrapper = createTag('div', { class: 'acrobat-icon' });
+    const widgetIconSvg = createSvgElement('WIDGET_ICON');
+    if (widgetIconSvg) {
+      widgetIconSvg.classList.add('icon-acrobat');
+      widgetIconSvg.setAttribute('aria-hidden', 'true');
+      iconWrapper.appendChild(widgetIconSvg);
+    }
+    const title = createTag('div', { class: 'verb-marquee-title' });
+    const adobeText = createTag('span', {}, 'Adobe');
+    const studySpaceText = createTag('span', {}, ' Acrobat');
+    title.append(adobeText, studySpaceText);
+    header.append(iconWrapper, title);
   }
-  const title = createTag('div', { class: 'unity-verb-marquee-title' });
-  const adobeText = createTag('span', {}, 'Adobe');
-  const studySpaceText = createTag('span', {}, ' Acrobat');
-  title.append(adobeText, studySpaceText);
-  header.append(iconWrapper, title);
   const headingEl = createTag('h1', { class: 'unity-verb-marquee-heading' }, heading);
   const isMobileOrTabletViewport = window.innerWidth < 1200;
   const copy1Text = isMobileOrTabletViewport
