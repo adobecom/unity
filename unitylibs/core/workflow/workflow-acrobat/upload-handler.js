@@ -19,6 +19,11 @@ export default class UploadHandler {
     return feature === 'pdf-ai' ? 'chat-pdf-pdf-ai' : feature;
   }
 
+  async isDocOrDocx(file) {
+    const { getExtension } = await import('../../../utils/FileUtils.js');
+    return ['doc', 'docx'].includes(getExtension(file?.name || '').toLowerCase());
+  }
+
   isDirectUpload(file) {
     const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
     const directUploadVerbs = this.actionBinder.workflowCfg.targetCfg.directUploadVerbs || [];
@@ -269,22 +274,22 @@ export default class UploadHandler {
     return { failedFiles, attemptMap };
   }
 
-  isAwaitFinalizeVerb(verb) {
+  async isAwaitFinalizeVerb(verb, file) {
     const awaitFinalizeVerbs = this.actionBinder.workflowCfg.targetCfg.awaitFinalizeVerbs || [];
-    return awaitFinalizeVerbs.includes(verb);
+    return awaitFinalizeVerbs.includes(verb) && await this.isDocOrDocx(file);
   }
 
-  getFinalizeRetryConfig(verb) {
+  async getFinalizeRetryConfig(verb, file) {
     const baseConfig = this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset;
-    if (this.isAwaitFinalizeVerb(verb)) {
+    if (await this.isAwaitFinalizeVerb(verb, file)) {
       return { ...baseConfig, retryOn202: false };
     }
     return baseConfig;
   }
 
-  async verifyContent(assetData, signal) {
+  async verifyContent(assetData, signal, file = null) {
     const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
-    const finalizeRetryConfig = this.getFinalizeRetryConfig(verb);
+    const finalizeRetryConfig = await this.getFinalizeRetryConfig(verb, file);
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
@@ -496,7 +501,7 @@ export default class UploadHandler {
       return;
     }
     this.actionBinder.operations.push(assetData.id);
-    const verified = await this.verifyContent(assetData);
+    const verified = await this.verifyContent(assetData, null, file);
     if (!verified || abortSignal.aborted) return;
     if (abortSignal.aborted || !this.actionBinder.isUploading) return;
     this.actionBinder.uploadTimestamp = Date.now();
