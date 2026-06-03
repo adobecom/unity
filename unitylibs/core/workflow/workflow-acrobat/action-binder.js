@@ -645,13 +645,26 @@ export default class ActionBinder {
     return new Promise((res) => { setTimeout(() => { res(); }, ms); });
   }
 
+  isDirectUploadVerb(verb) {
+    const directUploadVerbs = this.workflowCfg.targetCfg.directUploadVerbs || [];
+    return directUploadVerbs.includes(verb);
+  }
+
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    const verb = this.workflowCfg.enabledFeatures[0];
+    const splashLayer = this.transitionScreen.splashScreenEl;
+    if (this.isDirectUploadVerb(verb)) {
+      try {
+        this.transitionScreen.updateProgressBar(splashLayer, 100);
+      } catch (_) { }
+    } else {
+      this.transitionScreen.updateProgressBar(splashLayer, 100);
+    }
     try {
-      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
       if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {

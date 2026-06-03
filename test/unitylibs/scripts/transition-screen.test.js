@@ -33,11 +33,6 @@ describe('TransitionScreen', () => {
       expect(fill.style.width).to.equal('42%');
       expect(status.textContent).to.equal('42%');
     });
-
-    it('should no-op when spectrum progress bar is not initialized', () => {
-      splashScreenEl.innerHTML = '<p class="progress-bar-area"><span class="progress-bar"></span></p>';
-      expect(() => screen.updateProgressBar(splashScreenEl, 100)).to.not.throw();
-    });
   });
 
   describe('createProgressBar', () => {

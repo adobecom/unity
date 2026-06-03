@@ -1351,11 +1351,18 @@ describe('ActionBinder', () => {
       });
     });
 
+    describe('isDirectUploadVerb', () => {
+      it('should return true only for configured direct upload verbs', () => {
+        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
+        expect(actionBinder.isDirectUploadVerb('word-to-pdf')).to.be.true;
+        expect(actionBinder.isDirectUploadVerb('compress-pdf')).to.be.false;
+      });
+    });
+
     describe('continueInApp', () => {
       let locationSpy;
 
       beforeEach(() => {
-        // Create a spy for location changes
         locationSpy = sinon.spy();
 
         actionBinder.redirectUrl = 'https://test.com?param=value';
@@ -1385,6 +1392,57 @@ describe('ActionBinder', () => {
         await actionBinder.continueInApp();
         expect(actionBinder.showTransitionScreen.called).to.be.false;
         expect(locationSpy.called).to.be.false;
+      });
+
+      it('should redirect when tolerant verb progress bar update throws', async () => {
+        actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
+        actionBinder.transitionScreen = { splashScreenEl: document.createElement('div') };
+        const updateProgressBar = sinon.stub().throws(new TypeError('Cannot set properties of null'));
+        const importStub = sinon.stub(window, 'import').callsFake((specifier) => {
+          if (typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
+            return Promise.resolve({
+              default: function TransitionScreen(splashScreenEl) {
+                this.splashScreenEl = splashScreenEl;
+                this.updateProgressBar = updateProgressBar;
+                this.showSplashScreen = sinon.stub().resolves();
+              },
+            });
+          }
+          return Promise.resolve({ default: () => {} });
+        });
+        await actionBinder.continueInApp();
+        importStub.restore();
+        expect(updateProgressBar.calledOnce).to.be.true;
+        expect(actionBinder.delay.calledOnce).to.be.true;
+        expect(actionBinder.dispatchErrorToast.called).to.be.false;
+      });
+
+      it('should not redirect when non-tolerant verb progress bar update throws', async () => {
+        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
+        actionBinder.transitionScreen = { splashScreenEl: document.createElement('div') };
+        const updateProgressBar = sinon.stub().throws(new TypeError('Cannot set properties of null'));
+        const importStub = sinon.stub(window, 'import').callsFake((specifier) => {
+          if (typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
+            return Promise.resolve({
+              default: function TransitionScreen(splashScreenEl) {
+                this.splashScreenEl = splashScreenEl;
+                this.updateProgressBar = updateProgressBar;
+                this.showSplashScreen = sinon.stub().resolves();
+              },
+            });
+          }
+          return Promise.resolve({ default: () => {} });
+        });
+        try {
+          await actionBinder.continueInApp();
+          expect.fail('Expected continueInApp to throw');
+        } catch (e) {
+          expect(e.message).to.include('null');
+        }
+        importStub.restore();
+        expect(actionBinder.delay.called).to.be.false;
       });
     });
 

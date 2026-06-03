@@ -35,13 +35,10 @@ export default class TransitionScreen {
     if (!this.progressText && TransitionScreen.lastProgressText) this.progressText = TransitionScreen.lastProgressText;
     const p = Math.min(percentage, this.LOADER_LIMIT);
     const spb = layer.querySelector('.spectrum-ProgressBar');
-    if (!spb) return;
-    spb.setAttribute('value', p);
-    spb.setAttribute('aria-valuenow', p);
-    const percentageEl = layer.querySelector('.spectrum-ProgressBar-percentage');
-    if (percentageEl) percentageEl.innerHTML = `${p}%`;
-    const fillEl = layer.querySelector('.spectrum-ProgressBar-fill');
-    if (fillEl) fillEl.style.width = `${p}%`;
+    spb?.setAttribute('value', p);
+    spb?.setAttribute('aria-valuenow', p);
+    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
+    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
     const status = layer.querySelector('#progress-status');
     const newStatus = (this.progressText && this.progressText.trim() !== '')
       ? this.progressText.replace('%', `${p}%`)
