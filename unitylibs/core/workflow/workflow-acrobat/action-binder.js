@@ -650,8 +650,8 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 100;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
     try {
+      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
       if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
