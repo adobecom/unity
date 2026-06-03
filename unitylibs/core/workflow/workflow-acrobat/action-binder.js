@@ -119,6 +119,7 @@ export default class ActionBinder {
     upload_warn_delete_asset: -603,
     validation_warn_validate_files: -604,
     warn_fetch_experiment: -605,
+    warn_update_no_progress_bar: -606,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -650,6 +651,17 @@ export default class ActionBinder {
     return directUploadVerbs.includes(verb);
   }
 
+  async runProgressBarUpdate(splashLayer) {
+    try {
+      this.transitionScreen.updateProgressBar(splashLayer, 100);
+    } catch (error) {
+      await this.dispatchErrorToast('warn_update_no_progress_bar', null, error.message, true, true, {
+        code: 'warn_update_no_progress_bar',
+        desc: error.message,
+      });
+    }
+  }
+
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
@@ -658,8 +670,7 @@ export default class ActionBinder {
     const verb = this.workflowCfg.enabledFeatures[0];
     const splashLayer = this.transitionScreen.splashScreenEl;
     if (this.isDirectUploadVerb(verb)) {
-      try {this.transitionScreen.updateProgressBar(splashLayer, 100);}
-      catch (_) { }
+      await this.runProgressBarUpdate(splashLayer);
     } else {
       this.transitionScreen.updateProgressBar(splashLayer, 100);
     }

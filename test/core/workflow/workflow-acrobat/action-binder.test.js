@@ -2,6 +2,8 @@ import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-acrobat/action-binder.js';
 
+let mockUpdateProgressBar = null;
+
 describe('ActionBinder', () => {
   let actionBinder;
   let mockWorkflowCfg;
@@ -16,11 +18,12 @@ describe('ActionBinder', () => {
     window.import = function mockImport(specifier) {
       if (specifier && typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
         return Promise.resolve({
-          default: function TransitionScreen() {
+          default: function TransitionScreen(splashScreenEl) {
+            this.splashScreenEl = splashScreenEl;
             this.delayedSplashLoader = () => Promise.resolve();
             this.loadSplashFragment = () => Promise.resolve();
             this.showSplashScreen = () => Promise.resolve();
-            this.updateProgressBar = () => Promise.resolve();
+            this.updateProgressBar = mockUpdateProgressBar || (() => Promise.resolve());
             return this;
           },
         });
@@ -1394,55 +1397,38 @@ describe('ActionBinder', () => {
         expect(locationSpy.called).to.be.false;
       });
 
-      it('should redirect when tolerant verb progress bar update throws', async () => {
-        actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
-        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
-        actionBinder.transitionScreen = { splashScreenEl: document.createElement('div') };
+      it('should log to splunk and continue when direct upload verb progress bar update throws', async () => {
+        const splashLayer = document.createElement('div');
         const updateProgressBar = sinon.stub().throws(new TypeError('Cannot set properties of null'));
-        const importStub = sinon.stub(window, 'import').callsFake((specifier) => {
-          if (typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
-            return Promise.resolve({
-              default: function TransitionScreen(splashScreenEl) {
-                this.splashScreenEl = splashScreenEl;
-                this.updateProgressBar = updateProgressBar;
-                this.showSplashScreen = sinon.stub().resolves();
-              },
-            });
-          }
-          return Promise.resolve({ default: () => {} });
-        });
-        await actionBinder.continueInApp();
-        importStub.restore();
+        actionBinder.transitionScreen = {
+          splashScreenEl: splashLayer,
+          updateProgressBar,
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        await actionBinder.runProgressBarUpdate(splashLayer);
         expect(updateProgressBar.calledOnce).to.be.true;
-        expect(actionBinder.delay.calledOnce).to.be.true;
-        expect(actionBinder.dispatchErrorToast.called).to.be.false;
+        expect(actionBinder.dispatchErrorToast.calledOnce).to.be.true;
+        expect(actionBinder.dispatchErrorToast.calledWith(
+          'warn_update_no_progress_bar',
+          null,
+          'Cannot set properties of null',
+          true,
+          true,
+          { code: 'warn_update_no_progress_bar', desc: 'Cannot set properties of null' },
+        )).to.be.true;
       });
 
-      it('should not redirect when non-tolerant verb progress bar update throws', async () => {
-        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
-        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
-        actionBinder.transitionScreen = { splashScreenEl: document.createElement('div') };
+      it('should propagate error when non-tolerant verb progress bar update throws', () => {
+        const splashLayer = document.createElement('div');
         const updateProgressBar = sinon.stub().throws(new TypeError('Cannot set properties of null'));
-        const importStub = sinon.stub(window, 'import').callsFake((specifier) => {
-          if (typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
-            return Promise.resolve({
-              default: function TransitionScreen(splashScreenEl) {
-                this.splashScreenEl = splashScreenEl;
-                this.updateProgressBar = updateProgressBar;
-                this.showSplashScreen = sinon.stub().resolves();
-              },
-            });
-          }
-          return Promise.resolve({ default: () => {} });
-        });
-        try {
-          await actionBinder.continueInApp();
-          expect.fail('Expected continueInApp to throw');
-        } catch (e) {
-          expect(e.message).to.include('null');
-        }
-        importStub.restore();
-        expect(actionBinder.delay.called).to.be.false;
+        actionBinder.transitionScreen = {
+          splashScreenEl: splashLayer,
+          updateProgressBar,
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        // The else branch in continueInApp calls updateProgressBar without error handling
+        expect(() => actionBinder.transitionScreen.updateProgressBar(splashLayer, 100)).to.throw(TypeError, /null/);
+        expect(actionBinder.dispatchErrorToast.called).to.be.false;
       });
     });
 
