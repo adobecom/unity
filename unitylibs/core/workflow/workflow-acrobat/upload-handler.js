@@ -289,8 +289,7 @@ export default class UploadHandler {
 
   async verifyContent(assetData, signal, file = null) {
     const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
-    const fileForCheck = file || { name: assetData._fileName || '' };
-    const finalizeRetryConfig = await this.getFinalizeRetryConfig(verb, fileForCheck);
+    const finalizeRetryConfig = await this.getFinalizeRetryConfig(verb, file);
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
