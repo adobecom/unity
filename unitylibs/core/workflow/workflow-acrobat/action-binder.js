@@ -669,11 +669,8 @@ export default class ActionBinder {
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     const verb = this.workflowCfg.enabledFeatures[0];
     const splashLayer = this.transitionScreen.splashScreenEl;
-    if (this.isDirectUploadVerb(verb)) {
-      await this.runProgressBarUpdate(splashLayer);
-    } else {
-      this.transitionScreen.updateProgressBar(splashLayer, 100);
-    }
+    if (this.isDirectUploadVerb(verb)) await this.runProgressBarUpdate(splashLayer);
+    else this.transitionScreen.updateProgressBar(splashLayer, 100);
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');
