@@ -63,9 +63,9 @@
       "maxNumPages": 600
     }
   },
-   "page-limit-20": {
+   "page-limit-10": {
     "pageLimit": {
-      "maxNumPages": 20
+      "maxNumPages": 10
     }
   },
   "max-filesize-5-mb": {
