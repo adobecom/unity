@@ -68,6 +68,7 @@
   color: #fff;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
 }
 
 .ia-panel-right {
@@ -75,6 +76,13 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+.ia-widget[data-state="initial"] .ia-panel-right,
+.ia-widget[data-state="loading"] .ia-panel-right {
+  grid-template-areas: 'dropzone-shell';
+  align-content: start;
+  justify-items: stretch;
 }
 
 .ia-panel-left {
@@ -96,22 +104,25 @@
 .ia-ghost,
 .ia-result,
 .drop-zone-container,
-.ia-loading,
 .ia-complete {
   display: none;
 }
 
 .ia-widget[data-state="initial"] .ia-preview,
-.ia-widget[data-state="initial"] .drop-zone-container {
+.ia-widget[data-state="initial"] .drop-zone-container.ia-dropzone-shell {
   display: block;
 }
 
-.ia-widget[data-state="initial"] .drop-zone {
+.ia-widget[data-state="initial"] .ia-dropzone-shell .drop-zone {
   display: flex;
 }
 
 .ia-widget[data-state="loading"] .ia-ghost,
-.ia-widget[data-state="loading"] .ia-loading {
+.ia-widget[data-state="loading"] .drop-zone-container.ia-loading-shell {
+  display: block;
+}
+
+.ia-widget[data-state="loading"] .ia-loading-shell .drop-zone {
   display: flex;
 }
 
@@ -141,7 +152,7 @@
   min-height: 240px;
   max-height: 320px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 4px;
   display: block;
 }
 
@@ -264,6 +275,7 @@
   text-align: center;
   flex: none;
   width: 100%;
+  grid-area: dropzone-shell;
 }
 
 .unity-inline-action .drop-zone {
@@ -276,7 +288,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 16px;
   box-sizing: border-box;
   background-color: inherit;
   background-image: radial-gradient(circle, rgb(255 255 255 / 18%) 1px, transparent 1px);
@@ -390,10 +402,6 @@
   font-size: var(--type-body-xs-size, 12px);
   line-height: var(--type-body-xs-lh, 18px);
   margin-top: 16px;
-  margin-inline: auto;
-  margin-block-end: 0;
-  padding-inline: 24px;
-  max-width: 380px;
   box-sizing: border-box;
   color: var(--ia-white);
   text-align: center;
@@ -404,81 +412,129 @@
   text-decoration: underline;
 }
 
-.ia-loading {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0;
-  flex: none;
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  box-sizing: border-box;
+/* Loading panel: hidden dropzone skeleton sets size; visible layer shows status */
+.unity-inline-action .drop-zone.ia-loading-panel {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--ia-accent-focus);
+  background-color: #3b54c4;
+  background-image: none;
+  cursor: default;
 }
 
-.ia-loading-panel {
+.unity-inline-action .drop-zone.ia-loading-panel:hover,
+.unity-inline-action .drop-zone.ia-loading-panel:focus-visible {
+  border: 2px solid var(--ia-accent-focus);
+  background-color: #3b54c4;
+  background-image: none;
+  outline: none;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel > .ia-loading-sizer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel > .ia-loading-sizer .action-button {
+  pointer-events: none;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel .ia-loading-visible {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel .ia-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
-  padding: 34px 24px;
-  border: none;
-  border-radius: var(--ia-radius-sm);
-  background: #3b54c4;
+  max-width: 423px;
+  min-width: 0;
   box-sizing: border-box;
 }
 
-.ia-loading > .ia-legal {
-  font-size: var(--type-body-xs-size, 12px);
-  line-height: var(--type-body-xs-lh, 18px);
-  margin-top: 16px;
-  margin-inline: auto;
-  margin-block-end: 0;
-  padding-inline: 24px;
-  max-width: 380px;
-  box-sizing: border-box;
-  color: var(--ia-white);
-  text-align: center;
-}
-
-.ia-loading > .ia-legal a {
-  color: var(--ia-white);
-  text-decoration: underline;
-}
-
-.ia-loading-text {
+.unity-inline-action .drop-zone.ia-loading-panel .ia-loading-text {
   margin: 0;
-  text-align: center;
   font-size: 16px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 20px;
   color: var(--ia-white);
+  text-align: center;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel .ia-loading-progress {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Spectrum progress bar (TransitionScreen.createProgressBar) on blue loading panel */
-.ia-loading-panel .progress-holder {
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.ia-loading-panel .progress-holder .spectrum-ProgressBar {
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder .spectrum-ProgressBar {
+  display: flex;
   width: 100%;
-  inline-size: 100%;
+  max-width: 100%;
+  min-width: 0;
+  inline-size: auto;
+  box-sizing: border-box;
 }
 
-.ia-loading-panel .progress-holder .spectrum-ProgressBar--sideLabel {
-  flex-flow: row wrap;
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder .spectrum-ProgressBar-label {
+  display: none;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder .spectrum-ProgressBar--sideLabel {
+  flex-flow: row nowrap;
   align-items: center;
-  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
-.ia-loading-panel .progress-holder .spectrum-ProgressBar-percentage {
-  order: unset;
-  flex-shrink: 0;
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder .spectrum-ProgressBar-track {
+  order: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  inline-size: auto;
+  width: auto;
+  max-width: 100%;
+  block-size: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 35%);
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder .spectrum-ProgressBar-fill {
+  block-size: 4px;
+  border-radius: 2px;
+  background: var(--ia-white);
+  transition: width 0.2s ease;
+}
+
+.unity-inline-action .drop-zone.ia-loading-panel .progress-holder .spectrum-ProgressBar-percentage {
+  order: 2;
+  flex: 0 0 auto;
   margin: 0;
   font-size: 14px;
   font-weight: 400;
@@ -486,20 +542,6 @@
   color: var(--ia-white);
   text-align: end;
   min-width: 36px;
-}
-
-.ia-loading-panel .progress-holder .spectrum-ProgressBar-track {
-  flex: 1;
-  block-size: 4px;
-  border-radius: 2px;
-  background: rgb(255 255 255 / 35%);
-}
-
-.ia-loading-panel .progress-holder .spectrum-ProgressBar-fill {
-  block-size: 4px;
-  border-radius: 2px;
-  background: var(--ia-white);
-  transition: width 0.2s ease;
 }
 
 .ia-nba-heading {
@@ -615,7 +657,7 @@
   height: 100%;
   background: rgb(0 0 0 / 80%);
   z-index: 10;
-  border-radius: 16px;
+  border-radius: inherit;
   box-sizing: border-box;
 }
 
@@ -747,7 +789,7 @@
   }
 
   .unity-inline-action.unity-enabled > .interactive-area {
-    padding: 14px;
+    padding: 16px;
   }
 
   .interactive-area.dark .ia-widget,
@@ -769,9 +811,9 @@
   .interactive-area .ia-widget[data-state="loading"],
   .ia-widget[data-state="initial"],
   .ia-widget[data-state="loading"] {
-    height: 370px;
-    min-height: 370px;
-    max-height: 370px;
+    height: 368px;
+    min-height: 368px;
+    max-height: 368px;
   }
 
   .interactive-area.dark .ia-widget[data-state="complete"],
@@ -788,31 +830,17 @@
   }
 
   .ia-panel-right {
-    align-items: stretch;
-    padding: 16px 16px 16px 0;
+    padding-top: 16px;
+  }
+
+  .ia-widget[data-state="initial"] .ia-panel-right,
+  .ia-widget[data-state="loading"] .ia-panel-right {
+    align-content: start;
+    justify-items: stretch;
   }
 
   .ia-panel {
     height: 100%;
-  }
-
-  .ia-loading {
-    flex: none;
-    width: 100%;
-    min-height: 0;
-  }
-
-  .ia-loading-panel {
-    padding: 34px 24px;
-  }
-
-  .ia-loading > .ia-legal {
-    margin-top: 16px;
-    margin-inline: auto;
-    padding-inline: 24px;
-    max-width: 380px;
-    color: var(--ia-white);
-    text-align: center;
   }
 
   .ia-preview {
@@ -844,8 +872,6 @@
 
   .unity-inline-action .drop-zone-container > .ia-legal {
     margin-top: 16px;
-    margin-inline: auto;
-    max-width: 380px;
     color: var(--ia-white);
     text-align: center;
   }

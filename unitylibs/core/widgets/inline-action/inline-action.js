@@ -377,7 +377,7 @@ function wireDropZoneUpload(dropZone, uploadButton, fileInput) {
 }
 
 function buildDropZoneContainer(meta) {
-  const dropZoneContainer = createTag('div', { class: 'drop-zone-container' });
+  const dropZoneContainer = createTag('div', { class: 'drop-zone-container ia-dropzone-shell' });
   const dropZone = createTag('div', { class: 'drop-zone ia-dropzone' });
   const uploadActionContainer = createTag('p', { class: 'upload-action-container' });
   const uploadButton = buildUploadActionButton(meta.uploadIconHref, meta.uploadLabel);
@@ -402,6 +402,49 @@ function buildDropZoneContainer(meta) {
   legal.innerHTML = meta.legalHtml;
   dropZoneContainer.append(dropZone, legal);
   return { dropZoneContainer, dropZone, fileInput, legal };
+}
+
+function appendDropZoneSizeSizer(dropZone, meta) {
+  const sizerClass = 'ia-loading-sizer';
+  const icon = buildDropZoneDefaultIcon();
+  icon.classList.add(sizerClass);
+  icon.setAttribute('aria-hidden', 'true');
+  const uploadActionContainer = createTag('p', { class: `upload-action-container ${sizerClass}` });
+  uploadActionContainer.setAttribute('aria-hidden', 'true');
+  uploadActionContainer.append(buildUploadActionButton(meta.uploadIconHref, meta.uploadLabel));
+  dropZone.append(icon, uploadActionContainer);
+  if (meta.dragHint?.trim()) {
+    const heading = createTag('p', { class: `drop-zone-heading ${sizerClass}` }, meta.dragHint.trim());
+    heading.setAttribute('aria-hidden', 'true');
+    dropZone.append(heading);
+  }
+  if (meta.fileLimit?.trim()) {
+    const body = createTag('p', { class: `drop-zone-body ${sizerClass}` }, meta.fileLimit.trim());
+    body.setAttribute('aria-hidden', 'true');
+    dropZone.append(body);
+  }
+}
+
+function buildLoadingContainer(meta, progressHolder) {
+  const dropZoneContainer = createTag('div', { class: 'drop-zone-container ia-loading-shell' });
+  const dropZone = createTag('div', { class: 'drop-zone ia-loading-panel' });
+
+  appendDropZoneSizeSizer(dropZone, meta);
+
+  const visible = createTag('div', { class: 'ia-loading-visible' });
+  const content = createTag('div', { class: 'ia-loading-content' });
+  content.append(createTag('p', { class: 'ia-loading-text' }, meta.loadingText));
+  const progressWrap = createTag('div', { class: 'ia-loading-progress' });
+  progressWrap.append(progressHolder);
+  content.append(progressWrap);
+  visible.append(content);
+
+  dropZone.append(visible);
+
+  const legal = createTag('p', { class: 'ia-legal' });
+  legal.innerHTML = meta.legalHtml;
+  dropZoneContainer.append(dropZone, legal);
+  return { dropZoneContainer, dropZone, legal };
 }
 
 function insertInlineActionRoot(el, widgetInstance, widgetEl) {
@@ -510,14 +553,8 @@ export default class InlineActionWidget {
 
     const { dropZoneContainer, dropZone, fileInput, legal } = buildDropZoneContainer(this.meta);
 
-    const loading = createTag('div', { class: 'ia-loading' });
-    const loadingPanel = createTag('div', { class: 'ia-loading-panel' });
     const progressHolder = TransitionScreen.createProgressBar();
-    loadingPanel.append(
-      createTag('p', { class: 'ia-loading-text' }, this.meta.loadingText),
-      progressHolder,
-    );
-    loading.append(loadingPanel, legal.cloneNode(true));
+    const { dropZoneContainer: loadingContainer } = buildLoadingContainer(this.meta, progressHolder);
     this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
     this.progressScreen.progressText = this.meta.loadingText;
 
@@ -552,7 +589,7 @@ export default class InlineActionWidget {
     editBtn.append(createTag('span', {}, this.meta.editLabel));
     complete.append(grid, editBtn);
 
-    right.append(dropZoneContainer, loading, complete);
+    right.append(dropZoneContainer, loadingContainer, complete);
     if (this.spriteContent) {
       const sprite = createTag('div', { class: 'ia-sprite hide' });
       sprite.innerHTML = this.spriteContent;
