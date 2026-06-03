@@ -19,16 +19,16 @@ export default class UploadHandler {
     return feature === 'pdf-ai' ? 'chat-pdf-pdf-ai' : feature;
   }
 
-  isDocOrDocx(file) {
-    const name = (file?.name || '').toLowerCase();
-    return name.endsWith('.doc') || name.endsWith('.docx');
+  async isDocOrDocx(file) {
+    const { getExtension } = await import('../../../utils/FileUtils.js');
+    return ['doc', 'docx'].includes(getExtension(file?.name || '').toLowerCase());
   }
 
   isDirectUpload(file) {
     const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
     const directUploadVerbs = this.actionBinder.workflowCfg.targetCfg.directUploadVerbs || [];
     const directUploadMaxSize = this.actionBinder.workflowCfg.targetCfg.directUploadMaxSize || 0;
-    return directUploadVerbs.includes(verb) && file.size <= directUploadMaxSize && this.isDocOrDocx(file);
+    return directUploadVerbs.includes(verb) && file.size <= directUploadMaxSize;
   }
 
   async directUploadAsset(file, signal, workflowId = null) {
@@ -274,14 +274,14 @@ export default class UploadHandler {
     return { failedFiles, attemptMap };
   }
 
-  isAwaitFinalizeVerb(verb, file) {
+  async isAwaitFinalizeVerb(verb, file) {
     const awaitFinalizeVerbs = this.actionBinder.workflowCfg.targetCfg.awaitFinalizeVerbs || [];
-    return awaitFinalizeVerbs.includes(verb) && this.isDocOrDocx(file);
+    return awaitFinalizeVerbs.includes(verb) && await this.isDocOrDocx(file);
   }
 
-  getFinalizeRetryConfig(verb, file) {
+  async getFinalizeRetryConfig(verb, file) {
     const baseConfig = this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset;
-    if (this.isAwaitFinalizeVerb(verb, file)) {
+    if (await this.isAwaitFinalizeVerb(verb, file)) {
       return { ...baseConfig, retryOn202: false };
     }
     return baseConfig;
@@ -290,7 +290,7 @@ export default class UploadHandler {
   async verifyContent(assetData, signal, file = null) {
     const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
     const fileForCheck = file || { name: assetData._fileName || '' };
-    const finalizeRetryConfig = this.getFinalizeRetryConfig(verb, fileForCheck);
+    const finalizeRetryConfig = await this.getFinalizeRetryConfig(verb, fileForCheck);
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
