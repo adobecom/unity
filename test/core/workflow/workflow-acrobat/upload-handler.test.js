@@ -510,6 +510,22 @@ describe('UploadHandler', () => {
       expect(mockActionBinder.setIsUploading.calledWith(true)).to.be.true;
     });
 
+    it('should take the direct upload path and return early on success', async () => {
+      mockActionBinder.isDirectUploadVerb.returns(true);
+      uploadHandler.directUploadSingleFile = sinon.stub().resolves(true);
+      await uploadHandler.uploadSingleFile(file, fileData);
+      expect(uploadHandler.directUploadSingleFile.calledOnce).to.be.true;
+      expect(uploadHandler.getBlobData.called).to.be.false;
+    });
+
+    it('should fall through to chunked upload when direct upload fails', async () => {
+      mockActionBinder.isDirectUploadVerb.returns(true);
+      uploadHandler.directUploadSingleFile = sinon.stub().resolves(false);
+      await uploadHandler.uploadSingleFile(file, fileData);
+      expect(uploadHandler.directUploadSingleFile.calledOnce).to.be.true;
+      expect(uploadHandler.getBlobData.calledOnce).to.be.true;
+    });
+
     it('should handle asset creation error', async () => {
       uploadHandler.createAsset = sinon.stub().rejects(new Error('fail'));
 
