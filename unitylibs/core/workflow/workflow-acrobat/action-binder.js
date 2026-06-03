@@ -646,9 +646,11 @@ export default class ActionBinder {
     return new Promise((res) => { setTimeout(() => { res(); }, ms); });
   }
 
-  isDirectUploadVerb(verb) {
+  isDirectUploadVerb(fileSize) {
+    const verb = this.workflowCfg.enabledFeatures[0];
     const directUploadVerbs = this.workflowCfg.targetCfg.directUploadVerbs || [];
-    return directUploadVerbs.includes(verb);
+    const directUploadMaxSize = this.workflowCfg.targetCfg.directUploadMaxSize || 0;
+    return directUploadVerbs.includes(verb) && fileSize != null && fileSize <= directUploadMaxSize;
   }
 
   async runProgressBarUpdate(splashLayer) {
@@ -667,9 +669,8 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 100;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    const verb = this.workflowCfg.enabledFeatures[0];
     const splashLayer = this.transitionScreen.splashScreenEl;
-    if (this.isDirectUploadVerb(verb)) await this.runProgressBarUpdate(splashLayer);
+    if (this.isDirectUploadVerb(this.filesData?.size)) await this.runProgressBarUpdate(splashLayer);
     else this.transitionScreen.updateProgressBar(splashLayer, 100);
     try {
       await this.delay(500);

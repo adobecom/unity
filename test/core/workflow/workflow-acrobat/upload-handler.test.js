@@ -125,6 +125,7 @@ describe('UploadHandler', () => {
       operations: [],
       transitionScreen: { splashScreenEl: document.createElement('div') },
       initActionListeners: sinon.stub(),
+      isDirectUploadVerb: sinon.stub().returns(false),
       dispatchAnalyticsEvent: sinon.stub(),
       dispatchErrorToast: sinon.stub().resolves(),
       getAbortSignal: sinon.stub().returns({ aborted: false }),
