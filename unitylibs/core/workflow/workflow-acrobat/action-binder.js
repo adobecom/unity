@@ -658,9 +658,8 @@ export default class ActionBinder {
     const verb = this.workflowCfg.enabledFeatures[0];
     const splashLayer = this.transitionScreen.splashScreenEl;
     if (this.isDirectUploadVerb(verb)) {
-      try {
-        this.transitionScreen.updateProgressBar(splashLayer, 100);
-      } catch (_) { }
+      try {this.transitionScreen.updateProgressBar(splashLayer, 100);}
+      catch (_) { }
     } else {
       this.transitionScreen.updateProgressBar(splashLayer, 100);
     }
