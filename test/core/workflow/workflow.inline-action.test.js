@@ -38,7 +38,7 @@ describe('Inline Action workflow', () => {
     expect(meta.downloadLabel).to.equal('Download');
     expect(meta.downloadIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
     expect(meta.editIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
-    expect(meta.editLabel).to.include('Edit in Firefly');
+    expect(meta.editLabel).to.equal('Edit in Firefly1');
     expect(meta.nbaCards).to.have.length(4);
     expect(meta.nbaCards[0].nba).to.equal('upscale');
     expect(meta.nbaCards[2].nba).to.equal('generate-new-bg');
@@ -46,6 +46,18 @@ describe('Inline Action workflow', () => {
     expect(meta.nbaCards[2].defaultPrompt).to.equal('Generate prompt');
     expect(['Or tap here', 'Or drag and drop here']).to.include(meta.dragHint);
     expect(meta.heroSrc).to.match(/media_(mobile|tablet|desktop)/);
+  });
+
+  it('parses icon-aiPhotoEditor label and icon href from config li', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div><ul>
+          <li><span class="icon icon-aiPhotoEditor"></span><a href="/creativecloud/animation/testdoc/unity/generate.svg">https://main--cc--adobecom.aem.live/creativecloud/animation/testdoc/unity/generate.svg</a> Edit in Firefly1</li>
+        </ul></div></div>
+      </div>`;
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.editLabel).to.equal('Edit in Firefly1');
+    expect(meta.editIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
   });
 
   it('parses split upload paragraphs (icon row + label row)', () => {
@@ -91,6 +103,7 @@ describe('Inline Action workflow', () => {
     expect(document.querySelector('.ia-loading-shell .drop-zone.ia-loading-panel')).to.exist;
     expect(document.querySelector('.ia-loading-shell .progress-holder .spectrum-ProgressBar')).to.exist;
     expect(document.querySelectorAll('.ia-nba-card')).to.have.length(2);
+    expect(document.querySelector('.ia-edit-in-firefly')).to.exist;
     expect(document.querySelector('.ia-widget').dataset.state).to.equal('initial');
   });
 });

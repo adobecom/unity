@@ -234,7 +234,7 @@ export function parseInlineAuthoring(unityEl) {
     else if (cls === 'icon-download') {
       downloadLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || downloadLabel;
       downloadIconHref = getIconHrefFromLi(li) || downloadIconHref;
-    } else if (cls === 'icon-editInFirefly') {
+    } else if (cls === 'icon-aiPhotoEditor') {
       editLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || editLabel;
       editIconHref = getIconHrefFromLi(li) || editIconHref;
     } else if (cls === 'icon-placeholder-nba') nbaHeading = li.textContent.trim();
@@ -575,14 +575,17 @@ export default class InlineActionWidget {
       );
       grid.append(cardEl);
     });
-    const editBtn = createTag('button', { type: 'button', class: 'ia-edit-firefly' });
+    const editBtn = createTag('button', {
+      type: 'button',
+      class: 'ia-edit-in-firefly',
+      'aria-label': this.meta.editLabel,
+    });
     if (this.meta.editIconHref) {
-      editBtn.append(createTag('img', {
+      editBtn.append(createTag('picture', {}, createTag('img', {
         src: this.meta.editIconHref,
         alt: '',
-        width: 18,
-        height: 18,
-      }));
+        loading: 'lazy',
+      })));
     } else {
       editBtn.innerHTML = svgUse('ia-external-icon');
     }
@@ -607,7 +610,7 @@ export default class InlineActionWidget {
       '.drop-zone': 'upload',
       '.ia-file-input': 'upload',
       '.ia-nba-card': 'connector',
-      '.ia-edit-firefly': 'connector',
+      '.ia-edit-in-firefly': 'connector',
       '.ia-download-btn': 'download',
       '.ia-reupload-btn': 'reupload',
     };

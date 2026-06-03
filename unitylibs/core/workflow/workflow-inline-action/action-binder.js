@@ -108,7 +108,7 @@ export default class ActionBinder {
     unityConfig.endPoint = {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
       acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
-      removeBackground: `${unityConfig.apiEndPoint}/providers/PhotoshopRemoveBackground`,
+      removeBackground: `${unityConfig.apiEndPoint}/providers/RemoveBackground`,
     };
     return unityConfig;
   }
@@ -283,9 +283,9 @@ export default class ActionBinder {
     return res;
   }
 
-  resolveConnectorVerb(el, isDownload = false) {
-    if (isDownload) return 'download';
-    if (el?.classList?.contains('ia-edit-firefly')) return 'aiPhotoEditor';
+  resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
+    if (isDownload) return downloadsLocally ? 'aiPhotoEditor' : 'download';
+    if (el?.classList?.contains('ia-edit-in-firefly')) return 'aiPhotoEditor';
     if (el?.dataset?.nba) return el.dataset.nba;
     return undefined;
   }
@@ -307,6 +307,7 @@ export default class ActionBinder {
         action: 'asset-upload',
         operation: this.operation,
         verb: connectorVerb,
+        widgetType: 'nba',
         locale: getLocale(),
         additionalQueryParams: getCgenQueryParams(this.unityEl),
         type: file?.type,
@@ -441,8 +442,9 @@ export default class ActionBinder {
   async handleConnector(el, isDownload = false) {
     let userCount = this.getUserCount();
     const defaultPrompt = el?.dataset?.defaultPrompt;
-    const verb = this.resolveConnectorVerb(el, isDownload);
-    if (isDownload && userCount < 100) {
+    const downloadsLocally = isDownload && userCount < 100;
+    const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
+    if (downloadsLocally) {
       try {
         await this.triggerDownload(this.resultUrl);
         userCount = this.incrementUserCount();
