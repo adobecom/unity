@@ -597,17 +597,31 @@
   right: 12px;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 90%);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #fff;
+  pointer-events: none;
 }
 
 .ia-nba-arrow svg {
-  width: 14px;
-  height: 14px;
-  fill: #333;
+  width: 28px;
+  height: 28px;
+  fill: none;
+}
+
+.ia-nba-arrow-hover {
+  display: none;
+}
+
+.ia-nba-card:hover .ia-nba-arrow-default,
+.ia-nba-card:focus-visible .ia-nba-arrow-default {
+  display: none;
+}
+
+.ia-nba-card:hover .ia-nba-arrow-hover,
+.ia-nba-card:focus-visible .ia-nba-arrow-hover {
+  display: block;
 }
 
 .unity-inline-action .ia-edit-in-firefly {
@@ -657,10 +671,6 @@
 }
 
 .ia-sprite {
-  display: none;
-}
-
-.ia-sprite .ia-sprite-preview {
   display: none;
 }
 
@@ -796,6 +806,29 @@
   .ia-ghost,
   .ia-result {
     min-height: 240px;
+  }
+
+  .ia-nba-grid {
+    display: flex;
+    flex-flow: row nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    grid-template-columns: unset;
+    row-gap: 0;
+    scroll-padding-inline: 16px;
+  }
+
+  .ia-nba-card {
+    flex: 0 0 auto;
+    width: 216px;
+    max-width: none;
+    height: 150px;
+    aspect-ratio: auto;
+    scroll-snap-align: start;
   }
 }
 

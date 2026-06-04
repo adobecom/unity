@@ -274,8 +274,9 @@ export function parseInlineAuthoring(unityEl) {
   };
 }
 
-function svgUse(id) {
-  return `<svg aria-hidden="true"><use xlink:href="#${id}"></use></svg>`;
+function svgUse(id, className = '') {
+  const cls = className ? ` class="${className}"` : '';
+  return `<svg aria-hidden="true"${cls}><use xlink:href="#${id}"></use></svg>`;
 }
 
 function buildDropZoneDefaultIcon() {
@@ -572,7 +573,7 @@ export default class InlineActionWidget {
       cardEl.append(
         createTag('img', { src: card.src, alt: '', class: 'ia-nba-img' }),
         createTag('span', { class: 'ia-nba-label' }, card.label),
-        createTag('span', { class: 'ia-nba-arrow' }, svgUse('ia-arrow-icon')),
+        createTag('span', { class: 'ia-nba-arrow' }, `${svgUse('ia-arrow-icon', 'ia-nba-arrow-default')}${svgUse('ia-arrow-icon-hover', 'ia-nba-arrow-hover')}`),
       );
       grid.append(cardEl);
     });
