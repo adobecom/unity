@@ -6,7 +6,6 @@
 import {
   unityConfig,
   getUnityLibs,
-  priorityLoad,
   createTag,
   getLocale,
   getHeaders,
@@ -93,6 +92,7 @@ export default class ActionBinder {
     this.resultBlob = null;
     this.filesData = {};
     this.uploadAbortController = null;
+    this.signedInFlowInProgress = false;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
     this.verb = this.getVerbFromDom();
     this.initActionListeners = this.initActionListeners.bind(this);
@@ -204,6 +204,43 @@ export default class ActionBinder {
     this.widgetRef?.setProgress?.(Math.round(ratio * 80));
   }
 
+  async loadTransitionScreen() {
+    if (!this.transitionScreen) {
+      try {
+        this.workflowCfg.theme = this.unityEl.classList.contains('dark') ? 'dark' : null;
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(
+          null,
+          this.initActionListeners,
+          this.LOADER_LIMIT,
+          this.workflowCfg,
+          false,
+        );
+        await this.transitionScreen.delayedSplashLoader();
+      } catch (error) {
+        window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
+        throw error;
+      }
+    }
+  }
+
+  async cancelUploadOperation() {
+    try {
+      const { assetId } = this;
+      this.uploadAbortController?.abort();
+      this.uploadAbortController = null;
+      this.signedInFlowInProgress = false;
+      this.assetId = null;
+      this.resultAssetId = null;
+      sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
+      this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId });
+      await this.transitionScreen?.showSplashScreen(false);
+    } catch (error) {
+      await this.transitionScreen?.showSplashScreen(false);
+      window.lana?.log(`Message: Error cancelling upload operation, Error: ${error}`, this.lanaOptions);
+    }
+  }
+
   async uploadAsset(file, useInlineProgress = false) {
     const assetDetails = {
       targetProduct: this.workflowCfg.productName,
@@ -211,12 +248,14 @@ export default class ActionBinder {
       size: file.size,
       format: file.type,
     };
-    this.uploadAbortController = new AbortController();
+    if (!this.uploadAbortController) {
+      this.uploadAbortController = new AbortController();
+    }
     const { signal } = this.uploadAbortController;
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.apiConfig.endPoint.assetUpload,
-        { body: JSON.stringify(assetDetails) },
+        { body: JSON.stringify(assetDetails), ...(signal && { signal }) },
         { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
       );
       const { id, href, blocksize, uploadUrls } = resJson;
@@ -264,23 +303,40 @@ export default class ActionBinder {
       false,
     );
     if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+      if (signal?.aborted) return;
       await new Promise((r) => { setTimeout(r, 1000); });
+      if (signal?.aborted) return;
       return this.scanImgForSafety(assetId, signal);
     }
   }
 
-  async removeBackground() {
-    this.widgetRef?.setProgress?.(85);
+  async removeBackground(useSplashProgress = false) {
+    const { signal } = this.uploadAbortController || {};
+    if (signal?.aborted) return null;
+    if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
+      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 85);
+    } else {
+      this.widgetRef?.setProgress?.(85);
+    }
     const body = JSON.stringify({ surfaceId: 'Unity', assets: [{ id: this.assetId }] });
-    const res = await this.serviceHandler.postCallToService(
-      this.apiConfig.endPoint.removeBackground,
-      { body },
-      { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
-    );
-    this.resultAssetId = res.assetId;
-    this.resultUrl = res.outputUrl;
-    this.widgetRef?.setProgress?.(100);
-    return res;
+    try {
+      const res = await this.serviceHandler.postCallToService(
+        this.apiConfig.endPoint.removeBackground,
+        { body, ...(signal && { signal }) },
+        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
+      );
+      this.resultAssetId = res.assetId;
+      this.resultUrl = res.outputUrl;
+      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
+      } else {
+        this.widgetRef?.setProgress?.(100);
+      }
+      return res;
+    } catch (e) {
+      if (signal?.aborted || e.name === 'AbortError') return null;
+      throw e;
+    }
   }
 
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
@@ -316,7 +372,7 @@ export default class ActionBinder {
     };
   }
 
-  async callConnector(cOpts) {
+  async callConnector(cOpts, { openInSameTab = false } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -326,6 +382,10 @@ export default class ActionBinder {
       const error = new Error('Error connecting to App');
       error.status = res?.status;
       throw error;
+    }
+    if (openInSameTab) {
+      window.location.assign(res.url);
+      return res;
     }
     window.open(res.url, '_blank');
     return res;
@@ -391,18 +451,58 @@ export default class ActionBinder {
   }
 
   async signedInFlow(file) {
-    if (!this.transitionScreen) {
-      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-      this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, false);
+    if (this.signedInFlowInProgress) return;
+    this.signedInFlowInProgress = true;
+    try {
+      this.workflowCfg.theme = this.unityEl.classList.contains('dark') ? 'dark' : null;
+      if (!this.transitionScreen) {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        this.transitionScreen = new TransitionScreen(
+          null,
+          this.initActionListeners,
+          this.LOADER_LIMIT,
+          this.workflowCfg,
+          false,
+        );
+      }
+      if (!this.transitionScreen.splashScreenEl) {
+        await this.transitionScreen.loadSplashFragment();
+      }
+      await this.transitionScreen.showSplashScreen(true);
+      this.uploadAbortController = new AbortController();
+      const ok = await this.uploadAsset(file, false);
+      if (!ok) {
+        this.uploadAbortController = null;
+        await this.transitionScreen.showSplashScreen(false);
+        return;
+      }
+      const removeBgRes = await this.removeBackground(true);
+      if (!removeBgRes) {
+        this.uploadAbortController = null;
+        await this.transitionScreen.showSplashScreen(false);
+        return;
+      }
+      this.transitionScreen.LOADER_LIMIT = 100;
+      if (this.transitionScreen.splashScreenEl) {
+        this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
+      }
+      await this.callConnector(await this.buildConnectorPayload(file, {
+        verb: 'aiPhotoEditor',
+        connectorAssetId: this.resultAssetId,
+      }), { openInSameTab: true });
+    } catch (e) {
+      await this.transitionScreen?.showSplashScreen(false);
+      if (e.name !== 'AbortError') {
+        this.serviceHandler.showErrorToast(
+          { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
+          e,
+          this.lanaOptions,
+        );
+      }
+    } finally {
+      this.uploadAbortController = null;
+      this.signedInFlowInProgress = false;
     }
-    await this.transitionScreen.showSplashScreen(true);
-    const ok = await this.uploadAsset(file, false);
-    if (!ok) return;
-    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
-    await this.callConnector(await this.buildConnectorPayload(file, {
-      verb: this.operation,
-      connectorAssetId: this.assetId,
-    }));
   }
 
   async anonymousFlow(file) {
@@ -428,6 +528,7 @@ export default class ActionBinder {
   async uploadFile(files) {
     const file = await this.validateFile(files);
     if (!file) return;
+    this.uploadAbortController = null;
     this.assetId = null;
     this.resultAssetId = null;
     this.resultUrl = null;
@@ -435,8 +536,11 @@ export default class ActionBinder {
     this.filesData = { type: file.type, name: file.name };
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { isGuest } = await isGuestUser();
-    if (isGuest === false) await this.signedInFlow(file);
-    else await this.anonymousFlow(file);
+    if (isGuest === false) {
+      await this.signedInFlow(file);
+    } else {
+      await this.anonymousFlow(file);
+    }
   }
 
   async handleConnector(el, isDownload = false) {
@@ -511,6 +615,9 @@ export default class ActionBinder {
       case 'reupload':
         this.widgetRef?.openFilePicker();
         break;
+      case 'interrupt':
+        await this.cancelUploadOperation();
+        break;
       default:
         break;
     }
@@ -520,7 +627,7 @@ export default class ActionBinder {
     this.serviceHandler = new ServiceHandler(this.canvasArea, this.unityEl, this.getAdditionalHeaders.bind(this));
     await this.initAnalytics();
     if (this.workflowCfg.targetCfg.showSplashScreen) {
-      await priorityLoad([`${getUnityLibs()}/core/styles/splash-screen.css`]);
+      this.loadTransitionScreen();
     }
     Object.keys(actMap).forEach((key) => {
       b.querySelectorAll(key).forEach((el) => {

@@ -82,12 +82,15 @@ export default class TransitionScreen {
     if (matchedDomain && splashScreenConfig[`fragmentLink-${matchedDomain}`]) {
       return splashScreenConfig[`fragmentLink-${matchedDomain}`];
     }
-    const productName = this.workflowCfg.productName.toLowerCase();
-    if (this.workflowCfg.name === 'workflow-upload' || this.workflowCfg.name === 'workflow-prompt-bar-upload') {
-      const { theme } = this.workflowCfg;
-      const themedKey = theme ? `fragmentLink-${productName}-${theme}` : null;
+    const productName = this.workflowCfg.productName?.toLowerCase();
+    if (productName) {
+      const themedKey = this.workflowCfg.theme === 'dark'
+        ? `fragmentLink-${productName}-dark`
+        : null;
       if (themedKey && splashScreenConfig[themedKey]) return splashScreenConfig[themedKey];
-      return splashScreenConfig[`fragmentLink-${productName}`];
+      if (splashScreenConfig[`fragmentLink-${productName}`]) {
+        return splashScreenConfig[`fragmentLink-${productName}`];
+      }
     }
     return splashScreenConfig.fragmentLink;
   }

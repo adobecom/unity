@@ -449,6 +449,7 @@ function buildLoadingContainer(meta, progressHolder) {
 
 function insertInlineActionRoot(el, widgetInstance, widgetEl) {
   const skin = el.classList.contains('light') ? 'light' : 'dark';
+  if (skin === 'dark') el.classList.add('dark');
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
   interactiveShell.append(widgetEl);
   const root = createTag('div', { class: 'unity-inline-action unity-enabled' });
