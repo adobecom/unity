@@ -125,6 +125,7 @@ describe('UploadHandler', () => {
       operations: [],
       transitionScreen: { splashScreenEl: document.createElement('div') },
       initActionListeners: sinon.stub(),
+      isDirectUploadVerb: sinon.stub().returns(false),
       dispatchAnalyticsEvent: sinon.stub(),
       dispatchErrorToast: sinon.stub().resolves(),
       getAbortSignal: sinon.stub().returns({ aborted: false }),
@@ -507,6 +508,22 @@ describe('UploadHandler', () => {
       expect(mockActionBinder.setAssetId.calledWith(assetData.id)).to.be.true;
       expect(mockActionBinder.handleRedirect.calledOnce).to.be.true;
       expect(mockActionBinder.setIsUploading.calledWith(true)).to.be.true;
+    });
+
+    it('should take the direct upload path and return early on success', async () => {
+      mockActionBinder.isDirectUploadVerb.returns(true);
+      uploadHandler.directUploadSingleFile = sinon.stub().resolves(true);
+      await uploadHandler.uploadSingleFile(file, fileData);
+      expect(uploadHandler.directUploadSingleFile.calledOnce).to.be.true;
+      expect(uploadHandler.getBlobData.called).to.be.false;
+    });
+
+    it('should fall through to chunked upload when direct upload fails', async () => {
+      mockActionBinder.isDirectUploadVerb.returns(true);
+      uploadHandler.directUploadSingleFile = sinon.stub().resolves(false);
+      await uploadHandler.uploadSingleFile(file, fileData);
+      expect(uploadHandler.directUploadSingleFile.calledOnce).to.be.true;
+      expect(uploadHandler.getBlobData.calledOnce).to.be.true;
     });
 
     it('should handle asset creation error', async () => {
