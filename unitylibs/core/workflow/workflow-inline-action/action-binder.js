@@ -314,9 +314,9 @@ export default class ActionBinder {
     const { signal } = this.uploadAbortController || {};
     if (signal?.aborted) return null;
     if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
-      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 85);
+      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
     } else {
-      this.widgetRef?.setProgress?.(85);
+      this.widgetRef?.setProgress?.(95);
     }
     const body = JSON.stringify({ surfaceId: 'Unity', assets: [{ id: this.assetId }] });
     try {
