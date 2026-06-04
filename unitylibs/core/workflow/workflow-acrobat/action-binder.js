@@ -91,6 +91,7 @@ export default class ActionBinder {
     pre_upload_error_create_asset: -55,
     pre_upload_error_missing_verb_config: -56,
     pre_upload_error_transition_screen: -57,
+    pre_upload_error_direct_upload: -58,
     validation_error_validate_files: -100,
     validation_error_unsupported_type: -101,
     validation_error_empty_file: -102,
@@ -118,6 +119,7 @@ export default class ActionBinder {
     upload_warn_delete_asset: -603,
     validation_warn_validate_files: -604,
     warn_fetch_experiment: -605,
+    warn_update_no_progress_bar: -606,
   };
 
   static NEW_TO_OLD_ERROR_KEY_MAP = {
@@ -229,6 +231,7 @@ export default class ActionBinder {
       createAsset: `${unityConfig.apiEndPoint}/asset`,
       finalizeAsset: `${unityConfig.apiEndPoint}/asset/finalize`,
       getMetadata: `${unityConfig.apiEndPoint}/asset/metadata`,
+      directUpload: `${unityConfig.apiEndPoint}/asset/upload`,
     };
     return unityConfig;
   }
@@ -622,12 +625,32 @@ export default class ActionBinder {
     return new Promise((res) => { setTimeout(() => { res(); }, ms); });
   }
 
+  isDirectUploadVerb(fileSize) {
+    const verb = this.workflowCfg.enabledFeatures[0];
+    const directUploadVerbs = this.workflowCfg.targetCfg.directUploadVerbs || [];
+    const directUploadMaxSize = this.workflowCfg.targetCfg.directUploadMaxSize || 0;
+    return directUploadVerbs.includes(verb) && fileSize != null && fileSize <= directUploadMaxSize;
+  }
+
+  async runProgressBarUpdate(splashLayer) {
+    try {
+      this.transitionScreen.updateProgressBar(splashLayer, 100);
+    } catch (error) {
+      await this.dispatchErrorToast('warn_update_no_progress_bar', null, error.message, true, true, {
+        code: 'warn_update_no_progress_bar',
+        desc: error.message,
+      });
+    }
+  }
+
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
     this.LOADER_LIMIT = 100;
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
-    this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
+    const splashLayer = this.transitionScreen.splashScreenEl;
+    if (this.isDirectUploadVerb(this.filesData?.size)) await this.runProgressBarUpdate(splashLayer);
+    else this.transitionScreen.updateProgressBar(splashLayer, 100);
     try {
       await this.delay(500);
       const [baseUrl, queryString] = this.redirectUrl.split('?');

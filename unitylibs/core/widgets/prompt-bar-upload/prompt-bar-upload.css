@@ -943,8 +943,7 @@ margin: 0;
 
 .pbu-preview {
 position: absolute;
-top: 0;
-left: 0;
+inset: 0;
 width: 100%;
 height: 100%;
 box-sizing: border-box;
@@ -958,11 +957,14 @@ display: none;
 
 .pbu-preview-img {
 display: block;
-width: stretch;
-height: stretch;
+width: 100%;
+height: 100%;
+max-width: none;
 object-fit: cover;
+object-position: center;
 border-radius: 13.667px;
 border: 2px solid #4069FD;
+box-sizing: border-box;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-delete-btn {
