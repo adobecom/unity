@@ -19,75 +19,6 @@ export default class UploadHandler {
     return feature === 'pdf-ai' ? 'chat-pdf-pdf-ai' : feature;
   }
 
-  async isDocOrDocx(file) {
-    const { getExtension } = await import('../../../utils/FileUtils.js');
-    return ['doc', 'docx'].includes(getExtension(file?.name || '').toLowerCase());
-  }
-
-  async directUploadAsset(file, signal, workflowId = null) {
-    const formData = new FormData();
-    formData.append('surfaceId', unityConfig.surfaceId);
-    formData.append('targetProduct', this.actionBinder.workflowCfg.productName);
-    formData.append('name', file.name);
-    formData.append('size', file.size);
-    formData.append('format', 'application/pdf');
-    formData.append('file', file);
-    if (workflowId) formData.append('workflowId', workflowId);
-    const opts = await getApiCallOptions(
-      'POST',
-      unityConfig.apiKey,
-      this.actionBinder.getAdditionalHeaders() || {},
-      { body: formData, signal },
-    );
-    delete opts.headers['Content-Type'];
-    const { response, attempt } = await this.networkUtils.fetchFromServiceWithRetry(
-      this.actionBinder.acrobatApiConfig.acrobatEndpoint.directUpload,
-      opts,
-      this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default,
-    );
-    return { ...response, attempt };
-  }
-
-  async directUploadSingleFile(file, fileData, isPdf = true) {
-    const abortSignal = this.actionBinder.getAbortSignal();
-    this.actionBinder.dispatchAnalyticsEvent('uploading', fileData);
-    this.actionBinder.setIsUploading(true);
-    let assetData;
-    try {
-      assetData = await this.directUploadAsset(file, abortSignal);
-    } catch (error) {
-      this.initSplashScreen();
-      await this.transitionScreen.showSplashScreen();
-      this.handleUploadError(error, 'pre_upload_error_direct_upload');
-      return false;
-    }
-    fileData.assetId = assetData.id;
-    this.actionBinder.setAssetId(assetData.id);
-    const effectiveFileType = await this.getEffectiveFileType(file);
-    const cOpts = {
-      assetId: assetData.id,
-      targetProduct: this.actionBinder.workflowCfg.productName,
-      payload: {
-        languageRegion: this.actionBinder.workflowCfg.langRegion,
-        languageCode: this.actionBinder.workflowCfg.langCode,
-        verb: this.getVerbForFeature(),
-        assetMetadata: { [assetData.id]: { name: file.name, size: file.size, type: effectiveFileType } },
-        ...(!isPdf ? { feedback: 'nonpdf' } : {}),
-      },
-    };
-    const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
-    if (!redirectSuccess) return false;
-
-    this.actionBinder.operations.push(assetData.id);
-    this.actionBinder.uploadTimestamp = Date.now();
-    this.actionBinder.dispatchAnalyticsEvent('uploaded', {
-      ...fileData,
-      assetId: assetData.id,
-      maxRetryCount: assetData.attempt || 0,
-    });
-    return true;
-  }
-
   async getEffectiveFileType(file) {
     const { getExtension } = await import('../../../utils/FileUtils.js');
     const isHeicWithoutMimeType = this.actionBinder.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
@@ -267,22 +198,7 @@ export default class UploadHandler {
     return { failedFiles, attemptMap };
   }
 
-  async isAwaitFinalizeVerb(verb, file) {
-    const awaitFinalizeVerbs = this.actionBinder.workflowCfg.targetCfg.awaitFinalizeVerbs || [];
-    return awaitFinalizeVerbs.includes(verb) && await this.isDocOrDocx(file);
-  }
-
-  async getFinalizeRetryConfig(verb, file) {
-    const baseConfig = this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset;
-    if (await this.isAwaitFinalizeVerb(verb, file)) {
-      return { ...baseConfig, retryOn202: false };
-    }
-    return baseConfig;
-  }
-
-  async verifyContent(assetData, signal, file = null) {
-    const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
-    const finalizeRetryConfig = await this.getFinalizeRetryConfig(verb, file);
+  async verifyContent(assetData, signal) {
     try {
       const finalAssetData = {
         surfaceId: unityConfig.surfaceId,
@@ -298,8 +214,7 @@ export default class UploadHandler {
       const finalizeJson = await this.networkUtils.fetchFromServiceWithRetry(
         this.actionBinder.acrobatApiConfig.acrobatEndpoint.finalizeAsset,
         finalizeOpts,
-        finalizeRetryConfig,
-        (responseJson) => responseJson,
+        this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.finalizeAsset,
       );
       if (!finalizeJson || Object.keys(finalizeJson).length !== 0) {
         if (this.actionBinder.MULTI_FILE) {
@@ -423,11 +338,6 @@ export default class UploadHandler {
   }
 
   async uploadSingleFile(file, fileData, isPdf = true) {
-    if (this.actionBinder.isDirectUploadVerb(file.size)) {
-      const success = await this.directUploadSingleFile(file, fileData, isPdf);
-      if (success) return;
-    }
-
     const { maxConcurrentChunks } = this.getConcurrentLimits();
     const abortSignal = this.actionBinder.getAbortSignal();
     let cOpts = {};
@@ -494,7 +404,7 @@ export default class UploadHandler {
       return;
     }
     this.actionBinder.operations.push(assetData.id);
-    const verified = await this.verifyContent(assetData, null, file);
+    const verified = await this.verifyContent(assetData);
     if (!verified || abortSignal.aborted) return;
     if (abortSignal.aborted || !this.actionBinder.isUploading) return;
     this.actionBinder.uploadTimestamp = Date.now();
