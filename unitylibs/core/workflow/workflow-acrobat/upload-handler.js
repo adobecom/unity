@@ -24,13 +24,6 @@ export default class UploadHandler {
     return ['doc', 'docx'].includes(getExtension(file?.name || '').toLowerCase());
   }
 
-  isDirectUpload(file) {
-    const verb = this.actionBinder.workflowCfg.enabledFeatures[0];
-    const directUploadVerbs = this.actionBinder.workflowCfg.targetCfg.directUploadVerbs || [];
-    const directUploadMaxSize = this.actionBinder.workflowCfg.targetCfg.directUploadMaxSize || 0;
-    return directUploadVerbs.includes(verb) && file.size <= directUploadMaxSize;
-  }
-
   async directUploadAsset(file, signal, workflowId = null) {
     const formData = new FormData();
     formData.append('surfaceId', unityConfig.surfaceId);
@@ -430,7 +423,7 @@ export default class UploadHandler {
   }
 
   async uploadSingleFile(file, fileData, isPdf = true) {
-    if (this.isDirectUpload(file)) {
+    if (this.actionBinder.isDirectUploadVerb(file.size)) {
       const success = await this.directUploadSingleFile(file, fileData, isPdf);
       if (success) return;
     }
