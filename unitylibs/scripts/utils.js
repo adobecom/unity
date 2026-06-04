@@ -1,3 +1,7 @@
+export const UNITY_BLOCKS = [
+  'unity-verb-marquee',
+];
+
 export const [setLibs, getLibs] = (() => {
   let libs;
   return [
