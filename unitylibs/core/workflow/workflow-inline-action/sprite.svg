@@ -9,11 +9,11 @@
   </symbol>
   <symbol id="ia-arrow-icon" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="2"/>
-    <path d="M8.25 12H13.5L17.5 9.25L17.5 14.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 12H17M13 8L17 12L13 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
   <symbol id="ia-arrow-icon-hover" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="11" fill="#fff" stroke="#fff" stroke-width="2"/>
-    <path d="M8.25 12H13.5L17.5 9.25L17.5 14.75" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 12H17M13 8L17 12L13 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
   <symbol id="ia-external-icon" viewBox="0 0 20 20" fill="none">
     <path fill="currentColor" d="M14.25 2.75h3v3a.75.75 0 1 1-1.5 0V5h-3.19a.75.75 0 0 1 0-1.5h1.69Zm-8.5 4.5a.75.75 0 0 1 .75-.75h8.5a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-.75.75h-8.5a.75.75 0 0 1-.75-.75v-8.5Zm1.5.75v7h7v-7h-7Z"/>
