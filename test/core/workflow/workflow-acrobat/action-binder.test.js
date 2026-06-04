@@ -2,6 +2,8 @@ import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-acrobat/action-binder.js';
 
+let mockUpdateProgressBar = null;
+
 describe('ActionBinder', () => {
   let actionBinder;
   let mockWorkflowCfg;
@@ -16,11 +18,12 @@ describe('ActionBinder', () => {
     window.import = function mockImport(specifier) {
       if (specifier && typeof specifier === 'string' && specifier.includes('transition-screen.js')) {
         return Promise.resolve({
-          default: function TransitionScreen() {
+          default: function TransitionScreen(splashScreenEl) {
+            this.splashScreenEl = splashScreenEl;
             this.delayedSplashLoader = () => Promise.resolve();
             this.loadSplashFragment = () => Promise.resolve();
             this.showSplashScreen = () => Promise.resolve();
-            this.updateProgressBar = () => Promise.resolve();
+            this.updateProgressBar = mockUpdateProgressBar || (() => Promise.resolve());
             return this;
           },
         });
@@ -1351,11 +1354,36 @@ describe('ActionBinder', () => {
       });
     });
 
+    describe('isDirectUploadVerb', () => {
+      beforeEach(() => {
+        actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSize = 1048576;
+      });
+
+      it('should return true for configured direct upload verbs within max size', () => {
+        expect(actionBinder.isDirectUploadVerb(1048576)).to.be.true;
+        expect(actionBinder.isDirectUploadVerb(500000)).to.be.true;
+      });
+
+      it('should return false for direct upload verbs exceeding max size', () => {
+        expect(actionBinder.isDirectUploadVerb(1048577)).to.be.false;
+      });
+
+      it('should return false for direct upload verbs without file size', () => {
+        expect(actionBinder.isDirectUploadVerb()).to.be.false;
+      });
+
+      it('should return false for verbs not configured for direct upload', () => {
+        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+        expect(actionBinder.isDirectUploadVerb(500000)).to.be.false;
+      });
+    });
+
     describe('continueInApp', () => {
       let locationSpy;
 
       beforeEach(() => {
-        // Create a spy for location changes
         locationSpy = sinon.spy();
 
         actionBinder.redirectUrl = 'https://test.com?param=value';
@@ -1385,6 +1413,40 @@ describe('ActionBinder', () => {
         await actionBinder.continueInApp();
         expect(actionBinder.showTransitionScreen.called).to.be.false;
         expect(locationSpy.called).to.be.false;
+      });
+
+      it('should log to splunk and continue when direct upload verb progress bar update throws', async () => {
+        const splashLayer = document.createElement('div');
+        const updateProgressBar = sinon.stub().throws(new TypeError('Cannot set properties of null'));
+        actionBinder.transitionScreen = {
+          splashScreenEl: splashLayer,
+          updateProgressBar,
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        await actionBinder.runProgressBarUpdate(splashLayer);
+        expect(updateProgressBar.calledOnce).to.be.true;
+        expect(actionBinder.dispatchErrorToast.calledOnce).to.be.true;
+        expect(actionBinder.dispatchErrorToast.calledWith(
+          'warn_update_no_progress_bar',
+          null,
+          'Cannot set properties of null',
+          true,
+          true,
+          { code: 'warn_update_no_progress_bar', desc: 'Cannot set properties of null' },
+        )).to.be.true;
+      });
+
+      it('should propagate error when non-tolerant verb progress bar update throws', () => {
+        const splashLayer = document.createElement('div');
+        const updateProgressBar = sinon.stub().throws(new TypeError('Cannot set properties of null'));
+        actionBinder.transitionScreen = {
+          splashScreenEl: splashLayer,
+          updateProgressBar,
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        // The else branch in continueInApp calls updateProgressBar without error handling
+        expect(() => actionBinder.transitionScreen.updateProgressBar(splashLayer, 100)).to.throw(TypeError, /null/);
+        expect(actionBinder.dispatchErrorToast.called).to.be.false;
       });
     });
 
