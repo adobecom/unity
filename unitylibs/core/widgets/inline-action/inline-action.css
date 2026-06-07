@@ -42,9 +42,8 @@
 .unity-inline-action.unity-enabled > .interactive-area {
   display: flex;
   box-sizing: border-box;
-  padding: 14px;
+  padding: 16px;
   border-radius: 20px;
-  gap: 8px;
   isolation: isolate;
   overflow: hidden;
   background: #292929;
@@ -56,7 +55,6 @@
 .ia-widget {
   display: flex;
   flex-direction: column;
-  gap: 24px;
   width: 100%;
   max-width: 100%;
   height: auto;
@@ -221,9 +219,9 @@
 .ia-reupload-btn {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: 30px;
   border: none;
-  background: rgb(0 0 0 / 50%);
+  background: rgb(0 0 0);
   color: #fff;
   cursor: pointer;
   display: flex;
@@ -402,6 +400,7 @@
   font-size: var(--type-body-xs-size, 12px);
   line-height: var(--type-body-xs-lh, 18px);
   margin-top: 16px;
+  margin-bottom: 16px;
   box-sizing: border-box;
   color: var(--ia-white);
   text-align: center;
@@ -453,13 +452,14 @@
 }
 
 .unity-inline-action .drop-zone.ia-loading-panel .ia-loading-content {
+  padding: 10px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
   gap: 12px;
   width: 100%;
-  max-width: 423px;
   min-width: 0;
   box-sizing: border-box;
 }
@@ -566,7 +566,7 @@
   aspect-ratio: 216 / 150;
   padding: 0;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
   background: #333;
@@ -798,14 +798,14 @@
     padding-bottom: 48px;
   }
 
-  .unity-inline-action.unity-enabled > .interactive-area {
-    padding: 8px;
-  }
-
   .ia-checker,
   .ia-ghost,
   .ia-result {
     min-height: 240px;
+  }
+
+  .ia-widget[data-state="complete"] .ia-complete {
+    margin-right: 0;
   }
 
   .ia-nba-grid {
@@ -840,10 +840,6 @@
 
   .unity-inline-action.unity-enabled:has(.ia-widget[data-state="complete"]) {
     max-width: 1008px;
-  }
-
-  .unity-inline-action.unity-enabled > .interactive-area {
-    padding: 16px;
   }
 
   .interactive-area.dark .ia-widget,
@@ -925,7 +921,7 @@
   }
 
   .unity-inline-action .drop-zone-container > .ia-legal {
-    margin-top: 16px;
+    margin: 16px 45px;
     color: var(--ia-white);
     text-align: center;
   }

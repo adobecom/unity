@@ -114,15 +114,19 @@ export default class ActionBinder {
   }
 
   getVerbFromDom() {
-    const verbEl = this.unityEl?.querySelector('[class*="icon-verb-"]') || this.unityEl?.querySelector('[class*="icon-operation-"]');
+    const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]')
+      || this.unityEl?.querySelector('[class*="icon-verb-"]');
     if (!verbEl) return undefined;
+    const opClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-operation-'));
+    if (opClass) return opClass.slice('icon-operation-'.length);
     const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-verb-'));
     return verbClass?.slice('icon-verb-'.length);
   }
 
   getAdditionalHeaders() {
     const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
-    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
+    const actionVerb = this.verb ?? this.operation;
+    const xUnityAction = actionVerb ? `${baseAction}-${actionVerb}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
       'x-unity-action': xUnityAction,
@@ -350,7 +354,7 @@ export default class ActionBinder {
     return this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
   }
 
-  async buildConnectorPayload(file, { defaultPrompt, userCount, verb, connectorAssetId } = {}) {
+  async buildConnectorPayload(file, { defaultPrompt, verb, connectorAssetId } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const connectorVerb = verb ?? this.operation;
     const query = defaultPrompt?.trim();
@@ -361,13 +365,11 @@ export default class ActionBinder {
       payload: {
         workflow: this.getConnectorWorkflow(),
         action: 'asset-upload',
-        operation: this.operation,
         verb: connectorVerb,
         widgetType: 'nba',
         locale: getLocale(),
         additionalQueryParams: getCgenQueryParams(this.unityEl),
         type: file?.type,
-        ...(userCount != null && { userCount }),
       },
     };
   }
@@ -559,7 +561,6 @@ export default class ActionBinder {
     }
     await this.callConnector(await this.buildConnectorPayload(this.filesData, {
       defaultPrompt,
-      userCount,
       verb,
       connectorAssetId: this.resultAssetId,
     }));
