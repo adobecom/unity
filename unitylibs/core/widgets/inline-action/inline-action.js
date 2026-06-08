@@ -5,255 +5,127 @@ const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
 const DEFAULT_DROPZONE_ICON_IMAGE = '/cc-shared/assets/svg/s2-icon-default-image-20-n.svg';
 const DEFAULT_UPLOAD_ICON = '/cc-shared/assets/svg/s2-icon-upload-20-n.svg';
 
+const normalize = (text) => (text || '').replace(/\s+/g, ' ').trim();
+const stripUrls = (text) => normalize(text.replace(/https?:\/\S+/g, ''));
+
 function getImgSrc(pic) {
-  const viewport = defineDeviceByScreenSize();
-  let source = '';
-  if (viewport === 'MOBILE') source = pic.querySelector('source[type="image/webp"]:not([media])');
-  else source = pic.querySelector('source[type="image/webp"][media]');
+  const mobile = defineDeviceByScreenSize() === 'MOBILE';
+  const source = pic.querySelector(mobile ? 'source[type="image/webp"]:not([media])' : 'source[type="image/webp"][media]');
   return source ? source.srcset.split(' ')[0] : pic.querySelector('img')?.src;
 }
 
-function textBeforeBr(el) {
-  const parts = [];
-  el.childNodes.forEach((n) => {
-    if (n.nodeName === 'BR') return;
-    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
-    else if (n.nodeName !== 'PICTURE' && n.nodeName !== 'SPAN') parts.push(n.textContent);
-  });
-  return parts.join('').replace(/\s+/g, ' ').trim();
+function getSvgHref(el) {
+  return el?.querySelector('a[href*=".svg"]')?.getAttribute('href')
+    || el?.querySelector('img[src$=".svg"]')?.getAttribute('src');
 }
 
-function nbaLabelFromLi(li) {
+function nbaLiText(li, afterIcon = false) {
   const icon = li.querySelector('[class*="icon-nba-"]');
+  if (afterIcon && !icon) return '';
   const parts = [];
-  [...li.childNodes].some((n) => {
-    if (n === icon || n.nodeName === 'BR') return true;
-    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
+  let pastIcon = !afterIcon;
+  let done = false;
+  [...li.childNodes].some((node) => {
+    if (done) return true;
+    if (node === icon) {
+      if (afterIcon) pastIcon = true;
+      else done = true;
+      return false;
+    }
+    if (node.nodeName === 'BR') {
+      if (!afterIcon) done = true;
+      return false;
+    }
+    if (pastIcon && node.nodeType === Node.TEXT_NODE) parts.push(node.textContent);
     return false;
   });
-  return parts.join('').replace(/\s+/g, ' ').trim();
-}
-
-function textAfterIcon(li) {
-  const icon = li.querySelector('[class*="icon-nba-"]');
-  if (!icon) return '';
-  let found = false;
-  const parts = [];
-  li.childNodes.forEach((n) => {
-    if (n === icon) { found = true; return; }
-    if (!found) return;
-    if (n.nodeName === 'BR') return;
-    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
-  });
-  return parts.join('').replace(/\s+/g, ' ').trim();
+  return normalize(parts.join(''));
 }
 
 function parseNbaIcon(li) {
-  const icon = li.querySelector('[class*="icon-nba-"]');
-  if (!icon) return null;
-  const cls = [...icon.classList].find((c) => c.startsWith('icon-nba-'));
+  const cls = [...(li.querySelector('[class*="icon-nba-"]')?.classList || [])].find((c) => c.startsWith('icon-nba-'));
   return cls?.replace('icon-nba-', '') || null;
 }
 
 function uploadLabelFromPara(para) {
+  const skip = new Set(['BR', 'PICTURE', 'A', 'IMG', 'SPAN']);
   const parts = [];
   para?.childNodes.forEach((n) => {
-    if (n.nodeName === 'BR' || n.nodeName === 'PICTURE' || n.nodeName === 'A' || n.nodeName === 'IMG') return;
+    if (skip.has(n.nodeName)) return;
     if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
-    else if (n.nodeName !== 'SPAN') parts.push(n.textContent);
   });
-  return parts.join('').replace(/\s+/g, ' ').trim();
+  return normalize(parts.join(''));
 }
 
-function hasUploadMarker(para) {
-  return para?.querySelector(
-    'span[class*=icon-share], span[class*=icon-upload], a[href*=".svg"], img[src$=".svg"]:not(.video-container img)',
-  );
-}
+const hasUploadMarker = (para) => para?.querySelector(
+  'span[class*=icon-share], span[class*=icon-upload], a[href*=".svg"], img[src$=".svg"]:not(.video-container img)',
+);
 
-function getUploadIconHref(uploadPara) {
-  if (!uploadPara) return undefined;
-  const svgLink = uploadPara.querySelector('a[href*=".svg"]');
-  if (svgLink) return svgLink.getAttribute('href');
-  const iconImg = uploadPara.querySelector('img[src$=".svg"]');
-  if (iconImg) return iconImg.getAttribute('src');
-  return undefined;
-}
+const isViewportColumn = (el) => el?.tagName === 'DIV' && el.querySelector('picture, p')
+  && ![...el.children].some((child) => child.tagName === 'DIV' && child.querySelector('picture, p'));
 
-function getIconHrefFromLi(li) {
-  if (!li) return undefined;
-  const svgLink = li.querySelector('a[href*=".svg"]');
-  if (svgLink) return svgLink.getAttribute('href');
-  const iconImg = li.querySelector('img[src$=".svg"]');
-  if (iconImg) return iconImg.getAttribute('src');
-  return undefined;
-}
-
-function findPlaceholderIconLi(root, iconClass) {
-  const icon = root.querySelector(`.${iconClass}`)
-    || root.querySelector(`[class*="${iconClass}"]`);
-  return icon?.closest('li') ?? null;
-}
-
-function placeholderRowText(root, iconClass) {
-  const li = findPlaceholderIconLi(root, iconClass);
-  if (!li) return '';
-  return (li.innerText || '').replace(/\s+/g, ' ').trim();
-}
-
-function isViewportColumn(el) {
-  if (el?.tagName !== 'DIV' || !el.querySelector('picture, p')) return false;
-  const childColumns = [...el.children].filter(
-    (child) => child.tagName === 'DIV' && child.querySelector('picture, p'),
-  );
-  return childColumns.length < 2;
-}
-
-function collectViewportColumns(root) {
-  if (!root?.children) return [];
-  return [...root.children].filter(isViewportColumn);
-}
-
-function findViewportColumnContainer(section) {
-  if (!section) return null;
-  let bestNode = null;
-  let bestCount = 0;
-  const queue = [section];
-  while (queue.length) {
-    const node = queue.shift();
-    const cols = collectViewportColumns(node);
-    if (cols.length > bestCount) {
-      bestCount = cols.length;
-      bestNode = node;
-    }
-    [...node.children].filter((child) => child.tagName === 'DIV').forEach((child) => queue.push(child));
-  }
-  return bestNode;
-}
-
-function getViewportBlocks(unityEl) {
-  const section = unityEl.querySelector(':scope > div');
-  if (!section) return [];
-
-  const classRoot = section.querySelector('.mobile-up, .tablet-up, .desktop-up')?.parentElement;
-  if (classRoot?.querySelector('.desktop-up')) {
-    return ['mobile-up', 'tablet-up', 'desktop-up']
-      .map((name) => classRoot.querySelector(
-        `:scope > .${name}, :scope > .${name}.tablet-up, :scope > .${name}.desktop-up`,
-      ))
-      .filter(Boolean);
-  }
-
-  const container = findViewportColumnContainer(section);
-  if (!container) return [];
-  return collectViewportColumns(container);
-}
-
-function resolveViewportBlock(viewportBlocks) {
-  const device = defineDeviceByScreenSize();
-  const idx = VIEWPORT_IDX[device] ?? 2;
-  if (viewportBlocks[idx]) return viewportBlocks[idx];
-
-  if (idx >= 2) {
-    const desktopBlock = viewportBlocks.find((block) => /drag and drop/i.test(block.textContent));
-    if (desktopBlock) return desktopBlock;
-  }
-
-  return viewportBlocks[Math.min(idx, viewportBlocks.length - 1)];
+function getViewportBlock(unityEl) {
+  const blocks = [...(unityEl.querySelector(':scope > div')?.children || [])].filter(isViewportColumn);
+  return blocks[VIEWPORT_IDX[defineDeviceByScreenSize()] ?? 2] ?? blocks.at(-1);
 }
 
 function parseViewportCopy(vp) {
-  if (!vp) {
-    return {
-      heroPic: null,
-      uploadIconHref: undefined,
-      uploadLabel: 'Upload your image',
-      dragHint: '',
-      fileLimit: '',
-      legalHtml: '',
-    };
-  }
-
+  const empty = { heroPic: null, uploadIconHref: undefined, uploadLabel: 'Upload your image', dragHint: '', fileLimit: '', legalHtml: '' };
+  if (!vp) return empty;
   const paragraphs = [...vp.querySelectorAll(':scope > p')];
-  const terms = paragraphs[paragraphs.length - 1];
-  const heroPic = vp.querySelector(':scope > picture, :scope > p picture');
-  const mediaPara = heroPic?.closest('p');
-
-  const candidateParagraphs = paragraphs.slice(0, -1).filter(
-    (para) => para.textContent.trim() !== '' || para.querySelector('img, svg, a, picture'),
-  );
-
-  const uploadPara = candidateParagraphs.find(hasUploadMarker)
-    || candidateParagraphs.find((para) => para.querySelector('picture') && uploadLabelFromPara(para))
-    || candidateParagraphs.find((para) => para !== mediaPara)
-    || candidateParagraphs[0];
-
-  const uploadIconHref = getUploadIconHref(uploadPara);
-  const uploadLabel = (uploadPara && uploadLabelFromPara(uploadPara))
-    || (uploadPara && textBeforeBr(uploadPara))
-    || 'Upload your image';
-
-  const textParas = candidateParagraphs.filter((para) => {
-    if (para === uploadPara) return false;
-    if (para === mediaPara && !uploadLabelFromPara(para) && !textBeforeBr(para)) return false;
-    return true;
-  });
-
+  const bodyParas = paragraphs.slice(0, -1);
+  const uploadPara = bodyParas.find(hasUploadMarker);
+  const copyParas = bodyParas.filter((p) => p !== uploadPara
+    && !(p.querySelector('picture') && !hasUploadMarker(p) && !uploadLabelFromPara(p)));
   return {
-    heroPic,
-    uploadIconHref,
-    uploadLabel,
-    dragHint: textParas[0]?.textContent?.trim() || '',
-    fileLimit: textParas[1]?.textContent?.trim() || '',
-    legalHtml: terms?.innerHTML || '',
+    heroPic: vp.querySelector(':scope > p picture'),
+    uploadIconHref: getSvgHref(uploadPara),
+    uploadLabel: uploadLabelFromPara(uploadPara) || empty.uploadLabel,
+    dragHint: copyParas[0]?.textContent.trim() || '',
+    fileLimit: copyParas[1]?.textContent.trim() || '',
+    legalHtml: paragraphs.at(-1)?.innerHTML || '',
   };
 }
 
-export function parseInlineAuthoring(unityEl) {
-  const viewportBlocks = getViewportBlocks(unityEl);
-  const vp = resolveViewportBlock(viewportBlocks);
-  const configUl = [...unityEl.querySelectorAll(':scope > div ul')].find((ul) => ul.querySelector('[class*="icon-error"], [class*="icon-operation"]'));
-  const nbaUl = [...unityEl.querySelectorAll(':scope > div ul')].find((ul) => ul.querySelector('[class*="icon-nba-"]'));
+function placeholderRowText(root, iconClass) {
+  const li = root.querySelector(`.${iconClass}, [class*="${iconClass}"]`)?.closest('li');
+  return li ? normalize(li.innerText) : '';
+}
 
+export function parseInlineAuthoring(unityEl) {
   const {
     heroPic, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
-  } = parseViewportCopy(vp);
+  } = parseViewportCopy(getViewportBlock(unityEl));
+  const uls = [...unityEl.querySelectorAll(':scope > div ul')];
+  const configUl = uls.find((ul) => ul.querySelector('[class*="icon-error"], [class*="icon-operation"]'));
+  const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
 
-  let operation = 'removeBackground';
-  let downloadLabel = 'Download';
-  let downloadIconHref;
-  let editIconHref;
-  let editLabel = 'Edit in Firefly';
-  let nbaHeading = 'Do more with this image.';
+  const config = {
+    operation: 'removeBackground',
+    downloadLabel: 'Download',
+    downloadIconHref: undefined,
+    editIconHref: undefined,
+    editLabel: 'Edit in Firefly',
+    nbaHeading: 'Do more with this image.',
+  };
   configUl?.querySelectorAll('li').forEach((li) => {
-    const icon = li.querySelector('[class*="icon-"]');
-    if (!icon) return;
-    const cls = [...icon.classList].find((c) => c.startsWith('icon-'));
+    const cls = [...(li.querySelector('[class*="icon-"]')?.classList || [])].find((c) => c.startsWith('icon-'));
     if (!cls) return;
-    if (cls.startsWith('icon-operation-')) operation = cls.replace('icon-operation-', '');
+    if (cls.startsWith('icon-operation-')) config.operation = cls.replace('icon-operation-', '');
     else if (cls === 'icon-download') {
-      downloadLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || downloadLabel;
-      downloadIconHref = getIconHrefFromLi(li) || downloadIconHref;
+      config.downloadLabel = stripUrls(li.textContent) || config.downloadLabel;
+      config.downloadIconHref = getSvgHref(li) || config.downloadIconHref;
     } else if (cls === 'icon-aiPhotoEditor') {
-      editLabel = li.textContent.replace(/https?:\/\S+/g, '').trim() || editLabel;
-      editIconHref = getIconHrefFromLi(li) || editIconHref;
-    } else if (cls === 'icon-placeholder-nba') nbaHeading = li.textContent.trim();
+      config.editLabel = stripUrls(li.textContent) || config.editLabel;
+      config.editIconHref = getSvgHref(li) || config.editIconHref;
+    } else if (cls === 'icon-placeholder-nba') config.nbaHeading = li.textContent.trim();
   });
 
-  const loadingText = placeholderRowText(unityEl, 'icon-placeholder-loading')
-    || placeholderRowText(unityEl, 'placeholder-loading')
-    || 'Uploading image, loading remove background';
-
   const nbaCards = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
-    const pic = li.querySelector('picture');
     const nba = parseNbaIcon(li);
     if (!nba) return null;
-    return {
-      label: nbaLabelFromLi(li),
-      nba,
-      defaultPrompt: textAfterIcon(li),
-      src: pic ? getImgSrc(pic) : '',
-    };
+    const pic = li.querySelector('picture');
+    return { label: nbaLiText(li), nba, defaultPrompt: nbaLiText(li, true), src: pic ? getImgSrc(pic) : '' };
   }).filter(Boolean);
 
   return {
@@ -263,124 +135,99 @@ export function parseInlineAuthoring(unityEl) {
     dragHint,
     fileLimit,
     legalHtml,
-    operation,
-    downloadLabel,
-    downloadIconHref,
-    editIconHref,
-    editLabel,
-    nbaHeading,
+    ...config,
     nbaCards,
-    loadingText,
+    loadingText: placeholderRowText(unityEl, 'icon-placeholder-loading')
+      || placeholderRowText(unityEl, 'placeholder-loading')
+      || 'Uploading image, loading remove background',
   };
 }
 
-function svgUse(id, className = '') {
-  const cls = className ? ` class="${className}"` : '';
-  return `<svg aria-hidden="true"${cls}><use xlink:href="#${id}"></use></svg>`;
-}
+const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
 
-function buildDropZoneDefaultIcon() {
-  const iconPara = createTag('p', { class: 'drop-zone-default-icon' });
-  iconPara.setAttribute('aria-hidden', 'true');
-  iconPara.append(createTag('img', { src: DEFAULT_DROPZONE_ICON_IMAGE, alt: '' }));
-  return iconPara;
+function appendIconContent(el, { href, spriteId, size, picture = false }) {
+  if (href) {
+    const img = createTag('img', { src: href, alt: '', loading: 'lazy', ...(size && { width: size, height: size }) });
+    el.append(picture ? createTag('picture', {}, img) : img);
+  } else el.innerHTML = svgUse(spriteId);
 }
 
 function buildUploadActionButton(uploadIconHref, uploadLabel) {
-  const iconSrc = uploadIconHref || DEFAULT_UPLOAD_ICON;
   const button = createTag('a', {
     tabindex: '0',
     class: 'con-button blue action-button button-xl no-track',
     href: '#',
   });
   button.append(
-    createTag('picture', {}, createTag('img', { src: iconSrc, alt: '', loading: 'lazy' })),
+    createTag('picture', {}, createTag('img', { src: uploadIconHref || DEFAULT_UPLOAD_ICON, alt: '', loading: 'lazy' })),
     document.createTextNode(` ${uploadLabel}`),
   );
   return button;
 }
 
-/**
- * Drag-over the interactive shell; only the drop-zone gets `.active` (upload-marquee pattern).
- */
 function setupInteractiveAreaDragAndDrop(dragTargetEl, widgetEl, dropZone, fileInput) {
   let activeDropZone;
   const isInitial = () => widgetEl.dataset.state === 'initial';
-  const setActiveDropZone = () => {
-    if (!isInitial()) return;
-    if (activeDropZone !== dropZone) {
-      activeDropZone?.classList.remove('active');
-      activeDropZone = dropZone;
-      activeDropZone?.classList.add('active');
-    }
+  const setActive = () => {
+    if (!isInitial() || activeDropZone === dropZone) return;
+    activeDropZone?.classList.remove('active');
+    (activeDropZone = dropZone).classList.add('active');
   };
-  const clearActiveDropZone = () => {
+  const clearActive = () => {
     activeDropZone?.classList.remove('active');
     activeDropZone = null;
   };
+  const onDrag = (event, fn) => {
+    if (!isInitial()) return;
+    event.preventDefault();
+    fn?.(event);
+  };
 
-  dragTargetEl.addEventListener('dragenter', (event) => {
-    if (!isInitial()) return;
-    event.preventDefault();
-    setActiveDropZone();
-  });
-  dragTargetEl.addEventListener('dragover', (event) => {
-    if (!isInitial()) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-    setActiveDropZone();
-  });
-  dragTargetEl.addEventListener('dragleave', (event) => {
-    if (!isInitial()) return;
-    event.preventDefault();
-    clearActiveDropZone();
-  });
-  dragTargetEl.addEventListener('drop', (event) => {
-    if (!isInitial()) return;
-    event.preventDefault();
-    setActiveDropZone();
-    const files = event.dataTransfer?.files;
+  dragTargetEl.addEventListener('dragenter', (e) => onDrag(e, setActive));
+  dragTargetEl.addEventListener('dragover', (e) => onDrag(e, () => {
+    e.dataTransfer.dropEffect = 'copy';
+    setActive();
+  }));
+  dragTargetEl.addEventListener('dragleave', (e) => onDrag(e, clearActive));
+  dragTargetEl.addEventListener('drop', (e) => onDrag(e, () => {
+    setActive();
+    const files = e.dataTransfer?.files;
     if (files?.length && fileInput) {
-      try {
-        fileInput.files = files;
-      } catch {
-        // Some browsers may not allow assigning FileList directly.
-      }
+      try { fileInput.files = files; } catch { /* FileList assignment unsupported */ }
       fileInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    clearActiveDropZone();
+    clearActive();
+  }));
+  dropZone.addEventListener('drop', clearActive);
+  ['dragend', 'drop'].forEach((type) => {
+    document.addEventListener(type, clearActive);
+    window.addEventListener(type, clearActive);
   });
-  dropZone.addEventListener('drop', () => {
-    clearActiveDropZone();
-  });
-  document.addEventListener('dragend', clearActiveDropZone);
-  window.addEventListener('drop', clearActiveDropZone);
-  window.addEventListener('dragend', clearActiveDropZone);
 }
 
 function wireDropZoneUpload(dropZone, uploadButton, fileInput) {
+  const openPicker = () => fileInput?.click();
   dropZone.setAttribute('tabindex', '-1');
   dropZone.addEventListener('click', (event) => {
     event.stopPropagation();
-    fileInput?.click();
+    openPicker();
   });
   uploadButton.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
-    fileInput?.click();
+    openPicker();
   });
   uploadButton.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      fileInput?.click();
+      openPicker();
     }
   });
 }
 
-function buildDropZoneContainer(meta) {
+function buildDropZoneContainer(meta, progressHolder) {
   const dropZoneContainer = createTag('div', { class: 'drop-zone-container ia-dropzone-shell' });
   const dropZone = createTag('div', { class: 'drop-zone ia-dropzone' });
-  const uploadActionContainer = createTag('p', { class: 'upload-action-container' });
   const uploadButton = buildUploadActionButton(meta.uploadIconHref, meta.uploadLabel);
   const fileInput = createTag('input', {
     type: 'file',
@@ -390,83 +237,37 @@ function buildDropZoneContainer(meta) {
     tabindex: -1,
     'aria-hidden': 'true',
   });
+  const uploadActionContainer = createTag('p', { class: 'upload-action-container' });
   uploadActionContainer.append(uploadButton, fileInput);
-  dropZone.append(buildDropZoneDefaultIcon(), uploadActionContainer);
-  if (meta.dragHint?.trim()) {
-    dropZone.append(createTag('p', { class: 'drop-zone-heading' }, meta.dragHint.trim()));
-  }
-  if (meta.fileLimit?.trim()) {
-    dropZone.append(createTag('p', { class: 'drop-zone-body' }, meta.fileLimit.trim()));
-  }
+  const defaultIcon = createTag('p', { class: 'drop-zone-default-icon', 'aria-hidden': 'true' });
+  defaultIcon.append(createTag('img', { src: DEFAULT_DROPZONE_ICON_IMAGE, alt: '' }));
+  dropZone.append(defaultIcon, uploadActionContainer);
+  [['drop-zone-heading', meta.dragHint], ['drop-zone-body', meta.fileLimit]].forEach(([cls, text]) => {
+    if (text?.trim()) dropZone.append(createTag('p', { class: cls }, text.trim()));
+  });
+  const loadingContent = createTag('div', { class: 'ia-loading-content' });
+  const progressWrap = createTag('div', { class: 'ia-loading-progress' });
+  progressWrap.append(progressHolder);
+  loadingContent.append(createTag('p', { class: 'ia-loading-text' }, meta.loadingText), progressWrap);
+  dropZone.append(createTag('div', { class: 'ia-loading-visible', 'aria-hidden': 'true' }, loadingContent));
   wireDropZoneUpload(dropZone, uploadButton, fileInput);
   const legal = createTag('p', { class: 'ia-legal' });
   legal.innerHTML = meta.legalHtml;
   dropZoneContainer.append(dropZone, legal);
-  return { dropZoneContainer, dropZone, fileInput, legal };
-}
-
-function appendDropZoneSizeSizer(dropZone, meta) {
-  const sizerClass = 'ia-loading-sizer';
-  const icon = buildDropZoneDefaultIcon();
-  icon.classList.add(sizerClass);
-  icon.setAttribute('aria-hidden', 'true');
-  const uploadActionContainer = createTag('p', { class: `upload-action-container ${sizerClass}` });
-  uploadActionContainer.setAttribute('aria-hidden', 'true');
-  uploadActionContainer.append(buildUploadActionButton(meta.uploadIconHref, meta.uploadLabel));
-  dropZone.append(icon, uploadActionContainer);
-  if (meta.dragHint?.trim()) {
-    const heading = createTag('p', { class: `drop-zone-heading ${sizerClass}` }, meta.dragHint.trim());
-    heading.setAttribute('aria-hidden', 'true');
-    dropZone.append(heading);
-  }
-  if (meta.fileLimit?.trim()) {
-    const body = createTag('p', { class: `drop-zone-body ${sizerClass}` }, meta.fileLimit.trim());
-    body.setAttribute('aria-hidden', 'true');
-    dropZone.append(body);
-  }
-}
-
-function buildLoadingContainer(meta, progressHolder) {
-  const dropZoneContainer = createTag('div', { class: 'drop-zone-container ia-loading-shell' });
-  const dropZone = createTag('div', { class: 'drop-zone ia-loading-panel' });
-
-  appendDropZoneSizeSizer(dropZone, meta);
-
-  const visible = createTag('div', { class: 'ia-loading-visible' });
-  const content = createTag('div', { class: 'ia-loading-content' });
-  content.append(createTag('p', { class: 'ia-loading-text' }, meta.loadingText));
-  const progressWrap = createTag('div', { class: 'ia-loading-progress' });
-  progressWrap.append(progressHolder);
-  content.append(progressWrap);
-  visible.append(content);
-
-  dropZone.append(visible);
-
-  const legal = createTag('p', { class: 'ia-legal' });
-  legal.innerHTML = meta.legalHtml;
-  dropZoneContainer.append(dropZone, legal);
-  return { dropZoneContainer, dropZone, legal };
+  return { dropZoneContainer, dropZone, fileInput };
 }
 
 function insertInlineActionRoot(el, widgetInstance, widgetEl) {
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   if (skin === 'dark') el.classList.add('dark');
-  const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
-  interactiveShell.append(widgetEl);
   const root = createTag('div', { class: 'unity-inline-action unity-enabled' });
-  root.append(interactiveShell);
-  const holder = createTag('div', { class: 'ia-config-holder ia-sr-only' });
-  holder.setAttribute('aria-hidden', 'true');
-  while (el.firstChild) {
-    holder.append(el.firstChild);
-  }
+  root.append(createTag('div', { class: `interactive-area ${skin}` }, widgetEl));
+  const holder = createTag('div', { class: 'ia-config-holder ia-sr-only', 'aria-hidden': 'true' });
+  while (el.firstChild) holder.append(el.firstChild);
   el.append(holder);
   el.classList.add('unity-inline-action-host');
-  if (el.parentNode) {
-    el.parentNode.insertBefore(root, el);
-  } else {
-    el.append(root);
-  }
+  if (el.parentNode) el.parentNode.insertBefore(root, el);
+  else el.append(root);
   widgetInstance.promptBarExtendedRoot = root;
   return root;
 }
@@ -489,10 +290,9 @@ export default class InlineActionWidget {
   }
 
   setProgress(pct) {
-    const holder = this.widget?.querySelector('.ia-loading-panel .progress-holder');
+    const holder = this.widget?.querySelector('.ia-loading-visible .progress-holder');
     if (!holder || !this.progressScreen) return;
-    const val = Math.min(100, Math.max(0, Math.round(pct)));
-    this.progressScreen.updateProgressBar(holder, val);
+    this.progressScreen.updateProgressBar(holder, Math.min(100, Math.max(0, Math.round(pct))));
   }
 
   setResultUrl(url) {
@@ -514,54 +314,23 @@ export default class InlineActionWidget {
     this.meta = parseInlineAuthoring(this.el);
     const root = createTag('div', { class: 'ia-widget', 'data-state': 'initial' });
     const left = createTag('div', { class: 'ia-panel ia-panel-left' });
-    const right = createTag('div', { class: 'ia-panel ia-panel-right' });
-
-    const preview = createTag('div', { class: 'ia-preview' });
-    preview.append(createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }));
-
-    const ghost = createTag('div', { class: 'ia-ghost' });
-    const result = createTag('div', { class: 'ia-result' });
-    const checker = createTag('div', { class: 'ia-checker' });
-    checker.append(createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
+    const preview = createTag('div', { class: 'ia-preview' }, createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }));
+    const checker = createTag('div', { class: 'ia-checker' }, createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
     const resultActions = createTag('div', { class: 'ia-result-actions' });
     const reuploadBtn = createTag('button', { type: 'button', class: 'ia-reupload-btn', 'aria-label': 'Upload another image' });
-    if (this.meta.uploadIconHref) {
-      reuploadBtn.append(createTag('img', {
-        src: this.meta.uploadIconHref,
-        alt: '',
-        width: 20,
-        height: 20,
-      }));
-    } else {
-      reuploadBtn.innerHTML = svgUse('ia-upload-icon');
-    }
+    appendIconContent(reuploadBtn, { href: this.meta.uploadIconHref, spriteId: 'ia-upload-icon', size: 20 });
     const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
-    if (this.meta.downloadIconHref) {
-      downloadBtn.append(createTag('img', {
-        src: this.meta.downloadIconHref,
-        alt: '',
-        width: 18,
-        height: 18,
-      }));
-    } else {
-      downloadBtn.innerHTML = svgUse('ia-download-icon');
-    }
+    appendIconContent(downloadBtn, { href: this.meta.downloadIconHref, spriteId: 'ia-download-icon', size: 18 });
     downloadBtn.append(createTag('span', {}, this.meta.downloadLabel));
     resultActions.append(reuploadBtn, downloadBtn);
     checker.append(resultActions);
-    result.append(checker);
-
-    left.append(preview, ghost, result);
-
-    const { dropZoneContainer, dropZone, fileInput, legal } = buildDropZoneContainer(this.meta);
+    left.append(preview, createTag('div', { class: 'ia-ghost' }), createTag('div', { class: 'ia-result' }, checker));
 
     const progressHolder = TransitionScreen.createProgressBar();
-    const { dropZoneContainer: loadingContainer } = buildLoadingContainer(this.meta, progressHolder);
+    const { dropZoneContainer, dropZone, fileInput } = buildDropZoneContainer(this.meta, progressHolder);
     this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
     this.progressScreen.progressText = this.meta.loadingText;
 
-    const complete = createTag('div', { class: 'ia-complete' });
-    complete.append(createTag('p', { class: 'ia-nba-heading' }, this.meta.nbaHeading));
     const grid = createTag('div', { class: 'ia-nba-grid' });
     this.meta.nbaCards.forEach((card) => {
       const cardEl = createTag('button', {
@@ -577,24 +346,13 @@ export default class InlineActionWidget {
       );
       grid.append(cardEl);
     });
-    const editBtn = createTag('button', {
-      type: 'button',
-      class: 'ia-edit-in-firefly',
-      'aria-label': this.meta.editLabel,
-    });
-    if (this.meta.editIconHref) {
-      editBtn.append(createTag('picture', {}, createTag('img', {
-        src: this.meta.editIconHref,
-        alt: '',
-        loading: 'lazy',
-      })));
-    } else {
-      editBtn.innerHTML = svgUse('ia-external-icon');
-    }
+    const editBtn = createTag('button', { type: 'button', class: 'ia-edit-in-firefly', 'aria-label': this.meta.editLabel });
+    appendIconContent(editBtn, { href: this.meta.editIconHref, spriteId: 'ia-external-icon', picture: true });
     editBtn.append(createTag('span', {}, this.meta.editLabel));
-    complete.append(grid, editBtn);
-
-    right.append(dropZoneContainer, loadingContainer, complete);
+    const complete = createTag('div', { class: 'ia-complete' });
+    complete.append(createTag('p', { class: 'ia-nba-heading' }, this.meta.nbaHeading), grid, editBtn);
+    const right = createTag('div', { class: 'ia-panel ia-panel-right' });
+    right.append(dropZoneContainer, complete);
     if (this.spriteContent) {
       const sprite = createTag('div', { class: 'ia-sprite hide' });
       sprite.innerHTML = this.spriteContent;
@@ -602,10 +360,7 @@ export default class InlineActionWidget {
     }
     root.append(left, right);
     const unityRoot = insertInlineActionRoot(this.el, this, root);
-    const interactiveArea = unityRoot.querySelector('.interactive-area');
-    if (interactiveArea) {
-      setupInteractiveAreaDragAndDrop(interactiveArea, root, dropZone, fileInput);
-    }
+    setupInteractiveAreaDragAndDrop(unityRoot.querySelector('.interactive-area'), root, dropZone, fileInput);
     this.widget = root;
 
     return {
