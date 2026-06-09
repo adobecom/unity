@@ -103,8 +103,8 @@ export function parseInlineAuthoring(unityEl) {
     heroPic, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
   } = parseViewportCopy(getViewportBlock(unityEl));
   const uls = [...unityEl.querySelectorAll(':scope > div ul')];
-  const configUl = uls.find((ul) => ul.querySelector('[class*="icon-error"], [class*="icon-operation"]'));
   const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
+  const configUl = uls.find((ul) => ul !== nbaUl && ul.querySelector('[class*="icon-"]'));
 
   const config = {
     operation: 'removeBackground',

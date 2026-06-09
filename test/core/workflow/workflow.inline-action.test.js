@@ -52,11 +52,11 @@ describe('Inline Action workflow', () => {
     document.body.innerHTML = `
       <div class="unity workflow-inline-action widget-inline-action">
         <div><div><ul>
-          <li><span class="icon icon-aiPhotoEditor"></span><a href="/creativecloud/animation/testdoc/unity/generate.svg">https://main--cc--adobecom.aem.live/creativecloud/animation/testdoc/unity/generate.svg</a> Edit in Firefly1</li>
+          <li><span class="icon icon-aiPhotoEditor"></span><a href="/creativecloud/animation/testdoc/unity/generate.svg">https://main--cc--adobecom.aem.live/creativecloud/animation/testdoc/unity/generate.svg</a> Edit in Firefly</li>
         </ul></div></div>
       </div>`;
     const meta = parseInlineAuthoring(document.querySelector('.unity'));
-    expect(meta.editLabel).to.equal('Edit in Firefly1');
+    expect(meta.editLabel).to.equal('Edit in Firefly');
     expect(meta.editIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
   });
 
