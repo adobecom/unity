@@ -435,7 +435,9 @@ export default class ActionBinder {
   }
 
   async resolveDownloadBlob(url) {
-    return this.resultBlob || this.getImageBlobData(url);
+    const blob = this.resultBlob || await this.getImageBlobData(url);
+    if (!blob?.size) throw new Error('Failed to fetch image (empty response)');
+    return blob;
   }
 
   async cacheResultBlob(url) {
