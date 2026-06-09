@@ -485,7 +485,7 @@ export default class UploadHandler {
       return;
     }
     if (abortSignal.aborted) return;
-    if (failedFiles?.size > 0) {
+    if (failedFiles?.size === 1) {
       await this.showSplashScreen();
       await this.actionBinder.dispatchErrorToast('upload_error_chunk_upload', 504, `One or more chunks failed to upload for the single file: ${assetData.id}, ${file.size} bytes, ${file.type}`, false, true, {
         code: 'upload_error_chunk_upload',
