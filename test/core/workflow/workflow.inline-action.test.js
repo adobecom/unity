@@ -1,6 +1,8 @@
-import { readFile } from '@web/test-runner-commands';
 import { expect } from '@esm-bundle/chai';
 import { parseInlineAuthoring, InlineActionState } from '../../../../unitylibs/core/widgets/inline-action/inline-action.js';
+import inlineActionBody from './mocks/inline-action-body.js';
+import inlineActionAuthored from './mocks/inline-action-authored.js';
+import inlineActionThreeColumns from './mocks/inline-action-three-columns.js';
 
 window.adobeIMS = {
   getAccessToken: () => ({ token: 'token', expire: { valueOf: () => Date.now() + 3600000 } }),
@@ -9,7 +11,7 @@ window.adobeIMS = {
 
 describe('Inline Action workflow', () => {
   it('parses authoring metadata', async () => {
-    document.body.innerHTML = await readFile({ path: './mocks/inline-action-body.html' });
+    document.body.innerHTML = inlineActionBody;
     const unityEl = document.querySelector('.unity.workflow-inline-action');
     const meta = parseInlineAuthoring(unityEl);
     expect(meta.uploadLabel).to.include('Upload your image');
@@ -28,7 +30,7 @@ describe('Inline Action workflow', () => {
   });
 
   it('parses production-style HTML (3 viewport blocks + 4 NBA cards)', async () => {
-    document.body.innerHTML = await readFile({ path: './mocks/inline-action-authored.html' });
+    document.body.innerHTML = inlineActionAuthored;
     const unityEl = document.querySelector('.unity.workflow-inline-action');
     const meta = parseInlineAuthoring(unityEl);
     expect(meta.uploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-n.svg');
@@ -80,14 +82,14 @@ describe('Inline Action workflow', () => {
   });
 
   it('uses desktop column when three viewport divs are section children', async () => {
-    document.body.innerHTML = await readFile({ path: './mocks/inline-action-three-columns.html' });
+    document.body.innerHTML = inlineActionThreeColumns;
     const meta = parseInlineAuthoring(document.querySelector('.unity'));
     expect(['Or tap here', 'Or drag and drop here']).to.include(meta.dragHint);
     expect(meta.fileLimit).to.match(/Limits (mobile|tablet|desktop)/);
   });
 
   it('initializes widget and action binder', async () => {
-    document.body.innerHTML = await readFile({ path: './mocks/inline-action-body.html' });
+    document.body.innerHTML = inlineActionBody;
     const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
     const unityEl = document.querySelector('.unity.workflow-inline-action');
     await init(unityEl);

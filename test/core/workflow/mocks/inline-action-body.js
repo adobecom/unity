@@ -1,4 +1,4 @@
-<div>
+export default `<div>
   <div class="hero-marquee center con-block has-bg">
     <div class="copy"></div>
   </div>
@@ -16,4 +16,4 @@
       <li><picture><img src="http://localhost:2000/test/assets/media_.jpeg" alt=""></picture> Remove<br><span class="icon icon-nba-remove"></span><br>Prompt</li>
     </ul></div></div>
   </div>
-</div>
+</div>`;

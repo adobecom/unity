@@ -1,7 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { importMapsPlugin } from '@web/dev-server-import-maps';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { filePlugin } from '@web/test-runner-commands/plugins';
 
 async function enableCORS(context, next) {
   await next();
@@ -46,7 +44,6 @@ export default {
   nodeResolve: true,
   middlewares: [enableCORS],
   plugins: [
-    filePlugin(),
     importMapsPlugin({
       inject: {
         importMap: {
