@@ -562,6 +562,18 @@ export default class ActionBinder {
         }
         if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
+      if (this.workflowCfg.enabledFeatures[0] === 'resume-builder') {
+        const { validateDocxFiles } = await import('../../../scripts/docx-validator.js');
+        const docxResult = await validateDocxFiles(passed, this.limits);
+        if (docxResult.failed?.length > 0) {
+          const errorInfo = getPageCountErrorCode(docxResult.failed, docxResult.results, this.MULTI_FILE, errorMessages);
+          if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
+            await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
+            if (errorInfo.returnEmpty) return [];
+          }
+        }
+        return docxResult.passed;
+      }
       return passed;
     } catch (error) {
       await this.dispatchErrorToast('error_generic', 500, `Exception during PDF validation: ${error.message}`, true);
