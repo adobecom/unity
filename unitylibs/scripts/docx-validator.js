@@ -82,30 +82,3 @@ export async function getDocxPageCount(file) {
     return null;
   }
 }
-
-export async function validateDocxFiles(files, limits) {
-  const hasDocx = files.some((f) => f.type === DOCX_MIME);
-  if (!hasDocx) return { passed: files, failed: [], results: [] };
-
-  const checks = files.map((file) => {
-    if (file.type !== DOCX_MIME) return Promise.resolve({ file, ok: true });
-    return (async () => {
-      const pageCount = await getDocxPageCount(file);
-      if (pageCount === null || pageCount === undefined) return { file, ok: true };
-      if (limits.pageLimit?.maxNumPages && pageCount > limits.pageLimit.maxNumPages) {
-        const error = new Error(`Document exceeds maximum page count: ${pageCount} > ${limits.pageLimit.maxNumPages}`);
-        error.errorType = 'OVER_MAX_PAGE_COUNT';
-        throw error;
-      }
-      return { file, ok: true };
-    })().catch((error) => {
-      if (error.errorType === 'OVER_MAX_PAGE_COUNT') return { file, ok: false, error, errorType: error.errorType };
-      return { file, ok: true };
-    });
-  });
-
-  const results = await Promise.all(checks);
-  const passed = results.filter((r) => r.ok).map((r) => r.file);
-  const failed = results.filter((r) => !r.ok);
-  return { passed, failed, results };
-}

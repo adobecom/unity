@@ -562,17 +562,15 @@ export default class ActionBinder {
         }
         if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
-      if (this.workflowCfg.enabledFeatures[0] === 'resume-builder') {
-        const { validateDocxFiles } = await import('../../../scripts/docx-validator.js');
-        const docxResult = await validateDocxFiles(passed, this.limits);
-        if (docxResult.failed?.length > 0) {
-          const errorInfo = getPageCountErrorCode(docxResult.failed, docxResult.results, this.MULTI_FILE, errorMessages);
-          if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
-            await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
-            if (errorInfo.returnEmpty) return [];
-          }
+      if (this.workflowCfg.enabledFeatures[0] === 'resume-builder' && passed.length > 0) {
+        const { getDocxPageCount } = await import('../../../scripts/docx-validator.js');
+        const file = passed[0];
+        const pageCount = await getDocxPageCount(file);
+        if (pageCount !== null && this.limits.pageLimit?.maxNumPages && pageCount > this.limits.pageLimit.maxNumPages) {
+          const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
+          await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
+          return [];
         }
-        return docxResult.passed;
       }
       return passed;
     } catch (error) {
