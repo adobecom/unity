@@ -794,7 +794,6 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
-        case el.nodeName === 'BODY':
           el.addEventListener('dragover', (e) => e.preventDefault());
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
@@ -802,6 +801,25 @@ export default class ActionBinder {
             await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
           });
           break;
+        case el.nodeName === 'BODY': {
+          const onDragOver = (e) => e.preventDefault();
+          const onDrop = async (e) => {
+            e.preventDefault();
+            const { files, totalFileSize } = this.extractFiles(e);
+            await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
+          };
+          const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+              el.addEventListener('dragover', onDragOver);
+              el.addEventListener('drop', onDrop);
+            } else {
+              el.removeEventListener('dragover', onDragOver);
+              el.removeEventListener('drop', onDrop);
+            }
+          });
+          observer.observe(b.querySelector(this.workflowCfg.targetCfg.selector));
+          break;
+        }
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
