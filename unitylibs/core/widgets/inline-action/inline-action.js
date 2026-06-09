@@ -298,7 +298,9 @@ export default class InlineActionWidget {
   setProgress(pct) {
     const holder = this.widget?.querySelector('.ia-loading-visible .progress-holder');
     if (!holder || !this.progressScreen) return;
-    this.progressScreen.updateProgressBar(holder, Math.min(100, Math.max(0, Math.round(pct))));
+    const next = Math.min(100, Math.max(0, Math.round(pct)));
+    const current = parseInt(holder.querySelector('.spectrum-ProgressBar')?.getAttribute('value'), 10) || 0;
+    this.progressScreen.updateProgressBar(holder, Math.max(current, next));
   }
 
   setResultUrl(url) {

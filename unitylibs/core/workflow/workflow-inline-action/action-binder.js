@@ -18,6 +18,7 @@ import { InlineActionState } from '../../widgets/inline-action/inline-action.js'
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
 const UPLOAD_ERROR_TYPE = '.icon-error-request';
+const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
 
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
@@ -96,6 +97,7 @@ export default class ActionBinder {
     this.filesData = {};
     this.uploadAbortController = null;
     this.signedInFlowInProgress = false;
+    this.splashProgress = 0;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
     this.initActionListeners = this.initActionListeners.bind(this);
   }
@@ -221,7 +223,8 @@ export default class ActionBinder {
 
   setProgress(pct, useSplash = false) {
     if (useSplash && this.transitionScreen?.splashScreenEl) {
-      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, pct);
+      this.splashProgress = Math.max(this.splashProgress, pct);
+      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, this.splashProgress);
     } else {
       this.widgetRef?.setProgress?.(pct);
     }
@@ -292,7 +295,13 @@ export default class ActionBinder {
       const uploadHandler = new UploadHandler(this, this.serviceHandler);
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
         const totalChunks = Math.ceil(file.size / blocksize);
-        const chunkOptions = useInlineProgress ? { onChunkComplete: (i) => this.setProgress(Math.round(((i + 1) / totalChunks) * 80)) } : {};
+        let completedChunks = 0;
+        const chunkOptions = useInlineProgress ? {
+          onChunkComplete: () => {
+            completedChunks += 1;
+            this.setProgress(Math.round((completedChunks / totalChunks) * PROGRESS.UPLOAD_MAX));
+          },
+        } : {};
         const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal, chunkOptions);
         if (failedChunks?.size > 0) {
           if (signal.aborted) return false;
@@ -321,6 +330,7 @@ export default class ActionBinder {
         await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
         this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
       }
+      this.setProgress(PROGRESS.UPLOAD_MAX, !useInlineProgress);
       return true;
     } catch (e) {
       if (signal.aborted || e.name === 'AbortError') {
@@ -343,7 +353,6 @@ export default class ActionBinder {
   async removeBackground(useSplashProgress = false) {
     const { signal } = this.uploadAbortController || {};
     if (signal?.aborted) return null;
-    this.setProgress(95, useSplashProgress);
     const body = JSON.stringify({ surfaceId: 'Unity', assets: [{ id: this.assetId }] });
     try {
       const res = await this.serviceHandler.postCallToService(
@@ -353,7 +362,7 @@ export default class ActionBinder {
       );
       this.resultAssetId = res.assetId;
       this.resultUrl = res.outputUrl;
-      this.setProgress(useSplashProgress ? 95 : 100, useSplashProgress);
+      this.setProgress(PROGRESS.REMOVE_BG, useSplashProgress);
       return res;
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return null;
@@ -367,11 +376,7 @@ export default class ActionBinder {
     return el?.dataset?.nba;
   }
 
-  getConnectorWorkflow() {
-    return this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
-  }
-
-  async buildConnectorPayload(file, { defaultPrompt, verb, connectorAssetId } = {}) {
+  async buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
     return {
@@ -379,13 +384,13 @@ export default class ActionBinder {
       targetProduct: this.workflowCfg.productName,
       ...(query && { query }),
       payload: {
-        workflow: this.getConnectorWorkflow(),
+        workflow: this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
         action: 'asset-upload',
         verb: verb ?? this.operation,
         widgetType: 'nba',
         locale: getLocale(),
         additionalQueryParams: getCgenQueryParams(this.unityEl),
-        type: file?.type,
+        type: fileType,
       },
     };
   }
@@ -401,8 +406,13 @@ export default class ActionBinder {
       error.status = res?.status;
       throw error;
     }
-    if (openInSameTab) window.location.assign(res.url);
-    else window.open(res.url, '_blank');
+    if (openInSameTab) {
+      if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+      this.setProgress(PROGRESS.COMPLETE, true);
+      window.location.assign(res.url);
+    } else {
+      window.open(res.url, '_blank');
+    }
     return res;
   }
 
@@ -459,7 +469,12 @@ export default class ActionBinder {
     try {
       const ts = await this.ensureTransitionScreen();
       if (!ts.splashScreenEl) await ts.loadSplashFragment();
+      ts.LOADER_LIMIT = 0;
       await ts.showSplashScreen(true);
+      if (this.transitionScreen) this.transitionScreen.progressBarHandler = () => {};
+      this.splashProgress = 0;
+      ts.LOADER_LIMIT = PROGRESS.COMPLETE;
+      this.setProgress(0, true);
       const ok = await this.uploadAsset(file, false);
       if (!ok) {
         this.uploadAbortController = null;
@@ -472,11 +487,10 @@ export default class ActionBinder {
         await ts.showSplashScreen(false);
         return;
       }
-      ts.LOADER_LIMIT = 100;
-      if (ts.splashScreenEl) ts.updateProgressBar(ts.splashScreenEl, 100);
-      await this.callConnector(await this.buildConnectorPayload(file, {
+      await this.callConnector(await this.buildConnectorPayload({
         verb: 'aiPhotoEditor',
         connectorAssetId: this.resultAssetId,
+        fileType: this.filesData.type,
       }), { openInSameTab: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
@@ -501,6 +515,7 @@ export default class ActionBinder {
       await this.removeBackground();
       this.widgetRef?.setResultUrl(this.resultUrl);
       await loadImg(this.widgetRef.widget.querySelector('.ia-result-img'));
+      this.widgetRef?.setProgress(PROGRESS.COMPLETE);
       this.widgetRef?.setState(InlineActionState.COMPLETE);
       this.cacheResultBlob(this.resultUrl).catch(() => {});
     } catch (e) {
@@ -517,7 +532,7 @@ export default class ActionBinder {
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
-    this.filesData = { type: file.type, name: file.name };
+    this.filesData = { count: 1, size: file.size, type: file.type };
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { isGuest } = await isGuestUser();
     if (isGuest === false) await this.signedInFlow(file);
@@ -537,10 +552,11 @@ export default class ActionBinder {
         return;
       }
     }
-    await this.callConnector(await this.buildConnectorPayload(this.filesData, {
+    await this.callConnector(await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
       connectorAssetId: this.resultAssetId,
+      fileType: this.filesData.type,
     }));
   }
 
