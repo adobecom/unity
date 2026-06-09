@@ -19,7 +19,6 @@ const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
 const UPLOAD_ERROR_TYPE = '.icon-error-request';
 const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
-
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
 class ServiceHandler {
@@ -548,9 +547,11 @@ export default class ActionBinder {
         await this.triggerDownload(this.resultUrl);
         userCount = this.incrementUserCount();
       } catch (e) {
+        // vipulg: consider here that download failed
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
+      // vipulg: consider here that download succeeded
     }
     await this.callConnector(await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
