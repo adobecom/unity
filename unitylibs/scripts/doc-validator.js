@@ -58,12 +58,31 @@ export async function getDocPageCount(file) {
     const miniCutoff = view.getUint32(0x38, true);
     const miniFatStart = view.getUint32(0x3C, true);
 
-    // Build FAT from DIFAT entries in header (covers files up to ~28 MB without a DIFAT chain)
+    // Collect all FAT sector locations: first 109 from header DIFAT array,
+    // then follow the DIFAT chain for files with more than 109 FAT sectors.
+    const fatSectors = [];
+    for (let i = 0; i < 109; i++) {
+      const s = view.getUint32(0x4C + i * 4, true);
+      if (s >= ENDOFCHAIN) break;
+      fatSectors.push(s);
+    }
+    const difatStart = view.getUint32(0x44, true);
+    if (difatStart < ENDOFCHAIN) {
+      const slotsPerDifat = sectorSize / 4 - 1;
+      let difatSector = difatStart;
+      while (difatSector < ENDOFCHAIN) {
+        const base = (difatSector + 1) * sectorSize;
+        for (let j = 0; j < slotsPerDifat; j++) {
+          const s = view.getUint32(base + j * 4, true);
+          if (s >= ENDOFCHAIN) break;
+          fatSectors.push(s);
+        }
+        difatSector = view.getUint32(base + slotsPerDifat * 4, true);
+      }
+    }
     const fat = new Uint32Array(totalFatSectors * (sectorSize / 4));
     let fatIdx = 0;
-    for (let i = 0; i < Math.min(totalFatSectors, 109); i++) {
-      const fatSector = view.getUint32(0x4C + i * 4, true);
-      if (fatSector >= ENDOFCHAIN) break;
+    for (const fatSector of fatSectors) {
       const base = (fatSector + 1) * sectorSize;
       for (let j = 0; j < sectorSize / 4; j++) {
         fat[fatIdx++] = view.getUint32(base + j * 4, true);
