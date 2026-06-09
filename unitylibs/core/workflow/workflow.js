@@ -334,6 +334,7 @@ class WfInitiator {
 
 export default async function init(el, project = 'unity', unityLibs = '/unitylibs', unityVersion = 'v2', langRegion = 'us', langCode = 'en') {
   const { imsClientId } = getConfig();
+  console.log('dummy comment added');
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
   await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
