@@ -1,6 +1,6 @@
 import { readFile } from '@web/test-runner-commands';
 import { expect } from '@esm-bundle/chai';
-import { parseInlineAuthoring } from '../../../../unitylibs/core/widgets/inline-action/inline-action.js';
+import { parseInlineAuthoring, InlineActionState } from '../../../../unitylibs/core/widgets/inline-action/inline-action.js';
 
 window.adobeIMS = {
   getAccessToken: () => ({ token: 'token', expire: { valueOf: () => Date.now() + 3600000 } }),
@@ -104,6 +104,6 @@ describe('Inline Action workflow', () => {
     expect(document.querySelector('.ia-dropzone .progress-holder .spectrum-ProgressBar')).to.exist;
     expect(document.querySelectorAll('.ia-nba-card')).to.have.length(2);
     expect(document.querySelector('.ia-edit-in-firefly')).to.exist;
-    expect(document.querySelector('.ia-widget').dataset.state).to.equal('initial');
+    expect(document.querySelector('.ia-widget').dataset.state).to.equal(InlineActionState.INITIAL);
   });
 });

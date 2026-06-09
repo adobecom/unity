@@ -13,10 +13,13 @@ import {
   isGuestUser,
   loadImg,
 } from '../../../scripts/utils.js';
-import { createChunkUploadTasks } from '../../../utils/chunkingUtils.js';
+import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
+const UPLOAD_ERROR_TYPE = '.icon-error-request';
+
+const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
 class ServiceHandler {
   constructor(canvasArea, unityEl, getAdditionalHeaders) {
@@ -56,7 +59,7 @@ class ServiceHandler {
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
-      const mount = element.querySelector('.ia-widget') || element;
+      const mount = getMount(element);
       mount.style.pointerEvents = 'none';
       const errorToast = mount.querySelector('.alert-holder');
       if (!errorToast) return;
@@ -94,7 +97,6 @@ export default class ActionBinder {
     this.uploadAbortController = null;
     this.signedInFlowInProgress = false;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
-    this.verb = this.getVerbFromDom();
     this.initActionListeners = this.initActionListeners.bind(this);
   }
 
@@ -113,24 +115,17 @@ export default class ActionBinder {
     return unityConfig;
   }
 
-  getVerbFromDom() {
-    const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]')
-      || this.unityEl?.querySelector('[class*="icon-verb-"]');
-    if (!verbEl) return undefined;
-    const opClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-operation-'));
-    if (opClass) return opClass.slice('icon-operation-'.length);
-    const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-verb-'));
-    return verbClass?.slice('icon-verb-'.length);
-  }
-
   getAdditionalHeaders() {
     const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
-    const actionVerb = this.verb ?? this.operation;
-    const xUnityAction = actionVerb ? `${baseAction}-${actionVerb}` : baseAction;
+    const xUnityAction = this.operation ? `${baseAction}-${this.operation}` : baseAction;
     return {
       'x-unity-product': this.workflowCfg?.productName,
       'x-unity-action': xUnityAction,
     };
+  }
+
+  uploadErrorOpts(errorCode) {
+    return { errorToastEl: this.errorToastEl, errorType: UPLOAD_ERROR_TYPE, ...(errorCode && { errorCode }) };
   }
 
   getUserCount() {
@@ -154,18 +149,27 @@ export default class ActionBinder {
   }
 
   extractFiles(e) {
-    const files = [];
     if (e.dataTransfer?.items) {
-      [...e.dataTransfer.items].forEach((item) => { if (item.kind === 'file') files.push(item.getAsFile()); });
-    } else if (e.target?.files) {
-      [...e.target.files].forEach((file) => files.push(file));
+      return [...e.dataTransfer.items].filter((item) => item.kind === 'file').map((item) => item.getAsFile());
     }
-    return files;
+    if (e.target?.files) return [...e.target.files];
+    return [];
   }
 
   preventDefault(e) {
     e.preventDefault();
     e.stopPropagation();
+  }
+
+  dismissErrorToast() {
+    this.canvasArea.forEach((element) => {
+      const mount = getMount(element);
+      const errHolder = mount.querySelector('.alert-holder');
+      if (errHolder?.classList.contains('show')) {
+        mount.style.pointerEvents = 'auto';
+        errHolder.classList.remove('show');
+      }
+    });
   }
 
   handleClientUploadError(errorTypeSelector, errorCode) {
@@ -190,13 +194,24 @@ export default class ActionBinder {
     return file;
   }
 
-  async uploadImgToUnity(storageUrl, blobData, fileType, signal) {
-    const response = await fetch(storageUrl, {
+  async uploadImgToUnity(storageUrl, _id, blobData, fileType, signal) {
+    const uploadOptions = {
       method: 'PUT',
       headers: { 'Content-Type': fileType },
       body: blobData,
       ...(signal && { signal }),
-    });
+    };
+    let response;
+    try {
+      response = await fetch(storageUrl, uploadOptions);
+    } catch (e) {
+      if (e instanceof TypeError) {
+        const error = new Error(`Network error. URL: ${storageUrl}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
+      }
+      throw e;
+    }
     if (response.status !== 200) {
       const error = new Error('Failed to upload image to Unity');
       error.status = response.status;
@@ -204,27 +219,36 @@ export default class ActionBinder {
     }
   }
 
-  onUploadProgress(ratio) {
-    this.widgetRef?.setProgress?.(Math.round(ratio * 80));
+  setProgress(pct, useSplash = false) {
+    if (useSplash && this.transitionScreen?.splashScreenEl) {
+      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, pct);
+    } else {
+      this.widgetRef?.setProgress?.(pct);
+    }
+  }
+
+  async ensureTransitionScreen({ delayedSplash = false } = {}) {
+    this.workflowCfg.theme = this.unityEl.classList.contains('dark') ? 'dark' : null;
+    if (!this.transitionScreen) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(
+        null,
+        this.initActionListeners,
+        this.LOADER_LIMIT,
+        this.workflowCfg,
+        false,
+      );
+      if (delayedSplash) await this.transitionScreen.delayedSplashLoader();
+    }
+    return this.transitionScreen;
   }
 
   async loadTransitionScreen() {
-    if (!this.transitionScreen) {
-      try {
-        this.workflowCfg.theme = this.unityEl.classList.contains('dark') ? 'dark' : null;
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(
-          null,
-          this.initActionListeners,
-          this.LOADER_LIMIT,
-          this.workflowCfg,
-          false,
-        );
-        await this.transitionScreen.delayedSplashLoader();
-      } catch (error) {
-        window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
-        throw error;
-      }
+    try {
+      await this.ensureTransitionScreen({ delayedSplash: true });
+    } catch (error) {
+      window.lana?.log(`Message: Error loading transition screen, Error: ${error}`, this.lanaOptions);
+      throw error;
     }
   }
 
@@ -252,90 +276,84 @@ export default class ActionBinder {
       size: file.size,
       format: file.type,
     };
-    if (!this.uploadAbortController) {
-      this.uploadAbortController = new AbortController();
-    }
+    this.uploadAbortController = new AbortController();
     const { signal } = this.uploadAbortController;
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.apiConfig.endPoint.assetUpload,
-        { body: JSON.stringify(assetDetails), ...(signal && { signal }) },
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
+        { body: JSON.stringify(assetDetails) },
+        this.uploadErrorOpts(),
       );
+      if (signal.aborted) return false;
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
+      this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
       const uploadHandler = new UploadHandler(this, this.serviceHandler);
-      if (blocksize && uploadUrls?.length) {
+      if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
         const totalChunks = Math.ceil(file.size / blocksize);
-        const { failedChunks } = await createChunkUploadTasks(
-          uploadUrls,
-          file,
-          blocksize,
-          uploadHandler.uploadFileToUnity.bind(uploadHandler),
-          signal,
-          {
-            assetId: id,
-            fileType: file.type,
-            onChunkComplete: useInlineProgress
-              ? (i) => this.onUploadProgress((i + 1) / totalChunks)
-              : undefined,
-          },
-        );
+        const chunkOptions = useInlineProgress ? { onChunkComplete: (i) => this.setProgress(Math.round(((i + 1) / totalChunks) * 80)) } : {};
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal, chunkOptions);
         if (failedChunks?.size > 0) {
           if (signal.aborted) return false;
-          throw new Error('Chunk upload failed');
+          const error = new Error(`One or more chunks failed for asset: ${id}`);
+          error.status = 504;
+          this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', {
+            assetId: this.assetId,
+            failedChunks: failedChunks.size,
+            maxRetryCount: Math.max(...Array.from(attemptMap.values())),
+          });
+          throw error;
         }
-        await uploadHandler.scanImgForSafetyWithRetry(id, signal);
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
+        const { createChunkAnalyticsData } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
+        this.logAnalyticsinSplunk(
+          'Chunked Upload Completed|UnityWidget',
+          createChunkAnalyticsData('Chunked Upload Completed|UnityWidget', {
+            assetId: this.assetId,
+            chunkCount: totalChunks,
+            totalFileSize: file.size,
+            fileType: file.type,
+          }),
+        );
       } else {
-        await this.uploadImgToUnity(href, file, file.type, signal);
-        await this.scanImgForSafety(id, signal);
+        await this.uploadImgToUnity(href, id, file, file.type, signal);
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
+        this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: this.assetId });
       }
       return true;
     } catch (e) {
-      if (signal.aborted || e.name === 'AbortError') return false;
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
+      if (signal.aborted || e.name === 'AbortError') {
+        window.lana?.log(`Message: Upload aborted, Error: ${e.message}`, this.lanaOptions);
+        return false;
+      }
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+      this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
+        errorData: {
+          code: 'error-request',
+          subCode: `uploadAsset ${e.status}`,
+          desc: e.message || undefined,
+        },
+        assetId: this.assetId,
+      });
       return false;
-    }
-  }
-
-  async scanImgForSafety(assetId, signal) {
-    const res = await this.serviceHandler.postCallToService(
-      this.apiConfig.endPoint.acmpCheck,
-      { body: JSON.stringify({ assetId, targetProduct: this.workflowCfg.productName }), ...(signal && { signal }) },
-      {},
-      false,
-    );
-    if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
-      if (signal?.aborted) return;
-      await new Promise((r) => { setTimeout(r, 1000); });
-      if (signal?.aborted) return;
-      return this.scanImgForSafety(assetId, signal);
     }
   }
 
   async removeBackground(useSplashProgress = false) {
     const { signal } = this.uploadAbortController || {};
     if (signal?.aborted) return null;
-    if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
-      this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
-    } else {
-      this.widgetRef?.setProgress?.(95);
-    }
+    this.setProgress(95, useSplashProgress);
     const body = JSON.stringify({ surfaceId: 'Unity', assets: [{ id: this.assetId }] });
     try {
       const res = await this.serviceHandler.postCallToService(
         this.apiConfig.endPoint.removeBackground,
         { body, ...(signal && { signal }) },
-        { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
+        this.uploadErrorOpts(),
       );
       this.resultAssetId = res.assetId;
       this.resultUrl = res.outputUrl;
-      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
-        this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 95);
-      } else {
-        this.widgetRef?.setProgress?.(100);
-      }
+      this.setProgress(useSplashProgress ? 95 : 100, useSplashProgress);
       return res;
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return null;
@@ -346,8 +364,7 @@ export default class ActionBinder {
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
     if (isDownload) return downloadsLocally ? 'aiPhotoEditor' : 'download';
     if (el?.classList?.contains('ia-edit-in-firefly')) return 'aiPhotoEditor';
-    if (el?.dataset?.nba) return el.dataset.nba;
-    return undefined;
+    return el?.dataset?.nba;
   }
 
   getConnectorWorkflow() {
@@ -356,7 +373,6 @@ export default class ActionBinder {
 
   async buildConnectorPayload(file, { defaultPrompt, verb, connectorAssetId } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
-    const connectorVerb = verb ?? this.operation;
     const query = defaultPrompt?.trim();
     return {
       assetId: connectorAssetId,
@@ -365,7 +381,7 @@ export default class ActionBinder {
       payload: {
         workflow: this.getConnectorWorkflow(),
         action: 'asset-upload',
-        verb: connectorVerb,
+        verb: verb ?? this.operation,
         widgetType: 'nba',
         locale: getLocale(),
         additionalQueryParams: getCgenQueryParams(this.unityEl),
@@ -378,29 +394,20 @@ export default class ActionBinder {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
-      { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
+      this.uploadErrorOpts(),
     );
     if (!res?.url) {
       const error = new Error('Error connecting to App');
       error.status = res?.status;
       throw error;
     }
-    if (openInSameTab) {
-      window.location.assign(res.url);
-      return res;
-    }
-    window.open(res.url, '_blank');
+    if (openInSameTab) window.location.assign(res.url);
+    else window.open(res.url, '_blank');
     return res;
   }
 
   static downloadFilename(mimeType = 'image/png') {
-    const extMap = {
-      'image/png': 'png',
-      'image/jpeg': 'jpg',
-      'image/jpg': 'jpg',
-      'image/webp': 'webp',
-    };
-    const ext = extMap[mimeType] || 'png';
+    const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/webp': 'webp' }[mimeType] || 'png';
     return `Firefly_RemoveBackground.${ext}`;
   }
 
@@ -419,8 +426,7 @@ export default class ActionBinder {
   }
 
   async resolveDownloadBlob(url) {
-    if (this.resultBlob) return this.resultBlob;
-    return this.getImageBlobData(url);
+    return this.resultBlob || this.getImageBlobData(url);
   }
 
   async cacheResultBlob(url) {
@@ -432,12 +438,8 @@ export default class ActionBinder {
   }
 
   downloadBlob(blob, mimeType = 'image/png') {
-    const filename = ActionBinder.downloadFilename(mimeType);
     const objUrl = URL.createObjectURL(blob);
-    const a = createTag('a', {
-      href: objUrl,
-      download: filename,
-    });
+    const a = createTag('a', { href: objUrl, download: ActionBinder.downloadFilename(mimeType) });
     document.body.append(a);
     a.click();
     setTimeout(() => {
@@ -448,46 +450,30 @@ export default class ActionBinder {
 
   async triggerDownload(url) {
     const blob = await this.resolveDownloadBlob(url);
-    const mimeType = blob.type || 'image/png';
-    this.downloadBlob(blob, mimeType);
+    this.downloadBlob(blob, blob.type || 'image/png');
   }
 
   async signedInFlow(file) {
     if (this.signedInFlowInProgress) return;
     this.signedInFlowInProgress = true;
     try {
-      this.workflowCfg.theme = this.unityEl.classList.contains('dark') ? 'dark' : null;
-      if (!this.transitionScreen) {
-        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-        this.transitionScreen = new TransitionScreen(
-          null,
-          this.initActionListeners,
-          this.LOADER_LIMIT,
-          this.workflowCfg,
-          false,
-        );
-      }
-      if (!this.transitionScreen.splashScreenEl) {
-        await this.transitionScreen.loadSplashFragment();
-      }
-      await this.transitionScreen.showSplashScreen(true);
-      this.uploadAbortController = new AbortController();
+      const ts = await this.ensureTransitionScreen();
+      if (!ts.splashScreenEl) await ts.loadSplashFragment();
+      await ts.showSplashScreen(true);
       const ok = await this.uploadAsset(file, false);
       if (!ok) {
         this.uploadAbortController = null;
-        await this.transitionScreen.showSplashScreen(false);
+        await ts.showSplashScreen(false);
         return;
       }
       const removeBgRes = await this.removeBackground(true);
       if (!removeBgRes) {
         this.uploadAbortController = null;
-        await this.transitionScreen.showSplashScreen(false);
+        await ts.showSplashScreen(false);
         return;
       }
-      this.transitionScreen.LOADER_LIMIT = 100;
-      if (this.transitionScreen.splashScreenEl) {
-        this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
-      }
+      ts.LOADER_LIMIT = 100;
+      if (ts.splashScreenEl) ts.updateProgressBar(ts.splashScreenEl, 100);
       await this.callConnector(await this.buildConnectorPayload(file, {
         verb: 'aiPhotoEditor',
         connectorAssetId: this.resultAssetId,
@@ -495,11 +481,7 @@ export default class ActionBinder {
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
       if (e.name !== 'AbortError') {
-        this.serviceHandler.showErrorToast(
-          { errorToastEl: this.errorToastEl, errorType: '.icon-error-request' },
-          e,
-          this.lanaOptions,
-        );
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
     } finally {
       this.uploadAbortController = null;
@@ -508,22 +490,22 @@ export default class ActionBinder {
   }
 
   async anonymousFlow(file) {
-    this.widgetRef?.setState('loading');
+    this.widgetRef?.setState(InlineActionState.LOADING);
     this.widgetRef?.setProgress(0);
     try {
       const ok = await this.uploadAsset(file, true);
       if (!ok) {
-        this.widgetRef?.setState('initial');
+        this.widgetRef?.setState(InlineActionState.INITIAL);
         return;
       }
       await this.removeBackground();
       this.widgetRef?.setResultUrl(this.resultUrl);
       await loadImg(this.widgetRef.widget.querySelector('.ia-result-img'));
-      this.widgetRef?.setState('complete');
+      this.widgetRef?.setState(InlineActionState.COMPLETE);
       this.cacheResultBlob(this.resultUrl).catch(() => {});
     } catch (e) {
-      this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
-      this.widgetRef?.setState('initial');
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+      this.widgetRef?.setState(InlineActionState.INITIAL);
     }
   }
 
@@ -538,16 +520,12 @@ export default class ActionBinder {
     this.filesData = { type: file.type, name: file.name };
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { isGuest } = await isGuestUser();
-    if (isGuest === false) {
-      await this.signedInFlow(file);
-    } else {
-      await this.anonymousFlow(file);
-    }
+    if (isGuest === false) await this.signedInFlow(file);
+    else await this.anonymousFlow(file);
   }
 
   async handleConnector(el, isDownload = false) {
     let userCount = this.getUserCount();
-    const defaultPrompt = el?.dataset?.defaultPrompt;
     const downloadsLocally = isDownload && userCount < 100;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
     if (downloadsLocally) {
@@ -555,12 +533,12 @@ export default class ActionBinder {
         await this.triggerDownload(this.resultUrl);
         userCount = this.incrementUserCount();
       } catch (e) {
-        this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, e, this.lanaOptions);
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
     }
     await this.callConnector(await this.buildConnectorPayload(this.filesData, {
-      defaultPrompt,
+      defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
       connectorAssetId: this.resultAssetId,
     }));
@@ -573,7 +551,7 @@ export default class ActionBinder {
         fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
       ]);
       this.canvasArea.forEach((element) => {
-        const mount = element.querySelector('.ia-widget') || element;
+        const mount = getMount(element);
         if (mount.querySelector('.alert-holder')) return;
         const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
         const alertIcon = createTag('div', { class: 'alert-icon' });
@@ -584,8 +562,7 @@ export default class ActionBinder {
         alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
         const alertContent = createTag('div', { class: 'alert-content' });
         alertContent.append(alertIcon, alertClose);
-        const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
-        const holder = createTag('div', { class: 'alert-holder' }, alertToast);
+        const holder = createTag('div', { class: 'alert-holder' }, createTag('div', { class: 'alert-toast' }, alertContent));
         alertClose.addEventListener('click', (e) => {
           this.preventDefault(e);
           holder.classList.remove('show');
@@ -593,10 +570,8 @@ export default class ActionBinder {
         });
         mount.append(holder);
       });
-      const root = this.canvasArea[0];
-      const mount = root?.querySelector('.ia-widget') || root;
-      return mount?.querySelector('.alert-holder');
-    } catch (e) {
+      return getMount(this.canvasArea[0])?.querySelector('.alert-holder');
+    } catch {
       return null;
     }
   }
@@ -627,26 +602,13 @@ export default class ActionBinder {
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     this.serviceHandler = new ServiceHandler(this.canvasArea, this.unityEl, this.getAdditionalHeaders.bind(this));
     await this.initAnalytics();
-    if (this.workflowCfg.targetCfg.showSplashScreen) {
-      this.loadTransitionScreen();
-    }
+    if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
     Object.keys(actMap).forEach((key) => {
       b.querySelectorAll(key).forEach((el) => {
         const action = actMap[key];
-        if (el.classList.contains('drop-zone') || el.classList.contains('ia-dropzone')) {
-          return;
-        }
+        if (el.classList.contains('drop-zone') || el.classList.contains('ia-dropzone')) return;
         if (el.type === 'file') {
-          el.addEventListener('click', () => {
-            this.canvasArea.forEach((element) => {
-              const mount = element.querySelector('.ia-widget') || element;
-              const errHolder = mount.querySelector('.alert-holder');
-              if (errHolder?.classList.contains('show')) {
-                mount.style.pointerEvents = 'auto';
-                errHolder.classList.remove('show');
-              }
-            });
-          });
+          el.addEventListener('click', () => this.dismissErrorToast());
           el.addEventListener('change', async (e) => {
             await this.executeActionMaps('upload', this.extractFiles(e));
             e.target.value = '';

@@ -2,6 +2,12 @@ import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
 import TransitionScreen from '../../../scripts/transition-screen.js';
 
 const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
+
+export const InlineActionState = {
+  INITIAL: 'initial',
+  LOADING: 'loading',
+  COMPLETE: 'complete',
+};
 const DEFAULT_DROPZONE_ICON_IMAGE = '/cc-shared/assets/svg/s2-icon-default-image-20-n.svg';
 const DEFAULT_UPLOAD_ICON = '/cc-shared/assets/svg/s2-icon-upload-20-n.svg';
 
@@ -167,7 +173,7 @@ function buildUploadActionButton(uploadIconHref, uploadLabel) {
 
 function setupInteractiveAreaDragAndDrop(dragTargetEl, widgetEl, dropZone, fileInput) {
   let activeDropZone;
-  const isInitial = () => widgetEl.dataset.state === 'initial';
+  const isInitial = () => widgetEl.dataset.state === InlineActionState.INITIAL;
   const setActive = () => {
     if (!isInitial() || activeDropZone === dropZone) return;
     activeDropZone?.classList.remove('active');
@@ -280,7 +286,7 @@ export default class InlineActionWidget {
     this.spriteContent = spriteContent;
     this.widget = null;
     this.meta = null;
-    this.state = 'initial';
+    this.state = InlineActionState.INITIAL;
     this.progressScreen = null;
   }
 
@@ -312,7 +318,7 @@ export default class InlineActionWidget {
 
   async initWidget() {
     this.meta = parseInlineAuthoring(this.el);
-    const root = createTag('div', { class: 'ia-widget', 'data-state': 'initial' });
+    const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const left = createTag('div', { class: 'ia-panel ia-panel-left' });
     const preview = createTag('div', { class: 'ia-preview' }, createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }));
     const checker = createTag('div', { class: 'ia-checker' }, createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
