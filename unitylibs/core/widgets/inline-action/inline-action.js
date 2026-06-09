@@ -355,7 +355,7 @@ export default class InlineActionWidget {
       grid.append(cardEl);
     });
     const editBtn = createTag('button', { type: 'button', class: 'ia-edit-in-firefly', 'aria-label': this.meta.editLabel });
-    appendIconContent(editBtn, { href: this.meta.editIconHref, spriteId: 'ia-external-icon', picture: true });
+    if (this.meta.editIconHref) appendIconContent(editBtn, { href: this.meta.editIconHref, picture: true });
     editBtn.append(createTag('span', {}, this.meta.editLabel));
     const complete = createTag('div', { class: 'ia-complete' });
     complete.append(createTag('p', { class: 'ia-nba-heading' }, this.meta.nbaHeading), grid, editBtn);

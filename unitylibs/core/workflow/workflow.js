@@ -145,17 +145,9 @@ class WfInitiator {
 
   async getTarget(rawTargetConfig) {
     const targetConfig = await rawTargetConfig.json();
-    const defaults = targetConfig._defaults || {};
-    if (defaults.mountOnUnityEl) {
-      const iArea = createTag('div', { class: 'interactive-area' });
-      if (this.el.classList.contains('light')) iArea.classList.add('light');
-      else iArea.classList.add('dark');
-      this.el.prepend(iArea);
-      this.el.classList.add('unity-enabled');
-      return [this.el, iArea, { ...defaults }];
-    }
     const prevElem = this.el.previousElementSibling;
     const supportedBlocks = Object.keys(targetConfig).filter((key) => !key.startsWith('_'));
+    const defaults = targetConfig._defaults || {};
 
     let targetCfg = null;
     for (let k = 0; k < supportedBlocks.length; k += 1) {
@@ -320,9 +312,6 @@ class WfInitiator {
       if (supportedFeatures.has(fn)) {
         if (!this.workflowCfg.enabledFeatures.includes(fn)) this.workflowCfg.enabledFeatures.push(fn);
         this.workflowCfg.featureCfg.push(cf.closest('li'));
-      } else if (cfName.startsWith('icon-nba-') && this.workflowCfg.name === 'workflow-inline-action') {
-        const nbaFn = cfName.replace('icon-nba-', '');
-        if (!this.workflowCfg.enabledFeatures.includes(nbaFn)) this.workflowCfg.enabledFeatures.push(nbaFn);
       } else if (fn.includes('error')) {
         this.workflowCfg.errors[fn] = cf.closest('li').innerText;
       } else if (supportedTexts && supportedTexts.has(fn)) {
