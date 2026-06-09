@@ -85,7 +85,7 @@
       "splashScreenParent": "body"
     },
     "actionMap": {
-      "main": "upload",
+      "body": "upload",
       "#file-upload": "upload"
     }
   },
