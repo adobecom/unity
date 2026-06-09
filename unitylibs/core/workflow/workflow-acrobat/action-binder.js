@@ -801,7 +801,7 @@ export default class ActionBinder {
             await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
           });
           break;
-        case el.nodeName === 'BODY': {
+        case el.nodeName === 'MAIN': {
           const onDragOver = (e) => e.preventDefault();
           const onDrop = async (e) => {
             e.preventDefault();
