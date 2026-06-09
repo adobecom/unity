@@ -75,6 +75,20 @@
       "#file-upload": "upload"
     }
   },
+  "express": {
+    "selector": ".foreground",
+    "source": ".foreground .express-container",
+    "target": ".foreground .express-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      "body": "upload",
+      "#file-upload": "upload"
+    }
+  },
   "verb-marquee": {
     "selector": ".foreground",
     "source": ".foreground .verb-marquee-container",

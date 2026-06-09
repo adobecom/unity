@@ -784,7 +784,7 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
-      const el = b.querySelector(key);
+      const el = b.querySelector(key) ?? document.querySelector(key);
       if (!el) return;
       switch (true) {
         case el.nodeName === 'A':
@@ -794,6 +794,8 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
+        case el.nodeName === 'BODY':
+          el.addEventListener('dragover', (e) => e.preventDefault());
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
