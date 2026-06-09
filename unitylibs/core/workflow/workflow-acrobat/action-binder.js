@@ -563,9 +563,15 @@ export default class ActionBinder {
         if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
       if (this.workflowCfg.enabledFeatures[0] === 'resume-builder' && passed.length > 0) {
-        const { getDocxPageCount } = await import('../../../scripts/docx-validator.js');
         const file = passed[0];
-        const pageCount = await getDocxPageCount(file);
+        let pageCount = null;
+        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          const { getDocxPageCount } = await import('../../../scripts/docx-validator.js');
+          pageCount = await getDocxPageCount(file);
+        } else if (file.type === 'application/msword') {
+          const { getDocPageCount } = await import('../../../scripts/doc-validator.js');
+          pageCount = await getDocPageCount(file);
+        }
         if (pageCount !== null && this.limits.pageLimit?.maxNumPages && pageCount > this.limits.pageLimit.maxNumPages) {
           const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
           await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });

@@ -43,24 +43,14 @@ async function extractZipEntry(buffer, targetFilename) {
       if (compressionMethod === 8) {
         if (typeof DecompressionStream === 'undefined') return null;
         const ds = new DecompressionStream('deflate-raw');
-        const writer = ds.writable.getWriter();
-        writer.write(compressedData);
-        writer.close();
-        const chunks = [];
-        const reader = ds.readable.getReader();
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          // eslint-disable-next-line no-await-in-loop
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-        }
-        let total = 0;
-        for (const chunk of chunks) total += chunk.length;
-        const out = new Uint8Array(total);
-        let pos = 0;
-        for (const chunk of chunks) { out.set(chunk, pos); pos += chunk.length; }
-        return new TextDecoder().decode(out);
+        const inputStream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(compressedData);
+            controller.close();
+          },
+        });
+        const decompressed = await new Response(inputStream.pipeThrough(ds)).arrayBuffer();
+        return new TextDecoder().decode(decompressed);
       }
       return null;
     }
