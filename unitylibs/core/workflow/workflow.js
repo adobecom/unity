@@ -265,6 +265,7 @@ class WfInitiator {
           'quiz-maker',
           'flashcard-maker',
           'mindmap-maker',
+          'resume-builder',
         ]),
       },
       'workflow-ai': {
