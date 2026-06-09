@@ -38,7 +38,7 @@ describe('Inline Action workflow', () => {
     expect(meta.downloadLabel).to.equal('Download');
     expect(meta.downloadIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
     expect(meta.editIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
-    expect(meta.editLabel).to.equal('Edit in Firefly1');
+    expect(meta.editLabel).to.equal('Edit in Firefly');
     expect(meta.nbaCards).to.have.length(4);
     expect(meta.nbaCards[0].nba).to.equal('upscale');
     expect(meta.nbaCards[2].nba).to.equal('generate-new-bg');
