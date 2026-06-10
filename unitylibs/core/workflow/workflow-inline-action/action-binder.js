@@ -14,6 +14,7 @@ import {
   loadImg,
 } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
+import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -22,10 +23,11 @@ const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
 class ServiceHandler {
-  constructor(canvasArea, unityEl, getAdditionalHeaders) {
+  constructor(canvasArea, unityEl, getAdditionalHeaders, onUploadError) {
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
     this.getAdditionalHeaders = getAdditionalHeaders;
+    this.onUploadError = onUploadError;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
@@ -55,7 +57,7 @@ class ServiceHandler {
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
-    sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}`));
+    this.onUploadError?.(errorCallbackOptions.errorCode, errorType);
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -99,6 +101,20 @@ export default class ActionBinder {
     this.splashProgress = 0;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
     this.initActionListeners = this.initActionListeners.bind(this);
+    this.onUploadError = this.onUploadError.bind(this);
+  }
+
+  trackEvent(eventName, data = {}) {
+    sendAnalyticsEvent(new CustomEvent(eventName));
+    this.logAnalyticsinSplunk(eventName, data);
+  }
+
+  onUploadError(errorCode, errorType = 'server') {
+    this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_ERROR, {
+      errorData: { code: errorCode },
+      fileMetaData: this.filesData,
+      action: errorType,
+    });
   }
 
   static resolveLimits(workflowCfg) {
@@ -533,7 +549,7 @@ export default class ActionBinder {
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
-    this.filesData = { count: 1, size: file.size, type: file.type };
+    this.filesData = { count: 1, size: file.size, type: file.type, name: file.name };
     sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
     const { isGuest } = await isGuestUser();
     if (isGuest === false) await this.signedInFlow(file);
@@ -602,12 +618,20 @@ export default class ActionBinder {
         await this.uploadFile(files);
         break;
       case 'connector':
+        if (el?.classList?.contains('ia-edit-in-firefly')) {
+          this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, { assetId: this.resultAssetId });
+        } else if (el?.classList?.contains('ia-nba-card')) {
+          const label = el.querySelector('.ia-nba-label')?.textContent?.trim() || el.dataset.nba;
+          this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), { assetId: this.resultAssetId, action: el.dataset.nba });
+        }
         await this.handleConnector(el);
         break;
       case 'download':
+        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, { assetId: this.resultAssetId });
         await this.handleConnector(el, true);
         break;
       case 'reupload':
+        this.trackEvent(INLINE_ACTION_EVENTS.TRY_AGAIN, { assetId: this.resultAssetId, fileMetaData: this.filesData });
         this.widgetRef?.openFilePicker();
         break;
       case 'interrupt':
@@ -618,10 +642,37 @@ export default class ActionBinder {
     }
   }
 
+  bindUploadAnalytics(b) {
+    b.querySelectorAll('.upload-action-container .action-button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.UPLOAD_ASSET_CTA));
+        this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.UPLOAD_ASSET_CTA, { fileMetaData: this.filesData });
+      });
+    });
+    b.querySelectorAll('.ia-dropzone, .drop-zone.ia-dropzone').forEach((dropZone) => {
+      dropZone.addEventListener('click', () => {
+        sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP));
+        this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer?.files?.length) {
+          sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP));
+          this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
+        }
+      });
+    });
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
-    this.serviceHandler = new ServiceHandler(this.canvasArea, this.unityEl, this.getAdditionalHeaders.bind(this));
+    this.serviceHandler = new ServiceHandler(
+      this.canvasArea,
+      this.unityEl,
+      this.getAdditionalHeaders.bind(this),
+      this.onUploadError,
+    );
     await this.initAnalytics();
     if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
+    this.bindUploadAnalytics(b);
     Object.keys(actMap).forEach((key) => {
       b.querySelectorAll(key).forEach((el) => {
         const action = actMap[key];
