@@ -6,7 +6,7 @@
     "productTag-firefly": "FF",
     "limits-firefly": {
       "allowedFileTypes": ["image/jpeg", "image/jpg", "image/png", "image/webp"],
-      "maxFileSize": 100000000,
+      "maxFileSize": 40000000,
       "maxNumFiles": 1
     },
     "splashScreenConfig": {

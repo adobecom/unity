@@ -231,6 +231,16 @@ function wireDropZoneUpload(dropZone, uploadButton, fileInput) {
   });
 }
 
+function buildGhostOverlay() {
+  const ghost = createTag('div', { class: 'ia-ghost' });
+  ghost.append(
+    createTag('div', { class: 'ia-ghost-gradient' }),
+    createTag('div', { class: 'ia-ghost-mask' }),
+    createTag('div', { class: 'ia-ghost-dots' }),
+  );
+  return ghost;
+}
+
 function buildDropZoneContainer(meta, progressHolder) {
   const dropZoneContainer = createTag('div', { class: 'drop-zone-container ia-dropzone-shell' });
   const dropZone = createTag('div', { class: 'drop-zone ia-dropzone' });
@@ -332,7 +342,7 @@ export default class InlineActionWidget {
     downloadBtn.append(createTag('span', {}, this.meta.downloadLabel));
     resultActions.append(reuploadBtn, downloadBtn);
     checker.append(resultActions);
-    left.append(preview, createTag('div', { class: 'ia-ghost' }), createTag('div', { class: 'ia-result' }, checker));
+    left.append(preview, buildGhostOverlay(), createTag('div', { class: 'ia-result' }, checker));
 
     const progressHolder = TransitionScreen.createProgressBar();
     const { dropZoneContainer, dropZone, fileInput } = buildDropZoneContainer(this.meta, progressHolder);
