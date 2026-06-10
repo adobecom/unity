@@ -154,12 +154,13 @@
   min-height: 0;
   border-radius: 10px;
   overflow: hidden;
+  background-image: linear-gradient(to bottom right, #5a423f, #4b475f);
 
   --firefly-gradient-overlay-dot-size: 1px;
   --firefly-gradient-overlay-gradient-opacity: 0.4;
   --firefly-gradient-overlay-dot-color: rgb(255 255 255 / 80%);
   --firefly-gradient-overlay-dot-spacing: var(--spectrum-spacing-300, 12px);
-  --firefly-gradient-overlay-gradient-colors: var(--spectrum-red-200, #ffddd6), var(--spectrum-magenta-200, #fae6fa), var(--spectrum-indigo-200, #e0e2ff);
+  --firefly-gradient-overlay-gradient-colors: #5a423f, #4b475f;
   --firefly-gradient-overlay-mask-color: rgb(255 255 255 / 80%);
   --firefly-gradient-overlay-gradient-duration: 3s;
 }
@@ -179,7 +180,7 @@
 
 .ia-ghost-gradient {
   z-index: 3;
-  background-image: linear-gradient(-45deg, var(--firefly-gradient-overlay-gradient-colors));
+  background-image: linear-gradient(to bottom right, var(--firefly-gradient-overlay-gradient-colors));
   background-size: 400% 400%;
 }
 
@@ -273,8 +274,8 @@
 }
 
 .ia-reupload-btn {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 30px;
   border: none;
   background: rgb(0 0 0);
@@ -294,14 +295,15 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 9px 18px 10px 18px;
   border: none;
   border-radius: 999px;
   background: #1473e6;
   color: #fff;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   cursor: pointer;
+  line-height: 26px;
 }
 
 .ia-download-btn :is(svg, img) {
@@ -312,6 +314,14 @@
 .ia-reupload-btn svg,
 .ia-download-btn svg {
   fill: currentcolor;
+}
+
+.ia-reupload-btn:hover,
+.ia-download-btn:hover,
+.unity-inline-action .action-button:hover,
+.unity-inline-action .ia-edit-in-firefly:hover {
+  background: #274dea;
+  border-color: #274dea;
 }
 
 .unity-inline-action .drop-zone-container {
@@ -338,7 +348,6 @@
   gap: 16px;
   box-sizing: border-box;
   background-color: inherit;
-  background-image: radial-gradient(circle, rgb(255 255 255 / 18%) 1px, transparent 1px);
   background-size: 26px 26px;
   cursor: pointer;
   flex: none;
@@ -658,17 +667,17 @@
   margin: 0;
   margin-top: auto;
   align-self: flex-end;
-  padding: 12px 24px;
+  padding: 9px 18px 10px 18px;
   border: 2px solid rgb(255 255 255 / 60%);
   border-radius: 999px;
   background: transparent;
   color: #fff;
   font-family: var(--body-font-family);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 400;
-  line-height: 24px;
   cursor: pointer;
   appearance: none;
+  line-height: 26px;
 }
 
 .unity-inline-action .ia-edit-in-firefly > span {
