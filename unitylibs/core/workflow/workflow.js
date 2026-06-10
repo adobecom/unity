@@ -327,4 +327,5 @@ export default async function init(el, project = 'unity', unityLibs = '/unitylib
   if (imsClientId) unityConfig.apiKey = imsClientId;
   setUnityLibs(unityLibs, project);
   await new WfInitiator().init(el, project, unityLibs, langRegion, langCode);
+  console.log('dummy change');
 }
