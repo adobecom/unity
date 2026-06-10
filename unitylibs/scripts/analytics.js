@@ -1,10 +1,11 @@
 export const INLINE_ACTION_EVENTS = {
-  UPLOAD_ASSET_CTA: 'Upload asset CTA | UnityWidget',
-  DRAG_AND_DROP: 'Click Drag and drop | UnityWidget',
-  DOWNLOAD: 'Download | UnityWidget',
-  EDIT_IN_FIREFLY: 'Edit in Firefly | UnityWidget',
-  UPLOAD_ERROR: 'Upload error | UnityWidget',
-  TRY_AGAIN: 'Try again | UnityWidget',
+  UPLOAD_ASSET_CTA: 'Upload asset CTA|UnityWidget',
+  DRAG_AND_DROP: 'Click Drag and drop|UnityWidget',
+  DOWNLOAD: 'Download|UnityWidget',
+  DOWNLOAD_SUCCESS: 'Download Success|UnityWidget',
+  EDIT_IN_FIREFLY: 'Edit in Firefly|UnityWidget',
+  UPLOAD_ERROR: 'Upload error|UnityWidget',
+  TRY_AGAIN: 'Try again|UnityWidget',
   nbaClick: (label) => `${label} -- Do more with | UnityWidget`,
 };
 

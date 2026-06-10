@@ -564,12 +564,12 @@ export default class ActionBinder {
       try {
         await this.triggerDownload(this.resultUrl);
         userCount = this.incrementUserCount();
+        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
       } catch (e) {
         // vipulg: consider here that download failed
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
-      // vipulg: consider here that download succeeded
     }
     await this.callConnector(await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
@@ -650,7 +650,8 @@ export default class ActionBinder {
       });
     });
     b.querySelectorAll('.ia-dropzone, .drop-zone.ia-dropzone').forEach((dropZone) => {
-      dropZone.addEventListener('click', () => {
+      dropZone.addEventListener('click', (e) => {
+        if (e.target.closest('.upload-action-container')) return;
         sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP));
         this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
       });
@@ -678,7 +679,10 @@ export default class ActionBinder {
         const action = actMap[key];
         if (el.classList.contains('drop-zone') || el.classList.contains('ia-dropzone')) return;
         if (el.type === 'file') {
-          el.addEventListener('click', () => this.dismissErrorToast());
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.dismissErrorToast();
+          });
           el.addEventListener('change', async (e) => {
             await this.executeActionMaps('upload', this.extractFiles(e));
             e.target.value = '';

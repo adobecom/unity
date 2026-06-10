@@ -98,6 +98,7 @@ describe('Inline Action workflow', () => {
     await init(document.querySelector('.unity.workflow-inline-action'));
     document.querySelector('.upload-action-container .action-button').click();
     expect(trackedEvents).to.include('Upload asset CTA | UnityWidget');
+    expect(trackedEvents).to.not.include('Click Drag and drop | UnityWidget');
     delete window._satellite;
   });
 
@@ -117,6 +118,7 @@ describe('Inline Action workflow', () => {
     document.querySelector('.ia-nba-card[data-nba="upscale"]').click();
     await new Promise((resolve) => { setTimeout(resolve, 50); });
     expect(trackedEvents).to.include('Try again | UnityWidget');
+    expect(trackedEvents.filter((name) => name === 'Click Drag and drop | UnityWidget')).to.have.length(0);
     expect(trackedEvents).to.include('Download | UnityWidget');
     expect(trackedEvents).to.include('Edit in Firefly | UnityWidget');
     expect(trackedEvents).to.include('Upscale -- Do more with | UnityWidget');
