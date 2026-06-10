@@ -76,13 +76,13 @@ export default class ActionBinder {
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
     'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
-    'image-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'bmp-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'gif-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'tiff-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'indd-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'psd-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
-    'ai-to-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
+    'image-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'bmp-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'gif-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'tiff-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'indd-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'psd-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'ai-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'quiz-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
@@ -410,7 +410,7 @@ export default class ActionBinder {
     for (const file of files) {
       let fail = false;
       const { getExtension } = await import('../../../utils/FileUtils.js');
-      const typeCheckFail = this.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
+      const typeCheckFail = this.limits.allowedFileTypes.includes('image/heic')
         ? getExtension(file.name).toLowerCase() !== 'heic' && !this.limits.allowedFileTypes.includes(file.type)
         : !this.limits.allowedFileTypes.includes(file.type);
       if (typeCheckFail) {
