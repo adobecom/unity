@@ -562,27 +562,34 @@ export default class ActionBinder {
         }
         if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
-      if (this.workflowCfg.enabledFeatures[0] === 'resume-builder' && passed.length > 0) {
-        const file = passed[0];
-        let pageCount = null;
-        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-          const { getDocxPageCount } = await import('../../../scripts/docx-validator.js');
-          pageCount = await getDocxPageCount(file);
-        } else if (file.type === 'application/msword') {
-          const { getDocPageCount } = await import('../../../scripts/doc-validator.js');
-          pageCount = await getDocPageCount(file);
-        }
-        if (pageCount !== null && this.limits.pageLimit?.maxNumPages && pageCount > this.limits.pageLimit.maxNumPages) {
-          const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
-          await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
-          return [];
-        }
-      }
       return passed;
     } catch (error) {
       await this.dispatchErrorToast('error_generic', 500, `Exception during PDF validation: ${error.message}`, true);
       return files;
     }
+  }
+
+  async validateWordFilePageCount(files) {
+    if (!this.limits.pageLimit?.maxNumPages || files.length === 0) return files;
+    try {
+      const file = files[0];
+      let pageCount = null;
+      if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const { getDocxPageCount } = await import('../../../scripts/docx-validator.js');
+        pageCount = await getDocxPageCount(file);
+      } else if (file.type === 'application/msword') {
+        const { getDocPageCount } = await import('../../../scripts/doc-validator.js');
+        pageCount = await getDocPageCount(file);
+      }
+      if (pageCount !== null && pageCount > this.limits.pageLimit.maxNumPages) {
+        const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
+        await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
+        return [];
+      }
+    } catch (error) {
+      await this.dispatchErrorToast('error_generic', 500, `Exception during Word page count validation: ${error.message}`, true);
+    }
+    return files;
   }
 
   async handleFileUpload(files) {
@@ -595,7 +602,11 @@ export default class ActionBinder {
     this.MULTI_FILE = files.length > 1;
     const prevalidatedFiles = await this.filterFilesWithPdflite(sanitizedFiles);
     if (prevalidatedFiles.length === 0) return;
-    const { isValid, validFiles } = await this.validateFiles(prevalidatedFiles);
+    const wordValidatedFiles = this.workflowCfg.enabledFeatures[0] === 'resume-builder'
+      ? await this.validateWordFilePageCount(prevalidatedFiles)
+      : prevalidatedFiles;
+    if (wordValidatedFiles.length === 0) return;
+    const { isValid, validFiles } = await this.validateFiles(wordValidatedFiles);
     if (!isValid) return;
     await (this.pageConfigPromise || this.ensurePageConfig());
     await this.initUploadHandler();

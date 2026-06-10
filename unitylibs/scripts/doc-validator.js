@@ -1,5 +1,3 @@
-/* eslint-disable no-await-in-loop */
-
 const DOC_MIME = 'application/msword';
 const OLE2_MAGIC = new Uint8Array([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
 const ENDOFCHAIN = 0xFFFFFFFE;
@@ -58,8 +56,6 @@ export async function getDocPageCount(file) {
     const miniCutoff = view.getUint32(0x38, true);
     const miniFatStart = view.getUint32(0x3C, true);
 
-    // Collect all FAT sector locations: first 109 from header DIFAT array,
-    // then follow the DIFAT chain for files with more than 109 FAT sectors.
     const fatSectors = [];
     for (let i = 0; i < 109; i++) {
       const s = view.getUint32(0x4C + i * 4, true);
@@ -89,7 +85,6 @@ export async function getDocPageCount(file) {
       }
     }
 
-    // Read directory entries (128 bytes each)
     const entries = [];
     for (const s of fatChain(fat, dirStart)) {
       const base = (s + 1) * sectorSize;
@@ -110,7 +105,6 @@ export async function getDocPageCount(file) {
     const root = entries[0];
     if (!root) return null;
 
-    // Build mini FAT and mini stream if present
     let miniStream = null;
     let miniFat = null;
     if (miniFatStart < ENDOFCHAIN) {
@@ -130,7 +124,6 @@ export async function getDocPageCount(file) {
       ? readMiniSectors(miniStream, miniFat, si.start, si.size, miniSectorSize)
       : readSectors(bytes, fat, si.start, si.size, sectorSize);
 
-    // Parse OLE2 property set: locate PID_PAGECOUNT (0x0E)
     const sv = new DataView(siData.buffer);
     const sectionOffset = sv.getUint32(44, true);
     const propCount = sv.getUint32(sectionOffset + 4, true);

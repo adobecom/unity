@@ -1,12 +1,9 @@
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-// Parses the ZIP Central Directory to locate and extract a named entry.
-// Returns the decompressed text content, or null if not found/unsupported.
 async function extractZipEntry(buffer, targetFilename) {
   const view = new DataView(buffer);
   const bytes = new Uint8Array(buffer);
 
-  // Locate End of Central Directory (signature 0x06054b50)
   let eocdOffset = -1;
   for (let i = bytes.length - 22; i >= 0; i--) {
     if (view.getUint32(i, true) === 0x06054b50) {
