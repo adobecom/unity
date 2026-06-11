@@ -14,7 +14,16 @@
       "fragmentLink-firefly-dark": "/cc-shared/fragments/products/firefly/unity/splash-page-dark",
       "splashScreenParent": "body"
     },
-    "sendSplunkAnalytics": true
+    "sendSplunkAnalytics": true,
+    "actionMap": {
+      ".drop-zone": "upload",
+      ".upload-action-container .action-button": "upload",
+      ".ia-file-input": "upload",
+      ".ia-nba-card": "connector",
+      ".ia-edit-in-firefly": "connector",
+      ".ia-download-btn": "download",
+      ".ia-reupload-btn": "reupload"
+    }
   },
   "hero-marquee": {
     "selector": ".copy",

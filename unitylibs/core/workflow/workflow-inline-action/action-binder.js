@@ -618,28 +618,138 @@ export default class ActionBinder {
     }
   }
 
+  isInitialState() {
+    return this.widgetRef?.widget?.dataset?.state === InlineActionState.INITIAL;
+  }
+
+  openFilePicker(block = this.block) {
+    block?.querySelector('.ia-file-input')?.click();
+  }
+
+  bindInteractiveAreaDrag(block = this.block) {
+    const dragTarget = block?.querySelector('.interactive-area');
+    const widget = block?.querySelector('.ia-widget');
+    const dropZone = block?.querySelector('.drop-zone.ia-dropzone');
+    const fileInput = block?.querySelector('.ia-file-input');
+    if (!dragTarget || !widget || !dropZone || !fileInput) return;
+
+    let activeDropZone;
+    const setActive = () => {
+      if (!this.isInitialState() || activeDropZone === dropZone) return;
+      activeDropZone?.classList.remove('active');
+      (activeDropZone = dropZone).classList.add('active');
+    };
+    const clearActive = () => {
+      activeDropZone?.classList.remove('active');
+      activeDropZone = null;
+    };
+    const onDrag = (event, fn) => {
+      if (!this.isInitialState()) return;
+      event.preventDefault();
+      fn?.(event);
+    };
+
+    dragTarget.addEventListener('dragenter', (e) => onDrag(e, setActive));
+    dragTarget.addEventListener('dragover', (e) => onDrag(e, () => {
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      setActive();
+    }));
+    dragTarget.addEventListener('dragleave', (e) => onDrag(e, clearActive));
+    dragTarget.addEventListener('drop', (e) => onDrag(e, () => {
+      setActive();
+      const files = e.dataTransfer?.files;
+      if (files?.length) {
+        try { fileInput.files = files; } catch { /* FileList assignment unsupported */ }
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      clearActive();
+    }));
+    dropZone.addEventListener('drop', clearActive);
+    ['dragend', 'drop'].forEach((type) => {
+      document.addEventListener(type, clearActive);
+      window.addEventListener(type, clearActive);
+    });
+  }
+
+  bindUploadDropZone(el, action, block = this.block) {
+    el.setAttribute('tabindex', '-1');
+    el.addEventListener('dragover', (e) => {
+      if (!this.isInitialState()) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      el.classList.add('active');
+    });
+    el.addEventListener('dragleave', () => {
+      if (!this.isInitialState()) return;
+      el.classList.remove('active');
+    });
+    el.addEventListener('drop', async (e) => {
+      if (!this.isInitialState()) return;
+      this.preventDefault(e);
+      el.classList.remove('active');
+      await this.executeActionMaps(action, this.extractFiles(e));
+    });
+    el.addEventListener('click', (e) => {
+      if (!this.isInitialState()) return;
+      e.stopPropagation();
+      this.openFilePicker(block);
+    });
+  }
+
+  bindUploadActionButton(el, block = this.block) {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this.isInitialState()) return;
+      this.openFilePicker(block);
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (!this.isInitialState()) return;
+        this.openFilePicker(block);
+      }
+    });
+  }
+
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     this.serviceHandler = new ServiceHandler(this.canvasArea, this.unityEl, this.getAdditionalHeaders.bind(this));
     await this.initAnalytics();
     if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
-    Object.keys(actMap).forEach((key) => {
-      b.querySelectorAll(key).forEach((el) => {
-        const action = actMap[key];
-        if (el.classList.contains('drop-zone') || el.classList.contains('ia-dropzone')) return;
-        if (el.type === 'file') {
-          el.addEventListener('click', () => this.dismissErrorToast());
-          el.addEventListener('change', async (e) => {
-            await this.executeActionMaps('upload', this.extractFiles(e));
-            e.target.value = '';
-          });
-          return;
+    this.bindInteractiveAreaDrag(b);
+
+    const handlers = {
+      DIV: (el, action) => {
+        if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, b);
+      },
+      A: (el) => {
+        if (el.classList.contains('action-button')) this.bindUploadActionButton(el, b);
+      },
+      INPUT: (el, action) => {
+        if (this.limits.allowedFileTypes?.length) {
+          el.setAttribute('accept', this.limits.allowedFileTypes.join(','));
         }
+        el.addEventListener('click', () => this.dismissErrorToast());
+        el.addEventListener('change', async (e) => {
+          await this.executeActionMaps(action, this.extractFiles(e));
+          e.target.value = '';
+        });
+      },
+      BUTTON: (el, action) => {
         el.addEventListener('click', async (e) => {
           if (action !== 'upload') this.preventDefault(e);
           await this.executeActionMaps(action, null, el);
         });
+      },
+    };
+
+    Object.entries(actMap).forEach(([key, action]) => {
+      b.querySelectorAll(key).forEach((el) => {
+        const handler = handlers[el.nodeName];
+        if (handler) handler(el, action);
       });
     });
+
     window.addEventListener('dragover', this.preventDefault.bind(this), false);
     window.addEventListener('drop', this.preventDefault.bind(this), false);
   }

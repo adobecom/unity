@@ -170,66 +170,6 @@ function buildUploadActionButton(uploadIconHref, uploadLabel) {
   return button;
 }
 
-function setupInteractiveAreaDragAndDrop(dragTargetEl, widgetEl, dropZone, fileInput) {
-  let activeDropZone;
-  const isInitial = () => widgetEl.dataset.state === InlineActionState.INITIAL;
-  const setActive = () => {
-    if (!isInitial() || activeDropZone === dropZone) return;
-    activeDropZone?.classList.remove('active');
-    (activeDropZone = dropZone).classList.add('active');
-  };
-  const clearActive = () => {
-    activeDropZone?.classList.remove('active');
-    activeDropZone = null;
-  };
-  const onDrag = (event, fn) => {
-    if (!isInitial()) return;
-    event.preventDefault();
-    fn?.(event);
-  };
-
-  dragTargetEl.addEventListener('dragenter', (e) => onDrag(e, setActive));
-  dragTargetEl.addEventListener('dragover', (e) => onDrag(e, () => {
-    e.dataTransfer.dropEffect = 'copy';
-    setActive();
-  }));
-  dragTargetEl.addEventListener('dragleave', (e) => onDrag(e, clearActive));
-  dragTargetEl.addEventListener('drop', (e) => onDrag(e, () => {
-    setActive();
-    const files = e.dataTransfer?.files;
-    if (files?.length && fileInput) {
-      try { fileInput.files = files; } catch { /* FileList assignment unsupported */ }
-      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    clearActive();
-  }));
-  dropZone.addEventListener('drop', clearActive);
-  ['dragend', 'drop'].forEach((type) => {
-    document.addEventListener(type, clearActive);
-    window.addEventListener(type, clearActive);
-  });
-}
-
-function wireDropZoneUpload(dropZone, uploadButton, fileInput) {
-  const openPicker = () => fileInput?.click();
-  dropZone.setAttribute('tabindex', '-1');
-  dropZone.addEventListener('click', (event) => {
-    event.stopPropagation();
-    openPicker();
-  });
-  uploadButton.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    openPicker();
-  });
-  uploadButton.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openPicker();
-    }
-  });
-}
-
 function buildGhostOverlay() {
   const ghost = createTag('div', { class: 'ia-ghost' });
   ghost.append(
@@ -265,11 +205,10 @@ function buildDropZoneContainer(meta, progressHolder) {
   progressWrap.append(progressHolder);
   loadingContent.append(createTag('p', { class: 'ia-loading-text' }, meta.loadingText), progressWrap);
   dropZone.append(createTag('div', { class: 'ia-loading-visible', 'aria-hidden': 'true' }, loadingContent));
-  wireDropZoneUpload(dropZone, uploadButton, fileInput);
   const legal = createTag('p', { class: 'ia-legal' });
   legal.innerHTML = meta.legalHtml;
   dropZoneContainer.append(dropZone, legal);
-  return { dropZoneContainer, dropZone, fileInput };
+  return dropZoneContainer;
 }
 
 function buildNbaCard(card) {
@@ -349,10 +288,9 @@ function buildLeftPanel(meta) {
 }
 
 function buildRightPanel(meta, progressHolder) {
-  const { dropZoneContainer, dropZone, fileInput } = buildDropZoneContainer(meta, progressHolder);
   const right = createTag('div', { class: 'ia-panel ia-panel-right' });
-  right.append(dropZoneContainer, buildCompletePanel(meta));
-  return { panel: right, dropZone, fileInput };
+  right.append(buildDropZoneContainer(meta, progressHolder), buildCompletePanel(meta));
+  return right;
 }
 
 function appendSpriteSheet(root, spriteContent) {
@@ -423,7 +361,7 @@ export default class InlineActionWidget {
     const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const progressHolder = TransitionScreen.createProgressBar();
-    const { panel: right, dropZone, fileInput } = buildRightPanel(this.parsedData, progressHolder);
+    const right = buildRightPanel(this.parsedData, progressHolder);
 
     this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
     this.progressScreen.progressText = this.parsedData.loadingText;
@@ -431,17 +369,9 @@ export default class InlineActionWidget {
     appendSpriteSheet(root, this.spriteContent);
     root.append(buildLeftPanel(this.parsedData), right);
 
-    const unityRoot = insertInlineActionRoot(this.el, this, root);
-    setupInteractiveAreaDragAndDrop(unityRoot.querySelector('.interactive-area'), root, dropZone, fileInput);
+    insertInlineActionRoot(this.el, this, root);
     this.widget = root;
 
-    return {
-      '.drop-zone': 'upload',
-      '.ia-file-input': 'upload',
-      '.ia-nba-card': 'connector',
-      '.ia-edit-in-firefly': 'connector',
-      '.ia-download-btn': 'download',
-      '.ia-reupload-btn': 'reupload',
-    };
+    return this.workflowCfg.targetCfg.actionMap;
   }
 }
