@@ -333,7 +333,13 @@ export default class InlineActionWidget {
     this.meta = parseInlineAuthoring(this.el);
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const left = createTag('div', { class: 'ia-panel ia-panel-left' });
-    const preview = createTag('div', { class: 'ia-preview' }, createTag('img', { class: 'ia-preview-img', src: this.meta.heroSrc, alt: '' }));
+    const preview = createTag('div', { class: 'ia-preview' }, createTag('img', {
+      class: 'ia-preview-img',
+      src: this.meta.heroSrc,
+      alt: '',
+      loading: 'eager',
+      fetchpriority: 'high',
+    }));
     const checker = createTag('div', { class: 'ia-checker' }, createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
     const resultActions = createTag('div', { class: 'ia-result-actions' });
     const reuploadBtn = createTag('button', { type: 'button', class: 'ia-reupload-btn', 'aria-label': 'Upload another image' });
