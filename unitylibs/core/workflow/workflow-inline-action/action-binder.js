@@ -295,13 +295,13 @@ export default class ActionBinder {
       if (blocksize && uploadUrls && Array.isArray(uploadUrls)) {
         const totalChunks = Math.ceil(file.size / blocksize);
         let completedChunks = 0;
-        const chunkOptions = useInlineProgress ? {
+        const callbacks = useInlineProgress ? {
           onChunkComplete: () => {
             completedChunks += 1;
             this.setProgress(Math.round((completedChunks / totalChunks) * PROGRESS.UPLOAD_MAX));
           },
         } : {};
-        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal, chunkOptions);
+        const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal, callbacks);
         if (failedChunks?.size > 0) {
           if (signal.aborted) return false;
           const error = new Error(`One or more chunks failed for asset: ${id}`);

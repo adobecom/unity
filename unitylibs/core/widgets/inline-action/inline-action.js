@@ -1,5 +1,4 @@
 import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
-import TransitionScreen from '../../../scripts/transition-screen.js';
 
 const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
 
@@ -273,6 +272,96 @@ function buildDropZoneContainer(meta, progressHolder) {
   return { dropZoneContainer, dropZone, fileInput };
 }
 
+function buildNbaCard(card) {
+  const cardEl = createTag('button', {
+    type: 'button',
+    class: 'ia-nba-card',
+    'data-nba': card.nba,
+    'data-default-prompt': card.defaultPrompt,
+  });
+  cardEl.append(
+    createTag('img', { src: card.src, alt: '', class: 'ia-nba-img' }),
+    createTag('span', { class: 'ia-nba-label' }, card.label),
+    createTag('span', { class: 'ia-nba-arrow' }, `${svgUse('ia-arrow-icon', 'ia-nba-arrow-default')}${svgUse('ia-arrow-icon-hover', 'ia-nba-arrow-hover')}`),
+  );
+  return cardEl;
+}
+
+function buildNbaGrid(nbaCards) {
+  const grid = createTag('div', { class: 'ia-nba-grid' });
+  nbaCards.forEach((card) => grid.append(buildNbaCard(card)));
+  return grid;
+}
+
+function buildEditInFireflyButton(meta) {
+  const editBtn = createTag('button', {
+    type: 'button',
+    class: 'ia-edit-in-firefly',
+    'aria-label': meta.editLabel,
+  });
+  if (meta.editIconHref) appendIconContent(editBtn, { href: meta.editIconHref, picture: true });
+  editBtn.append(createTag('span', {}, meta.editLabel));
+  return editBtn;
+}
+
+function buildCompletePanel(meta) {
+  const complete = createTag('div', { class: 'ia-complete' });
+  complete.append(
+    createTag('p', { class: 'ia-nba-heading' }, meta.nbaHeading),
+    buildNbaGrid(meta.nbaCards),
+    buildEditInFireflyButton(meta),
+  );
+  return complete;
+}
+
+function buildResultSection(meta) {
+  const checker = createTag('div', { class: 'ia-checker' }, createTag('img', {
+    class: 'ia-result-img',
+    src: '',
+    alt: 'Processed image',
+  }));
+  const resultActions = createTag('div', { class: 'ia-result-actions' });
+  const reuploadBtn = createTag('button', {
+    type: 'button',
+    class: 'ia-reupload-btn',
+    'aria-label': 'Upload another image',
+  });
+  appendIconContent(reuploadBtn, { href: meta.uploadIconHref, spriteId: 'ia-upload-icon', size: 20 });
+  const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
+  appendIconContent(downloadBtn, { href: meta.downloadIconHref, spriteId: 'ia-download-icon', size: 18 });
+  downloadBtn.append(createTag('span', {}, meta.downloadLabel));
+  resultActions.append(reuploadBtn, downloadBtn);
+  checker.append(resultActions);
+  return createTag('div', { class: 'ia-result' }, checker);
+}
+
+function buildLeftPanel(meta) {
+  const left = createTag('div', { class: 'ia-panel ia-panel-left' });
+  const preview = createTag('div', { class: 'ia-preview' }, createTag('img', {
+    class: 'ia-preview-img',
+    src: meta.heroSrc,
+    alt: '',
+    loading: 'eager',
+    fetchpriority: 'high',
+  }));
+  left.append(preview, buildGhostOverlay(), buildResultSection(meta));
+  return left;
+}
+
+function buildRightPanel(meta, progressHolder) {
+  const { dropZoneContainer, dropZone, fileInput } = buildDropZoneContainer(meta, progressHolder);
+  const right = createTag('div', { class: 'ia-panel ia-panel-right' });
+  right.append(dropZoneContainer, buildCompletePanel(meta));
+  return { panel: right, dropZone, fileInput };
+}
+
+function appendSpriteSheet(root, spriteContent) {
+  if (!spriteContent) return;
+  const sprite = createTag('div', { class: 'ia-sprite hide' });
+  sprite.innerHTML = spriteContent;
+  root.append(sprite);
+}
+
 function insertInlineActionRoot(el, widgetInstance, widgetEl) {
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   if (skin === 'dark') el.classList.add('dark');
@@ -295,7 +384,7 @@ export default class InlineActionWidget {
     this.workflowCfg = workflowCfg;
     this.spriteContent = spriteContent;
     this.widget = null;
-    this.meta = null;
+    this.parsedData = null;
     this.state = InlineActionState.INITIAL;
     this.progressScreen = null;
   }
@@ -330,60 +419,18 @@ export default class InlineActionWidget {
   }
 
   async initWidget() {
-    this.meta = parseInlineAuthoring(this.el);
+    this.parsedData = parseInlineAuthoring(this.el);
+    const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
-    const left = createTag('div', { class: 'ia-panel ia-panel-left' });
-    const preview = createTag('div', { class: 'ia-preview' }, createTag('img', {
-      class: 'ia-preview-img',
-      src: this.meta.heroSrc,
-      alt: '',
-      loading: 'eager',
-      fetchpriority: 'high',
-    }));
-    const checker = createTag('div', { class: 'ia-checker' }, createTag('img', { class: 'ia-result-img', src: '', alt: 'Processed image' }));
-    const resultActions = createTag('div', { class: 'ia-result-actions' });
-    const reuploadBtn = createTag('button', { type: 'button', class: 'ia-reupload-btn', 'aria-label': 'Upload another image' });
-    appendIconContent(reuploadBtn, { href: this.meta.uploadIconHref, spriteId: 'ia-upload-icon', size: 20 });
-    const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
-    appendIconContent(downloadBtn, { href: this.meta.downloadIconHref, spriteId: 'ia-download-icon', size: 18 });
-    downloadBtn.append(createTag('span', {}, this.meta.downloadLabel));
-    resultActions.append(reuploadBtn, downloadBtn);
-    checker.append(resultActions);
-    left.append(preview, buildGhostOverlay(), createTag('div', { class: 'ia-result' }, checker));
-
     const progressHolder = TransitionScreen.createProgressBar();
-    const { dropZoneContainer, dropZone, fileInput } = buildDropZoneContainer(this.meta, progressHolder);
-    this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
-    this.progressScreen.progressText = this.meta.loadingText;
+    const { panel: right, dropZone, fileInput } = buildRightPanel(this.parsedData, progressHolder);
 
-    const grid = createTag('div', { class: 'ia-nba-grid' });
-    this.meta.nbaCards.forEach((card) => {
-      const cardEl = createTag('button', {
-        type: 'button',
-        class: 'ia-nba-card',
-        'data-nba': card.nba,
-        'data-default-prompt': card.defaultPrompt,
-      });
-      cardEl.append(
-        createTag('img', { src: card.src, alt: '', class: 'ia-nba-img' }),
-        createTag('span', { class: 'ia-nba-label' }, card.label),
-        createTag('span', { class: 'ia-nba-arrow' }, `${svgUse('ia-arrow-icon', 'ia-nba-arrow-default')}${svgUse('ia-arrow-icon-hover', 'ia-nba-arrow-hover')}`),
-      );
-      grid.append(cardEl);
-    });
-    const editBtn = createTag('button', { type: 'button', class: 'ia-edit-in-firefly', 'aria-label': this.meta.editLabel });
-    if (this.meta.editIconHref) appendIconContent(editBtn, { href: this.meta.editIconHref, picture: true });
-    editBtn.append(createTag('span', {}, this.meta.editLabel));
-    const complete = createTag('div', { class: 'ia-complete' });
-    complete.append(createTag('p', { class: 'ia-nba-heading' }, this.meta.nbaHeading), grid, editBtn);
-    const right = createTag('div', { class: 'ia-panel ia-panel-right' });
-    right.append(dropZoneContainer, complete);
-    if (this.spriteContent) {
-      const sprite = createTag('div', { class: 'ia-sprite hide' });
-      sprite.innerHTML = this.spriteContent;
-      root.append(sprite);
-    }
-    root.append(left, right);
+    this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
+    this.progressScreen.progressText = this.parsedData.loadingText;
+
+    appendSpriteSheet(root, this.spriteContent);
+    root.append(buildLeftPanel(this.parsedData), right);
+
     const unityRoot = insertInlineActionRoot(this.el, this, root);
     setupInteractiveAreaDragAndDrop(unityRoot.querySelector('.interactive-area'), root, dropZone, fileInput);
     this.widget = root;
