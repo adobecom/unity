@@ -310,7 +310,8 @@ export default class InlineActionWidget {
     if (!holder || !this.progressScreen) return;
     const next = Math.min(100, Math.max(0, Math.round(pct)));
     const current = parseInt(holder.querySelector('.spectrum-ProgressBar')?.getAttribute('value'), 10) || 0;
-    this.progressScreen.updateProgressBar(holder, Math.max(current, next));
+    const value = next === 0 ? 0 : Math.max(current, next);
+    this.progressScreen.updateProgressBar(holder, value);
   }
 
   setResultUrl(url) {
