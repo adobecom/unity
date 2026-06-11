@@ -619,15 +619,19 @@ export default class ActionBinder {
         break;
       case 'connector':
         if (el?.classList?.contains('ia-edit-in-firefly')) {
-          this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, { assetId: this.resultAssetId });
+          this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, { assetId: this.resultAssetId, action: 'redirect' });
         } else if (el?.classList?.contains('ia-nba-card')) {
           const label = el.querySelector('.ia-nba-label')?.textContent?.trim() || el.dataset.nba;
-          this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), { assetId: this.resultAssetId, action: el.dataset.nba });
+          this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), {
+            assetId: this.resultAssetId,
+            action: 'redirect',
+            verb: el.dataset.nba,
+          });
         }
         await this.handleConnector(el);
         break;
       case 'download':
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, { assetId: this.resultAssetId });
+        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, { assetId: this.resultAssetId, action: 'redirect' });
         await this.handleConnector(el, true);
         break;
       case 'reupload':
