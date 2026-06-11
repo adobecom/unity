@@ -542,7 +542,7 @@ export default class ActionBinder {
 
   async handleConnector(el, isDownload = false) {
     let userCount = this.getUserCount();
-    const downloadsLocally = isDownload && userCount < 100;
+    const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
     if (downloadsLocally) {
       try {
