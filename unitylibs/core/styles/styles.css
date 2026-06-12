@@ -223,7 +223,6 @@
   width: auto;
   align-items: center;
   align-self: stretch;
-  gap: 12px;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-icon svg,

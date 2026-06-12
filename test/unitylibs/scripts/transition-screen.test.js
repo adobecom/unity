@@ -215,34 +215,5 @@ describe('TransitionScreen', () => {
       };
       expect(screen.getFragmentLink(undefined)).to.equal(fragmentLink);
     });
-
-    it('should return product-specific fragment link for workflow-inline-action', () => {
-      screen.workflowCfg = {
-        targetCfg: {
-          splashScreenConfig: {
-            'fragmentLink-firefly': '/cc-shared/fragments/products/firefly/unity/splash-page',
-            'fragmentLink-firefly-dark': '/cc-shared/fragments/products/firefly/unity/splash-page-dark',
-          },
-        },
-        productName: 'firefly',
-        name: 'workflow-inline-action',
-      };
-      expect(screen.getFragmentLink(undefined)).to.equal('/cc-shared/fragments/products/firefly/unity/splash-page');
-    });
-
-    it('should return themed fragment link when theme is set', () => {
-      screen.workflowCfg = {
-        targetCfg: {
-          splashScreenConfig: {
-            'fragmentLink-firefly': '/cc-shared/fragments/products/firefly/unity/splash-page',
-            'fragmentLink-firefly-dark': '/cc-shared/fragments/products/firefly/unity/splash-page-dark',
-          },
-        },
-        productName: 'firefly',
-        name: 'workflow-inline-action',
-        theme: 'dark',
-      };
-      expect(screen.getFragmentLink(undefined)).to.equal('/cc-shared/fragments/products/firefly/unity/splash-page-dark');
-    });
   });
 });

@@ -62,11 +62,6 @@ class WfInitiator {
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
       ],
-      'workflow-inline-action': [
-        `${baseWfPath}/sprite.svg`,
-        `${getUnityLibs()}/core/styles/splash-screen.css`,
-        ...this.getWidgetPaths(),
-      ],
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -116,7 +111,7 @@ class WfInitiator {
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const isExtendedWidget = (this.targetConfig?.extendedWidgets ?? []).includes(this.widgetName);
-    const extendedLayoutRoot = isExtendedWidget ? (unityWidgetObject?.extendedRoot || null) : null;
+    const extendedLayoutRoot = isExtendedWidget ? (unityWidgetObject?.promptBarExtendedRoot || null) : null;
     const actionBinderBlock = isExtendedWidget ? extendedLayoutRoot : this.targetBlock;
     const canvasAreaForBinder = isExtendedWidget ? extendedLayoutRoot : this.interactiveArea;
     await new ActionBinder(
@@ -125,7 +120,6 @@ class WfInitiator {
       actionBinderBlock,
       canvasAreaForBinder,
       this.actionMap,
-      unityWidgetObject,
     ).initActionListeners();
   }
 
@@ -278,10 +272,6 @@ class WfInitiator {
         productName: 'Firefly',
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
-      },
-      'workflow-inline-action': {
-        productName: product || 'Firefly',
-        sfList: new Set([feature]),
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];

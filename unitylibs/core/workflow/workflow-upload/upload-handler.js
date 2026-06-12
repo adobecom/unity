@@ -63,11 +63,10 @@ export default class UploadHandler {
     return this.networkUtils.fetchFromServiceWithRetry(storageUrl, uploadOptions, retryConfig, onSuccess, onError);
   }
 
-  async uploadChunksToUnity(uploadUrls, file, blockSize, signal = null, callbacks = {}) {
+  async uploadChunksToUnity(uploadUrls, file, blockSize, signal = null) {
     const options = {
       assetId: this.actionBinder.assetId,
       fileType: file.type,
-      ...callbacks,
     };
     const result = await createChunkUploadTasks(
       uploadUrls,
