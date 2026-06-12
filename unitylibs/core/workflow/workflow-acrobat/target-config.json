@@ -75,18 +75,25 @@
       "#file-upload": "upload"
     }
   },
-  "express": {
+  "verb-dropzone": {
     "selector": ".foreground",
-    "source": ".foreground .express-container",
-    "target": ".foreground .express-container",
+    "source": ".foreground .verb-dropzone-area",
+    "target": ".foreground .verb-dropzone-area",
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink": "/drafts/ruchika/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
       "body": "upload",
       "#file-upload": "upload"
+    },
+    "redirectParams": {
+      "x_api_client_location": {
+        "source": "pageUrlPath",
+        "stripPrefix": "/express/",
+        "transform": "reverseSegments"
+      }
     }
   },
   "verb-marquee": {

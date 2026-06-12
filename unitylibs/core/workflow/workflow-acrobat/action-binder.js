@@ -494,6 +494,23 @@ export default class ActionBinder {
       });
   }
 
+  getComputedRedirectParams(queryString) {
+    const params = this.workflowCfg.targetCfg?.redirectParams;
+    if (!params) return queryString;
+    const searchParams = new URLSearchParams(queryString);
+    for (const [key, cfg] of Object.entries(params)) {
+      if (cfg.source !== 'pageUrlPath') continue;
+      const path = window.location.pathname;
+      const after = cfg.stripPrefix ? path.split(cfg.stripPrefix)[1] : path.slice(1);
+      if (!after) continue;
+      const value = cfg.transform === 'reverseSegments'
+        ? after.split('/').filter(Boolean).reverse().join('_')
+        : after;
+      searchParams.set(key, value);
+    }
+    return searchParams.toString();
+  }
+
   async handleRedirect(cOpts, filesData) {
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
@@ -518,7 +535,8 @@ export default class ActionBinder {
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
     const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
-    this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
+    const updatedQuery = this.getComputedRedirectParams(queryString);
+    this.redirectUrl = `${baseUrl}?${additionalParams}${updatedQuery}`;
     this.dispatchAnalyticsEvent('redirectUrl', { ...filesData, redirectUrl: this.redirectUrl });
     return true;
   }
