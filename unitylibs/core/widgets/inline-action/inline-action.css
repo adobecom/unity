@@ -297,7 +297,12 @@
   justify-content: center;
 }
 
-.ia-reupload-btn :is(svg, img) {
+.ia-reupload-btn :is(svg, img, span[class*='icon']) {
+  width: 20px;
+  height: 20px;
+}
+
+.unity-inline-action .action-button :is(svg, span[class*='icon']) {
   width: 20px;
   height: 20px;
 }

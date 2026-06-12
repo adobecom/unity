@@ -51,6 +51,74 @@ describe('Inline Action workflow', () => {
     expect(['Or tap here', 'Or drag and drop here']).to.include(meta.dragHint);
   });
 
+  it('parses config icon href from img when anchor is absent', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div><ul>
+          <li><span class="icon icon-download"></span><img src="/cc-shared/assets/svg/s2-icon-download-20-w.svg" alt="">Download</li>
+          <li><span class="icon icon-aiPhotoEditor"></span><img src="/cc-shared/assets/svg/s2-icon-edit-20-w.svg" alt=""> Edit in Firefly</li>
+        </ul></div></div>
+      </div>`;
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.downloadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-download-20-w.svg');
+    expect(meta.editIconHref).to.equal('/cc-shared/assets/svg/s2-icon-edit-20-w.svg');
+    expect(meta.downloadLabel).to.equal('Download');
+    expect(meta.editLabel).to.equal('Edit in Firefly');
+  });
+
+  it('ignores video-container svg imgs when parsing upload icon href', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p>
+            <div class="video-container video-holder">
+              <img class="accessibility-control pause-icon" src="/federal/assets/svgs/accessibility-pause.svg" alt="">
+            </div>
+            <img src="/cc-shared/assets/svg/s2-icon-upload-20-n.svg" alt=""> Upload your image
+          </p>
+          <p>Or drag and drop here</p>
+          <p>Limits apply.</p>
+          <p>Terms</p>
+        </div></div>
+      </div>`;
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.uploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-n.svg');
+  });
+
+  it('parses reupload icon href from config icon-share row', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p><a href="/cc-shared/assets/svg/s2-icon-upload-20-n.svg">icon</a> Upload your image</p>
+          <p>Or drag and drop here</p>
+          <p>Limits apply.</p>
+          <p>Terms</p>
+        </div></div>
+        <div><div><ul>
+          <li><span class="icon icon-share"></span><img src="/cc-shared/assets/svg/s2-icon-upload-20-w.svg" alt=""></li>
+          <li><span class="icon icon-operation-removeBackground"></span></li>
+        </ul></div></div>
+      </div>`;
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.uploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-n.svg');
+    expect(meta.reuploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-w.svg');
+  });
+
+  it('parses upload icon href from img in upload paragraph', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p><img src="/cc-shared/assets/svg/s2-icon-upload-20-w.svg" alt=""> Upload your image</p>
+          <p>Or drag and drop here</p>
+          <p>Limits apply.</p>
+          <p>Terms</p>
+        </div></div>
+      </div>`;
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.uploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-w.svg');
+    expect(meta.uploadLabel).to.equal('Upload your image');
+  });
+
   it('parses icon-aiPhotoEditor label and icon href from config li', () => {
     document.body.innerHTML = `
       <div class="unity workflow-inline-action widget-inline-action">

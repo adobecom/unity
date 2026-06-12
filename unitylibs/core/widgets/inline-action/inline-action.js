@@ -6,6 +6,7 @@ const DEFAULT_DROPZONE_ICON_IMAGE = '/cc-shared/assets/svg/s2-icon-default-image
 const DEFAULT_UPLOAD_ICON = '/cc-shared/assets/svg/s2-icon-upload-20-n.svg';
 
 const normalize = (text) => (text || '').replace(/\s+/g, ' ').trim();
+const stripUrls = (text) => normalize(text.replace(/https?:\/\S+/g, ''));
 const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
 
 function getImgSrc(pic) {
@@ -60,13 +61,33 @@ export function extractHeroMedia(vp) {
   return preview;
 }
 
-function findUploadAnchor(root) {
-  return [...root?.querySelectorAll('a[href*=".svg"]') || []]
+function getSvgHref(el) {
+  if (!el) return undefined;
+  const anchor = [...el.querySelectorAll('a[href*=".svg"]')]
     .find((a) => !a.closest('.video-container'));
+  if (anchor) return anchor.getAttribute('href');
+  return el.querySelector('img[src*=".svg"]:not(.video-container img)')?.getAttribute('src');
 }
 
-function getSvgHref(el) {
-  return el?.querySelector('a[href*=".svg"]')?.getAttribute('href');
+function cloneUploadIconEl(para) {
+  if (!para) return null;
+  const img = para.querySelector('img[src*=".svg"]:not(.video-container img)');
+  if (img) return img.cloneNode(true);
+  const span = para.querySelector('span[class*=icon-share], span[class*=icon-upload]');
+  return span ? span.cloneNode(true) : null;
+}
+
+function appendAuthoredUploadIcon(el, { para, href, spriteId, size, picture = false }) {
+  const iconEl = cloneUploadIconEl(para);
+  if (iconEl?.tagName === 'IMG') {
+    el.append(picture ? createTag('picture', {}, iconEl) : iconEl);
+    return;
+  }
+  if (iconEl) {
+    el.append(iconEl);
+    return;
+  }
+  appendIconContent(el, { href, spriteId, size, picture });
 }
 
 function nbaLiText(li, afterIcon = false) {
@@ -97,11 +118,19 @@ function parseNbaIcon(li) {
   return cls?.replace('icon-nba-', '') || null;
 }
 
-function textFromDirectNodes(el) {
-  return normalize([...el?.childNodes || []]
-    .filter((n) => n.nodeType === Node.TEXT_NODE)
-    .map((n) => n.textContent)
-    .join(''));
+function uploadLabelFromPara(para) {
+  const skip = new Set(['BR', 'PICTURE', 'A', 'IMG', 'SPAN']);
+  const parts = [];
+  para?.childNodes.forEach((n) => {
+    if (skip.has(n.nodeName)) return;
+    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
+  });
+  return normalize(parts.join(''));
+}
+
+function configRowIconClass(li) {
+  const iconEl = li.querySelector(':scope > span[class*="icon-"]');
+  return [...(iconEl?.classList || [])].find((c) => c.startsWith('icon-') && c !== 'icon');
 }
 
 const hasUploadMarker = (para) => para?.querySelector(
@@ -125,16 +154,16 @@ function parseViewportCopy(vp) {
   const paragraphs = [...vp.querySelectorAll(':scope > p')];
   const bodyParas = paragraphs.slice(0, -1);
   const uploadPara = bodyParas.find(hasUploadMarker);
-  const uploadAnchor = findUploadAnchor(vp);
+  const uploadIconHref = getSvgHref(uploadPara) || getSvgHref(vp);
+  const uploadIconRoot = getSvgHref(uploadPara) ? uploadPara : vp;
   const copyParas = bodyParas.filter((p) => {
     if (p === uploadPara) return false;
-    return !(p === mediaPara && !hasUploadMarker(p) && !p.textContent.trim());
+    return !(p === mediaPara && !hasUploadMarker(p) && !uploadLabelFromPara(p));
   });
   return {
-    uploadIconHref: uploadAnchor?.getAttribute('href'),
-    uploadLabel: uploadPara
-      ? textFromDirectNodes(uploadPara)
-      : normalize(uploadAnchor?.nextSibling?.textContent || ''),
+    uploadPara: uploadIconRoot,
+    uploadIconHref,
+    uploadLabel: uploadLabelFromPara(uploadPara) || DEFAULT_UPLOAD_LABEL,
     dragHint: copyParas[0]?.textContent.trim() || '',
     fileLimit: copyParas[1]?.textContent.trim() || '',
     legalHtml: paragraphs.at(-1)?.innerHTML || '',
@@ -147,9 +176,9 @@ function placeholderRowText(root, iconClass) {
 }
 
 export function parseInlineAuthoring(unityEl) {
-  const { uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml } = parseViewportCopy(
-    getViewportBlock(unityEl),
-  );
+  const {
+    uploadPara, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
+  } = parseViewportCopy(getViewportBlock(unityEl));
   const uls = [...unityEl.querySelectorAll(':scope > div ul')];
   const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
   const configUl = uls.find((ul) => ul !== nbaUl && ul.querySelector('[class*="icon-"]'));
@@ -160,18 +189,21 @@ export function parseInlineAuthoring(unityEl) {
     downloadIconHref: undefined,
     editIconHref: undefined,
     editLabel: 'Edit in Firefly',
+    reuploadIconHref: undefined,
     nbaHeading: 'Do more with this image.',
   };
   configUl?.querySelectorAll('li').forEach((li) => {
-    const cls = [...(li.querySelector('[class*="icon-"]')?.classList || [])].find((c) => c.startsWith('icon-'));
+    const cls = configRowIconClass(li);
     if (!cls) return;
     if (cls.startsWith('icon-operation-')) config.operation = cls.replace('icon-operation-', '');
-    else if (cls === 'icon-download') {
-      config.downloadLabel = textFromDirectNodes(li);
-      config.downloadIconHref = getSvgHref(li);
+    else if (cls.includes('icon-share')) {
+      config.reuploadIconHref = getSvgHref(li) || config.reuploadIconHref;
+    } else if (cls === 'icon-download') {
+      config.downloadLabel = stripUrls(li.textContent) || config.downloadLabel;
+      config.downloadIconHref = getSvgHref(li) || config.downloadIconHref;
     } else if (cls === 'icon-aiPhotoEditor') {
-      config.editLabel = textFromDirectNodes(li);
-      config.editIconHref = getSvgHref(li);
+      config.editLabel = stripUrls(li.textContent) || config.editLabel;
+      config.editIconHref = getSvgHref(li) || config.editIconHref;
     } else if (cls === 'icon-placeholder-nba') config.nbaHeading = li.textContent.trim();
   });
 
@@ -183,6 +215,7 @@ export function parseInlineAuthoring(unityEl) {
   }).filter(Boolean);
 
   return {
+    uploadPara,
     uploadIconHref,
     uploadLabel,
     dragHint,
@@ -198,19 +231,26 @@ function appendIconContent(el, { href, spriteId, size, picture = false }) {
   if (href) {
     const img = createTag('img', { src: href, alt: '', loading: 'lazy', ...(size && { width: size, height: size }) });
     el.append(picture ? createTag('picture', {}, img) : img);
-  } else el.innerHTML = svgUse(spriteId);
+    return;
+  }
+  if (spriteId) el.innerHTML = svgUse(spriteId);
 }
 
-function buildUploadActionButton(uploadIconHref, uploadLabel) {
+function buildUploadActionButton(uploadPara, uploadIconHref, uploadLabel) {
   const button = createTag('a', {
     tabindex: '0',
     class: 'con-button blue action-button button-xl no-track',
     href: '#',
   });
-  button.append(
-    createTag('picture', {}, createTag('img', { src: uploadIconHref || DEFAULT_UPLOAD_ICON, alt: '', loading: 'lazy' })),
-    document.createTextNode(` ${uploadLabel || DEFAULT_UPLOAD_LABEL}`),
-  );
+  appendAuthoredUploadIcon(button, {
+    para: uploadPara, href: uploadIconHref || DEFAULT_UPLOAD_ICON, picture: true,
+  });
+  if (!button.querySelector('picture, img, span[class*=icon]')) {
+    button.append(createTag('picture', {}, createTag('img', {
+      src: DEFAULT_UPLOAD_ICON, alt: '', loading: 'lazy',
+    })));
+  }
+  button.append(document.createTextNode(` ${uploadLabel || DEFAULT_UPLOAD_LABEL}`));
   return button;
 }
 
@@ -227,7 +267,7 @@ function buildGhostOverlay() {
 function buildDropZoneContainer(meta, progressHolder) {
   const dropZoneContainer = createTag('div', { class: 'drop-zone-container ia-dropzone-shell' });
   const dropZone = createTag('div', { class: 'drop-zone ia-dropzone' });
-  const uploadButton = buildUploadActionButton(meta.uploadIconHref, meta.uploadLabel);
+  const uploadButton = buildUploadActionButton(meta.uploadPara, meta.uploadIconHref, meta.uploadLabel);
   const fileInput = createTag('input', {
     type: 'file',
     name: 'file-upload',
@@ -309,7 +349,12 @@ function buildResultSection(meta) {
     class: 'ia-reupload-btn',
     'aria-label': 'Upload another image',
   });
-  appendIconContent(reuploadBtn, { href: meta.uploadIconHref, spriteId: 'ia-upload-icon', size: 20 });
+  appendAuthoredUploadIcon(reuploadBtn, {
+    para: meta.reuploadIconHref ? null : meta.uploadPara,
+    href: meta.reuploadIconHref || meta.uploadIconHref,
+    spriteId: 'ia-upload-icon',
+    size: 20,
+  });
   const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
   appendIconContent(downloadBtn, { href: meta.downloadIconHref, spriteId: 'ia-download-icon', size: 18 });
   downloadBtn.append(createTag('span', {}, meta.downloadLabel));
