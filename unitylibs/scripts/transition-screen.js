@@ -84,7 +84,7 @@ export default class TransitionScreen {
       return splashScreenConfig[`fragmentLink-${matchedDomain}`];
     }
     const productName = this.workflowCfg.productName?.toLowerCase();
-    if (productName) {
+    if (productName && productName !== 'acrobat') {
       const themedKey = this.workflowCfg.theme === 'dark'
         ? `fragmentLink-${productName}-dark`
         : null;
