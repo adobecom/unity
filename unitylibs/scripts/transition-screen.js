@@ -79,6 +79,7 @@ export default class TransitionScreen {
 
   getFragmentLink(matchedDomain = getMatchedDomain(this.workflowCfg.targetCfg.domainMap)) {
     const { splashScreenConfig } = this.workflowCfg.targetCfg;
+    if (!splashScreenConfig) return undefined;
     if (matchedDomain && splashScreenConfig[`fragmentLink-${matchedDomain}`]) {
       return splashScreenConfig[`fragmentLink-${matchedDomain}`];
     }

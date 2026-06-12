@@ -311,7 +311,7 @@ function insertInlineActionRoot(el, widgetInstance, widgetEl) {
   el.classList.add('unity-inline-action-host');
   if (el.parentNode) el.parentNode.insertBefore(root, el);
   else el.append(root);
-  widgetInstance.promptBarExtendedRoot = root;
+  widgetInstance.extendedRoot = root;
   return root;
 }
 
