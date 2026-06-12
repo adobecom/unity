@@ -858,7 +858,7 @@ function insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer
   } else {
     el.append(root);
   }
-  widgetInstance.extendedRoot = root;
+  widgetInstance.promptBarExtendedRoot = root;
 }
 
 async function mountPromptBarStyleUI(widgetInstance, parsed) {
@@ -876,7 +876,7 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
   const { styleContainer, styleItems, previewArea, styleList } = createStylePreviewSection(styles, previewRows, styleSectionHeadingText);
   const disconnectInteractivity = attachPromptBarStyleInteractivity(styles, previewRows, inpField, styleItems, previewArea, styleList);
   insertPromptBarStyleRoot(el, widgetInstance, widgetWrap, styleContainer, previewArea);
-  const root = widgetInstance.extendedRoot;
+  const root = widgetInstance.promptBarExtendedRoot;
   let removalObserver = null;
   const teardownPromptBarStyle = () => {
     removalObserver?.disconnect();
@@ -898,7 +898,7 @@ async function mountPromptBarStyleUI(widgetInstance, parsed) {
 export default class PromptBarStyleWidget extends UnityWidget {
   constructor(...args) {
     super(...args);
-    this.extendedRoot = null;
+    this.promptBarExtendedRoot = null;
     this.disconnectPromptBarStyle = null;
   }
 
