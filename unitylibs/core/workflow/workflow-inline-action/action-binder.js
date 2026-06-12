@@ -117,25 +117,13 @@ export default class ActionBinder {
     });
   }
 
-  trackCtaAnalytics(action, el) {
+  trackConnectorAnalytics(el) {
     const redirectMeta = { assetId: this.resultAssetId, action: 'redirect' };
-    switch (action) {
-      case 'connector':
-        if (el?.classList?.contains('ia-edit-in-firefly')) {
-          this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, redirectMeta);
-        } else if (el?.classList?.contains('ia-nba-card')) {
-          const label = el.querySelector('.ia-nba-label')?.textContent?.trim() || el.dataset.nba;
-          this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), { ...redirectMeta, verb: el.dataset.nba });
-        }
-        break;
-      case 'download':
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, redirectMeta);
-        break;
-      case 'reupload':
-        this.trackEvent(INLINE_ACTION_EVENTS.TRY_AGAIN, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-        break;
-      default:
-        break;
+    if (el?.classList?.contains('ia-edit-in-firefly')) {
+      this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, redirectMeta);
+    } else if (el?.classList?.contains('ia-nba-card')) {
+      const label = el.querySelector('.ia-nba-label')?.textContent?.trim() || el.dataset.nba;
+      this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), { ...redirectMeta, verb: el.dataset.nba });
     }
   }
 
@@ -588,7 +576,6 @@ export default class ActionBinder {
         userCount = this.incrementUserCount();
         this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
       } catch (e) {
-        // vipulg: consider here that download failed
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
@@ -640,15 +627,15 @@ export default class ActionBinder {
         await this.uploadFile(files);
         break;
       case 'connector':
-        this.trackCtaAnalytics(action, el);
+        this.trackConnectorAnalytics(el);
         await this.handleConnector(el);
         break;
       case 'download':
-        this.trackCtaAnalytics(action, el);
+        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, { assetId: this.resultAssetId, action: 'redirect' });
         await this.handleConnector(el, true);
         break;
       case 'reupload':
-        this.trackCtaAnalytics(action, el);
+        this.trackEvent(INLINE_ACTION_EVENTS.TRY_AGAIN, { assetId: this.resultAssetId, fileMetaData: this.filesData });
         this.widgetRef?.openFilePicker();
         break;
       case 'interrupt':
