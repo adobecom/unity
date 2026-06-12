@@ -116,7 +116,7 @@ class WfInitiator {
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const isExtendedWidget = (this.targetConfig?.extendedWidgets ?? []).includes(this.widgetName);
-    const extendedLayoutRoot = isExtendedWidget ? (unityWidgetObject?.promptBarExtendedRoot || null) : null;
+    const extendedLayoutRoot = isExtendedWidget ? (unityWidgetObject?.extendedRoot || null) : null;
     const actionBinderBlock = isExtendedWidget ? extendedLayoutRoot : this.targetBlock;
     const canvasAreaForBinder = isExtendedWidget ? extendedLayoutRoot : this.interactiveArea;
     await new ActionBinder(
