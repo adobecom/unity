@@ -497,7 +497,7 @@ export default class ActionBinder {
   getComputedRedirectParams(queryString) {
     const params = this.workflowCfg.targetCfg?.redirectParams;
     if (!params) return queryString;
-    const searchParams = new URLSearchParams(queryString);
+    let updatedQuery = queryString || '';
     for (const [key, cfg] of Object.entries(params)) {
       if (cfg.source !== 'pageUrlPath') continue;
       const path = window.location.pathname;
@@ -506,9 +506,15 @@ export default class ActionBinder {
       const value = cfg.transform === 'reverseSegments'
         ? after.split('/').filter(Boolean).reverse().join('_')
         : after;
-      searchParams.set(key, value);
+      const encodedValue = encodeURIComponent(value);
+      const paramRegex = new RegExp(`(^|&)(${key}=)[^&]*`);
+      if (paramRegex.test(updatedQuery)) {
+        updatedQuery = updatedQuery.replace(paramRegex, `$1${key}=${encodedValue}`);
+      } else {
+        updatedQuery = updatedQuery ? `${updatedQuery}&${key}=${encodedValue}` : `${key}=${encodedValue}`;
+      }
     }
-    return searchParams.toString();
+    return updatedQuery;
   }
 
   async handleRedirect(cOpts, filesData) {
