@@ -88,6 +88,43 @@ describe('Inline Action workflow', () => {
     expect(meta.fileLimit).to.match(/Limits (mobile|tablet|desktop)/);
   });
 
+  it('fires upload CTA analytics on upload button click', async () => {
+    const trackedEvents = [];
+    window._satellite = {
+      track: (_, data) => trackedEvents.push(data?.data?.web?.webInteraction?.name),
+    };
+    document.body.innerHTML = await readFile({ path: './mocks/inline-action-body.html' });
+    const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
+    await init(document.querySelector('.unity.workflow-inline-action'));
+    document.querySelector('.upload-action-container .action-button').click();
+    expect(trackedEvents).to.include('Upload asset CTA | UnityWidget');
+    expect(trackedEvents).to.not.include('Click Drag and drop | UnityWidget');
+    delete window._satellite;
+  });
+
+  it('fires NBA and download analytics on complete-state CTAs', async () => {
+    const trackedEvents = [];
+    window._satellite = {
+      track: (_, data) => trackedEvents.push(data?.data?.web?.webInteraction?.name),
+    };
+    document.body.innerHTML = await readFile({ path: './mocks/inline-action-body.html' });
+    const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
+    await init(document.querySelector('.unity.workflow-inline-action'));
+    const widget = document.querySelector('.ia-widget');
+    widget.dataset.state = 'complete';
+    document.querySelector('.ia-reupload-btn').click();
+    document.querySelector('.ia-download-btn').click();
+    document.querySelector('.ia-edit-in-firefly').click();
+    document.querySelector('.ia-nba-card[data-nba="upscale"]').click();
+    await new Promise((resolve) => { setTimeout(resolve, 50); });
+    expect(trackedEvents).to.include('Try again | UnityWidget');
+    expect(trackedEvents.filter((name) => name === 'Click Drag and drop | UnityWidget')).to.have.length(0);
+    expect(trackedEvents).to.include('Download | UnityWidget');
+    expect(trackedEvents).to.include('Edit in Firefly | UnityWidget');
+    expect(trackedEvents).to.include('Upscale -- Do more with | UnityWidget');
+    delete window._satellite;
+  });
+
   it('initializes widget and action binder', async () => {
     document.body.innerHTML = inlineActionBody;
     const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
