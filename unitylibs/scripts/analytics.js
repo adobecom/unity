@@ -6,7 +6,7 @@ export const INLINE_ACTION_EVENTS = {
   EDIT_IN_FIREFLY: 'Edit in Firefly|UnityWidget',
   UPLOAD_ERROR: 'Upload error|UnityWidget',
   TRY_AGAIN: 'Try again|UnityWidget',
-  nbaClick: (label) => `${label} -- Do more with | UnityWidget`,
+  nbaClick: (label) => `${label} - Do more with|UnityWidget`,
 };
 
 export const PROMPT_BAR_EVENTS = {
