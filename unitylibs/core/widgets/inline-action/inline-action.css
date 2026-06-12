@@ -135,14 +135,22 @@
   min-height: 240px;
 }
 
-.ia-preview-img {
+.ia-preview .video-container {
   width: 100%;
-  height: auto;
+  height: 100%;
+}
+
+.ia-preview picture,
+.ia-preview picture > img,
+.ia-preview video {
+  width: 100%;
+  height: 100%;
   min-height: 240px;
   max-height: 320px;
   object-fit: cover;
   border-radius: 4px;
   display: block;
+  line-height: 0;
 }
 
 .ia-ghost {
@@ -846,7 +854,7 @@
     max-height: 194px;
   }
 
-  .ia-widget[data-state="initial"] .ia-preview-img {
+  .ia-widget[data-state="initial"] .ia-preview :is(picture, picture > img, video) {
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -868,7 +876,7 @@
 }
 
 @media screen and (min-width: 600px) {
-  .ia-preview-img {
+  .ia-preview :is(picture, picture > img, video) {
     width: 100%;
     height: 100%;
     min-height: 0;

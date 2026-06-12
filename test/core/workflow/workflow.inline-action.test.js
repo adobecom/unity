@@ -1,5 +1,7 @@
 import { expect } from '@esm-bundle/chai';
-import { parseInlineAuthoring, InlineActionState } from '../../../../unitylibs/core/widgets/inline-action/inline-action.js';
+import {
+  parseInlineAuthoring, extractHeroMedia, InlineActionState,
+} from '../../../../unitylibs/core/widgets/inline-action/inline-action.js';
 import inlineActionBody from './mocks/inline-action-body.js';
 import inlineActionAuthored from './mocks/inline-action-authored.js';
 import inlineActionThreeColumns from './mocks/inline-action-three-columns.js';
@@ -47,7 +49,6 @@ describe('Inline Action workflow', () => {
     expect(meta.nbaCards[2].label).to.equal('Generate new background');
     expect(meta.nbaCards[2].defaultPrompt).to.equal('Generate prompt');
     expect(['Or tap here', 'Or drag and drop here']).to.include(meta.dragHint);
-    expect(meta.heroSrc).to.match(/media_(mobile|tablet|desktop)/);
   });
 
   it('parses icon-aiPhotoEditor label and icon href from config li', () => {
@@ -60,6 +61,53 @@ describe('Inline Action workflow', () => {
     const meta = parseInlineAuthoring(document.querySelector('.unity'));
     expect(meta.editLabel).to.equal('Edit in Firefly');
     expect(meta.editIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
+  });
+
+  it('parses upload copy when hero is video-container', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p>
+            <div class="video-container video-holder">
+              <video autoplay muted loop playsinline poster="./media_hero.jpg?width=750&amp;format=jpg">
+                <source src="/cc-shared/assets/firefly/video/remove-background/media_1aa46b3e0b7d35da63fe79f69a542763329c1d626.mp4" type="video/mp4">
+              </video>
+              <a class="pause-play-wrapper" href="#">
+                <div class="offset-filler">
+                  <img class="accessibility-control pause-icon" src="/federal/assets/svgs/accessibility-pause.svg" alt="">
+                  <img class="accessibility-control play-icon" src="/federal/assets/svgs/accessibility-play.svg" alt="">
+                </div>
+              </a>
+            </div>
+            <a href="/cc-shared/assets/svg/s2-icon-upload-20-n.svg">icon</a> Upload your image
+          </p>
+          <p>Or drag and drop here</p>
+          <p>File must be JPEG(JPG), PNG, or WEBP and up to 100MB.</p>
+          <p>Adobe <a href="https://www.adobe.com/legal/terms.html">Terms of Use</a></p>
+        </div></div>
+      </div>`;
+    const vp = document.querySelector('.unity > div > div');
+    const meta = parseInlineAuthoring(document.querySelector('.unity'));
+    expect(meta.uploadIconHref).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-n.svg');
+    expect(meta.uploadLabel).to.equal('Upload your image');
+    expect(extractHeroMedia(vp).querySelector('.video-container video')).to.exist;
+  });
+
+  it('moves authored picture or video-container into ia-preview', () => {
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p><picture><img src="./hero.jpg" alt=""></picture></p>
+          <p><a href="/cc-shared/assets/svg/s2-icon-upload-20-n.svg">icon</a> Upload your image</p>
+          <p>Or drag and drop here</p>
+          <p>Terms</p>
+        </div></div>
+      </div>`;
+    const vp = document.querySelector('.unity > div > div');
+    const preview = extractHeroMedia(vp);
+    expect(preview.classList.contains('ia-preview')).to.be.true;
+    expect(preview.querySelector('picture img')?.getAttribute('src')).to.include('hero.jpg');
+    expect(vp.querySelector('picture')).to.not.exist;
   });
 
   it('parses split upload paragraphs (icon row + label row)', () => {
@@ -93,12 +141,12 @@ describe('Inline Action workflow', () => {
     window._satellite = {
       track: (_, data) => trackedEvents.push(data?.data?.web?.webInteraction?.name),
     };
-    document.body.innerHTML = await readFile({ path: './mocks/inline-action-body.html' });
+    document.body.innerHTML = inlineActionBody;
     const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
     await init(document.querySelector('.unity.workflow-inline-action'));
     document.querySelector('.upload-action-container .action-button').click();
-    expect(trackedEvents).to.include('Upload asset CTA | UnityWidget');
-    expect(trackedEvents).to.not.include('Click Drag and drop | UnityWidget');
+    expect(trackedEvents).to.include('Upload asset CTA|UnityWidget');
+    expect(trackedEvents).to.not.include('Click Drag and drop|UnityWidget');
     delete window._satellite;
   });
 
@@ -107,7 +155,7 @@ describe('Inline Action workflow', () => {
     window._satellite = {
       track: (_, data) => trackedEvents.push(data?.data?.web?.webInteraction?.name),
     };
-    document.body.innerHTML = await readFile({ path: './mocks/inline-action-body.html' });
+    document.body.innerHTML = inlineActionBody;
     const { default: init } = await import('../../../../unitylibs/blocks/unity/unity.js');
     await init(document.querySelector('.unity.workflow-inline-action'));
     const widget = document.querySelector('.ia-widget');
@@ -117,12 +165,45 @@ describe('Inline Action workflow', () => {
     document.querySelector('.ia-edit-in-firefly').click();
     document.querySelector('.ia-nba-card[data-nba="upscale"]').click();
     await new Promise((resolve) => { setTimeout(resolve, 50); });
-    expect(trackedEvents).to.include('Try again | UnityWidget');
-    expect(trackedEvents.filter((name) => name === 'Click Drag and drop | UnityWidget')).to.have.length(0);
-    expect(trackedEvents).to.include('Download | UnityWidget');
-    expect(trackedEvents).to.include('Edit in Firefly | UnityWidget');
-    expect(trackedEvents).to.include('Upscale -- Do more with | UnityWidget');
+    expect(trackedEvents).to.include('Try again|UnityWidget');
+    expect(trackedEvents.filter((name) => name === 'Click Drag and drop|UnityWidget')).to.have.length(0);
+    expect(trackedEvents).to.include('Download|UnityWidget');
+    expect(trackedEvents).to.include('Edit in Firefly|UnityWidget');
+    expect(trackedEvents).to.include('Upscale - Do more with|UnityWidget');
     delete window._satellite;
+  });
+
+  it('renders hero preview video from authored video-container', async () => {
+    const videoUrl = '/cc-shared/assets/firefly/video/hero.mp4';
+    document.body.innerHTML = `
+      <div class="unity workflow-inline-action widget-inline-action">
+        <div><div>
+          <p>
+            <div class="video-container video-holder">
+              <video autoplay muted loop playsinline poster="./hero.jpg">
+                <source src="${videoUrl}" type="video/mp4">
+              </video>
+              <a class="pause-play-wrapper" href="#">
+                <img class="accessibility-control pause-icon" src="/federal/assets/svgs/accessibility-pause.svg" alt="">
+              </a>
+            </div>
+            <a href="/cc-shared/assets/svg/s2-icon-upload-20-n.svg">icon</a> Upload your image
+          </p>
+          <p>Or drag and drop here</p>
+          <p>File limits</p>
+          <p>Terms</p>
+        </div></div>
+        <div><div><ul><li><span class="icon icon-operation-removeBackground"></span></li></ul></div></div>
+      </div>`;
+    const { default: InlineActionWidget } = await import('../../../../unitylibs/core/widgets/inline-action/inline-action.js');
+    const widget = new InlineActionWidget(null, document.querySelector('.unity'), { targetCfg: { actionMap: {} } });
+    await widget.initWidget();
+    const video = document.querySelector('.ia-preview .video-container video');
+    expect(video).to.exist;
+    expect(video.querySelector('source')?.getAttribute('src')).to.equal(videoUrl);
+    expect(document.querySelector('.ia-preview picture')).to.not.exist;
+    const uploadIcon = document.querySelector('.upload-action-container .action-button picture img');
+    expect(uploadIcon?.getAttribute('src')).to.equal('/cc-shared/assets/svg/s2-icon-upload-20-n.svg');
   });
 
   it('initializes widget and action binder', async () => {

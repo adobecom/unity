@@ -1,17 +1,12 @@
 import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
 
+export const InlineActionState = { INITIAL: 'initial', LOADING: 'loading', COMPLETE: 'complete' };
 const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
-
-export const InlineActionState = {
-  INITIAL: 'initial',
-  LOADING: 'loading',
-  COMPLETE: 'complete',
-};
 const DEFAULT_DROPZONE_ICON_IMAGE = '/cc-shared/assets/svg/s2-icon-default-image-20-n.svg';
 const DEFAULT_UPLOAD_ICON = '/cc-shared/assets/svg/s2-icon-upload-20-n.svg';
 
 const normalize = (text) => (text || '').replace(/\s+/g, ' ').trim();
-const stripUrls = (text) => normalize(text.replace(/https?:\/\S+/g, ''));
+const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
 
 function getImgSrc(pic) {
   const mobile = defineDeviceByScreenSize() === 'MOBILE';
@@ -19,9 +14,59 @@ function getImgSrc(pic) {
   return source ? source.srcset.split(' ')[0] : pic.querySelector('img')?.src;
 }
 
+const HERO_MEDIA_SELECTOR = 'picture, .video-container.video-holder';
+const DEFAULT_UPLOAD_LABEL = 'Upload your image';
+
+function makeHeroMediaDecorative(container) {
+  container.querySelectorAll('picture, picture img').forEach((el) => {
+    el.setAttribute('tabindex', '-1');
+    el.setAttribute('role', 'presentation');
+  });
+  const img = container.querySelector('picture img');
+  if (img) {
+    img.loading = 'eager';
+    img.setAttribute('fetchpriority', 'high');
+  }
+}
+
+function wirePreviewVideo(preview) {
+  const video = preview.querySelector('video');
+  if (!video?.hasAttribute('autoplay')) return;
+  const play = () => {
+    video.muted = true;
+    video.play().catch(() => {});
+  };
+  video.addEventListener('loadeddata', play, { once: true });
+  new IntersectionObserver((entries) => {
+    entries.forEach(({ isIntersecting }) => {
+      if (isIntersecting) play();
+      else if (!video.paused) video.pause();
+    });
+  }, { threshold: 0.1 }).observe(video);
+  play();
+}
+
+export function extractHeroMedia(vp) {
+  const media = vp?.querySelector(HERO_MEDIA_SELECTOR);
+  const preview = createTag('div', { class: 'ia-preview' });
+  if (!media) return preview;
+  const mediaPara = media.closest('p');
+  preview.append(media);
+  makeHeroMediaDecorative(preview);
+  wirePreviewVideo(preview);
+  if (mediaPara?.tagName === 'P' && mediaPara.textContent.trim() === '') {
+    mediaPara.remove();
+  }
+  return preview;
+}
+
+function findUploadAnchor(root) {
+  return [...root?.querySelectorAll('a[href*=".svg"]') || []]
+    .find((a) => !a.closest('.video-container'));
+}
+
 function getSvgHref(el) {
-  return el?.querySelector('a[href*=".svg"]')?.getAttribute('href')
-    || el?.querySelector('img[src$=".svg"]')?.getAttribute('src');
+  return el?.querySelector('a[href*=".svg"]')?.getAttribute('href');
 }
 
 function nbaLiText(li, afterIcon = false) {
@@ -52,22 +97,19 @@ function parseNbaIcon(li) {
   return cls?.replace('icon-nba-', '') || null;
 }
 
-function uploadLabelFromPara(para) {
-  const skip = new Set(['BR', 'PICTURE', 'A', 'IMG', 'SPAN']);
-  const parts = [];
-  para?.childNodes.forEach((n) => {
-    if (skip.has(n.nodeName)) return;
-    if (n.nodeType === Node.TEXT_NODE) parts.push(n.textContent);
-  });
-  return normalize(parts.join(''));
+function textFromDirectNodes(el) {
+  return normalize([...el?.childNodes || []]
+    .filter((n) => n.nodeType === Node.TEXT_NODE)
+    .map((n) => n.textContent)
+    .join(''));
 }
 
 const hasUploadMarker = (para) => para?.querySelector(
   'span[class*=icon-share], span[class*=icon-upload], a[href*=".svg"], img[src$=".svg"]:not(.video-container img)',
 );
 
-const isViewportColumn = (el) => el?.tagName === 'DIV' && el.querySelector('picture, p')
-  && ![...el.children].some((child) => child.tagName === 'DIV' && child.querySelector('picture, p'));
+const isViewportColumn = (el) => el?.tagName === 'DIV' && el.querySelector(`${HERO_MEDIA_SELECTOR}, p`)
+  && ![...el.children].some((child) => child.tagName === 'DIV' && child.querySelector(`${HERO_MEDIA_SELECTOR}, p`));
 
 function getViewportBlock(unityEl) {
   const blocks = [...(unityEl.querySelector(':scope > div')?.children || [])].filter(isViewportColumn);
@@ -75,17 +117,24 @@ function getViewportBlock(unityEl) {
 }
 
 function parseViewportCopy(vp) {
-  const empty = { heroPic: null, uploadIconHref: undefined, uploadLabel: 'Upload your image', dragHint: '', fileLimit: '', legalHtml: '' };
-  if (!vp) return empty;
+  if (!vp) {
+    return { uploadIconHref: undefined, uploadLabel: '', dragHint: '', fileLimit: '', legalHtml: '' };
+  }
+  const media = vp.querySelector(HERO_MEDIA_SELECTOR);
+  const mediaPara = media?.closest('p');
   const paragraphs = [...vp.querySelectorAll(':scope > p')];
   const bodyParas = paragraphs.slice(0, -1);
   const uploadPara = bodyParas.find(hasUploadMarker);
-  const copyParas = bodyParas.filter((p) => p !== uploadPara
-    && !(p.querySelector('picture') && !hasUploadMarker(p) && !uploadLabelFromPara(p)));
+  const uploadAnchor = findUploadAnchor(vp);
+  const copyParas = bodyParas.filter((p) => {
+    if (p === uploadPara) return false;
+    return !(p === mediaPara && !hasUploadMarker(p) && !p.textContent.trim());
+  });
   return {
-    heroPic: vp.querySelector(':scope > p picture'),
-    uploadIconHref: getSvgHref(uploadPara),
-    uploadLabel: uploadLabelFromPara(uploadPara) || empty.uploadLabel,
+    uploadIconHref: uploadAnchor?.getAttribute('href'),
+    uploadLabel: uploadPara
+      ? textFromDirectNodes(uploadPara)
+      : normalize(uploadAnchor?.nextSibling?.textContent || ''),
     dragHint: copyParas[0]?.textContent.trim() || '',
     fileLimit: copyParas[1]?.textContent.trim() || '',
     legalHtml: paragraphs.at(-1)?.innerHTML || '',
@@ -98,9 +147,9 @@ function placeholderRowText(root, iconClass) {
 }
 
 export function parseInlineAuthoring(unityEl) {
-  const {
-    heroPic, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
-  } = parseViewportCopy(getViewportBlock(unityEl));
+  const { uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml } = parseViewportCopy(
+    getViewportBlock(unityEl),
+  );
   const uls = [...unityEl.querySelectorAll(':scope > div ul')];
   const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
   const configUl = uls.find((ul) => ul !== nbaUl && ul.querySelector('[class*="icon-"]'));
@@ -118,11 +167,11 @@ export function parseInlineAuthoring(unityEl) {
     if (!cls) return;
     if (cls.startsWith('icon-operation-')) config.operation = cls.replace('icon-operation-', '');
     else if (cls === 'icon-download') {
-      config.downloadLabel = stripUrls(li.textContent) || config.downloadLabel;
-      config.downloadIconHref = getSvgHref(li) || config.downloadIconHref;
+      config.downloadLabel = textFromDirectNodes(li);
+      config.downloadIconHref = getSvgHref(li);
     } else if (cls === 'icon-aiPhotoEditor') {
-      config.editLabel = stripUrls(li.textContent) || config.editLabel;
-      config.editIconHref = getSvgHref(li) || config.editIconHref;
+      config.editLabel = textFromDirectNodes(li);
+      config.editIconHref = getSvgHref(li);
     } else if (cls === 'icon-placeholder-nba') config.nbaHeading = li.textContent.trim();
   });
 
@@ -134,7 +183,6 @@ export function parseInlineAuthoring(unityEl) {
   }).filter(Boolean);
 
   return {
-    heroSrc: heroPic ? getImgSrc(heroPic) : '',
     uploadIconHref,
     uploadLabel,
     dragHint,
@@ -142,13 +190,9 @@ export function parseInlineAuthoring(unityEl) {
     legalHtml,
     ...config,
     nbaCards,
-    loadingText: placeholderRowText(unityEl, 'icon-placeholder-loading')
-      || placeholderRowText(unityEl, 'placeholder-loading')
-      || 'Uploading image, loading remove background',
+    loadingText: placeholderRowText(unityEl, 'icon-placeholder-loading'),
   };
 }
-
-const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
 
 function appendIconContent(el, { href, spriteId, size, picture = false }) {
   if (href) {
@@ -165,7 +209,7 @@ function buildUploadActionButton(uploadIconHref, uploadLabel) {
   });
   button.append(
     createTag('picture', {}, createTag('img', { src: uploadIconHref || DEFAULT_UPLOAD_ICON, alt: '', loading: 'lazy' })),
-    document.createTextNode(` ${uploadLabel}`),
+    document.createTextNode(` ${uploadLabel || DEFAULT_UPLOAD_LABEL}`),
   );
   return button;
 }
@@ -274,16 +318,9 @@ function buildResultSection(meta) {
   return createTag('div', { class: 'ia-result' }, checker);
 }
 
-function buildLeftPanel(meta) {
+function buildLeftPanel(heroPreview, meta) {
   const left = createTag('div', { class: 'ia-panel ia-panel-left' });
-  const preview = createTag('div', { class: 'ia-preview' }, createTag('img', {
-    class: 'ia-preview-img',
-    src: meta.heroSrc,
-    alt: '',
-    loading: 'eager',
-    fetchpriority: 'high',
-  }));
-  left.append(preview, buildGhostOverlay(), buildResultSection(meta));
+  left.append(heroPreview, buildGhostOverlay(), buildResultSection(meta));
   return left;
 }
 
@@ -357,7 +394,9 @@ export default class InlineActionWidget {
   }
 
   async initWidget() {
+    const viewport = getViewportBlock(this.el);
     this.parsedData = parseInlineAuthoring(this.el);
+    const heroPreview = extractHeroMedia(viewport);
     const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const progressHolder = TransitionScreen.createProgressBar();
@@ -367,7 +406,7 @@ export default class InlineActionWidget {
     this.progressScreen.progressText = this.parsedData.loadingText;
 
     appendSpriteSheet(root, this.spriteContent);
-    root.append(buildLeftPanel(this.parsedData), right);
+    root.append(buildLeftPanel(heroPreview, this.parsedData), right);
 
     insertInlineActionRoot(this.el, this, root);
     this.widget = root;
