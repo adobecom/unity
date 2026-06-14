@@ -33,6 +33,7 @@
   --ia-radius-sm: 8px;
   --ia-drop-zone-border: 2px dashed rgb(255 255 255 / 50%);
   --ia-button-font-size: 19px;
+  --ia-panel-left-bg: transparent;
   margin-inline: auto;
   padding-bottom: 76px;
 }
@@ -42,11 +43,14 @@
   box-sizing: border-box;
   padding: 16px;
   border-radius: 20px;
-  isolation: isolate;
   overflow: hidden;
-  background: #292929;
+  background: rgb(41 41 41 / 60%);
   height: auto;
   max-height: none;
+}
+
+.unity-inline-action.unity-enabled > .interactive-area.light {
+  background: rgb(41 41 41 / 60%);
 }
 
 .ia-widget {
@@ -59,7 +63,7 @@
   max-height: none;
   margin: 0;
   border-radius: 10px;
-  background: #292929;
+  background: transparent;
   color: #fff;
   box-sizing: border-box;
   position: relative;
@@ -79,7 +83,7 @@
 
 .ia-panel-left {
   order: 2;
-  background: #1b1b1b;
+  background: var(--ia-panel-left-bg);
 }
 
 .ia-widget[data-state="initial"] .ia-panel-right,
@@ -367,8 +371,7 @@
   justify-content: center;
   gap: 16px;
   box-sizing: border-box;
-  background-color: inherit;
-  background-size: 26px 26px;
+  background-color: transparent;
   cursor: pointer;
   flex: none;
   width: 100%;
