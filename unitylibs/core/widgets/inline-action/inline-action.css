@@ -643,8 +643,6 @@
   text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
 }
 
 .ia-nba-arrow {
@@ -750,7 +748,6 @@
   position: absolute;
   inset: 0;
   background: rgb(0 0 0 / 80%);
-  z-index: 10;
   border-radius: inherit;
   box-sizing: border-box;
 }
@@ -760,6 +757,7 @@
 }
 
 .unity-inline-action.unity-enabled .ia-widget .alert-holder {
+  z-index: 10;
   padding: 0 16px;
   box-sizing: border-box;
 }
