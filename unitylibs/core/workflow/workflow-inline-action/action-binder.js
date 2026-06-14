@@ -777,7 +777,14 @@ export default class ActionBinder {
       DIV: (el, action) => {
         if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, b);
       },
-      A: (el) => {
+      A: (el, action) => {
+        if (action === 'interrupt') {
+          el.addEventListener('click', async (e) => {
+            this.preventDefault(e);
+            await this.executeActionMaps(action);
+          });
+          return;
+        }
         if (el.classList.contains('action-button')) this.bindUploadActionButton(el, b);
       },
       INPUT: (el, action) => {
