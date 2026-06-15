@@ -2,7 +2,7 @@ import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-acrobat/action-binder.js';
 
-let mockUpdateProgressBar = null;
+const mockUpdateProgressBar = null;
 
 describe('ActionBinder', () => {
   let actionBinder;
@@ -1104,6 +1104,113 @@ describe('ActionBinder', () => {
           const result = await actionBinder.handleRedirect(cOpts, filesData);
 
           expect(result).to.be.false;
+        });
+
+        it('should inject x_api_client_location in redirect URL for verb-dropzone config', async () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          actionBinder.workflowCfg.targetCfg = {
+            sendSplunkAnalytics: true,
+            experimentationOn: [],
+            showSplashScreen: false,
+            redirectParams: {
+              x_api_client_location: {
+                source: 'pageUrlPath',
+                stripPrefix: '/express/',
+                transform: 'reverseSegments',
+              },
+            },
+          };
+          actionBinder.redirectUrl = 'https://test-redirect-url.com?other=param';
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(result).to.be.true;
+          expect(actionBinder.redirectUrl).to.include('x_api_client_location=cv_resume_create');
+          expect(actionBinder.redirectUrl).to.include('other=param');
+          history.pushState({}, '', '/');
+        });
+      });
+
+      describe('getComputedRedirectParams', () => {
+        let originalPath;
+
+        beforeEach(() => {
+          originalPath = window.location.pathname;
+          actionBinder.workflowCfg.targetCfg = {
+            sendSplunkAnalytics: true,
+            experimentationOn: [],
+            showSplashScreen: false,
+            redirectParams: {
+              x_api_client_location: {
+                source: 'pageUrlPath',
+                stripPrefix: '/express/',
+                transform: 'reverseSegments',
+              },
+            },
+          };
+        });
+
+        afterEach(() => {
+          history.pushState({}, '', originalPath);
+        });
+
+        it('should return queryString unchanged when redirectParams is not configured', () => {
+          actionBinder.workflowCfg.targetCfg = { sendSplunkAnalytics: true };
+          const queryString = 'x_api_client_location=old_value&other=param';
+          expect(actionBinder.getComputedRedirectParams(queryString)).to.equal(queryString);
+        });
+
+        it('should append x_api_client_location for /express/create/resume/cv', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          expect(actionBinder.getComputedRedirectParams('other=param'))
+            .to.equal('other=param&x_api_client_location=cv_resume_create');
+        });
+
+        it('should append x_api_client_location for /express/create/resume', () => {
+          history.pushState({}, '', '/express/create/resume');
+          expect(actionBinder.getComputedRedirectParams('other=param'))
+            .to.equal('other=param&x_api_client_location=resume_create');
+        });
+
+        it('should update existing x_api_client_location in-place without changing other params', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          const queryString = 'foo=bar&x_api_client_location=old_value&baz=qux';
+          expect(actionBinder.getComputedRedirectParams(queryString))
+            .to.equal('foo=bar&x_api_client_location=cv_resume_create&baz=qux');
+        });
+
+        it('should preserve other param encodings unchanged', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          const queryString = 'foo=bar%20baz&other=val%2Bplus';
+          expect(actionBinder.getComputedRedirectParams(queryString))
+            .to.equal('foo=bar%20baz&other=val%2Bplus&x_api_client_location=cv_resume_create');
+        });
+
+        it('should not add x_api_client_location when URL path does not contain stripPrefix', () => {
+          history.pushState({}, '', '/some/other/path');
+          const queryString = 'other=param';
+          expect(actionBinder.getComputedRedirectParams(queryString)).to.equal(queryString);
+        });
+
+        it('should skip param when source is not pageUrlPath', () => {
+          actionBinder.workflowCfg.targetCfg.redirectParams.x_api_client_location.source = 'unknown';
+          history.pushState({}, '', '/express/create/resume/cv');
+          const queryString = 'other=param';
+          expect(actionBinder.getComputedRedirectParams(queryString)).to.equal(queryString);
+        });
+
+        it('should handle trailing slash in URL path', () => {
+          history.pushState({}, '', '/express/create/resume/cv/');
+          expect(actionBinder.getComputedRedirectParams(''))
+            .to.equal('x_api_client_location=cv_resume_create');
+        });
+
+        it('should return only the new param when queryString is empty', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          expect(actionBinder.getComputedRedirectParams(''))
+            .to.equal('x_api_client_location=cv_resume_create');
         });
       });
     });
