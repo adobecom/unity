@@ -105,14 +105,6 @@ function getPlatformInfo(userAgent) {
   };
 }
 
-export function isIOSWebKit(userAgent) {
-  const ua = getUserAgent(userAgent);
-  if (getPlatformInfo(ua).platform === 'ios') return true;
-  if (isIPad(ua)) return true;
-  if (typeof navigator === 'undefined') return false;
-  return ua.includes('Mac') && navigator.maxTouchPoints > 1;
-}
-
 export default function isDesktop(userAgent) {
   const ua = getUserAgent(userAgent);
   if (isHeadlessBrowser(ua)) return true;
