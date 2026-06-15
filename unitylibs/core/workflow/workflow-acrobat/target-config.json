@@ -81,7 +81,7 @@
     "target": ".foreground .verb-dropzone-area",
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/drafts/ruchika/splashscreen",
+      "fragmentLink": "/express/unity/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
