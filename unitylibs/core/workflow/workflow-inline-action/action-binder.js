@@ -15,6 +15,7 @@ import {
 } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
+import { isIOSWebKit } from '../../../utils/device-detection.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -420,7 +421,7 @@ export default class ActionBinder {
     };
   }
 
-  async callConnector(cOpts, { openInSameTab = false } = {}) {
+  async callConnector(cOpts, { openInSameTab = false, popup = null } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -435,6 +436,8 @@ export default class ActionBinder {
       if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
       this.setProgress(PROGRESS.COMPLETE, true);
       window.location.assign(res.url);
+    } else if (popup && !popup.closed) {
+      popup.location.replace(res.url);
     } else {
       window.open(res.url, '_blank');
     }
@@ -570,6 +573,7 @@ export default class ActionBinder {
     let userCount = this.getUserCount();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
+    const popup = isIOSWebKit() ? window.open('about:blank', '_blank') : null;
     if (downloadsLocally) {
       try {
         await this.triggerDownload(this.resultUrl);
@@ -577,7 +581,6 @@ export default class ActionBinder {
         this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
       } catch (e) {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-        return;
       }
     }
     await this.callConnector(await this.buildConnectorPayload({
@@ -585,7 +588,7 @@ export default class ActionBinder {
       verb,
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
-    }));
+    }), { popup });
   }
 
   async createErrorToast() {

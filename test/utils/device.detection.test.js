@@ -1,7 +1,7 @@
 /* eslint-disable quote-props */
 /* eslint-disable quotes */
 import { expect } from '@esm-bundle/chai';
-import isDesktop from '../../unitylibs/utils/device-detection.js';
+import isDesktop, { isIOSWebKit } from '../../unitylibs/utils/device-detection.js';
 
 describe('Device Detection', () => {
   let originalNavigator;
@@ -85,5 +85,27 @@ describe('Device Detection', () => {
     Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Touch Tablet PC';
     expect(isDesktop(userAgent)).to.equal(false);
+  });
+
+  it('should detect iPhone as iOS WebKit', () => {
+    const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1';
+    expect(isIOSWebKit(userAgent)).to.equal(true);
+  });
+
+  it('should detect iPad as iOS WebKit', () => {
+    const userAgent = 'Mozilla/5.0 (iPad; CPU OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1';
+    expect(isIOSWebKit(userAgent)).to.equal(true);
+  });
+
+  it('should detect iPadOS Mac UA with touch as iOS WebKit', () => {
+    Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
+    Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15', configurable: true });
+    expect(isIOSWebKit()).to.equal(true);
+  });
+
+  it('should not detect macOS desktop as iOS WebKit', () => {
+    Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+    const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+    expect(isIOSWebKit(userAgent)).to.equal(false);
   });
 });
