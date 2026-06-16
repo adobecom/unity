@@ -421,7 +421,20 @@ export default class ActionBinder {
     };
   }
 
-  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false } = {}) {
+  navigateToConnectorUrl(url, { openInSameTab = false, useSplashProgress = false } = {}) {
+    if (openInSameTab) {
+      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+        this.setProgress(PROGRESS.COMPLETE, true);
+      }
+      window.location.href = url;
+      return;
+    }
+    const opened = window.open(url, '_blank');
+    if (!opened) window.location.href = url;
+  }
+
+  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false, deferNavigation = false } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -432,15 +445,8 @@ export default class ActionBinder {
       error.status = res?.status;
       throw error;
     }
-    if (openInSameTab) {
-      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
-        this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
-        this.setProgress(PROGRESS.COMPLETE, true);
-      }
-      window.location.href = res.url;
-    } else {
-      const opened = window.open(res.url, '_blank');
-      if (!opened) window.location.href = res.url;
+    if (!deferNavigation) {
+      this.navigateToConnectorUrl(res.url, { openInSameTab, useSplashProgress });
     }
     return res;
   }
@@ -589,7 +595,14 @@ export default class ActionBinder {
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
     });
+
     if (downloadsLocally) {
+      // Start connector fetch before download — Safari blocks fetch() started after a file download.
+      const connectorPromise = this.callConnector(connectorPayload, {
+        openInSameTab,
+        useSplashProgress: false,
+        deferNavigation: true,
+      });
       try {
         await this.startLocalDownload();
         this.incrementUserCount();
@@ -597,7 +610,15 @@ export default class ActionBinder {
       } catch (e) {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
+      try {
+        const res = await connectorPromise;
+        this.navigateToConnectorUrl(res.url, { openInSameTab, useSplashProgress: false });
+      } catch (e) {
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+      }
+      return;
     }
+
     try {
       await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
     } catch (e) {
