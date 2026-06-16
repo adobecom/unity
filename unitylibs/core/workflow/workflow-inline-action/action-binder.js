@@ -570,24 +570,27 @@ export default class ActionBinder {
     else await this.anonymousFlow(file);
   }
 
-  startLocalDownload() {
+  async startLocalDownload() {
     if (this.resultBlob?.size) {
       this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
       return;
     }
-    this.triggerDownload(this.resultUrl).catch((e) => {
-      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-    });
+    await this.triggerDownload(this.resultUrl);
   }
 
   async handleConnector(el, isDownload = false) {
+    const openInSameTab = !isDesktop();
     const userCount = this.getUserCount();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
     if (downloadsLocally) {
-      this.startLocalDownload();
-      this.incrementUserCount();
-      this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+      try {
+        await this.startLocalDownload();
+        this.incrementUserCount();
+        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+      } catch (e) {
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+      }
     }
     try {
       await this.callConnector(await this.buildConnectorPayload({
@@ -595,7 +598,7 @@ export default class ActionBinder {
         verb,
         connectorAssetId: this.resultAssetId,
         fileType: this.filesData.type,
-      }), { openInSameTab: !isDesktop(), useSplashProgress: false });
+      }), { openInSameTab, useSplashProgress: false });
     } catch (e) {
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
     }
