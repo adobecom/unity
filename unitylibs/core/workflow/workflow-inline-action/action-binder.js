@@ -595,6 +595,23 @@ export default class ActionBinder {
     });
 
     if (downloadsLocally) {
+      let connectorUrl;
+      try {
+        const res = await this.serviceHandler.postCallToService(
+          this.apiConfig.connectorApiEndPoint,
+          { body: JSON.stringify(connectorPayload) },
+          this.uploadErrorOpts(),
+        );
+        if (!res?.url) {
+          const error = new Error('Error connecting to App');
+          error.status = res?.status;
+          throw error;
+        }
+        connectorUrl = res.url;
+      } catch (e) {
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+        return;
+      }
       try {
         await this.startLocalDownload();
         this.incrementUserCount();
@@ -602,6 +619,8 @@ export default class ActionBinder {
       } catch (e) {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
+      this.navigateToConnectorUrl(connectorUrl, { openInSameTab, useSplashProgress: false });
+      return;
     }
 
     try {
