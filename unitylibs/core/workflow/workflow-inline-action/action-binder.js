@@ -434,7 +434,7 @@ export default class ActionBinder {
     if (!opened) window.location.href = url;
   }
 
-  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false, deferNavigation = false } = {}) {
+  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -445,9 +445,7 @@ export default class ActionBinder {
       error.status = res?.status;
       throw error;
     }
-    if (!deferNavigation) {
-      this.navigateToConnectorUrl(res.url, { openInSameTab, useSplashProgress });
-    }
+    this.navigateToConnectorUrl(res.url, { openInSameTab, useSplashProgress });
     return res;
   }
 
