@@ -595,12 +595,6 @@ export default class ActionBinder {
     });
 
     if (downloadsLocally) {
-      // On mobile, open a blank window now — synchronously, while still within the user gesture
-      // context so popup blockers allow it. We'll navigate it to the connector URL after the
-      // async work is done. This keeps the current tab in place so the download/QuickLook
-      // preview isn't dismissed by our own navigation.
-      const mobileConnectorWindow = openInSameTab ? window.open('', '_blank') : null;
-
       let connectorUrl;
       try {
         const res = await this.serviceHandler.postCallToService(
@@ -615,7 +609,6 @@ export default class ActionBinder {
         }
         connectorUrl = res.url;
       } catch (e) {
-        mobileConnectorWindow?.close();
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
@@ -628,11 +621,12 @@ export default class ActionBinder {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
 
-      if (mobileConnectorWindow) {
-        mobileConnectorWindow.location.href = connectorUrl;
-      } else {
-        this.navigateToConnectorUrl(connectorUrl, { openInSameTab: false, useSplashProgress: false });
-      }
+      // Defer navigation so the browser has a chance to show the download popup before
+      // the current page navigates away. On Android, the download manager handles the
+      // file independently so it completes even after navigation.
+      setTimeout(() => {
+        this.navigateToConnectorUrl(connectorUrl, { openInSameTab, useSplashProgress: false });
+      }, 100);
       return;
     }
 
