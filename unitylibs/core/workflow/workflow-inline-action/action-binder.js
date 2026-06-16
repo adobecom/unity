@@ -23,11 +23,10 @@ const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
 class ServiceHandler {
-  constructor(canvasArea, unityEl, getAdditionalHeaders, onUploadError) {
+  constructor(canvasArea, unityEl, getAdditionalHeaders) {
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
     this.getAdditionalHeaders = getAdditionalHeaders;
-    this.onUploadError = onUploadError;
   }
 
   async postCallToService(api, options, errorCallbackOptions = {}, failOnError = true) {
@@ -56,8 +55,7 @@ class ServiceHandler {
     return response.json();
   }
 
-  showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
-    this.onUploadError?.(errorCallbackOptions.errorCode, errorType);
+  showErrorToast(errorCallbackOptions, error, lanaOptions) {
     if (!errorCallbackOptions.errorToastEl) return;
     const msg = this.unityEl.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim();
     this.canvasArea.forEach((element) => {
@@ -101,19 +99,45 @@ export default class ActionBinder {
     this.splashProgress = 0;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
     this.initActionListeners = this.initActionListeners.bind(this);
-    this.onUploadError = this.onUploadError.bind(this);
+  }
+
+  getAnalyticsMeta(data = {}) {
+    return { workflow: WORKFLOW_NAME, ...data };
   }
 
   trackEvent(eventName, data = {}) {
-    sendAnalyticsEvent(new CustomEvent(eventName));
-    this.logAnalyticsinSplunk(eventName, data);
+    const metaData = this.getAnalyticsMeta(data);
+    sendAnalyticsEvent(new CustomEvent(eventName, {
+      detail: { workflow: meta.workflow },
+    }));
+    this.logAnalyticsinSplunk(eventName, metaData);
   }
 
-  onUploadError(errorCode, errorType = 'server') {
-    this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_ERROR, {
+  trackClientError(errorCode) {
+    this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_CLIENT_ERROR, {
       errorData: { code: errorCode },
       fileMetaData: this.filesData,
-      action: errorType,
+    });
+  }
+
+  trackServerError(callType, error, errorCode = 'error-request') {
+    this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_SERVER_ERROR, {
+      errorData: {
+        code: errorCode,
+        subCode: `${callType} ${error?.status ?? ''}`.trim(),
+        desc: error?.message || undefined,
+      },
+      fileMetaData: this.filesData,
+      assetId: this.assetId || this.resultAssetId,
+      action: callType,
+    });
+  }
+
+  trackConnectorSuccess(verb, assetId) {
+    this.trackEvent(INLINE_ACTION_EVENTS.CONNECTOR_SUCCESS, {
+      assetId: assetId || this.resultAssetId,
+      verb,
+      fileMetaData: this.filesData,
     });
   }
 
@@ -166,7 +190,12 @@ export default class ActionBinder {
   }
 
   logAnalyticsinSplunk(eventName, data) {
-    this.sendAnalyticsToSplunk?.(eventName, this.workflowCfg.productName, { ...data, workflow: WORKFLOW_NAME }, `${unityConfig.apiEndPoint}/log`);
+    this.sendAnalyticsToSplunk?.(
+      eventName,
+      this.workflowCfg.productName,
+      this.getAnalyticsMeta(data),
+      `${unityConfig.apiEndPoint}/log`,
+    );
   }
 
   async initAnalytics() {
@@ -200,7 +229,8 @@ export default class ActionBinder {
   }
 
   handleClientUploadError(errorTypeSelector, errorCode) {
-    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector, errorCode }, '', this.lanaOptions, 'client');
+    this.trackClientError(errorCode);
+    this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, errorType: errorTypeSelector, errorCode }, '', this.lanaOptions);
   }
 
   async validateFile(files) {
@@ -288,8 +318,7 @@ export default class ActionBinder {
       this.signedInFlowInProgress = false;
       this.assetId = null;
       this.resultAssetId = null;
-      sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
-      this.logAnalyticsinSplunk('Cancel|UnityWidget', { assetId });
+      this.trackEvent('Cancel|UnityWidget', { assetId });
       await this.transitionScreen?.showSplashScreen(false);
     } catch (error) {
       await this.transitionScreen?.showSplashScreen(false);
@@ -306,6 +335,7 @@ export default class ActionBinder {
     };
     this.uploadAbortController = new AbortController();
     const { signal } = this.uploadAbortController;
+    let callType = 'asset';
     try {
       const resJson = await this.serviceHandler.postCallToService(
         this.apiConfig.endPoint.assetUpload,
@@ -313,6 +343,7 @@ export default class ActionBinder {
         this.uploadErrorOpts(),
       );
       if (signal.aborted) return false;
+      callType = 'upload';
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
@@ -362,15 +393,8 @@ export default class ActionBinder {
         window.lana?.log(`Message: Upload aborted, Error: ${e.message}`, this.lanaOptions);
         return false;
       }
+      this.trackServerError(callType, e);
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-      this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
-        errorData: {
-          code: 'error-request',
-          subCode: `uploadAsset ${e.status}`,
-          desc: e.message || undefined,
-        },
-        assetId: this.assetId,
-      });
       return false;
     }
   }
@@ -421,24 +445,33 @@ export default class ActionBinder {
   }
 
   async callConnector(cOpts, { openInSameTab = false } = {}) {
-    const res = await this.serviceHandler.postCallToService(
-      this.apiConfig.connectorApiEndPoint,
-      { body: JSON.stringify(cOpts) },
-      this.uploadErrorOpts(),
-    );
-    if (!res?.url) {
-      const error = new Error('Error connecting to App');
-      error.status = res?.status;
-      throw error;
+    try {
+      const res = await this.serviceHandler.postCallToService(
+        this.apiConfig.connectorApiEndPoint,
+        { body: JSON.stringify(cOpts) },
+        this.uploadErrorOpts(),
+      );
+      if (!res?.url) {
+        const error = new Error('Error connecting to App');
+        error.status = res?.status;
+        throw error;
+      }
+      this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
+      if (openInSameTab) {
+        if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+        this.setProgress(PROGRESS.COMPLETE, true);
+        window.location.assign(res.url);
+      } else {
+        window.open(res.url, '_blank');
+      }
+      return res;
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        this.trackServerError('connector', e);
+        e.analyticsTracked = true;
+      }
+      throw e;
     }
-    if (openInSameTab) {
-      if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
-      this.setProgress(PROGRESS.COMPLETE, true);
-      window.location.assign(res.url);
-    } else {
-      window.open(res.url, '_blank');
-    }
-    return res;
   }
 
   static downloadFilename(mimeType = 'image/png') {
@@ -522,6 +555,7 @@ export default class ActionBinder {
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
       if (e.name !== 'AbortError') {
+        if (!e.analyticsTracked) this.trackServerError('upload', e);
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
     } finally {
@@ -546,6 +580,7 @@ export default class ActionBinder {
       this.widgetRef?.setState(InlineActionState.COMPLETE);
       this.cacheResultBlob(this.resultUrl).catch(() => {});
     } catch (e) {
+      this.trackServerError('upload', e);
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       this.widgetRef?.setState(InlineActionState.INITIAL);
     }
@@ -560,7 +595,7 @@ export default class ActionBinder {
     this.resultUrl = null;
     this.resultBlob = null;
     this.filesData = { count: 1, size: file.size, type: file.type, name: file.name };
-    sendAnalyticsEvent(new CustomEvent('Uploading Started|UnityWidget'));
+    this.trackEvent('Uploading Started|UnityWidget');
     const { isGuest } = await isGuestUser();
     if (isGuest === false) await this.signedInFlow(file);
     else await this.anonymousFlow(file);
@@ -576,16 +611,23 @@ export default class ActionBinder {
         userCount = this.incrementUserCount();
         this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
       } catch (e) {
+        this.trackServerError('upload', e);
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
     }
-    await this.callConnector(await this.buildConnectorPayload({
-      defaultPrompt: el?.dataset?.defaultPrompt,
-      verb,
-      connectorAssetId: this.resultAssetId,
-      fileType: this.filesData.type,
-    }));
+    try {
+      await this.callConnector(await this.buildConnectorPayload({
+        defaultPrompt: el?.dataset?.defaultPrompt,
+        verb,
+        connectorAssetId: this.resultAssetId,
+        fileType: this.filesData.type,
+      }));
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+      }
+    }
   }
 
   async createErrorToast() {
@@ -649,20 +691,17 @@ export default class ActionBinder {
   bindUploadAnalytics(b) {
     b.querySelectorAll('.upload-action-container .action-button').forEach((btn) => {
       btn.addEventListener('click', () => {
-        sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.UPLOAD_ASSET_CTA));
-        this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.UPLOAD_ASSET_CTA, { fileMetaData: this.filesData });
+        this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_ASSET_CTA, { fileMetaData: this.filesData });
       });
     });
     b.querySelectorAll('.ia-dropzone, .drop-zone.ia-dropzone').forEach((dropZone) => {
       dropZone.addEventListener('click', (e) => {
         if (e.target.closest('.upload-action-container')) return;
-        sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP));
-        this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
+        this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
       });
       dropZone.addEventListener('drop', (e) => {
         if (e.dataTransfer?.files?.length) {
-          sendAnalyticsEvent(new CustomEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP));
-          this.logAnalyticsinSplunk(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
+          this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
         }
       });
     });
@@ -767,7 +806,6 @@ export default class ActionBinder {
       this.canvasArea,
       this.unityEl,
       this.getAdditionalHeaders.bind(this),
-      this.onUploadError,
     );
     await this.initAnalytics();
     if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();

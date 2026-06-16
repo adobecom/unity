@@ -4,7 +4,9 @@ export const INLINE_ACTION_EVENTS = {
   DOWNLOAD: 'Download|UnityWidget',
   DOWNLOAD_SUCCESS: 'Download Success|UnityWidget',
   EDIT_IN_FIREFLY: 'Edit in Firefly|UnityWidget',
-  UPLOAD_ERROR: 'Upload error|UnityWidget',
+  UPLOAD_CLIENT_ERROR: 'Upload client error|UnityWidget',
+  UPLOAD_SERVER_ERROR: 'Upload server error|UnityWidget',
+  CONNECTOR_SUCCESS: 'Connector Success|UnityWidget',
   TRY_AGAIN: 'Try again|UnityWidget',
   nbaClick: (label) => `${label} - Do more with|UnityWidget`,
 };
@@ -53,7 +55,7 @@ function getSessionID() {
 
 function createPayloadForSplunk(metaData) {
   const {
-    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation,
+    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation, workflow,
     styleEventName, voiceEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
   return {
@@ -69,6 +71,7 @@ function createPayloadForSplunk(metaData) {
     content: {
       ...(assetId && { assetId }),
       ...(fileMetaData && { fileMetaData }),
+      ...(workflow && { workflow }),
       ...(styleEventName && { style: styleEventName }),
       ...(voiceEventName && { voice: voiceEventName }),
       ...(modelGenEventName && { model: modelGenEventName }),
