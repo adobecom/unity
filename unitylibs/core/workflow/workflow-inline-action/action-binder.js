@@ -97,18 +97,23 @@ export default class ActionBinder {
     this.uploadAbortController = null;
     this.signedInFlowInProgress = false;
     this.splashProgress = 0;
+    this.isGuestUser = undefined;
     this.operation = widgetRef?.meta?.operation || 'removeBackground';
     this.initActionListeners = this.initActionListeners.bind(this);
   }
 
   getAnalyticsMeta(data = {}) {
-    return { workflow: WORKFLOW_NAME, ...data };
+    return {
+      workflow: WORKFLOW_NAME,
+      ...(this.isGuestUser !== undefined && { isGuestUser: this.isGuestUser }),
+      ...data,
+    };
   }
 
   trackEvent(eventName, data = {}) {
     const metaData = this.getAnalyticsMeta(data);
     sendAnalyticsEvent(new CustomEvent(eventName, {
-      detail: { workflow: meta.workflow },
+      detail: { workflow: metaData.workflow },
     }));
     this.logAnalyticsinSplunk(eventName, metaData);
   }
@@ -595,8 +600,9 @@ export default class ActionBinder {
     this.resultUrl = null;
     this.resultBlob = null;
     this.filesData = { count: 1, size: file.size, type: file.type, name: file.name };
-    this.trackEvent('Uploading Started|UnityWidget');
     const { isGuest } = await isGuestUser();
+    this.isGuestUser = isGuest;
+    this.trackEvent('Uploading Started|UnityWidget');
     if (isGuest === false) await this.signedInFlow(file);
     else await this.anonymousFlow(file);
   }

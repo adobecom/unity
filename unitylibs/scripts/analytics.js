@@ -55,7 +55,7 @@ function getSessionID() {
 
 function createPayloadForSplunk(metaData) {
   const {
-    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation, workflow,
+    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation, workflow, isGuestUser,
     styleEventName, voiceEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
   return {
@@ -87,6 +87,7 @@ function createPayloadForSplunk(metaData) {
     user: {
       locale: document.documentElement.lang.toLocaleLowerCase(),
       id: getSessionID(),
+      ...(isGuestUser !== undefined && { isGuestUser }),
     },
     error: errorData ? {
       type: errorData.code,
