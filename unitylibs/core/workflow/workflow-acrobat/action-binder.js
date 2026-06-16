@@ -494,6 +494,29 @@ export default class ActionBinder {
       });
   }
 
+  getComputedRedirectParams(queryString) {
+    const params = this.workflowCfg.targetCfg?.redirectParams;
+    if (!params) return queryString;
+    let updatedQuery = queryString || '';
+    for (const [key, cfg] of Object.entries(params)) {
+      if (cfg.source !== 'pageUrlPath') continue;
+      const path = window.location.pathname;
+      const after = cfg.stripPrefix ? path.split(cfg.stripPrefix)[1] : path.slice(1);
+      if (!after) continue;
+      const value = cfg.transform === 'reverseSegments'
+        ? after.split('/').filter(Boolean).reverse().join('_')
+        : after;
+      const encodedValue = encodeURIComponent(value);
+      const paramRegex = new RegExp(`(^|&)(${key}=)[^&]*`);
+      if (paramRegex.test(updatedQuery)) {
+        updatedQuery = updatedQuery.replace(paramRegex, `$1${key}=${encodedValue}`);
+      } else {
+        updatedQuery = updatedQuery ? `${updatedQuery}&${key}=${encodedValue}` : `${key}=${encodedValue}`;
+      }
+    }
+    return updatedQuery;
+  }
+
   async handleRedirect(cOpts, filesData) {
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
@@ -518,7 +541,8 @@ export default class ActionBinder {
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
     const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
-    this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
+    const updatedQuery = this.getComputedRedirectParams(queryString);
+    this.redirectUrl = `${baseUrl}?${additionalParams}${updatedQuery}`;
     this.dispatchAnalyticsEvent('redirectUrl', { ...filesData, redirectUrl: this.redirectUrl });
     return true;
   }
@@ -811,7 +835,7 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
-      const el = b.querySelector(key);
+      const el = b.querySelector(key) ?? document.querySelector(key);
       if (!el) return;
       switch (true) {
         case el.nodeName === 'A':
@@ -821,12 +845,32 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
+          el.addEventListener('dragover', (e) => e.preventDefault());
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
           });
           break;
+        case el.nodeName === 'BODY': {
+          const onDragOver = (e) => e.preventDefault();
+          const onDrop = async (e) => {
+            e.preventDefault();
+            const { files, totalFileSize } = this.extractFiles(e);
+            await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
+          };
+          const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+              el.addEventListener('dragover', onDragOver);
+              el.addEventListener('drop', onDrop);
+            } else {
+              el.removeEventListener('dragover', onDragOver);
+              el.removeEventListener('drop', onDrop);
+            }
+          });
+          observer.observe(b.querySelector(this.workflowCfg.targetCfg.selector));
+          break;
+        }
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
