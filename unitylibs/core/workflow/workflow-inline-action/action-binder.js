@@ -433,11 +433,14 @@ export default class ActionBinder {
       throw error;
     }
     if (openInSameTab) {
-      if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
-      this.setProgress(PROGRESS.COMPLETE, true);
-      window.location.assign(res.url);
+      if (this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+        this.setProgress(PROGRESS.COMPLETE, true);
+      }
+      window.location.replace(res.url);
     } else {
-      window.open(res.url, '_blank');
+      const opened = window.open(res.url, '_blank');
+      if (!opened) window.location.replace(res.url);
     }
     return res;
   }
@@ -568,6 +571,7 @@ export default class ActionBinder {
   }
 
   async handleConnector(el, isDownload = false) {
+    const openInSameTab = !isDesktop();
     let userCount = this.getUserCount();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
@@ -585,7 +589,7 @@ export default class ActionBinder {
       verb,
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
-    }), { openInSameTab: !isDesktop() });
+    }), { openInSameTab });
   }
 
   async createErrorToast() {
