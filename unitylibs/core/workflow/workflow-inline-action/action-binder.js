@@ -16,6 +16,7 @@ import {
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
 import isDesktop from '../../../utils/device-detection.js';
+import { getCgenQueryParams } from '../../../utils/cgen-utils.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -402,8 +403,7 @@ export default class ActionBinder {
     return el?.dataset?.nba;
   }
 
-  async buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
-    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+  buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
     const query = defaultPrompt?.trim();
     return {
       assetId: connectorAssetId,
@@ -583,6 +583,12 @@ export default class ActionBinder {
     const userCount = this.getUserCount();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
+    const connectorPayload = this.buildConnectorPayload({
+      defaultPrompt: el?.dataset?.defaultPrompt,
+      verb,
+      connectorAssetId: this.resultAssetId,
+      fileType: this.filesData.type,
+    });
     if (downloadsLocally) {
       try {
         await this.startLocalDownload();
@@ -593,12 +599,7 @@ export default class ActionBinder {
       }
     }
     try {
-      await this.callConnector(await this.buildConnectorPayload({
-        defaultPrompt: el?.dataset?.defaultPrompt,
-        verb,
-        connectorAssetId: this.resultAssetId,
-        fileType: this.filesData.type,
-      }), { openInSameTab, useSplashProgress: false });
+      await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
     } catch (e) {
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
     }
