@@ -421,7 +421,7 @@ export default class ActionBinder {
     };
   }
 
-  async callConnector(cOpts, { openInSameTab = false } = {}) {
+  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -433,7 +433,7 @@ export default class ActionBinder {
       throw error;
     }
     if (openInSameTab) {
-      if (this.transitionScreen?.splashScreenEl) {
+      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
         this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
         this.setProgress(PROGRESS.COMPLETE, true);
       }
@@ -522,7 +522,7 @@ export default class ActionBinder {
         verb: 'aiPhotoEditor',
         connectorAssetId: this.resultAssetId,
         fileType: this.filesData.type,
-      }), { openInSameTab: true });
+      }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
       if (e.name !== 'AbortError') {
@@ -590,7 +590,7 @@ export default class ActionBinder {
         verb,
         connectorAssetId: this.resultAssetId,
         fileType: this.filesData.type,
-      }), { openInSameTab });
+      }), { openInSameTab, useSplashProgress: false });
     } catch (e) {
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
     }
