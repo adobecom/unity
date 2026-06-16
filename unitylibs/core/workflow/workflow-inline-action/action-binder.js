@@ -595,6 +595,12 @@ export default class ActionBinder {
     });
 
     if (downloadsLocally) {
+      // On mobile, open a blank window now — synchronously, while still within the user gesture
+      // context so popup blockers allow it. We'll navigate it to the connector URL after the
+      // async work is done. This keeps the current tab in place so the download/QuickLook
+      // preview isn't dismissed by our own navigation.
+      const mobileConnectorWindow = openInSameTab ? window.open('', '_blank') : null;
+
       let connectorUrl;
       try {
         const res = await this.serviceHandler.postCallToService(
@@ -609,9 +615,11 @@ export default class ActionBinder {
         }
         connectorUrl = res.url;
       } catch (e) {
+        mobileConnectorWindow?.close();
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
         return;
       }
+
       try {
         await this.startLocalDownload();
         this.incrementUserCount();
@@ -619,7 +627,12 @@ export default class ActionBinder {
       } catch (e) {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
-      this.navigateToConnectorUrl(connectorUrl, { openInSameTab, useSplashProgress: false });
+
+      if (mobileConnectorWindow) {
+        mobileConnectorWindow.location.href = connectorUrl;
+      } else {
+        this.navigateToConnectorUrl(connectorUrl, { openInSameTab: false, useSplashProgress: false });
+      }
       return;
     }
 
