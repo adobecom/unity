@@ -495,6 +495,30 @@ export default class ActionBinder {
     }, 200);
   }
 
+  /**
+   * iOS blocks same-tab navigation after a same-tab programmatic download click.
+   * Open the file in a new context (target=_blank), then redirect the current tab.
+   */
+  triggerMobileLocalDownload() {
+    const mimeType = this.resultBlob?.type || this.filesData.type || 'image/png';
+    const url = this.resultBlob?.size
+      ? URL.createObjectURL(this.resultBlob)
+      : this.resultUrl;
+    if (!url) throw new Error('No download URL available');
+    const a = createTag('a', {
+      href: url,
+      download: ActionBinder.downloadFilename(mimeType),
+      target: '_blank',
+      rel: 'noopener noreferrer',
+    });
+    document.body.append(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      if (this.resultBlob?.size) URL.revokeObjectURL(url);
+    }, 200);
+  }
+
   async triggerDownload(url) {
     const blob = await this.resolveDownloadBlob(url);
     this.downloadBlob(blob, blob.type || 'image/png');
@@ -597,22 +621,32 @@ export default class ActionBinder {
     });
 
     if (downloadsLocally) {
-      // Start connector fetch before download — Safari blocks fetch() started after a file download.
-      const connectorPromise = this.callConnector(connectorPayload, {
-        openInSameTab,
-        useSplashProgress: false,
-        deferNavigation: true,
-      });
+      let res;
+      try {
+        res = await this.callConnector(connectorPayload, { deferNavigation: true });
+      } catch (e) {
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+        return;
+      }
+
+      if (openInSameTab) {
+        // Redirect first (same as NBA/Edit). A download click before location.href blocks iOS navigation.
+        this.navigateToConnectorUrl(res.url, { openInSameTab: true, useSplashProgress: false });
+        try {
+          this.triggerMobileLocalDownload();
+          this.incrementUserCount();
+          this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+        } catch (e) {
+          window.lana?.log(`Message: Mobile download after redirect failed, Error: ${e}`, this.lanaOptions);
+        }
+        return;
+      }
+
+      this.navigateToConnectorUrl(res.url, { openInSameTab: false, useSplashProgress: false });
       try {
         await this.startLocalDownload();
         this.incrementUserCount();
         this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-      } catch (e) {
-        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-      }
-      try {
-        const res = await connectorPromise;
-        this.navigateToConnectorUrl(res.url, { openInSameTab, useSplashProgress: false });
       } catch (e) {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
