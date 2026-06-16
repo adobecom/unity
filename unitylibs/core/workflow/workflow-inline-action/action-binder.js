@@ -437,10 +437,10 @@ export default class ActionBinder {
         this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
         this.setProgress(PROGRESS.COMPLETE, true);
       }
-      window.location.replace(res.url);
+      window.location.href = res.url;
     } else {
       const opened = window.open(res.url, '_blank');
-      if (!opened) window.location.replace(res.url);
+      if (!opened) window.location.href = res.url;
     }
     return res;
   }
@@ -584,12 +584,16 @@ export default class ActionBinder {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
     }
-    await this.callConnector(await this.buildConnectorPayload({
-      defaultPrompt: el?.dataset?.defaultPrompt,
-      verb,
-      connectorAssetId: this.resultAssetId,
-      fileType: this.filesData.type,
-    }), { openInSameTab });
+    try {
+      await this.callConnector(await this.buildConnectorPayload({
+        defaultPrompt: el?.dataset?.defaultPrompt,
+        verb,
+        connectorAssetId: this.resultAssetId,
+        fileType: this.filesData.type,
+      }), { openInSameTab });
+    } catch (e) {
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    }
   }
 
   async createErrorToast() {
