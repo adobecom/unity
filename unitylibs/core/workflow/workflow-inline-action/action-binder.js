@@ -570,25 +570,35 @@ export default class ActionBinder {
     else await this.anonymousFlow(file);
   }
 
+  startLocalDownload() {
+    if (this.resultBlob?.size) {
+      this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
+      return;
+    }
+    this.triggerDownload(this.resultUrl).catch((e) => {
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    });
+  }
+
   async handleConnector(el, isDownload = false) {
-    let userCount = this.getUserCount();
+    const userCount = this.getUserCount();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
     if (downloadsLocally) {
-      try {
-        await this.triggerDownload(this.resultUrl);
-        userCount = this.incrementUserCount();
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-      } catch (e) {
-        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-      }
+      this.startLocalDownload();
+      this.incrementUserCount();
+      this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
     }
-    await this.callConnector(await this.buildConnectorPayload({
-      defaultPrompt: el?.dataset?.defaultPrompt,
-      verb,
-      connectorAssetId: this.resultAssetId,
-      fileType: this.filesData.type,
-    }), { openInSameTab: !isDesktop(), useSplashProgress: false });
+    try {
+      await this.callConnector(await this.buildConnectorPayload({
+        defaultPrompt: el?.dataset?.defaultPrompt,
+        verb,
+        connectorAssetId: this.resultAssetId,
+        fileType: this.filesData.type,
+      }), { openInSameTab: !isDesktop(), useSplashProgress: false });
+    } catch (e) {
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    }
   }
 
   async createErrorToast() {
