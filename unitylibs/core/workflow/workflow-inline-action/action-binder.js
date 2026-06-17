@@ -15,8 +15,7 @@ import {
 } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
-import isDesktop from '../../../utils/device-detection.js';
-import { getCgenQueryParams } from '../../../utils/cgen-utils.js';
+import isDesktop, { isIOS } from '../../../utils/device-detection.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -403,7 +402,8 @@ export default class ActionBinder {
     return el?.dataset?.nba;
   }
 
-  buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
+  async buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
+    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
     return {
       assetId: connectorAssetId,
@@ -582,12 +582,22 @@ export default class ActionBinder {
     await this.triggerDownload(this.resultUrl);
   }
 
+  async runFirstLocalDownload() {
+    try {
+      await this.startLocalDownload();
+      this.incrementUserCount();
+      this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+    } catch (e) {
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    }
+  }
+
   async handleConnector(el, isDownload = false) {
-    const openInSameTab = !isDesktop();
     const userCount = this.getUserCount();
+    const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
-    const connectorPayload = this.buildConnectorPayload({
+    const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
       connectorAssetId: this.resultAssetId,
@@ -595,38 +605,13 @@ export default class ActionBinder {
     });
 
     if (downloadsLocally) {
-      let connectorUrl;
+      await this.runFirstLocalDownload();
+      if (isIOS()) return;
       try {
-        const res = await this.serviceHandler.postCallToService(
-          this.apiConfig.connectorApiEndPoint,
-          { body: JSON.stringify(connectorPayload) },
-          this.uploadErrorOpts(),
-        );
-        if (!res?.url) {
-          const error = new Error('Error connecting to App');
-          error.status = res?.status;
-          throw error;
-        }
-        connectorUrl = res.url;
-      } catch (e) {
-        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-        return;
-      }
-
-      try {
-        await this.startLocalDownload();
-        this.incrementUserCount();
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+        await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
       } catch (e) {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       }
-
-      // Defer navigation so the browser has a chance to show the download popup before
-      // the current page navigates away. On Android, the download manager handles the
-      // file independently so it completes even after navigation.
-      setTimeout(() => {
-        this.navigateToConnectorUrl(connectorUrl, { openInSameTab, useSplashProgress: false });
-      }, 100);
       return;
     }
 
