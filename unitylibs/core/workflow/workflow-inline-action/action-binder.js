@@ -603,6 +603,7 @@ export default class ActionBinder {
     if (downloadsLocally) {
       await this.runFirstLocalDownload();
       if (isIOSSafari()) return;
+      await new Promise((resolve) => { setTimeout(resolve, 100); });
       try {
         await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
       } catch (e) {
