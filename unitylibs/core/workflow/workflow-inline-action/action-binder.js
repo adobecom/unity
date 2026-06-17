@@ -421,19 +421,6 @@ export default class ActionBinder {
     };
   }
 
-  navigateToConnectorUrl(url, { openInSameTab = false, useSplashProgress = false } = {}) {
-    if (openInSameTab) {
-      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
-        this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
-        this.setProgress(PROGRESS.COMPLETE, true);
-      }
-      window.location.href = url;
-      return;
-    }
-    const opened = window.open(url, '_blank');
-    if (!opened) window.location.href = url;
-  }
-
   async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
@@ -445,7 +432,16 @@ export default class ActionBinder {
       error.status = res?.status;
       throw error;
     }
-    this.navigateToConnectorUrl(res.url, { openInSameTab, useSplashProgress });
+    if (openInSameTab) {
+      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+        this.setProgress(PROGRESS.COMPLETE, true);
+      }
+      window.location.href = res.url;
+      return res;
+    }
+    const opened = window.open(res.url, '_blank');
+    if (!opened) window.location.href = res.url;
     return res;
   }
 
