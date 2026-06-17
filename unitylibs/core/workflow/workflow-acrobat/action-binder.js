@@ -76,6 +76,13 @@ export default class ActionBinder {
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
     'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'image-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'bmp-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'gif-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'tiff-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'indd-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'psd-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
+    'ai-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'quiz-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
@@ -403,7 +410,7 @@ export default class ActionBinder {
     for (const file of files) {
       let fail = false;
       const { getExtension } = await import('../../../utils/FileUtils.js');
-      const typeCheckFail = this.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
+      const typeCheckFail = this.limits.allowedFileTypes.includes('image/heic')
         ? getExtension(file.name).toLowerCase() !== 'heic' && !this.limits.allowedFileTypes.includes(file.type)
         : !this.limits.allowedFileTypes.includes(file.type);
       if (typeCheckFail) {
@@ -494,6 +501,29 @@ export default class ActionBinder {
       });
   }
 
+  getComputedRedirectParams(queryString) {
+    const params = this.workflowCfg.targetCfg?.redirectParams;
+    if (!params) return queryString;
+    let updatedQuery = queryString || '';
+    for (const [key, cfg] of Object.entries(params)) {
+      if (cfg.source !== 'pageUrlPath') continue;
+      const path = window.location.pathname;
+      const after = cfg.stripPrefix ? path.split(cfg.stripPrefix)[1] : path.slice(1);
+      if (!after) continue;
+      const value = cfg.transform === 'reverseSegments'
+        ? after.split('/').filter(Boolean).reverse().join('_')
+        : after;
+      const encodedValue = encodeURIComponent(value);
+      const paramRegex = new RegExp(`(^|&)(${key}=)[^&]*`);
+      if (paramRegex.test(updatedQuery)) {
+        updatedQuery = updatedQuery.replace(paramRegex, `$1${key}=${encodedValue}`);
+      } else {
+        updatedQuery = updatedQuery ? `${updatedQuery}&${key}=${encodedValue}` : `${key}=${encodedValue}`;
+      }
+    }
+    return updatedQuery;
+  }
+
   async handleRedirect(cOpts, filesData) {
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
@@ -518,7 +548,8 @@ export default class ActionBinder {
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
     const additionalParams = unityConfig.env === 'stage' ? `${window.location.search.slice(1)}&` : '';
-    this.redirectUrl = `${baseUrl}?${additionalParams}${queryString}`;
+    const updatedQuery = this.getComputedRedirectParams(queryString);
+    this.redirectUrl = `${baseUrl}?${additionalParams}${updatedQuery}`;
     this.dispatchAnalyticsEvent('redirectUrl', { ...filesData, redirectUrl: this.redirectUrl });
     return true;
   }
@@ -707,8 +738,8 @@ export default class ActionBinder {
         document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
       }
       if (this.multiFileFailure && !this.redirectUrl.includes('feedback=') && this.redirectUrl.includes('#folder')) {
-        window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&${queryString}`;
-      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}${queryString}`;
+        window.location.href = `${baseUrl}?feedback=${this.multiFileFailure}&redirectTime=${Date.now()}&${queryString}`;
+      } else window.location.href = `${baseUrl}?${this.redirectWithoutUpload === false ? `UTS_Uploaded=${this.uploadTimestamp}&` : ''}redirectTime=${Date.now()}&${queryString}`;
     } catch (e) {
       await this.transitionScreen.showSplashScreen();
       await this.dispatchErrorToast('error_generic', 500, `Exception thrown when redirecting to product; ${e.message}`, false, e.showError, {
@@ -811,7 +842,7 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     for (const [key, value] of Object.entries(actMap)) {
-      const el = b.querySelector(key);
+      const el = b.querySelector(key) ?? document.querySelector(key);
       if (!el) return;
       switch (true) {
         case el.nodeName === 'A':
@@ -821,12 +852,32 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
+          el.addEventListener('dragover', (e) => e.preventDefault());
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
           });
           break;
+        case el.nodeName === 'BODY': {
+          const onDragOver = (e) => e.preventDefault();
+          const onDrop = async (e) => {
+            e.preventDefault();
+            const { files, totalFileSize } = this.extractFiles(e);
+            await this.acrobatActionMaps(value, files, totalFileSize, 'drop');
+          };
+          const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+              el.addEventListener('dragover', onDragOver);
+              el.addEventListener('drop', onDrop);
+            } else {
+              el.removeEventListener('dragover', onDragOver);
+              el.removeEventListener('drop', onDrop);
+            }
+          });
+          observer.observe(b.querySelector(this.workflowCfg.targetCfg.selector));
+          break;
+        }
         case el.nodeName === 'INPUT':
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
