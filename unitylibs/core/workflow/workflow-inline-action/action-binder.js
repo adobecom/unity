@@ -115,7 +115,7 @@ export default class ActionBinder {
     sendAnalyticsEvent(new CustomEvent(eventName, {
       detail: { workflow: metaData.workflow },
     }));
-    this.logAnalyticsinSplunk(eventName, metaData);
+    this.logAnalyticsinSplunk(eventName, data);
   }
 
   trackClientError(errorCode) {
