@@ -410,8 +410,17 @@ export default class InlineActionWidget {
   }
 
   setState(state) {
+    const prev = this.state;
     this.state = state;
-    if (this.widget) this.widget.dataset.state = state;
+    if (!this.widget) return;
+    this.widget.dataset.state = state;
+    if (state === InlineActionState.LOADING && prev === InlineActionState.COMPLETE) {
+      this.widget.dataset.loadingLayout = 'complete';
+      this.widget.querySelector('.ia-dropzone-shell')?.classList.add('ia-from-complete');
+    } else {
+      delete this.widget.dataset.loadingLayout;
+      this.widget.querySelector('.ia-dropzone-shell')?.classList.remove('ia-from-complete');
+    }
   }
 
   setProgress(pct) {
