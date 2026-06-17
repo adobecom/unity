@@ -570,17 +570,13 @@ export default class ActionBinder {
     else await this.anonymousFlow(file);
   }
 
-  async startLocalDownload() {
-    if (this.resultBlob?.size) {
-      this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
-      return;
-    }
-    await this.triggerDownload(this.resultUrl);
-  }
-
   async runFirstLocalDownload() {
     try {
-      await this.startLocalDownload();
+      if (this.resultBlob?.size) {
+        this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
+      } else {
+        await this.triggerDownload(this.resultUrl);
+      }
       this.incrementUserCount();
       this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
     } catch (e) {
@@ -599,19 +595,11 @@ export default class ActionBinder {
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
     });
-
     if (downloadsLocally) {
       await this.runFirstLocalDownload();
       if (isIOSSafari()) return;
       await new Promise((resolve) => { setTimeout(resolve, 200); });
-      try {
-        await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
-      } catch (e) {
-        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-      }
-      return;
     }
-
     try {
       await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
     } catch (e) {

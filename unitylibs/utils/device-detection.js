@@ -105,7 +105,7 @@ function getPlatformInfo(userAgent) {
   };
 }
 
-export function isIOS(userAgent) {
+function isIOS(userAgent) {
   const ua = getUserAgent(userAgent);
   return isIPad(ua) || getPlatformInfo(ua).platform === 'ios';
 }
