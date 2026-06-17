@@ -110,6 +110,11 @@ export function isIOS(userAgent) {
   return isIPad(ua) || getPlatformInfo(ua).platform === 'ios';
 }
 
+export function isIOSSafari(userAgent) {
+  const ua = getUserAgent(userAgent);
+  return isIOS(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+}
+
 export default function isDesktop(userAgent) {
   const ua = getUserAgent(userAgent);
   if (isHeadlessBrowser(ua)) return true;

@@ -15,7 +15,7 @@ import {
 } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
-import isDesktop, { isIOS } from '../../../utils/device-detection.js';
+import isDesktop, { isIOSSafari } from '../../../utils/device-detection.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -602,7 +602,7 @@ export default class ActionBinder {
 
     if (downloadsLocally) {
       await this.runFirstLocalDownload();
-      if (isIOS()) return;
+      if (isIOSSafari()) return;
       try {
         await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
       } catch (e) {
