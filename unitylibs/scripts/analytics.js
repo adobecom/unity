@@ -1,3 +1,18 @@
+export const INLINE_ACTION_EVENTS = {
+  UPLOAD_ASSET_CTA: 'Upload asset CTA|UnityWidget',
+  DRAG_AND_DROP: 'Click Drag and drop|UnityWidget',
+  DOWNLOAD: 'Download|UnityWidget',
+  DOWNLOAD_SUCCESS: 'Download Success|UnityWidget',
+  EDIT_IN_FIREFLY: 'Edit in Firefly|UnityWidget',
+  UPLOAD_CLIENT_ERROR: 'Upload client error|UnityWidget',
+  UPLOAD_SERVER_ERROR: 'Upload server error|UnityWidget',
+  CONNECTOR_SUCCESS: 'Connector Success|UnityWidget',
+  REMOVE_BACKGROUND_SUCCESS: 'Remove Background Success|UnityWidget',
+  REMOVE_BACKGROUND_ERROR: 'Remove Background error|UnityWidget',
+  TRY_AGAIN: 'Try again|UnityWidget',
+  nbaClick: (label) => `${label} - Do more with|UnityWidget`,
+};
+
 export const PROMPT_BAR_EVENTS = {
   ENTER_PROMPT: 'Enter Prompt|UnityWidget',
   MODEL_SELECT_DROPDOWN: 'Model Select Dropdown|UnityWidget',
@@ -42,7 +57,7 @@ function getSessionID() {
 
 function createPayloadForSplunk(metaData) {
   const {
-    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation,
+    eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation, workflow, isGuestUser,
     styleEventName, voiceEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
   return {
@@ -58,6 +73,7 @@ function createPayloadForSplunk(metaData) {
     content: {
       ...(assetId && { assetId }),
       ...(fileMetaData && { fileMetaData }),
+      ...(workflow && { workflow }),
       ...(styleEventName && { style: styleEventName }),
       ...(voiceEventName && { voice: voiceEventName }),
       ...(modelGenEventName && { model: modelGenEventName }),
@@ -73,6 +89,7 @@ function createPayloadForSplunk(metaData) {
     user: {
       locale: document.documentElement.lang.toLocaleLowerCase(),
       id: getSessionID(),
+      ...(isGuestUser !== undefined && { isGuestUser }),
     },
     error: errorData ? {
       type: errorData.code,

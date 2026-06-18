@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { expect } from '@esm-bundle/chai';
-import { getExperimentData, getDecisionScopesForVerb } from '../../unitylibs/utils/experiment-provider.js';
+import getExperimentData, { getDecisionScopesForVerb } from '../../unitylibs/utils/experiment-provider.js';
 
 describe('getExperimentData', () => {
   // Helper function to setup mock with result and error

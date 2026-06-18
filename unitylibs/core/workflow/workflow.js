@@ -62,6 +62,11 @@ class WfInitiator {
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
       ],
+      'workflow-inline-action': [
+        `${baseWfPath}/sprite.svg`,
+        `${getUnityLibs()}/core/styles/splash-screen.css`,
+        ...this.getWidgetPaths(),
+      ],
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -111,7 +116,7 @@ class WfInitiator {
     }
     const { default: ActionBinder } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/action-binder.js`);
     const isExtendedWidget = (this.targetConfig?.extendedWidgets ?? []).includes(this.widgetName);
-    const extendedLayoutRoot = isExtendedWidget ? (unityWidgetObject?.promptBarExtendedRoot || null) : null;
+    const extendedLayoutRoot = isExtendedWidget ? (unityWidgetObject?.extendedRoot || null) : null;
     const actionBinderBlock = isExtendedWidget ? extendedLayoutRoot : this.targetBlock;
     const canvasAreaForBinder = isExtendedWidget ? extendedLayoutRoot : this.interactiveArea;
     await new ActionBinder(
@@ -120,6 +125,7 @@ class WfInitiator {
       actionBinderBlock,
       canvasAreaForBinder,
       this.actionMap,
+      unityWidgetObject,
     ).initActionListeners();
   }
 
@@ -248,6 +254,13 @@ class WfInitiator {
           'summarize-pdf',
           'pdf-ai',
           'heic-to-pdf',
+          'image-to-pdf',
+          'bmp-to-pdf',
+          'gif-to-pdf',
+          'tiff-to-pdf',
+          'indd-to-pdf',
+          'psd-to-pdf',
+          'ai-to-pdf',
           'quiz-maker',
           'flashcard-maker',
           'mindmap-maker',
@@ -273,6 +286,10 @@ class WfInitiator {
         sfList: new Set(['text-to-mage']),
         stList: new Set(['prompt', 'tip', 'legal', 'generate']),
       },
+      'workflow-inline-action': {
+        productName: product || 'Firefly',
+        sfList: new Set([feature]),
+      },
     };
     if (!wfName || !workflowCfg[wfName]) return [];
     return {
@@ -289,7 +306,7 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee');
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-dropzone');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
