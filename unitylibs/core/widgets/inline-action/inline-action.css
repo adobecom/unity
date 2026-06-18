@@ -33,6 +33,7 @@
   --ia-radius-sm: 8px;
   --ia-drop-zone-border: 2px dashed rgb(255 255 255 / 50%);
   --ia-button-font-size: 19px;
+  --ia-panel-left-bg: transparent;
   margin-inline: auto;
   padding-bottom: 76px;
 }
@@ -42,11 +43,14 @@
   box-sizing: border-box;
   padding: 16px;
   border-radius: 20px;
-  isolation: isolate;
   overflow: hidden;
-  background: #292929;
+  background: rgb(41 41 41 / 60%);
   height: auto;
   max-height: none;
+}
+
+.unity-inline-action.unity-enabled > .interactive-area.light {
+  background: rgb(41 41 41 / 60%);
 }
 
 .ia-widget {
@@ -58,8 +62,8 @@
   min-height: 0;
   max-height: none;
   margin: 0;
-  border-radius: 10px;
-  background: #292929;
+  border-radius: var(--ia-radius-sm);
+  background: transparent;
   color: #fff;
   box-sizing: border-box;
   position: relative;
@@ -75,11 +79,12 @@
 .ia-panel-right {
   order: 1;
   justify-content: flex-start;
+  border-radius: var(--ia-radius-sm);
 }
 
 .ia-panel-left {
   order: 2;
-  background: #1b1b1b;
+  background: var(--ia-panel-left-bg);
 }
 
 .ia-widget[data-state="initial"] .ia-panel-right,
@@ -90,7 +95,6 @@
 }
 
 .ia-panel {
-  border-radius: 10px;
   min-height: 0;
   height: auto;
   position: relative;
@@ -126,7 +130,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  margin: 16px 16px 16px 0;
+  margin: 16px 16px 14px 0;
 }
 
 .ia-preview {
@@ -234,6 +238,8 @@
   max-height: 320px;
   overflow: hidden;
   box-sizing: border-box;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .ia-checker {
@@ -259,6 +265,8 @@
   max-height: 100%;
   object-fit: contain;
   flex: 0 1 auto;
+  -webkit-user-drag: none;
+  user-select: none;
   background:
     linear-gradient(45deg, #ccc 25%, transparent 25%),
     linear-gradient(-45deg, #ccc 25%, transparent 25%),
@@ -320,6 +328,7 @@
   font-weight: 600;
   cursor: pointer;
   line-height: 26px;
+  font-family: var(--body-font-family);
 }
 
 .ia-download-btn :is(svg, img) {
@@ -334,10 +343,14 @@
 
 .ia-reupload-btn:hover,
 .ia-download-btn:hover,
-.unity-inline-action .action-button:hover,
-.unity-inline-action .ia-edit-in-firefly:hover {
+.unity-inline-action .action-button:hover {
   background: #274dea;
   border-color: #274dea;
+}
+
+.unity-inline-action .ia-edit-in-firefly:hover {
+  background: #274dea;
+  border-color: var(--ia-white);
 }
 
 .unity-inline-action .drop-zone-container {
@@ -352,10 +365,14 @@
   grid-area: dropzone-shell;
 }
 
+.unity-inline-action .ia-widget[data-state="loading"] .drop-zone-container.ia-dropzone-shell.ia-from-complete {
+  margin: 80px 0 0;
+}
+
 .unity-inline-action .drop-zone {
   border: var(--ia-drop-zone-border);
   border-radius: var(--ia-radius-sm);
-  padding: 34px 24px;
+  padding: 44px 24px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -363,8 +380,7 @@
   justify-content: center;
   gap: 16px;
   box-sizing: border-box;
-  background-color: inherit;
-  background-size: 26px 26px;
+  background-color: transparent;
   cursor: pointer;
   flex: none;
   width: 100%;
@@ -614,7 +630,7 @@
   height: auto;
   aspect-ratio: 216 / 150;
   padding: 0;
-  border: none;
+  border: 1.783px solid rgb(255 255 255 / 10%);
   border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
@@ -628,17 +644,20 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: inherit;
+  border-radius: 4px;
 }
 
 .ia-nba-label {
   position: absolute;
   bottom: 12px;
   left: 12px;
+  right: 44px;
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
 }
 
 .ia-nba-arrow {
@@ -682,6 +701,7 @@
 
 .ia-nba-card:is(:hover, :focus-visible) .ia-nba-arrow-default { display: none; }
 .ia-nba-card:is(:hover, :focus-visible) .ia-nba-arrow-hover { display: block; }
+.ia-nba-card:hover { border: 1.783px solid #fff; }
 
 .unity-inline-action.unity-enabled > .interactive-area:has(:is(.ia-nba-card, .ia-edit-in-firefly, .action-button):focus-visible),
 .ia-widget:has(:is(.ia-nba-card, .ia-edit-in-firefly, .action-button):focus-visible),
@@ -702,16 +722,15 @@
   max-width: 100%;
   margin: 0;
   margin-top: auto;
-  margin-bottom: 2px;
   align-self: flex-end;
-  padding: 9px 18px 10px 18px;
-  border: 2px solid rgb(255 255 255 / 60%);
+  padding: 7px 18px 8px 18px;
+  border: 2px solid var(--ia-white);
   border-radius: 999px;
   background: transparent;
   color: #fff;
   font-family: var(--body-font-family);
   font-size: 17px;
-  font-weight: 400;
+  font-weight: 800;
   cursor: pointer;
   appearance: none;
   line-height: 26px;
@@ -744,7 +763,6 @@
   position: absolute;
   inset: 0;
   background: rgb(0 0 0 / 80%);
-  z-index: 10;
   border-radius: inherit;
   box-sizing: border-box;
 }
@@ -754,6 +772,7 @@
 }
 
 .unity-inline-action.unity-enabled .ia-widget .alert-holder {
+  z-index: 10;
   padding: 0 16px;
   box-sizing: border-box;
 }
@@ -859,6 +878,12 @@
     max-height: 194px;
   }
 
+  .ia-widget[data-state="loading"][data-loading-layout="complete"] .ia-ghost {
+    height: 281px;
+    min-height: 281px;
+    max-height: 281px;
+  }
+
   .ia-widget[data-state="initial"] .ia-preview :is(picture, picture > img, video) {
     width: 100%;
     height: 100%;
@@ -912,12 +937,25 @@
     padding-bottom: 48px;
   }
 
+  .ia-widget[data-state="loading"] .ia-panel-left {
+    display: none;
+  }
+  
+  .ia-widget[data-state="complete"] {
+    flex-direction: column-reverse;
+  }
+
+  .ia-widget[data-state="loading"][data-loading-layout="complete"] {
+    flex-direction: column-reverse;
+  }
+
   .ia-widget[data-state="complete"] .ia-complete {
     margin-top: 0;
     margin-right: 0;
+    margin-bottom: 0;
   }
 
-  .ia-widget[data-state="complete"] .ia-nba-heading { margin-top: 0; }
+  .ia-widget[data-state="complete"] .ia-nba-heading { margin-top: 16px; }
 
   .ia-nba-grid {
     display: flex;
@@ -987,6 +1025,12 @@
     max-height: 368px;
   }
 
+  .ia-widget[data-state="loading"][data-loading-layout="complete"] {
+    height: 500px;
+    min-height: 500px;
+    max-height: 500px;
+  }
+
   .ia-widget[data-state="complete"] {
     height: 500px;
     min-height: 500px;
@@ -999,7 +1043,6 @@
   }
 
   .ia-panel-right {
-    padding-top: 16px;
     padding-bottom: 2px;
     box-sizing: border-box;
   }
@@ -1007,13 +1050,14 @@
   .ia-panel,
   .ia-preview,
   .ia-widget[data-state="complete"] .ia-result {
+    border-radius: var(--ia-radius-sm);
     height: 100%;
     min-height: 0;
     max-height: none;
   }
 
   .unity-inline-action .drop-zone-container > .ia-legal {
-    margin-inline: 45px;
+    margin-inline: 35px;
   }
 
   .ia-nba-grid {

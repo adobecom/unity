@@ -118,6 +118,19 @@ export default class ActionBinder {
     this.logAnalyticsinSplunk(eventName, data);
   }
 
+  trackRemoveBackgroundError(error) {
+    this.trackEvent(INLINE_ACTION_EVENTS.REMOVE_BACKGROUND_ERROR, {
+      errorData: {
+        code: 'error-request',
+        subCode: `removeBackground ${error?.status ?? ''}`.trim(),
+        desc: error?.message || undefined,
+      },
+      fileMetaData: this.filesData,
+      assetId: this.assetId,
+      action: 'removeBackground',
+    });
+  }
+
   trackClientError(errorCode) {
     this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_CLIENT_ERROR, {
       errorData: { code: errorCode },
@@ -417,9 +430,12 @@ export default class ActionBinder {
       this.resultAssetId = res.assetId;
       this.resultUrl = res.outputUrl;
       this.setProgress(PROGRESS.REMOVE_BG, useSplashProgress);
+      this.trackEvent(INLINE_ACTION_EVENTS.REMOVE_BACKGROUND_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData,});
       return res;
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return null;
+      this.trackRemoveBackgroundError(e);
+      e.analyticsTracked = true;
       throw e;
     }
   }
@@ -436,6 +452,7 @@ export default class ActionBinder {
     return {
       assetId: connectorAssetId,
       targetProduct: this.workflowCfg.productName,
+      additionalQueryParams: getCgenQueryParams(this.unityEl),
       ...(query && { query }),
       payload: {
         workflow: this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
@@ -443,13 +460,12 @@ export default class ActionBinder {
         verb: verb ?? this.operation,
         widgetType: 'nba',
         locale: getLocale(),
-        additionalQueryParams: getCgenQueryParams(this.unityEl),
         type: fileType,
       },
     };
   }
 
-  async callConnector(cOpts, { openInSameTab = false } = {}) {
+  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false } = {}) {
     try {
       const res = await this.serviceHandler.postCallToService(
         this.apiConfig.connectorApiEndPoint,
@@ -463,12 +479,15 @@ export default class ActionBinder {
       }
       this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
       if (openInSameTab) {
-        if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
-        this.setProgress(PROGRESS.COMPLETE, true);
-        window.location.assign(res.url);
-      } else {
-        window.open(res.url, '_blank');
+        if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
+          this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+          this.setProgress(PROGRESS.COMPLETE, true);
+        }
+        window.location.href = res.url;
+        return res;
       }
+      const opened = window.open(res.url, '_blank');
+      if (!opened) window.location.href = res.url;
       return res;
     } catch (e) {
       if (e.name !== 'AbortError') {
@@ -556,7 +575,7 @@ export default class ActionBinder {
         verb: 'aiPhotoEditor',
         connectorAssetId: this.resultAssetId,
         fileType: this.filesData.type,
-      }), { openInSameTab: true });
+      }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
       if (e.name !== 'AbortError') {
@@ -585,7 +604,7 @@ export default class ActionBinder {
       this.widgetRef?.setState(InlineActionState.COMPLETE);
       this.cacheResultBlob(this.resultUrl).catch(() => {});
     } catch (e) {
-      this.trackServerError('upload', e);
+      if (!e.analyticsTracked) this.trackServerError('upload', e);
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       this.widgetRef?.setState(InlineActionState.INITIAL);
     }
@@ -607,32 +626,43 @@ export default class ActionBinder {
     else await this.anonymousFlow(file);
   }
 
+  async runFirstLocalDownload() {
+    try {
+      if (this.resultBlob?.size) {
+        this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
+      } else {
+        await this.triggerDownload(this.resultUrl);
+        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+      } 
+      this.incrementUserCount();
+      this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+    } catch (e) {
+        this.trackServerError('download', e);
+        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    }
+  }
+
   async handleConnector(el, isDownload = false) {
-    let userCount = this.getUserCount();
+    const { default: isDesktop, isIOSSafari } = await import(`${getUnityLibs()}/utils/device-detection.js`);
+    const userCount = this.getUserCount();
+    const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
+    const connectorPayload = await this.buildConnectorPayload({
+      defaultPrompt: el?.dataset?.defaultPrompt,
+      verb,
+      connectorAssetId: this.resultAssetId,
+      fileType: this.filesData.type,
+    });
     if (downloadsLocally) {
-      try {
-        await this.triggerDownload(this.resultUrl);
-        userCount = this.incrementUserCount();
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-      } catch (e) {
-        this.trackServerError('upload', e);
-        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-        return;
-      }
+      await this.runFirstLocalDownload();
+      if (isIOSSafari()) return;
+      await new Promise((resolve) => { setTimeout(resolve, 200); });
     }
     try {
-      await this.callConnector(await this.buildConnectorPayload({
-        defaultPrompt: el?.dataset?.defaultPrompt,
-        verb,
-        connectorAssetId: this.resultAssetId,
-        fileType: this.filesData.type,
-      }));
+      await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
     } catch (e) {
-      if (e.name !== 'AbortError') {
         this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-      }
     }
   }
 
@@ -821,7 +851,14 @@ export default class ActionBinder {
       DIV: (el, action) => {
         if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, b);
       },
-      A: (el) => {
+      A: (el, action) => {
+        if (action === 'interrupt') {
+          el.addEventListener('click', async (e) => {
+            this.preventDefault(e);
+            await this.executeActionMaps(action);
+          });
+          return;
+        }
         if (el.classList.contains('action-button')) this.bindUploadActionButton(el, b);
       },
       INPUT: (el, action) => {

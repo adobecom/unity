@@ -439,6 +439,7 @@ export default class ActionBinder {
 
     const connectorBody = {
       targetProduct: this.workflowCfg.productName,
+      additionalQueryParams: queryParams,
       ...(this.assetId && { assetId: this.assetId }),
       ...(query && { query }),
       payload: {
@@ -446,7 +447,6 @@ export default class ActionBinder {
         verb: this.verb,
         action: 'asset-upload',
         locale: getLocale(),
-        additionalQueryParams: queryParams,
         size,
         ...(modelId && { modelId }),
         ...(modelVersion && { modelVersion }),
