@@ -238,6 +238,8 @@
   max-height: 320px;
   overflow: hidden;
   box-sizing: border-box;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .ia-checker {
@@ -263,6 +265,8 @@
   max-height: 100%;
   object-fit: contain;
   flex: 0 1 auto;
+  -webkit-user-drag: none;
+  user-select: none;
   background:
     linear-gradient(45deg, #ccc 25%, transparent 25%),
     linear-gradient(-45deg, #ccc 25%, transparent 25%),
@@ -644,7 +648,7 @@
   left: 12px;
   right: 44px;
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.25;
   text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
@@ -713,9 +717,8 @@
   max-width: 100%;
   margin: 0;
   margin-top: auto;
-  margin-bottom: 2px;
   align-self: flex-end;
-  padding: 9px 18px 10px 18px;
+  padding: 7px 18px 8px 18px;
   border: 2px solid var(--ia-white);
   border-radius: 999px;
   background: transparent;
@@ -923,12 +926,21 @@
     padding-bottom: 48px;
   }
 
+  .ia-widget[data-state="loading"] .ia-panel-left {
+    display: none;
+  }
+
+  .ia-widget[data-state="complete"] {
+    flex-direction: column-reverse;
+  }
+
   .ia-widget[data-state="complete"] .ia-complete {
     margin-top: 0;
     margin-right: 0;
+    margin-bottom: 0;
   }
 
-  .ia-widget[data-state="complete"] .ia-nba-heading { margin-top: 0; }
+  .ia-widget[data-state="complete"] .ia-nba-heading { margin-top: 16px; }
 
   .ia-nba-grid {
     display: flex;
@@ -1010,7 +1022,6 @@
   }
 
   .ia-panel-right {
-    padding-top: 16px;
     padding-bottom: 2px;
     box-sizing: border-box;
   }
