@@ -254,6 +254,13 @@ class WfInitiator {
           'summarize-pdf',
           'pdf-ai',
           'heic-to-pdf',
+          'image-to-pdf',
+          'bmp-to-pdf',
+          'gif-to-pdf',
+          'tiff-to-pdf',
+          'indd-to-pdf',
+          'psd-to-pdf',
+          'ai-to-pdf',
           'quiz-maker',
           'flashcard-maker',
           'mindmap-maker',
@@ -299,7 +306,7 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee');
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-dropzone');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);

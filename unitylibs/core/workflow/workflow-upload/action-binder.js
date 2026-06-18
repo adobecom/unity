@@ -253,7 +253,7 @@ export default class ActionBinder {
           });
           throw error;
         }
-        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);        
+        await uploadHandler.scanImgForSafetyWithRetry(this.assetId, signal);
         const { createChunkAnalyticsData } = await import(`${getUnityLibs()}/utils/chunkingUtils.js`);
         const totalChunks = Math.ceil(file.size / blocksize);
         this.logAnalyticsinSplunk(
@@ -402,15 +402,9 @@ export default class ActionBinder {
     try {
       ({ width, height } = await getImageDimensions(file));
     } catch (e) { return null; }
-    const isMaxLimits = this.limits.maxWidth && this.limits.maxHeight;
-    const isMinLimits = this.limits.minWidth && this.limits.minHeight;
     this.filesData = { ...this.filesData, width, height };
-    if (isMaxLimits && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
+    if (this.limits.maxWidth && this.limits.maxHeight && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
       this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
-      throw new Error('Unable to process the file type!');
-    }
-    if (isMinLimits && (width < this.limits.minWidth || height < this.limits.minHeight)) {
-      this.handleClientUploadError('.icon-error-filemindimension', 'error-filemindimension', 'Unable to process the file type!');
       throw new Error('Unable to process the file type!');
     }
     return { width, height };

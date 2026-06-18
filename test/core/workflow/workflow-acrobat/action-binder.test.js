@@ -2,7 +2,7 @@ import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-acrobat/action-binder.js';
 
-let mockUpdateProgressBar = null;
+const mockUpdateProgressBar = null;
 
 describe('ActionBinder', () => {
   let actionBinder;
@@ -1104,6 +1104,113 @@ describe('ActionBinder', () => {
           const result = await actionBinder.handleRedirect(cOpts, filesData);
 
           expect(result).to.be.false;
+        });
+
+        it('should inject x_api_client_location in redirect URL for verb-dropzone config', async () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          actionBinder.workflowCfg.targetCfg = {
+            sendSplunkAnalytics: true,
+            experimentationOn: [],
+            showSplashScreen: false,
+            redirectParams: {
+              x_api_client_location: {
+                source: 'pageUrlPath',
+                stripPrefix: '/express/',
+                transform: 'reverseSegments',
+              },
+            },
+          };
+          actionBinder.redirectUrl = 'https://test-redirect-url.com?other=param';
+          const cOpts = { payload: {} };
+          const filesData = { test: 'data' };
+
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(result).to.be.true;
+          expect(actionBinder.redirectUrl).to.include('x_api_client_location=cv_resume_create');
+          expect(actionBinder.redirectUrl).to.include('other=param');
+          history.pushState({}, '', '/');
+        });
+      });
+
+      describe('getComputedRedirectParams', () => {
+        let originalPath;
+
+        beforeEach(() => {
+          originalPath = window.location.pathname;
+          actionBinder.workflowCfg.targetCfg = {
+            sendSplunkAnalytics: true,
+            experimentationOn: [],
+            showSplashScreen: false,
+            redirectParams: {
+              x_api_client_location: {
+                source: 'pageUrlPath',
+                stripPrefix: '/express/',
+                transform: 'reverseSegments',
+              },
+            },
+          };
+        });
+
+        afterEach(() => {
+          history.pushState({}, '', originalPath);
+        });
+
+        it('should return queryString unchanged when redirectParams is not configured', () => {
+          actionBinder.workflowCfg.targetCfg = { sendSplunkAnalytics: true };
+          const queryString = 'x_api_client_location=old_value&other=param';
+          expect(actionBinder.getComputedRedirectParams(queryString)).to.equal(queryString);
+        });
+
+        it('should append x_api_client_location for /express/create/resume/cv', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          expect(actionBinder.getComputedRedirectParams('other=param'))
+            .to.equal('other=param&x_api_client_location=cv_resume_create');
+        });
+
+        it('should append x_api_client_location for /express/create/resume', () => {
+          history.pushState({}, '', '/express/create/resume');
+          expect(actionBinder.getComputedRedirectParams('other=param'))
+            .to.equal('other=param&x_api_client_location=resume_create');
+        });
+
+        it('should update existing x_api_client_location in-place without changing other params', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          const queryString = 'foo=bar&x_api_client_location=old_value&baz=qux';
+          expect(actionBinder.getComputedRedirectParams(queryString))
+            .to.equal('foo=bar&x_api_client_location=cv_resume_create&baz=qux');
+        });
+
+        it('should preserve other param encodings unchanged', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          const queryString = 'foo=bar%20baz&other=val%2Bplus';
+          expect(actionBinder.getComputedRedirectParams(queryString))
+            .to.equal('foo=bar%20baz&other=val%2Bplus&x_api_client_location=cv_resume_create');
+        });
+
+        it('should not add x_api_client_location when URL path does not contain stripPrefix', () => {
+          history.pushState({}, '', '/some/other/path');
+          const queryString = 'other=param';
+          expect(actionBinder.getComputedRedirectParams(queryString)).to.equal(queryString);
+        });
+
+        it('should skip param when source is not pageUrlPath', () => {
+          actionBinder.workflowCfg.targetCfg.redirectParams.x_api_client_location.source = 'unknown';
+          history.pushState({}, '', '/express/create/resume/cv');
+          const queryString = 'other=param';
+          expect(actionBinder.getComputedRedirectParams(queryString)).to.equal(queryString);
+        });
+
+        it('should handle trailing slash in URL path', () => {
+          history.pushState({}, '', '/express/create/resume/cv/');
+          expect(actionBinder.getComputedRedirectParams(''))
+            .to.equal('x_api_client_location=cv_resume_create');
+        });
+
+        it('should return only the new param when queryString is empty', () => {
+          history.pushState({}, '', '/express/create/resume/cv');
+          expect(actionBinder.getComputedRedirectParams(''))
+            .to.equal('x_api_client_location=cv_resume_create');
         });
       });
     });
@@ -2781,6 +2888,97 @@ describe('ActionBinder', () => {
       await actionBinder.processSingleFile(files);
 
       expect(actionBinder.handleFileUpload.calledWith(files)).to.be.true;
+    });
+  });
+
+  describe('image-to-pdf verbs onboarding', () => {
+    const NEW_IMAGE_VERBS = [
+      'image-to-pdf',
+      'bmp-to-pdf',
+      'gif-to-pdf',
+      'tiff-to-pdf',
+      'indd-to-pdf',
+      'psd-to-pdf',
+      'ai-to-pdf',
+    ];
+
+    NEW_IMAGE_VERBS.forEach((verb) => {
+      it(`should have correct limits configuration for ${verb} in LIMITS_MAP`, () => {
+        const verbLimits = ActionBinder.LIMITS_MAP[verb];
+        expect(verbLimits).to.exist;
+        expect(verbLimits).to.deep.equal([
+          'hybrid',
+          'allowed-filetypes-all',
+          'allowed-filetypes-heic',
+          'max-filesize-100-mb',
+        ]);
+      });
+
+      it(`should configure ${verb} as hybrid mode`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb][0]).to.equal('hybrid');
+      });
+
+      it(`should enable HEIC support for ${verb} via allowed-filetypes-heic`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-heic');
+      });
+
+      it(`should allow all file types for ${verb}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-all');
+      });
+
+      it(`should have max-filesize-100-mb for ${verb}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('max-filesize-100-mb');
+      });
+    });
+  });
+
+  describe('HEIC validation for image-to-pdf verbs', () => {
+    beforeEach(() => {
+      actionBinder.limits = {
+        maxNumFiles: 100,
+        allowedFileTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'],
+        maxFileSize: 104857600, // 100MB
+      };
+      actionBinder.workflowCfg.enabledFeatures = ['image-to-pdf'];
+      sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+      actionBinder.MULTI_FILE = false;
+    });
+
+    it('should accept a HEIC file with image/heic MIME type', async () => {
+      const files = [{ name: 'photo.heic', type: 'image/heic', size: 1048576 }];
+      const result = await actionBinder.validateFiles(files);
+      expect(result.isValid).to.be.true;
+      expect(result.validFiles).to.have.lengthOf(1);
+    });
+
+    it('should accept a HEIC file with empty MIME type via extension fallback', async () => {
+      const files = [{ name: 'photo.HEIC', type: '', size: 1048576 }];
+      const result = await actionBinder.validateFiles(files);
+      expect(result.isValid).to.be.true;
+      expect(result.validFiles).to.have.lengthOf(1);
+    });
+
+    it('should accept a regular supported image alongside HEIC support', async () => {
+      const files = [{ name: 'photo.jpg', type: 'image/jpeg', size: 1048576 }];
+      const result = await actionBinder.validateFiles(files);
+      expect(result.isValid).to.be.true;
+      expect(result.validFiles).to.have.lengthOf(1);
+    });
+
+    it('should still reject an unsupported file type for image-to-pdf', async () => {
+      const files = [{ name: 'archive.zip', type: 'application/zip', size: 1048576 }];
+      const result = await actionBinder.validateFiles(files);
+      expect(result.isValid).to.be.false;
+      expect(result.validFiles).to.be.empty;
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_unsupported_type')).to.be.true;
+    });
+
+    it('should not apply the HEIC extension fallback when the verb does not support HEIC', async () => {
+      actionBinder.limits.allowedFileTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      const files = [{ name: 'photo.heic', type: '', size: 1048576 }];
+      const result = await actionBinder.validateFiles(files);
+      expect(result.isValid).to.be.false;
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_unsupported_type')).to.be.true;
     });
   });
 
