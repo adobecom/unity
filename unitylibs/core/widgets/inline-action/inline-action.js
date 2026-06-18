@@ -338,11 +338,13 @@ function buildCompletePanel(meta) {
 }
 
 function buildResultSection(meta) {
-  const checker = createTag('div', { class: 'ia-checker' }, createTag('img', {
+  const img = createTag('img', {
     class: 'ia-result-img',
     src: '',
     alt: 'Processed image',
-  }));
+    draggable: 'false',
+  });
+  const checker = createTag('div', { class: 'ia-checker' }, img);
   const resultActions = createTag('div', { class: 'ia-result-actions' });
   const reuploadBtn = createTag('button', {
     type: 'button',
@@ -360,7 +362,9 @@ function buildResultSection(meta) {
   downloadBtn.append(createTag('span', {}, meta.downloadLabel));
   resultActions.append(reuploadBtn, downloadBtn);
   checker.append(resultActions);
-  return createTag('div', { class: 'ia-result' }, checker);
+  const result = createTag('div', { class: 'ia-result' }, checker);
+  result.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+  return result;
 }
 
 function buildLeftPanel(heroPreview, meta) {
