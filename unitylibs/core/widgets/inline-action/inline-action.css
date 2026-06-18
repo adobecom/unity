@@ -932,6 +932,10 @@
     padding-bottom: 48px;
   }
 
+  .ia-widget[data-state="loading"] .ia-panel-left {
+    display: none;
+  }
+  
   .ia-widget[data-state="complete"] {
     flex-direction: column-reverse;
   }
