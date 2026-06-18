@@ -340,7 +340,6 @@ export default class ActionBinder {
     const queryParams = getCgenQueryParams(this.unityEl);
     const payload = {
       locale: getLocale(),
-      additionalQueryParams: queryParams,
       workflow: this.workflowCfg.supportedFeatures.values().next().value,
       type: file.type,
     };
@@ -355,6 +354,7 @@ export default class ActionBinder {
     const cOpts = {
       assetId,
       targetProduct: this.workflowCfg.productName,
+      additionalQueryParams: queryParams,
       payload,
     };
     try {

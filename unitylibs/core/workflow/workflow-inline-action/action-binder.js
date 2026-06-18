@@ -407,6 +407,7 @@ export default class ActionBinder {
     return {
       assetId: connectorAssetId,
       targetProduct: this.workflowCfg.productName,
+      additionalQueryParams: getCgenQueryParams(this.unityEl),
       ...(query && { query }),
       payload: {
         workflow: this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
@@ -414,7 +415,6 @@ export default class ActionBinder {
         verb: verb ?? this.operation,
         widgetType: 'nba',
         locale: getLocale(),
-        additionalQueryParams: getCgenQueryParams(this.unityEl),
         type: fileType,
       },
     };
