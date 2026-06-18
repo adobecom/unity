@@ -230,6 +230,43 @@ describe('UploadHandler', () => {
     });
   });
 
+  describe('getEffectiveFileType', () => {
+    it('should tag an empty-MIME .heic file as image/heic when the verb supports HEIC', async () => {
+      mockActionBinder.limits = { allowedFileTypes: ['application/pdf', 'image/heic'] };
+      const file = new File(['content'], 'photo.heic', { type: '' });
+      const result = await uploadHandler.getEffectiveFileType(file);
+      expect(result).to.equal('image/heic');
+    });
+
+    it('should be case-insensitive for the .HEIC extension', async () => {
+      mockActionBinder.limits = { allowedFileTypes: ['application/pdf', 'image/heic'] };
+      const file = new File(['content'], 'photo.HEIC', { type: '' });
+      const result = await uploadHandler.getEffectiveFileType(file);
+      expect(result).to.equal('image/heic');
+    });
+
+    it('should preserve the reported MIME type for a .heic file that already has one', async () => {
+      mockActionBinder.limits = { allowedFileTypes: ['application/pdf', 'image/heic'] };
+      const file = new File(['content'], 'photo.heic', { type: 'image/heic' });
+      const result = await uploadHandler.getEffectiveFileType(file);
+      expect(result).to.equal('image/heic');
+    });
+
+    it('should not tag a .heic file when the verb does not support HEIC', async () => {
+      mockActionBinder.limits = { allowedFileTypes: ['application/pdf', 'image/jpeg'] };
+      const file = new File(['content'], 'photo.heic', { type: '' });
+      const result = await uploadHandler.getEffectiveFileType(file);
+      expect(result).to.equal('');
+    });
+
+    it('should return the reported MIME type for a non-HEIC file', async () => {
+      mockActionBinder.limits = { allowedFileTypes: ['application/pdf', 'image/heic'] };
+      const file = new File(['content'], 'photo.jpg', { type: 'image/jpeg' });
+      const result = await uploadHandler.getEffectiveFileType(file);
+      expect(result).to.equal('image/jpeg');
+    });
+  });
+
   describe('PDF Chunking', () => {
     it('should chunk and upload PDF successfully', async () => {
       const assetDataArray = [{

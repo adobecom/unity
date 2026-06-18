@@ -90,7 +90,7 @@ export default class UploadHandler {
 
   async getEffectiveFileType(file) {
     const { getExtension } = await import('../../../utils/FileUtils.js');
-    const isHeicWithoutMimeType = this.actionBinder.workflowCfg.enabledFeatures[0] === 'heic-to-pdf'
+    const isHeicWithoutMimeType = this.actionBinder.limits?.allowedFileTypes?.includes('image/heic')
       && getExtension(file.name).toLowerCase() === 'heic'
       && !file.type;
     return isHeicWithoutMimeType ? 'image/heic' : file.type;
