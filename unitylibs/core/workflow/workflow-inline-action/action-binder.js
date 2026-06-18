@@ -15,7 +15,6 @@ import {
 } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
-import isDesktop, { isIOSSafari } from '../../../utils/device-detection.js';
 
 const DOWNLOAD_COUNT_KEY = 'inline-action-download-count';
 const WORKFLOW_NAME = 'inline-action';
@@ -585,6 +584,7 @@ export default class ActionBinder {
   }
 
   async handleConnector(el, isDownload = false) {
+    const { default: isDesktop, isIOSSafari } = await import(`${getUnityLibs()}/utils/device-detection.js`);
     const userCount = this.getUserCount();
     const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
