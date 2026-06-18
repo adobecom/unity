@@ -118,6 +118,19 @@ export default class ActionBinder {
     this.logAnalyticsinSplunk(eventName, data);
   }
 
+  trackRemoveBackgroundError(error) {
+    this.trackEvent(INLINE_ACTION_EVENTS.REMOVE_BACKGROUND_ERROR, {
+      errorData: {
+        code: 'error-request',
+        subCode: `removeBackground ${error?.status ?? ''}`.trim(),
+        desc: error?.message || undefined,
+      },
+      fileMetaData: this.filesData,
+      assetId: this.assetId,
+      action: 'removeBackground',
+    });
+  }
+
   trackClientError(errorCode) {
     this.trackEvent(INLINE_ACTION_EVENTS.UPLOAD_CLIENT_ERROR, {
       errorData: { code: errorCode },
@@ -417,9 +430,12 @@ export default class ActionBinder {
       this.resultAssetId = res.assetId;
       this.resultUrl = res.outputUrl;
       this.setProgress(PROGRESS.REMOVE_BG, useSplashProgress);
+      this.trackEvent(INLINE_ACTION_EVENTS.REMOVE_BACKGROUND_SUCCESS, { assetId: this.assetId, fileMetaData: this.filesData,});
       return res;
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return null;
+      this.trackRemoveBackgroundError(e);
+      e.analyticsTracked = true;
       throw e;
     }
   }
@@ -588,7 +604,7 @@ export default class ActionBinder {
       this.widgetRef?.setState(InlineActionState.COMPLETE);
       this.cacheResultBlob(this.resultUrl).catch(() => {});
     } catch (e) {
-      this.trackServerError('upload', e);
+      if (!e.analyticsTracked) this.trackServerError('upload', e);
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
       this.widgetRef?.setState(InlineActionState.INITIAL);
     }
