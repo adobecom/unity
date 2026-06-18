@@ -430,7 +430,7 @@ export default class ActionBinder {
       this.resultAssetId = res.assetId;
       this.resultUrl = res.outputUrl;
       this.setProgress(PROGRESS.REMOVE_BG, useSplashProgress);
-      this.trackEvent(INLINE_ACTION_EVENTS.REMOVE_BACKGROUND_SUCCESS, { assetId: resultAssetId, fileMetaData: this.filesData,});
+      this.trackEvent(INLINE_ACTION_EVENTS.REMOVE_BACKGROUND_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData,});
       return res;
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return null;
