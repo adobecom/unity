@@ -1049,6 +1049,7 @@
   .ia-panel,
   .ia-preview,
   .ia-widget[data-state="complete"] .ia-result {
+    border-radius: var(--ia-radius-sm);
     height: 100%;
     min-height: 0;
     max-height: none;
