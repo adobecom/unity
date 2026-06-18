@@ -7,6 +7,8 @@ export const INLINE_ACTION_EVENTS = {
   UPLOAD_CLIENT_ERROR: 'Upload client error|UnityWidget',
   UPLOAD_SERVER_ERROR: 'Upload server error|UnityWidget',
   CONNECTOR_SUCCESS: 'Connector Success|UnityWidget',
+  REMOVE_BACKGROUND_SUCCESS: 'Remove Background Success|UnityWidget',
+  REMOVE_BACKGROUND_ERROR: 'Remove Background error|UnityWidget',
   TRY_AGAIN: 'Try again|UnityWidget',
   nbaClick: (label) => `${label} - Do more with|UnityWidget`,
 };
