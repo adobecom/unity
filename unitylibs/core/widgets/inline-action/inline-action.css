@@ -62,7 +62,7 @@
   min-height: 0;
   max-height: none;
   margin: 0;
-  border-radius: 10px;
+  border-radius: var(--ia-radius-sm);
   background: transparent;
   color: #fff;
   box-sizing: border-box;
@@ -79,6 +79,7 @@
 .ia-panel-right {
   order: 1;
   justify-content: flex-start;
+  border-radius: var(--ia-radius-sm);
 }
 
 .ia-panel-left {
@@ -94,7 +95,6 @@
 }
 
 .ia-panel {
-  border-radius: 10px;
   min-height: 0;
   height: auto;
   position: relative;
@@ -328,6 +328,7 @@
   font-weight: 600;
   cursor: pointer;
   line-height: 26px;
+  font-family: var(--body-font-family);
 }
 
 .ia-download-btn :is(svg, img) {
@@ -371,7 +372,7 @@
 .unity-inline-action .drop-zone {
   border: var(--ia-drop-zone-border);
   border-radius: var(--ia-radius-sm);
-  padding: 34px 24px;
+  padding: 44px 24px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -655,7 +656,6 @@
   font-size: 16px;
   font-weight: 600;
   line-height: 1.25;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
   display: -webkit-box;
   -webkit-box-orient: vertical;
 }
@@ -729,7 +729,7 @@
   color: #fff;
   font-family: var(--body-font-family);
   font-size: 17px;
-  font-weight: 400;
+  font-weight: 800;
   cursor: pointer;
   appearance: none;
   line-height: 26px;
@@ -1055,7 +1055,7 @@
   }
 
   .unity-inline-action .drop-zone-container > .ia-legal {
-    margin-inline: 45px;
+    margin-inline: 35px;
   }
 
   .ia-nba-grid {
