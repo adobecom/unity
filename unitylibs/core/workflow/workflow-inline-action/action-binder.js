@@ -420,7 +420,7 @@ export default class ActionBinder {
     };
   }
 
-  async callConnector(cOpts, { openInSameTab = false } = {}) {
+  async callConnector(cOpts, { openInSameTab = false, useSplashProgress = false } = {}) {
     const res = await this.serviceHandler.postCallToService(
       this.apiConfig.connectorApiEndPoint,
       { body: JSON.stringify(cOpts) },
@@ -432,12 +432,15 @@ export default class ActionBinder {
       throw error;
     }
     if (openInSameTab) {
-      if (this.transitionScreen) this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
-      this.setProgress(PROGRESS.COMPLETE, true);
-      window.location.assign(res.url);
-    } else {
-      window.open(res.url, '_blank');
+      if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
+        this.setProgress(PROGRESS.COMPLETE, true);
+      }
+      window.location.href = res.url;
+      return res;
     }
+    const opened = window.open(res.url, '_blank');
+    if (!opened) window.location.href = res.url;
     return res;
   }
 
@@ -518,7 +521,7 @@ export default class ActionBinder {
         verb: 'aiPhotoEditor',
         connectorAssetId: this.resultAssetId,
         fileType: this.filesData.type,
-      }), { openInSameTab: true });
+      }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
       if (e.name !== 'AbortError') {
@@ -566,26 +569,42 @@ export default class ActionBinder {
     else await this.anonymousFlow(file);
   }
 
+  async runFirstLocalDownload() {
+    try {
+      if (this.resultBlob?.size) {
+        this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
+      } else {
+        await this.triggerDownload(this.resultUrl);
+      }
+      this.incrementUserCount();
+      this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
+    } catch (e) {
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    }
+  }
+
   async handleConnector(el, isDownload = false) {
-    let userCount = this.getUserCount();
+    const { default: isDesktop, isIOSSafari } = await import(`${getUnityLibs()}/utils/device-detection.js`);
+    const userCount = this.getUserCount();
+    const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
-    if (downloadsLocally) {
-      try {
-        await this.triggerDownload(this.resultUrl);
-        userCount = this.incrementUserCount();
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-      } catch (e) {
-        this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-        return;
-      }
-    }
-    await this.callConnector(await this.buildConnectorPayload({
+    const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
-    }));
+    });
+    if (downloadsLocally) {
+      await this.runFirstLocalDownload();
+      if (isIOSSafari()) return;
+      await new Promise((resolve) => { setTimeout(resolve, 200); });
+    }
+    try {
+      await this.callConnector(connectorPayload, { openInSameTab, useSplashProgress: false });
+    } catch (e) {
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+    }
   }
 
   async createErrorToast() {
