@@ -926,12 +926,21 @@
     padding-bottom: 48px;
   }
 
+  .ia-widget[data-state="loading"] .ia-panel-left {
+    display: none;
+  }
+
+  .ia-widget[data-state="complete"] {
+    flex-direction: column-reverse;
+  }
+
   .ia-widget[data-state="complete"] .ia-complete {
     margin-top: 0;
     margin-right: 0;
+    margin-bottom: 0;
   }
 
-  .ia-widget[data-state="complete"] .ia-nba-heading { margin-top: 0; }
+  .ia-widget[data-state="complete"] .ia-nba-heading { margin-top: 16px; }
 
   .ia-nba-grid {
     display: flex;
