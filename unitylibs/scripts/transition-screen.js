@@ -96,19 +96,22 @@ export default class TransitionScreen {
     return splashScreenConfig.fragmentLink;
   }
 
-  replaceDotMedia(area = document) {
+  replaceDotMedia(area = document, fragmentBaseUrl = null) {
     const config = getConfig?.();
     const contentRoot = config?.contentRoot ?? '';
-    if (!contentRoot) return;
+    if (!fragmentBaseUrl && !contentRoot) return;
     const prefix = (config?.locale?.prefix ?? '').replace('/', '') ?? '';
     const currUrl = new URL(window.location.href);
     const pathSeg = currUrl.pathname.split('/').length;
-    if (area === document && ((prefix === '' && pathSeg >= 3) || (prefix !== '' && pathSeg >= 4))) return;
+    if (!fragmentBaseUrl && area === document && ((prefix === '' && pathSeg >= 3) || (prefix !== '' && pathSeg >= 4))) return;
     const resetAttributeBase = (tag, attr) => {
       area.querySelectorAll(`${tag}[${attr}^="./media_"]`).forEach((el) => {
         const value = el.getAttribute(attr);
         if (!value) return;
-        el.setAttribute(attr, new URL(`${contentRoot}${value.substring(1)}`, window.location.href).href);
+        const resolvedUrl = fragmentBaseUrl
+          ? new URL(value, fragmentBaseUrl).href
+          : new URL(`${contentRoot}${value.substring(1)}`, window.location.href).href;
+        el.setAttribute(attr, resolvedUrl);
       });
     };
     resetAttributeBase('img', 'src');
@@ -138,7 +141,8 @@ export default class TransitionScreen {
     const sections = doc.querySelectorAll('body > div');
     const f = createTag('div', { class: 'fragment splash-loader decorate', style: 'display: none', tabindex: '-1', role: 'dialog', 'aria-modal': 'true' });
     if (this.workflowCfg.theme === 'dark') f.classList.add('dark');
-    if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') sections.forEach(sec => this.replaceDotMedia(sec))
+    const fragmentBaseUrl = new URL(`${this.splashFragmentLink}.plain.html`, window.location.href).href;
+    sections.forEach((sec) => this.replaceDotMedia(sec, fragmentBaseUrl));
     f.append(...sections);
     const splashDiv = document.querySelector(
       this.workflowCfg.targetCfg.splashScreenConfig.splashScreenParent,
