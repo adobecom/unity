@@ -1355,6 +1355,27 @@ describe('ActionBinder', () => {
         expect(actionBinder.handleSingleFileUpload.called).to.be.false;
       });
 
+      it('should normalize proprietary Adobe formats (.ai) to the canonical MIME when the browser reports a wrong type', async () => {
+        const files = [{ name: 'art.ai', type: 'application/postscript', size: 1048576 }];
+        await actionBinder.handleFileUpload(files);
+        const validatedFiles = actionBinder.validateFiles.firstCall.args[0];
+        expect(validatedFiles[0].type).to.equal('application/illustrator');
+      });
+
+      it('should normalize proprietary Adobe formats (.psd) to the canonical MIME when the browser reports no type', async () => {
+        const files = [{ name: 'design.psd', type: '', size: 1048576 }];
+        await actionBinder.handleFileUpload(files);
+        const validatedFiles = actionBinder.validateFiles.firstCall.args[0];
+        expect(validatedFiles[0].type).to.equal('image/vnd.adobe.photoshop');
+      });
+
+      it('should keep the browser-reported MIME for non-proprietary formats', async () => {
+        const files = [{ name: 'photo.jpg', type: 'image/jpeg', size: 1048576 }];
+        await actionBinder.handleFileUpload(files);
+        const validatedFiles = actionBinder.validateFiles.firstCall.args[0];
+        expect(validatedFiles[0].type).to.equal('image/jpeg');
+      });
+
       it('should handle single file from multi-file upload when validation fails for others', async () => {
         const files = [
           { name: 'test1.pdf', type: 'application/pdf', size: 1048576 },
