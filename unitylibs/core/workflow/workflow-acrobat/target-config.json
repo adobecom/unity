@@ -15,7 +15,7 @@
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
     "awaitFinalizeVerbs": ["word-to-pdf"],
-    "directUploadVerbs": ["word-to-pdf"],
+    "directUploadVerbs": ["word-to-pdf", "ppt-to-pdf", "excel-to-pdf", "jpg-to-pdf", "png-to-pdf", "heic-to-pdf"],
     "directUploadMaxSize": 1048576,
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
     "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "heic-to-pdf", "image-to-pdf", "bmp-to-pdf", "gif-to-pdf", "tiff-to-pdf", "indd-to-pdf", "psd-to-pdf", "ai-to-pdf", "quiz-maker", "flashcard-maker", "mindmap-maker", "resume-builder"],
