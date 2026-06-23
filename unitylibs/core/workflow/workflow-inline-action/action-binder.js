@@ -213,6 +213,7 @@ export default class ActionBinder {
       this.workflowCfg.productName,
       this.getAnalyticsMeta(data),
       `${unityConfig.apiEndPoint}/log`,
+      true,
     );
   }
 
