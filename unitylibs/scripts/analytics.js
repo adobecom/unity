@@ -103,8 +103,8 @@ function createPayloadForSplunk(metaData) {
 export default function sendAnalyticsToSplunk(eventName, product, metaData, splunkEndpoint, sendBeacon = false) {
   try {
     const eventDataPayload = createPayloadForSplunk({ ...metaData, eventName, product });
-    if (sendBeacon && navigator.sendBeacon && navigator.sendBeacon(splunkEndpoint, JSON.stringify(eventDataPayload))) return;
-    fetch(splunkEndpoint, {
+    if (sendBeacon && navigator.sendBeacon && navigator.sendBeacon(splunkEndpoint, JSON.stringify(eventDataPayload))) return Promise.resolve();
+    return fetch(splunkEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(eventDataPayload),
@@ -114,5 +114,6 @@ export default function sendAnalyticsToSplunk(eventName, product, metaData, splu
       `An error occurred while sending ${eventName} to splunk, metadata: ${JSON.stringify(metaData || {})}, error: ${error || ''}`,
       { sampleRate: 100, tags: 'Unity-PS-Upload' },
     );
+    return Promise.resolve();
   }
 }
