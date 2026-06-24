@@ -627,7 +627,7 @@ export default class ActionBinder {
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
-      const mimeType = file.type || await this.getMimeType(file);
+      const mimeType = (await this.getMimeType(file)) || file.type;
       return new File([file], sanitizedFileName, { type: mimeType, lastModified: file.lastModified });
     }));
     this.MULTI_FILE = files.length > 1;
