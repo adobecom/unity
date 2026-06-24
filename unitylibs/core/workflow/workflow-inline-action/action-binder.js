@@ -115,7 +115,7 @@ export default class ActionBinder {
     sendAnalyticsEvent(new CustomEvent(eventName, {
       detail: { workflow: metaData.workflow },
     }));
-    this.logAnalyticsinSplunk(eventName, data);
+    return this.logAnalyticsinSplunk(eventName, data);
   }
 
   trackRemoveBackgroundError(error) {
@@ -152,7 +152,7 @@ export default class ActionBinder {
   }
 
   trackConnectorSuccess(verb, assetId) {
-    this.trackEvent(INLINE_ACTION_EVENTS.CONNECTOR_SUCCESS, {
+    return this.trackEvent(INLINE_ACTION_EVENTS.CONNECTOR_SUCCESS, {
       assetId: assetId || this.resultAssetId,
       verb,
       fileMetaData: this.filesData,
@@ -208,7 +208,7 @@ export default class ActionBinder {
   }
 
   logAnalyticsinSplunk(eventName, data) {
-    this.sendAnalyticsToSplunk?.(
+    return this.sendAnalyticsToSplunk?.(
       eventName,
       this.workflowCfg.productName,
       this.getAnalyticsMeta(data),
@@ -477,8 +477,9 @@ export default class ActionBinder {
         error.status = res?.status;
         throw error;
       }
-      this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
+      const trackSuccessPromise = this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
       if (openInSameTab) {
+        await trackSuccessPromise;
         if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
           this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
           this.setProgress(PROGRESS.COMPLETE, true);
@@ -487,7 +488,10 @@ export default class ActionBinder {
         return res;
       }
       const opened = window.open(res.url, '_blank');
-      if (!opened) window.location.href = res.url;
+      if (!opened) {
+        await trackSuccessPromise;
+        window.location.href = res.url;
+      }
       return res;
     } catch (e) {
       if (e.name !== 'AbortError') {
