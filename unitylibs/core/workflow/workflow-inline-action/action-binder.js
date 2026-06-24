@@ -22,6 +22,28 @@ const UPLOAD_ERROR_TYPE = '.icon-error-request';
 const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
+function correctOrientation(file) {
+  if (!file.type.match(/image\/(jpeg|jpg)/i)) return Promise.resolve(file);
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => resolve(blob ? new File([blob], file.name, { type: file.type }) : file),
+        file.type,
+        0.92,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 class ServiceHandler {
   constructor(canvasArea, unityEl, getAdditionalHeaders) {
     this.canvasArea = canvasArea;
@@ -613,17 +635,18 @@ export default class ActionBinder {
   async uploadFile(files) {
     const file = await this.validateFile(files);
     if (!file) return;
+    const correctedFile = await correctOrientation(file);
     this.uploadAbortController = null;
     this.assetId = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
-    this.filesData = { count: 1, size: file.size, type: file.type, name: file.name };
+    this.filesData = { count: 1, size: correctedFile.size, type: correctedFile.type, name: correctedFile.name };
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
-    if (isGuest === false) await this.signedInFlow(file);
-    else await this.anonymousFlow(file);
+    if (isGuest === false) await this.signedInFlow(correctedFile);
+    else await this.anonymousFlow(correctedFile);
   }
 
   async runFirstLocalDownload() {
