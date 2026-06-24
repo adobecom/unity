@@ -194,7 +194,6 @@ export default class ActionBinder {
     this.initialize();
     this.experimentData = null;
     this.experimentViaPageConfig = false;
-    this.experimentDataPromise = null;
     this.pageConfigLocation = null;
     this.pageConfigFetched = false;
     this.pageConfigPromise = null;
@@ -276,18 +275,16 @@ export default class ActionBinder {
     const verb = this.workflowCfg.enabledFeatures[0];
     try {
       const { fetchPageConfig } = await import('../../../scripts/utils.js');
-      const { default: getExperimentData, getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
+      const { default: getExperimentData } = await import('../../../utils/experiment-provider.js');
       const pageConfig = await fetchPageConfig({ product: 'acrobat', verb });
       this.pageConfigLocation = pageConfig.location;
       if (pageConfig.config?.target?.enabled) {
-        this.experimentDataPromise = getExperimentData(pageConfig.config.target.decisionScopes)
-          .then((data) => { this.experimentData = data; this.experimentViaPageConfig = true; })
-          .catch((error) => this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, { code: 'warn_fetch_experiment', desc: error.message }));
+        this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
+        this.experimentViaPageConfig = true;
       } else if (!this.experimentData && this.workflowCfg.targetCfg?.experimentationOn?.includes(verb)) {
-        this.experimentDataPromise = getDecisionScopesForVerb(verb)
-          .then((decisionScopes) => getExperimentData(decisionScopes))
-          .then((data) => { this.experimentData = data; })
-          .catch((error) => this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, { code: 'warn_fetch_experiment', desc: error.message }));
+        const { getDecisionScopesForVerb } = await import('../../../utils/experiment-provider.js');
+        const decisionScopes = await getDecisionScopesForVerb(verb);
+        this.experimentData = await getExperimentData(decisionScopes);
       }
     } catch (error) {
       await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
@@ -544,7 +541,6 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
-    if (this.experimentDataPromise) await this.experimentDataPromise;
     if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
