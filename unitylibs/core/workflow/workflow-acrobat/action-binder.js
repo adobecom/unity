@@ -273,11 +273,21 @@ export default class ActionBinder {
     if (this.pageConfigFetched) return;
     this.pageConfigFetched = true;
     const verb = this.workflowCfg.enabledFeatures[0];
+    let pageConfig;
     try {
       const { fetchPageConfig } = await import('../../../scripts/utils.js');
-      const { default: getExperimentData } = await import('../../../utils/experiment-provider.js');
-      const pageConfig = await fetchPageConfig({ product: 'acrobat', verb });
+      pageConfig = await fetchPageConfig({ product: 'acrobat', verb });
       this.pageConfigLocation = pageConfig.location;
+    } catch (error) {
+      await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
+        code: 'warn_fetch_experiment',
+        desc: error.message,
+      });
+      this.acrobatApiConfig = this.getAcrobatApiConfig();
+      return;
+    }
+    try {
+      const { default: getExperimentData } = await import('../../../utils/experiment-provider.js');
       if (pageConfig.config?.target?.enabled) {
         this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
         this.experimentViaPageConfig = true;
@@ -291,6 +301,8 @@ export default class ActionBinder {
         code: 'warn_fetch_experiment',
         desc: error.message,
       });
+      this.pageConfigFetched = false;
+      this.pageConfigPromise = null;
     }
     this.acrobatApiConfig = this.getAcrobatApiConfig();
   }
