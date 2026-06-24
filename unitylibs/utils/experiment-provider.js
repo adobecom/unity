@@ -14,10 +14,28 @@ export async function getDecisionScopesForVerb(verb) {
   return region ? [`${verbScope}_${region}`, verbScope] : [verbScope];
 }
 
+function waitForSatellite(timeout = 5000) {
+  if (window._satellite) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const interval = setInterval(() => {
+      if (window._satellite) {
+        clearInterval(interval);
+        resolve();
+      } else if (Date.now() - start >= timeout) {
+        clearInterval(interval);
+        reject(new Error('_satellite not available within timeout'));
+      }
+    }, 100);
+  });
+}
+
 export default async function getExperimentData(decisionScopes) {
   if (!decisionScopes || decisionScopes.length === 0) {
     throw new Error('No decision scopes provided for experiment data fetch');
   }
+
+  await waitForSatellite();
 
   return new Promise((resolve, reject) => {
     try {
