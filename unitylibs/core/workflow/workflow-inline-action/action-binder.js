@@ -22,8 +22,40 @@ const UPLOAD_ERROR_TYPE = '.icon-error-request';
 const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
-function correctOrientation(file) {
-  if (!file.type.match(/image\/(jpeg|jpg)/i)) return Promise.resolve(file);
+async function readExifOrientation(file) {
+  const buffer = await file.slice(0, 64 * 1024).arrayBuffer();
+  const view = new DataView(buffer);
+  if (view.getUint16(0) !== 0xFFD8) return null;
+  let offset = 2;
+  while (offset < view.byteLength - 4) {
+    const marker = view.getUint16(offset);
+    const segmentLength = view.getUint16(offset + 2);
+    if (marker === 0xFFE1) {
+      if (view.getUint32(offset + 4) !== 0x45786966) return null;
+      const tiffOffset = offset + 10;
+      const little = view.getUint16(tiffOffset) === 0x4949;
+      const ifdOffset = view.getUint32(tiffOffset + 4, little);
+      const entries = view.getUint16(tiffOffset + ifdOffset, little);
+      for (let i = 0; i < entries; i += 1) {
+        const entryOffset = tiffOffset + ifdOffset + 2 + (i * 12);
+        if (view.getUint16(entryOffset, little) === 0x0112) {
+          return view.getUint16(entryOffset + 8, little);
+        }
+      }
+      return null;
+    }
+    if ((marker & 0xFF00) !== 0xFF00) break;
+    offset += 2 + segmentLength;
+  }
+  return null;
+}
+
+async function correctOrientation(file) {
+  if (!file.type.match(/image\/(jpeg|jpg)/i)) return file;
+  const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
+  if (isDesktop()) return file;
+  const orientation = await readExifOrientation(file);
+  if (!orientation || orientation === 1) return file;
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
