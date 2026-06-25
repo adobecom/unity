@@ -52,8 +52,6 @@ async function readExifOrientation(file) {
 
 async function correctOrientation(file) {
   if (!/image\/(jpeg|jpg)/i.test(file.type)) return file;
-  const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
-  if (isDesktop()) return file;
   const orientation = await readExifOrientation(file).catch(() => null);
   if (!orientation || orientation === 1) return file;
   return new Promise((resolve) => {
