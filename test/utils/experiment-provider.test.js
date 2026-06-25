@@ -1,5 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { expect } from '@esm-bundle/chai';
+import sinon from 'sinon';
 import getExperimentData, { getDecisionScopesForVerb } from '../../unitylibs/utils/experiment-provider.js';
 
 describe('getExperimentData', () => {
@@ -115,6 +116,40 @@ describe('getExperimentData', () => {
     setupMock(undefined);
     const result = await getExperimentData(['acom_unity_acrobat_add-comment_us']);
     expect(result).to.equal(null);
+  });
+});
+
+describe('waitForSatellite behavior in getExperimentData', () => {
+  afterEach(() => {
+    delete window._satellite;
+  });
+
+  it('should wait for _satellite to become available and then succeed', async () => {
+    delete window._satellite;
+    setTimeout(() => {
+      window._satellite = {
+        track: (event, options) => {
+          if (typeof options.done === 'function') setTimeout(() => options.done(null, null), 0);
+        },
+      };
+    }, 50);
+    const result = await getExperimentData(['acom_unity_acrobat_compress-pdf']);
+    expect(result).to.equal(null);
+  });
+
+  it('should reject when _satellite is not available within timeout', async () => {
+    delete window._satellite;
+    const clock = sinon.useFakeTimers();
+    try {
+      const promise = getExperimentData(['acom_unity_acrobat_compress-pdf']);
+      await clock.tickAsync(5100);
+      await promise;
+      expect.fail('Should have rejected');
+    } catch (error) {
+      expect(error.message).to.equal('_satellite not available within timeout');
+    } finally {
+      clock.restore();
+    }
   });
 });
 

@@ -3037,4 +3037,122 @@ describe('ActionBinder', () => {
       expect(Array.isArray(result)).to.be.true;
     });
   });
+
+  describe('ensurePageConfig', () => {
+    let originalFetch;
+
+    const mockFetchResponse = (config = {}) => ({
+      ok: true,
+      json: async () => ({ location: 'https://test-location.com', config }),
+    });
+
+    const mockSatellite = (content = null) => {
+      window._satellite = {
+        track: (event, options) => {
+          if (typeof options.done === 'function') {
+            const result = content
+              ? { decisions: [{ items: [{ data: { content } }] }], propositions: [] }
+              : { decisions: [], propositions: [] };
+            setTimeout(() => options.done(result, null), 0);
+          }
+        },
+      };
+    };
+
+    beforeEach(() => {
+      originalFetch = window.fetch;
+      window.unityConfig.pageConfigEndPoint = 'https://test-api.adobe.com/pageconfig';
+      actionBinder.pageConfigFetched = false;
+      actionBinder.pageConfigPromise = null;
+      actionBinder.pageConfigLocation = null;
+      actionBinder.experimentData = null;
+      actionBinder.experimentViaPageConfig = false;
+      sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+    });
+
+    afterEach(() => {
+      window.fetch = originalFetch;
+      delete window._satellite;
+    });
+
+    it('should not run again when pageConfigFetched is already true', async () => {
+      actionBinder.pageConfigFetched = true;
+      window.fetch = sinon.stub();
+
+      await actionBinder.ensurePageConfig();
+
+      expect(window.fetch.called).to.be.false;
+    });
+
+    it('should reset pageConfigFetched and pageConfigPromise when getExperimentData fails on first attempt without dispatching error', async () => {
+      window.fetch = sinon.stub().resolves(mockFetchResponse({ target: { enabled: true, decisionScopes: ['scope1'] } }));
+      window._satellite = {
+        track: (event, options) => {
+          if (typeof options.done === 'function') setTimeout(() => options.done(null, new Error('Target error')), 0);
+        },
+      };
+
+      await actionBinder.ensurePageConfig();
+
+      expect(actionBinder.pageConfigFetched).to.be.false;
+      expect(actionBinder.pageConfigPromise).to.be.null;
+      expect(actionBinder.dispatchErrorToast.called).to.be.false;
+    });
+
+    it('should reset flags and dispatch error to Splunk when getExperimentData fails on retry', async () => {
+      actionBinder.pageConfigLocation = 'https://existing-location.com';
+      window.fetch = sinon.stub().resolves(mockFetchResponse({ target: { enabled: true, decisionScopes: ['scope1'] } }));
+      window._satellite = {
+        track: (event, options) => {
+          if (typeof options.done === 'function') setTimeout(() => options.done(null, new Error('Target error')), 0);
+        },
+      };
+
+      await actionBinder.ensurePageConfig();
+
+      expect(actionBinder.pageConfigFetched).to.be.false;
+      expect(actionBinder.pageConfigPromise).to.be.null;
+      expect(actionBinder.dispatchErrorToast.calledOnce).to.be.true;
+    });
+
+    it('should set experimentData and experimentViaPageConfig when pageConfig target is enabled', async () => {
+      const mockData = { variationId: 'variant-1' };
+      window.fetch = sinon.stub().resolves(mockFetchResponse({ target: { enabled: true, decisionScopes: ['scope1'] } }));
+      mockSatellite(mockData);
+
+      await actionBinder.ensurePageConfig();
+
+      expect(actionBinder.experimentData).to.deep.equal(mockData);
+      expect(actionBinder.experimentViaPageConfig).to.be.true;
+      expect(actionBinder.pageConfigFetched).to.be.true;
+    });
+
+    it('should set experimentData via targetCfg.experimentationOn when pageConfig target is not enabled', async () => {
+      const mockData = { variationId: 'variant-2' };
+      actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+      actionBinder.workflowCfg.targetCfg.experimentationOn = ['compress-pdf'];
+      window.fetch = sinon.stub()
+        .onFirstCall().resolves(mockFetchResponse({}))
+        .onSecondCall()
+        .resolves({ ok: true, json: async () => ({ country: 'US' }) });
+      mockSatellite(mockData);
+
+      await actionBinder.ensurePageConfig();
+
+      expect(actionBinder.experimentData).to.deep.equal(mockData);
+      expect(actionBinder.experimentViaPageConfig).to.be.false;
+      expect(actionBinder.pageConfigFetched).to.be.true;
+    });
+
+    it('should not call _satellite when pageConfig target is not enabled and verb not in experimentationOn', async () => {
+      window.fetch = sinon.stub().resolves(mockFetchResponse({}));
+      window._satellite = { track: sinon.stub() };
+
+      await actionBinder.ensurePageConfig();
+
+      expect(window._satellite.track.called).to.be.false;
+      expect(actionBinder.experimentData).to.be.null;
+      expect(actionBinder.pageConfigFetched).to.be.true;
+    });
+  });
 });
