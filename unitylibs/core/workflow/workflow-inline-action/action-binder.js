@@ -531,7 +531,7 @@ export default class ActionBinder {
       }
       const trackSuccessPromise = this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
       if (openInSameTab) {
-        await trackSuccessPromise;
+        await trackSuccessPromise.catch(() => {});
         if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
           this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
           this.setProgress(PROGRESS.COMPLETE, true);
@@ -541,7 +541,7 @@ export default class ActionBinder {
       }
       const opened = window.open(res.url, '_blank');
       if (!opened) {
-        await trackSuccessPromise;
+        await trackSuccessPromise.catch(() => {});
         window.location.href = res.url;
       }
       return res;
