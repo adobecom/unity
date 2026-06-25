@@ -22,6 +22,58 @@ const UPLOAD_ERROR_TYPE = '.icon-error-request';
 const PROGRESS = { UPLOAD_MAX: 60, REMOVE_BG: 95, COMPLETE: 100 };
 const getMount = (el) => el?.querySelector?.('.ia-widget') || el;
 
+async function readExifOrientation(file) {
+  const buffer = await file.slice(0, 64 * 1024).arrayBuffer();
+  const view = new DataView(buffer);
+  if (view.getUint16(0) !== 0xFFD8) return null;
+  let offset = 2;
+  while (offset < view.byteLength - 4) {
+    const marker = view.getUint16(offset);
+    const segmentLength = view.getUint16(offset + 2);
+    if (marker === 0xFFE1) {
+      if (view.getUint32(offset + 4) !== 0x45786966) return null;
+      const tiffOffset = offset + 10;
+      const little = view.getUint16(tiffOffset) === 0x4949;
+      const ifdOffset = view.getUint32(tiffOffset + 4, little);
+      const entries = view.getUint16(tiffOffset + ifdOffset, little);
+      for (let i = 0; i < entries; i += 1) {
+        const entryOffset = tiffOffset + ifdOffset + 2 + (i * 12);
+        if (view.getUint16(entryOffset, little) === 0x0112) {
+          return view.getUint16(entryOffset + 8, little);
+        }
+      }
+      return null;
+    }
+    if ((marker & 0xFF00) !== 0xFF00) break;
+    offset += 2 + segmentLength;
+  }
+  return null;
+}
+
+async function correctOrientation(file) {
+  if (!/image\/(jpeg|jpg)/i.test(file.type)) return file;
+  const orientation = await readExifOrientation(file).catch(() => null);
+  if (!orientation || orientation === 1) return file;
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => resolve(blob ? new File([blob], file.name, { type: file.type }) : file),
+        file.type,
+        0.92,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 class ServiceHandler {
   constructor(canvasArea, unityEl, getAdditionalHeaders) {
     this.canvasArea = canvasArea;
@@ -115,7 +167,7 @@ export default class ActionBinder {
     sendAnalyticsEvent(new CustomEvent(eventName, {
       detail: { workflow: metaData.workflow },
     }));
-    this.logAnalyticsinSplunk(eventName, data);
+    return this.logAnalyticsinSplunk(eventName, data);
   }
 
   trackRemoveBackgroundError(error) {
@@ -152,7 +204,7 @@ export default class ActionBinder {
   }
 
   trackConnectorSuccess(verb, assetId) {
-    this.trackEvent(INLINE_ACTION_EVENTS.CONNECTOR_SUCCESS, {
+    return this.trackEvent(INLINE_ACTION_EVENTS.CONNECTOR_SUCCESS, {
       assetId: assetId || this.resultAssetId,
       verb,
       fileMetaData: this.filesData,
@@ -208,7 +260,7 @@ export default class ActionBinder {
   }
 
   logAnalyticsinSplunk(eventName, data) {
-    this.sendAnalyticsToSplunk?.(
+    return this.sendAnalyticsToSplunk?.(
       eventName,
       this.workflowCfg.productName,
       this.getAnalyticsMeta(data),
@@ -477,8 +529,9 @@ export default class ActionBinder {
         error.status = res?.status;
         throw error;
       }
-      this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
+      const trackSuccessPromise = this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
       if (openInSameTab) {
+        await trackSuccessPromise.catch(() => {});
         if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
           this.transitionScreen.LOADER_LIMIT = PROGRESS.COMPLETE;
           this.setProgress(PROGRESS.COMPLETE, true);
@@ -487,7 +540,10 @@ export default class ActionBinder {
         return res;
       }
       const opened = window.open(res.url, '_blank');
-      if (!opened) window.location.href = res.url;
+      if (!opened) {
+        await trackSuccessPromise.catch(() => {});
+        window.location.href = res.url;
+      }
       return res;
     } catch (e) {
       if (e.name !== 'AbortError') {
@@ -613,17 +669,18 @@ export default class ActionBinder {
   async uploadFile(files) {
     const file = await this.validateFile(files);
     if (!file) return;
+    const correctedFile = await correctOrientation(file);
     this.uploadAbortController = null;
     this.assetId = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
-    this.filesData = { count: 1, size: file.size, type: file.type, name: file.name };
+    this.filesData = { count: 1, size: correctedFile.size, type: correctedFile.type, name: correctedFile.name };
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
-    if (isGuest === false) await this.signedInFlow(file);
-    else await this.anonymousFlow(file);
+    if (isGuest === false) await this.signedInFlow(correctedFile);
+    else await this.anonymousFlow(correctedFile);
   }
 
   async runFirstLocalDownload() {
