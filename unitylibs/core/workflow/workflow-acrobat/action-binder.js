@@ -289,14 +289,6 @@ export default class ActionBinder {
         this.experimentData = await getExperimentData(decisionScopes);
       }
     } catch (error) {
-      if (!pageConfig) {
-        await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
-          code: 'warn_fetch_experiment',
-          desc: error.message,
-        });
-        this.acrobatApiConfig = this.getAcrobatApiConfig();
-        return;
-      }
       if (isRetry) {
         await this.dispatchErrorToast('warn_fetch_experiment', null, error.message, true, true, {
           code: 'warn_fetch_experiment',
