@@ -22,7 +22,7 @@
 .unity-prompt-bar-style:has(.alert-holder.show) .unity-slf-style-container,
 .unity-prompt-bar-style:has(.alert-holder.show) .unity-slf-right,
 .unity-prompt-bar-style:has(.alert-holder.show) .ex-unity-wrap > :not(.alert-holder) {
-  opacity: 0.05;
+  opacity: 0.1;
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast {
