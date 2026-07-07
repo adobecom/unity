@@ -125,6 +125,13 @@ State which signal drove the classification so it's auditable, not a black box.
      same pattern. Note any sibling occurrences of the same bug class in the handoff context
      passed to `/unity-a11y` — don't silently expand scope to fix them, but don't let them go
      unmentioned either.
+   - Before writing anything into the handoff about a sibling file's state — "already correct",
+     "reference implementation", "not affected" — read that file yourself and trace the actual
+     runtime behavior (e.g. what a helper returns on the unauthored/empty path, not just whether
+     an element is unconditionally created). A subagent's summary or a surface-level grep match
+     is a lead, not a verified conclusion; don't launder it into a stated fact in the handoff. If
+     it's genuinely infeasible to verify before handing off, say the sibling is *unverified* and
+     let `/unity-a11y` check it, rather than asserting it's fine.
 4. Once the file(s) are resolved, invoke `/unity-a11y` via the Skill tool with that scope already
    established, and with the bug understanding gathered here passed along as the known-issue
    context (so `/unity-a11y`'s own intake doesn't need to re-ask "discover vs. known issues" —
@@ -137,6 +144,11 @@ State which signal drove the classification so it's auditable, not a black box.
 ## Rules
 
 - Never state a component file as the fix target without having grepped/read it first.
+- The same standard applies in reverse: never state that a file is *unaffected*, *already
+  correct*, or a *reference implementation* without having grepped/read it yourself first. A
+  research subagent's classification ("OK, not affected") describes what it checked, not
+  necessarily the full runtime behavior — verify the claim yourself before repeating it as
+  settled fact in the `/unity-a11y` handoff.
 - Never skip the comment thread when summarizing or classifying — it's frequently where the
   ticket's real, current state lives.
 - Don't re-implement `/unity-a11y`'s checklist, patterns, or templates here — this skill only

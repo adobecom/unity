@@ -99,9 +99,26 @@ proposing a fix.
 **Audit** — Report findings ranked by severity (Critical → Serious → Moderate → Minor). Do not edit code.
 → Output template: [assets/templates/audit-report.template.md](assets/templates/audit-report.template.md)
 
-**Fix** — Apply targeted changes to the file(s) in scope. Do not touch layout, styling, or logic unrelated to accessibility, and don't reach into other files unless asked. If the fix originates from a design reference (e.g. a Figma link passed in from `/unity-a11y-jira`), pull the exact color/font-size/spacing off the relevant leaf node and verify the CSS you touch matches it — don't rely on eyeballing a screenshot. If the element has theme-conditional variants (`.light`/`.dark` or similar), re-verify contrast in every variant after editing a shared color rule, not just the variant you're actively looking at — splitting or consolidating a color rule can silently break contrast in a variant you didn't re-check.
+**Fix** — Apply targeted changes to the file(s) in scope. Do not touch layout, styling, or logic unrelated to accessibility, and don't reach into other files unless asked.
+
+Only apply, without asking first, what the ticket/task directly names. Anything beyond that —
+a sibling file that appears to share the same bug, a design-value mismatch found while
+verifying fidelity, a related issue noticed along the way — gets **surfaced, not applied**:
+name the file/property, say what you found, and ask whether to include it before touching it.
+Discovering an extra issue is not authorization to fix it.
+
+If the fix originates from a design reference (e.g. a Figma link passed in from `/unity-a11y-jira`), the following is a hard gate — not optional, not skippable when short on time — before the fix can be reported as done:
+
+1. List every visual property you are adding or changing (color, font-size, font-weight, line-height, spacing, etc.). An accessibility fix that adds visible content (a label, focus ring, error text, etc.) always has visual properties, even if the ticket's wording only mentions structure/behavior.
+2. For each property, pull the actual value from the relevant Figma **leaf node** (`get_design_context` / `get_metadata` targeted at that specific leaf id — not a parent frame, and not a guess from eyeballing a screenshot) and note the source node id.
+3. Compare each pulled value against the CSS you're touching or adding. Do not assume existing CSS is already correct just because a rule with a plausibly-matching class name already exists — "a rule exists" and "the rule's values match the design" are different claims; verify the second one explicitly. If a value is out of scope for the named fix (e.g. it belongs to an element the ticket didn't ask about), surface it and ask rather than fixing it inline.
+4. If the element has theme-conditional variants (`.light`/`.dark` or similar), re-verify contrast in every variant after editing a shared color rule, not just the variant you're actively looking at — splitting or consolidating a color rule can silently break contrast in a variant you didn't re-check.
+5. If the same bug pattern appears to exist in a sibling/similar file (same widget family, similar id/class naming), don't assume parity from naming similarity alone and don't silently skip it either — open the sibling's actual CSS/JS and check its structure independently. State explicitly what you found, then ask before fixing it: this is a new file outside the named scope, so silence is not consent.
+
+If a pulled design value can't be matched without a broader design-token or shared-rule change (e.g. it would also recolor unrelated elements), don't hardcode it silently — flag it per the Rules below instead.
+
 → Before/after patterns (using `createTag` + native `addEventListener`, matching this repo's actual style): [references/fix-patterns.md](references/fix-patterns.md)
-→ Output template: [assets/templates/fix-report.template.md](assets/templates/fix-report.template.md) — fill this for every fix-mode run before ending the turn; a prose-only summary does not satisfy this step.
+→ Output template: [assets/templates/fix-report.template.md](assets/templates/fix-report.template.md) — fill this for every fix-mode run before ending the turn, including the design-fidelity table when a design reference was used; a prose-only summary does not satisfy this step.
 
 **Add** — Instrument the component from scratch: semantic HTML first, then ARIA roles/states, keyboard handling, focus management, live regions.
 → Add mode steps + patterns: [references/fix-patterns.md](references/fix-patterns.md)
@@ -133,6 +150,14 @@ Fill [assets/templates/output-card.template.yaml](assets/templates/output-card.t
   new one.
 - If a fix requires a new design token or color change, flag it as out-of-scope and recommend a
   design-system update rather than hardcoding a value.
+- When a fix is driven by a design reference, verify every touched visual property against the
+  actual Figma leaf node value before considering the fix complete — an existing CSS rule with a
+  plausibly-matching class name is not evidence that its values are correct. Do this in the same
+  pass as the fix, not only when asked.
+- Never apply a fix for anything beyond what the ticket/task directly names — including sibling
+  files with a similar bug, design-value mismatches found while verifying fidelity, or any other
+  issue noticed along the way — without asking the user first. Report the finding and wait for a
+  yes; don't fix-then-mention.
 - Keep inline a11y comments to non-obvious ARIA choices only.
 - Run `npm run lint:js` / `npm run lint:css` on touched files after fixing and confirm no new
   errors versus the pre-fix baseline (this repo has pre-existing lint debt — diff against it,
