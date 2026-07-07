@@ -99,9 +99,9 @@ proposing a fix.
 **Audit** — Report findings ranked by severity (Critical → Serious → Moderate → Minor). Do not edit code.
 → Output template: [assets/templates/audit-report.template.md](assets/templates/audit-report.template.md)
 
-**Fix** — Apply targeted changes to the file(s) in scope. Do not touch layout, styling, or logic unrelated to accessibility, and don't reach into other files unless asked.
+**Fix** — Apply targeted changes to the file(s) in scope. Do not touch layout, styling, or logic unrelated to accessibility, and don't reach into other files unless asked. If the fix originates from a design reference (e.g. a Figma link passed in from `/unity-a11y-jira`), pull the exact color/font-size/spacing off the relevant leaf node and verify the CSS you touch matches it — don't rely on eyeballing a screenshot. If the element has theme-conditional variants (`.light`/`.dark` or similar), re-verify contrast in every variant after editing a shared color rule, not just the variant you're actively looking at — splitting or consolidating a color rule can silently break contrast in a variant you didn't re-check.
 → Before/after patterns (using `createTag` + native `addEventListener`, matching this repo's actual style): [references/fix-patterns.md](references/fix-patterns.md)
-→ Output template: [assets/templates/fix-report.template.md](assets/templates/fix-report.template.md)
+→ Output template: [assets/templates/fix-report.template.md](assets/templates/fix-report.template.md) — fill this for every fix-mode run before ending the turn; a prose-only summary does not satisfy this step.
 
 **Add** — Instrument the component from scratch: semantic HTML first, then ARIA roles/states, keyboard handling, focus management, live regions.
 → Add mode steps + patterns: [references/fix-patterns.md](references/fix-patterns.md)
@@ -110,13 +110,15 @@ proposing a fix.
 
 ### Step 5 — Output
 
-Fill the structured output card for every run. Attach the relevant mode template.
+Fill the structured output card for every run — this is a required step, not optional
+documentation. Attach the relevant mode template. Do not end the turn with a prose-only recap in
+place of these templates.
 
 → [assets/templates/output-card.template.yaml](assets/templates/output-card.template.yaml)
 
 ## Output (structured-first)
 
-Fill [assets/templates/output-card.template.yaml](assets/templates/output-card.template.yaml) for every run.
+Fill [assets/templates/output-card.template.yaml](assets/templates/output-card.template.yaml) for every run — required, before the turn is considered done.
 
 - Audit mode: also attach filled [assets/templates/audit-report.template.md](assets/templates/audit-report.template.md).
 - Fix mode: also attach filled [assets/templates/fix-report.template.md](assets/templates/fix-report.template.md).

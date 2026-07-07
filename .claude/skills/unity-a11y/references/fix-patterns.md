@@ -102,6 +102,11 @@ const label = createTag('label', { for: 'email-input' }, 'Email address');
 const input = createTag('input', { id: 'email-input', type: 'email', autocomplete: 'email' });
 ```
 
+If a sibling widget already renders the same kind of label with a fallback default (e.g.
+`labelText || 'Prompt'` for an unauthored placeholder), match its established fallback text and
+pattern rather than inventing new copy — grep sibling widgets for the same field id/class before
+writing a new default string.
+
 When a visible label isn't feasible (common for compact prompt/search inputs):
 
 ```js

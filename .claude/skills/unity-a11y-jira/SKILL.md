@@ -102,11 +102,29 @@ State which signal drove the classification so it's auditable, not a black box.
    control, a later comment supplied the actual expected fix and a Figma link).
 2. If a Figma URL appears in the description or comments, pull its design context/screenshot —
    it's fine to fetch it whenever a link is present, it often carries the real expected outcome.
+   The Figma MCP tools behave inconsistently in headless sessions: `get_design_context` often
+   fails with "nothing selected" when called on a frame/container node, but succeeds when called
+   on a specific leaf node id. Don't give up after one failure — fall back in this order:
+   `get_screenshot` first (reliable, gives a visual reference), `get_metadata` for layout/
+   bounding-box structure, then `get_design_context` targeted at individual leaf node ids (not
+   containers) when exact typography/color values are needed.
 3. Identify the bug and resolve the affected component file(s) under `unitylibs/`: search for
    markup/class names/copy quoted in the ticket (`grep`/Explore), cross-referenced against the
    page/block named in the ticket and anything the Figma pull showed. If nothing matches
    confidently, or more than one plausible component is found, **stop and ask** — do not guess
    and hand a wrong file to `/unity-a11y`.
+   - Check whether the relevant markup is conditionally rendered behind an authored content flag
+     (an `.icon-*`/placeholder-row class a page author must add for the feature to render at
+     all) — a recurring unitylibs anti-pattern where an accessibility feature exists in code but
+     is silently disabled unless a content author opts in. If found, say so explicitly: it
+     determines whether the real fix is code-level (make the feature unconditional, with a
+     sensible fallback) or content-authoring (add the missing flag/row to the page) — those have
+     different owners.
+   - Once the primary file is resolved, grep for the same element id/class signature (e.g. a
+     shared `id="promptInput"`-style anchor) across `unitylibs/` for sibling widgets sharing the
+     same pattern. Note any sibling occurrences of the same bug class in the handoff context
+     passed to `/unity-a11y` — don't silently expand scope to fix them, but don't let them go
+     unmentioned either.
 4. Once the file(s) are resolved, invoke `/unity-a11y` via the Skill tool with that scope already
    established, and with the bug understanding gathered here passed along as the known-issue
    context (so `/unity-a11y`'s own intake doesn't need to re-ask "discover vs. known issues" —
