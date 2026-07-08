@@ -64,6 +64,13 @@ missing `keydown` handler in the file you're editing may already exist in its bi
 If the task scope is a single file but a real issue's root cause is in a different file, say so
 explicitly rather than expanding scope without asking.
 
+Also check whether the relevant markup is conditionally rendered behind an authored content flag
+(an `.icon-*`/placeholder-row class a page author must add for the feature to render at all) — a
+recurring unitylibs anti-pattern where an accessibility feature exists in code but is silently
+disabled unless a content author opts in. If found, say so explicitly: it determines whether the
+real fix is code-level (make the feature unconditional, with a sensible fallback) or
+content-authoring (add the missing flag/row to the page) — those have different owners.
+
 ---
 
 ### Step 2 — Identify mode
@@ -107,7 +114,7 @@ verifying fidelity, a related issue noticed along the way — gets **surfaced, n
 name the file/property, say what you found, and ask whether to include it before touching it.
 Discovering an extra issue is not authorization to fix it.
 
-If the fix originates from a design reference (e.g. a Figma link passed in from `/unity-a11y-jira`), the following is a hard gate — not optional, not skippable when short on time — before the fix can be reported as done:
+If the fix originates from a design reference (e.g. a Figma link passed in from `/unity-jira`), the following is a hard gate — not optional, not skippable when short on time — before the fix can be reported as done:
 
 1. List every visual property you are adding or changing (color, font-size, font-weight, line-height, spacing, etc.). An accessibility fix that adds visible content (a label, focus ring, error text, etc.) always has visual properties, even if the ticket's wording only mentions structure/behavior.
 2. For each property, pull the actual value from the relevant Figma **leaf node** (`get_design_context` / `get_metadata` targeted at that specific leaf id — not a parent frame, and not a guess from eyeballing a screenshot) and note the source node id.

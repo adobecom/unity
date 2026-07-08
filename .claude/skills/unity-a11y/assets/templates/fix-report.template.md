@@ -8,7 +8,7 @@
 | 2 | 4.1.2 | Replaced `<div role="button">` with `<button>` |
 | 3 | 2.1.1 | Added `keydown` listener with Enter/Space support |
 
-**Design fidelity check (required if a design reference was used — e.g. from `/unity-a11y-jira`):**
+**Design fidelity check (required if a design reference was used — e.g. from `/unity-jira`):**
 
 | Property | Figma leaf node | Design value | CSS applied | Match? |
 |---|---|---|---|---|
