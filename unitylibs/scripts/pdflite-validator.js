@@ -19,20 +19,20 @@ async function loadPdflite() {
 
 export async function validateFilesWithPdflite(files, limits) {
   const hasPdfFiles = files.some((f) => f.type === 'application/pdf');
-  if (!hasPdfFiles) return { passed: files, failed: [] };
+  if (!hasPdfFiles) return { passed: files, failed: [], totalPageCount: 0 };
   let pdflite;
   try {
     pdflite = await loadPdflite();
   } catch (error) {
-    return { passed: files, failed: [] };
+    return { passed: files, failed: [], totalPageCount: 0 };
   }
-  if (!pdflite) return { passed: files, failed: [] };
+  if (!pdflite) return { passed: files, failed: [], totalPageCount: 0 };
   const checks = files.map((file) => {
-    if (file.type !== 'application/pdf') return Promise.resolve({ file, ok: true });
+    if (file.type !== 'application/pdf') return Promise.resolve({ file, ok: true, pageCount: null });
     return (async () => {
       const details = await pdflite.fileDetails(file);
-      const pageCount = details?.NUM_PAGES;
-      if (pageCount === undefined || pageCount === null) return { file, ok: true };
+      const pageCount = details?.NUM_PAGES ?? null;
+      if (pageCount === null) return { file, ok: true, pageCount: null };
       const overMaxPageCount = limits.pageLimit?.maxNumPages && pageCount > limits.pageLimit.maxNumPages;
       const underMinPageCount = limits.pageLimit?.minNumPages && pageCount < limits.pageLimit.minNumPages;
       let error = null;
@@ -44,18 +44,22 @@ export async function validateFilesWithPdflite(files, limits) {
         error = new Error(`PDF below minimum page count: ${pageCount} < ${limits.pageLimit.minNumPages}`);
         error.errorType = 'UNDER_MIN_PAGE_COUNT';
       }
-      if (error) throw error;
-      return { file, ok: true };
+      if (error) {
+        error.pageCount = pageCount;
+        throw error;
+      }
+      return { file, ok: true, pageCount };
     })().catch((error) => {
       const isPageCountError = error.errorType === 'OVER_MAX_PAGE_COUNT' || error.errorType === 'UNDER_MIN_PAGE_COUNT';
-      if (isPageCountError) return { file, ok: false, error, errorType: error.errorType };
-      return { file, ok: true };
+      if (isPageCountError) return { file, ok: false, error, errorType: error.errorType, pageCount: error.pageCount ?? null };
+      return { file, ok: true, pageCount: null };
     });
   });
   const results = await Promise.all(checks);
   const passed = results.filter((r) => r.ok).map((r) => r.file);
   const failed = results.filter((r) => !r.ok);
-  return { passed, failed, results };
+  const totalPageCount = results.filter((r) => r.ok).reduce((sum, r) => sum + (r.pageCount || 0), 0);
+  return { passed, failed, results, totalPageCount };
 }
 
 export function getPageCountErrorCode(failed, results, isMultiFile, errorMessages) {

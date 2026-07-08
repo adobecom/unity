@@ -1314,6 +1314,7 @@ describe('ActionBinder', () => {
           enabledFeatures: ['test-feature'],
           targetCfg: { verbsWithoutMfuToSfuFallback: ['compress-pdf'] },
         };
+        actionBinder.filesData = {};
         actionBinder.sanitizeFileName = sinon.stub().resolves('sanitized-file.pdf');
         actionBinder.filterFilesWithPdflite = sinon.stub().callsFake(async (files) => files);
         actionBinder.validateFiles = sinon.stub().resolves({ isValid: true, validFiles: [] });
@@ -1494,6 +1495,32 @@ describe('ActionBinder', () => {
         expect(actionBinder.initUploadHandler.called).to.be.true;
         expect(actionBinder.handleMultiFileUpload.calledWith(validFile)).to.be.true;
         expect(actionBinder.handleSingleFileUpload.called).to.be.false;
+      });
+
+      it('should not set filesData.pageCount for image files (no fallback)', async () => {
+        const files = [
+          { name: 'photo1.heic', type: 'image/heic', size: 1048576 },
+          { name: 'photo2.heic', type: 'image/heic', size: 2097152 },
+        ];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.filesData.pageCount).to.be.undefined;
+      });
+
+      it('should preserve filesData.pageCount set by pdflite before upload proceeds', async () => {
+        const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
+        actionBinder.filesData = { pageCount: 12 };
+        actionBinder.filterFilesWithPdflite = sinon.stub().callsFake(async (fs) => {
+          actionBinder.filesData.pageCount = 12;
+          return fs;
+        });
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.filesData.pageCount).to.equal(12);
       });
     });
 
@@ -3006,6 +3033,7 @@ describe('ActionBinder', () => {
   describe('filterFilesWithPdflite', () => {
     beforeEach(() => {
       actionBinder.MULTI_FILE = false;
+      actionBinder.filesData = {};
       actionBinder.limits = {
         pageLimit: {
           maxNumPages: 100,
@@ -3015,12 +3043,31 @@ describe('ActionBinder', () => {
       sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
     });
 
-    it('should return files unchanged if no page limits configured', async () => {
+    it('should return PDF files when no page limits configured', async () => {
       delete actionBinder.limits.pageLimit;
       const files = [{ type: 'application/pdf', name: 'test.pdf' }];
       const result = await actionBinder.filterFilesWithPdflite(files);
+      expect(Array.isArray(result)).to.be.true;
+      expect(result).to.have.lengthOf(1);
+      expect(result[0]).to.equal(files[0]);
+      expect(actionBinder.dispatchErrorToast.called).to.be.false;
+    });
+
+    it('should return non-PDF files immediately without calling pdflite', async () => {
+      const files = [
+        { type: 'image/heic', name: 'photo.heic' },
+        { type: 'image/jpeg', name: 'image.jpg' },
+      ];
+      const result = await actionBinder.filterFilesWithPdflite(files);
       expect(result).to.equal(files);
       expect(actionBinder.dispatchErrorToast.called).to.be.false;
+      expect(actionBinder.filesData.pageCount).to.be.undefined;
+    });
+
+    it('should not set filesData.pageCount when pdflite cannot determine page count', async () => {
+      const files = [{ type: 'application/pdf', name: 'test.pdf' }];
+      await actionBinder.filterFilesWithPdflite(files);
+      expect(actionBinder.filesData.pageCount).to.be.undefined;
     });
 
     it('should have filterFilesWithPdflite method', () => {

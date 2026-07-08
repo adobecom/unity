@@ -586,12 +586,14 @@ export default class ActionBinder {
   }
 
   async filterFilesWithPdflite(files) {
-    if (!this.limits.pageLimit) return files;
+    const hasPdfFiles = files.some((f) => f.type === 'application/pdf');
+    if (!hasPdfFiles) return files;
     try {
       const { validateFilesWithPdflite, getPageCountErrorCode } = await import('../../../scripts/pdflite-validator.js');
       const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
-      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
-      if (failed && failed.length > 0) {
+      const { passed, failed, results, totalPageCount } = await validateFilesWithPdflite(files, this.limits);
+      if (totalPageCount > 0) this.filesData.pageCount = totalPageCount;
+      if (this.limits.pageLimit && failed && failed.length > 0) {
         const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
         if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
           await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
@@ -618,6 +620,7 @@ export default class ActionBinder {
         const { getDocPageCount } = await import('../../../scripts/doc-validator.js');
         pageCount = await getDocPageCount(file);
       }
+      if (pageCount !== null) this.filesData.pageCount = pageCount;
       if (pageCount !== null && pageCount > this.limits.pageLimit.maxNumPages) {
         const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.OVER_MAX_PAGE_COUNT;
         await this.dispatchErrorToast(errorCode, null, null, false, true, { code: errorCode });
