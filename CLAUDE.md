@@ -80,3 +80,15 @@ Audits, fixes, and instruments **unitylibs** components (vanilla JS/DOM, built w
 **Modes:** audit (report only) / fix (apply changes) / add (instrument from scratch).
 
 ---
+
+### `unity-jira`
+
+Orchestrator for a single Jira ticket: fetches it (including the full comment thread), classifies it against a registry of specialized Unity skills, and either hands off to a matching skill with resolved context or falls back to summarizing the ticket and asking how to proceed.
+
+**Use for:** triaging, summarizing, or solving a Jira ticket given its key or URL.
+
+**Requires:** access to the corp-jira MCP tools; the mapped skill (e.g. `unity-a11y`) present for a matched-route handoff.
+
+**Routes:** matched skill handoff (currently: accessibility → `unity-a11y`) / general (summarize + propose + ask).
+
+---
