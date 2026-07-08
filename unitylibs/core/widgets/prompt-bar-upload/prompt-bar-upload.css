@@ -431,7 +431,12 @@ display: flex;
 }
 
 .unity-prompt-bar-upload.unity-enabled .pbu-prompt-bar-container .inp-fieldset {
-display: contents;
+display: flex;
+flex-direction: inherit;
+align-items: inherit;
+align-content: inherit;
+gap: inherit;
+width: 100%;
 border: none;
 margin: 0;
 padding: 0;

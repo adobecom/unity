@@ -515,7 +515,12 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-fieldset {
-  display: contents;
+  display: flex;
+  flex-flow: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+  width: 100%;
   border: none;
   margin: 0;
   padding: 0;
