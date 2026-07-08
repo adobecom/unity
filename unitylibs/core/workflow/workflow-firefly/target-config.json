@@ -35,5 +35,11 @@
     "source": ".copy",
     "target": ".upload-marquee-prompt-container",
     "insert": "after"
+  },
+  "firefly-model-showcase": {
+    "selector": ".content-container",
+    "source": ".content-container",
+    "target": ".firefly-model-showcase-prompt-container",
+    "insert": "after"
   }
 }

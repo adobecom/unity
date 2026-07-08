@@ -68,7 +68,13 @@
 :root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.dark,
 :root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.dark a,
 :root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.light a,
-:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.light {
+:root:has(meta[name="theme"][content="max25"]) .showcase-marquee.unity-enabled .interactive-area.light,
+:root:has(meta[name="theme"][content="max25"]) .firefly-model-showcase.unity-enabled .interactive-area,
+:root:has(meta[name="theme"][content="max25"]) .firefly-model-showcase.unity-enabled .interactive-area.dark,
+:root:has(meta[name="theme"][content="max25"]) .firefly-model-showcase.unity-enabled .interactive-area a,
+:root:has(meta[name="theme"][content="max25"]) .firefly-model-showcase.unity-enabled .interactive-area.dark a,
+:root:has(meta[name="theme"][content="max25"]) .firefly-model-showcase.unity-enabled .interactive-area.light a,
+:root:has(meta[name="theme"][content="max25"]) .firefly-model-showcase.unity-enabled .interactive-area.light {
   color: inherit;
 }
 
