@@ -430,12 +430,22 @@ display: flex;
   }
 }
 
+.unity-prompt-bar-upload.unity-enabled .pbu-prompt-bar-container .inp-fieldset {
+display: contents;
+border: none;
+margin: 0;
+padding: 0;
+min-width: 0;
+}
+
 .unity-prompt-bar-upload.unity-enabled .unity-slf-copy-label {
 color: #d1d1d1;
 font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
 font-size: 14px;
 font-weight: 400;
 line-height: 18px;
+padding: 0;
+border: none;
 }
 
 .unity-prompt-bar-upload.unity-enabled .unity-slf-prompt-label {
