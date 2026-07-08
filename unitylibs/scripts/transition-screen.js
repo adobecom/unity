@@ -25,7 +25,7 @@ export default class TransitionScreen {
   }
 
   clearProgressBarHandler() {
-    if (this.progressBarTimeoutId != null) {
+    if (this.progressBarTimeoutId !== null) {
       clearTimeout(this.progressBarTimeoutId);
       this.progressBarTimeoutId = null;
     }
@@ -87,7 +87,6 @@ export default class TransitionScreen {
       this.progressBarTimeoutId = null;
       if (generation !== this.progressBarGeneration) return;
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
-      if (v === 100) return;
       this.updateProgressBar(s, v + newI);
       this.progressBarHandler(s, newDelay, newI);
     }, newDelay);
