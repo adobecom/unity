@@ -75,7 +75,7 @@ export default class ActionBinder {
     'chat-pdf-student': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
     'summarize-pdf': ['single', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-filesize-100-mb'],
     'pdf-ai': ['hybrid', 'allowed-filetypes-pdf-word-ppt-txt', 'page-limit-600', 'max-numfiles-10', 'max-filesize-100-mb'],
-    'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb' 'max-numfiles-100'],
+    'heic-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb', 'max-numfiles-100'],
     'image-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'bmp-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'gif-to-pdf': ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
