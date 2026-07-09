@@ -118,6 +118,17 @@ State which signal (or lack thereof) drove the decision so it's auditable, not a
    page/block named in the ticket and anything the Figma pull showed. If nothing matches
    confidently, or more than one plausible component is found, **stop and ask** — do not guess
    and hand a wrong file to the mapped skill.
+   - A class-name grep match is not sufficient on its own when the same class names are shared
+     across multiple widget folders — this repo has several (e.g. `.unity-act-btn`/`.gen-btn`
+     exist identically in both `unitylibs/core/widgets/prompt-bar*` (Firefly) and
+     `unitylibs/core/workflow/workflow-ai/` (Illustrator — "ai" there is Adobe's internal
+     abbreviation for Illustrator, not "AI"). Cross-check the actual product named in the
+     ticket's URL/summary against which folder owns that product before finalizing resolution;
+     don't resolve to `workflow-ai` for a Firefly ticket just because the class names match.
+     Example: a ticket whose URL points at a Firefly product page (e.g. contains `ai-photo-editor`
+     or `ai-painting-generator`) should resolve to `prompt-bar*`, even though the identical
+     `.unity-act-btn`/`.gen-btn` selectors also exist in `workflow-ai/widget.css` and would
+     otherwise look like a match.
    - Once the primary file is resolved, grep for the same id/class/pattern signature across
      `unitylibs/` for sibling widgets that share the same code pattern. Note any sibling
      occurrences of the same bug class in the handoff context passed to the mapped skill. Don't
