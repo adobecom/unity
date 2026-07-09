@@ -19,7 +19,7 @@
     "directUploadMaxSize": 1048576,
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
     "nonpdfSfuProductScreen": ["word-to-pdf", "jpg-to-pdf", "ppt-to-pdf", "excel-to-pdf", "png-to-pdf", "createpdf", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "heic-to-pdf", "image-to-pdf", "bmp-to-pdf", "gif-to-pdf", "tiff-to-pdf", "indd-to-pdf", "psd-to-pdf", "ai-to-pdf", "quiz-maker", "flashcard-maker", "mindmap-maker", "resume-builder"],
-    "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "quiz-maker", "flashcard-maker", "mindmap-maker", "heic-to-pdf"],
+    "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "quiz-maker", "flashcard-maker", "mindmap-maker"],
     "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
     "experimentationOn": ["add-comment"],
     "fetchApiConfig": {
