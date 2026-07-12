@@ -2913,23 +2913,20 @@ describe('ActionBinder', () => {
   });
 
   describe('image-to-pdf verbs onboarding', () => {
-    const NEW_IMAGE_VERBS = [
-      'image-to-pdf',
-      'bmp-to-pdf',
-      'gif-to-pdf',
-      'tiff-to-pdf',
-      'indd-to-pdf',
-      'psd-to-pdf',
-      'ai-to-pdf',
+    const IMAGE_VERBS = ['image-to-pdf', 'bmp-to-pdf', 'gif-to-pdf', 'tiff-to-pdf'];
+    const ADOBE_DESIGN_VERBS = [
+      { verb: 'psd-to-pdf', filetypeKey: 'allowed-filetypes-psd-only' },
+      { verb: 'ai-to-pdf', filetypeKey: 'allowed-filetypes-ai-only' },
+      { verb: 'indd-to-pdf', filetypeKey: 'allowed-filetypes-indd-only' },
     ];
 
-    NEW_IMAGE_VERBS.forEach((verb) => {
+    IMAGE_VERBS.forEach((verb) => {
       it(`should have correct limits configuration for ${verb} in LIMITS_MAP`, () => {
         const verbLimits = ActionBinder.LIMITS_MAP[verb];
         expect(verbLimits).to.exist;
         expect(verbLimits).to.deep.equal([
           'hybrid',
-          'allowed-filetypes-all',
+          'allowed-filetypes-no-adobe-design',
           'allowed-filetypes-heic',
           'max-filesize-100-mb',
         ]);
@@ -2943,8 +2940,28 @@ describe('ActionBinder', () => {
         expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-heic');
       });
 
-      it(`should allow all file types for ${verb}`, () => {
-        expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-all');
+      it(`should use no-adobe-design file types for ${verb}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-no-adobe-design');
+      });
+
+      it(`should have max-filesize-100-mb for ${verb}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('max-filesize-100-mb');
+      });
+    });
+
+    ADOBE_DESIGN_VERBS.forEach(({ verb, filetypeKey }) => {
+      it(`should have correct limits configuration for ${verb} in LIMITS_MAP`, () => {
+        const verbLimits = ActionBinder.LIMITS_MAP[verb];
+        expect(verbLimits).to.exist;
+        expect(verbLimits).to.deep.equal(['hybrid', filetypeKey, 'max-filesize-100-mb']);
+      });
+
+      it(`should configure ${verb} as hybrid mode`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb][0]).to.equal('hybrid');
+      });
+
+      it(`should restrict ${verb} to its own format via ${filetypeKey}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include(filetypeKey);
       });
 
       it(`should have max-filesize-100-mb for ${verb}`, () => {
