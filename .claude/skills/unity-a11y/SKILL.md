@@ -7,7 +7,7 @@ description: >
   screen-reader friendly, improve focus management, check color contrast, address WCAG
   compliance, or add accessibility to a Unity widget/feature.
 metadata:
-  version: 1.0.0
+  version: 1.1.0
   domain: Build and Code
   kind: skill
   tags: [accessibility, a11y, wcag, aria, unitylibs, keyboard, screen-reader]
@@ -47,6 +47,22 @@ Before proposing a plan, confirm:
 - which component file(s) under `unitylibs/` are in scope
 - what the user wants: **audit** (report only), **fix** (apply changes), or **add** (instrument from scratch)
 - whether there is a known issue list or the skill should discover issues first
+
+If invoked via a handoff from an orchestrator (e.g. `/unity-jira`'s Handoff Contract —
+`ticket`/`scope`/`known_issue`/`figma_refs`/`sibling_files`), treat those fields as already
+answered — don't re-ask for scope or re-derive the known-issue context from the ticket yourself.
+The **mode** question (audit/fix/add) is never part of that contract, so still ask it unless the
+handoff explicitly states one.
+
+**Orchestrator handoffs run ticket-scoped, not component-scoped.** When a `known_issue` is
+supplied, that string *is* the entire scope of the run — not a starting point for a broader
+sweep. Do not run the full Step 3 checklist against the file, and do not surface additional WCAG
+findings (other criteria, other elements, other files) that the checklist would otherwise catch,
+even if they're sitting right next to the code you're already reading. Report and/or fix only the
+named issue. The one exception: `sibling_files` entries the orchestrator already surfaced — those
+may be echoed back (still not auto-fixed), since they're part of what the ticket handed off, not a
+new discovery. A standalone invocation (no handoff, a user hands you a file directly) still runs
+the full checklist per Step 3 — this restriction is specific to orchestrator-handoff runs.
 
 One blocking question at a time when the above is unclear.
 
@@ -89,8 +105,13 @@ If intent is ambiguous, ask: "Do you want me to (1) audit and report issues, (2)
 
 ### Step 3 — Run the checklist
 
-Walk every element through the checklist. Cover: semantics, accessible name, state and
-relationships, keyboard and focus, forms, visual checks, dynamic updates, and WCAG criteria.
+**Standalone invocation** (no orchestrator handoff): walk every element through the checklist.
+Cover: semantics, accessible name, state and relationships, keyboard and focus, forms, visual
+checks, dynamic updates, and WCAG criteria.
+
+**Orchestrator handoff** (a `known_issue` was supplied): skip the full sweep. Use the checklist
+only to confirm the correct pattern/fix for the *named* issue — don't walk unrelated elements or
+categories looking for more.
 
 For widget-like components (dialogs, drop zones, combobox/listbox suggestion lists, progress/status,
 etc. — the patterns actually used across unitylibs), look up the correct ARIA pattern before
@@ -104,6 +125,9 @@ proposing a fix.
 ### Step 4 — Execute mode
 
 **Audit** — Report findings ranked by severity (Critical → Serious → Moderate → Minor). Do not edit code.
+On an orchestrator handoff, the report has exactly one row: the `known_issue`. Don't add rows for
+other issues noticed while reading the file — that's the full-checklist behavior reserved for a
+standalone audit.
 → Output template: [assets/templates/audit-report.template.md](assets/templates/audit-report.template.md)
 
 **Fix** — Apply targeted changes to the file(s) in scope. Do not touch layout, styling, or logic unrelated to accessibility, and don't reach into other files unless asked.
@@ -148,6 +172,9 @@ Fill [assets/templates/output-card.template.yaml](assets/templates/output-card.t
 
 ## Rules
 
+- On an orchestrator handoff (a `known_issue` is supplied), stay strictly ticket-scoped: no full
+  checklist, no bonus findings, no widened audit — even when the file being read makes other
+  issues obvious. That breadth belongs only to a standalone (non-handoff) invocation.
 - Never change visual layout, styling, or logic unrelated to accessibility.
 - Prefer native semantic HTML over ARIA roles; add ARIA only where semantic HTML is insufficient.
 - Never use positive `tabindex` values.

@@ -9,7 +9,7 @@ description: >
   how they'd like to proceed. Use when the user gives a Jira ticket key or URL and wants it
   triaged, summarized, or solved.
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   domain: Build and Code
   kind: skill
   tags: [jira, triage, orchestrator, ticket, summarize]
@@ -68,14 +68,50 @@ One blocking question at a time when the above is unclear.
 
 The set of skills this orchestrator can route to. Extend this table as new Unity skills are
 added — each entry needs a signal set (how to recognize a matching ticket) and a resolution
-recipe (what context that skill needs before handoff).
+recipe (extra context, beyond the standard Handoff Contract below, that skill needs before
+handoff).
 
-| Domain          | Target skill  | Signals                                                                                                                    |
-|-----------------|---------------|------------------------------------------------------------------------------------------------------------------------------|
-| Accessibility   | `/unity-a11y` | `Accessibility` component; `a11y`/`WCAG_*`/`Accessibility_*` label; WCAG success-criterion reference (e.g. "3.3.2"); keywords: ARIA, screen reader, keyboard navigation, focus, contrast, accessible name, alt text |
-| *(none yet)*    | *(add here)*  | e.g. a future `unity-performance` skill: keywords like LCP, CLS, bundle size, slow load, perf regression                     |
+| Domain          | Target skill  | Signals                                                                                                                    | Resolution recipe (beyond the standard contract) |
+|-----------------|---------------|------------------------------------------------------------------------------------------------------------------------------|----|
+| Accessibility   | `/unity-a11y` | `Accessibility` component; `a11y`/`WCAG_*`/`Accessibility_*` label; WCAG success-criterion reference (e.g. "3.3.2"); keywords: ARIA, screen reader, keyboard navigation, focus, contrast, accessible name, alt text | Pull any linked Figma design (`get_screenshot` → `get_metadata` → `get_design_context` on leaf nodes); resolve the affected `unitylibs/` file, watching for the `workflow-ai` naming trap (see Step 3a.3) |
+| *(none yet)*    | *(add here)*  | e.g. a future `unity-performance` skill: keywords like LCP, CLS, bundle size, slow load, perf regression                     | e.g. pull linked CrUX/Lighthouse data; resolve the affected build/bundle config or component |
 
 If a ticket doesn't clearly match any row, don't force it — take the general route instead.
+
+---
+
+## Handoff Contract
+
+Every matched-route handoff passes the **same generic fields** to the mapped skill, regardless
+of domain. This is the contract any current or future mapped skill's own Intake can rely on
+being pre-filled — it exists so adding the Nth mapped skill doesn't mean inventing a new ad hoc
+handoff shape:
+
+```yaml
+ticket: "{ticket key or URL}"
+scope: ["{resolved unitylibs/ file path(s)}"]              # never guessed — ask user if ambiguous
+known_issue: "{distilled bug understanding from description + full comment thread}"
+figma_refs: ["{node id or link}"]                            # or null if none linked
+sibling_files: ["{file}: {note} ({verified|unverified})"]    # same bug pattern elsewhere; surfaced, not auto-fixed
+```
+
+Boundary — what's explicitly **not** in this contract: any domain-specific question the mapped
+skill is the actual expert on (e.g. a11y's audit/fix/add mode, or a future perf skill's
+budget-vs-regression classification). The orchestrator resolves ticket-level context only; the
+mapped skill still runs its own Intake for anything domain-specific the contract doesn't cover.
+Don't let a mapped skill's request for "just one more field" grow this contract ad hoc — a
+genuinely generic field (useful to any domain) belongs here; a domain-specific one belongs in
+that skill's row of the **Resolution recipe** column instead, passed as extra free-text
+alongside the contract.
+
+`known_issue` is a hard scope boundary, not just context: the mapped skill should treat it as the
+entire problem to solve, not a jumping-off point for a wider sweep of the file(s) in `scope`. If
+the mapped skill's own instructions don't already say this, that's a gap in that skill, not
+license for this orchestrator to pre-filter what it hands off — pass the full ticket
+understanding and let the mapped skill's own scope discipline (or lack of it) show up as an
+observable result you can call out afterward.
+
+Invoke the mapped skill via the Skill tool with this contract as the args payload.
 
 ---
 
@@ -142,11 +178,13 @@ State which signal (or lack thereof) drove the decision so it's auditable, not a
    - Domain-specific inspection (e.g. an accessibility-authoring-flag anti-pattern, a
      performance-budget check) belongs to the mapped skill's own workflow, not here — this step
      only locates and hands off the file(s); it doesn't diagnose the domain-specific root cause.
-4. Once the file(s) are resolved, invoke the mapped skill (e.g. `/unity-a11y`) via the Skill tool
-   with that scope already established, and with the bug understanding gathered here passed
-   along as the known-issue context (so the mapped skill's own intake doesn't need to re-ask
-   "discover vs. known issues" — it's already answered). Still let the mapped skill ask its own
-   mode questions (e.g. audit/fix/add) — don't guess those on its behalf.
+4. Once the file(s) are resolved, assemble the **Handoff Contract** (`ticket`, `scope`,
+   `known_issue`, `figma_refs`, `sibling_files`) from what Steps 1-3 gathered, plus whatever the
+   registry's Resolution recipe column calls for beyond that, and invoke the mapped skill (e.g.
+   `/unity-a11y`) via the Skill tool with the contract as the args payload — so the mapped
+   skill's own intake doesn't need to re-ask "discover vs. known issues" or re-resolve scope;
+   it's already answered. Still let the mapped skill ask its own domain-specific questions (e.g.
+   a11y's audit/fix/add mode) — the contract never answers those on its behalf.
 5. Relay the mapped skill's output; don't duplicate its checklist, patterns, or templates here.
 
 ### Step 3b — General route (no registry match)
@@ -181,7 +219,13 @@ State which signal (or lack thereof) drove the decision so it's auditable, not a
 - If classification is borderline, or component resolution is ambiguous, say so and ask, rather
   than picking silently.
 - Adding a new mapped skill means adding a row to the **Skill Mapping Registry** with its own
-  signals — don't hardcode a new domain's routing logic outside that table.
+  signals and resolution recipe — don't hardcode a new domain's routing logic outside that table.
+- Every matched-route handoff uses the standard **Handoff Contract** fields (`ticket`, `scope`,
+  `known_issue`, `figma_refs`, `sibling_files`) — don't invent one-off field names per skill.
+  Anything genuinely domain-specific goes in that skill's Resolution recipe entry, not as a new
+  ad hoc contract field; this is what keeps the handoff scalable as more skills are added.
+- The contract never answers a mapped skill's own domain-specific intake questions (e.g. a11y's
+  audit/fix/add mode) — those stay the mapped skill's to ask.
 - The general route doesn't own an execution path — it proposes and asks, then follows the
   user's actual instruction rather than assuming what "solve" means for that ticket's domain.
 
