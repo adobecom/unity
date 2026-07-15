@@ -441,6 +441,7 @@ border: none;
 margin: 0;
 padding: 0;
 min-width: 0;
+text-align: start;
 }
 
 .unity-prompt-bar-upload.unity-enabled .unity-slf-copy-label {

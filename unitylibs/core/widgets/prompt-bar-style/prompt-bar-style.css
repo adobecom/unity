@@ -191,6 +191,7 @@
   margin: 0;
   padding: 0;
   min-width: 0;
+  text-align: start;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .unity-slf-copy-label {
@@ -1262,6 +1263,7 @@
   margin: 0;
   padding: 0;
   min-width: 0;
+  text-align: start;
 }
 
 .unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .unity-slf-copy-label,

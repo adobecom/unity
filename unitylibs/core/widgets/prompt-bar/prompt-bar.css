@@ -525,6 +525,7 @@
   margin: 0;
   padding: 0;
   min-width: 0;
+  text-align: start;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label {
