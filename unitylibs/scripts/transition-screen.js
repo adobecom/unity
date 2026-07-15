@@ -20,6 +20,16 @@ export default class TransitionScreen {
     this.isDesktop = isDesktop;
     this.headingElements = [];
     this.progressText = '';
+    this.progressBarTimeoutId = null;
+    this.progressBarGeneration = 0;
+  }
+
+  clearProgressBarHandler() {
+    if (this.progressBarTimeoutId !== null) {
+      clearTimeout(this.progressBarTimeoutId);
+      this.progressBarTimeoutId = null;
+    }
+    this.progressBarGeneration += 1;
   }
 
   setProgressTextFromDOM() {
@@ -44,6 +54,7 @@ export default class TransitionScreen {
       ? this.progressText.replace('%', `${p}%`)
       : `${p}%`;
     if (status && status.textContent !== newStatus) status.textContent = newStatus;
+    if (percentage >= 100) this.clearProgressBarHandler();
   }
 
   static createProgressBar() {
@@ -63,13 +74,18 @@ export default class TransitionScreen {
     const newDelay = Math.min(delay + 100, 2000);
     const newI = Math.max(i - 5, 5);
     const progressBar = s.querySelector('.spectrum-ProgressBar');
-    if (initialize) this.updateProgressBar(s, 0);
-    else {
+    if (initialize) {
+      this.clearProgressBarHandler();
+      this.updateProgressBar(s, 0);
+    } else {
       const currentValue = parseInt(progressBar?.getAttribute('value'), 10);
       if (currentValue === 100 || currentValue >= this.LOADER_LIMIT) return;
     }
 
-    setTimeout(() => {
+    const generation = this.progressBarGeneration;
+    this.progressBarTimeoutId = setTimeout(() => {
+      this.progressBarTimeoutId = null;
+      if (generation !== this.progressBarGeneration) return;
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
       if (v === 100) return;
       this.updateProgressBar(s, v + newI);
@@ -213,6 +229,7 @@ export default class TransitionScreen {
 
   splashVisibilityController(displayOn) {
     if (!displayOn) {
+      this.clearProgressBarHandler();
       this.LOADER_LIMIT = 95;
       this.splashScreenEl.parentElement?.classList.remove('hide-splash-overflow');
       this.splashScreenEl.classList.remove('show');

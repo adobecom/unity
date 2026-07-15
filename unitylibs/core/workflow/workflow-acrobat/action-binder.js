@@ -731,9 +731,12 @@ export default class ActionBinder {
 
   async continueInApp() {
     if (!this.redirectUrl || !(this.operations.length || this.redirectWithoutUpload)) return;
+    if (!this.transitionScreen) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(this.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    }
     this.LOADER_LIMIT = 100;
-    const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
-    this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
+    this.transitionScreen.LOADER_LIMIT = 100;
     const splashLayer = this.transitionScreen.splashScreenEl;
     if (this.isDirectUploadVerb(this.filesData?.size)) await this.runProgressBarUpdate(splashLayer);
     else this.transitionScreen.updateProgressBar(splashLayer, 100);

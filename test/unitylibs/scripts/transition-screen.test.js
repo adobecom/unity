@@ -45,20 +45,64 @@ describe('TransitionScreen', () => {
   });
 
   describe('progressBarHandler', () => {
-    it('should call updateProgressBar and recurse', () => {
+    beforeEach(() => {
       splashScreenEl.innerHTML = `
         <div class="spectrum-ProgressBar" value="0" aria-valuenow="0"></div>
         <div class="spectrum-ProgressBar-percentage">0%</div>
         <div class="spectrum-ProgressBar-fill" style="width: 0%"></div>
         <div id="progress-status"></div>
       `;
+    });
+
+    it('should call updateProgressBar and recurse', () => {
       const spy = sinon.spy(screen, 'updateProgressBar');
-      // Use fake timers to control setTimeout
       const clock = sinon.useFakeTimers();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
       clock.tick(20);
       expect(spy.called).to.be.true;
       spy.restore();
+      clock.restore();
+    });
+
+    it('should ignore stale callbacks after clearProgressBarHandler', () => {
+      const clock = sinon.useFakeTimers();
+      screen.progressBarHandler(splashScreenEl, 10, 10, true);
+      clock.tick(15);
+      screen.clearProgressBarHandler();
+      const valueBeforeStaleTick = splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value');
+      clock.tick(100);
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal(valueBeforeStaleTick);
+      clock.restore();
+    });
+
+    it('should restart cleanly when initialized after cancel', () => {
+      const clock = sinon.useFakeTimers();
+      screen.progressBarHandler(splashScreenEl, 10, 10, true);
+      clock.tick(15);
+      screen.clearProgressBarHandler();
+      screen.progressBarHandler(splashScreenEl, 10, 10, true);
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('0');
+      clock.tick(15);
+      expect(parseInt(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value'), 10)).to.be.greaterThan(0);
+      clock.restore();
+    });
+  });
+
+  describe('clearProgressBarHandler', () => {
+    it('should stop pending progress updates when updateProgressBar reaches 100', () => {
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="0" aria-valuenow="0"></div>
+        <div class="spectrum-ProgressBar-percentage">0%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 0%"></div>
+        <div id="progress-status"></div>
+      `;
+      const clock = sinon.useFakeTimers();
+      screen.progressBarHandler(splashScreenEl, 10, 10, true);
+      clock.tick(15);
+      screen.updateProgressBar(splashScreenEl, 100);
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('100');
+      clock.tick(100);
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('100');
       clock.restore();
     });
   });
@@ -97,10 +141,23 @@ describe('TransitionScreen', () => {
       document.body.innerHTML = '<main></main><header></header><footer></footer>';
     });
     it('should hide splash and reset LOADER_LIMIT when displayOn is false', () => {
+      const clock = sinon.useFakeTimers();
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="0" aria-valuenow="0"></div>
+        <div class="spectrum-ProgressBar-percentage">0%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 0%"></div>
+        <div id="progress-status"></div>
+      `;
+      screen.progressBarHandler(splashScreenEl, 10, 10, true);
+      clock.tick(15);
       screen.splashVisibilityController(false);
+      const valueAtCancel = splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value');
+      clock.tick(100);
       expect(screen.LOADER_LIMIT).to.equal(95);
       expect(splashScreenEl.classList.contains('show')).to.be.false;
       expect(splashScreenEl.parentElement.classList.contains('hide-splash-overflow')).to.be.false;
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal(valueAtCancel);
+      clock.restore();
     });
     it('should show splash and set aria-hidden when displayOn is true', () => {
       const stub = sinon.stub(screen, 'progressBarHandler');

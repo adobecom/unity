@@ -1591,6 +1591,22 @@ describe('ActionBinder', () => {
         expect(() => actionBinder.transitionScreen.updateProgressBar(splashLayer, 100)).to.throw(TypeError, /null/);
         expect(actionBinder.dispatchErrorToast.called).to.be.false;
       });
+
+      it('should reuse the existing transition screen and set LOADER_LIMIT to 100', async () => {
+        const splashLayer = document.createElement('div');
+        const existingTransitionScreen = {
+          splashScreenEl: splashLayer,
+          LOADER_LIMIT: 95,
+          updateProgressBar: sinon.stub(),
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        actionBinder.transitionScreen = existingTransitionScreen;
+        await actionBinder.continueInApp();
+        expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
+        expect(actionBinder.LOADER_LIMIT).to.equal(100);
+        expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
+        expect(existingTransitionScreen.updateProgressBar.calledOnceWith(splashLayer, 100)).to.be.true;
+      });
     });
 
     describe('cancelAcrobatOperation', () => {
