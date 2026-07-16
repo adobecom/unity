@@ -1165,7 +1165,7 @@ line-height: normal;
   .unity-prompt-bar-upload.unity-enabled .pbu-main {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
+    gap: 0;
     padding: 16px;
   }
 
@@ -1173,18 +1173,23 @@ line-height: normal;
   .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
     order: 1;
     width: 100%;
-    padding: 0;
+    padding: 0 0 16px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
     order: 2;
     width: 100%;
     max-width: 100%;
+    align-items: stretch;
     border-inline-end: none;
-    padding: 0;
+    padding: 16px 0 0;
     margin: 0;
     gap: 8px;
-    border: none;
+    border-block-start: 1px solid rgb(255 255 255 / 12%);
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-left-section {
+    border-block-start-color: rgb(0 0 0 / 12%);
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-right-section .unity-slf-prompt-label {
@@ -1205,26 +1210,29 @@ line-height: normal;
     line-height: 1.45;
   }
 
-  /* Figma: compact square first-frame uploader, not full-width strip */
+  /* Figma mobile: full-width first-frame dropzone */
   .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap {
-    width: 123px;
-    height: 123px;
-    min-height: 123px;
+    width: 100%;
+    max-width: 100%;
+    height: 160px;
+    min-height: 160px;
+    align-self: stretch;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap .drop-zone {
-    width: 123px;
-    height: 123px;
+    width: 100%;
+    height: 160px;
+    min-height: 160px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-preview {
-    width: 123px;
-    height: 123px;
+    width: 100%;
+    height: 120px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap .pbu-select-spinner {
-    width: 123px;
-    height: 123px;
+    width: 100%;
+    height: 120px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-upload-heading {
