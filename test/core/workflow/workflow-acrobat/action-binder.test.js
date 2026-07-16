@@ -1597,6 +1597,7 @@ describe('ActionBinder', () => {
         const existingTransitionScreen = {
           splashScreenEl: splashLayer,
           LOADER_LIMIT: 95,
+          clearProgressBarHandler: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
@@ -1605,6 +1606,7 @@ describe('ActionBinder', () => {
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
+        expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
         expect(existingTransitionScreen.updateProgressBar.calledOnceWith(splashLayer, 100)).to.be.true;
       });
     });

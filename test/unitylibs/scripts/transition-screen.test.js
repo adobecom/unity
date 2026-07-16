@@ -33,6 +33,32 @@ describe('TransitionScreen', () => {
       expect(fill.style.width).to.equal('42%');
       expect(status.textContent).to.equal('42%');
     });
+
+    it('should fill to 100% even when LOADER_LIMIT is 95', () => {
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="95" aria-valuenow="95"></div>
+        <div class="spectrum-ProgressBar-percentage">95%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 95%"></div>
+        <div id="progress-status"></div>
+      `;
+      screen.updateProgressBar(splashScreenEl, 100);
+      const fill = splashScreenEl.querySelector('.spectrum-ProgressBar-fill');
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('100');
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar-percentage').innerHTML).to.equal('100%');
+      expect(fill.style.width).to.equal('100%');
+    });
+
+    it('should not decrease progress after reaching 100%', () => {
+      splashScreenEl.innerHTML = `
+        <div class="spectrum-ProgressBar" value="100" aria-valuenow="100"></div>
+        <div class="spectrum-ProgressBar-percentage">100%</div>
+        <div class="spectrum-ProgressBar-fill" style="width: 100%"></div>
+        <div id="progress-status"></div>
+      `;
+      screen.updateProgressBar(splashScreenEl, 95);
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('100');
+      expect(splashScreenEl.querySelector('.spectrum-ProgressBar-fill').style.width).to.equal('100%');
+    });
   });
 
   describe('createProgressBar', () => {

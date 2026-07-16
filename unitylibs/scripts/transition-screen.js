@@ -43,12 +43,22 @@ export default class TransitionScreen {
   updateProgressBar(layer, percentage) {
     if (!layer) return;
     if (!this.progressText && TransitionScreen.lastProgressText) this.progressText = TransitionScreen.lastProgressText;
-    const p = Math.min(percentage, this.LOADER_LIMIT);
+    const current = parseInt(layer.querySelector('.spectrum-ProgressBar')?.getAttribute('value'), 10) || 0;
+    const p = percentage >= 100 ? 100 : Math.min(percentage, this.LOADER_LIMIT);
+    if (current >= 100 && p < 100) return;
     const spb = layer.querySelector('.spectrum-ProgressBar');
+    const fill = layer.querySelector('.spectrum-ProgressBar-fill');
     spb?.setAttribute('value', p);
     spb?.setAttribute('aria-valuenow', p);
     layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
-    layer.querySelector('.spectrum-ProgressBar-fill').style.width = `${p}%`;
+    if (fill) {
+      if (p >= 100) fill.style.transition = 'none';
+      fill.style.width = `${p}%`;
+      if (p >= 100) {
+        fill.offsetWidth;
+        fill.style.removeProperty('transition');
+      }
+    }
     const status = layer.querySelector('#progress-status');
     const newStatus = (this.progressText && this.progressText.trim() !== '')
       ? this.progressText.replace('%', `${p}%`)
@@ -87,7 +97,7 @@ export default class TransitionScreen {
       this.progressBarTimeoutId = null;
       if (generation !== this.progressBarGeneration) return;
       const v = initialize ? 0 : parseInt(progressBar.getAttribute('value'), 10);
-      if (v === 100) return;
+      if (v >= 100) return;
       this.updateProgressBar(s, v + newI);
       this.progressBarHandler(s, newDelay, newI);
     }, newDelay);
