@@ -11,6 +11,20 @@
   top: 0;
 }
 
+.unity-prompt-bar-style:has(.alert-holder.show) > .interactive-area {
+  pointer-events: none;
+}
+
+.unity-prompt-bar-style:has(.alert-holder.show) .alert-holder {
+  pointer-events: auto;
+}
+
+.unity-prompt-bar-style:has(.alert-holder.show) .unity-slf-style-container,
+.unity-prompt-bar-style:has(.alert-holder.show) .unity-slf-right,
+.unity-prompt-bar-style:has(.alert-holder.show) .ex-unity-wrap > :not(.alert-holder) {
+  opacity: 0.1;
+}
+
 .unity-enabled .interactive-area .alert-holder .alert-toast {
   width: auto;
   max-width: 340px;
@@ -219,7 +233,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn:focus {
-  outline: 2px solid #005FCC;
+  outline: 2px solid #0050A8;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico {
@@ -1122,7 +1136,8 @@
 .unity-prompt-bar-style .unity-slf-style-item.selected {
   border: 2px solid #274dea;
   padding: 2px;
-  background: #000;
+  background: #1b1b1b;
+  gap: 1.5px;
 }
 
 .unity-prompt-bar-style .unity-slf-style-item.selected:focus-visible {
@@ -1150,7 +1165,6 @@
 .unity-prompt-bar-style .unity-slf-style-item:hover .unity-slf-style-label,
 .unity-prompt-bar-style .unity-slf-style-item.selected .unity-slf-style-label {
   color: #F8F8F8;
-  background: #1b1b1b;
 }
 
 .unity-prompt-bar-style .unity-slf-style-label {
@@ -1162,9 +1176,10 @@
   color: #d1d1d1;
   text-overflow: ellipsis;
   font-family: "Adobe Clean", adobe-clean, "Adobe Clean Serif", sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 400;
+  line-height: 13.5px;
 }
 
 .unity-prompt-bar-style .unity-slf-gen-btn {
