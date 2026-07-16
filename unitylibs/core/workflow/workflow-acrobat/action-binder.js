@@ -61,7 +61,7 @@ export default class ActionBinder {
     'pdf-to-ppt': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-250-mb'],
     'pdf-to-image': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
     'pdf-to-png': ['hybrid', 'allowed-filetypes-pdf-only', 'max-filesize-100-mb'],
-    createpdf: ['hybrid', 'allowed-filetypes-all', 'max-filesize-100-mb'],
+    createpdf: ['hybrid', 'allowed-filetypes-all', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'word-to-pdf': ['hybrid', 'allowed-filetypes-no-adobe-design', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'excel-to-pdf': ['hybrid', 'allowed-filetypes-no-adobe-design', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
     'ppt-to-pdf': ['hybrid', 'allowed-filetypes-no-adobe-design', 'allowed-filetypes-heic', 'max-filesize-100-mb'],
