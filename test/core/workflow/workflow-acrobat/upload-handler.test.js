@@ -828,6 +828,16 @@ describe('UploadHandler', () => {
     });
   });
 
+  describe('initSplashScreen', () => {
+    it('should sync the active transition screen on the action binder', async () => {
+      uploadHandler.initSplashScreen.restore();
+      const { setUnityLibs } = await import('../../../../unitylibs/scripts/utils.js');
+      setUnityLibs('../../../../unitylibs');
+      await uploadHandler.initSplashScreen();
+      expect(mockActionBinder.transitionScreen).to.equal(uploadHandler.transitionScreen);
+    });
+  });
+
   describe('multiFileGuestUpload', () => {
     beforeEach(() => {
       sinon.restore();
