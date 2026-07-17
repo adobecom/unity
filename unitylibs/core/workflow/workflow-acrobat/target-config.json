@@ -109,5 +109,19 @@
       ".foreground": "upload",
       "#file-upload": "upload"
     }
+  },
+  "verb-marquee-2": {
+    "selector": ".foreground",
+    "source": ".foreground .verb-marquee-2-container",
+    "target": ".foreground .verb-marquee-2-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".foreground": "upload",
+      "#file-upload": "upload"
+    }
   }
 }
