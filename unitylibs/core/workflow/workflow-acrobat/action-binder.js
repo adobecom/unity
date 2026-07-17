@@ -889,6 +889,9 @@ export default class ActionBinder {
           break;
         }
         case el.nodeName === 'INPUT':
+          if (this.limits.allowedFileTypes?.length) {
+            el.setAttribute('accept', this.limits.allowedFileTypes.join(','));
+          }
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'change');

@@ -1737,6 +1737,30 @@ describe('ActionBinder', () => {
         extractSpy.restore();
       });
 
+      it('should set accept attribute on input when allowedFileTypes is populated', async () => {
+        const el = document.createElement('input');
+        el.type = 'file';
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { input: 'upload' };
+        actionBinder.limits = { allowedFileTypes: ['application/illustrator', 'application/x-indesign'] };
+
+        await actionBinder.initActionListeners(block, actMap);
+
+        expect(el.getAttribute('accept')).to.equal('application/illustrator,application/x-indesign');
+      });
+
+      it('should not set accept attribute on input when allowedFileTypes is empty', async () => {
+        const el = document.createElement('input');
+        el.type = 'file';
+        const block = { querySelector: sinon.stub().returns(el) };
+        const actMap = { input: 'upload' };
+        actionBinder.limits = { allowedFileTypes: [] };
+
+        await actionBinder.initActionListeners(block, actMap);
+
+        expect(el.getAttribute('accept')).to.be.null;
+      });
+
       it('should handle input change event with multiple files', async () => {
         const el = document.createElement('input');
         el.type = 'file';
