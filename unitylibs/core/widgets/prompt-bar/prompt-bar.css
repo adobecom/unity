@@ -1316,3 +1316,65 @@
     padding: 0px;
   }
 }
+
+/* =============================================================================
+   LOC LINE-BREAK FIX — MWPW-190279
+   Prevents text overflow and incorrect line-breaking in the prompt bar widget
+   for locales with long compound words (DE, BR, RO) and CJK scripts (JA).
+   Applies to: hero-marquee and upload-marquee Unity blocks.
+   ============================================================================= */
+
+/* Base rule: safe word-wrap for all locales on headings and body text
+   within unity-enabled marquee blocks. Prevents long translated strings
+   from overflowing fixed-width containers. */
+.hero-marquee.unity-enabled .interactive-area .text h1,
+.hero-marquee.unity-enabled .interactive-area .text h2,
+.hero-marquee.unity-enabled .interactive-area .text h3,
+.hero-marquee.unity-enabled .interactive-area .text h4,
+.hero-marquee.unity-enabled .interactive-area .text h5,
+.hero-marquee.unity-enabled .interactive-area .text p,
+.upload-marquee.unity-enabled .interactive-area .text h1,
+.upload-marquee.unity-enabled .interactive-area .text h2,
+.upload-marquee.unity-enabled .interactive-area .text h3,
+.upload-marquee.unity-enabled .interactive-area .text h4,
+.upload-marquee.unity-enabled .interactive-area .text h5,
+.upload-marquee.unity-enabled .interactive-area .text p {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Prompt input field: allow safe breaking so long pasted or typed strings
+   in localized contexts do not overflow the autocomplete container. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Japanese: use keep-all + strict line-break to follow JIS line-breaking rules.
+   Overrides break-word which can incorrectly split CJK characters mid-word.
+   overflow-wrap: anywhere is used instead to handle edge-case long strings
+   (e.g. URLs or user-typed latin text in a JA context). */
+[lang="ja-JP"] .hero-marquee.unity-enabled .interactive-area .text h1,
+[lang="ja-JP"] .hero-marquee.unity-enabled .interactive-area .text h2,
+[lang="ja-JP"] .hero-marquee.unity-enabled .interactive-area .text h3,
+[lang="ja-JP"] .hero-marquee.unity-enabled .interactive-area .text h4,
+[lang="ja-JP"] .hero-marquee.unity-enabled .interactive-area .text h5,
+[lang="ja-JP"] .hero-marquee.unity-enabled .interactive-area .text p,
+[lang="ja-JP"] .upload-marquee.unity-enabled .interactive-area .text h1,
+[lang="ja-JP"] .upload-marquee.unity-enabled .interactive-area .text h2,
+[lang="ja-JP"] .upload-marquee.unity-enabled .interactive-area .text h3,
+[lang="ja-JP"] .upload-marquee.unity-enabled .interactive-area .text h4,
+[lang="ja-JP"] .upload-marquee.unity-enabled .interactive-area .text h5,
+[lang="ja-JP"] .upload-marquee.unity-enabled .interactive-area .text p {
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: anywhere;
+  hyphens: none;
+}
+
+[lang="ja-JP"] .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: anywhere;
+}
