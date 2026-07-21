@@ -110,10 +110,10 @@
       "#file-upload": "upload"
     }
   },
-  "verb-marquee-2": {
+  "verb-redeign-test": {
     "selector": ".foreground",
-    "source": ".foreground .verb-marquee-2-container",
-    "target": ".foreground .verb-marquee-2-container",
+    "source": ".foreground .vm2-container",
+    "target": ".foreground .vm2-container",
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
