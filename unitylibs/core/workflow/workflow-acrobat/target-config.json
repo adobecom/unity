@@ -110,7 +110,7 @@
       "#file-upload": "upload"
     }
   },
-  "verb-redeign-test": {
+  "verb-redesign-test": {
     "selector": ".foreground",
     "source": ".foreground .vm2-container",
     "target": ".foreground .vm2-container",
