@@ -9,14 +9,15 @@ description: >
   how they'd like to proceed. Use when the user gives a Jira ticket key or URL and wants it
   triaged, summarized, or solved.
 metadata:
-  version: 0.4.0
+  version: 0.5.0
   domain: Build and Code
   kind: skill
   tags: [jira, triage, orchestrator, ticket, summarize]
 compatibility:
   agents: [claude-code, codex, cursor]
   requirements:
-    - Access to the corp-jira MCP tools (search_jira_issues, get_jira_comments)
+    - Access to the corp-jira MCP tools (search_jira_issues, get_jira_comments) — if missing,
+      this skill shows the Setup Guide below instead of failing silently or guessing at content
     - Figma MCP tools, for routes whose resolution step needs a linked design
     - The mapped skill (e.g. unity-a11y) present, for a matched-route handoff
 #disable-model-invocation: true
@@ -116,6 +117,75 @@ Invoke the mapped skill via the Skill tool with this contract as the args payloa
 ---
 
 ## Workflow
+
+### Step 0 — Verify corp-jira access
+
+Before fetching anything, confirm the `corp-jira` MCP tools (e.g. `search_jira_issues`,
+`get_jira_comments`, `test_jira_auth`) are actually available in this session — don't assume
+they're set up just because this skill was invoked.
+
+- Check via whatever tool-discovery mechanism the host agent exposes (e.g. searching deferred
+  tools for `corp-jira`, or checking a "requires authentication" listing). If the tools aren't
+  present at all, or a call to one fails with a not-found/not-connected/auth error, treat this as
+  a **new-user setup gap**, not a ticket-classification problem.
+- Stop here and print the **Setup Guide** below instead of attempting Steps 1+. Do not fall back
+  to the general route, and do not guess at ticket content without the real tools — a fabricated
+  summary is worse than asking the user to finish setup first.
+- If the user says they've just completed setup, retry the tool check once before re-showing the
+  guide.
+
+#### Setup Guide (corp-jira MCP)
+
+Show this verbatim (adjust the repo path if the user's already cloned it elsewhere):
+
+```
+The corp-jira MCP server isn't connected yet. Here's how to set it up:
+
+1. Prerequisites: Node.js v16.19.0+, and access to jira.corp.adobe.com.
+
+2. Clone and build the server:
+   git clone https://github.com/Adobe-AIFoundations/adobe-mcp-servers.git
+   cd adobe-mcp-servers/src/corp-jira
+   npm install
+   npm run build
+   (this produces dist/index.js, the entry point the MCP config launches via `node`)
+
+3. Generate a Jira Personal Access Token (PAT):
+   - Go to https://jira.corp.adobe.com/secure/ViewProfile.jspa
+   - Click "Personal Access Tokens" in the left sidebar
+   - Create a new token with appropriate permissions
+   - Copy it — you won't see it again
+
+4. Configure credentials — copy .env.example to .env in src/corp-jira/ and fill in:
+   JIRA_EMAIL=your.email@adobe.com
+   JIRA_PERSONAL_ACCESS_TOKEN=your_pat_token_here
+   JIRA_API_BASE_URL=https://jira.corp.adobe.com/rest/api/2
+   (An IMS/iPaaS auth mode also exists for shared service accounts, but PAT is the default
+   for an individual user.)
+
+5. Register the MCP server with your agent. Either:
+   claude mcp add corp-jira --scope user -- node /absolute/path/to/adobe-mcp-servers/src/corp-jira/dist/index.js
+
+   or add it directly under mcpServers in ~/.claude.json:
+   "corp-jira": {
+     "type": "stdio",
+     "command": "node",
+     "args": ["/absolute/path/to/adobe-mcp-servers/src/corp-jira/dist/index.js"],
+     "env": {
+       "JIRA_EMAIL": "your.email@adobe.com",
+       "JIRA_PERSONAL_ACCESS_TOKEN": "your_pat_token_here",
+       "JIRA_API_BASE_URL": "https://jira.corp.adobe.com/rest/api/2"
+     }
+   }
+
+6. Restart your agent session, then run the `test_jira_auth` tool (exposed by this server) to
+   confirm auth works.
+
+Once connected, re-run /unity-jira with your ticket.
+```
+
+Never print a live PAT or token value back to the user while walking through this — treat any
+credential the user pastes or that appears in config as sensitive, not something to echo back.
 
 ### Step 1 — Fetch
 
@@ -228,10 +298,12 @@ State which signal (or lack thereof) drove the decision so it's auditable, not a
   audit/fix/add mode) — those stay the mapped skill's to ask.
 - The general route doesn't own an execution path — it proposes and asks, then follows the
   user's actual instruction rather than assuming what "solve" means for that ticket's domain.
+- If corp-jira MCP tools aren't available, never fabricate a ticket summary or guess at content —
+  show the Setup Guide (Step 0) and stop; don't fall back to the general route as a workaround.
 
 ## Output
 
-For every run, report:
+For a normal run, report:
 
 ```yaml
 ticket: "{KEY}"
@@ -242,4 +314,12 @@ scope: "{resolved file(s), or 'unresolved — asked user'}"
 figma_pulled: "{yes/link, or no}"
 artifacts: "{mapped skill output, or the ticket summary + proposed next step}"
 open_questions: "{anything still needing user input}"
+```
+
+If Step 0 blocked the run, report instead:
+
+```yaml
+status: "setup-required"
+missing: "corp-jira MCP tools not connected"
+action: "printed Setup Guide; waiting on user to configure and retry"
 ```
