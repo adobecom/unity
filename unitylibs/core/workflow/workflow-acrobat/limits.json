@@ -165,6 +165,41 @@
       "image/tiff"
     ]
   },
+  "allowed-filetypes-no-adobe-design": {
+    "allowedFileTypes": [
+      "application/pdf",
+      "application/msword",
+      "application/xml",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/mspowerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/x-tika-ooxml",
+      "application/vnd.ms-excel",
+      "application/msexcel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/x-tika-msworks-spreadsheet",
+      "application/vnd.adobe.form.fillsign",
+      "application/rtf",
+      "image/jpeg",
+      "image/png",
+      "image/bmp",
+      "image/gif",
+      "image/tiff",
+      "message/rfc822",
+      "text/plain",
+      "text/rtf"
+    ]
+  },
+  "allowed-filetypes-psd-only": {
+    "allowedFileTypes": ["image/vnd.adobe.photoshop"]
+  },
+  "allowed-filetypes-ai-only": {
+    "allowedFileTypes": ["application/illustrator"]
+  },
+  "allowed-filetypes-indd-only": {
+    "allowedFileTypes": ["application/x-indesign"]
+  },
   "allowed-filetypes-heic": {
     "allowedFileTypes": ["image/heic"]
   },
