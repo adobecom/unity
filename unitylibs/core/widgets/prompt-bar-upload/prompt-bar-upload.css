@@ -401,8 +401,9 @@ display: flex;
     display: inline !important;
   }
 
+  /* Tablet/iPad: icon-only aspect ratio trigger (avoid truncated "16:9" text) */
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .model-name {
-    display: inline !important;
+    display: none !important;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-more-btn .btn-txt {
@@ -410,17 +411,15 @@ display: flex;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .pbu-aspect-ratio-icon .pbu-aspect-ratio-svg--standard {
-    display: flex !important;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .pbu-aspect-ratio-icon .pbu-aspect-ratio-svg--layers {
     display: none !important;
   }
 
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .pbu-aspect-ratio-icon .pbu-aspect-ratio-svg--layers {
+    display: flex !important;
+  }
+
   .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model:hover {
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover {
     background: #353535;
     padding: 6px 10px;
     max-width: 200px;
@@ -428,15 +427,23 @@ display: flex;
     box-shadow: none;
   }
 
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model:hover {
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover {
     background: #434343;
   }
 
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model:hover,
   .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .pbu-aspect-models .selected-model,
   .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .pbu-aspect-models .selected-model:hover {
+    max-width: none;
+    padding: 6px 10px;
+    gap: 6px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover {
     background: rgb(0 0 0 / 8%);
     padding: 6px 10px;
     gap: 8px;
