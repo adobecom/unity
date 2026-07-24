@@ -401,8 +401,9 @@ display: flex;
     display: inline !important;
   }
 
+  /* Tablet/iPad: icon-only aspect ratio trigger (avoid truncated "16:9" text) */
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .model-name {
-    display: inline !important;
+    display: none !important;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-more-btn .btn-txt {
@@ -410,17 +411,15 @@ display: flex;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .pbu-aspect-ratio-icon .pbu-aspect-ratio-svg--standard {
-    display: flex !important;
-  }
-
-  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .pbu-aspect-ratio-icon .pbu-aspect-ratio-svg--layers {
     display: none !important;
   }
 
+  .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .pbu-aspect-models .selected-model .pbu-aspect-ratio-icon .pbu-aspect-ratio-svg--layers {
+    display: flex !important;
+  }
+
   .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model:hover {
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover {
     background: #353535;
     padding: 6px 10px;
     max-width: 200px;
@@ -428,15 +427,23 @@ display: flex;
     box-shadow: none;
   }
 
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model:hover {
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover {
     background: #434343;
   }
 
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model,
-  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-controls-footer .pbu-aspect-models .selected-model:hover,
   .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .pbu-aspect-models .selected-model,
   .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .pbu-aspect-models .selected-model:hover {
+    max-width: none;
+    padding: 6px 10px;
+    gap: 6px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-controls-footer .models-container:not(.pbu-aspect-models) .selected-model:hover {
     background: rgb(0 0 0 / 8%);
     padding: 6px 10px;
     gap: 8px;
@@ -1158,47 +1165,86 @@ line-height: normal;
   .unity-prompt-bar-upload.unity-enabled .interactive-area {
     width: 100%;
     max-width: 100%;
+    padding: 8px !important;
+    border-radius: 16px !important;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-main {
     flex-direction: column;
+    align-items: stretch;
     gap: 0;
+    padding: 16px;
+  }
+
+  /* Figma mobile: prompt + Generate first, uploader below */
+  .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
+    order: 1;
+    width: 100%;
+    padding: 0 0 16px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-left-section {
+    order: 2;
     width: 100%;
     max-width: 100%;
+    align-items: stretch;
     border-inline-end: none;
-    padding-inline-end: 0;
-    padding-block-end: 16px;
-    margin-bottom: 0;
-    border-block-end: 1px solid rgb(255 255 255 / 12%);
+    padding: 16px 0 0;
+    margin: 0;
+    gap: 8px;
+    border-block-start: 1px solid rgb(255 255 255 / 12%);
   }
 
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.light .pbu-left-section {
+    border-block-start-color: rgb(0 0 0 / 12%);
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-right-section .unity-slf-prompt-label {
+    margin-bottom: 8px;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .pbu-right-section .inp-field {
+    min-height: 88px;
+    margin-bottom: 12px;
+    padding-block: 0 8px;
+  }
+
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-right-section .inp-field,
+  .unity-prompt-bar-upload.unity-enabled .interactive-area.dark .pbu-right-section .inp-field::placeholder {
+    margin-bottom: 0;
+    padding-top: 0;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  /* Figma mobile: full-width first-frame dropzone */
   .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap {
     width: 100%;
+    max-width: 100%;
     height: 160px;
     min-height: 160px;
+    align-self: stretch;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap .drop-zone {
     width: 100%;
     height: 160px;
+    min-height: 160px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-preview {
     width: 100%;
-    height: 160px;
+    height: 120px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-drop-zone-wrap .pbu-select-spinner {
     width: 100%;
-    height: 160px;
+    height: 120px;
   }
 
-  .unity-prompt-bar-upload.unity-enabled .pbu-right-section {
-    width: 100%;
-    padding-top: 12px;
+  .unity-prompt-bar-upload.unity-enabled .pbu-upload-heading {
+    font-size: 14px;
+    line-height: 18px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer {
@@ -1217,9 +1263,11 @@ line-height: normal;
   }
 
   .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .act-wrap .gen-btn {
-    max-width: 130px;
-    flex: 1;
+    max-width: none;
+    min-width: 120px;
+    flex: 0 1 auto;
     justify-content: center;
+    padding: 10px 20px;
   }
 
   .unity-prompt-bar-upload.unity-enabled .interactive-area .pbu-controls-footer .pbu-aspect-models {
@@ -1249,5 +1297,9 @@ line-height: normal;
   [dir="rtl"] .unity-prompt-bar-upload.unity-enabled .pbu-controls-footer .models-container .verb-list {
     left: auto;
     right: -20px;
+  }
+
+  .ex-unity-wrap.pbu-widget .pbu-legal-foot {
+    margin-top: 16px;
   }
 }
