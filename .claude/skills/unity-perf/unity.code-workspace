@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"name": "unity",
+			"path": "../../.."
+		},
+		{
+			"name": "milo",
+			"path": "../../../../milo"
+		},
+		{
+			"name": "da-cc",
+			"path": "../../../../da-cc"
+		},
+		{
+			"name": "acom-dev-orchestrator",
+			"path": "../../../../acom-dev-orchestrator"
+		},
+		{
+			"name": "devx-evolve",
+			"path": "../../../../devx-evolve"
+		},
+		{
+			"name": "adobe-mcp-servers",
+			"path": "../../../../../adobe-mcp-servers"
+		}
+	]
+}

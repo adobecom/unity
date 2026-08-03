@@ -81,6 +81,18 @@ Audits, fixes, and instruments **unitylibs** components (vanilla JS/DOM, built w
 
 ---
 
+### `unity-perf`
+
+Audits and fixes Core Web Vitals regressions (LCP, CLS, INP, TBT) in **unitylibs** components — load sequencing (script/style fetch order, dynamic imports), DOM/media patterns (lazy-loading, layout shift, debounce), and main-thread blocking work. Measures via Lighthouse against a local or preview URL and attributes each regressed metric to whether the flagged element actually sits inside Unity's rendered DOM. Out of scope: general perf hygiene not tied to a measured CWV impact (network retry tuning, upload concurrency, caching TTLs).
+
+**Use for:** checking LCP/CLS/INP/TBT, auditing or fixing a Core Web Vitals regression, investigating a Lighthouse score drop tied to a Unity workflow/feature/widget.
+
+**Requires:** component/workflow file(s) under `unitylibs/` in scope; a running local dev server (`aem up`) or a live preview URL (`?unitylibs=<branch_name>`) for Lighthouse measurement (strongly recommended, not strictly required).
+
+**Modes:** audit (report only) / fix (apply changes).
+
+---
+
 ### `unity-jira`
 
 Orchestrator for a single Jira ticket: fetches it (including the full comment thread), classifies it against a registry of specialized Unity skills, and either hands off to a matching skill with resolved context or falls back to summarizing the ticket and asking how to proceed.
@@ -89,6 +101,6 @@ Orchestrator for a single Jira ticket: fetches it (including the full comment th
 
 **Requires:** access to the corp-jira MCP tools; the mapped skill (e.g. `unity-a11y`) present for a matched-route handoff.
 
-**Routes:** matched skill handoff (currently: accessibility → `unity-a11y`) / general (summarize + propose + ask).
+**Routes:** matched skill handoff (currently: accessibility → `unity-a11y`, performance → `unity-perf`) / general (summarize + propose + ask).
 
 ---

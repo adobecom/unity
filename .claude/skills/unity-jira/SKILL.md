@@ -75,7 +75,7 @@ handoff).
 | Domain          | Target skill  | Signals                                                                                                                    | Resolution recipe (beyond the standard contract) |
 |-----------------|---------------|------------------------------------------------------------------------------------------------------------------------------|----|
 | Accessibility   | `/unity-a11y` | `Accessibility` component; `a11y`/`WCAG_*`/`Accessibility_*` label; WCAG success-criterion reference (e.g. "3.3.2"); keywords: ARIA, screen reader, keyboard navigation, focus, contrast, accessible name, alt text | Pull any linked Figma design (`get_screenshot` → `get_metadata` → `get_design_context` on leaf nodes); resolve the affected `unitylibs/` file, watching for the `workflow-ai` naming trap (see Step 3a.3) |
-| *(none yet)*    | *(add here)*  | e.g. a future `unity-performance` skill: keywords like LCP, CLS, bundle size, slow load, perf regression                     | e.g. pull linked CrUX/Lighthouse data; resolve the affected build/bundle config or component |
+| Performance     | `/unity-perf` | `Performance` component; `perf`/`Performance_*` label; keywords: LCP, CLS, INP, TBT, Core Web Vitals, Lighthouse score, layout shift, slow load, perf regression | `figma_refs` rarely applies (no visual target) — only pull if the ticket ties the regression to a specific design-driven asset (oversized image, new web font); resolve the affected workflow/feature/widget file on the render path (not a shared network util unless proven to be on the critical rendering path) |
 
 If a ticket doesn't clearly match any row, don't force it — take the general route instead.
 

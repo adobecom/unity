@@ -1,0 +1,29 @@
+request_summary: "{audit | fix} on {ComponentName}"
+scope: "{Full | Partial — root cause outside requested file(s): [list]}"
+mode: "{audit | fix}"
+metric_targeted: "{LCP | CLS | INP | TBT | multiple: [list]}"
+platform: "{mobile (CLI default) | desktop CLI-standard (--preset=desktop, 1350x940) | desktop matching a DevTools-panel run (--screenEmulation.disabled + --window-size=W,H) | both}"
+lighthouse_measured: "{yes — url: {URL} | no — not available for this run}"
+cwv_scores:
+  overall: "{XX/100 | UNRELIABLE}"
+  lcp: "{X.Xs | UNRELIABLE}"
+  cls: "{X.XX}"
+  inp: "{XXXms | N/A}"
+  tbt: "{XXXms | UNRELIABLE}"
+lcp_element: "{selector, e.g. 'main > div.section > picture.section-background > img'}"
+lcp_breakdown:
+  ttfb_ms: "{X}"
+  resource_load_delay_ms: "{X}"
+  resource_load_duration_ms: "{X}"
+  element_render_delay_ms: "{X}"
+element_in_unity_dom: "{yes | no | n/a (TBT — attributed via long-task trace instead)}"
+observed:
+  - "{facts found in the component}"
+actions_taken:
+  - "{change or finding description}"
+artifacts:
+  - "{file path or none}"
+issues_remaining:
+  - "{anything out of scope, or a non-CWV inefficiency noticed but not pursued}"
+recommendations:
+  - "{next actions}"
