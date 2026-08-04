@@ -713,9 +713,15 @@ export default class ActionBinder {
 
   isDirectUploadVerb(fileSize) {
     const verb = this.workflowCfg.enabledFeatures[0];
-    const directUploadVerbs = this.workflowCfg.targetCfg.directUploadVerbs || [];
-    const directUploadMaxSize = this.workflowCfg.targetCfg.directUploadMaxSize || 0;
-    return directUploadVerbs.includes(verb) && fileSize != null && fileSize <= directUploadMaxSize;
+    const {
+      directUploadEnabled = false,
+      directUploadExcludedVerbs = [],
+      directUploadMaxSize = 0,
+    } = this.workflowCfg.targetCfg;
+    return directUploadEnabled
+      && !directUploadExcludedVerbs.includes(verb)
+      && fileSize != null
+      && fileSize <= directUploadMaxSize;
   }
 
   async runProgressBarUpdate(splashLayer) {

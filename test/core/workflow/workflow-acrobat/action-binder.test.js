@@ -1500,26 +1500,37 @@ describe('ActionBinder', () => {
     describe('isDirectUploadVerb', () => {
       beforeEach(() => {
         actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
-        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadEnabled = true;
+        actionBinder.workflowCfg.targetCfg.directUploadExcludedVerbs = [];
         actionBinder.workflowCfg.targetCfg.directUploadMaxSize = 1048576;
       });
 
-      it('should return true for configured direct upload verbs within max size', () => {
+      it('should return true for any verb within max size when enabled', () => {
         expect(actionBinder.isDirectUploadVerb(1048576)).to.be.true;
         expect(actionBinder.isDirectUploadVerb(500000)).to.be.true;
       });
 
-      it('should return false for direct upload verbs exceeding max size', () => {
+      it('should return true for a verb that was not previously in the allowlist', () => {
+        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+        expect(actionBinder.isDirectUploadVerb(500000)).to.be.true;
+      });
+
+      it('should return false when direct upload is disabled', () => {
+        actionBinder.workflowCfg.targetCfg.directUploadEnabled = false;
+        expect(actionBinder.isDirectUploadVerb(500000)).to.be.false;
+      });
+
+      it('should return false for excluded verbs', () => {
+        actionBinder.workflowCfg.targetCfg.directUploadExcludedVerbs = ['word-to-pdf'];
+        expect(actionBinder.isDirectUploadVerb(500000)).to.be.false;
+      });
+
+      it('should return false for verbs exceeding max size', () => {
         expect(actionBinder.isDirectUploadVerb(1048577)).to.be.false;
       });
 
-      it('should return false for direct upload verbs without file size', () => {
+      it('should return false without a file size', () => {
         expect(actionBinder.isDirectUploadVerb()).to.be.false;
-      });
-
-      it('should return false for verbs not configured for direct upload', () => {
-        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
-        expect(actionBinder.isDirectUploadVerb(500000)).to.be.false;
       });
     });
 
