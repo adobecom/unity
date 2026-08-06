@@ -1311,3 +1311,89 @@
     padding: 0px;
   }
 }
+
+/*
+ * firefly-model-showcase prompt-bar restyle (MWPW-189386)
+ * Scoped to .firefly-model-showcase (+ the active max25/theme-two theme) so the
+ * shared prompt bar used by hero-marquee / showcase-marquee / upload-marquee is
+ * unaffected. Values from Figma node 4039:30793. Desktop first; tablet/mobile
+ * breakpoint tweaks are added later.
+ */
+
+/* Widget box: dark gray-200 frosted panel */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+  background: #323232; /* Palette/gray/200 */
+  border: 2.4px solid rgb(255 255 255 / 15%);
+  border-radius: 24px;
+  backdrop-filter: none; /* bg is opaque; drop the inherited max25 blur(125px) (perf) */
+  box-shadow:
+    0 83.35px 33.34px 0 rgb(0 0 0 / 22%),
+    0 44.56px 17.82px 0 rgb(0 0 0 / 18%),
+    0 24.98px 9.99px 0 rgb(0 0 0 / 16%),
+    0 13.27px 5.31px 0 rgb(0 0 0 / 13%),
+    0 5.52px 2.21px 0 rgb(0 0 0 / 9%);
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+  padding: 23px 29px;
+}
+
+/* Prompt input + eyebrow label: light text on the dark panel (a11y: label kept) */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+  color: #fff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label {
+  color: #dbdbdb; /* Alias/content/neutral/default */
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+  color: #dbdbdb;
+  font-size: 16px;
+}
+
+/* Type dropdown pill ("Image"): solid gray-100 pill, light text */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .selected-verb {
+  background: #2c2c2c; /* Palette/gray/100 */
+  color: #dbdbdb;
+  border-radius: 8px;
+}
+
+/* Model picker: transparent, white text */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .selected-model {
+  color: #fff;
+}
+
+/* Open dropdown / model menus: dark surface, light items */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verb-list {
+  background: #2c2c2c;
+  color: #fff;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop {
+  background: #2c2c2c;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item {
+  color: #fff;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
+  background-color: #3f3f3f;
+}
+
+/* Generate button: Spectrum accent (blue) fill, white label + icon */
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+  background: #4069fd; /* Alias/background/semantic/accent/default */
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+  color: #fff;
+  font-size: 16px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-ico img {
+  filter: none;
+}
