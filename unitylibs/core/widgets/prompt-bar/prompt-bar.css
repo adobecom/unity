@@ -1390,13 +1390,3 @@
     max-width: 300px;
   }
 }
-
-@media (min-width: 600px) {
-  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
-    padding: 10px 20px;
-  }
-
-  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
-    display: flex;
-  }
-}
