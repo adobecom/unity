@@ -1372,18 +1372,6 @@
   color: #fff;
 }
 
-:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop {
-  background: #2c2c2c;
-}
-
-:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item {
-  color: #fff;
-}
-
-:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
-  background-color: #3f3f3f;
-}
-
 :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
   background: #4069fd;
 }
