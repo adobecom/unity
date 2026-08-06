@@ -1363,6 +1363,10 @@
   filter: invert(1);
 }
 
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container .verb-list .verb-link img {
+  filter: invert(1);
+}
+
 :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
   color: #fff;
 }
