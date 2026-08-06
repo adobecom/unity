@@ -1,6 +1,7 @@
 request_summary: "{audit | fix | add} on {ComponentName}"
 scope: "{Full | Partial — root cause outside requested file(s): [list]}"
 mode: "{audit | fix | add}"
+axe_scan: "{ran against <url> | skipped — no page exists per Intake answer}"
 observed:
   - "{facts found in the component}"
 actions_taken:

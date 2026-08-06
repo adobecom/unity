@@ -27,7 +27,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['test/**/*.js', 'nala/**/*.js', 'nala/**/*.cjs'],
+      files: ['test/**/*.js', 'nala/**/*.js', 'nala/**/*.cjs', 'scripts/**/*.js'],
       rules: {
         'no-console': 'off',
         'import/no-extraneous-dependencies': [

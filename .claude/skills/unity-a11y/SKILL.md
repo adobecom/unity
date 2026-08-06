@@ -7,7 +7,7 @@ description: >
   screen-reader friendly, improve focus management, check color contrast, address WCAG
   compliance, or add accessibility to a Unity widget/feature.
 metadata:
-  version: 1.1.0
+  version: 1.2.0
   domain: Build and Code
   kind: skill
   tags: [accessibility, a11y, wcag, aria, unitylibs, keyboard, screen-reader]
@@ -47,12 +47,23 @@ Before proposing a plan, confirm:
 - which component file(s) under `unitylibs/` are in scope
 - what the user wants: **audit** (report only), **fix** (apply changes), or **add** (instrument from scratch)
 - whether there is a known issue list or the skill should discover issues first
+- what URL renders this component right now (a local `aem up` server, a PR preview, or a stage/live
+  URL) — needed for the Step 5 automated axe-core scan later. If the answer is that no such page
+  exists yet, that's fine: note it now and Step 5 will simply be skipped, rather than discovering
+  this gap only when Step 5 comes up.
+
+Ask this URL question up front, during Intake, every run — **do not defer it to Step 5**. Step 5
+sits after Step 4's mode-specific output, which makes it easy to treat Step 4's report/fix as the
+end of the run and fall straight through to Step 6 without ever circling back for a URL. Capturing
+it during Intake removes that failure mode entirely: by the time Step 5 is reached, the URL (or the
+fact that none exists) is already known, so it's a purely mechanical "run it" or "skip it," never a
+step to remember to ask about later.
 
 If invoked via a handoff from an orchestrator (e.g. `/unity-jira`'s Handoff Contract —
 `ticket`/`scope`/`known_issue`/`figma_refs`/`sibling_files`), treat those fields as already
 answered — don't re-ask for scope or re-derive the known-issue context from the ticket yourself.
-The **mode** question (audit/fix/add) is never part of that contract, so still ask it unless the
-handoff explicitly states one.
+The **mode** question (audit/fix/add) and the **URL** question are never part of that contract, so
+still ask both unless the handoff explicitly states one.
 
 **Orchestrator handoffs run ticket-scoped, not component-scoped.** When a `known_issue` is
 supplied, that string *is* the entire scope of the run — not a starting point for a broader
@@ -155,7 +166,50 @@ If a pulled design value can't be matched without a broader design-token or shar
 
 ---
 
-### Step 5 — Output
+### Step 5 — Automated axe-core scan (when a live preview is available)
+
+Manual checklist review catches things axe can't (keyboard operability across split files, whether
+an ARIA state is semantically correct) — axe-core catches things the checklist relies on eyeballing
+(contrast ratios, malformed ARIA, missing accessible names). Run both; neither replaces the other.
+
+Requires a page that actually renders the component in scope, reachable over HTTP — a local `aem up`
+server (`http://localhost:3000/...`), a PR preview, or a stage/live URL. This uses the URL already
+captured during Intake — do not ask for it again here. If Intake's answer was that no such page
+exists, skip this step now and say so in the output card's `issues_remaining` rather than blocking on
+it. If for any reason Intake didn't capture a URL answer (e.g. an older transcript, a resumed run),
+stop and ask it now before proceeding — never reach Step 6 without having asked.
+
+1. Confirm Playwright browsers are installed: `npx playwright install chromium` (one-time; see
+   README.md).
+2. Run the scan scoped to the component's root element via `--selector` — omitting it scans the
+   full page, which drowns component-specific findings in unrelated page issues, so always pass it
+   when the component's root class is known:
+   ```
+   npm run a11y:scan -- --url <page-url> --selector "<component-root-selector>"
+   ```
+   Scans `wcag2a`, `wcag2aa`, and `wcag22aa` tags at desktop (1360px) and mobile (375px) viewports
+   by default (`--viewport` accepts a comma-separated `WxH` list to override). HTML reports land in
+   `test-results/a11y/`.
+3. Process `violations`: fix within scope, same rules as Step 4 — CSS for contrast/focus/sizing,
+   JS/markup for missing alt/ARIA/labels, and never touch a file outside the current scope without
+   asking first. An issue traceable to authored content (e.g. an authored `<img>` missing `alt`) is
+   an authoring concern, not a code fix — flag it, don't fabricate content.
+4. Process `incomplete`: resolve what's resolvable from code; anything needing genuine manual
+   judgment (e.g. contrast against a photographic/gradient background) gets documented, not guessed.
+5. Re-run after each fix. Cap at 3 fix-and-rerun cycles — anything still failing after that goes into
+   the output card's `issues_remaining`, not silently dropped.
+6. Fold surviving violations into the mode's report table (mark the WCAG column entry with an
+   `[axe]` suffix so it's clear which findings are tool-confirmed vs. manual-review) — this is
+   additive to Step 3/4's findings, not a replacement for them.
+
+---
+
+### Step 6 — Output
+
+**Gate — check before filling anything:** was Step 5 actually run, or explicitly skipped because
+Intake's URL answer said no page exists? If neither happened — if you're about to fill the output
+card without having touched Step 5 at all — stop and go back to Step 5 now. Jumping from Step 4's
+mode-specific report/fix straight to this step is exactly the failure mode this gate exists to catch.
 
 Fill the structured output card for every run — this is a required step, not optional
 documentation. Attach the relevant mode template. Do not end the turn with a prose-only recap in
@@ -195,3 +249,8 @@ Fill [assets/templates/output-card.template.yaml](assets/templates/output-card.t
 - Run `npm run lint:js` / `npm run lint:css` on touched files after fixing and confirm no new
   errors versus the pre-fix baseline (this repo has pre-existing lint debt — diff against it,
   don't try to fix unrelated lint errors).
+- The Step 5 axe-core scan is additive evidence, not a substitute for the Step 3 checklist — a
+  clean axe run does not mean the component is accessible (axe only catches a subset of WCAG
+  failures; it cannot judge whether an ARIA role is the *semantically correct* choice, or whether
+  a `keydown` handler in a sibling binder file actually fires). Never skip Step 3 because axe came
+  back clean.
