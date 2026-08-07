@@ -22,7 +22,8 @@
       ".ia-nba-card": "connector",
       ".ia-edit-in-firefly": "connector",
       ".ia-download-btn": "download",
-      ".ia-reupload-btn": "reupload"
+      ".ia-reupload-btn": "reupload",
+      ".ia-cta-accent": "runEditorOperation"
     }
   },
   "hero-marquee": {

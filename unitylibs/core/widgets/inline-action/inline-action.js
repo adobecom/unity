@@ -477,7 +477,7 @@ export default class InlineActionWidget {
       loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`);
       completeLeft = buildEditorStage(this.parsedData);
       completeRight = buildEditorPanel(this.parsedData);
-      this.editorEngine = new EditorEngine(completeLeft, this.parsedData);
+      this.editorEngine = new EditorEngine(completeLeft, completeRight, this.parsedData);
     } else {
       completeLeft = buildResultSection(this.parsedData);
       completeRight = buildCompletePanel(this.parsedData);

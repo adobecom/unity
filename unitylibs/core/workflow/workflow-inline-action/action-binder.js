@@ -142,6 +142,7 @@ export default class ActionBinder {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF-InlineAction' };
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
+    this.assetHref = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
@@ -150,7 +151,7 @@ export default class ActionBinder {
     this.signedInFlowInProgress = false;
     this.splashProgress = 0;
     this.isGuestUser = undefined;
-    this.operation = widgetRef?.meta?.operation || 'removeBackground';
+    this.operation = widgetRef?.parsedData?.operation || 'removeBackground';
     this.initActionListeners = this.initActionListeners.bind(this);
   }
 
@@ -416,6 +417,7 @@ export default class ActionBinder {
       callType = 'upload';
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
+      this.assetHref = href;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
       const uploadHandler = new UploadHandler(this, this.serviceHandler);
@@ -799,9 +801,22 @@ export default class ActionBinder {
       case 'interrupt':
         await this.cancelUploadOperation();
         break;
+      case 'runEditorOperation':
+        await this.runEditorOperation();
+        break;
       default:
         break;
     }
+  }
+
+  async runEditorOperation() {
+    const engine = this.widgetRef?.editorEngine;
+    if (!engine) return;
+    const bounds = engine.getSourceBounds();
+    const { default: editorFlow } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+    const payload = editorFlow.buildCropPayload(bounds, this.assetHref);
+    // eslint-disable-next-line no-console
+    console.log('[inline-action editor] crop payload', payload);
   }
 
   bindUploadAnalytics(b) {

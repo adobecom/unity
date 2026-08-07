@@ -262,6 +262,135 @@
   font-size: 14px;
 }
 
+.ia-aspect-section,
+.ia-further-section {
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.ia-aspect-heading,
+.ia-further-heading {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ia-heading-text, #f2f2f2);
+}
+
+.ia-aspect-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ia-aspect-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: #2a2a2a;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ia-aspect-pill.is-active {
+  background: var(--ia-white, #fff);
+  color: #111;
+  border-color: var(--ia-white, #fff);
+}
+
+.ia-more {
+  position: relative;
+}
+
+.ia-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: #202020;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+.ia-more-menu.hide {
+  display: none;
+}
+
+.ia-more-opt {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ia-more-opt:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.ia-cta-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ia-cta-accent,
+.ia-cta-outline {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.ia-cta-accent {
+  border: none;
+  background: var(--ia-accent, #3b63fb);
+  color: var(--ia-white, #fff);
+}
+
+.ia-cta-outline {
+  border: 2px solid var(--ia-white, #fff);
+  background: transparent;
+  color: var(--ia-white, #fff);
+}
+
+.ia-further-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ia-further-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: #2a2a2a;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ia-img {
     transition: none;
