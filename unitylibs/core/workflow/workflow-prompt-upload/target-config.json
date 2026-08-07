@@ -1,0 +1,101 @@
+{
+  "_defaults": {
+    "renderWidget": true,
+    "sendSplunkAnalytics": true,
+    "showModels": false,
+    "showUpload": true,
+    "showPrompt": true,
+    "domainMap": {
+      "acrobat": [
+        "^(stage\\.)?acrobat\\.adobe\\.com$",
+        "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
+      ]
+    },
+    "uploadLimits": {
+      "HIGH_END": { "files": 10, "chunks": 10 },
+      "MID_RANGE": { "files": 5, "chunks": 10 },
+      "LOW_END": { "files": 3, "chunks": 6 }
+    },
+    "verbsWithoutMfuToSfuFallback": [],
+    "awaitFinalizeVerbs": [],
+    "directUploadVerbs": ["jpg-to-pdf"],
+    "directUploadMaxSize": 1048576,
+    "nonpdfMfuFeedbackScreenTypeNonpdf": [],
+    "nonpdfSfuProductScreen": ["generate-pres", "citation-generator", "jpg-to-pdf"],
+    "mfuUploadAllowed": ["generate-pres", "citation-generator", "jpg-to-pdf"],
+    "mfuUploadOnlyPdfAllowed": [],
+    "experimentationOn": [],
+    "optionDropdownPayloadKey": "option",
+    "limits": {
+      "maxNumFiles": 1,
+      "allowedFileTypes": [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-powerpoint",
+        "text/plain"
+      ],
+      "maxFileSize": 104857600,
+      "max-char-limit": 3000
+    },
+    "limits-jpg-to-pdf": {
+      "maxNumFiles": 1,
+      "allowedFileTypes": ["image/jpeg", "image/jpg", "image/png"],
+      "maxFileSize": 104857600
+    },
+    "fetchApiConfig": {
+      "finalizeAsset": {
+        "retryType": "polling",
+        "retryParams": {
+          "maxRetryDelay": 300000,
+          "defaultRetryDelay": 5000
+        }
+      },
+      "getMetadata": {
+        "retryType": "polling",
+        "retryParams": {
+          "maxRetryDelay": 5000,
+          "defaultRetryDelay": 500
+        }
+      },
+      "default": {
+        "retryType": "exponential",
+        "retryParams": {
+          "maxRetries": 4,
+          "retryDelay": 1000
+        }
+      }
+    }
+  },
+  "prompt-upload-marquee": {
+    "selector": ".foreground",
+    "source": ".foreground .prompt-upload-container",
+    "target": ".foreground .prompt-upload-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".drop-zone": "select-file",
+      "#file-upload": "select-file",
+      ".gen-btn": "generate"
+    }
+  },
+  "verb-widget": {
+    "renderWidget": false,
+    "selector": ".verb-wrapper",
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": "upload",
+      "#file-upload": "upload"
+    }
+  }
+}
