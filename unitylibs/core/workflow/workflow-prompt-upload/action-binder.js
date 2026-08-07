@@ -844,10 +844,7 @@ export default class ActionBinder {
         case 'A':
         case 'BUTTON':
           el.addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (value === 'interrupt') await this.cancelOperation();
-            else if (value === 'generate') await this.handleGenerate();
-            else if (value === 'upload') searchRoot?.querySelector('#file-upload')?.click();
+            if (value === 'interrupt') { e.preventDefault(); await this.cancelOperation(); } else if (value === 'generate') { e.preventDefault(); await this.handleGenerate(); }
           });
           break;
         case 'DIV':
@@ -861,9 +858,11 @@ export default class ActionBinder {
             if (value === 'select-file') await this.validateAndStoreFile(files);
             else if (value === 'upload') await this.uploadFilesImmediately(files, 'drop');
           });
-          el.addEventListener('click', () => {
-            searchRoot?.querySelector('#file-upload')?.click();
-          });
+          if (value === 'select-file') {
+            el.addEventListener('click', () => {
+              searchRoot?.querySelector('#file-upload')?.click();
+            });
+          }
           break;
         case 'INPUT':
           el.addEventListener('change', async (e) => {
