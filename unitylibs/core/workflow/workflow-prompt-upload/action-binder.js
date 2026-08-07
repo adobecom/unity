@@ -144,6 +144,7 @@ export default class ActionBinder {
     this.optionValue = '';
     this.analyticsModule = null;
     this.sendAnalyticsToSplunk = null;
+    this.verbAnalytics = null;
     this.experimentData = null;
     this.experimentViaPageConfig = false;
     this.pageConfigLocation = null;
@@ -272,9 +273,10 @@ export default class ActionBinder {
   async initAnalytics() {
     if (this.analyticsModule) return;
     try {
-      this.analyticsModule = await import(`${getUnityLibs()}/scripts/analytics.js`);
+      this.analyticsModule = await import(`${getUnityLibs()}/core/workflow/workflow-prompt-upload/verb-analytics.js`);
+      this.verbAnalytics = this.analyticsModule.default;
       if (this.workflowCfg.targetCfg?.sendSplunkAnalytics) {
-        this.sendAnalyticsToSplunk = this.analyticsModule.default;
+        this.sendAnalyticsToSplunk = this.analyticsModule.sendAnalyticsToSplunk;
       }
     } catch (e) {
       window.lana?.log(`Message: Failed to load analytics module, Error: ${e}`, this.lanaOptions);
@@ -284,8 +286,9 @@ export default class ActionBinder {
   logAnalyticsinSplunk(eventName, data = {}) {
     this.sendAnalyticsToSplunk?.(
       eventName,
+      this.verb,
       this.workflowCfg.productName,
-      { ...data, operation: this.verb, verb: this.verb, action: 'prompt-upload' },
+      data,
       `${unityConfig.apiEndPoint}/log`,
       true,
     );
@@ -305,8 +308,9 @@ export default class ActionBinder {
     };
     const analyticsName = map[eventName] || eventName;
     if (!this.analyticsModule) await this.initAnalytics();
-    try { this.analyticsModule?.sendAdobeAnalytics?.(analyticsName); } catch (e) { /* noop */ }
-    if (this.workflowCfg.targetCfg.sendSplunkAnalytics) this.logAnalyticsinSplunk(analyticsName, data || {});
+    const meta = { ...(data || {}) };
+    try { this.verbAnalytics?.(analyticsName, this.verb, this.workflowCfg.productName, meta, false); } catch (e) { /* noop */ }
+    if (this.workflowCfg.targetCfg.sendSplunkAnalytics) this.logAnalyticsinSplunk(analyticsName, meta);
   }
 
   resolveErrorMessage(errorType) {
@@ -332,12 +336,9 @@ export default class ActionBinder {
     };
     const analyticsName = ActionBinder.ERROR_ANALYTICS_MAP[errorType] || `error:${errorType}`;
     if (!this.analyticsModule) await this.initAnalytics();
-    try { this.analyticsModule?.sendAdobeAnalytics?.(analyticsName); } catch (e) { /* noop */ }
-    this.logAnalyticsinSplunk(analyticsName, {
-      errorData,
-      fileMetaData: this.filesData,
-      statusCode: status,
-    });
+    const meta = { ...this.filesData, errorData, errorInfo: info || undefined };
+    try { this.verbAnalytics?.(analyticsName, this.verb, this.workflowCfg.productName, meta, false); } catch (e) { /* noop */ }
+    this.logAnalyticsinSplunk(analyticsName, meta);
   }
 
   findOrCreateErrorToast() {
@@ -908,6 +909,9 @@ export default class ActionBinder {
       }
     });
     this.getWidgetWrap()?.addEventListener('pbu-delete-image', () => this.clearPendingFiles());
-    if (b === this.block && !this.pageConfigPromise) this.pageConfigPromise = this.ensurePageConfig();
+    if (b === this.block) {
+      this.loadTransitionScreen();
+      if (!this.pageConfigPromise) this.pageConfigPromise = this.ensurePageConfig();
+    }
   }
 }
