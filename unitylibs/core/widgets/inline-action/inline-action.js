@@ -1,4 +1,9 @@
-import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
+import {
+  createTag,
+  defineDeviceByScreenSize,
+  loadStyle,
+  getUnityLibs,
+} from '../../../scripts/utils.js';
 
 export const InlineActionState = { INITIAL: 'initial', LOADING: 'loading', COMPLETE: 'complete' };
 const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
@@ -367,15 +372,15 @@ function buildResultSection(meta) {
   return result;
 }
 
-function buildLeftPanel(heroPreview, meta) {
+function buildLeftPanel(heroPreview, meta, completeContent) {
   const left = createTag('div', { class: 'ia-panel ia-panel-left' });
-  left.append(heroPreview, buildGhostOverlay(), buildResultSection(meta));
+  left.append(heroPreview, buildGhostOverlay(), completeContent);
   return left;
 }
 
-function buildRightPanel(meta, progressHolder) {
+function buildRightPanel(meta, progressHolder, completeContent) {
   const right = createTag('div', { class: 'ia-panel ia-panel-right' });
-  right.append(buildDropZoneContainer(meta, progressHolder), buildCompletePanel(meta));
+  right.append(buildDropZoneContainer(meta, progressHolder), completeContent);
   return right;
 }
 
@@ -411,6 +416,7 @@ export default class InlineActionWidget {
     this.parsedData = null;
     this.state = InlineActionState.INITIAL;
     this.progressScreen = null;
+    this.editorEngine = null;
   }
 
   setState(state) {
@@ -451,6 +457,10 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
+  async setEditorImage(url) {
+    await this.editorEngine?.setImage(url);
+  }
+
   async initWidget() {
     const viewport = getViewportBlock(this.el);
     this.parsedData = parseInlineAuthoring(this.el);
@@ -458,13 +468,27 @@ export default class InlineActionWidget {
     const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const progressHolder = TransitionScreen.createProgressBar();
-    const right = buildRightPanel(this.parsedData, progressHolder);
+
+    const isEditorOp = this.parsedData.operation !== 'removeBackground';
+    let completeLeft;
+    let completeRight;
+    if (isEditorOp) {
+      const { buildEditorStage, buildEditorPanel, EditorEngine } = await import('./editor.js');
+      loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`);
+      completeLeft = buildEditorStage(this.parsedData);
+      completeRight = buildEditorPanel(this.parsedData);
+      this.editorEngine = new EditorEngine(completeLeft, this.parsedData);
+    } else {
+      completeLeft = buildResultSection(this.parsedData);
+      completeRight = buildCompletePanel(this.parsedData);
+    }
+    const right = buildRightPanel(this.parsedData, progressHolder, completeRight);
 
     this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
     this.progressScreen.progressText = this.parsedData.loadingText;
 
     appendSpriteSheet(root, this.spriteContent);
-    root.append(buildLeftPanel(heroPreview, this.parsedData), right);
+    root.append(buildLeftPanel(heroPreview, this.parsedData, completeLeft), right);
 
     insertInlineActionRoot(this.el, this, root);
     this.widget = root;

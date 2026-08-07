@@ -679,8 +679,31 @@ export default class ActionBinder {
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
+    if (this.operation !== 'removeBackground') {
+      await this.editorUploadFlow(correctedFile);
+      return;
+    }
     if (isGuest === false) await this.signedInFlow(correctedFile);
     else await this.anonymousFlow(correctedFile);
+  }
+
+  async editorUploadFlow(file) {
+    this.widgetRef?.setState(InlineActionState.LOADING);
+    this.widgetRef?.setProgress(0);
+    try {
+      const ok = await this.uploadAsset(file, true);
+      if (!ok) {
+        this.widgetRef?.setState(InlineActionState.INITIAL);
+        return;
+      }
+      this.widgetRef?.setProgress(PROGRESS.COMPLETE);
+      this.widgetRef?.setState(InlineActionState.COMPLETE);
+      await this.widgetRef?.setEditorImage(URL.createObjectURL(file));
+    } catch (e) {
+      if (!e.analyticsTracked) this.trackServerError('upload', e);
+      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
+      this.widgetRef?.setState(InlineActionState.INITIAL);
+    }
   }
 
   async runFirstLocalDownload() {
