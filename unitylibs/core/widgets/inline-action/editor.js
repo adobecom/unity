@@ -406,7 +406,7 @@ export class EditorEngine {
           x: clamp(baseRect.x + dxPct, 0, 100 - baseRect.w),
           y: clamp(baseRect.y + dyPct, 0, 100 - baseRect.h),
         }
-        : resizeRect(baseRect, kind, dxPct, dyPct, null);
+        : resizeRect(baseRect, kind, dxPct, dyPct, this.selectedRatio);
       this.render();
     };
     const up = () => {
