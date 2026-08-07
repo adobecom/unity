@@ -14,7 +14,7 @@
     },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
-    "awaitFinalizeVerbs": ["word-to-pdf"],
+    "awaitFinalizeVerbs": ["word-to-pdf", "ppt-to-pdf", "excel-to-pdf"],
     "directUploadVerbs": ["word-to-pdf", "ppt-to-pdf", "excel-to-pdf", "jpg-to-pdf", "png-to-pdf", "heic-to-pdf"],
     "directUploadMaxSize": 1048576,
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
