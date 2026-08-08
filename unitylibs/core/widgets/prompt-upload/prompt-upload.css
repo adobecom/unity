@@ -1,0 +1,93 @@
+/*
+ * prompt-upload widget layout (Option A).
+ * Primitive styling (dropzone, input, dropdown, buttons) comes from shared/shared.css.
+ * This file only owns the two-column Citation Generator layout + results styling.
+ */
+
+.pu-main {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.pu-left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pu-right-section {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.pu-upload-heading,
+.pu-right-section .unity-slf-copy-label {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.pu-dropzone-hint {
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: center;
+  max-width: 160px;
+}
+
+.pu-prompt-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  position: relative;
+}
+
+.pu-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d3d3d3;
+  border-radius: 12px;
+  padding: 4px 4px 4px 8px;
+}
+
+.pu-search-row .inp-field { flex: 1; }
+.pu-search-row .act-wrap { flex-shrink: 0; }
+
+/* Citation results dropdown */
+.pu-results { position: relative; }
+
+.pu-results .pu-citation-dropdown .selected-model {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.pu-results .verb-list {
+  width: 100%;
+  min-width: 0;
+}
+
+.pu-citation-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+}
+
+.pu-citation-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.pu-citation-meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+@media (max-width: 700px) {
+  .pu-main { flex-direction: column; }
+  .pu-left-section { align-items: center; }
+}
