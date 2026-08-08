@@ -84,18 +84,20 @@
     }
   },
   "verb-widget": {
-    "renderWidget": false,
-    "selector": ".verb-wrapper",
-    "source": ".verb-wrapper .verb-container",
-    "target": ".verb-wrapper .verb-container",
+    "renderWidget": true,
+    "selector": ".verb-container",
+    "source": ".verb-container",
+    "target": ".verb-container",
+    "insert": "after",
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
       "splashScreenParent": "body"
     },
     "actionMap": {
-      ".verb-wrapper": "upload",
-      "#file-upload": "upload"
+      ".drop-zone": "upload",
+      "#file-upload": "upload",
+      ".gen-btn": "generate"
     }
   }
 }

@@ -64,7 +64,7 @@ export function mountWidget({
   widgetWrap.append(unitySprite, root);
   if (legalFoot) widgetWrap.append(legalFoot);
 
-  const interactArea = target?.querySelector('.copy');
+  const interactArea = target?.querySelector('.copy') || target;
   const { target: anchorSelector, insert } = workflowCfg.targetCfg || {};
   const anchor = anchorSelector ? interactArea?.querySelector(anchorSelector) : null;
   if (anchor && insert === 'before') anchor.before(widgetWrap);
