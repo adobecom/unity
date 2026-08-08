@@ -78,8 +78,8 @@
       "splashScreenParent": "body"
     },
     "actionMap": {
-      ".drop-zone": "select-file",
-      "#file-upload": "select-file",
+      ".drop-zone": "upload",
+      "#file-upload": "upload",
       ".gen-btn": "generate"
     }
   },
