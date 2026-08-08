@@ -87,6 +87,7 @@ class WfInitiator {
     const wfRes = workflowRes[workflowName] || [];
     const priorityList = [...commonResources, ...wfRes];
     const pfr = await priorityLoad(priorityList);
+    
 
     return {
       targetConfigCallRes: pfr[0],
