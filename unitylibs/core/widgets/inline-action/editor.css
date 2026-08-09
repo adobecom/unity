@@ -315,7 +315,8 @@
   gap: 8px;
 }
 
-.ia-aspect-pill {
+.ia-aspect-pill,
+.ia-resize-tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -328,7 +329,8 @@
   cursor: pointer;
 }
 
-.ia-aspect-pill.is-active {
+.ia-aspect-pill.is-active,
+.ia-resize-tab.is-active {
   background: var(--ia-white, #fff);
   color: #111;
   border-color: var(--ia-white, #fff);
@@ -338,7 +340,9 @@
   position: relative;
 }
 
-.ia-more-menu {
+.ia-more-menu,
+.ia-social-menu,
+.ia-unit-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -353,11 +357,15 @@
   box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
 }
 
-.ia-more-menu.hide {
+.ia-more-menu.hide,
+.ia-social-menu.hide,
+.ia-unit-menu.hide {
   display: none;
 }
 
-.ia-more-opt {
+.ia-more-opt,
+.ia-social-opt,
+.ia-unit-opt {
   padding: 8px 12px;
   border: none;
   border-radius: 8px;
@@ -369,33 +377,10 @@
   white-space: nowrap;
 }
 
-.ia-more-opt:hover {
+.ia-more-opt:hover,
+.ia-social-opt:hover,
+.ia-unit-opt:hover {
   background: rgb(255 255 255 / 10%);
-}
-
-.ia-resize-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 16px;
-  padding: 4px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 5%);
-}
-
-.ia-resize-tab {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ia-white, #fff);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.ia-resize-tab.is-active {
-  background: var(--ia-white, #fff);
-  color: #111;
 }
 
 .ia-resize-detail-panel.hide {
@@ -450,29 +435,29 @@
 }
 
 .ia-dim-unit {
-  flex: 0 0 auto;
-  padding-bottom: 9px;
-  font-size: 13px;
-  color: var(--ia-body-muted, #dbdbdb);
-}
-
-.ia-size-readout {
-  margin: 0;
-  font-size: 12px;
-  color: var(--ia-body-muted, #dbdbdb);
-}
-
-.ia-social-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 15%);
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
   font-size: 14px;
   cursor: pointer;
+}
+
+.ia-unit-chevron {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.ia-size-readout {
+  margin: 12px 0 16px;
+  font-size: 12px;
+  color: var(--ia-body-muted, #dbdbdb);
 }
 
 .ia-social-grids {
@@ -486,6 +471,7 @@
 .ia-cta-row {
   display: flex;
   gap: 12px;
+  margin-top: 16px;
   margin-bottom: 16px;
 }
 

@@ -50,6 +50,34 @@ const RESIZE_SOCIAL = {
     { label: 'Story/Reels 9:16', ratio: 9 / 16 },
     { label: 'Landscape 1.91:1', ratio: 1.91 },
   ],
+  TikTok: [
+    { label: 'Video 9:16', ratio: 9 / 16 },
+  ],
+  Facebook: [
+    { label: 'Feed post 1:1', ratio: 1 },
+    { label: 'Story 9:16', ratio: 9 / 16 },
+    { label: 'Cover 1.91:1', ratio: 1.91 },
+  ],
+  Youtube: [
+    { label: 'Thumbnail 16:9', ratio: 16 / 9 },
+    { label: 'Short 9:16', ratio: 9 / 16 },
+  ],
+  Linkedin: [
+    { label: 'Post 1.91:1', ratio: 1.91 },
+    { label: 'Square 1:1', ratio: 1 },
+  ],
+};
+
+// Pixel-space stays the single source of truth for the actual rect/frame math — units
+// only matter for how the Custom fields are typed into and displayed. 300px = 1in
+// (300 DPI, the standard print-resolution basis); cm/mm are derived from that.
+const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
+const DPI = 300;
+const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
+const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
+const pxToUnit = (px, unit) => {
+  const value = px / PX_PER_UNIT[unit];
+  return unit === 'px' ? Math.round(value) : Math.round(value * 100) / 100;
 };
 
 export function containBox(naturalW, naturalH, viewportW, viewportH) {
@@ -245,6 +273,15 @@ function buildAspectPill(label, ratio, isActive = false) {
   }, label);
 }
 
+function buildCtaRow(isCrop) {
+  const row = createTag('div', { class: 'ia-cta-row' });
+  row.append(
+    createTag('button', { type: 'button', class: 'ia-cta-accent' }, isCrop ? 'Crop and download' : 'Resize and download'),
+    createTag('button', { type: 'button', class: 'ia-cta-outline' }, 'Open in Firefly'),
+  );
+  return row;
+}
+
 function buildCropAspectSection() {
   const section = createTag('div', { class: 'ia-aspect-section' });
   section.append(createTag('p', { class: 'ia-aspect-heading' }, 'Aspect ratio'));
@@ -268,7 +305,7 @@ function buildCropAspectSection() {
   }, 'More');
   more.append(moreTrigger, moreMenu);
   row.append(more);
-  section.append(row);
+  section.append(row, buildCtaRow(true));
   return section;
 }
 
@@ -276,9 +313,32 @@ function buildDimensionField(labelText, className) {
   const field = createTag('div', { class: 'ia-dim-field' });
   field.append(
     createTag('label', { class: 'ia-dim-label' }, labelText),
-    createTag('input', { type: 'number', class: className, min: '1', inputmode: 'numeric' }),
+    createTag('input', { type: 'number', class: className, min: '0', step: 'any', inputmode: 'decimal' }),
   );
   return field;
+}
+
+// Same dropdown pattern as Crop's More / Resize's Social — a plain trigger + option
+// list, distinct classes so it doesn't get picked up by that unrelated wiring.
+function buildUnitPicker() {
+  const wrap = createTag('div', { class: 'ia-more' });
+  const menu = createTag('div', { class: 'ia-unit-menu hide' });
+  UNIT_OPTIONS.forEach((unit) => {
+    menu.append(createTag('button', { type: 'button', class: 'ia-unit-opt', 'data-unit': unit }, unit));
+  });
+  const trigger = createTag('button', {
+    type: 'button',
+    class: 'ia-dim-unit ia-unit-trigger',
+    'data-unit': 'px',
+    'aria-haspopup': 'true',
+    'aria-expanded': 'false',
+  });
+  trigger.append(
+    createTag('span', { class: 'ia-unit-label' }, 'px'),
+    createTag('span', { class: 'ia-unit-chevron', 'aria-hidden': 'true' }, '⌄'),
+  );
+  wrap.append(trigger, menu);
+  return wrap;
 }
 
 function buildCustomDetail() {
@@ -288,10 +348,9 @@ function buildCustomDetail() {
     buildDimensionField('Width', 'ia-width-input'),
     createTag('button', { type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true' }, '🔒'),
     buildDimensionField('Height', 'ia-height-input'),
-    createTag('span', { class: 'ia-dim-unit' }, 'px'),
+    buildUnitPicker(),
   );
-  const readout = createTag('p', { class: 'ia-size-readout' }, 'Original size: -- New size: --');
-  detail.append(fields, readout);
+  detail.append(fields);
   return detail;
 }
 
@@ -303,50 +362,57 @@ function buildStandardDetail() {
   return detail;
 }
 
+// Social's detail is just the per-platform ratio grids — the platform picker itself
+// lives in the pill row (see buildResizeAspectSection), same as Crop's More trigger.
 function buildSocialDetail() {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'social' });
-  const platformWrap = createTag('div', { class: 'ia-more' });
-  const platformMenu = createTag('div', { class: 'ia-more-menu hide' });
   const grids = createTag('div', { class: 'ia-social-grids' });
   Object.entries(RESIZE_SOCIAL).forEach(([platform, ratios]) => {
-    platformMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
     const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform': platform });
     ratios.forEach(({ label, ratio }) => grid.append(buildAspectPill(label, ratio)));
     grids.append(grid);
   });
-  const platformTrigger = createTag('button', {
-    type: 'button',
-    class: 'ia-social-trigger',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-  }, 'Choose a platform');
-  platformWrap.append(platformTrigger, platformMenu);
-  detail.append(platformWrap, grids);
+  detail.append(grids);
   return detail;
 }
 
+// Custom/Standard are plain pills exactly like Crop's aspect pills. Social is a
+// dropdown trigger exactly like Crop's "More" — clicking it doesn't switch tabs by
+// itself, it opens a platform list; picking a platform is what switches to showing
+// that platform's ratio grid (see EditorEngine.bindSocialEvents).
 function buildResizeAspectSection() {
   const section = createTag('div', { class: 'ia-aspect-section' });
   section.append(createTag('p', { class: 'ia-aspect-heading' }, 'Aspect ratio'));
-  const tabs = createTag('div', { class: 'ia-resize-tabs' });
-  ['Custom', 'Standard', 'Social'].forEach((label, i) => {
-    tabs.append(createTag('button', {
+  const row = createTag('div', { class: 'ia-aspect-row' });
+  // These are deliberately NOT .ia-aspect-pill — that class is reserved for actual
+  // ratio-selecting pills (Standard's presets, Social's per-platform grids), which
+  // already go through bindAspectEvents()/selectAspect(). Custom/Standard/Social
+  // switch tabs or open a dropdown instead, so they get their own class + CSS that
+  // matches .ia-aspect-pill visually without being picked up by that generic wiring.
+  ['Custom', 'Standard'].forEach((label, i) => {
+    row.append(createTag('button', {
       type: 'button',
       class: `ia-resize-tab${i === 0 ? ' is-active' : ''}`,
       'data-tab': label.toLowerCase(),
     }, label));
   });
-  section.append(tabs, buildCustomDetail(), buildStandardDetail(), buildSocialDetail());
+  const social = createTag('div', { class: 'ia-more' });
+  const socialMenu = createTag('div', { class: 'ia-social-menu hide' });
+  Object.keys(RESIZE_SOCIAL).forEach((platform) => {
+    socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
+  });
+  const socialTrigger = createTag('button', {
+    type: 'button',
+    class: 'ia-resize-tab ia-social-trigger',
+    'data-tab': 'social',
+    'aria-haspopup': 'true',
+    'aria-expanded': 'false',
+  }, 'Social');
+  social.append(socialTrigger, socialMenu);
+  row.append(social);
+  const readout = createTag('p', { class: 'ia-size-readout' }, 'Original size: -- New size: --');
+  section.append(row, buildCustomDetail(), buildStandardDetail(), buildSocialDetail(), readout, buildCtaRow(false));
   return section;
-}
-
-function buildCtaRow(isCrop) {
-  const row = createTag('div', { class: 'ia-cta-row' });
-  row.append(
-    createTag('button', { type: 'button', class: 'ia-cta-accent' }, isCrop ? 'Crop and download' : 'Resize and download'),
-    createTag('button', { type: 'button', class: 'ia-cta-outline' }, 'Open in Firefly'),
-  );
-  return row;
 }
 
 function buildFurtherSection(isCrop) {
@@ -380,7 +446,7 @@ export function buildEditorPanel(meta) {
   );
   panel.append(header);
   const aspectSection = isCrop ? buildCropAspectSection() : buildResizeAspectSection();
-  panel.append(aspectSection, buildCtaRow(isCrop), buildFurtherSection(isCrop));
+  panel.append(aspectSection, buildFurtherSection(isCrop));
   return panel;
 }
 
@@ -404,13 +470,18 @@ export class EditorEngine {
     this.widthInput = panelEl.querySelector('.ia-width-input');
     this.heightInput = panelEl.querySelector('.ia-height-input');
     this.lockBtn = panelEl.querySelector('.ia-dim-lock');
+    this.unitTrigger = panelEl.querySelector('.ia-unit-trigger');
+    this.unitLabel = panelEl.querySelector('.ia-unit-label');
+    this.unitMenu = panelEl.querySelector('.ia-unit-menu');
+    this.unit = 'px';
     this.socialTrigger = panelEl.querySelector('.ia-social-trigger');
-    this.socialMenu = this.socialTrigger?.parentElement.querySelector('.ia-more-menu');
+    this.socialMenu = panelEl.querySelector('.ia-social-menu');
     this.socialGrids = [...panelEl.querySelectorAll('.ia-social-grid')];
     this.sizeReadout = panelEl.querySelector('.ia-size-readout');
     this.originalSize = 0;
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
+    this.hasInteracted = false;
     this.locked = true;
     this.resizeTab = 'custom';
     this.rect = {
@@ -471,8 +542,8 @@ export class EditorEngine {
     if (!this.widthInput || !this.naturalW) return;
     const [vpW, vpH] = this.viewportSize();
     const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-    if (document.activeElement !== this.widthInput) this.widthInput.value = b.right - b.left;
-    if (document.activeElement !== this.heightInput) this.heightInput.value = b.bottom - b.top;
+    if (document.activeElement !== this.widthInput) this.widthInput.value = pxToUnit(b.right - b.left, this.unit);
+    if (document.activeElement !== this.heightInput) this.heightInput.value = pxToUnit(b.bottom - b.top, this.unit);
     this.scheduleSizeReadout();
   }
 
@@ -486,9 +557,8 @@ export class EditorEngine {
   // prototype used. Draws the full source image (not just the crop region — Resize's
   // size estimate is about output pixel count + quality, independent of the frame) at
   // the current target dimensions and reads the actual compressed blob size.
-  computeNewSize() {
+  computeNewSize(width, height) {
     return new Promise((resolve) => {
-      const { width, height } = this.getResizeDimensions();
       if (!width || !height) { resolve(null); return; }
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -505,11 +575,16 @@ export class EditorEngine {
   }
 
   async updateSizeReadout() {
+    const original = EditorEngine.formatBytes(this.originalSize);
+    if (!this.hasInteracted) {
+      this.sizeReadout.textContent = `Original size: ${original} New size: --`;
+      return;
+    }
     this.sizeReadoutSeq += 1;
     const seq = this.sizeReadoutSeq;
-    const newSize = await this.computeNewSize();
+    const { width, height } = this.getResizeDimensions();
+    const newSize = await this.computeNewSize(width, height);
     if (seq !== this.sizeReadoutSeq) return; // a newer update superseded this one
-    const original = EditorEngine.formatBytes(this.originalSize);
     const updated = EditorEngine.formatBytes(newSize);
     this.sizeReadout.textContent = `Original size: ${original} New size: ${updated}`;
   }
@@ -537,17 +612,33 @@ export class EditorEngine {
     this.bindResizeTabEvents();
     this.bindDimensionEvents();
     this.bindSocialEvents();
+    this.bindUnitEvents();
     this.resetBtn?.addEventListener('click', () => this.reset());
   }
 
   bindResizeTabEvents() {
     this.resizeTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
-        this.resizeTab = tab.dataset.tab;
-        this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t === tab));
-        this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== tab.dataset.tab));
+        // Social doesn't switch tabs on its own click — like Crop's More, it opens a
+        // dropdown first; picking a platform is what actually switches to it (see
+        // bindSocialEvents), same as picking a More option marks that pill active.
+        if (tab.dataset.tab === 'social') {
+          this.toggleSocialMenu();
+          return;
+        }
+        this.selectResizeTab(tab);
       });
     });
+  }
+
+  selectResizeTab(tab) {
+    this.resizeTab = tab.dataset.tab;
+    this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t === tab));
+    this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== tab.dataset.tab));
+    // Same as Crop's More trigger reverting to "More" when a different pill is picked
+    // (selectAspect's fromMore=false branch) — Social should only show a platform name
+    // while it's actually the active tab, not linger after Custom/Standard is chosen.
+    if (tab !== this.socialTrigger && this.socialTrigger) this.socialTrigger.textContent = 'Social';
   }
 
   bindDimensionEvents() {
@@ -569,35 +660,70 @@ export class EditorEngine {
     const current = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
     let width = current.right - current.left;
     let height = current.bottom - current.top;
-    if (axis === 'width') width = raw;
-    else height = raw;
+    const rawPx = unitToPx(raw, this.unit);
+    if (axis === 'width') width = rawPx;
+    else height = rawPx;
     if (this.locked) {
       const naturalRatio = this.naturalW / this.naturalH;
       if (axis === 'width') height = Math.round(width / naturalRatio);
       else width = Math.round(height * naturalRatio);
     }
     this.rect = frameFromDimensions(width, height, this.naturalW, this.naturalH, vpW, vpH);
+    this.hasInteracted = true;
     this.render();
+  }
+
+  toggleSocialMenu() {
+    const isOpen = !this.socialMenu.classList.contains('hide');
+    this.socialMenu.classList.toggle('hide', isOpen);
+    this.socialTrigger.setAttribute('aria-expanded', String(!isOpen));
+  }
+
+  closeSocialMenu() {
+    this.socialMenu?.classList.add('hide');
+    this.socialTrigger?.setAttribute('aria-expanded', 'false');
   }
 
   bindSocialEvents() {
     if (!this.socialTrigger) return;
-    this.socialTrigger.addEventListener('click', () => {
-      const isOpen = !this.socialMenu.classList.contains('hide');
-      this.socialMenu.classList.toggle('hide', isOpen);
-      this.socialTrigger.setAttribute('aria-expanded', String(!isOpen));
-    });
     this.panel.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         const { platform } = opt.dataset;
         this.socialTrigger.textContent = platform;
         this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platform !== platform));
-        this.socialMenu.classList.add('hide');
-        this.socialTrigger.setAttribute('aria-expanded', 'false');
+        this.closeSocialMenu();
+        this.selectResizeTab(this.socialTrigger);
       });
     });
     document.addEventListener('click', (e) => {
-      if (!this.panel.contains(e.target)) this.socialMenu?.classList.add('hide');
+      if (!this.panel.contains(e.target)) this.closeSocialMenu();
+    });
+  }
+
+  toggleUnitMenu() {
+    const isOpen = !this.unitMenu.classList.contains('hide');
+    this.unitMenu.classList.toggle('hide', isOpen);
+    this.unitTrigger.setAttribute('aria-expanded', String(!isOpen));
+  }
+
+  closeUnitMenu() {
+    this.unitMenu?.classList.add('hide');
+    this.unitTrigger?.setAttribute('aria-expanded', 'false');
+  }
+
+  bindUnitEvents() {
+    if (!this.unitTrigger) return;
+    this.unitTrigger.addEventListener('click', () => this.toggleUnitMenu());
+    this.panel.querySelectorAll('.ia-unit-opt').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        this.unit = opt.dataset.unit;
+        if (this.unitLabel) this.unitLabel.textContent = this.unit;
+        this.closeUnitMenu();
+        this.syncDimensionFields();
+      });
+    });
+    document.addEventListener('click', (e) => {
+      if (!this.panel.contains(e.target)) this.closeUnitMenu();
     });
   }
 
@@ -615,14 +741,18 @@ export class EditorEngine {
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
-      if (this.socialTrigger) this.socialTrigger.textContent = 'Choose a platform';
+      if (this.socialTrigger) this.socialTrigger.textContent = 'Social';
+      this.unit = 'px';
+      if (this.unitLabel) this.unitLabel.textContent = 'px';
       if (this.naturalW) {
         const [vpW, vpH] = this.viewportSize();
         this.rect = centeredRect(null, this.naturalW, this.naturalH, vpW, vpH);
         this.render();
       }
     }
+    this.hasInteracted = false;
     this.setMode(this.isCrop ? 'rotate' : 'quality');
+    this.scheduleSizeReadout();
   }
 
   bindAspectEvents() {
@@ -676,6 +806,7 @@ export class EditorEngine {
     if (this.naturalW) {
       const [vpW, vpH] = this.viewportSize();
       this.rect = centeredRect(ratio, this.naturalW, this.naturalH, vpW, vpH);
+      this.hasInteracted = true;
       this.render();
     }
   }
@@ -715,6 +846,7 @@ export class EditorEngine {
   startDrag(e, kind) {
     e.preventDefault();
     this.resetIdle();
+    this.hasInteracted = true;
     const startX = e.clientX;
     const startY = e.clientY;
     const baseRect = { ...this.rect };
@@ -760,6 +892,7 @@ export class EditorEngine {
     if (this.mode === 'zoom') this.zoom = value;
     else if (this.mode === 'rotate') this.rotate = value;
     else this.quality = value;
+    this.hasInteracted = true;
     this.updateValLabel();
     this.render();
   }
