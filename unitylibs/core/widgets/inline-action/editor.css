@@ -292,11 +292,6 @@
   background: rgb(255 255 255 / 10%);
 }
 
-.ia-editor-placeholder {
-  color: var(--ia-body-muted, #dbdbdb);
-  font-size: 14px;
-}
-
 .ia-aspect-section,
 .ia-further-section {
   padding: 16px;
@@ -376,6 +371,116 @@
 
 .ia-more-opt:hover {
   background: rgb(255 255 255 / 10%);
+}
+
+.ia-resize-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.ia-resize-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ia-resize-tab.is-active {
+  background: var(--ia-white, #fff);
+  color: #111;
+}
+
+.ia-resize-detail-panel.hide {
+  display: none;
+}
+
+.ia-dim-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ia-dim-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.ia-dim-label {
+  font-size: 12px;
+  color: var(--ia-body-muted, #dbdbdb);
+}
+
+.ia-dim-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: #2a2a2a;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.ia-dim-lock {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: #2a2a2a;
+  color: var(--ia-white, #fff);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.ia-dim-lock.is-active {
+  opacity: 1;
+  background: rgb(255 255 255 / 15%);
+}
+
+.ia-dim-unit {
+  flex: 0 0 auto;
+  padding-bottom: 9px;
+  font-size: 13px;
+  color: var(--ia-body-muted, #dbdbdb);
+}
+
+.ia-size-readout {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ia-body-muted, #dbdbdb);
+}
+
+.ia-social-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: #2a2a2a;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ia-social-grids {
+  margin-top: 12px;
+}
+
+.ia-social-grid.hide {
+  display: none;
 }
 
 .ia-cta-row {

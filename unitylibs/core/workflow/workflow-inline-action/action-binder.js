@@ -814,9 +814,11 @@ export default class ActionBinder {
     if (!engine) return;
     const bounds = engine.getSourceBounds();
     const { default: editorFlow } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
-    const payload = editorFlow.buildCropPayload(bounds, this.assetHref);
+    const payload = this.operation === 'resize'
+      ? editorFlow.buildResizePayload(bounds, engine.getResizeDimensions(), this.assetHref)
+      : editorFlow.buildCropPayload(bounds, this.assetHref);
     // eslint-disable-next-line no-console
-    console.log('[inline-action editor] crop payload', payload);
+    console.log(`[inline-action editor] ${this.operation} payload`, payload);
   }
 
   bindUploadAnalytics(b) {
