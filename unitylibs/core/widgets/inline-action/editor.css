@@ -195,17 +195,21 @@
 }
 
 .ia-toggle__btn {
-  width: 24px;
-  height: 24px;
   border: none;
+  border-radius: 999px;
   background: transparent;
-  opacity: 0.3;
+  color: var(--ia-white, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.5;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 10px;
 }
 
 .ia-toggle__btn.is-active {
   opacity: 1;
+  background: rgb(255 255 255 / 15%);
 }
 
 .ia-slider {
@@ -255,6 +259,33 @@
   font-size: 21px;
   font-weight: 700;
   color: var(--ia-heading-text, #f2f2f2);
+}
+
+.ia-editor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ia-editor-reset,
+.ia-editor-header .ia-reupload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  background: transparent;
+  color: var(--ia-white, #fff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ia-editor-reset:hover,
+.ia-editor-header .ia-reupload-btn:hover {
+  background: rgb(255 255 255 / 10%);
 }
 
 .ia-editor-placeholder {

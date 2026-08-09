@@ -60,55 +60,84 @@ export function centeredRect(ratio, naturalW, naturalH, viewportW, viewportH) {
   };
 }
 
-export function resizeRect(base, handle, dxPct, dyPct, ratioLock) {
-  let left = base.x;
-  let top = base.y;
-  let right = base.x + base.w;
-  let bottom = base.y + base.h;
-  const edges = HANDLE_EDGES[handle] || [];
-  if (edges.includes('left')) left = clamp(left + dxPct, 0, right - MIN_PCT);
-  if (edges.includes('right')) right = clamp(right + dxPct, left + MIN_PCT, 100);
-  if (edges.includes('top')) top = clamp(top + dyPct, 0, bottom - MIN_PCT);
-  if (edges.includes('bottom')) bottom = clamp(bottom + dyPct, top + MIN_PCT, 100);
+function edgeDelta(movesNeg, movesPos, delta) {
+  if (movesNeg) return -delta;
+  if (movesPos) return delta;
+  return 0;
+}
 
-  let newW = right - left;
-  let newH = bottom - top;
+// Resizes from a fixed anchor (the corner/edge opposite whichever the handle drags).
+// When ratioLock is set, viewport-bounds overflow is resolved by scaling BOTH
+// dimensions down together (from whichever axis is more constrained), so the ratio
+// stays exact even when a side hits the viewport edge — clamping w/h independently
+// would otherwise silently break the locked ratio right at the boundary.
+export function resizeRect(base, handle, dxPct, dyPct, ratioLock) {
+  const edges = HANDLE_EDGES[handle] || [];
+  const movesLeft = edges.includes('left');
+  const movesRight = edges.includes('right');
+  const movesTop = edges.includes('top');
+  const movesBottom = edges.includes('bottom');
+
+  const anchorX = movesLeft ? base.x + base.w : base.x;
+  const anchorY = movesTop ? base.y + base.h : base.y;
+
+  let newW = Math.max(base.w + edgeDelta(movesLeft, movesRight, dxPct), MIN_PCT);
+  let newH = Math.max(base.h + edgeDelta(movesTop, movesBottom, dyPct), MIN_PCT);
+
   if (ratioLock) {
-    if (edges.includes('left') || edges.includes('right')) {
-      newH = newW / ratioLock;
-      if (edges.includes('top')) top = bottom - newH;
-      else bottom = top + newH;
-    } else if (edges.includes('top') || edges.includes('bottom')) {
-      newW = newH * ratioLock;
-      if (edges.includes('left')) left = right - newW;
-      else right = left + newW;
+    if (movesLeft || movesRight) newH = newW / ratioLock;
+    else if (movesTop || movesBottom) newW = newH * ratioLock;
+  }
+
+  const maxW = movesLeft ? anchorX : 100 - anchorX;
+  const maxH = movesTop ? anchorY : 100 - anchorY;
+  if (newW > maxW || newH > maxH) {
+    if (ratioLock) {
+      const scale = Math.min(maxW / newW, maxH / newH);
+      newW *= scale;
+      newH *= scale;
+    } else {
+      newW = Math.min(newW, maxW);
+      newH = Math.min(newH, maxH);
     }
   }
+  newW = Math.max(newW, MIN_PCT);
+  newH = Math.max(newH, MIN_PCT);
+
+  const left = movesLeft ? anchorX - newW : anchorX;
+  const top = movesTop ? anchorY - newH : anchorY;
   return {
-    x: clamp(left, 0, 100),
-    y: clamp(top, 0, 100),
-    w: clamp(newW, MIN_PCT, 100),
-    h: clamp(newH, MIN_PCT, 100),
+    x: clamp(left, 0, 100 - newW),
+    y: clamp(top, 0, 100 - newH),
+    w: newW,
+    h: newH,
   };
 }
 
 // Converts the frame's viewport-% rect into source-image pixel bounds — this is what
-// actually feeds edits.document.crop.bounds. Ignores rotate/zoom composition for now
-// (rotate has no field in the API payload we've seen; zoom-folding is a follow-up).
-export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH) {
+// actually feeds edits.document.crop.bounds. Folds in zoom: the image is scaled around
+// the viewport's own center (transform-origin: center) while the frame stays fixed in
+// viewport-space, so a zoomed-in image maps a fixed on-screen frame to a smaller,
+// centered source region. Un-scaling each edge around the viewport center before the
+// existing offset/cs conversion recovers that region exactly (zoom=0 reduces to the
+// original unscaled math). Rotation still has no field in the API payload we've seen,
+// so it isn't folded in here — that's still open.
+export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0) {
   const { cs, w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
   const offsetY = (viewportH - dispH) / 2;
-  const rectPx = {
-    left: (rect.x / 100) * viewportW,
-    top: (rect.y / 100) * viewportH,
-    width: (rect.w / 100) * viewportW,
-    height: (rect.h / 100) * viewportH,
-  };
-  const left = clamp(Math.round((rectPx.left - offsetX) / cs), 0, naturalW);
-  const top = clamp(Math.round((rectPx.top - offsetY) / cs), 0, naturalH);
-  const right = clamp(Math.round((rectPx.left + rectPx.width - offsetX) / cs), left, naturalW);
-  const bottom = clamp(Math.round((rectPx.top + rectPx.height - offsetY) / cs), top, naturalH);
+  const scale = zoomScale(zoom);
+  const unscale = (px, size) => (size / 2) + ((px - (size / 2)) / scale);
+
+  const leftPx = unscale((rect.x / 100) * viewportW, viewportW);
+  const topPx = unscale((rect.y / 100) * viewportH, viewportH);
+  const rightPx = unscale(((rect.x + rect.w) / 100) * viewportW, viewportW);
+  const bottomPx = unscale(((rect.y + rect.h) / 100) * viewportH, viewportH);
+
+  const left = clamp(Math.round((leftPx - offsetX) / cs), 0, naturalW);
+  const top = clamp(Math.round((topPx - offsetY) / cs), 0, naturalH);
+  const right = clamp(Math.round((rightPx - offsetX) / cs), left, naturalW);
+  const bottom = clamp(Math.round((bottomPx - offsetY) / cs), top, naturalH);
   return { left, top, right, bottom };
 }
 
@@ -126,6 +155,7 @@ function buildFrame() {
 
 function buildAdjustBar(isCrop) {
   const modeA = isCrop ? 'rotate' : 'quality';
+  const labelA = isCrop ? 'Rotate' : 'Quality';
   const bar = createTag('div', { class: 'ia-adjust-bar' });
   const toggle = createTag('div', { class: 'ia-toggle' });
   toggle.append(
@@ -133,14 +163,14 @@ function buildAdjustBar(isCrop) {
       type: 'button',
       class: 'ia-toggle__btn is-active',
       'data-mode': modeA,
-      'aria-label': modeA,
-    }),
+      'aria-label': labelA,
+    }, labelA),
     createTag('button', {
       type: 'button',
       class: 'ia-toggle__btn',
       'data-mode': 'zoom',
-      'aria-label': 'zoom',
-    }),
+      'aria-label': 'Zoom',
+    }, 'Zoom'),
   );
   const slider = createTag('input', {
     type: 'range',
@@ -228,13 +258,18 @@ export function buildEditorPanel(meta) {
   const isCrop = meta.operation === 'crop';
   const panel = createTag('div', { class: 'ia-editor-panel' });
   const header = createTag('div', { class: 'ia-editor-header' });
-  header.append(
-    createTag('span', { class: 'ia-editor-title' }, isCrop ? 'Crop your image' : 'Resize your image'),
+  const actions = createTag('div', { class: 'ia-editor-header-actions' });
+  actions.append(
+    createTag('button', { type: 'button', class: 'ia-editor-reset' }, 'Reset'),
     createTag('button', {
       type: 'button',
       class: 'ia-editor-reupload ia-reupload-btn',
       'aria-label': 'Upload another image',
-    }),
+    }, 'Upload'),
+  );
+  header.append(
+    createTag('span', { class: 'ia-editor-title' }, isCrop ? 'Crop your image' : 'Resize your image'),
+    actions,
   );
   panel.append(header);
   if (isCrop) {
@@ -256,6 +291,7 @@ export class EditorEngine {
     this.valEl = stageEl.querySelector('.ia-val');
     this.toggleBtns = [...stageEl.querySelectorAll('.ia-toggle__btn')];
     this.panel = panelEl;
+    this.resetBtn = panelEl.querySelector('.ia-editor-reset');
     this.aspectPills = [...panelEl.querySelectorAll('.ia-aspect-pill')];
     this.moreTrigger = panelEl.querySelector('.ia-more-trigger');
     this.moreMenu = panelEl.querySelector('.ia-more-menu');
@@ -328,6 +364,15 @@ export class EditorEngine {
     this.setMode(this.mode);
     this.resetIdle();
     this.bindAspectEvents();
+    this.resetBtn?.addEventListener('click', () => this.reset());
+  }
+
+  reset() {
+    this.rotate = 0;
+    this.zoom = 0;
+    this.quality = 100;
+    this.selectAspect(null, 'Freeform');
+    this.setMode(this.isCrop ? 'rotate' : 'quality');
   }
 
   bindAspectEvents() {
@@ -387,7 +432,10 @@ export class EditorEngine {
 
   getSourceBounds() {
     const [vpW, vpH] = this.viewportSize();
-    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH);
+    // Resize's zoom is inspection-only (doesn't affect output) per the design — only
+    // fold it in for Crop, where zooming behind a fixed frame changes the real selection.
+    const zoomForBounds = this.isCrop ? this.zoom : 0;
+    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, zoomForBounds);
   }
 
   startDrag(e, kind) {
