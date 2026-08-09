@@ -407,6 +407,10 @@ export class EditorEngine {
     this.socialTrigger = panelEl.querySelector('.ia-social-trigger');
     this.socialMenu = this.socialTrigger?.parentElement.querySelector('.ia-more-menu');
     this.socialGrids = [...panelEl.querySelectorAll('.ia-social-grid')];
+    this.sizeReadout = panelEl.querySelector('.ia-size-readout');
+    this.originalSize = 0;
+    this.sizeReadoutTimer = null;
+    this.sizeReadoutSeq = 0;
     this.locked = true;
     this.resizeTab = 'custom';
     this.rect = {
@@ -431,7 +435,8 @@ export class EditorEngine {
     return [width, height];
   }
 
-  async setImage(url) {
+  async setImage(url, originalSize = 0) {
+    this.originalSize = originalSize;
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
@@ -468,6 +473,45 @@ export class EditorEngine {
     const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
     if (document.activeElement !== this.widthInput) this.widthInput.value = b.right - b.left;
     if (document.activeElement !== this.heightInput) this.heightInput.value = b.bottom - b.top;
+    this.scheduleSizeReadout();
+  }
+
+  static formatBytes(bytes) {
+    if (!bytes) return '--';
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  // Real byte size via the browser's own JPEG encoder — not the w*h*3 heuristic the
+  // prototype used. Draws the full source image (not just the crop region — Resize's
+  // size estimate is about output pixel count + quality, independent of the frame) at
+  // the current target dimensions and reads the actual compressed blob size.
+  computeNewSize() {
+    return new Promise((resolve) => {
+      const { width, height } = this.getResizeDimensions();
+      if (!width || !height) { resolve(null); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(this.sharpImg, 0, 0, width, height);
+      canvas.toBlob((blob) => resolve(blob?.size ?? null), 'image/jpeg', this.quality / 100);
+    });
+  }
+
+  scheduleSizeReadout() {
+    if (!this.sizeReadout) return;
+    clearTimeout(this.sizeReadoutTimer);
+    this.sizeReadoutTimer = setTimeout(() => this.updateSizeReadout(), 150);
+  }
+
+  async updateSizeReadout() {
+    this.sizeReadoutSeq += 1;
+    const seq = this.sizeReadoutSeq;
+    const newSize = await this.computeNewSize();
+    if (seq !== this.sizeReadoutSeq) return; // a newer update superseded this one
+    const original = EditorEngine.formatBytes(this.originalSize);
+    const updated = EditorEngine.formatBytes(newSize);
+    this.sizeReadout.textContent = `Original size: ${original} New size: ${updated}`;
   }
 
   bindEvents() {

@@ -457,8 +457,8 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
-  async setEditorImage(url) {
-    await this.editorEngine?.setImage(url);
+  async setEditorImage(url, originalSize) {
+    await this.editorEngine?.setImage(url, originalSize);
   }
 
   async initWidget() {

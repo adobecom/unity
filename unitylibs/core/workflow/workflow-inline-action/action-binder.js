@@ -682,14 +682,14 @@ export default class ActionBinder {
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
     if (this.operation !== 'removeBackground') {
-      await this.editorUploadFlow(correctedFile);
+      await this.editorUploadFlow(correctedFile, file.size);
       return;
     }
     if (isGuest === false) await this.signedInFlow(correctedFile);
     else await this.anonymousFlow(correctedFile);
   }
 
-  async editorUploadFlow(file) {
+  async editorUploadFlow(file, originalSize = file.size) {
     this.widgetRef?.setState(InlineActionState.LOADING);
     this.widgetRef?.setProgress(0);
     try {
@@ -700,7 +700,7 @@ export default class ActionBinder {
       }
       this.widgetRef?.setProgress(PROGRESS.COMPLETE);
       this.widgetRef?.setState(InlineActionState.COMPLETE);
-      await this.widgetRef?.setEditorImage(URL.createObjectURL(file));
+      await this.widgetRef?.setEditorImage(URL.createObjectURL(file), originalSize);
     } catch (e) {
       if (!e.analyticsTracked) this.trackServerError('upload', e);
       this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
