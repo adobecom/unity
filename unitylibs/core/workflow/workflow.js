@@ -63,15 +63,17 @@ class WfInitiator {
         ...this.getWidgetPaths(),
       ],
       // Option A (shared primitives): preload ONLY what the initial render needs —
-      // widget js/css, sprite and the critical shared primitives + their CSS.
-      // dropdown.js and the citation mock are lazy-imported on first Search, so they
-      // stay out of the priority list and load after LCP.
+      // widget js/css, sprite and the render-critical shared primitives + their CSS.
+      // The dropdown primitive is render-critical too (the citation-style dropdown
+      // renders at init). Only the citation search data (citation-mock.js) is
+      // lazy-imported on first Search, so it stays out of the priority list.
       'workflow-prompt-upload': [
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
         `${getUnityLibs()}/core/widgets/shared/widget-base.js`,
         `${getUnityLibs()}/core/widgets/shared/dropzone.js`,
         `${getUnityLibs()}/core/widgets/shared/prompt-input.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropdown.js`,
         `${getUnityLibs()}/core/widgets/shared/shared.css`,
       ],
       'workflow-inline-action': [

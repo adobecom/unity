@@ -83,6 +83,22 @@
       ".gen-btn": "generate"
     }
   },
+  "hero-marquee": {
+    "selector": ".copy",
+    "source": ".copy",
+    "target": ".copy",
+    "insert": "after",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".drop-zone": "upload",
+      "#file-upload": "upload",
+      ".gen-btn": "generate"
+    }
+  },
   "verb-widget": {
     "renderWidget": false,
     "selector": ".verb-wrapper",

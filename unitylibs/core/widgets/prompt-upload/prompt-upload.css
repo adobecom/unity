@@ -57,6 +57,16 @@
 .pu-search-row .inp-field { flex: 1; }
 .pu-search-row .act-wrap { flex-shrink: 0; }
 
+/* Citation-style dropdown (e.g. APA editions) sitting inside the search row */
+.pu-search-row .pu-style-dropdown { flex-shrink: 0; }
+
+.pu-search-row .pu-style-dropdown .selected-model {
+  border: none;
+  border-inline-start: 1px solid #e1e1e1;
+  border-radius: 0;
+  white-space: nowrap;
+}
+
 /* Citation results dropdown */
 .pu-results { position: relative; }
 
