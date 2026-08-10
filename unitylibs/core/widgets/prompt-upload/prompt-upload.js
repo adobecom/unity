@@ -2,20 +2,28 @@
  * prompt-upload widget — Option A (shared primitives).
  *
  * Composes the reusable primitives in `core/widgets/shared/` instead of duplicating
- * dropzone/dropdown/input logic per widget. Critical-path primitives are statically
- * imported (and preloaded via priorityLibFetch); the dropdown + citation search are
- * lazy-imported on first interaction so they never block initial render / LCP.
+ * dropzone/dropdown/input logic per widget. Render-critical primitives are statically
+ * imported (and preloaded via priorityLibFetch); only the citation search data is
+ * lazy-imported on first Search so it never blocks initial render / LCP.
  *
- * Renders the Citation Generator surface: multi-file dropzone (left) + search field
- * with a disabled-until-typing Search CTA and a keyword -> citation results dropdown (right).
+ * Renders the Citation Generator surface from the authored `unity` block:
+ *   - multi-file dropzone (left)              <- icon-show-dropzone / icon-dropzone-title
+ *   - search field + citation-style dropdown  <- icon-show-search / icon-placeholder-text /
+ *                                                icon-cta-text / icon-show-citationdropdown-values
+ *   - disabled-until-typing CTA (req #3) and a keyword -> citation results dropdown (req #2).
  *
  * Honors the workflow-prompt-upload binder DOM contract: `.drop-zone`, `#file-upload`,
- * `#pbuPromptInput`, `.gen-btn`, `.ex-unity-wrap`, `pbu-image-selected`, `pbu-delete-image`.
+ * `#pbuPromptInput`, `.gen-btn`, `.ex-unity-wrap`, `pbu-image-selected`, `pbu-delete-image`,
+ * and `data-selected-option-value` (paired with target-config `optionDropdownPayloadKey`).
  */
 import { createTag } from '../../../scripts/utils.js';
-import { mountWidget, placeholderText, labelForField } from '../shared/widget-base.js';
+import { mountWidget, placeholderText, labelForField, svgIcon } from '../shared/widget-base.js';
 import { buildDropzone, wirePreview } from '../shared/dropzone.js';
 import buildPromptInput from '../shared/prompt-input.js';
+import {
+  buildDropdownShell, attachDropdownBehavior, syncDropdownSelection,
+  closeDropdown, setComboboxTriggerAriaLabel,
+} from '../shared/dropdown.js';
 
 export default class PromptUploadWidget {
   constructor(target, el, workflowCfg, spriteCon) {
@@ -25,20 +33,29 @@ export default class PromptUploadWidget {
     this.spriteCon = spriteCon;
     this.widgetWrap = null;
     this.searchCta = null;
+    this.genBtn = null;
     this.resultsEl = null;
-    this.dropdownRefs = null;
+    this.selectedOption = '';
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-PU-Widget' };
   }
 
   get cfg() { return this.workflowCfg?.targetCfg || {}; }
 
+  /* Reads an authored boolean row (e.g. icon-show-dropzone -> "true"); falls back to cfg. */
+  authoredFlag(iconClass, fallback) {
+    const raw = placeholderText(this.el, iconClass);
+    if (raw === '') return fallback;
+    return raw.trim().toLowerCase() === 'true';
+  }
+
   buildLeftSection() {
-    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, placeholderText(this.el, 'icon-dropzone-label') || 'Upload source files');
+    const heading = placeholderText(this.el, 'icon-dropzone-title') || 'Upload source files';
+    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, heading);
     const hint = placeholderText(this.el, 'icon-dropzone-hint');
     const refs = buildDropzone({
       allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
       multiple: true,
-      uploadLabel: 'Upload source files',
+      uploadLabel: heading,
     });
     const leftSection = createTag('div', { class: 'pu-left-section' });
     leftSection.append(uploadLabel, refs.wrap);
@@ -46,16 +63,57 @@ export default class PromptUploadWidget {
     return { leftSection, dropZoneRefs: refs };
   }
 
+  setSelectedOption(value) {
+    this.selectedOption = value;
+    this.widgetWrap?.setAttribute('data-selected-option-value', value);
+  }
+
+  /* Persistent citation-style dropdown (e.g. APA editions) from icon-show-citationdropdown-values. */
+  buildCitationStyleDropdown() {
+    const raw = placeholderText(this.el, 'icon-show-citationdropdown-values');
+    const options = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!options.length) return null;
+    [this.selectedOption] = options;
+    const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Citation style', menuId: 'pu-citation-style-menu', extraClass: 'pu-style-dropdown' });
+    nameContainer.textContent = this.selectedOption;
+    setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
+
+    options.forEach((opt, idx) => {
+      const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'aria-selected': idx === 0 ? 'true' : 'false', 'data-option-value': opt });
+      link.append(
+        createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon')),
+        createTag('span', { class: 'model-name' }, opt),
+      );
+      const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
+      li.append(link);
+      list.append(li);
+    });
+
+    list.addEventListener('click', (e) => {
+      const link = e.target.closest('a.model-link');
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const value = link.getAttribute('data-option-value') || '';
+      nameContainer.textContent = value;
+      setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
+      this.setSelectedOption(value);
+      syncDropdownSelection(list, link);
+      closeDropdown(container, triggerBtn, list);
+    });
+    attachDropdownBehavior(container, triggerBtn, list);
+    return container;
+  }
+
   buildSearchCta() {
-    const label = labelForField(this.el, 'icon-generate', 'Search');
-    const btn = createTag('a', {
+    const label = labelForField(this.el, 'icon-cta-text', 'Generate');
+    return createTag('a', {
       href: '#',
       class: 'unity-act-btn search-cta disabled',
       'aria-disabled': 'true',
       'aria-label': label,
       role: 'button',
     }, createTag('div', { class: 'btn-txt' }, label));
-    return btn;
   }
 
   setSearchEnabled(enabled) {
@@ -65,9 +123,9 @@ export default class PromptUploadWidget {
   }
 
   buildRightSection() {
-    const promptHeading = placeholderText(this.el, 'icon-placeholder-prompt')
+    const promptHeading = placeholderText(this.el, 'icon-placeholder-text')
       || labelForField(this.el, 'icon-label-prompt', 'Search by URL, title, ISBN, DOI, or keywords');
-    const promptLabel = createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-copy-label' }, promptHeading);
+    const promptLabel = createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-copy-label unity-slf-sr-only' }, promptHeading);
 
     const input = buildPromptInput({
       ariaLabel: promptHeading,
@@ -94,11 +152,14 @@ export default class PromptUploadWidget {
 
     this.resultsEl = createTag('div', { class: 'pu-results' });
 
+    const styleDropdown = this.buildCitationStyleDropdown();
     const actWrap = createTag('div', { class: 'act-wrap' });
     actWrap.append(this.searchCta, this.genBtn);
 
     const searchRow = createTag('div', { class: 'pu-search-row' });
-    searchRow.append(input, actWrap);
+    searchRow.append(input);
+    if (styleDropdown) searchRow.append(styleDropdown);
+    searchRow.append(actWrap);
 
     const container = createTag('div', { class: 'pu-prompt-bar-container' });
     container.append(promptLabel, searchRow, this.resultsEl);
@@ -113,18 +174,11 @@ export default class PromptUploadWidget {
     const query = input?.value?.trim() || '';
     if (!query) return;
     try {
-      // Deferred modules: only fetched on first interaction (kept out of preload/LCP).
-      const [{ buildDropdownShell, attachDropdownBehavior, syncDropdownSelection }, { default: searchCitations }] = await Promise.all([
-        import('../shared/dropdown.js'),
-        import('./citation-mock.js'),
-      ]);
+      // Only the search data is deferred; the dropdown primitive is already loaded.
+      const { default: searchCitations } = await import('./citation-mock.js');
       const citations = await searchCitations(query);
       this.resultsEl.innerHTML = '';
-      const { container, triggerBtn, nameContainer, list } = buildDropdownShell({
-        label: 'Matching citations',
-        menuId: 'pu-citation-menu',
-        extraClass: 'pu-citation-dropdown',
-      });
+      const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Matching citations', menuId: 'pu-citation-menu', extraClass: 'pu-citation-dropdown' });
       nameContainer.textContent = `${citations.length} result${citations.length === 1 ? '' : 's'} for “${query}”`;
 
       citations.forEach((c, idx) => {
@@ -167,8 +221,8 @@ export default class PromptUploadWidget {
   }
 
   async initWidget() {
-    const showUpload = this.cfg.showUpload !== false;
-    const showPrompt = this.cfg.showPrompt !== false;
+    const showUpload = this.authoredFlag('icon-show-dropzone', this.cfg.showUpload !== false);
+    const showPrompt = this.authoredFlag('icon-show-search', this.cfg.showPrompt !== false);
 
     const main = createTag('div', { class: 'pu-main' });
     let dropZoneRefs = null;
@@ -189,6 +243,7 @@ export default class PromptUploadWidget {
       wrapClass: 'pu-widget',
     });
 
+    if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     if (dropZoneRefs) wirePreview(this.widgetWrap, dropZoneRefs);
     return this.cfg.actionMap;
   }
