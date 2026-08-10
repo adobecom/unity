@@ -14,7 +14,7 @@
     },
     "sendSplunkAnalytics": true,
     "verbsWithoutMfuToSfuFallback": ["compress-pdf"],
-    "awaitFinalizeVerbs": ["word-to-pdf"],
+    "awaitFinalizeVerbs": ["word-to-pdf", "ppt-to-pdf", "excel-to-pdf"],
     "directUploadVerbs": ["word-to-pdf", "ppt-to-pdf", "excel-to-pdf", "jpg-to-pdf", "png-to-pdf", "heic-to-pdf"],
     "directUploadMaxSize": 1048576,
     "nonpdfMfuFeedbackScreenTypeNonpdf": ["combine-pdf"],
@@ -100,6 +100,20 @@
     "selector": ".foreground",
     "source": ".foreground .verb-marquee-container",
     "target": ".foreground .verb-marquee-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".foreground": "upload",
+      "#file-upload": "upload"
+    }
+  },
+  "verb-redesign-test": {
+    "selector": ".foreground",
+    "source": ".foreground .vm2-container",
+    "target": ".foreground .vm2-container",
     "showSplashScreen": true,
     "splashScreenConfig": {
       "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",

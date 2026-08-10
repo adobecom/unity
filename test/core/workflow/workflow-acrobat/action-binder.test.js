@@ -1075,6 +1075,28 @@ describe('ActionBinder', () => {
           expect(result).to.be.true;
         });
 
+        it('should set referrer to the authored referrer when present', async () => {
+          actionBinder.workflowCfg.referrer = 'file-compressor';
+          const cOpts = { payload: { verb: 'compress-pdf' } };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.referrer).to.equal('file-compressor');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should fall back referrer to the verb when no referrer is authored', async () => {
+          actionBinder.workflowCfg.referrer = '';
+          const cOpts = { payload: { verb: 'compress-pdf' } };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.referrer).to.equal('compress-pdf');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
         it('should handle redirect with feedback for multi-file validation failure', async () => {
           actionBinder.multiFileValidationFailure = true;
           const cOpts = { payload: {} };
@@ -1590,6 +1612,24 @@ describe('ActionBinder', () => {
         // The else branch in continueInApp calls updateProgressBar without error handling
         expect(() => actionBinder.transitionScreen.updateProgressBar(splashLayer, 100)).to.throw(TypeError, /null/);
         expect(actionBinder.dispatchErrorToast.called).to.be.false;
+      });
+
+      it('should reuse the existing transition screen and set LOADER_LIMIT to 100', async () => {
+        const splashLayer = document.createElement('div');
+        const existingTransitionScreen = {
+          splashScreenEl: splashLayer,
+          LOADER_LIMIT: 95,
+          clearProgressBarHandler: sinon.stub(),
+          updateProgressBar: sinon.stub(),
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        actionBinder.transitionScreen = existingTransitionScreen;
+        await actionBinder.continueInApp();
+        expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
+        expect(actionBinder.LOADER_LIMIT).to.equal(100);
+        expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
+        expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
+        expect(existingTransitionScreen.updateProgressBar.calledOnceWith(splashLayer, 100)).to.be.true;
       });
     });
 
@@ -2913,23 +2953,20 @@ describe('ActionBinder', () => {
   });
 
   describe('image-to-pdf verbs onboarding', () => {
-    const NEW_IMAGE_VERBS = [
-      'image-to-pdf',
-      'bmp-to-pdf',
-      'gif-to-pdf',
-      'tiff-to-pdf',
-      'indd-to-pdf',
-      'psd-to-pdf',
-      'ai-to-pdf',
+    const IMAGE_VERBS = ['image-to-pdf', 'bmp-to-pdf', 'gif-to-pdf', 'tiff-to-pdf'];
+    const ADOBE_DESIGN_VERBS = [
+      { verb: 'psd-to-pdf', filetypeKey: 'allowed-filetypes-psd-only' },
+      { verb: 'ai-to-pdf', filetypeKey: 'allowed-filetypes-ai-only' },
+      { verb: 'indd-to-pdf', filetypeKey: 'allowed-filetypes-indd-only' },
     ];
 
-    NEW_IMAGE_VERBS.forEach((verb) => {
+    IMAGE_VERBS.forEach((verb) => {
       it(`should have correct limits configuration for ${verb} in LIMITS_MAP`, () => {
         const verbLimits = ActionBinder.LIMITS_MAP[verb];
         expect(verbLimits).to.exist;
         expect(verbLimits).to.deep.equal([
           'hybrid',
-          'allowed-filetypes-all',
+          'allowed-filetypes-no-adobe-design',
           'allowed-filetypes-heic',
           'max-filesize-100-mb',
         ]);
@@ -2943,8 +2980,28 @@ describe('ActionBinder', () => {
         expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-heic');
       });
 
-      it(`should allow all file types for ${verb}`, () => {
-        expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-all');
+      it(`should use no-adobe-design file types for ${verb}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('allowed-filetypes-no-adobe-design');
+      });
+
+      it(`should have max-filesize-100-mb for ${verb}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include('max-filesize-100-mb');
+      });
+    });
+
+    ADOBE_DESIGN_VERBS.forEach(({ verb, filetypeKey }) => {
+      it(`should have correct limits configuration for ${verb} in LIMITS_MAP`, () => {
+        const verbLimits = ActionBinder.LIMITS_MAP[verb];
+        expect(verbLimits).to.exist;
+        expect(verbLimits).to.deep.equal(['hybrid', filetypeKey, 'max-filesize-100-mb']);
+      });
+
+      it(`should configure ${verb} as hybrid mode`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb][0]).to.equal('hybrid');
+      });
+
+      it(`should restrict ${verb} to its own format via ${filetypeKey}`, () => {
+        expect(ActionBinder.LIMITS_MAP[verb]).to.include(filetypeKey);
       });
 
       it(`should have max-filesize-100-mb for ${verb}`, () => {

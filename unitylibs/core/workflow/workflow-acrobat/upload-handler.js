@@ -19,9 +19,10 @@ export default class UploadHandler {
     return feature === 'pdf-ai' ? 'chat-pdf-pdf-ai' : feature;
   }
 
-  async isDocOrDocx(file) {
+  async isOfficeFile(file) {
     const { getExtension } = await import('../../../utils/FileUtils.js');
-    return ['doc', 'docx'].includes(getExtension(file?.name || '').toLowerCase());
+    const officeExtensions = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'];
+    return officeExtensions.includes(getExtension(file?.name || '').toLowerCase());
   }
 
   async directUploadAsset(file, signal, workflowId = null) {
@@ -269,7 +270,7 @@ export default class UploadHandler {
 
   async isAwaitFinalizeVerb(verb, file) {
     const awaitFinalizeVerbs = this.actionBinder.workflowCfg.targetCfg.awaitFinalizeVerbs || [];
-    return awaitFinalizeVerbs.includes(verb) && await this.isDocOrDocx(file);
+    return awaitFinalizeVerbs.includes(verb) && await this.isOfficeFile(file);
   }
 
   async getFinalizeRetryConfig(verb, file) {
@@ -651,6 +652,7 @@ export default class UploadHandler {
   async initSplashScreen() {
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.actionBinder.transitionScreen.splashScreenEl, this.actionBinder.initActionListeners, this.actionBinder.LOADER_LIMIT, this.actionBinder.workflowCfg);
+    this.actionBinder.transitionScreen = this.transitionScreen;
   }
 
   async showSplashScreen(displayOn = false) {

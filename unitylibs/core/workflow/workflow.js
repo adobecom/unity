@@ -209,11 +209,13 @@ class WfInitiator {
     let product = '';
     let feature = '';
     let psw = '';
+    let referrer = '';
     [...this.el.classList].forEach((cn) => {
       if (cn.match('workflow-')) wfName = cn;
       if (cn.match('product-')) product = cn.replace('product-', '');
       if (cn.match('feature-')) feature = cn.replace('feature-', '');
       if (cn.match('psw-enabled')) psw = cn;
+      if (cn.startsWith('referrer-')) referrer = cn.replace('referrer-', '');
     });
     const workflowCfg = {
       'workflow-photoshop': {
@@ -301,12 +303,13 @@ class WfInitiator {
       errors: {},
       supportedTexts: workflowCfg[wfName]?.stList ?? null,
       pswFeature: !!psw,
+      referrer,
     };
   }
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-dropzone');
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-redesign-test, .verb-dropzone');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
