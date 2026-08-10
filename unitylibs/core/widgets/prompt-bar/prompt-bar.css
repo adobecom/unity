@@ -1395,10 +1395,26 @@
   }
 }
 
-@media (min-width: 1025px), (orientation: landscape) and (max-height: 500px) {
+@media (min-width: 1025px) {
   :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verb-list {
     top: auto;
     bottom: 100%;
+    margin-bottom: 8px;
+    animation: firefly-menu-up-out 0.2s ease forwards;
+  }
+
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+    animation: firefly-menu-up-in 0.4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
+  }
+}
+
+@media screen and (max-width: 599px) {
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container .verb-list,
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container .verb-list {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
     margin-bottom: 8px;
     animation: firefly-menu-up-out 0.2s ease forwards;
   }
