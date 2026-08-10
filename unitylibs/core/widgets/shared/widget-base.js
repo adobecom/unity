@@ -64,9 +64,12 @@ export function mountWidget({
   widgetWrap.append(unitySprite, root);
   if (legalFoot) widgetWrap.append(legalFoot);
 
-  const interactArea = target?.querySelector('.copy');
+  // Resolve the anchor within the whole interactive area (the wrapped selector),
+  // so `target: ".copy"` + `insert: "after"` places the widget as a sibling right
+  // after the copy column. Fall back to appending inside `.copy` (or the area).
+  const interactArea = target?.querySelector('.copy') || target;
   const { target: anchorSelector, insert } = workflowCfg.targetCfg || {};
-  const anchor = anchorSelector ? interactArea?.querySelector(anchorSelector) : null;
+  const anchor = anchorSelector ? target?.querySelector(anchorSelector) : null;
   if (anchor && insert === 'before') anchor.before(widgetWrap);
   else if (anchor) anchor.after(widgetWrap);
   else interactArea?.appendChild(widgetWrap);
