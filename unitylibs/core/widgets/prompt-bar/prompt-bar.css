@@ -1410,6 +1410,10 @@
 }
 
 @media screen and (max-width: 599px) {
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
+    position: relative;
+  }
+
   :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container .verb-list,
   :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container .verb-list {
     top: auto;
