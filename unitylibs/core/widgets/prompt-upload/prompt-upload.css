@@ -1,12 +1,12 @@
 /*
  * prompt-upload widget layout (Option A).
  * Primitive styling (dropzone, input, dropdown, buttons) comes from shared/shared.css.
- * This file only owns the two-column Citation Generator layout + results styling.
+ * This file owns the two-column Citation Generator layout + results styling.
  */
 
 .pu-main {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   align-items: stretch;
   width: 100%;
 }
@@ -15,56 +15,78 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 
+/* Divider between the dropzone (left) and the search area (right) */
 .pu-right-section {
   flex: 1;
   display: flex;
   min-width: 0;
+  padding-inline-start: 24px;
+  border-inline-start: 1px solid #e6e6e6;
 }
 
-.pu-upload-heading,
-.pu-right-section .unity-slf-copy-label {
+.pu-upload-heading {
   font-size: 13px;
   font-weight: 700;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .pu-dropzone-hint {
   font-size: 11px;
   opacity: 0.6;
   text-align: center;
-  max-width: 160px;
+  max-width: 180px;
 }
 
 .pu-prompt-bar-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
   position: relative;
 }
 
+/* Search field on top (full width); APA dropdown + CTA wrap onto the row below. */
 .pu-search-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  border: 1px solid #d3d3d3;
-  border-radius: 12px;
-  padding: 4px 4px 4px 8px;
+  gap: 12px;
+  width: 100%;
 }
 
-.pu-search-row .inp-field { flex: 1; }
-.pu-search-row .act-wrap { flex-shrink: 0; }
+.pu-search-row .inp-field {
+  flex: 1 1 100%;
+  min-height: 40px;
+  font-size: 16px;
+  padding-inline: 0;
+}
 
-/* Citation-style dropdown (e.g. APA editions) sitting inside the search row */
-.pu-search-row .pu-style-dropdown { flex-shrink: 0; }
+.pu-search-row .inp-field::placeholder { color: #6e6e6e; }
+.pu-search-row .pu-style-dropdown { order: 2; }
 
+.pu-search-row .act-wrap {
+  order: 3;
+  margin-inline-start: auto;
+}
+
+/* Citation-style dropdown (e.g. APA editions) — plain text trigger, not a bordered pill */
 .pu-search-row .pu-style-dropdown .selected-model {
   border: none;
-  border-inline-start: 1px solid #e1e1e1;
-  border-radius: 0;
+  background: transparent;
+  padding-inline: 0;
+  font-weight: 500;
   white-space: nowrap;
+}
+
+/* Search CTA sizing to match the design pill */
+.pu-search-row .search-cta {
+  padding: 10px 28px;
+  border-radius: 22px;
+  font-size: 15px;
 }
 
 /* Citation results dropdown */
@@ -99,5 +121,13 @@
 
 @media (max-width: 700px) {
   .pu-main { flex-direction: column; }
+
   .pu-left-section { align-items: center; }
+
+  .pu-right-section {
+    padding-inline-start: 0;
+    border-inline-start: none;
+    border-block-start: 1px solid #e6e6e6;
+    padding-block-start: 16px;
+  }
 }

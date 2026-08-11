@@ -43,7 +43,9 @@ export function extractLegalFootFromAuthoring(root) {
 export function mountWidget({
   el, target, workflowCfg, spriteCon, main, rootClass, wrapClass,
 }) {
-  const skin = el.classList.contains('light') ? 'light' : 'dark';
+  // Light by default (matches the Citation Generator design); authors opt into dark
+  // by adding a `dark` class to the unity block.
+  const skin = el.classList.contains('dark') ? 'dark' : 'light';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
   interactiveShell.append(main);
 
