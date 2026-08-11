@@ -321,7 +321,16 @@ export class UnityWidget {
       const atStart = idx === 0;
       const atEnd = idx === links.length - 1;
       if ((e.shiftKey && atStart) || (!e.shiftKey && atEnd)) {
+        e.preventDefault();
         this.closeVerbOrModelMenu(selectedElement);
+        const sel = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const allFocusable = [...document.querySelectorAll(sel)]
+          .filter((focusEl) => focusEl.offsetParent !== null);
+        const btnIdx = allFocusable.indexOf(selectedElement);
+        if (btnIdx >= 0) {
+          const nextEl = allFocusable[e.shiftKey ? btnIdx - 1 : btnIdx + 1];
+          if (nextEl) nextEl.focus({ preventScroll: true });
+        }
       }
     });
   }
