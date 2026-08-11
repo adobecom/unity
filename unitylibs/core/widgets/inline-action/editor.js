@@ -432,14 +432,19 @@ export function buildEditorPanel(meta) {
   const panel = createTag('div', { class: 'ia-editor-panel' });
   const header = createTag('div', { class: 'ia-editor-header' });
   const actions = createTag('div', { class: 'ia-editor-header-actions' });
-  actions.append(
-    createTag('button', { type: 'button', class: 'ia-editor-reset' }, 'Reset'),
-    createTag('button', {
+  actions.append(createTag('button', { type: 'button', class: 'ia-editor-reset' }, 'Reset'));
+  if (!isCrop) {
+    actions.append(createTag('button', {
       type: 'button',
-      class: 'ia-editor-reupload ia-reupload-btn',
-      'aria-label': 'Upload another image',
-    }, 'Upload'),
-  );
+      class: 'ia-editor-quality',
+      'aria-pressed': 'false',
+    }, 'Quality'));
+  }
+  actions.append(createTag('button', {
+    type: 'button',
+    class: 'ia-editor-reupload ia-reupload-btn',
+    'aria-label': 'Upload another image',
+  }, 'Upload'));
   header.append(
     createTag('span', { class: 'ia-editor-title' }, isCrop ? 'Crop your image' : 'Resize your image'),
     actions,
@@ -462,6 +467,11 @@ export class EditorEngine {
     this.toggleBtns = [...stageEl.querySelectorAll('.ia-toggle__btn')];
     this.panel = panelEl;
     this.resetBtn = panelEl.querySelector('.ia-editor-reset');
+    this.qualityBtn = panelEl.querySelector('.ia-editor-quality');
+    this.qualityPreviewActive = false;
+    this.qualityPreviewUrl = null;
+    this.originalUrl = '';
+    this.sourceImg = null;
     this.aspectPills = [...panelEl.querySelectorAll('.ia-aspect-pill')];
     this.moreTrigger = panelEl.querySelector('.ia-more-trigger');
     this.moreMenu = panelEl.querySelector('.ia-more-menu');
@@ -509,6 +519,11 @@ export class EditorEngine {
   async setImage(url, originalSize = 0) {
     this.originalSize = originalSize;
     this.hasInteracted = false;
+    if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
+    this.qualityPreviewUrl = null;
+    this.qualityPreviewActive = false;
+    this.updateQualityBtnState();
+    this.originalUrl = url;
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
@@ -518,6 +533,11 @@ export class EditorEngine {
     }
     this.naturalW = this.sharpImg.naturalWidth;
     this.naturalH = this.sharpImg.naturalHeight;
+    // Dedicated, never-swapped source element for pixel operations (size estimate,
+    // quality preview) so toggling the quality preview on/off can't compound
+    // re-encoding against an already-degraded image.
+    this.sourceImg = new Image();
+    this.sourceImg.src = url;
     const [vpW, vpH] = this.viewportSize();
     this.rect = centeredRect(null, this.naturalW, this.naturalH, vpW, vpH);
     this.render();
@@ -560,11 +580,11 @@ export class EditorEngine {
   // the current target dimensions and reads the actual compressed blob size.
   computeNewSize(width, height) {
     return new Promise((resolve) => {
-      if (!width || !height) { resolve(null); return; }
+      if (!width || !height || !this.sourceImg) { resolve(null); return; }
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      canvas.getContext('2d').drawImage(this.sharpImg, 0, 0, width, height);
+      canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, width, height);
       canvas.toBlob((blob) => resolve(blob?.size ?? null), 'image/jpeg', this.quality / 100);
     });
   }
@@ -588,6 +608,53 @@ export class EditorEngine {
     if (seq !== this.sizeReadoutSeq) return; // a newer update superseded this one
     const updated = EditorEngine.formatBytes(newSize);
     this.sizeReadout.textContent = `Original size: ${original} New size: ${updated}`;
+  }
+
+  // Resize-only "Quality" button: an explicit, on-demand visual preview of what the
+  // current quality slider value actually does to the image, since (unlike rotation)
+  // there's no free CSS shortcut for real compression artifacts. Re-encodes the full
+  // source at its natural resolution (no crop/resample) so the swapped-in image keeps
+  // the exact same dimensions as the original and never disturbs the frame/viewport
+  // layout. Always draws from `this.sourceImg` (never the currently-displayed
+  // `sharpImg`/`blurImg`) so repeated toggles can't compound re-encoding loss.
+  applyQualityPreview() {
+    if (!this.sourceImg || !this.naturalW || !this.naturalH) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = this.naturalW;
+    canvas.height = this.naturalH;
+    canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, this.naturalW, this.naturalH);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
+      const url = URL.createObjectURL(blob);
+      this.qualityPreviewUrl = url;
+      this.blurImg.src = url;
+      this.sharpImg.src = url;
+      this.qualityPreviewActive = true;
+      this.updateQualityBtnState();
+    }, 'image/jpeg', this.quality / 100);
+  }
+
+  revertQualityPreview() {
+    if (!this.qualityPreviewActive) return;
+    this.blurImg.src = this.originalUrl;
+    this.sharpImg.src = this.originalUrl;
+    if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
+    this.qualityPreviewUrl = null;
+    this.qualityPreviewActive = false;
+    this.updateQualityBtnState();
+  }
+
+  toggleQualityPreview() {
+    if (this.qualityPreviewActive) this.revertQualityPreview();
+    else this.applyQualityPreview();
+  }
+
+  updateQualityBtnState() {
+    if (!this.qualityBtn) return;
+    this.qualityBtn.classList.toggle('is-active', this.qualityPreviewActive);
+    this.qualityBtn.setAttribute('aria-pressed', String(this.qualityPreviewActive));
+    this.qualityBtn.textContent = this.qualityPreviewActive ? 'Original' : 'Quality';
   }
 
   bindEvents() {
@@ -615,6 +682,7 @@ export class EditorEngine {
     this.bindSocialEvents();
     this.bindUnitEvents();
     this.resetBtn?.addEventListener('click', () => this.reset());
+    this.qualityBtn?.addEventListener('click', () => this.toggleQualityPreview());
   }
 
   bindResizeTabEvents() {
@@ -732,6 +800,7 @@ export class EditorEngine {
     this.rotate = 0;
     this.zoom = 0;
     this.quality = 100;
+    this.revertQualityPreview();
     if (this.isCrop) {
       this.selectAspect(null, 'Freeform');
     } else {
@@ -891,6 +960,9 @@ export class EditorEngine {
     else if (this.mode === 'rotate') this.rotate = value;
     else this.quality = value;
     this.hasInteracted = true;
+    // Changing quality invalidates whatever preview is currently shown — revert so the
+    // display never silently shows a stale quality level.
+    if (this.mode === 'quality') this.revertQualityPreview();
     this.updateValLabel();
     this.render();
   }
