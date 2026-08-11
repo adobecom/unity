@@ -508,6 +508,7 @@ export class EditorEngine {
 
   async setImage(url, originalSize = 0) {
     this.originalSize = originalSize;
+    this.hasInteracted = false;
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
