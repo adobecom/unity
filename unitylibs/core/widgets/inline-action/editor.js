@@ -814,10 +814,7 @@ export class EditorEngine {
 
   getSourceBounds() {
     const [vpW, vpH] = this.viewportSize();
-    // Resize's zoom is inspection-only (doesn't affect output) per the design — only
-    // fold it in for Crop, where zooming behind a fixed frame changes the real selection.
-    const zoomForBounds = this.isCrop ? this.zoom : 0;
-    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, zoomForBounds);
+    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom);
   }
 
   // Resize's target output size — same bounds-width/height reuse as syncDimensionFields,
