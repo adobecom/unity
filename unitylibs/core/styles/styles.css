@@ -308,6 +308,7 @@
 }
 
 .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-close svg,
+.unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-close img,
 .upload.unity-enabled .alert-holder .alert-toast .alert-content .alert-close svg,
 .upload-marquee.unity-enabled .alert-holder .alert-toast .alert-content .alert-close svg {
   display: flex;
