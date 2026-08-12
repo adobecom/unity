@@ -1316,3 +1316,145 @@
     padding: 0px;
   }
 }
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap {
+  max-width: 600px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
+  background: #323232;
+  border: 2.4px solid rgb(255 255 255 / 15%);
+  border-radius: 24px;
+  backdrop-filter: none;
+  box-shadow:
+    0 83.35px 33.34px 0 rgb(0 0 0 / 22%),
+    0 44.56px 17.82px 0 rgb(0 0 0 / 18%),
+    0 24.98px 9.99px 0 rgb(0 0 0 / 16%),
+    0 13.27px 5.31px 0 rgb(0 0 0 / 13%),
+    0 5.52px 2.21px 0 rgb(0 0 0 / 9%);
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap {
+  padding: 23px 29px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
+  color: #fff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label {
+  color: #dbdbdb;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field::placeholder {
+  color: #dbdbdb;
+  font-size: 16px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .selected-verb {
+  background: #2c2c2c;
+  color: #dbdbdb;
+  border-radius: 8px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .selected-model {
+  color: #fff;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container .menu-icon svg,
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container .menu-icon svg {
+  filter: invert(1);
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container .verb-list .verb-link img {
+  filter: invert(1);
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name {
+  color: #fff;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verb-list {
+  background: #2c2c2c;
+  color: #fff;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+  background: #4069fd;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+  color: #fff;
+  font-size: 16px;
+}
+
+:root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-ico img {
+  filter: none;
+}
+
+@media (max-width: 599px) {
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap {
+    max-width: 300px;
+  }
+}
+
+@media (min-width: 1025px) {
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verb-list {
+    top: auto;
+    bottom: 100%;
+    margin-bottom: 8px;
+    animation: firefly-menu-up-out 0.2s ease forwards;
+  }
+
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+    animation: firefly-menu-up-in 0.4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
+  }
+}
+
+@media screen and (max-width: 599px) {
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap.verb-options .verbs-container {
+    position: relative;
+  }
+
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container .verb-list,
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container .verb-list {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 8px;
+    animation: firefly-menu-up-out 0.2s ease forwards;
+  }
+
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
+  :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+    animation: firefly-menu-up-in 0.4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
+  }
+}
+
+@keyframes firefly-menu-up-in {
+  0% {
+    transform: translateY(7px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes firefly-menu-up-out {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(7px);
+    opacity: 0;
+    display: none;
+  }
+}
