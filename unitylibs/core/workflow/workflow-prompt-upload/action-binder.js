@@ -289,14 +289,6 @@ export default class ActionBinder {
     }
   }
 
-  warmUpAnalytics() {
-    if (this.analyticsWarmScheduled) return;
-    this.analyticsWarmScheduled = true;
-    const load = () => { this.initAnalytics(); };
-    if (window.requestIdleCallback) window.requestIdleCallback(load, { timeout: 3000 });
-    else setTimeout(load, 2000);
-  }
-
   logAnalyticsinSplunk(eventName, data = {}) {
     this.sendAnalyticsToSplunk?.(
       eventName,
@@ -928,7 +920,6 @@ export default class ActionBinder {
     this.getWidgetWrap()?.addEventListener('pbu-delete-image', () => this.clearPendingFiles());
     if (b === this.block) {
       this.loadTransitionScreen();
-      this.warmUpAnalytics();
       if (!this.pageConfigPromise) this.pageConfigPromise = this.ensurePageConfig();
     }
   }
