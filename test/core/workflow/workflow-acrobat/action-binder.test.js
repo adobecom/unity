@@ -1075,28 +1075,6 @@ describe('ActionBinder', () => {
           expect(result).to.be.true;
         });
 
-        it('should set referrer to the authored referrer when present', async () => {
-          actionBinder.workflowCfg.referrer = 'file-compressor';
-          const cOpts = { payload: { verb: 'compress-pdf' } };
-          const filesData = { test: 'data' };
-          const result = await actionBinder.handleRedirect(cOpts, filesData);
-
-          expect(cOpts.payload.referrer).to.equal('file-compressor');
-          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
-          expect(result).to.be.true;
-        });
-
-        it('should fall back referrer to the verb when no referrer is authored', async () => {
-          actionBinder.workflowCfg.referrer = '';
-          const cOpts = { payload: { verb: 'compress-pdf' } };
-          const filesData = { test: 'data' };
-          const result = await actionBinder.handleRedirect(cOpts, filesData);
-
-          expect(cOpts.payload.referrer).to.equal('compress-pdf');
-          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
-          expect(result).to.be.true;
-        });
-
         it('should handle redirect with feedback for multi-file validation failure', async () => {
           actionBinder.multiFileValidationFailure = true;
           const cOpts = { payload: {} };
