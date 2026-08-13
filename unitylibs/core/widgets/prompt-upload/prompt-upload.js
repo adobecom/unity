@@ -1,21 +1,3 @@
-/*
- * prompt-upload widget — Option A (shared primitives).
- *
- * Composes the reusable primitives in `core/widgets/shared/` instead of duplicating
- * dropzone/dropdown/input logic per widget. Render-critical primitives are statically
- * imported (and preloaded via priorityLibFetch); only the citation search data is
- * lazy-imported on first Search so it never blocks initial render / LCP.
- *
- * Renders the Citation Generator surface from the authored `unity` block:
- *   - multi-file dropzone (left)              <- icon-show-dropzone / icon-dropzone-title
- *   - search field + citation-style dropdown  <- icon-show-search / icon-placeholder-text /
- *                                                icon-cta-text / icon-show-citationdropdown-values
- *   - disabled-until-typing CTA (req #3) and a keyword -> citation results dropdown (req #2).
- *
- * Honors the workflow-prompt-upload binder DOM contract: `.drop-zone`, `#file-upload`,
- * `#pbuPromptInput`, `.gen-btn`, `.ex-unity-wrap`, `pbu-image-selected`, `pbu-delete-image`,
- * and `data-selected-option-value` (paired with target-config `optionDropdownPayloadKey`).
- */
 import { createTag } from '../../../scripts/utils.js';
 import { mountWidget, placeholderText, labelForField, svgIcon } from '../shared/widget-base.js';
 import { buildDropzone, wirePreview } from '../shared/dropzone.js';
@@ -41,7 +23,6 @@ export default class PromptUploadWidget {
 
   get cfg() { return this.workflowCfg?.targetCfg || {}; }
 
-  /* Reads an authored boolean row (e.g. icon-show-dropzone -> "true"); falls back to cfg. */
   authoredFlag(iconClass, fallback) {
     const raw = placeholderText(this.el, iconClass);
     if (raw === '') return fallback;
@@ -68,7 +49,6 @@ export default class PromptUploadWidget {
     this.widgetWrap?.setAttribute('data-selected-option-value', value);
   }
 
-  /* Persistent citation-style dropdown (e.g. APA editions) from icon-show-citationdropdown-values. */
   buildCitationStyleDropdown() {
     const raw = placeholderText(this.el, 'icon-show-citationdropdown-values');
     const options = raw.split(',').map((s) => s.trim()).filter(Boolean);
@@ -134,7 +114,6 @@ export default class PromptUploadWidget {
     });
     input.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' || e.shiftKey) return;
-      // Own Enter so the binder's default (.gen-btn generate) doesn't pre-empt search.
       e.preventDefault();
       e.stopImmediatePropagation();
       if (!this.searchCta.classList.contains('disabled')) this.onSearch();
@@ -147,7 +126,6 @@ export default class PromptUploadWidget {
       this.onSearch();
     });
 
-    // Hidden binder-driven CTA used to hand a selected citation off to the redirect flow.
     this.genBtn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate');
 
     this.resultsEl = createTag('div', { class: 'pu-results' });
@@ -174,7 +152,6 @@ export default class PromptUploadWidget {
     const query = input?.value?.trim() || '';
     if (!query) return;
     try {
-      // Only the search data is deferred; the dropdown primitive is already loaded.
       const { default: searchCitations } = await import('./citation-mock.js');
       const citations = await searchCitations(query);
       this.resultsEl.innerHTML = '';
@@ -205,7 +182,6 @@ export default class PromptUploadWidget {
 
       this.resultsEl.append(container);
       attachDropdownBehavior(container, triggerBtn, list);
-      // Open immediately so the results are visible right after Search.
       triggerBtn.click();
     } catch (err) {
       window.lana?.log(`Message: citation search failed, Error: ${err}`, this.lanaOptions);
@@ -216,7 +192,6 @@ export default class PromptUploadWidget {
     if (!citation) return;
     const input = this.widgetWrap?.querySelector('#pbuPromptInput');
     if (input) input.value = citation.title;
-    // Hand off to the workflow's prompt->redirect flow (binder-driven).
     this.genBtn?.click();
   }
 

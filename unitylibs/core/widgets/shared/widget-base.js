@@ -1,8 +1,3 @@
-/*
- * Shared widget shell + authoring helpers.
- * Critical-path: needed to render the initial widget DOM, so it is safe to preload.
- * Extracted from prompt-bar-upload to remove cross-widget duplication (Option A / shared primitives).
- */
 import { createTag } from '../../../scripts/utils.js';
 
 export function svgIcon(href) {
@@ -34,17 +29,9 @@ export function extractLegalFootFromAuthoring(root) {
   return foot;
 }
 
-/*
- * Builds the standard `.ex-unity-wrap` shell: skin wrapper, sprite container,
- * moves the original authored content into a hidden config holder, then inserts
- * the wrap relative to the authored anchor (targetCfg.target / insert).
- * Returns the widgetWrap element.
- */
 export function mountWidget({
   el, target, workflowCfg, spriteCon, main, rootClass, wrapClass,
 }) {
-  // Light by default (matches the Citation Generator design); authors opt into dark
-  // by adding a `dark` class to the unity block.
   const skin = el.classList.contains('dark') ? 'dark' : 'light';
   const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
   interactiveShell.append(main);
@@ -66,9 +53,6 @@ export function mountWidget({
   widgetWrap.append(unitySprite, root);
   if (legalFoot) widgetWrap.append(legalFoot);
 
-  // Resolve the anchor within the whole interactive area (the wrapped selector),
-  // so `target: ".copy"` + `insert: "after"` places the widget as a sibling right
-  // after the copy column. Fall back to appending inside `.copy` (or the area).
   const interactArea = target?.querySelector('.copy') || target;
   const { target: anchorSelector, insert } = workflowCfg.targetCfg || {};
   const anchor = anchorSelector ? target?.querySelector(anchorSelector) : null;

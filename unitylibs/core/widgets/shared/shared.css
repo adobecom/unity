@@ -1,9 +1,3 @@
-/*
- * Shared widget primitive styles (Option A).
- * Critical-path styling for the wrap shell, dropzone, prompt input, buttons and dropdown.
- * Widget-specific layout lives in each widget's own CSS.
- */
-
 .ex-unity-wrap {
   position: relative;
   width: 100%;
@@ -41,7 +35,6 @@
 
 .hidden { display: none !important; }
 
-/* Dropzone */
 .shared-drop-zone-wrap {
   position: relative;
   display: flex;
@@ -115,7 +108,6 @@
   fill: #fff;
 }
 
-/* Prompt / search input */
 .inp-field {
   width: 100%;
   min-height: 44px;
@@ -129,7 +121,6 @@
   box-sizing: border-box;
 }
 
-/* Action button */
 .unity-act-btn {
   display: inline-flex;
   align-items: center;
@@ -152,7 +143,6 @@
   pointer-events: none;
 }
 
-/* Dropdown (combobox) */
 .models-container { position: relative; }
 
 .selected-model {

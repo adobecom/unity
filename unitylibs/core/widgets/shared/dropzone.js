@@ -1,19 +1,6 @@
-/*
- * Shared dropzone primitive (drop-zone + hidden file input + preview/delete).
- * Critical-path: renders on initial load, safe to preload.
- * Emits/consumes the binder DOM contract: `.drop-zone`, `#file-upload`,
- * `pbu-image-selected` (in), `pbu-delete-image` (out).
- */
 import { createTag, getUnityLibs } from '../../../scripts/utils.js';
 import { svgIcon } from './widget-base.js';
 
-/*
- * @param {object} opts
- * @param {string[]} opts.allowedFileTypes - MIME types for the `accept` attribute.
- * @param {boolean} [opts.multiple] - allow selecting multiple files.
- * @param {string} [opts.uploadLabel] - a11y label for the dropzone.
- * @returns refs { wrap, dropZone, fileInput, preview, previewImg, deleteBtn }
- */
 export function buildDropzone({ allowedFileTypes = [], multiple = false, uploadLabel = 'Upload files' }) {
   const fileInputAttrs = {
     type: 'file',
@@ -57,10 +44,6 @@ export function buildDropzone({ allowedFileTypes = [], multiple = false, uploadL
   return { wrap, dropZone, fileInput, preview, previewImg, deleteBtn };
 }
 
-/*
- * Wires the preview swap for the `select-file` flow (single-file preview).
- * No-op visually for the immediate `upload` flow, where the transition screen takes over.
- */
 export function wirePreview(widgetWrap, { dropZone, preview, previewImg, deleteBtn }) {
   const showPreview = (file) => {
     if (!file || !file.type?.startsWith('image/')) return;

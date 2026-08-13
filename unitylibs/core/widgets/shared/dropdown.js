@@ -1,10 +1,3 @@
-/*
- * Shared combobox/dropdown primitive with full keyboard a11y.
- * DEFERRED: only needed on interaction (e.g. Search click / option pickers),
- * so it is intentionally NOT preloaded and is lazy-imported after LCP.
- * Promoted from prompt-bar-upload's module-level dropdown helpers (the cleanest
- * of the 4 duplicate implementations across widgets).
- */
 import { createTag } from '../../../scripts/utils.js';
 import { svgIcon } from './widget-base.js';
 
