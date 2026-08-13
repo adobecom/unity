@@ -15,7 +15,6 @@ import {
   getLocale,
   createTag,
 } from '../../../scripts/utils.js';
-import NetworkUtils from '../../../utils/NetworkUtils.js';
 
 const DOS_SPECIAL_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL', 'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
@@ -122,7 +121,7 @@ export default class ActionBinder {
     this.limits = this.resolveLimits();
     this.operations = [];
     this.acrobatApiConfig = null;
-    this.networkUtils = new NetworkUtils();
+    this.networkUtils = null;
     this.uploadHandler = null;
     this.splashScreenEl = null;
     this.transitionScreen = null;
@@ -270,6 +269,13 @@ export default class ActionBinder {
     if (parr.length) await priorityLoad(parr);
   }
 
+  async ensureNetworkUtils() {
+    if (this.networkUtils) return this.networkUtils;
+    const { default: NetworkUtils } = await import('../../../utils/NetworkUtils.js');
+    this.networkUtils = new NetworkUtils();
+    return this.networkUtils;
+  }
+
   async initAnalytics() {
     if (this.analyticsModule) return;
     try {
@@ -315,8 +321,10 @@ export default class ActionBinder {
 
   resolveErrorMessage(errorType) {
     const selector = ActionBinder.ERROR_SELECTOR_MAP[errorType] || '.icon-error-request';
-    const msg = this.unityEl?.querySelector(selector)?.closest('li')?.textContent?.trim()
-      || this.unityEl?.querySelector('.icon-error-request')?.closest('li')?.textContent?.trim();
+    const key = selector.replace('.icon-', '');
+    const errors = this.workflowCfg.errors || {};
+    const fromDom = (sel) => this.unityEl?.querySelector(sel)?.closest('li')?.textContent?.trim();
+    const msg = errors[key] || fromDom(selector) || errors['error-request'] || fromDom('.icon-error-request');
     return msg || 'Unable to process the request';
   }
 
@@ -478,6 +486,7 @@ export default class ActionBinder {
   }
 
   async getRedirectUrl(cOpts) {
+    await this.ensureNetworkUtils();
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders() || {}, { body: JSON.stringify(cOpts) });
     this.promiseStack.push(
       this.networkUtils.fetchFromServiceWithRetry(this.acrobatApiConfig.connectorApiEndPoint, postOpts),
@@ -535,6 +544,7 @@ export default class ActionBinder {
   }
 
   async initUploadHandler() {
+    await this.ensureNetworkUtils();
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-acrobat/upload-handler.js`);
     this.uploadHandler = new UploadHandler(this, this.networkUtils);
   }
@@ -836,7 +846,6 @@ export default class ActionBinder {
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
     const searchRoot = this.canvasArea || b;
-    await this.initAnalytics();
     Object.entries(actMap).forEach(([selector, value]) => {
       const el = searchRoot?.querySelector?.(selector) ?? b.querySelector(selector) ?? document.querySelector(selector);
       if (!el || el.dataset.puBound) return;
