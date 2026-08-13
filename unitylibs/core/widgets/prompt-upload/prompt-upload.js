@@ -63,6 +63,12 @@ function extractLegalFootFromAuthoring(root) {
 }
 
 // ---- Dropdown/combobox (inlined) ----
+function setComboboxTriggerAriaLabel(triggerBtn, nameContainer) {
+  const v = (nameContainer.textContent || '').trim();
+  const prefix = triggerBtn.dataset.comboboxLabel || '';
+  triggerBtn.setAttribute('aria-label', v ? `${prefix}, ${v}` : prefix);
+}
+
 function closeDropdown(container, triggerBtn, list) {
   container.classList.remove('show-menu');
   list.setAttribute('style', 'display: none;');
@@ -83,6 +89,7 @@ function buildDropdownShell({ label, menuId, extraClass = '' }) {
   const nameContainer = createTag('span', { class: 'model-name' });
   const menuIcon = createTag('span', { class: 'menu-icon' }, svgIcon('#unity-chevron-icon'));
   const triggerBtn = createTag('button', { type: 'button', class: 'selected-model', 'aria-expanded': 'false', 'aria-controls': menuId, 'aria-haspopup': 'listbox', role: 'combobox' });
+  triggerBtn.dataset.comboboxLabel = label;
   triggerBtn.append(nameContainer, menuIcon);
   const list = createTag('ul', { class: 'verb-list', id: menuId, role: 'listbox' });
   list.setAttribute('style', 'display: none;');
@@ -142,10 +149,58 @@ export default class PromptUploadWidget {
     this.searchCta = null;
     this.genBtn = null;
     this.resultsEl = null;
+    this.selectedOption = '';
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-PU-Widget' };
   }
 
   get cfg() { return this.workflowCfg?.targetCfg || {}; }
+
+  /* Reads an authored boolean row (e.g. icon-show-dropzone -> "true"); falls back to cfg. */
+  authoredFlag(iconClass, fallback) {
+    const raw = placeholderText(this.el, iconClass);
+    if (raw === '') return fallback;
+    return raw.trim().toLowerCase() === 'true';
+  }
+
+  setSelectedOption(value) {
+    this.selectedOption = value;
+    this.widgetWrap?.setAttribute('data-selected-option-value', value);
+  }
+
+  /* Persistent citation-style dropdown (e.g. APA editions) from icon-show-citationdropdown-values. */
+  buildCitationStyleDropdown() {
+    const raw = placeholderText(this.el, 'icon-show-citationdropdown-values');
+    const options = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!options.length) return null;
+    [this.selectedOption] = options;
+    const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Citation style', menuId: 'pu-citation-style-menu', extraClass: 'pu-style-dropdown' });
+    nameContainer.textContent = this.selectedOption;
+    setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
+    options.forEach((opt, idx) => {
+      const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'aria-selected': idx === 0 ? 'true' : 'false', 'data-option-value': opt });
+      link.append(
+        createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon')),
+        createTag('span', { class: 'model-name' }, opt),
+      );
+      const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
+      li.append(link);
+      list.append(li);
+    });
+    list.addEventListener('click', (e) => {
+      const link = e.target.closest('a.model-link');
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const value = link.getAttribute('data-option-value') || '';
+      nameContainer.textContent = value;
+      setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
+      this.setSelectedOption(value);
+      syncDropdownSelection(list, link);
+      closeDropdown(container, triggerBtn, list);
+    });
+    attachDropdownBehavior(container, triggerBtn, list);
+    return container;
+  }
 
   // ---- Dropzone (inlined) ----
   buildDropzone() {
@@ -194,7 +249,7 @@ export default class PromptUploadWidget {
   }
 
   buildLeftSection() {
-    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, placeholderText(this.el, 'icon-dropzone-label') || 'Upload source files');
+    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, placeholderText(this.el, 'icon-dropzone-title') || 'Upload source files');
     const hint = placeholderText(this.el, 'icon-dropzone-hint');
     const refs = this.buildDropzone();
     const leftSection = createTag('div', { class: 'pu-left-section' });
@@ -210,9 +265,9 @@ export default class PromptUploadWidget {
   }
 
   buildRightSection() {
-    const promptHeading = placeholderText(this.el, 'icon-placeholder-prompt')
+    const promptHeading = placeholderText(this.el, 'icon-placeholder-text')
       || labelForField(this.el, 'icon-label-prompt', 'Search by URL, title, ISBN, DOI, or keywords');
-    const promptLabel = createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-copy-label' }, promptHeading);
+    const promptLabel = createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-copy-label unity-slf-sr-only' }, promptHeading);
 
     const input = createTag('textarea', { id: 'pbuPromptInput', class: 'inp-field', rows: '1', 'aria-label': promptHeading, placeholder: promptHeading, 'aria-autocomplete': 'list' });
     input.addEventListener('input', () => this.setSearchEnabled(!!input.value.trim()));
@@ -224,7 +279,7 @@ export default class PromptUploadWidget {
       if (!this.searchCta.classList.contains('disabled')) this.onSearch();
     });
 
-    const searchLabel = labelForField(this.el, 'icon-generate', 'Search');
+    const searchLabel = labelForField(this.el, 'icon-cta-text', 'Generate');
     this.searchCta = createTag('a', { href: '#', class: 'unity-act-btn search-cta disabled', 'aria-disabled': 'true', 'aria-label': searchLabel, role: 'button' }, createTag('div', { class: 'btn-txt' }, searchLabel));
     this.searchCta.addEventListener('click', (e) => {
       e.preventDefault();
@@ -236,10 +291,13 @@ export default class PromptUploadWidget {
     this.genBtn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate');
     this.resultsEl = createTag('div', { class: 'pu-results' });
 
+    const styleDropdown = this.buildCitationStyleDropdown();
     const actWrap = createTag('div', { class: 'act-wrap' });
     actWrap.append(this.searchCta, this.genBtn);
     const searchRow = createTag('div', { class: 'pu-search-row' });
-    searchRow.append(input, actWrap);
+    searchRow.append(input);
+    if (styleDropdown) searchRow.append(styleDropdown);
+    searchRow.append(actWrap);
     const container = createTag('div', { class: 'pu-prompt-bar-container' });
     container.append(promptLabel, searchRow, this.resultsEl);
     const rightSection = createTag('div', { class: 'pu-right-section' });
@@ -289,7 +347,9 @@ export default class PromptUploadWidget {
   }
 
   mount(main) {
-    const skin = this.el.classList.contains('light') ? 'light' : 'dark';
+    // Light by default (matches the Citation Generator design); authors opt into dark
+    // by adding a `dark` class to the unity block.
+    const skin = this.el.classList.contains('dark') ? 'dark' : 'light';
     const interactiveShell = createTag('div', { class: `interactive-area ${skin}` });
     interactiveShell.append(main);
     const root = createTag('div', { class: 'unity-prompt-upload unity-enabled' });
@@ -305,17 +365,19 @@ export default class PromptUploadWidget {
     this.widgetWrap = createTag('div', { class: 'ex-unity-wrap verb-options pu-widget' });
     this.widgetWrap.append(unitySprite, root);
     if (legalFoot) this.widgetWrap.append(legalFoot);
-    const interactArea = this.target?.querySelector('.copy');
+    // Resolve the anchor within the whole interactive area so `target: ".copy"` +
+    // `insert: "after"` places the widget as a sibling right after the copy column.
+    const interactArea = this.target?.querySelector('.copy') || this.target;
     const { target: anchorSelector, insert } = this.cfg;
-    const anchor = anchorSelector ? interactArea?.querySelector(anchorSelector) : null;
+    const anchor = anchorSelector ? this.target?.querySelector(anchorSelector) : null;
     if (anchor && insert === 'before') anchor.before(this.widgetWrap);
     else if (anchor) anchor.after(this.widgetWrap);
     else interactArea?.appendChild(this.widgetWrap);
   }
 
   async initWidget() {
-    const showUpload = this.cfg.showUpload !== false;
-    const showPrompt = this.cfg.showPrompt !== false;
+    const showUpload = this.authoredFlag('icon-show-dropzone', this.cfg.showUpload !== false);
+    const showPrompt = this.authoredFlag('icon-show-search', this.cfg.showPrompt !== false);
     const main = createTag('div', { class: 'pu-main' });
     let dropZoneRefs = null;
     if (showUpload) {
@@ -325,6 +387,7 @@ export default class PromptUploadWidget {
     }
     if (showPrompt) main.append(this.buildRightSection());
     this.mount(main);
+    if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     if (dropZoneRefs) this.wirePreview(dropZoneRefs);
     return this.cfg.actionMap;
   }
