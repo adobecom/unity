@@ -502,6 +502,10 @@ export class EditorEngine {
     };
     this.naturalW = 0;
     this.naturalH = 0;
+    // Custom tab's independent output size — decoupled from `rect` while locked (see
+    // onDimensionCommit/startDrag). Only collapses back into `rect` when unlocked.
+    this.targetW = 0;
+    this.targetH = 0;
     this.selectedRatio = null;
     this.mode = this.isCrop ? 'rotate' : 'quality';
     this.rotate = 0;
@@ -533,6 +537,8 @@ export class EditorEngine {
     }
     this.naturalW = this.sharpImg.naturalWidth;
     this.naturalH = this.sharpImg.naturalHeight;
+    this.targetW = this.naturalW;
+    this.targetH = this.naturalH;
     // Dedicated, never-swapped source element for pixel operations (size estimate,
     // quality preview) so toggling the quality preview on/off can't compound
     // re-encoding against an already-degraded image.
@@ -556,15 +562,14 @@ export class EditorEngine {
     if (!this.isCrop) this.syncDimensionFields();
   }
 
-  // Resize has no separate width/height state — rect stays the single source of
-  // truth (dragging, presets, and typed dimensions all just set rect), and the
-  // Custom fields are a pure display of whatever rect currently is.
+  // Pure display of `targetW`/`targetH` — the Custom tab's independent output size.
+  // Never reads `rect`: while locked, dragging never touches targetW/targetH (see
+  // startDrag), so this must not resync from the frame on every render or it would
+  // silently undo that decoupling.
   syncDimensionFields() {
     if (!this.widthInput || !this.naturalW) return;
-    const [vpW, vpH] = this.viewportSize();
-    const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-    if (document.activeElement !== this.widthInput) this.widthInput.value = pxToUnit(b.right - b.left, this.unit);
-    if (document.activeElement !== this.heightInput) this.heightInput.value = pxToUnit(b.bottom - b.top, this.unit);
+    if (document.activeElement !== this.widthInput) this.widthInput.value = pxToUnit(this.targetW, this.unit);
+    if (document.activeElement !== this.heightInput) this.heightInput.value = pxToUnit(this.targetH, this.unit);
     this.scheduleSizeReadout();
   }
 
@@ -712,8 +717,32 @@ export class EditorEngine {
 
   bindDimensionEvents() {
     if (!this.widthInput) return;
-    this.widthInput.addEventListener('input', () => this.onDimensionInput('width'));
-    this.heightInput.addEventListener('input', () => this.onDimensionInput('height'));
+    // Commit on blur/Enter for typed digits — partial input while composing a number
+    // should never reshape the frame or recompute the size readout mid-edit. Arrow-key
+    // stepping is different: each press is already a complete, atomic change (the
+    // browser's native stepUp/stepDown), so it commits immediately, per tick.
+    const commit = (axis) => () => this.onDimensionCommit(axis);
+    this.widthInput.addEventListener('blur', commit('width'));
+    this.heightInput.addEventListener('blur', commit('height'));
+    [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
+      let viaArrowKey = false;
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.onDimensionCommit(axis);
+          input.blur();
+          return;
+        }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') viaArrowKey = true;
+      });
+      // The native step happens between keydown and input, so input.value already
+      // reflects the new stepped value by the time this fires.
+      input.addEventListener('input', () => {
+        if (!viaArrowKey) return;
+        viaArrowKey = false;
+        this.onDimensionCommit(axis);
+      });
+    });
     this.lockBtn.addEventListener('click', () => {
       this.locked = !this.locked;
       this.lockBtn.classList.toggle('is-active', this.locked);
@@ -721,23 +750,31 @@ export class EditorEngine {
     });
   }
 
-  onDimensionInput(axis) {
+  // Locked: targetW/targetH are independent of the crop frame — updated here,
+  // cross-computed from their own current ratio, `rect` is never touched. Unlocked:
+  // targetW/targetH and `rect` collapse back into one thing — frameFromDimensions
+  // always builds a fresh centered rect from scratch, so this single call both
+  // "resets" whatever the frame previously was and reshapes it to the new size.
+  onDimensionCommit(axis) {
     if (!this.naturalW) return;
     const raw = Number(axis === 'width' ? this.widthInput.value : this.heightInput.value);
     if (!raw || raw <= 0) return;
-    const [vpW, vpH] = this.viewportSize();
-    const current = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-    let width = current.right - current.left;
-    let height = current.bottom - current.top;
     const rawPx = unitToPx(raw, this.unit);
-    if (axis === 'width') width = rawPx;
-    else height = rawPx;
     if (this.locked) {
-      const naturalRatio = this.naturalW / this.naturalH;
-      if (axis === 'width') height = Math.round(width / naturalRatio);
-      else width = Math.round(height * naturalRatio);
+      const ratio = this.targetW / this.targetH;
+      if (axis === 'width') {
+        this.targetW = rawPx;
+        this.targetH = Math.round(rawPx / ratio);
+      } else {
+        this.targetH = rawPx;
+        this.targetW = Math.round(rawPx * ratio);
+      }
+    } else {
+      if (axis === 'width') this.targetW = rawPx;
+      else this.targetH = rawPx;
+      const [vpW, vpH] = this.viewportSize();
+      this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH);
     }
-    this.rect = frameFromDimensions(width, height, this.naturalW, this.naturalH, vpW, vpH);
     this.hasInteracted = true;
     this.render();
   }
@@ -817,6 +854,8 @@ export class EditorEngine {
       if (this.naturalW) {
         const [vpW, vpH] = this.viewportSize();
         this.rect = centeredRect(null, this.naturalW, this.naturalH, vpW, vpH);
+        this.targetW = this.naturalW;
+        this.targetH = this.naturalH;
         this.render();
       }
     }
@@ -876,6 +915,14 @@ export class EditorEngine {
     if (this.naturalW) {
       const [vpW, vpH] = this.viewportSize();
       this.rect = centeredRect(ratio, this.naturalW, this.naturalH, vpW, vpH);
+      // Resize's Standard/Social presets carry no literal target size, only a ratio —
+      // seed targetW/targetH from the newly-shaped rect so the Custom tab shows
+      // something coherent if the user switches back to it.
+      if (!this.isCrop) {
+        const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
+        this.targetW = b.right - b.left;
+        this.targetH = b.bottom - b.top;
+      }
       this.hasInteracted = true;
       this.render();
     }
@@ -886,9 +933,12 @@ export class EditorEngine {
     return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom);
   }
 
-  // Resize's target output size — same bounds-width/height reuse as syncDimensionFields,
-  // since rect stays the one source of truth rather than duplicating width/height state.
+  // Resize's target output size. Custom tab has its own independent targetW/targetH
+  // (decoupled from the crop frame while locked — see onDimensionCommit/startDrag).
+  // Standard/Social have no such concept — they only carry an aspect ratio, so their
+  // output size is still whatever the selected rect's own natural footprint is.
   getResizeDimensions() {
+    if (this.resizeTab === 'custom') return { width: this.targetW, height: this.targetH };
     const [vpW, vpH] = this.viewportSize();
     const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
     return { width: b.right - b.left, height: b.bottom - b.top };
@@ -939,6 +989,16 @@ export class EditorEngine {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      // Unlocked Custom-tab drag: rect and targetW/targetH are the same thing, so
+      // sync the latter to match. Locked: never touch targetW/targetH here — dragging
+      // only changes which pixels get sampled, not the output size (see §3 of the
+      // design discussion this implements).
+      if (!this.isCrop && this.resizeTab === 'custom' && !this.locked) {
+        const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
+        this.targetW = b.right - b.left;
+        this.targetH = b.bottom - b.top;
+        this.render();
+      }
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
