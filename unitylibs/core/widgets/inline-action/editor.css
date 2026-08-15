@@ -68,6 +68,11 @@
   box-shadow: 0 0 0 9999px rgb(0 0 0 / 40%);
   cursor: move;
   transition: box-shadow 400ms ease, border-color 400ms ease;
+
+  /* Without this, touch browsers treat a finger-drag on the frame/handles as a page
+     scroll/pan gesture before JS ever sees it — preventDefault() in startDrag() alone
+     isn't enough, since touch-action is what decides this ahead of any event handler. */
+  touch-action: none;
 }
 
 .ia-frame.ia-frame--idle {
