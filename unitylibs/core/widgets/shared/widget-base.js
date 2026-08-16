@@ -50,6 +50,10 @@ export function mountWidget({
   unitySprite.innerHTML = spriteCon || '';
 
   const widgetWrap = createTag('div', { class: `ex-unity-wrap verb-options ${wrapClass}` });
+  const verb = [...(workflowCfg.supportedFeatures || [])].filter(Boolean)[0]
+    || [...el.classList].find((c) => c.startsWith('feature-'))?.slice('feature-'.length)
+    || '';
+  if (verb) widgetWrap.classList.add(`pu-v-${verb}`);
   widgetWrap.append(unitySprite, root);
   if (legalFoot) widgetWrap.append(legalFoot);
 

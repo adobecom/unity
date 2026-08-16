@@ -47,14 +47,26 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 160px;
-  min-height: 120px;
+  min-width: var(--pu-dz-min-w, 160px);
+  min-height: var(--pu-dz-min-h, 120px);
   padding: 16px;
   border: 1.5px dashed #adadad;
   border-radius: 12px;
   cursor: pointer;
   box-sizing: border-box;
   text-align: center;
+}
+
+/* Per-verb layout variants: the widget stamps `pu-v-<verb>` on the wrap
+   (from the feature/verb, not authoring); scope verb-specific CSS here. */
+.pu-v-citation-generator {
+  --pu-dz-min-w: 200px;
+  --pu-dz-min-h: 150px;
+}
+
+.pu-v-generate-pres {
+  --pu-dz-min-w: 300px;
+  --pu-dz-min-h: 240px;
 }
 
 .drop-zone:focus-visible {
