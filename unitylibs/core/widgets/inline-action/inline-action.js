@@ -417,6 +417,8 @@ export default class InlineActionWidget {
     this.state = InlineActionState.INITIAL;
     this.progressScreen = null;
     this.editorEngine = null;
+    this.editorStageSlot = null;
+    this.editorPanelSlot = null;
   }
 
   setState(state) {
@@ -457,8 +459,26 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
+  // editor.js/editor.css and the EditorEngine are only ever needed once an image has
+  // actually been uploaded — deferred here (rather than at initWidget()) so state 1
+  // (upload-only) never pays for them, keeping LCP/initial load unaffected by an
+  // operation the user hasn't triggered yet.
   async setEditorImage(url, originalSize) {
-    await this.editorEngine?.setImage(url, originalSize);
+    if (!this.editorEngine) {
+      const { buildEditorStage, buildEditorPanel, EditorEngine } = await import('./editor.js');
+      // loadStyle takes a callback, not a promise — must be awaited via this wrapper
+      // (matching unity.js's init()) or EditorEngine's initial viewport measurement can
+      // run before editor.css has actually applied, producing a wrongly-sized frame.
+      await new Promise((resolve) => {
+        loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve);
+      });
+      const stage = buildEditorStage(this.parsedData);
+      const panel = buildEditorPanel(this.parsedData);
+      this.editorStageSlot.append(stage);
+      this.editorPanelSlot.append(panel);
+      this.editorEngine = new EditorEngine(stage, panel, this.parsedData);
+    }
+    await this.editorEngine.setImage(url, originalSize);
   }
 
   async initWidget() {
@@ -473,11 +493,12 @@ export default class InlineActionWidget {
     let completeLeft;
     let completeRight;
     if (isEditorOp) {
-      const { buildEditorStage, buildEditorPanel, EditorEngine } = await import('./editor.js');
-      loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`);
-      completeLeft = buildEditorStage(this.parsedData);
-      completeRight = buildEditorPanel(this.parsedData);
-      this.editorEngine = new EditorEngine(completeLeft, completeRight, this.parsedData);
+      // Empty slots only — editor.js/editor.css and the real stage/panel DOM are built
+      // lazily in setEditorImage(), once an image is actually uploaded (see there for why).
+      completeLeft = createTag('div', { class: 'ia-editor-stage-slot' });
+      completeRight = createTag('div', { class: 'ia-editor-panel-slot' });
+      this.editorStageSlot = completeLeft;
+      this.editorPanelSlot = completeRight;
     } else {
       completeLeft = buildResultSection(this.parsedData);
       completeRight = buildCompletePanel(this.parsedData);
