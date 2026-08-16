@@ -196,8 +196,8 @@ export default class PromptUploadWidget {
   }
 
   async initWidget() {
-    const showUpload = this.authoredFlag('icon-show-dropzone', this.cfg.showUpload !== false);
-    const showPrompt = this.authoredFlag('icon-show-search', this.cfg.showPrompt !== false);
+    const showUpload = this.authoredFlag('icon-show-dropzone', false);
+    const showPrompt = this.authoredFlag('icon-show-search', false);
 
     const main = createTag('div', { class: 'pu-main' });
     let dropZoneRefs = null;

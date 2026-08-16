@@ -16,6 +16,9 @@
   flex: 1;
   display: flex;
   min-width: 0;
+}
+
+.pu-left-section + .pu-right-section {
   padding-inline-start: 24px;
   border-inline-start: 1px solid #e6e6e6;
 }
@@ -113,7 +116,7 @@
 
   .pu-left-section { align-items: center; }
 
-  .pu-right-section {
+  .pu-left-section + .pu-right-section {
     padding-inline-start: 0;
     border-inline-start: none;
     border-block-start: 1px solid #e6e6e6;
