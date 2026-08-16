@@ -906,19 +906,14 @@ export default class ActionBinder {
     });
   }
 
-  async initActionListeners(b = this.block, actMap = this.actionMap) {
-    this.serviceHandler = new ServiceHandler(
-      this.canvasArea,
-      this.unityEl,
-      this.getAdditionalHeaders.bind(this),
-    );
-    await this.initAnalytics();
-    if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
-    this.bindUploadAnalytics(b);
-    this.bindInteractiveAreaDrag(b);
+  // Extracted so it can be called a second time, scoped to just the editor's lazily-built
+  // panel, once that DOM actually exists (see editorUploadFlow in editor-flow.js) — the
+  // editor's own action-mapped elements (.ia-cta-accent, .ia-editor-reupload) don't exist
+  // yet the first time this runs from initActionListeners(), at initial page load.
+  bindActionMapElements(root, actMap = this.actionMap) {
     const handlers = {
       DIV: (el, action) => {
-        if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, b);
+        if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, root);
       },
       A: (el, action) => {
         if (action === 'interrupt') {
@@ -928,7 +923,7 @@ export default class ActionBinder {
           });
           return;
         }
-        if (el.classList.contains('action-button')) this.bindUploadActionButton(el, b);
+        if (el.classList.contains('action-button')) this.bindUploadActionButton(el, root);
       },
       INPUT: (el, action) => {
         if (this.limits.allowedFileTypes?.length) {
@@ -949,11 +944,24 @@ export default class ActionBinder {
     };
 
     Object.entries(actMap).forEach(([key, action]) => {
-      b.querySelectorAll(key).forEach((el) => {
+      root.querySelectorAll(key).forEach((el) => {
         const handler = handlers[el.nodeName];
         if (handler) handler(el, action);
       });
     });
+  }
+
+  async initActionListeners(b = this.block, actMap = this.actionMap) {
+    this.serviceHandler = new ServiceHandler(
+      this.canvasArea,
+      this.unityEl,
+      this.getAdditionalHeaders.bind(this),
+    );
+    await this.initAnalytics();
+    if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
+    this.bindUploadAnalytics(b);
+    this.bindInteractiveAreaDrag(b);
+    this.bindActionMapElements(b, actMap);
 
     window.addEventListener('dragover', this.preventDefault.bind(this), false);
     window.addEventListener('drop', this.preventDefault.bind(this), false);

@@ -427,8 +427,8 @@ function buildFurtherSection(isCrop) {
   return section;
 }
 
-export function buildEditorPanel(meta) {
-  const isCrop = meta.operation === 'crop';
+export function buildEditorPanel(parsedData) {
+  const isCrop = parsedData.operation === 'crop';
   const panel = createTag('div', { class: 'ia-editor-panel' });
   const header = createTag('div', { class: 'ia-editor-header' });
   const actions = createTag('div', { class: 'ia-editor-header-actions' });
@@ -456,8 +456,8 @@ export function buildEditorPanel(meta) {
 }
 
 export class EditorEngine {
-  constructor(stageEl, panelEl, meta) {
-    this.isCrop = meta.operation === 'crop';
+  constructor(stageEl, panelEl, parsedData) {
+    this.isCrop = parsedData.operation === 'crop';
     this.viewport = stageEl.querySelector('.ia-viewport');
     this.blurImg = stageEl.querySelector('.ia-imglayer--blur .ia-img');
     this.sharpImg = stageEl.querySelector('.ia-imglayer--sharp .ia-img');

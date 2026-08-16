@@ -46,9 +46,16 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
       binder.widgetRef?.setState(InlineActionState.INITIAL);
       return;
     }
+    // The editor panel (and its .ia-cta-accent/.ia-editor-reupload) is built lazily
+    // inside setEditorImage() the first time only — action-binder.js's one-time
+    // action-map scan at page load ran before this DOM existed, so it needs binding
+    // here, once, right after it's actually created. Captured before setEditorImage()
+    // runs, since that call is what sets widgetRef.editorEngine for the first time.
+    const isFirstEditorLoad = !binder.widgetRef.editorEngine;
     binder.widgetRef?.setProgress(100); // matches action-binder.js's PROGRESS.COMPLETE
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
     await binder.widgetRef?.setEditorImage(URL.createObjectURL(file), originalSize);
+    if (isFirstEditorLoad) binder.bindActionMapElements(binder.widgetRef.editorEngine.panel);
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError('upload', e);
     binder.serviceHandler.showErrorToast(binder.uploadErrorOpts(), e, binder.lanaOptions);
