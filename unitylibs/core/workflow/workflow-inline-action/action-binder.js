@@ -682,30 +682,12 @@ export default class ActionBinder {
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
     if (this.operation !== 'removeBackground') {
-      await this.editorUploadFlow(correctedFile, file.size);
+      const { editorUploadFlow } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+      await editorUploadFlow(this, correctedFile, file.size);
       return;
     }
     if (isGuest === false) await this.signedInFlow(correctedFile);
     else await this.anonymousFlow(correctedFile);
-  }
-
-  async editorUploadFlow(file, originalSize = file.size) {
-    this.widgetRef?.setState(InlineActionState.LOADING);
-    this.widgetRef?.setProgress(0);
-    try {
-      const ok = await this.uploadAsset(file, true);
-      if (!ok) {
-        this.widgetRef?.setState(InlineActionState.INITIAL);
-        return;
-      }
-      this.widgetRef?.setProgress(PROGRESS.COMPLETE);
-      this.widgetRef?.setState(InlineActionState.COMPLETE);
-      await this.widgetRef?.setEditorImage(URL.createObjectURL(file), originalSize);
-    } catch (e) {
-      if (!e.analyticsTracked) this.trackServerError('upload', e);
-      this.serviceHandler.showErrorToast(this.uploadErrorOpts(), e, this.lanaOptions);
-      this.widgetRef?.setState(InlineActionState.INITIAL);
-    }
   }
 
   async runFirstLocalDownload() {
@@ -801,24 +783,14 @@ export default class ActionBinder {
       case 'interrupt':
         await this.cancelUploadOperation();
         break;
-      case 'runEditorOperation':
-        await this.runEditorOperation();
+      case 'runEditorOperation': {
+        const { runEditorOperation } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+        await runEditorOperation(this);
         break;
+      }
       default:
         break;
     }
-  }
-
-  async runEditorOperation() {
-    const engine = this.widgetRef?.editorEngine;
-    if (!engine) return;
-    const bounds = engine.getSourceBounds();
-    const { default: editorFlow } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
-    const payload = this.operation === 'resize'
-      ? editorFlow.buildResizePayload(bounds, engine.getResizeDimensions(), this.assetHref)
-      : editorFlow.buildCropPayload(bounds, this.assetHref);
-    // eslint-disable-next-line no-console
-    console.log(`[inline-action editor] ${this.operation} payload`, payload);
   }
 
   bindUploadAnalytics(b) {
