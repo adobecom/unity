@@ -249,8 +249,8 @@ function buildAdjustBar(isCrop) {
   return bar;
 }
 
-export function buildEditorStage(meta) {
-  const isCrop = meta.operation === 'crop';
+export function buildEditorStage(parsedData) {
+  const isCrop = parsedData.operation === 'crop';
   const stage = createTag('div', { class: 'ia-editor-stage' });
   const viewport = createTag('div', { class: 'ia-viewport' });
   const blurImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
@@ -1040,16 +1040,21 @@ export class EditorEngine {
   }
 }
 
-// Builds a working editor into the given (already-in-document) slot elements and
-// returns the engine — self-contained, so the caller (inline-action.js) only needs to
-// decide *when* to call this and cache the result, never construct the DOM itself.
-export async function initEditor(stageSlot, panelSlot, meta) {
+// Builds a working editor and swaps it in for the given (already-in-document) slot
+// elements — self-contained, so the caller (inline-action.js) only needs to decide
+// *when* to call this and cache the result, never construct the DOM itself.
+// Uses replaceWith(), not append(): the slots are plain unstyled placeholder divs, and
+// .ia-panel-left/.ia-panel-right (their parent) is a flex container whose layout the
+// real .ia-editor-stage/.ia-editor-panel depend on directly — an extra wrapper div left
+// in place would sit between them and break that flex relationship (this was a real,
+// reproduced regression, not just a theoretical one).
+export async function initEditor(stageSlot, panelSlot, parsedData) {
   await new Promise((resolve) => {
     loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve);
   });
-  const stage = buildEditorStage(meta);
-  const panel = buildEditorPanel(meta);
-  stageSlot.append(stage);
-  panelSlot.append(panel);
-  return new EditorEngine(stage, panel, meta);
+  const stage = buildEditorStage(parsedData);
+  const panel = buildEditorPanel(parsedData);
+  stageSlot.replaceWith(stage);
+  panelSlot.replaceWith(panel);
+  return new EditorEngine(stage, panel, parsedData);
 }
