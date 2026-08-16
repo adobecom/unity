@@ -58,8 +58,8 @@
 }
 
 .pu-v-generate-pres {
-  --pu-dz-min-w: 300px;
-  --pu-dz-min-h: 240px;
+  --pu-dz-min-w: 200px;
+  --pu-dz-min-h: 120px;
 }
 
 .drop-zone:focus-visible {

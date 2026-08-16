@@ -29,11 +29,26 @@
   opacity: 0.85;
 }
 
-.pu-dropzone-hint {
+.pu-dropzone-subtext {
   font-size: 11px;
   opacity: 0.6;
   text-align: center;
   max-width: 180px;
+}
+
+/* dropzone-title-position: inside — title + subtext rendered inside the box */
+.pu-dz-title-inside .drop-zone {
+  gap: 6px;
+}
+
+.pu-dz-title-inside .pu-upload-heading {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 1;
+}
+
+.pu-dz-title-inside .pu-dropzone-subtext {
+  margin-top: -2px;
 }
 
 .pu-prompt-bar-container {

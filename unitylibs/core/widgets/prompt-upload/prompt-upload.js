@@ -31,16 +31,26 @@ export default class PromptUploadWidget {
 
   buildLeftSection() {
     const heading = placeholderText(this.el, 'icon-dropzone-title') || 'Upload source files';
-    const uploadLabel = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, heading);
-    const hint = placeholderText(this.el, 'icon-dropzone-hint');
+    const subtext = placeholderText(this.el, 'icon-dropzone-subtext');
+    const titleInside = placeholderText(this.el, 'icon-dropzone-title-position') === 'inside';
     const refs = buildDropzone({
       allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
       multiple: true,
       uploadLabel: heading,
     });
+    const titleEl = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, heading);
+    const subtextEl = subtext ? createTag('div', { class: 'pu-dropzone-subtext' }, subtext) : null;
     const leftSection = createTag('div', { class: 'pu-left-section' });
-    leftSection.append(uploadLabel, refs.wrap);
-    if (hint) leftSection.append(createTag('div', { class: 'pu-dropzone-hint' }, hint));
+    if (titleInside) {
+      leftSection.classList.add('pu-dz-title-inside');
+      refs.dropZone.append(titleEl);
+      if (subtextEl) refs.dropZone.append(subtextEl);
+      leftSection.append(refs.wrap);
+    } else {
+      leftSection.append(titleEl);
+      if (subtextEl) leftSection.append(subtextEl);
+      leftSection.append(refs.wrap);
+    }
     return { leftSection, dropZoneRefs: refs };
   }
 
