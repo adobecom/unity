@@ -1,4 +1,4 @@
-import { createTag } from '../../../scripts/utils.js';
+import { createTag, loadStyle, getUnityLibs } from '../../../scripts/utils.js';
 
 const MIN_PCT = 10;
 const IDLE_MS = 5000;
@@ -1038,4 +1038,18 @@ export class EditorEngine {
     clearTimeout(this.idleTimer);
     this.idleTimer = setTimeout(() => this.frame.classList.add('ia-frame--idle'), IDLE_MS);
   }
+}
+
+// Builds a working editor into the given (already-in-document) slot elements and
+// returns the engine — self-contained, so the caller (inline-action.js) only needs to
+// decide *when* to call this and cache the result, never construct the DOM itself.
+export async function initEditor(stageSlot, panelSlot, meta) {
+  await new Promise((resolve) => {
+    loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve);
+  });
+  const stage = buildEditorStage(meta);
+  const panel = buildEditorPanel(meta);
+  stageSlot.append(stage);
+  panelSlot.append(panel);
+  return new EditorEngine(stage, panel, meta);
 }

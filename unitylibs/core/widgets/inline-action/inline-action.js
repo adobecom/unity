@@ -1,9 +1,4 @@
-import {
-  createTag,
-  defineDeviceByScreenSize,
-  loadStyle,
-  getUnityLibs,
-} from '../../../scripts/utils.js';
+import { createTag, defineDeviceByScreenSize } from '../../../scripts/utils.js';
 
 export const InlineActionState = { INITIAL: 'initial', LOADING: 'loading', COMPLETE: 'complete' };
 const VIEWPORT_IDX = { MOBILE: 0, TABLET: 1, DESKTOP: 2 };
@@ -465,18 +460,8 @@ export default class InlineActionWidget {
   // operation the user hasn't triggered yet.
   async setEditorImage(url, originalSize) {
     if (!this.editorEngine) {
-      const { buildEditorStage, buildEditorPanel, EditorEngine } = await import('./editor.js');
-      // loadStyle takes a callback, not a promise — must be awaited via this wrapper
-      // (matching unity.js's init()) or EditorEngine's initial viewport measurement can
-      // run before editor.css has actually applied, producing a wrongly-sized frame.
-      await new Promise((resolve) => {
-        loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve);
-      });
-      const stage = buildEditorStage(this.parsedData);
-      const panel = buildEditorPanel(this.parsedData);
-      this.editorStageSlot.append(stage);
-      this.editorPanelSlot.append(panel);
-      this.editorEngine = new EditorEngine(stage, panel, this.parsedData);
+      const { initEditor } = await import('./editor.js');
+      this.editorEngine = await initEditor(this.editorStageSlot, this.editorPanelSlot, this.parsedData);
     }
     await this.editorEngine.setImage(url, originalSize);
   }
