@@ -50,6 +50,8 @@
   gap: var(--pu-dz-gap, 8px);
   min-width: var(--pu-dz-min-w, 160px);
   min-height: var(--pu-dz-min-h, 120px);
+  width: var(--pu-dz-w, 150px);
+  height: var(--pu-dz-h, 150px);
   padding: var(--pu-dz-padding, 16px);
   border: var(--pu-dz-border, 1.5px dashed #c4c4c4);
   border-radius: var(--pu-dz-radius, 16px);
@@ -65,8 +67,8 @@
 }
 
 .pu-v-generate-pres {
-  --pu-dz-min-w: 200px;
-  --pu-dz-min-h: 120px;
+  --pu-dz-w: 200px;
+  --pu-dz-h: 120px;
 }
 
 .drop-zone:focus-visible {
