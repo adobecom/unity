@@ -39,14 +39,6 @@
   border-inline-start: 2px solid #e0e0e0;
 }
 
-.pu-widget .drop-zone {
-  width: 150px;
-  height: 150px;
-  border: 1.5px dashed #c4c4c4;
-  border-radius: 16px;
-  gap: 10px;
-}
-
 .pu-widget .shared-drop-content img {
   width: 36px;
   height: 36px;
@@ -114,6 +106,11 @@
   gap: 12px;
   width: 100%;
   margin-top: auto;
+}
+
+/* CTA always sits on the right — even when there's no dropdown on the left */
+.pu-footer-container .act-wrap {
+  margin-inline-start: auto;
 }
 
 .pu-search-icon {
