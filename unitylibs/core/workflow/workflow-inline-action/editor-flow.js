@@ -76,4 +76,60 @@ export async function runEditorOperation(binder) {
   console.log(`[inline-action editor] ${binder.operation} payload`, payload);
 }
 
-export default { buildCropPayload, buildResizePayload, editorUploadFlow, runEditorOperation };
+// Converts the same pixel bounds used for the PS API into the fractional (0-1) shape
+// EditInFirefly's contract wants: each offset is "how much of that edge is cropped
+// away," as a fraction of the SOURCE IMAGE's own dimensions — not the viewport, and not
+// absolute pixels. Reuses getSourceBounds() as-is (already zoom-aware); rotation isn't
+// folded in anywhere in this pipeline since it's out of scope for now (see
+// crop-rotation-and-quality.md — deprioritized, not part of MVP).
+export function buildEditInFireflyCropPayload(bounds, naturalW, naturalH, ratioLabel, sourceUrl) {
+  const config = {
+    type: 'asset',
+    referrer: 'Unknown',
+    assetId: sourceUrl,
+    origin: 'presignedUrl',
+    action: 'open',
+    offsetTop: bounds.top / naturalH,
+    offsetLeft: bounds.left / naturalW,
+    offsetRight: 1 - (bounds.right / naturalW),
+    offsetBottom: 1 - (bounds.bottom / naturalH),
+    workflow: 'cropImage',
+  };
+  // The sample contract never showed what "no lock" (Freeform) looks like — omitting
+  // the field entirely rather than guessing a placeholder value for it.
+  if (ratioLabel && ratioLabel !== 'Freeform') config.cropAspectRatioLock = ratioLabel;
+  return { version: '1.1', module: 'ImageEdit', config };
+}
+
+// Only ever called from action-binder.js's executeActionMaps(), for the
+// 'runEditInFirefly' action (the "Open in Firefly" CTA). Crop only for now — the
+// equivalent Resize contract shape is unconfirmed (see crop-rotation-and-quality.md
+// open questions), so this deliberately doesn't guess one.
+export async function runEditInFirefly(binder) {
+  const engine = binder.widgetRef?.editorEngine;
+  if (!engine) return;
+  if (binder.operation !== 'crop') {
+    // eslint-disable-next-line no-console
+    console.log(`[inline-action editor] EditInFirefly not yet implemented for ${binder.operation}`);
+    return;
+  }
+  const bounds = engine.getSourceBounds();
+  const payload = buildEditInFireflyCropPayload(
+    bounds,
+    engine.naturalW,
+    engine.naturalH,
+    engine.selectedRatioLabel,
+    binder.assetHref,
+  );
+  // eslint-disable-next-line no-console
+  console.log('[inline-action editor] EditInFirefly payload', payload);
+}
+
+export default {
+  buildCropPayload,
+  buildResizePayload,
+  editorUploadFlow,
+  runEditorOperation,
+  buildEditInFireflyCropPayload,
+  runEditInFirefly,
+};

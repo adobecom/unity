@@ -516,6 +516,9 @@ export class EditorEngine {
     this.targetW = 0;
     this.targetH = 0;
     this.selectedRatio = null;
+    // Kept alongside selectedRatio purely for the EditInFirefly contract's
+    // cropAspectRatioLock, which wants the authored label ("4:3"), not the numeric ratio.
+    this.selectedRatioLabel = 'Freeform';
     this.mode = this.isCrop ? 'zoom' : 'quality';
     this.zoom = 0;
     this.quality = 100;
@@ -910,6 +913,7 @@ export class EditorEngine {
 
   selectAspect(ratio, label, fromMore = false) {
     this.selectedRatio = ratio;
+    this.selectedRatioLabel = label;
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
       this.moreTrigger.textContent = label;
