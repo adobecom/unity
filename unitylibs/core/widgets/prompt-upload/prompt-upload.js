@@ -1,5 +1,5 @@
 import { createTag } from '../../../scripts/utils.js';
-import { mountWidget, placeholderText, labelForField, svgIcon } from '../shared/widget-base.js';
+import { mountWidget, placeholderText, labelForField, svgIcon, spriteIcon } from '../shared/widget-base.js';
 import { buildDropzone, wirePreview } from '../shared/dropzone.js';
 import buildPromptInput from '../shared/prompt-input.js';
 import {
@@ -30,9 +30,9 @@ export default class PromptUploadWidget {
   }
 
   buildLeftSection() {
-    const heading = placeholderText(this.el, 'icon-dropzone-title') || 'Upload source files';
+    const heading = placeholderText(this.el, 'icon-dropzone-label') || 'Upload source files';
     const subtext = placeholderText(this.el, 'icon-dropzone-subtext');
-    const titleInside = placeholderText(this.el, 'icon-dropzone-title-position') === 'inside';
+    const titleInside = placeholderText(this.el, 'icon-dropzone-label-position') === 'inside';
     const refs = buildDropzone({
       allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
       multiple: true,
@@ -97,13 +97,21 @@ export default class PromptUploadWidget {
 
   buildSearchCta() {
     const label = labelForField(this.el, 'icon-cta-text', 'Generate');
-    return createTag('a', {
+    const cta = createTag('a', {
       href: '#',
       class: 'unity-act-btn search-cta disabled',
       'aria-disabled': 'true',
       'aria-label': label,
       role: 'button',
-    }, createTag('div', { class: 'btn-txt' }, label));
+    });
+    const iconName = placeholderText(this.el, 'icon-cta-icon');
+    if (iconName) {
+      const ico = createTag('span', { class: 'btn-ico', 'aria-hidden': 'true' });
+      ico.innerHTML = spriteIcon(iconName);
+      cta.append(ico);
+    }
+    cta.append(createTag('div', { class: 'btn-txt' }, label));
+    return cta;
   }
 
   setSearchEnabled(enabled) {
@@ -114,8 +122,13 @@ export default class PromptUploadWidget {
 
   buildRightSection() {
     const promptHeading = placeholderText(this.el, 'icon-placeholder-text')
-      || labelForField(this.el, 'icon-label-prompt', 'Search by URL, title, ISBN, DOI, or keywords');
-    const promptLabel = createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-copy-label unity-slf-sr-only' }, promptHeading);
+      || 'Search by URL, title, ISBN, DOI, or keywords';
+    // Authored `prompt-label` → visible label above the input; absent → sr-only (a11y only).
+    const promptLabelText = placeholderText(this.el, 'icon-prompt-label');
+    const promptLabel = createTag('label', {
+      for: 'pbuPromptInput',
+      class: `unity-slf-copy-label ${promptLabelText ? 'pu-prompt-label' : 'unity-slf-sr-only'}`,
+    }, promptLabelText || promptHeading);
 
     const input = buildPromptInput({
       ariaLabel: promptHeading,
@@ -138,10 +151,15 @@ export default class PromptUploadWidget {
 
     this.genBtn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate');
     this.resultsEl = createTag('div', { class: 'pu-results hidden' });
-    const searchIcon = createTag('span', { class: 'pu-search-icon', 'aria-hidden': 'true' });
-    searchIcon.innerHTML = svgIcon('#unity-search-icon');
     const searchField = createTag('div', { class: 'pu-search-field' });
-    searchField.append(searchIcon, input);
+    // Leading icon only when authored (e.g. citation `:search-icon: search`).
+    const searchIconName = placeholderText(this.el, 'icon-search-icon');
+    if (searchIconName) {
+      const searchIcon = createTag('span', { class: 'pu-search-icon', 'aria-hidden': 'true' });
+      searchIcon.innerHTML = spriteIcon(searchIconName);
+      searchField.append(searchIcon);
+    }
+    searchField.append(input);
 
     const styleDropdown = this.buildCitationStyleDropdown();
     const actWrap = createTag('div', { class: 'act-wrap' });

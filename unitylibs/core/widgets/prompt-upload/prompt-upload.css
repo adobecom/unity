@@ -78,10 +78,19 @@
 .pu-prompt-bar-container {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 24px;
+  justify-content: flex-start;
+  gap: 12px;
   width: 100%;
   min-height: fit-content;
+}
+
+/* Visible prompt label (presentation): authored `prompt-label` */
+.pu-prompt-label {
+  display: block;
+  font-size: 18px;
+  font-weight: 400;
+  color: #2c2c2c;
+  opacity: 1;
 }
 
 .pu-search-row {
@@ -104,6 +113,7 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
+  margin-top: auto;
 }
 
 .pu-search-icon {
@@ -141,6 +151,17 @@
   font-size: 16px;
   background: #3b63fb;
   color: #fff;
+}
+
+.search-cta .btn-ico {
+  display: inline-flex;
+  align-items: center;
+}
+
+.search-cta .btn-ico svg {
+  width: 18px;
+  height: 18px;
+  fill: currentcolor;
 }
 
 .pu-results {
