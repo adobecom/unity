@@ -83,21 +83,22 @@ export async function runEditorOperation(binder) {
 // folded in anywhere in this pipeline since it's out of scope for now (see
 // crop-rotation-and-quality.md — deprioritized, not part of MVP).
 export function buildEditInFireflyCropPayload(bounds, naturalW, naturalH, ratioLabel, sourceUrl) {
+  // Confirmed by the FF team: "freeform" (lowercase) when unlocked, else the ratio
+  // string as authored (e.g. "4:3") — our own pill labels already match this shape.
+  const cropAspectRatioLock = (!ratioLabel || ratioLabel === 'Freeform') ? 'freeform' : ratioLabel;
   const config = {
     type: 'asset',
     referrer: 'Unknown',
     assetId: sourceUrl,
     origin: 'presignedUrl',
     action: 'open',
+    cropAspectRatioLock,
     offsetTop: bounds.top / naturalH,
     offsetLeft: bounds.left / naturalW,
     offsetRight: 1 - (bounds.right / naturalW),
     offsetBottom: 1 - (bounds.bottom / naturalH),
     workflow: 'cropImage',
   };
-  // The sample contract never showed what "no lock" (Freeform) looks like — omitting
-  // the field entirely rather than guessing a placeholder value for it.
-  if (ratioLabel && ratioLabel !== 'Freeform') config.cropAspectRatioLock = ratioLabel;
   return { version: '1.1', module: 'ImageEdit', config };
 }
 
