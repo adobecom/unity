@@ -137,20 +137,25 @@ export default class PromptUploadWidget {
     });
 
     this.genBtn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate');
-
-    this.resultsEl = createTag('div', { class: 'pu-results' });
+    this.resultsEl = createTag('div', { class: 'pu-results hidden' });
+    const searchIcon = createTag('span', { class: 'pu-search-icon', 'aria-hidden': 'true' });
+    searchIcon.innerHTML = svgIcon('#unity-search-icon');
+    const searchField = createTag('div', { class: 'pu-search-field' });
+    searchField.append(searchIcon, input);
 
     const styleDropdown = this.buildCitationStyleDropdown();
     const actWrap = createTag('div', { class: 'act-wrap' });
     actWrap.append(this.searchCta, this.genBtn);
 
     const searchRow = createTag('div', { class: 'pu-search-row' });
-    searchRow.append(input);
-    if (styleDropdown) searchRow.append(styleDropdown);
-    searchRow.append(actWrap);
+    searchRow.append(searchField);
+
+    const footerContainer = createTag('div', { class: 'pu-footer-container' });
+    if (styleDropdown) footerContainer.append(styleDropdown);
+    footerContainer.append(actWrap);
 
     const container = createTag('div', { class: 'pu-prompt-bar-container' });
-    container.append(promptLabel, searchRow, this.resultsEl);
+    container.append(promptLabel, searchRow, footerContainer);
 
     const rightSection = createTag('div', { class: 'pu-right-section' });
     rightSection.append(container);
@@ -165,37 +170,47 @@ export default class PromptUploadWidget {
       const { default: searchCitations } = await import('./citation-mock.js');
       const citations = await searchCitations(query);
       this.resultsEl.innerHTML = '';
-      const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Matching citations', menuId: 'pu-citation-menu', extraClass: 'pu-citation-dropdown' });
-      nameContainer.textContent = `${citations.length} result${citations.length === 1 ? '' : 's'} for “${query}”`;
+      if (!citations.length) { this.resultsEl.classList.add('hidden'); return; }
 
-      citations.forEach((c, idx) => {
-        const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'aria-selected': idx === 0 ? 'true' : 'false', 'data-citation-id': c.id });
+      const list = createTag('ul', { class: 'pu-results-list', role: 'listbox', 'aria-label': 'Matching citations' });
+      citations.forEach((c) => {
+        const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'data-citation-id': c.id });
         const text = createTag('span', { class: 'model-name pu-citation-text' });
         text.append(
           createTag('span', { class: 'pu-citation-title' }, c.title),
           createTag('span', { class: 'pu-citation-meta' }, `${c.authors} (${c.year}). ${c.source}`),
         );
         link.append(text);
-        const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
+        const li = createTag('li', { class: 'verb-item', role: 'presentation' });
         li.append(link);
         list.append(li);
       });
-
       list.addEventListener('click', (e) => {
         const link = e.target.closest('a.model-link');
         if (!link) return;
         e.preventDefault();
         e.stopPropagation();
-        syncDropdownSelection(list, link);
         this.onCitationSelected(citations.find((c) => c.id === link.getAttribute('data-citation-id')));
       });
 
-      this.resultsEl.append(container);
-      attachDropdownBehavior(container, triggerBtn, list);
-      triggerBtn.click();
+      this.resultsEl.append(list);
+      this.resultsEl.classList.remove('hidden');
+      this.bindResultsDismiss();
     } catch (err) {
       window.lana?.log(`Message: citation search failed, Error: ${err}`, this.lanaOptions);
     }
+  }
+
+  bindResultsDismiss() {
+    if (this.dismissBound) return;
+    this.dismissBound = true;
+    const hide = () => this.resultsEl?.classList.add('hidden');
+    document.addEventListener('click', (e) => {
+      if (!this.widgetWrap?.contains(e.target)) hide();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hide();
+    });
   }
 
   onCitationSelected(citation) {
@@ -229,6 +244,8 @@ export default class PromptUploadWidget {
     });
 
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
+    const root = this.widgetWrap?.querySelector('.unity-prompt-upload');
+    if (this.resultsEl && root) root.append(this.resultsEl);
     if (dropZoneRefs) wirePreview(this.widgetWrap, dropZoneRefs);
     return this.cfg.actionMap;
   }

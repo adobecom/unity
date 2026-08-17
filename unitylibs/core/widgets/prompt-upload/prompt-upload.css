@@ -1,6 +1,22 @@
+.pu-widget .unity-prompt-upload {
+  position: relative;
+  background: #fff;
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 8%);
+}
+
+.pu-widget .unity-prompt-upload .interactive-area {
+  display: block;
+  background: #f5f5f5;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: none;
+}
+
 .pu-main {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   align-items: stretch;
   width: 100%;
 }
@@ -19,8 +35,21 @@
 }
 
 .pu-left-section + .pu-right-section {
-  padding-inline-start: 24px;
-  border-inline-start: 1px solid #e6e6e6;
+  padding-inline-start: 16px;
+  border-inline-start: 2px solid #e0e0e0;
+}
+
+.pu-widget .drop-zone {
+  width: 150px;
+  height: 150px;
+  border: 1.5px dashed #c4c4c4;
+  border-radius: 16px;
+  gap: 10px;
+}
+
+.pu-widget .shared-drop-content img {
+  width: 36px;
+  height: 36px;
 }
 
 .pu-upload-heading {
@@ -31,83 +60,108 @@
 
 .pu-dropzone-subtext {
   font-size: 11px;
-  opacity: 0.6;
+  color: #767676;
   text-align: center;
-  max-width: 180px;
+  max-width: 190px;
+  line-height: 1.35;
 }
 
-/* dropzone-title-position: inside — title + subtext rendered inside the box */
-.pu-dz-title-inside .drop-zone {
-  gap: 6px;
-}
+.pu-dz-title-inside .drop-zone { gap: 8px; }
 
 .pu-dz-title-inside .pu-upload-heading {
   font-size: 14px;
   font-weight: 400;
   opacity: 1;
-}
-
-.pu-dz-title-inside .pu-dropzone-subtext {
-  margin-top: -2px;
+  color: #2c2c2c;
 }
 
 .pu-prompt-bar-container {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
   width: 100%;
-  position: relative;
+  min-height: fit-content;
 }
 
 .pu-search-row {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+}
+
+.pu-search-field {
+  flex: 1;
+  display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
 }
 
-.pu-search-row .inp-field {
-  flex: 1 1 100%;
-  min-height: 40px;
-  font-size: 16px;
-  padding-inline: 0;
+.pu-footer-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
 }
 
-.pu-search-row .inp-field::placeholder { color: #6e6e6e; }
-.pu-search-row .pu-style-dropdown { order: 2; }
-
-.pu-search-row .act-wrap {
-  order: 3;
-  margin-inline-start: auto;
+.pu-search-icon {
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
-.pu-search-row .pu-style-dropdown .selected-model {
+.pu-search-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: #767676;
+}
+
+.pu-search-field .inp-field {
+  flex: 1;
+  min-height: 32px;
+  font-size: 19px;
+  padding: 0;
+}
+
+.pu-search-field .inp-field::placeholder { color: #8e8e8e; }
+
+.pu-footer-container .pu-style-dropdown .selected-model {
   border: none;
   background: transparent;
   padding-inline: 0;
+  font-size: 15px;
   font-weight: 500;
+  color: #2c2c2c;
   white-space: nowrap;
 }
 
-.pu-search-row .search-cta {
-  padding: 10px 28px;
-  border-radius: 22px;
-  font-size: 15px;
+.pu-footer-container .search-cta {
+  border-radius: 24px;
+  font-size: 16px;
+  background: #3b63fb;
+  color: #fff;
 }
 
-.pu-results { position: relative; }
-
-.pu-results .pu-citation-dropdown .selected-model {
-  width: 100%;
-  justify-content: space-between;
+.pu-results {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: 60;
 }
 
-.pu-results .verb-list {
-  width: 100%;
-  min-width: 0;
+.pu-results-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e6e6e6;
 }
+
+.pu-results .verb-link { padding: 14px 20px; }
 
 .pu-citation-text {
   display: flex;
@@ -117,24 +171,24 @@
 }
 
 .pu-citation-title {
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #3b5bf6;
 }
 
 .pu-citation-meta {
-  font-size: 12px;
-  opacity: 0.7;
+  font-size: 13px;
+  color: #6e6e6e;
 }
 
 @media (max-width: 700px) {
   .pu-main { flex-direction: column; }
-
   .pu-left-section { align-items: center; }
 
   .pu-left-section + .pu-right-section {
     padding-inline-start: 0;
     border-inline-start: none;
-    border-block-start: 1px solid #e6e6e6;
+    border-block-start: 1px solid #e0e0e0;
     padding-block-start: 16px;
   }
 }
