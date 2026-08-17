@@ -2,8 +2,6 @@ import { createTag, loadStyle, getUnityLibs } from '../../../scripts/utils.js';
 
 const MIN_PCT = 10;
 const IDLE_MS = 5000;
-const ROTATE_MIN = -180;
-const ROTATE_MAX = 180;
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 const HANDLE_EDGES = {
   nw: ['left', 'top'],
@@ -184,8 +182,8 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock) {
 // viewport-space, so a zoomed-in image maps a fixed on-screen frame to a smaller,
 // centered source region. Un-scaling each edge around the viewport center before the
 // existing offset/cs conversion recovers that region exactly (zoom=0 reduces to the
-// original unscaled math). Rotation still has no field in the API payload we've seen,
-// so it isn't folded in here — that's still open.
+// original unscaled math). Rotation isn't in scope right now (removed — see
+// crop-rotation-and-quality.md), so it isn't folded in here.
 export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0) {
   const { cs, w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
@@ -217,34 +215,45 @@ function buildFrame() {
   return frame;
 }
 
+// Rotation removed for now (no backend support yet — see crop-rotation-and-quality.md).
+// Crop is left with only Zoom, so there's nothing to toggle between — a single
+// already-active button is kept in the same .ia-toggle markup purely for visual
+// consistency with Resize's real Quality/Zoom toggle, not because it's interactive.
 function buildAdjustBar(isCrop) {
-  const modeA = isCrop ? 'rotate' : 'quality';
-  const labelA = isCrop ? 'Rotate' : 'Quality';
   const bar = createTag('div', { class: 'ia-adjust-bar' });
   const toggle = createTag('div', { class: 'ia-toggle' });
-  toggle.append(
-    createTag('button', {
+  if (isCrop) {
+    toggle.append(createTag('button', {
       type: 'button',
       class: 'ia-toggle__btn is-active',
-      'data-mode': modeA,
-      'aria-label': labelA,
-    }, labelA),
-    createTag('button', {
-      type: 'button',
-      class: 'ia-toggle__btn',
       'data-mode': 'zoom',
       'aria-label': 'Zoom',
-    }, 'Zoom'),
-  );
+    }, 'Zoom'));
+  } else {
+    toggle.append(
+      createTag('button', {
+        type: 'button',
+        class: 'ia-toggle__btn is-active',
+        'data-mode': 'quality',
+        'aria-label': 'Quality',
+      }, 'Quality'),
+      createTag('button', {
+        type: 'button',
+        class: 'ia-toggle__btn',
+        'data-mode': 'zoom',
+        'aria-label': 'Zoom',
+      }, 'Zoom'),
+    );
+  }
   const slider = createTag('input', {
     type: 'range',
     class: 'ia-slider',
     autocomplete: 'off',
-    min: isCrop ? String(ROTATE_MIN) : '0',
-    max: isCrop ? String(ROTATE_MAX) : '100',
+    min: '0',
+    max: '100',
     value: isCrop ? '0' : '100',
   });
-  const val = createTag('span', { class: 'ia-val' }, isCrop ? '0.0°' : '100%');
+  const val = createTag('span', { class: 'ia-val' }, isCrop ? '0%' : '100%');
   bar.append(toggle, slider, val);
   return bar;
 }
@@ -507,8 +516,7 @@ export class EditorEngine {
     this.targetW = 0;
     this.targetH = 0;
     this.selectedRatio = null;
-    this.mode = this.isCrop ? 'rotate' : 'quality';
-    this.rotate = 0;
+    this.mode = this.isCrop ? 'zoom' : 'quality';
     this.zoom = 0;
     this.quality = 100;
     this.idleTimer = null;
@@ -556,7 +564,7 @@ export class EditorEngine {
     this.frame.style.width = `${w}%`;
     this.frame.style.height = `${h}%`;
     this.sharpImg.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
-    const transform = `rotate(${this.rotate}deg) scale(${zoomScale(this.zoom)})`;
+    const transform = `scale(${zoomScale(this.zoom)})`;
     this.blurImg.style.transform = transform;
     this.sharpImg.style.transform = transform;
     if (!this.isCrop) this.syncDimensionFields();
@@ -834,7 +842,6 @@ export class EditorEngine {
   }
 
   reset() {
-    this.rotate = 0;
     this.zoom = 0;
     this.quality = 100;
     this.revertQualityPreview();
@@ -860,7 +867,7 @@ export class EditorEngine {
       }
     }
     this.hasInteracted = false;
-    this.setMode(this.isCrop ? 'rotate' : 'quality');
+    this.setMode(this.isCrop ? 'zoom' : 'quality');
     this.scheduleSizeReadout();
   }
 
@@ -1007,9 +1014,9 @@ export class EditorEngine {
   setMode(mode) {
     this.mode = mode;
     this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
-    this.slider.min = mode === 'rotate' ? String(ROTATE_MIN) : '0';
-    this.slider.max = mode === 'rotate' ? String(ROTATE_MAX) : '100';
-    const current = { rotate: this.rotate, zoom: this.zoom, quality: this.quality }[mode];
+    this.slider.min = '0';
+    this.slider.max = '100';
+    const current = { zoom: this.zoom, quality: this.quality }[mode];
     this.slider.value = String(current);
     this.updateValLabel();
   }
@@ -1017,7 +1024,6 @@ export class EditorEngine {
   onSlider() {
     const value = Number(this.slider.value);
     if (this.mode === 'zoom') this.zoom = value;
-    else if (this.mode === 'rotate') this.rotate = value;
     else this.quality = value;
     this.hasInteracted = true;
     // Changing quality invalidates whatever preview is currently shown — revert so the
@@ -1028,8 +1034,7 @@ export class EditorEngine {
   }
 
   updateValLabel() {
-    if (this.mode === 'rotate') this.valEl.textContent = `${this.rotate.toFixed(1)}°`;
-    else if (this.mode === 'zoom') this.valEl.textContent = `${Math.round(this.zoom)}%`;
+    if (this.mode === 'zoom') this.valEl.textContent = `${Math.round(this.zoom)}%`;
     else this.valEl.textContent = `${Math.round(this.quality)}%`;
   }
 
