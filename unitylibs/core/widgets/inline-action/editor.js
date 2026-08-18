@@ -108,15 +108,21 @@ export function centeredRect(ratio, naturalW, naturalH, viewportW, viewportH) {
 // natural size the frame exactly hugs the displayed image (iw/ih below); growing past
 // natural size grows the frame toward the full container, per the same object-contain
 // fraction the image itself is displayed at.
-export function frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH) {
+// `anchorRect`, if given, keeps the new box centered on wherever that rect's own
+// center currently is (e.g. the box the user last dragged to) instead of recentering
+// in the viewport — clamped so a larger new size can't push it out of bounds.
+// Omitting it (viewport-center) is only meaningful before any selection exists.
+export function frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH, anchorRect = null) {
   const { cs } = containBox(naturalW, naturalH, viewportW, viewportH);
   const iw = (naturalW * cs) / viewportW;
   const ih = (naturalH * cs) / viewportH;
   const wPct = clamp((width / naturalW) * iw * 100, MIN_PCT, 100);
   const hPct = clamp((height / naturalH) * ih * 100, MIN_PCT, 100);
+  const centerX = anchorRect ? anchorRect.x + (anchorRect.w / 2) : 50;
+  const centerY = anchorRect ? anchorRect.y + (anchorRect.h / 2) : 50;
   return {
-    x: (100 - wPct) / 2,
-    y: (100 - hPct) / 2,
+    x: clamp(centerX - (wPct / 2), 0, 100 - wPct),
+    y: clamp(centerY - (hPct / 2), 0, 100 - hPct),
     w: wPct,
     h: hPct,
   };
@@ -772,8 +778,9 @@ export class EditorEngine {
   // Locked: targetW/targetH are independent of the crop frame — updated here,
   // cross-computed from their own current ratio, `rect` is never touched. Unlocked:
   // targetW/targetH and `rect` collapse back into one thing — frameFromDimensions
-  // always builds a fresh centered rect from scratch, so this single call both
-  // "resets" whatever the frame previously was and reshapes it to the new size.
+  // rebuilds the box at the new size anchored on the current rect's own center (not
+  // the viewport's), so typing/stepping a value resizes the box in place rather than
+  // snapping it back to wherever a fresh, never-touched selection would start.
   onDimensionCommit(axis) {
     if (!this.naturalW) return;
     const raw = Number(axis === 'width' ? this.widthInput.value : this.heightInput.value);
@@ -792,7 +799,7 @@ export class EditorEngine {
       if (axis === 'width') this.targetW = rawPx;
       else this.targetH = rawPx;
       const [vpW, vpH] = this.viewportSize();
-      this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH);
+      this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH, this.rect);
     }
     this.hasInteracted = true;
     this.render();
@@ -981,6 +988,12 @@ export class EditorEngine {
 
   startDrag(e, kind) {
     e.preventDefault();
+    // preventDefault() above also suppresses pointerdown's native focus-shift, which is
+    // normally what blurs a focused input when you click elsewhere (and is what commits
+    // Width/Height's typed value). Without this, starting a drag while a dimension
+    // field is focused would leave it focused — and never committed — unlike a real
+    // click outside it. Blur explicitly to match that expected behavior.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     this.resetIdle();
     this.hasInteracted = true;
     const startX = e.clientX;
@@ -1003,21 +1016,23 @@ export class EditorEngine {
           y: clamp(baseRect.y + dyPct, 0, 100 - baseRect.h),
         }
         : resizeRect(baseRect, kind, dxPct, dyPct, ratioLock);
+      // Unlocked Custom-tab drag: rect and targetW/targetH are the same thing, so keep
+      // the displayed width/height live during the drag itself, not just once it ends.
+      // Locked: never touch targetW/targetH here — dragging only changes which pixels
+      // get sampled, not the output size (see §3 of the design discussion this
+      // implements). The expensive "New Size" estimate stays debounced regardless,
+      // via scheduleSizeReadout() (called from render() -> syncDimensionFields()), so
+      // it still only actually computes once the user pauses, not on every tick.
+      if (!this.isCrop && this.resizeTab === 'custom' && !this.locked) {
+        const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
+        this.targetW = b.right - b.left;
+        this.targetH = b.bottom - b.top;
+      }
       this.render();
     };
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      // Unlocked Custom-tab drag: rect and targetW/targetH are the same thing, so
-      // sync the latter to match. Locked: never touch targetW/targetH here — dragging
-      // only changes which pixels get sampled, not the output size (see §3 of the
-      // design discussion this implements).
-      if (!this.isCrop && this.resizeTab === 'custom' && !this.locked) {
-        const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-        this.targetW = b.right - b.left;
-        this.targetH = b.bottom - b.top;
-        this.render();
-      }
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
