@@ -44,6 +44,46 @@
   height: 36px;
 }
 
+/* Panel dropzone variant (dropzone-style: panel) — full width, Select-file button + drag text */
+.pu-left-section.pu-left-panel {
+  flex: 1;
+  width: 100%;
+}
+
+.drop-zone.pu-dz-panel {
+  --pu-dz-w: 100%;
+  --pu-dz-h: auto;
+  --pu-dz-min-h: 200px;
+  --pu-dz-gap: 12px;
+}
+
+.pu-dz-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pu-select-file-btn {
+  background: #3b63fb;
+  color: #fff;
+  border-radius: 24px;
+  padding: 12px 28px;
+  font-size: 16px;
+}
+
+.pu-select-file-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentcolor;
+}
+
+.pu-dz-drag-text {
+  font-weight: 700;
+  font-size: 15px;
+  color: #2c2c2c;
+}
+
 .pu-upload-heading {
   font-size: 13px;
   font-weight: 700;

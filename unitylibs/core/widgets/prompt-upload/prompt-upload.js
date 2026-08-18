@@ -30,17 +30,28 @@ export default class PromptUploadWidget {
   }
 
   buildLeftSection() {
+    const style = placeholderText(this.el, 'icon-dropzone-style') || 'box';
     const heading = placeholderText(this.el, 'icon-dropzone-label') || 'Upload source files';
     const subtext = placeholderText(this.el, 'icon-dropzone-subtext');
-    const titleInside = placeholderText(this.el, 'icon-dropzone-label-position') === 'inside';
     const refs = buildDropzone({
       allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
       multiple: true,
       uploadLabel: heading,
+      style,
+      selectFileText: placeholderText(this.el, 'icon-select-file-text') || 'Select file',
+      dragText: placeholderText(this.el, 'icon-drag-text'),
     });
-    const titleEl = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, heading);
     const subtextEl = subtext ? createTag('div', { class: 'pu-dropzone-subtext' }, subtext) : null;
     const leftSection = createTag('div', { class: 'pu-left-section' });
+
+    if (style === 'panel') {
+      leftSection.classList.add('pu-left-panel');
+      if (subtextEl) refs.dropZone.append(subtextEl);
+      leftSection.append(refs.wrap);
+      return { leftSection, dropZoneRefs: refs };
+    }
+    const titleInside = placeholderText(this.el, 'icon-dropzone-label-position') === 'inside';
+    const titleEl = createTag('div', { class: 'unity-slf-copy-label pu-upload-heading' }, heading);
     if (titleInside) {
       leftSection.classList.add('pu-dz-title-inside');
       refs.dropZone.append(titleEl);
@@ -264,7 +275,7 @@ export default class PromptUploadWidget {
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     const root = this.widgetWrap?.querySelector('.unity-prompt-upload');
     if (this.resultsEl && root) root.append(this.resultsEl);
-    if (dropZoneRefs) wirePreview(this.widgetWrap, dropZoneRefs);
+    if (dropZoneRefs?.preview) wirePreview(this.widgetWrap, dropZoneRefs);
     return this.cfg.actionMap;
   }
 }
