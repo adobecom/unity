@@ -469,7 +469,9 @@ export class EditorEngine {
     this.isCrop = parsedData.operation === 'crop';
     this.viewport = stageEl.querySelector('.ia-viewport');
     this.blurImg = stageEl.querySelector('.ia-imglayer--blur .ia-img');
-    this.sharpImg = stageEl.querySelector('.ia-imglayer--sharp .ia-img');
+    // clip-path lives on this wrapper, not on sharpImg itself — see render()'s comment.
+    this.sharpLayer = stageEl.querySelector('.ia-imglayer--sharp');
+    this.sharpImg = this.sharpLayer.querySelector('.ia-img');
     this.frame = stageEl.querySelector('.ia-frame');
     this.slider = stageEl.querySelector('.ia-slider');
     this.valEl = stageEl.querySelector('.ia-val');
@@ -566,7 +568,13 @@ export class EditorEngine {
     this.frame.style.top = `${y}%`;
     this.frame.style.width = `${w}%`;
     this.frame.style.height = `${h}%`;
-    this.sharpImg.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
+    // clip-path must live on sharpLayer (the untransformed wrapper), not sharpImg
+    // itself — CSS clips an element's own box before applying its transform, so a
+    // clip-path on the same element being scaled would visibly scale the "cut here"
+    // window along with the zoom, drifting away from the static .ia-frame overlay
+    // (which never gets a zoom transform). Clipping on the fixed wrapper keeps the
+    // visible sharp window pinned to the frame regardless of zoom.
+    this.sharpLayer.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
     const transform = `scale(${zoomScale(this.zoom)})`;
     this.blurImg.style.transform = transform;
     this.sharpImg.style.transform = transform;
