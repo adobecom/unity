@@ -34,6 +34,8 @@ export default class ActionBinder {
     SAME_FILE_TYPE: 'validation_error_file_same_type',
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count',
     UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count',
+    PASSWORD_PROTECTED: 'validation_error_password_protected',
+    ACROFORM_NOT_SUPPORTED: 'validation_error_acroform_not_supported',
   };
 
   static MULTI_FILE_ERROR_MESSAGES = {
@@ -42,7 +44,12 @@ export default class ActionBinder {
     FILE_TOO_LARGE: 'validation_error_file_too_large_multi',
     SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
+    PASSWORD_PROTECTED: 'validation_error_password_protected_multi',
   };
+
+  static PDF_INTEGRITY_CHECK_VERBS = ['gen-presentation', 'interactive-reports', 'stylize'];
+
+  static PDF_ACROFORM_CHECK_VERBS = ['stylize'];
 
   static LIMITS_MAP = {
     fillsign: ['single', 'page-limit-100'],
@@ -87,6 +94,9 @@ export default class ActionBinder {
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'resume-builder': ['single', 'allowed-filetypes-resume', 'page-limit-10', 'max-filesize-20-mb'],
+    'gen-presentation': ['single', 'allowed-filetypes-study-spaces', 'allowed-filetypes-avalon', 'page-limit-600', 'max-filesize-100-mb'],
+    'interactive-reports': ['single', 'allowed-filetypes-study-spaces', 'allowed-filetypes-avalon', 'page-limit-600', 'max-filesize-100-mb'],
+    stylize: ['single', 'allowed-filetypes-pdf-only', 'page-limit-15', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -106,11 +116,14 @@ export default class ActionBinder {
     validation_error_file_too_large: -103,
     validation_error_only_accept_one_file: -104,
     validation_error_file_same_type: -105,
+    validation_error_password_protected: -106,
+    validation_error_acroform_not_supported: -107,
     validation_error_unsupported_type_multi: -200,
     validation_error_empty_file_multi: -201,
     validation_error_file_too_large_multi: -202,
     validation_error_multiple_invalid_files: -203,
     validation_error_max_num_files: -204,
+    validation_error_password_protected_multi: -205,
     validation_error_file_same_type_multi: -206,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
@@ -142,6 +155,9 @@ export default class ActionBinder {
     validation_error_file_too_large: 'verb_upload_error_file_too_large',
     validation_error_only_accept_one_file: 'verb_upload_error_only_accept_one_file',
     validation_error_file_same_type: 'verb_upload_error_file_same_type',
+    validation_error_password_protected: 'verb_upload_error_password_protected',
+    validation_error_password_protected_multi: 'verb_upload_error_password_protected_multi',
+    validation_error_acroform_not_supported: 'verb_upload_error_acroform_not_supported',
     validation_error_unsupported_type_multi: 'verb_upload_error_unsupported_type_multi',
     validation_error_empty_file_multi: 'verb_upload_error_empty_file_multi',
     validation_error_file_too_large_multi: 'verb_upload_error_file_too_large_multi',
@@ -587,12 +603,42 @@ export default class ActionBinder {
   }
 
   async filterFilesWithPdflite(files) {
-    if (!this.limits.pageLimit) return files;
+    const verb = this.workflowCfg.enabledFeatures[0];
+    const runIntegrityCheck = ActionBinder.PDF_INTEGRITY_CHECK_VERBS.includes(verb);
+    const runAcroformCheck = ActionBinder.PDF_ACROFORM_CHECK_VERBS.includes(verb);
+    const runPageCountCheck = !!this.limits.pageLimit;
+    if (!runIntegrityCheck && !runAcroformCheck && !runPageCountCheck) return files;
+    if (!files.some((file) => file.type === 'application/pdf')) return files;
     try {
       const { validateFilesWithPdflite, getPageCountErrorCode } = await import('../../../scripts/pdflite-validator.js');
       const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
       const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
-      if (failed && failed.length > 0) {
+      let remaining = passed;
+
+      if (runIntegrityCheck && Array.isArray(results)) {
+        const protectedResults = results.filter(
+          (r) => r.ok && (r.isEncrypted === true || r.isPasswordProtected === true),
+        );
+        if (protectedResults.length > 0) {
+          const protectedFiles = new Set(protectedResults.map((r) => r.file));
+          remaining = remaining.filter((f) => !protectedFiles.has(f));
+          const errorCode = errorMessages.PASSWORD_PROTECTED;
+          await this.dispatchErrorToast(errorCode, null, `${protectedResults.length} file(s) encrypted or password-protected`, false, true, { code: 'validation_error_validate_files', subCode: errorCode });
+          if (this.MULTI_FILE) this.multiFileValidationFailure = true;
+        }
+      }
+
+      if (runAcroformCheck && Array.isArray(results)) {
+        const acroformResults = results.filter((r) => r.ok && r.hasAcroForm === true);
+        if (acroformResults.length > 0) {
+          const acroformFiles = new Set(acroformResults.map((r) => r.file));
+          remaining = remaining.filter((f) => !acroformFiles.has(f));
+          const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.ACROFORM_NOT_SUPPORTED;
+          await this.dispatchErrorToast(errorCode, null, `${acroformResults.length} file(s) contain a form; forms are not supported`, false, true, { code: 'validation_error_validate_files', subCode: errorCode });
+        }
+      }
+
+      if (runPageCountCheck && failed && failed.length > 0) {
         const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
         if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
           await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
@@ -600,7 +646,7 @@ export default class ActionBinder {
         }
         if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
-      return passed;
+      return remaining;
     } catch (error) {
       await this.dispatchErrorToast('error_generic', 500, `Exception during PDF validation: ${error.message}`, true);
       return files;

@@ -267,6 +267,9 @@ class WfInitiator {
           'flashcard-maker',
           'mindmap-maker',
           'resume-builder',
+          'gen-presentation',
+          'interactive-reports',
+          'stylize',
         ]),
       },
       'workflow-ai': {

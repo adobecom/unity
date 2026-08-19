@@ -31,8 +31,11 @@ export async function validateFilesWithPdflite(files, limits) {
     if (file.type !== 'application/pdf') return Promise.resolve({ file, ok: true });
     return (async () => {
       const details = await pdflite.fileDetails(file);
+      const isEncrypted = details?.IS_ENCRYPTED === true;
+      const isPasswordProtected = details?.IS_PASSWORD_PROTECTED === true;
+      const hasAcroForm = details?.HAS_ACROFORM === true;
       const pageCount = details?.NUM_PAGES;
-      if (pageCount === undefined || pageCount === null) return { file, ok: true };
+      if (pageCount === undefined || pageCount === null) return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm };
       const overMaxPageCount = limits.pageLimit?.maxNumPages && pageCount > limits.pageLimit.maxNumPages;
       const underMinPageCount = limits.pageLimit?.minNumPages && pageCount < limits.pageLimit.minNumPages;
       let error = null;
@@ -45,7 +48,7 @@ export async function validateFilesWithPdflite(files, limits) {
         error.errorType = 'UNDER_MIN_PAGE_COUNT';
       }
       if (error) throw error;
-      return { file, ok: true };
+      return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm };
     })().catch((error) => {
       const isPageCountError = error.errorType === 'OVER_MAX_PAGE_COUNT' || error.errorType === 'UNDER_MIN_PAGE_COUNT';
       if (isPageCountError) return { file, ok: false, error, errorType: error.errorType };
