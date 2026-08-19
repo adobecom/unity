@@ -531,6 +531,7 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts, filesData) {
+    cOpts.payload.referrer = this.workflowCfg.referrer || cOpts.payload.verb;
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
       const numAttempts = parseInt(localStorage.getItem(`${this.workflowCfg.enabledFeatures[0]}_attempts`), 10) || 0;
