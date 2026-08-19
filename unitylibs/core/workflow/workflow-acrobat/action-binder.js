@@ -47,10 +47,6 @@ export default class ActionBinder {
     PASSWORD_PROTECTED: 'validation_error_password_protected_multi',
   };
 
-  static PDF_INTEGRITY_CHECK_VERBS = ['gen-presentation', 'interactive-reports', 'stylize'];
-
-  static PDF_ACROFORM_CHECK_VERBS = ['stylize'];
-
   static LIMITS_MAP = {
     fillsign: ['single', 'page-limit-100'],
     'compress-pdf': ['hybrid', 'allowed-filetypes-all', 'max-filesize-2-gb'],
@@ -604,8 +600,8 @@ export default class ActionBinder {
 
   async filterFilesWithPdflite(files) {
     const verb = this.workflowCfg.enabledFeatures[0];
-    const runIntegrityCheck = ActionBinder.PDF_INTEGRITY_CHECK_VERBS.includes(verb);
-    const runAcroformCheck = ActionBinder.PDF_ACROFORM_CHECK_VERBS.includes(verb);
+    const runIntegrityCheck = (this.workflowCfg.targetCfg.pdfIntegrityCheckVerbs || []).includes(verb);
+    const runAcroformCheck = (this.workflowCfg.targetCfg.pdfAcroformCheckVerbs || []).includes(verb);
     const runPageCountCheck = !!this.limits.pageLimit;
     if (!runIntegrityCheck && !runAcroformCheck && !runPageCountCheck) return files;
     if (!files.some((file) => file.type === 'application/pdf')) return files;
@@ -686,7 +682,7 @@ export default class ActionBinder {
     this.MULTI_FILE = files.length > 1;
     const prevalidatedFiles = await this.filterFilesWithPdflite(sanitizedFiles);
     if (prevalidatedFiles.length === 0) return;
-    const wordValidatedFiles = this.workflowCfg.enabledFeatures[0] === 'resume-builder'
+    const wordValidatedFiles = (this.workflowCfg.targetCfg.wordPageCountVerbs || []).includes(this.workflowCfg.enabledFeatures[0])
       ? await this.validateWordFilePageCount(prevalidatedFiles)
       : prevalidatedFiles;
     if (wordValidatedFiles.length === 0) return;
