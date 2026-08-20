@@ -267,7 +267,7 @@ class WfInitiator {
           'flashcard-maker',
           'mindmap-maker',
           'resume-builder',
-          'gen-presentation',
+          'gen-presentation-v2',
           'interactive-reports',
           'stylize',
         ]),
