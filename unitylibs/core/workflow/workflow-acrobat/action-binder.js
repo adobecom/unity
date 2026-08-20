@@ -210,6 +210,7 @@ export default class ActionBinder {
       this.tokenError = result.error;
       return;
     }
+    this.tokenError = null;
     this.signedOut = result.isGuest ?? undefined;
   }
 
@@ -793,6 +794,7 @@ export default class ActionBinder {
     await this.loadTransitionScreen();
     await this.handlePreloads();
     if (this.signedOut === undefined) {
+      if (this.tokenError) await this.initialize();
       if (this.tokenError) {
         const errorDetails = this.tokenError;
         await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${JSON.stringify(errorDetails.originalError)}`, false, true, {
