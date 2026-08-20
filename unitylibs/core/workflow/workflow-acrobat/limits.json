@@ -235,7 +235,6 @@
   "allowed-filetypes-avalon": {
     "allowedFileTypes": [
       "message/rfc822",
-      "application/octet-stream",
       "application/vnd.ms-outlook"
     ]
   }
