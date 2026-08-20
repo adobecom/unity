@@ -45,6 +45,7 @@ export default class ActionBinder {
     SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
     PASSWORD_PROTECTED: 'validation_error_password_protected_multi',
+    ACROFORM_NOT_SUPPORTED: 'validation_error_acroform_not_supported_multi',
   };
 
   static LIMITS_MAP = {
@@ -121,6 +122,7 @@ export default class ActionBinder {
     validation_error_max_num_files: -204,
     validation_error_password_protected_multi: -205,
     validation_error_file_same_type_multi: -206,
+    validation_error_acroform_not_supported_multi: -207,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
     upload_validation_error_max_page_count_multi: -303,
@@ -154,6 +156,7 @@ export default class ActionBinder {
     validation_error_password_protected: 'verb_upload_error_password_protected',
     validation_error_password_protected_multi: 'verb_upload_error_password_protected_multi',
     validation_error_acroform_not_supported: 'verb_upload_error_acroform_not_supported',
+    validation_error_acroform_not_supported_multi: 'verb_upload_error_acroform_not_supported_multi',
     validation_error_unsupported_type_multi: 'verb_upload_error_unsupported_type_multi',
     validation_error_empty_file_multi: 'verb_upload_error_empty_file_multi',
     validation_error_file_too_large_multi: 'verb_upload_error_file_too_large_multi',
@@ -625,12 +628,14 @@ export default class ActionBinder {
       }
 
       if (runAcroformCheck && Array.isArray(results)) {
-        const acroformResults = results.filter((r) => r.ok && r.hasAcroForm === true);
+        const remainingSet = new Set(remaining);
+        const acroformResults = results.filter((r) => r.ok && r.hasAcroForm === true && remainingSet.has(r.file));
         if (acroformResults.length > 0) {
           const acroformFiles = new Set(acroformResults.map((r) => r.file));
           remaining = remaining.filter((f) => !acroformFiles.has(f));
-          const errorCode = ActionBinder.SINGLE_FILE_ERROR_MESSAGES.ACROFORM_NOT_SUPPORTED;
+          const errorCode = errorMessages.ACROFORM_NOT_SUPPORTED;
           await this.dispatchErrorToast(errorCode, null, `${acroformResults.length} file(s) contain a form; forms are not supported`, false, true, { code: 'validation_error_validate_files', subCode: errorCode });
+          if (this.MULTI_FILE) this.multiFileValidationFailure = true;
         }
       }
 

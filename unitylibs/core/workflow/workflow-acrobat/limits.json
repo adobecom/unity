@@ -236,8 +236,7 @@
     "allowedFileTypes": [
       "message/rfc822",
       "application/octet-stream",
-      "application/vnd.ms-outlook",
-      "application/octet-stream"
+      "application/vnd.ms-outlook"
     ]
   }
 }
