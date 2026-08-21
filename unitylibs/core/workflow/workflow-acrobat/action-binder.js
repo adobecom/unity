@@ -614,7 +614,6 @@ export default class ActionBinder {
       const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
       const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
       let remaining = passed;
-
       if (runIntegrityCheck && Array.isArray(results)) {
         const protectedResults = results.filter(
           (r) => r.ok && (r.isEncrypted === true || r.isPasswordProtected === true),
@@ -627,7 +626,6 @@ export default class ActionBinder {
           if (this.MULTI_FILE) this.multiFileValidationFailure = true;
         }
       }
-
       if (runAcroformCheck && Array.isArray(results)) {
         const remainingSet = new Set(remaining);
         const acroformResults = results.filter((r) => r.ok && r.hasAcroForm === true && remainingSet.has(r.file));
@@ -639,7 +637,6 @@ export default class ActionBinder {
           if (this.MULTI_FILE) this.multiFileValidationFailure = true;
         }
       }
-
       if (runPageCountCheck && failed && failed.length > 0) {
         const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
         if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
