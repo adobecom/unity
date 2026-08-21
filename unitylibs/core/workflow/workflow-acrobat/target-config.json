@@ -22,9 +22,9 @@
     "mfuUploadAllowed": ["combine-pdf", "rotate-pages", "chat-pdf", "chat-pdf-student", "summarize-pdf", "pdf-ai", "quiz-maker", "flashcard-maker", "mindmap-maker", "heic-to-pdf"],
     "mfuUploadOnlyPdfAllowed": ["combine-pdf"],
     "experimentationOn": ["add-comment"],
-    "pdfIntegrityCheckVerbs": ["gen-presentation", "interactive-report", "stylize"],
+    "pdfIntegrityCheckVerbs": ["gen-presentation-v2", "interactive-report", "stylize"],
     "pdfAcroformCheckVerbs": ["stylize"],
-    "wordPageCountVerbs": ["resume-builder", "gen-presentation", "interactive-report"],
+    "wordPageCountVerbs": ["resume-builder", "gen-presentation-v2", "interactive-report"],
     "fetchApiConfig": {
       "finalizeAsset": {
         "retryType": "polling",
