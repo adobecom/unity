@@ -36,6 +36,7 @@ export default class ActionBinder {
     UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count',
     PASSWORD_PROTECTED: 'validation_error_password_protected',
     ACROFORM_NOT_SUPPORTED: 'validation_error_acroform_not_supported',
+    SCANNED_DOCUMENT: 'validation_error_scanned_document',
   };
 
   static MULTI_FILE_ERROR_MESSAGES = {
@@ -46,6 +47,7 @@ export default class ActionBinder {
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
     PASSWORD_PROTECTED: 'validation_error_password_protected_multi',
     ACROFORM_NOT_SUPPORTED: 'validation_error_acroform_not_supported_multi',
+    SCANNED_DOCUMENT: 'validation_error_scanned_document_multi',
   };
 
   static LIMITS_MAP = {
@@ -115,6 +117,7 @@ export default class ActionBinder {
     validation_error_file_same_type: -105,
     validation_error_password_protected: -106,
     validation_error_acroform_not_supported: -107,
+    validation_error_scanned_document: -108,
     validation_error_unsupported_type_multi: -200,
     validation_error_empty_file_multi: -201,
     validation_error_file_too_large_multi: -202,
@@ -123,6 +126,7 @@ export default class ActionBinder {
     validation_error_password_protected_multi: -205,
     validation_error_file_same_type_multi: -206,
     validation_error_acroform_not_supported_multi: -207,
+    validation_error_scanned_document_multi: -208,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
     upload_validation_error_max_page_count_multi: -303,
@@ -157,6 +161,8 @@ export default class ActionBinder {
     validation_error_password_protected_multi: 'verb_upload_error_password_protected_multi',
     validation_error_acroform_not_supported: 'verb_upload_error_acroform_not_supported',
     validation_error_acroform_not_supported_multi: 'verb_upload_error_acroform_not_supported_multi',
+    validation_error_scanned_document: 'verb_upload_error_scanned_document',
+    validation_error_scanned_document_multi: 'verb_upload_error_scanned_document_multi',
     validation_error_unsupported_type_multi: 'verb_upload_error_unsupported_type_multi',
     validation_error_empty_file_multi: 'verb_upload_error_empty_file_multi',
     validation_error_file_too_large_multi: 'verb_upload_error_file_too_large_multi',
@@ -606,37 +612,44 @@ export default class ActionBinder {
     const verb = this.workflowCfg.enabledFeatures[0];
     const runIntegrityCheck = (this.workflowCfg.targetCfg.pdfIntegrityCheckVerbs || []).includes(verb);
     const runAcroformCheck = (this.workflowCfg.targetCfg.pdfAcroformCheckVerbs || []).includes(verb);
+    const runScannedCheck = (this.workflowCfg.targetCfg.pdfScannedCheckVerbs || []).includes(verb);
     const runPageCountCheck = !!this.limits.pageLimit;
-    if (!runIntegrityCheck && !runAcroformCheck && !runPageCountCheck) return files;
+    if (!runIntegrityCheck && !runAcroformCheck && !runScannedCheck && !runPageCountCheck) return files;
     if (!files.some((file) => file.type === 'application/pdf')) return files;
     try {
       const { validateFilesWithPdflite, getPageCountErrorCode } = await import('../../../scripts/pdflite-validator.js');
       const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
-      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
+      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits, runScannedCheck);
       let remaining = passed;
-      if (runIntegrityCheck && Array.isArray(results)) {
-        const protectedResults = results.filter(
-          (r) => r.ok && (r.isEncrypted === true || r.isPasswordProtected === true),
-        );
-        if (protectedResults.length > 0) {
-          const protectedFiles = new Set(protectedResults.map((r) => r.file));
-          remaining = remaining.filter((f) => !protectedFiles.has(f));
-          const errorCode = errorMessages.PASSWORD_PROTECTED;
-          await this.dispatchErrorToast(errorCode, null, `${protectedResults.length} file(s) encrypted or password-protected`, false, true, { code: 'validation_error_validate_files', subCode: errorCode });
-          if (this.MULTI_FILE) this.multiFileValidationFailure = true;
-        }
-      }
-      if (runAcroformCheck && Array.isArray(results)) {
+      const applyPdfliteCheck = async (enabled, matches, errorKey, describe) => {
+        if (!enabled || !Array.isArray(results)) return;
         const remainingSet = new Set(remaining);
-        const acroformResults = results.filter((r) => r.ok && r.hasAcroForm === true && remainingSet.has(r.file));
-        if (acroformResults.length > 0) {
-          const acroformFiles = new Set(acroformResults.map((r) => r.file));
-          remaining = remaining.filter((f) => !acroformFiles.has(f));
-          const errorCode = errorMessages.ACROFORM_NOT_SUPPORTED;
-          await this.dispatchErrorToast(errorCode, null, `${acroformResults.length} file(s) contain a form; forms are not supported`, false, true, { code: 'validation_error_validate_files', subCode: errorCode });
-          if (this.MULTI_FILE) this.multiFileValidationFailure = true;
-        }
-      }
+        const matched = results.filter((r) => r.ok && remainingSet.has(r.file) && matches(r));
+        if (matched.length === 0) return;
+        const matchedFiles = new Set(matched.map((r) => r.file));
+        remaining = remaining.filter((f) => !matchedFiles.has(f));
+        const errorCode = errorMessages[errorKey];
+        await this.dispatchErrorToast(errorCode, null, describe(matched.length), false, true, { code: 'validation_error_validate_files', subCode: errorCode });
+        if (this.MULTI_FILE) this.multiFileValidationFailure = true;
+      };
+      await applyPdfliteCheck(
+        runIntegrityCheck,
+        (r) => r.isEncrypted === true || r.isPasswordProtected === true || r.isCorrupted === true,
+        'PASSWORD_PROTECTED',
+        (n) => `${n} file(s) encrypted, password-protected, or corrupted`,
+      );
+      await applyPdfliteCheck(
+        runAcroformCheck,
+        (r) => r.hasAcroForm === true,
+        'ACROFORM_NOT_SUPPORTED',
+        (n) => `${n} file(s) contain a form; forms are not supported`,
+      );
+      await applyPdfliteCheck(
+        runScannedCheck,
+        (r) => r.isScanned === true,
+        'SCANNED_DOCUMENT',
+        (n) => `${n} file(s) are scanned documents`,
+      );
       if (runPageCountCheck && failed && failed.length > 0) {
         const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
         if (errorInfo?.shouldDispatch && errorInfo.errorCode) {

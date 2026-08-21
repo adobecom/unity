@@ -24,6 +24,7 @@
     "experimentationOn": ["add-comment"],
     "pdfIntegrityCheckVerbs": ["gen-presentation-v2", "interactive-report", "stylize"],
     "pdfAcroformCheckVerbs": ["stylize"],
+    "pdfScannedCheckVerbs": ["stylize"],
     "wordPageCountVerbs": ["resume-builder", "gen-presentation-v2", "interactive-report"],
     "fetchApiConfig": {
       "finalizeAsset": {
