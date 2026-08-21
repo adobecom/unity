@@ -268,7 +268,7 @@ class WfInitiator {
           'mindmap-maker',
           'resume-builder',
           'gen-presentation-v2',
-          'interactive-reports',
+          'interactive-report',
           'stylize',
         ]),
       },
