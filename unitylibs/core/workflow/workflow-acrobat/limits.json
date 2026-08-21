@@ -231,11 +231,5 @@
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
-  },
-  "allowed-filetypes-avalon": {
-    "allowedFileTypes": [
-      "message/rfc822",
-      "application/vnd.ms-outlook"
-    ]
   }
 }
