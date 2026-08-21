@@ -2221,6 +2221,53 @@ describe('ActionBinder', () => {
           )).to.be.true;
         });
       });
+
+      describe('token error retry', () => {
+        it('retries via initialize and proceeds when the retry clears tokenError', async () => {
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+          actionBinder.signedOut = undefined;
+          actionBinder.tokenError = { type: 'token_error', originalError: { message: 'boom' } };
+          const initStub = sinon.stub(actionBinder, 'initialize').callsFake(async () => {
+            actionBinder.signedOut = false;
+            actionBinder.tokenError = null;
+          });
+          const validFiles = [{ name: 'a.pdf', type: 'application/pdf', size: 1048576 }];
+
+          await actionBinder.acrobatActionMaps('upload', validFiles, 1048576, 'test-event');
+
+          expect(initStub.calledOnce).to.be.true;
+          expect(actionBinder.dispatchErrorToast.neverCalledWith('pre_upload_error_fetching_access_token')).to.be.true;
+          expect(actionBinder.processHybrid.calledOnce).to.be.true;
+        });
+
+        it('shows the access-token error toast and stops when the retry still fails', async () => {
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+          actionBinder.signedOut = undefined;
+          const errorDetails = { type: 'token_error', originalError: { message: 'boom' } };
+          actionBinder.tokenError = errorDetails;
+          const initStub = sinon.stub(actionBinder, 'initialize').resolves();
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(initStub.calledOnce).to.be.true;
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'pre_upload_error_fetching_access_token',
+            null,
+            `Could not fetch access token; Error: ${JSON.stringify(errorDetails.originalError)}`,
+            false,
+            true,
+            { code: 'pre_upload_error_fetching_access_token', desc: errorDetails },
+          )).to.be.true;
+          expect(actionBinder.processHybrid.called).to.be.false;
+          expect(actionBinder.dispatchAnalyticsEvent.called).to.be.false;
+        });
+      });
     });
 
     describe('applySignedInSettings', () => {
