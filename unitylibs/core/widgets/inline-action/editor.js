@@ -30,8 +30,6 @@ const MORE_ASPECTS = [
   { label: '3:4', ratio: 3 / 4 },
   { label: '2:1', ratio: 2 },
 ];
-const CROP_FURTHER_STUBS = ['Upscale', 'Prompt to edit', 'Expand', 'Remove object', 'Tune'];
-const RESIZE_FURTHER_STUBS = ['Prompt to edit', 'Remove object', 'Tune', 'Expand', 'Cartoonize'];
 const RESIZE_STANDARD = [
   { label: 'Square 1:1', ratio: 1 },
   { label: 'Widescreen 16:9', ratio: 16 / 9 },
@@ -221,51 +219,52 @@ function buildFrame() {
   return frame;
 }
 
-// Rotation removed for now (no backend support yet — see crop-rotation-and-quality.md).
-// Crop is left with only Zoom, so there's nothing to toggle between — a single
-// already-active button is kept in the same .ia-toggle markup purely for visual
-// consistency with Resize's real Quality/Zoom toggle, not because it's interactive.
-function buildAdjustBar(isCrop) {
+// Only 'zoom' and 'quality' are functionally wired (EditorEngine has real state and
+// slider behavior for exactly those two) — an authored icon-placeholder-slider-* with
+// any other suffix renders a real toggle button, but clicking it and moving the slider
+// won't actually change anything, since there's no matching state field to write to.
+const KNOWN_SLIDER_MODES = new Set(['zoom', 'quality']);
+
+// Icon-only until this button becomes the active mode, at which point its label
+// appears beside the icon (see .ia-toggle-label / .is-active in editor.css) — the
+// active button is whichever one setMode() last marked, same mechanism already used
+// elsewhere in this file, no extra state needed here.
+function buildToggleButton(mode, label, iconHref, isActive) {
+  const btn = createTag('button', {
+    type: 'button',
+    class: `ia-toggle__btn${isActive ? ' is-active' : ''}`,
+    'data-mode': mode,
+    'aria-label': label,
+  });
+  if (iconHref) btn.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
+  btn.append(createTag('span', { class: 'ia-toggle-label' }, label));
+  return btn;
+}
+
+// Only called when parsedData.sliderModes is non-empty (see buildEditorStage) — no
+// fallback to hardcoded modes: an unauthored page simply gets no adjust bar at all.
+function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
   const toggle = createTag('div', { class: 'ia-toggle' });
-  if (isCrop) {
-    toggle.append(createTag('button', {
-      type: 'button',
-      class: 'ia-toggle__btn is-active',
-      'data-mode': 'zoom',
-      'aria-label': 'Zoom',
-    }, 'Zoom'));
-  } else {
-    toggle.append(
-      createTag('button', {
-        type: 'button',
-        class: 'ia-toggle__btn is-active',
-        'data-mode': 'quality',
-        'aria-label': 'Quality',
-      }, 'Quality'),
-      createTag('button', {
-        type: 'button',
-        class: 'ia-toggle__btn',
-        'data-mode': 'zoom',
-        'aria-label': 'Zoom',
-      }, 'Zoom'),
-    );
-  }
+  const { sliderModes } = parsedData;
+  sliderModes.forEach(({ mode, label, iconHref }, i) => toggle.append(buildToggleButton(mode, label, iconHref, i === 0)));
+  const startMode = sliderModes[0]?.mode;
   const slider = createTag('input', {
     type: 'range',
     class: 'ia-slider',
     autocomplete: 'off',
     min: '0',
     max: '100',
-    value: isCrop ? '0' : '100',
+    // Just the first paint's placeholder — EditorEngine's constructor immediately
+    // overwrites this via setMode() once real state (this.zoom/this.quality) exists.
+    value: startMode === 'quality' ? '100' : '0',
   });
-  const val = createTag('span', { class: 'ia-val' }, isCrop ? '0%' : '100%');
+  const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '0%');
   bar.append(toggle, slider, val);
   return bar;
 }
 
 export function buildEditorStage(parsedData) {
-  const isCrop = parsedData.operation === 'crop';
   const stage = createTag('div', { class: 'ia-editor-stage' });
   const viewport = createTag('div', { class: 'ia-viewport' });
   const blurImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
@@ -275,8 +274,20 @@ export function buildEditorStage(parsedData) {
     createTag('div', { class: 'ia-imglayer ia-imglayer--sharp' }, sharpImg),
     buildFrame(),
   );
-  stage.append(viewport, buildAdjustBar(isCrop));
+  stage.append(viewport);
+  // No icon-placeholder-slider-* authored at all — no adjust bar, not a fallback one.
+  if (parsedData.sliderModes.length) stage.append(buildAdjustBar(parsedData));
   return stage;
+}
+
+// Shared by every authored icon+label button/pill (reset, reupload, the two CTAs,
+// each NBA pill) — iconHref is optional (undefined when not authored), so this works
+// identically whether or not a given row actually has an icon.
+function buildIconButton(tag, attrs, iconHref, label) {
+  const el = createTag(tag, attrs);
+  if (iconHref) el.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
+  el.append(createTag('span', {}, label));
+  return el;
 }
 
 function buildAspectPill(label, ratio, isActive = false) {
@@ -288,18 +299,24 @@ function buildAspectPill(label, ratio, isActive = false) {
   }, label);
 }
 
-function buildCtaRow(isCrop) {
+// downloadLabel/editLabel come from the authored config list (the same icon-download/
+// icon-aiPhotoEditor rows rbg's buildResultSection/buildEditInFireflyButton read) —
+// undefined when not authored, so falls back to the crop/resize-specific defaults
+// below rather than rbg's generic "Download"/"Edit in Firefly" wording.
+function buildCtaRow(isCrop, parsedData) {
   const row = createTag('div', { class: 'ia-cta-row' });
+  const downloadLabel = parsedData.downloadLabel || (isCrop ? 'Crop and download' : 'Resize and download');
+  const editLabel = parsedData.editLabel || 'Open in Firefly';
   row.append(
-    createTag('button', { type: 'button', class: 'ia-cta-accent' }, isCrop ? 'Crop and download' : 'Resize and download'),
-    createTag('button', { type: 'button', class: 'ia-cta-outline' }, 'Open in Firefly'),
+    buildIconButton('button', { type: 'button', class: 'ia-cta-accent' }, parsedData.downloadIconHref, downloadLabel),
+    buildIconButton('button', { type: 'button', class: 'ia-cta-outline' }, parsedData.editIconHref, editLabel),
   );
   return row;
 }
 
-function buildCropAspectSection() {
+function buildCropAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
-  section.append(createTag('p', { class: 'ia-aspect-heading' }, 'Aspect ratio'));
+  section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
   ASPECT_PILLS.forEach(({ label, ratio }, i) => row.append(buildAspectPill(label, ratio, i === 0)));
   const more = createTag('div', { class: 'ia-more' });
@@ -320,7 +337,7 @@ function buildCropAspectSection() {
   }, 'More');
   more.append(moreTrigger, moreMenu);
   row.append(more);
-  section.append(row, buildCtaRow(true));
+  section.append(row, buildCtaRow(true, parsedData));
   return section;
 }
 
@@ -395,9 +412,9 @@ function buildSocialDetail() {
 // dropdown trigger exactly like Crop's "More" — clicking it doesn't switch tabs by
 // itself, it opens a platform list; picking a platform is what switches to showing
 // that platform's ratio grid (see EditorEngine.bindSocialEvents).
-function buildResizeAspectSection() {
+function buildResizeAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
-  section.append(createTag('p', { class: 'ia-aspect-heading' }, 'Aspect ratio'));
+  section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
   // These are deliberately NOT .ia-aspect-pill — that class is reserved for actual
   // ratio-selecting pills (Standard's presets, Social's per-platform grids), which
@@ -425,18 +442,24 @@ function buildResizeAspectSection() {
   }, 'Social');
   social.append(socialTrigger, socialMenu);
   row.append(social);
-  const readout = createTag('p', { class: 'ia-size-readout' }, 'Original size: -- New size: --');
-  section.append(row, buildCustomDetail(), buildStandardDetail(), buildSocialDetail(), readout, buildCtaRow(false));
+  const originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
+  const newSizeLabel = parsedData.newSizeLabel || 'New size';
+  const readout = createTag('p', { class: 'ia-size-readout' }, `${originalSizeLabel}: -- ${newSizeLabel}: --`);
+  section.append(row, buildCustomDetail(), buildStandardDetail(), buildSocialDetail(), readout, buildCtaRow(false, parsedData));
   return section;
 }
 
-function buildFurtherSection(isCrop) {
+// Crop/Resize's "take it further" pills come from the same authored NBA rows rbg's
+// cards use (icon-nba-* rows), just read via parsedData.nbaPills — the simpler
+// icon+label shape, not rbg's image-card shape (see parseInlineAuthoring). One page
+// only ever authors one operation, so there's no separate crop-vs-resize content to
+// pick between here — whatever's authored applies to this page's operation directly.
+function buildFurtherSection(parsedData) {
   const section = createTag('div', { class: 'ia-further-section' });
-  section.append(createTag('p', { class: 'ia-further-heading' }, 'Take your image further'));
+  section.append(createTag('p', { class: 'ia-further-heading' }, parsedData.nbaHeading || 'Take your image further'));
   const grid = createTag('div', { class: 'ia-further-grid' });
-  const stubs = isCrop ? CROP_FURTHER_STUBS : RESIZE_FURTHER_STUBS;
-  stubs.forEach((label) => {
-    grid.append(createTag('button', { type: 'button', class: 'ia-further-pill' }, label));
+  parsedData.nbaPills.forEach(({ nba, label, iconHref }) => {
+    grid.append(buildIconButton('button', { type: 'button', class: 'ia-further-pill', 'data-nba': nba }, iconHref, label));
   });
   section.append(grid);
   return section;
@@ -447,7 +470,12 @@ export function buildEditorPanel(parsedData) {
   const panel = createTag('div', { class: 'ia-editor-panel' });
   const header = createTag('div', { class: 'ia-editor-header' });
   const actions = createTag('div', { class: 'ia-editor-header-actions' });
-  actions.append(createTag('button', { type: 'button', class: 'ia-editor-reset' }, 'Reset'));
+  actions.append(buildIconButton(
+    'button',
+    { type: 'button', class: 'ia-editor-reset' },
+    parsedData.resetIconHref,
+    parsedData.resetLabel || 'Reset',
+  ));
   if (!isCrop) {
     actions.append(createTag('button', {
       type: 'button',
@@ -455,18 +483,23 @@ export function buildEditorPanel(parsedData) {
       'aria-pressed': 'false',
     }, 'Quality'));
   }
-  actions.append(createTag('button', {
-    type: 'button',
-    class: 'ia-editor-reupload ia-reupload-btn',
-    'aria-label': 'Upload another image',
-  }, 'Upload'));
+  actions.append(buildIconButton(
+    'button',
+    {
+      type: 'button',
+      class: 'ia-editor-reupload ia-reupload-btn',
+      'aria-label': parsedData.reuploadLabel || 'Upload another image',
+    },
+    parsedData.reuploadIconHref,
+    parsedData.reuploadLabel || 'Upload',
+  ));
   header.append(
-    createTag('span', { class: 'ia-editor-title' }, isCrop ? 'Crop your image' : 'Resize your image'),
+    createTag('span', { class: 'ia-editor-title' }, parsedData.editorTitle || (isCrop ? 'Crop your image' : 'Resize your image')),
     actions,
   );
   panel.append(header);
-  const aspectSection = isCrop ? buildCropAspectSection() : buildResizeAspectSection();
-  panel.append(aspectSection, buildFurtherSection(isCrop));
+  const aspectSection = isCrop ? buildCropAspectSection(parsedData) : buildResizeAspectSection(parsedData);
+  panel.append(aspectSection, buildFurtherSection(parsedData));
   return panel;
 }
 
@@ -505,6 +538,11 @@ export class EditorEngine {
     this.socialMenu = panelEl.querySelector('.ia-social-menu');
     this.socialGrids = [...panelEl.querySelectorAll('.ia-social-grid')];
     this.sizeReadout = panelEl.querySelector('.ia-size-readout');
+    // Same fallback pattern as the readout's initial text in buildResizeAspectSection —
+    // duplicated rather than shared, since that's a standalone builder function with no
+    // access to `this`, and this is the only other place these labels are needed.
+    this.originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
+    this.newSizeLabel = parsedData.newSizeLabel || 'New size';
     this.originalSize = 0;
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
@@ -527,7 +565,12 @@ export class EditorEngine {
     // Kept alongside selectedRatio purely for the EditInFirefly contract's
     // cropAspectRatioLock, which wants the authored label ("4:3"), not the numeric ratio.
     this.selectedRatioLabel = 'Freeform';
-    this.mode = this.isCrop ? 'zoom' : 'quality';
+    // Matches whichever mode buildAdjustBar picked as the first/active toggle button
+    // (or null if none were authored — no adjust bar exists in that case, see
+    // buildEditorStage), so DOM (.is-active) and state start in sync. Stored so
+    // reset() can return to it without re-deriving the same lookup.
+    this.defaultMode = parsedData.sliderModes[0]?.mode || null;
+    this.mode = this.defaultMode;
     this.zoom = 0;
     this.quality = 100;
     this.idleTimer = null;
@@ -628,7 +671,7 @@ export class EditorEngine {
   async updateSizeReadout() {
     const original = EditorEngine.formatBytes(this.originalSize);
     if (!this.hasInteracted) {
-      this.sizeReadout.textContent = `Original size: ${original} New size: --`;
+      this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: --`;
       return;
     }
     this.sizeReadoutSeq += 1;
@@ -637,7 +680,7 @@ export class EditorEngine {
     const newSize = await this.computeNewSize(width, height);
     if (seq !== this.sizeReadoutSeq) return; // a newer update superseded this one
     const updated = EditorEngine.formatBytes(newSize);
-    this.sizeReadout.textContent = `Original size: ${original} New size: ${updated}`;
+    this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: ${updated}`;
   }
 
   // Resize-only "Quality" button: an explicit, on-demand visual preview of what the
@@ -698,7 +741,7 @@ export class EditorEngine {
         this.startDrag(e, handle.dataset.handle);
       });
     });
-    this.slider.addEventListener('input', () => this.onSlider());
+    this.slider?.addEventListener('input', () => this.onSlider());
     this.toggleBtns.forEach((btn) => {
       btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
     });
@@ -885,7 +928,7 @@ export class EditorEngine {
       }
     }
     this.hasInteracted = false;
-    this.setMode(this.isCrop ? 'zoom' : 'quality');
+    this.setMode(this.defaultMode);
     this.scheduleSizeReadout();
   }
 
@@ -1041,14 +1084,22 @@ export class EditorEngine {
   setMode(mode) {
     this.mode = mode;
     this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
+    // No slider exists at all when nothing was authored (see buildEditorStage) —
+    // this.mode is still tracked for bookkeeping, but there's nothing left to update.
+    if (!this.slider) return;
     this.slider.min = '0';
     this.slider.max = '100';
-    const current = { zoom: this.zoom, quality: this.quality }[mode];
+    // Unrecognized authored mode (see KNOWN_SLIDER_MODES) — the button and its label
+    // still work, there's just no real state to reflect, so this is the safest inert
+    // fallback rather than showing "undefined".
+    const current = { zoom: this.zoom, quality: this.quality }[mode] ?? 0;
     this.slider.value = String(current);
     this.updateValLabel();
   }
 
   onSlider() {
+    // Unrecognized authored mode (see KNOWN_SLIDER_MODES) — nothing to update.
+    if (!KNOWN_SLIDER_MODES.has(this.mode)) return;
     const value = Number(this.slider.value);
     if (this.mode === 'zoom') this.zoom = value;
     else this.quality = value;
@@ -1061,8 +1112,10 @@ export class EditorEngine {
   }
 
   updateValLabel() {
+    if (!this.valEl) return;
     if (this.mode === 'zoom') this.valEl.textContent = `${Math.round(this.zoom)}%`;
-    else this.valEl.textContent = `${Math.round(this.quality)}%`;
+    else if (this.mode === 'quality') this.valEl.textContent = `${Math.round(this.quality)}%`;
+    else this.valEl.textContent = '--';
   }
 
   resetIdle() {

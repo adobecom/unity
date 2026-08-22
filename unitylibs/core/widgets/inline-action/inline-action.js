@@ -182,15 +182,37 @@ export function parseInlineAuthoring(unityEl) {
   const uls = [...unityEl.querySelectorAll(':scope > div ul')];
   const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
   const configUl = uls.find((ul) => ul !== nbaUl && ul.querySelector('[class*="icon-"]'));
+  // The editor's adjust-bar toggle buttons (Quality/Zoom, or whatever's authored) —
+  // an array, not a single field, since any number of icon-placeholder-slider-* rows
+  // can be authored; collected in document order, same order they'll be shown in.
+  const sliderModes = [];
 
   const config = {
     operation: 'removeBackground',
-    downloadLabel: 'Download',
+    // Left undefined rather than defaulted here — each consumer (rbg's buttons below,
+    // and the crop/resize editor's CTA row) needs to tell "not authored" apart from
+    // "authored as this exact string" so it can apply its own appropriate fallback.
+    downloadLabel: undefined,
     downloadIconHref: undefined,
     editIconHref: undefined,
-    editLabel: 'Edit in Firefly',
+    editLabel: undefined,
     reuploadIconHref: undefined,
-    nbaHeading: 'Do more with this image.',
+    // resetLabel/reuploadLabel: the editor's own Reset/"Upload another image" header
+    // buttons — distinct from `uploadLabel` above, which is the pre-upload CTA's own
+    // label. Named separately so the two don't collide despite both often reading
+    // "Upload".
+    resetLabel: undefined,
+    resetIconHref: undefined,
+    reuploadLabel: undefined,
+    // Same "undefined, not defaulted here" reasoning as above — rbg's NBA heading
+    // and the crop/resize editor's title each need their own fallback wording.
+    nbaHeading: undefined,
+    editorTitle: undefined,
+    // Editor-only — no rbg equivalent exists for these, so no fallback-collision
+    // concern; the fallback wording lives entirely in editor.js.
+    aspectRatioLabel: undefined,
+    originalSizeLabel: undefined,
+    newSizeLabel: undefined,
   };
   configUl?.querySelectorAll('li').forEach((li) => {
     const cls = configRowIconClass(li);
@@ -204,7 +226,26 @@ export function parseInlineAuthoring(unityEl) {
     } else if (cls === 'icon-aiPhotoEditor') {
       config.editLabel = stripUrls(li.textContent) || config.editLabel;
       config.editIconHref = getSvgHref(li) || config.editIconHref;
+    } else if (cls === 'icon-reset') {
+      config.resetLabel = stripUrls(li.textContent) || config.resetLabel;
+      config.resetIconHref = getSvgHref(li) || config.resetIconHref;
+    } else if (cls === 'icon-upload') {
+      config.reuploadLabel = stripUrls(li.textContent) || config.reuploadLabel;
+      // Same field icon-share already feeds — both are just different authoring
+      // conventions for "the reupload icon", so either can supply it.
+      config.reuploadIconHref = getSvgHref(li) || config.reuploadIconHref;
     } else if (cls === 'icon-placeholder-nba') config.nbaHeading = li.textContent.trim();
+    else if (cls === 'icon-placeholder-editor') config.editorTitle = li.textContent.trim();
+    else if (cls === 'icon-placeholder-aspect-ratio') config.aspectRatioLabel = li.textContent.trim();
+    else if (cls === 'icon-placeholder-original-size') config.originalSizeLabel = li.textContent.trim();
+    else if (cls === 'icon-placeholder-new-size') config.newSizeLabel = li.textContent.trim();
+    else if (cls.startsWith('icon-placeholder-slider-')) {
+      sliderModes.push({
+        mode: cls.replace('icon-placeholder-slider-', ''),
+        label: stripUrls(li.textContent),
+        iconHref: getSvgHref(li),
+      });
+    }
   });
 
   const nbaCards = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
@@ -212,6 +253,18 @@ export function parseInlineAuthoring(unityEl) {
     if (!nba) return null;
     const pic = li.querySelector('picture');
     return { label: nbaLiText(li), nba, defaultPrompt: nbaLiText(li, true), src: pic ? getImgSrc(pic) : '' };
+  }).filter(Boolean);
+
+  // Crop/Resize's "take it further" row is a plain icon+label pill, not an image card —
+  // same simple shape as the reset/upload/download rows above (icon, optional link,
+  // trailing text), not rbg's richer before/after-icon-text + picture format nbaLiText
+  // expects. Parsed separately, from the same nbaUl, so rbg's card rendering (above)
+  // and the editor's pill rendering can each read the authoring convention they need
+  // from the same list without either breaking the other.
+  const nbaPills = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
+    const nba = parseNbaIcon(li);
+    const label = nba ? stripUrls(li.textContent) : '';
+    return nba && label ? { nba, label, iconHref: getSvgHref(li) } : null;
   }).filter(Boolean);
 
   return {
@@ -223,6 +276,8 @@ export function parseInlineAuthoring(unityEl) {
     legalHtml,
     ...config,
     nbaCards,
+    nbaPills,
+    sliderModes,
     loadingText: placeholderRowText(unityEl, 'icon-placeholder-loading'),
   };
 }
@@ -317,20 +372,21 @@ function buildNbaGrid(nbaCards) {
 }
 
 function buildEditInFireflyButton(meta) {
+  const editLabel = meta.editLabel || 'Edit in Firefly';
   const editBtn = createTag('button', {
     type: 'button',
     class: 'ia-edit-in-firefly',
-    'aria-label': meta.editLabel,
+    'aria-label': editLabel,
   });
   if (meta.editIconHref) appendIconContent(editBtn, { href: meta.editIconHref, picture: true });
-  editBtn.append(createTag('span', {}, meta.editLabel));
+  editBtn.append(createTag('span', {}, editLabel));
   return editBtn;
 }
 
 function buildCompletePanel(meta) {
   const complete = createTag('div', { class: 'ia-complete' });
   complete.append(
-    createTag('p', { class: 'ia-nba-heading' }, meta.nbaHeading),
+    createTag('p', { class: 'ia-nba-heading' }, meta.nbaHeading || 'Do more with this image.'),
     buildNbaGrid(meta.nbaCards),
     buildEditInFireflyButton(meta),
   );
@@ -359,7 +415,7 @@ function buildResultSection(meta) {
   });
   const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
   appendIconContent(downloadBtn, { href: meta.downloadIconHref, spriteId: 'ia-download-icon', size: 18 });
-  downloadBtn.append(createTag('span', {}, meta.downloadLabel));
+  downloadBtn.append(createTag('span', {}, meta.downloadLabel || 'Download'));
   resultActions.append(reuploadBtn, downloadBtn);
   checker.append(resultActions);
   const result = createTag('div', { class: 'ia-result' }, checker);
@@ -474,7 +530,11 @@ export default class InlineActionWidget {
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const progressHolder = TransitionScreen.createProgressBar();
 
-    const isEditorOp = this.parsedData.operation !== 'removeBackground';
+    // Explicit allowlist, not "anything but removeBackground" — an unrecognized or
+    // malformed authored operation (e.g. a parsing edge case) should fall back to the
+    // known-good rbg path rather than silently loading the editor for an operation it
+    // doesn't actually recognize.
+    const isEditorOp = ['crop', 'resize'].includes(this.parsedData.operation);
     let completeLeft;
     let completeRight;
     if (isEditorOp) {

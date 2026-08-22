@@ -204,6 +204,9 @@
 }
 
 .ia-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
   border-radius: 999px;
   background: transparent;
@@ -219,6 +222,16 @@
 .ia-toggle__btn.is-active {
   opacity: 1;
   background: rgb(255 255 255 / 15%);
+}
+
+/* Icon-only until this becomes the active mode — the label only appears alongside
+   the icon once .is-active is set (by setMode(), whenever the user picks this mode). */
+.ia-toggle-label {
+  display: none;
+}
+
+.ia-toggle__btn.is-active .ia-toggle-label {
+  display: inline;
 }
 
 .ia-slider {
@@ -490,6 +503,10 @@
 
 .ia-cta-accent,
 .ia-cta-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   flex: 1;
   padding: 12px 20px;
   border-radius: 999px;
@@ -528,6 +545,14 @@
   color: var(--ia-white, #fff);
   font-size: 14px;
   cursor: pointer;
+}
+
+/* Shared by every authored icon+label button/pill (reset, reupload, both CTAs, each
+   NBA pill) — only rendered when that row actually authored an icon href. */
+.ia-btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
