@@ -342,13 +342,23 @@ function buildDropdownCloseButton() {
   return createTag('button', { type: 'button', class: 'ia-dropdown-close', 'aria-label': 'Close' }, '×');
 }
 
-function buildAspectPill(label, ratio, iconHref, isActive = false) {
-  return buildIconButton('button', {
+// `dimensions`, when given (Social rows only — Standard/crop pills carry a ratio and
+// nothing else), is stamped onto the pill so selecting it can set the resize output to
+// those exact authored pixels, rather than recomputing an approximation from the crop
+// rect (which would round to whatever the frame's own pixel math produces, not
+// necessarily the literal "1080x1920" the row promised).
+function buildAspectPill(label, ratio, iconHref, isActive = false, dimensions = null) {
+  const attrs = {
     type: 'button',
     class: `ia-aspect-pill${isActive ? ' is-active' : ''}`,
     'data-ratio': ratio ?? '',
     'data-label': label,
-  }, iconHref, label);
+  };
+  if (dimensions) {
+    attrs['data-width'] = dimensions.width;
+    attrs['data-height'] = dimensions.height;
+  }
+  return buildIconButton('button', attrs, iconHref, label);
 }
 
 // downloadLabel/editLabel come from the authored config list (the same icon-download/
@@ -467,7 +477,9 @@ function buildSocialDetail(socialRows, platforms) {
     const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform': platform });
     socialRows
       .filter((r) => r.platform === platform)
-      .forEach((r) => grid.append(buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon)));
+      .forEach((r) => grid.append(
+        buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon, false, { width: r.width, height: r.height }),
+      ));
     grids.append(grid);
   });
   detail.append(grids);
@@ -1045,8 +1057,9 @@ export class EditorEngine {
     this.aspectPills.forEach((pill) => {
       if (pill === this.moreTrigger) return;
       pill.addEventListener('click', () => {
-        const { ratio, label } = pill.dataset;
-        this.selectAspect(ratio ? Number(ratio) : null, label);
+        const { ratio, label, width, height } = pill.dataset;
+        const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
+        this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions);
         this.closeMore();
       });
     });
@@ -1088,7 +1101,7 @@ export class EditorEngine {
     this.moreTrigger?.setAttribute('aria-expanded', 'false');
   }
 
-  selectAspect(ratio, label, fromMore = false) {
+  selectAspect(ratio, label, fromMore = false, dimensions = null) {
     this.selectedRatio = ratio;
     this.selectedRatioLabel = label;
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
@@ -1103,13 +1116,21 @@ export class EditorEngine {
     if (this.naturalW) {
       const [vpW, vpH] = this.viewportSize();
       this.rect = centeredRect(ratio, this.naturalW, this.naturalH, vpW, vpH);
-      // Resize's Standard/Social presets carry no literal target size, only a ratio —
-      // seed targetW/targetH from the newly-shaped rect so the Custom tab shows
-      // something coherent if the user switches back to it.
       if (!this.isCrop) {
-        const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-        this.targetW = b.right - b.left;
-        this.targetH = b.bottom - b.top;
+        if (dimensions) {
+          // Social rows carry a literal pixel target (e.g. "1080x1920") — use it
+          // exactly, rather than rectPctToSourceBounds' rounded approximation of
+          // whatever the frame's current on-screen pixel math happens to produce.
+          this.targetW = dimensions.width;
+          this.targetH = dimensions.height;
+        } else {
+          // Standard presets carry no literal target size, only a ratio — seed
+          // targetW/targetH from the newly-shaped rect so the Custom tab shows
+          // something coherent if the user switches back to it.
+          const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
+          this.targetW = b.right - b.left;
+          this.targetH = b.bottom - b.top;
+        }
       }
       this.hasInteracted = true;
       this.render();
