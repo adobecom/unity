@@ -213,6 +213,8 @@ export function parseInlineAuthoring(unityEl) {
     aspectRatioLabel: undefined,
     originalSizeLabel: undefined,
     newSizeLabel: undefined,
+    widthLabel: undefined,
+    heightLabel: undefined,
   };
   configUl?.querySelectorAll('li').forEach((li) => {
     const cls = configRowIconClass(li);
@@ -239,6 +241,8 @@ export function parseInlineAuthoring(unityEl) {
     else if (cls === 'icon-placeholder-aspect-ratio') config.aspectRatioLabel = li.textContent.trim();
     else if (cls === 'icon-placeholder-original-size') config.originalSizeLabel = li.textContent.trim();
     else if (cls === 'icon-placeholder-new-size') config.newSizeLabel = li.textContent.trim();
+    else if (cls === 'icon-placeholder-width') config.widthLabel = li.textContent.trim();
+    else if (cls === 'icon-placeholder-height') config.heightLabel = li.textContent.trim();
     else if (cls.startsWith('icon-placeholder-slider-')) {
       sliderModes.push({
         mode: cls.replace('icon-placeholder-slider-', ''),

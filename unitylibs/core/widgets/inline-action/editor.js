@@ -1,4 +1,4 @@
-import { createTag, loadStyle, getUnityLibs } from '../../../scripts/utils.js';
+import { createTag, loadStyle, getUnityLibs, getUnityPromptConfigsBaseUrl } from '../../../scripts/utils.js';
 
 const MIN_PCT = 10;
 const IDLE_MS = 5000;
@@ -17,52 +17,96 @@ const HANDLE_EDGES = {
 const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
 export const zoomScale = (zoom) => 1 + (zoom / 100);
 
-// Stubbed content — not authored yet. Real pills/NBAs are wired up to the same
-// selection logic once these come from parseInlineAuthoring().
-const ASPECT_PILLS = [
-  { label: 'Freeform', ratio: null },
-  { label: '1:1', ratio: 1 },
-  { label: '16:9', ratio: 16 / 9 },
-  { label: '9:16', ratio: 9 / 16 },
-];
-const MORE_ASPECTS = [
-  { label: '4:3', ratio: 4 / 3 },
-  { label: '3:4', ratio: 3 / 4 },
-  { label: '2:1', ratio: 2 },
-];
-const RESIZE_STANDARD = [
-  { label: 'Square 1:1', ratio: 1 },
-  { label: 'Widescreen 16:9', ratio: 16 / 9 },
-  { label: 'iPhone 9:16', ratio: 9 / 16 },
-  { label: 'Landscape 3:2', ratio: 3 / 2 },
-  { label: 'Presentation 3:4', ratio: 3 / 4 },
-];
-// Stubbed to one platform for now — only the interaction pattern (dropdown -> that
-// platform's own preset grid) matters until this is authored.
-const RESIZE_SOCIAL = {
-  Instagram: [
-    { label: 'Feed post 1:1', ratio: 1 },
-    { label: 'Portrait 4:5', ratio: 4 / 5 },
-    { label: 'Story/Reels 9:16', ratio: 9 / 16 },
-    { label: 'Landscape 1.91:1', ratio: 1.91 },
-  ],
-  TikTok: [
-    { label: 'Video 9:16', ratio: 9 / 16 },
-  ],
-  Facebook: [
-    { label: 'Feed post 1:1', ratio: 1 },
-    { label: 'Story 9:16', ratio: 9 / 16 },
-    { label: 'Cover 1.91:1', ratio: 1.91 },
-  ],
-  Youtube: [
-    { label: 'Thumbnail 16:9', ratio: 16 / 9 },
-    { label: 'Short 9:16', ratio: 9 / 16 },
-  ],
-  Linkedin: [
-    { label: 'Post 1.91:1', ratio: 1.91 },
-    { label: 'Square 1:1', ratio: 1 },
-  ],
-};
+// Aspect-ratio presets (crop pills, resize Standard/Social) are authored the same way
+// as model-picker.json: one flat sheet with a `module` column (crop/resize), fetched
+// once and filtered client-side to this page's own operation — see createModelMap()
+// in prompt-bar-style.js for the same module-column convention. `group` buckets each
+// row (crop's inline pills vs. its "More" overflow; resize's Custom/Standard/Social
+// tabs); `platform` only applies to Social rows. `name` is NOT unique across the whole
+// sheet (e.g. "Landscape" repeats under Standard, Instagram and Youtube with different
+// values each time), so it must never be used alone as a lookup/identity key.
+async function loadAspectRatios(operation) {
+  try {
+    const url = `${getUnityPromptConfigsBaseUrl()}/unity/configs/prompt/cropandresize.json`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch aspect ratios: ${res.status}`);
+    const { content } = await res.json();
+    const rows = content?.data;
+    return Array.isArray(rows) ? rows.filter((row) => row.module === operation) : [];
+  } catch (e) {
+    window.lana?.log(`Message: Error loading aspect ratios, Error: ${e}`);
+    return [];
+  }
+}
+
+function parseRatioString(ratio) {
+  const [w, h] = ratio.split(':').map(Number);
+  return h ? w / h : null;
+}
+
+// Standard/crop rows carry a ratio; Social rows carry literal pixel targets instead
+// (used as-is for the real resize output, not just a display ratio) — derive a
+// numeric ratio from whichever is present. Bare trigger rows (Freeform, Custom) have
+// neither and resolve to null (freeform).
+function aspectRatioValue(row) {
+  if (row.ratio) return parseRatioString(row.ratio);
+  if (row.width && row.height) return row.width / row.height;
+  return null;
+}
+
+// Matches the two label formats already confirmed in design: "{name} {ratio}" for
+// ratio-only rows (crop pills, Standard), "{name} {width} x {height}" for Social's
+// pixel targets. `suppressName` is used for crop's "More" overflow rows, whose shared
+// `name` is the dropdown trigger's own label, not each individual option's — pass it
+// there so an option reads "4:3", not "{localized More} 4:3".
+function composeAspectLabel(row, suppressName = false) {
+  const name = suppressName ? '' : (row.name || row.group || '');
+  if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
+  if (row.ratio) return `${name} ${row.ratio}`.trim();
+  return name;
+}
+
+// `name` is localized, so it can't be compared against a literal "More" — instead, the
+// overflow bucket is whichever `name` value repeats across more than one row (every
+// standalone pill's name is unique; only the overflow rows share one, translated,
+// value). That shared value is also the dropdown trigger's own label — read from the
+// sheet, never hardcoded — see buildCropAspectSection.
+function groupCropRows(rows) {
+  const counts = new Map();
+  rows.forEach((r) => counts.set(r.name, (counts.get(r.name) || 0) + 1));
+  return {
+    pillRows: rows.filter((r) => counts.get(r.name) === 1),
+    moreRows: rows.filter((r) => counts.get(r.name) > 1),
+  };
+}
+
+// `group` is localized (it's resize's Custom/Standard/Social tab label, shown as-is),
+// so a row's kind can't be inferred by comparing `group` to a literal English string —
+// instead it's inferred from which structural (non-localized) columns are populated:
+// Social rows carry a `platform`; Standard rows carry a `ratio` but no `platform`;
+// Custom carries neither (just the bare trigger, no preset data at all).
+function resizeRowKind(row) {
+  if (row.platform) return 'social';
+  if (row.ratio) return 'standard';
+  return 'custom';
+}
+
+// Buckets resize rows by their (localized) `group` value — rows sharing an identical
+// group belong to the same tab, and that value is the tab's own displayed label.
+// Bucket order follows first-appearance in the authored rows.
+function groupResizeRows(rows) {
+  const buckets = [];
+  const byGroup = new Map();
+  rows.forEach((row) => {
+    if (!byGroup.has(row.group)) {
+      const bucket = { group: row.group, kind: resizeRowKind(row), rows: [] };
+      byGroup.set(row.group, bucket);
+      buckets.push(bucket);
+    }
+    byGroup.get(row.group).rows.push(row);
+  });
+  return buckets;
+}
 
 // Pixel-space stays the single source of truth for the actual rect/frame math — units
 // only matter for how the Custom fields are typed into and displayed. 300px = 1in
@@ -290,13 +334,21 @@ function buildIconButton(tag, attrs, iconHref, label) {
   return el;
 }
 
-function buildAspectPill(label, ratio, isActive = false) {
-  return createTag('button', {
+// Shared by every dropdown menu (crop's More, resize's Social, the unit picker) — an
+// explicit close affordance inside the menu itself, in addition to the existing
+// outside-click handling in each bind*Events method. Click binding happens there too
+// (not here), since this is a pure DOM builder with no EditorEngine instance yet.
+function buildDropdownCloseButton() {
+  return createTag('button', { type: 'button', class: 'ia-dropdown-close', 'aria-label': 'Close' }, '×');
+}
+
+function buildAspectPill(label, ratio, iconHref, isActive = false) {
+  return buildIconButton('button', {
     type: 'button',
     class: `ia-aspect-pill${isActive ? ' is-active' : ''}`,
     'data-ratio': ratio ?? '',
     'data-label': label,
-  }, label);
+  }, iconHref, label);
 }
 
 // downloadLabel/editLabel come from the authored config list (the same icon-download/
@@ -314,29 +366,39 @@ function buildCtaRow(isCrop, parsedData) {
   return row;
 }
 
+// No fallback to hardcoded pills — an unauthored crop page (aspectRows empty) simply
+// gets an empty aspect row, same "authored or nothing" rule already applied to the
+// adjust bar's slider modes.
 function buildCropAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
   section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
-  ASPECT_PILLS.forEach(({ label, ratio }, i) => row.append(buildAspectPill(label, ratio, i === 0)));
-  const more = createTag('div', { class: 'ia-more' });
-  const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
-  MORE_ASPECTS.forEach(({ label, ratio }) => {
-    moreMenu.append(createTag('button', {
+  const { pillRows, moreRows } = groupCropRows(parsedData.aspectRows || []);
+  pillRows.forEach((r, i) => row.append(buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon, i === 0)));
+  if (moreRows.length) {
+    const more = createTag('div', { class: 'ia-more' });
+    const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
+    moreMenu.append(buildDropdownCloseButton());
+    moreRows.forEach((r) => {
+      const label = composeAspectLabel(r, true);
+      moreMenu.append(buildIconButton('button', {
+        type: 'button',
+        class: 'ia-more-opt',
+        'data-ratio': aspectRatioValue(r) ?? '',
+        'data-label': label,
+      }, r.icon, label));
+    });
+    // moreRows share one repeated, localized `name` (see groupCropRows) — that's the
+    // dropdown trigger's own default label, never a hardcoded "More".
+    const moreTrigger = createTag('button', {
       type: 'button',
-      class: 'ia-more-opt',
-      'data-ratio': ratio,
-      'data-label': label,
-    }, label));
-  });
-  const moreTrigger = createTag('button', {
-    type: 'button',
-    class: 'ia-aspect-pill ia-more-trigger',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-  }, 'More');
-  more.append(moreTrigger, moreMenu);
-  row.append(more);
+      class: 'ia-aspect-pill ia-more-trigger',
+      'aria-haspopup': 'true',
+      'aria-expanded': 'false',
+    }, moreRows[0].name);
+    more.append(moreTrigger, moreMenu);
+    row.append(more);
+  }
   section.append(row, buildCtaRow(true, parsedData));
   return section;
 }
@@ -355,6 +417,7 @@ function buildDimensionField(labelText, className) {
 function buildUnitPicker() {
   const wrap = createTag('div', { class: 'ia-more' });
   const menu = createTag('div', { class: 'ia-unit-menu hide' });
+  menu.append(buildDropdownCloseButton());
   UNIT_OPTIONS.forEach((unit) => {
     menu.append(createTag('button', { type: 'button', class: 'ia-unit-opt', 'data-unit': unit }, unit));
   });
@@ -373,79 +436,98 @@ function buildUnitPicker() {
   return wrap;
 }
 
-function buildCustomDetail() {
+function buildCustomDetail(parsedData) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'custom' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
   fields.append(
-    buildDimensionField('Width', 'ia-width-input'),
+    buildDimensionField(parsedData.widthLabel || 'Width', 'ia-width-input'),
     createTag('button', { type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true' }, '🔒'),
-    buildDimensionField('Height', 'ia-height-input'),
+    buildDimensionField(parsedData.heightLabel || 'Height', 'ia-height-input'),
     buildUnitPicker(),
   );
   detail.append(fields);
   return detail;
 }
 
-function buildStandardDetail() {
+function buildStandardDetail(standardRows) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'standard' });
   const grid = createTag('div', { class: 'ia-aspect-row' });
-  RESIZE_STANDARD.forEach(({ label, ratio }) => grid.append(buildAspectPill(label, ratio)));
+  standardRows.forEach((r) => grid.append(buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon)));
   detail.append(grid);
   return detail;
 }
 
 // Social's detail is just the per-platform ratio grids — the platform picker itself
 // lives in the pill row (see buildResizeAspectSection), same as Crop's More trigger.
-function buildSocialDetail() {
+// Platform order follows first-appearance in the authored rows, not alphabetical.
+function buildSocialDetail(socialRows, platforms) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'social' });
   const grids = createTag('div', { class: 'ia-social-grids' });
-  Object.entries(RESIZE_SOCIAL).forEach(([platform, ratios]) => {
+  platforms.forEach((platform) => {
     const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform': platform });
-    ratios.forEach(({ label, ratio }) => grid.append(buildAspectPill(label, ratio)));
+    socialRows
+      .filter((r) => r.platform === platform)
+      .forEach((r) => grid.append(buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon)));
     grids.append(grid);
   });
   detail.append(grids);
   return detail;
 }
 
-// Custom/Standard are plain pills exactly like Crop's aspect pills. Social is a
-// dropdown trigger exactly like Crop's "More" — clicking it doesn't switch tabs by
-// itself, it opens a platform list; picking a platform is what switches to showing
-// that platform's ratio grid (see EditorEngine.bindSocialEvents).
+// Custom is always available (typing width/height doesn't depend on authoring).
+// Standard/Social only render at all if the sheet actually authored rows for them —
+// same "authored or nothing" rule as the adjust bar and crop's pills — so an
+// unauthored resize page falls back to Custom-only rather than showing an empty tab.
 function buildResizeAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
   section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
+  const buckets = groupResizeRows(parsedData.aspectRows || []);
+  const customBucket = buckets.find((b) => b.kind === 'custom');
+  const standardBucket = buckets.find((b) => b.kind === 'standard');
+  const socialBucket = buckets.find((b) => b.kind === 'social');
+  // platform is NOT localized (brand names are stable across locales), so it's used
+  // directly as both the grid key and the dropdown option's own display text.
+  const platforms = socialBucket ? [...new Set(socialBucket.rows.map((r) => r.platform))] : [];
   // These are deliberately NOT .ia-aspect-pill — that class is reserved for actual
   // ratio-selecting pills (Standard's presets, Social's per-platform grids), which
   // already go through bindAspectEvents()/selectAspect(). Custom/Standard/Social
   // switch tabs or open a dropdown instead, so they get their own class + CSS that
   // matches .ia-aspect-pill visually without being picked up by that generic wiring.
-  ['Custom', 'Standard'].forEach((label, i) => {
-    row.append(createTag('button', {
-      type: 'button',
-      class: `ia-resize-tab${i === 0 ? ' is-active' : ''}`,
-      'data-tab': label.toLowerCase(),
-    }, label));
-  });
-  const social = createTag('div', { class: 'ia-more' });
-  const socialMenu = createTag('div', { class: 'ia-social-menu hide' });
-  Object.keys(RESIZE_SOCIAL).forEach((platform) => {
-    socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
-  });
-  const socialTrigger = createTag('button', {
+  // Each tab's label is its bucket's own (localized) `group` value — Custom falls back
+  // to the English default only when truly unauthored, same as every other label here.
+  row.append(createTag('button', {
     type: 'button',
-    class: 'ia-resize-tab ia-social-trigger',
-    'data-tab': 'social',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-  }, 'Social');
-  social.append(socialTrigger, socialMenu);
-  row.append(social);
+    class: 'ia-resize-tab is-active',
+    'data-tab': 'custom',
+  }, customBucket?.group || 'Custom'));
+  if (standardBucket) {
+    row.append(createTag('button', { type: 'button', class: 'ia-resize-tab', 'data-tab': 'standard' }, standardBucket.group));
+  }
+  if (socialBucket) {
+    const social = createTag('div', { class: 'ia-more' });
+    const socialMenu = createTag('div', { class: 'ia-social-menu hide' });
+    socialMenu.append(buildDropdownCloseButton());
+    platforms.forEach((platform) => {
+      socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
+    });
+    const socialTrigger = createTag('button', {
+      type: 'button',
+      class: 'ia-resize-tab ia-social-trigger',
+      'data-tab': 'social',
+      'aria-haspopup': 'true',
+      'aria-expanded': 'false',
+    }, socialBucket.group);
+    social.append(socialTrigger, socialMenu);
+    row.append(social);
+  }
   const originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
   const newSizeLabel = parsedData.newSizeLabel || 'New size';
   const readout = createTag('p', { class: 'ia-size-readout' }, `${originalSizeLabel}: -- ${newSizeLabel}: --`);
-  section.append(row, buildCustomDetail(), buildStandardDetail(), buildSocialDetail(), readout, buildCtaRow(false, parsedData));
+  const details = [buildCustomDetail(parsedData)];
+  if (standardBucket) details.push(buildStandardDetail(standardBucket.rows));
+  if (socialBucket) details.push(buildSocialDetail(socialBucket.rows, platforms));
+  section.append(row, ...details, readout, buildCtaRow(false, parsedData));
   return section;
 }
 
@@ -525,6 +607,20 @@ export class EditorEngine {
     this.aspectPills = [...panelEl.querySelectorAll('.ia-aspect-pill')];
     this.moreTrigger = panelEl.querySelector('.ia-more-trigger');
     this.moreMenu = panelEl.querySelector('.ia-more-menu');
+    // .ia-more is reused by resize's Social/unit-picker wrappers too (see buildUnitPicker/
+    // buildResizeAspectSection), so this must be derived from the specific trigger via
+    // closest(), never a fresh panel-wide querySelector('.ia-more') — that would be
+    // ambiguous whenever more than one such wrapper exists in the same panel.
+    this.moreWrap = this.moreTrigger?.closest('.ia-more');
+    // First authored, real ratio-selecting pill (never the More trigger itself) — used
+    // by reset() so crop always returns to whatever the sheet's own first row was,
+    // instead of assuming a hardcoded "Freeform" pill exists.
+    const firstPill = this.aspectPills.find((p) => p !== this.moreTrigger);
+    this.defaultAspectRatio = firstPill?.dataset.ratio ? Number(firstPill.dataset.ratio) : null;
+    this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
+    // Captured once, at build time, before any click can overwrite it — the sheet's own
+    // (localized) label, never a hardcoded "More" (see groupCropRows/buildCropAspectSection).
+    this.moreDefaultLabel = this.moreTrigger?.textContent || 'More';
     this.resizeTabs = [...panelEl.querySelectorAll('.ia-resize-tab')];
     this.resizeDetails = [...panelEl.querySelectorAll('.ia-resize-detail-panel')];
     this.widthInput = panelEl.querySelector('.ia-width-input');
@@ -533,9 +629,14 @@ export class EditorEngine {
     this.unitTrigger = panelEl.querySelector('.ia-unit-trigger');
     this.unitLabel = panelEl.querySelector('.ia-unit-label');
     this.unitMenu = panelEl.querySelector('.ia-unit-menu');
+    this.unitWrap = this.unitTrigger?.closest('.ia-more');
     this.unit = 'px';
     this.socialTrigger = panelEl.querySelector('.ia-social-trigger');
+    // Same as moreDefaultLabel above — the bucket's own (localized) group value, not a
+    // hardcoded "Social".
+    this.socialDefaultLabel = this.socialTrigger?.textContent || 'Social';
     this.socialMenu = panelEl.querySelector('.ia-social-menu');
+    this.socialWrap = this.socialTrigger?.closest('.ia-more');
     this.socialGrids = [...panelEl.querySelectorAll('.ia-social-grid')];
     this.sizeReadout = panelEl.querySelector('.ia-size-readout');
     // Same fallback pattern as the readout's initial text in buildResizeAspectSection —
@@ -777,10 +878,11 @@ export class EditorEngine {
     this.resizeTab = tab.dataset.tab;
     this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t === tab));
     this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== tab.dataset.tab));
-    // Same as Crop's More trigger reverting to "More" when a different pill is picked
-    // (selectAspect's fromMore=false branch) — Social should only show a platform name
-    // while it's actually the active tab, not linger after Custom/Standard is chosen.
-    if (tab !== this.socialTrigger && this.socialTrigger) this.socialTrigger.textContent = 'Social';
+    // Same as Crop's More trigger reverting to its default label when a different pill
+    // is picked (selectAspect's fromMore=false branch) — Social should only show a
+    // platform name while it's actually the active tab, not linger after Custom/Standard
+    // is chosen.
+    if (tab !== this.socialTrigger && this.socialTrigger) this.socialTrigger.textContent = this.socialDefaultLabel;
   }
 
   bindDimensionEvents() {
@@ -870,8 +972,12 @@ export class EditorEngine {
         this.selectResizeTab(this.socialTrigger);
       });
     });
+    this.socialMenu?.querySelector('.ia-dropdown-close')?.addEventListener('click', () => this.closeSocialMenu());
+    // Scoped to the dropdown's own wrapper, not the whole panel — clicking elsewhere in
+    // the panel (e.g. the CTA row, a Standard pill) should close this like any other
+    // outside click, not just a click that lands entirely outside the panel.
     document.addEventListener('click', (e) => {
-      if (!this.panel.contains(e.target)) this.closeSocialMenu();
+      if (!this.socialWrap?.contains(e.target)) this.closeSocialMenu();
     });
   }
 
@@ -897,8 +1003,10 @@ export class EditorEngine {
         this.syncDimensionFields();
       });
     });
+    this.unitMenu?.querySelector('.ia-dropdown-close')?.addEventListener('click', () => this.closeUnitMenu());
+    // Scoped to the picker's own wrapper, not the whole panel — see bindSocialEvents.
     document.addEventListener('click', (e) => {
-      if (!this.panel.contains(e.target)) this.closeUnitMenu();
+      if (!this.unitWrap?.contains(e.target)) this.closeUnitMenu();
     });
   }
 
@@ -907,7 +1015,7 @@ export class EditorEngine {
     this.quality = 100;
     this.revertQualityPreview();
     if (this.isCrop) {
-      this.selectAspect(null, 'Freeform');
+      this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel);
     } else {
       this.locked = true;
       this.resizeTab = 'custom';
@@ -916,7 +1024,7 @@ export class EditorEngine {
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
-      if (this.socialTrigger) this.socialTrigger.textContent = 'Social';
+      if (this.socialTrigger) this.socialTrigger.textContent = this.socialDefaultLabel;
       this.unit = 'px';
       if (this.unitLabel) this.unitLabel.textContent = 'px';
       if (this.naturalW) {
@@ -943,16 +1051,27 @@ export class EditorEngine {
       });
     });
     this.moreTrigger?.addEventListener('click', () => this.toggleMore());
-    this.moreMenu?.querySelectorAll('.ia-more-opt').forEach((opt) => {
+    // Double optional-chain: moreMenu is null when the sheet authored no "More" rows
+    // for this operation (see buildCropAspectSection) — querySelectorAll on null would
+    // throw without the first `?.`, and calling .forEach on that undefined result would
+    // throw without the second.
+    this.moreMenu?.querySelectorAll('.ia-more-opt')?.forEach((opt) => {
       opt.addEventListener('click', () => {
         const { ratio, label } = opt.dataset;
         this.selectAspect(Number(ratio), label, true);
         this.closeMore();
       });
     });
-    document.addEventListener('click', (e) => {
-      if (!this.panel.contains(e.target)) this.closeMore();
-    });
+    this.moreMenu?.querySelector('.ia-dropdown-close')?.addEventListener('click', () => this.closeMore());
+    // Guarded on moreTrigger existing at all (not just aspectPills.length, which can be
+    // true from standalone pills alone) — no point registering a global listener for a
+    // dropdown that was never authored. Scoped to the dropdown's own wrapper, not the
+    // whole panel, once it does exist — see bindSocialEvents.
+    if (this.moreTrigger) {
+      document.addEventListener('click', (e) => {
+        if (!this.moreWrap.contains(e.target)) this.closeMore();
+      });
+    }
   }
 
   toggleMore() {
@@ -977,7 +1096,7 @@ export class EditorEngine {
       this.moreTrigger.textContent = label;
       this.moreTrigger.classList.add('is-active');
     } else {
-      if (this.moreTrigger) this.moreTrigger.textContent = 'More';
+      if (this.moreTrigger) this.moreTrigger.textContent = this.moreDefaultLabel;
       const match = this.aspectPills.find((pill) => pill.dataset.label === label);
       match?.classList.add('is-active');
     }
@@ -1134,12 +1253,14 @@ export class EditorEngine {
 // in place would sit between them and break that flex relationship (this was a real,
 // reproduced regression, not just a theoretical one).
 export async function initEditor(stageSlot, panelSlot, parsedData) {
-  await new Promise((resolve) => {
-    loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve);
-  });
-  const stage = buildEditorStage(parsedData);
-  const panel = buildEditorPanel(parsedData);
+  const [, aspectRows] = await Promise.all([
+    new Promise((resolve) => { loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve); }),
+    loadAspectRatios(parsedData.operation),
+  ]);
+  const fullData = { ...parsedData, aspectRows };
+  const stage = buildEditorStage(fullData);
+  const panel = buildEditorPanel(fullData);
   stageSlot.replaceWith(stage);
   panelSlot.replaceWith(panel);
-  return new EditorEngine(stage, panel, parsedData);
+  return new EditorEngine(stage, panel, fullData);
 }
