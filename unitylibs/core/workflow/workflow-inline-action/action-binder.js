@@ -605,7 +605,11 @@ export default class ActionBinder {
     this.downloadBlob(blob, blob.type || 'image/png');
   }
 
-  async signedInFlow(file) {
+  // performOperation=false is crop/resize's signed-in path: no Ps API call at all — the
+  // raw uploaded asset is handed straight to Firefly, which does the actual editing
+  // there. Everything else (splash screen, upload, connector redirect) is identical to
+  // rbg's own signed-in flow, so it's the same method rather than a duplicated one.
+  async signedInFlow(file, { performOperation = true } = {}) {
     if (this.signedInFlowInProgress) return;
     this.signedInFlowInProgress = true;
     try {
@@ -623,15 +627,19 @@ export default class ActionBinder {
         await ts.showSplashScreen(false);
         return;
       }
-      const removeBgRes = await this.removeBackground(true);
-      if (!removeBgRes) {
-        this.uploadAbortController = null;
-        await ts.showSplashScreen(false);
-        return;
+      let connectorAssetId = this.assetId;
+      if (performOperation) {
+        const removeBgRes = await this.removeBackground(true);
+        if (!removeBgRes) {
+          this.uploadAbortController = null;
+          await ts.showSplashScreen(false);
+          return;
+        }
+        connectorAssetId = this.resultAssetId;
       }
       await this.callConnector(await this.buildConnectorPayload({
         verb: 'aiPhotoEditor',
-        connectorAssetId: this.resultAssetId,
+        connectorAssetId,
         fileType: this.filesData.type,
       }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
@@ -681,7 +689,19 @@ export default class ActionBinder {
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
-    if (this.operation !== 'removeBackground') {
+    // Explicit allowlist, not "anything but removeBackground" — matches the same
+    // reasoning as inline-action.js's isEditorOp: an unrecognized or malformed
+    // operation should fall back to the known-good rbg path below, not be routed into
+    // the editor flow it doesn't actually support.
+    if (['crop', 'resize'].includes(this.operation)) {
+      // Signed-in users skip the in-page editor entirely and redirect straight to
+      // Firefly via the same signedInFlow rbg uses, just without its Ps API call (see
+      // signedInFlow's performOperation param) — editor-flow.js is only needed at all
+      // for guest/anonymous users, who still get the in-page editor as before.
+      if (isGuest === false) {
+        await this.signedInFlow(correctedFile, { performOperation: false });
+        return;
+      }
       const { editorUploadFlow } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
       await editorUploadFlow(this, correctedFile, file.size);
       return;
