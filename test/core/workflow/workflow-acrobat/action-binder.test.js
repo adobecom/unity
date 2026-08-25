@@ -3184,6 +3184,14 @@ describe('ActionBinder', () => {
       expect(actionBinder.dispatchErrorToast.calledWith('validation_error_scanned_document')).to.be.true;
     });
 
+    it('excludes empty files with the empty-file error, not the corrupt/encrypted one', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 0, IS_EMPTY: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('empty.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_empty_file')).to.be.true;
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.false;
+    });
+
     it('excludes encrypted/password-protected files via the integrity error', async () => {
       pdfDetailsStub.returns({ NUM_PAGES: 1, IS_ENCRYPTED: true });
       const result = await actionBinder.filterFilesWithPdflite([pdf('encrypted.pdf')]);

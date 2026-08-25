@@ -35,8 +35,9 @@ export async function validateFilesWithPdflite(files, limits, checkScanned = fal
       const isPasswordProtected = details?.IS_PASSWORD_PROTECTED === true;
       const hasAcroForm = details?.HAS_ACROFORM === true;
       const isScanned = details?.IS_SCANNED_DOCUMENT === true;
+      const isEmpty = details?.IS_EMPTY === true;
       const pageCount = details?.NUM_PAGES;
-      if (pageCount === undefined || pageCount === null) return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm, isScanned };
+      if (pageCount === undefined || pageCount === null) return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm, isScanned, isEmpty };
       const overMaxPageCount = limits.pageLimit?.maxNumPages && pageCount > limits.pageLimit.maxNumPages;
       const underMinPageCount = limits.pageLimit?.minNumPages && pageCount < limits.pageLimit.minNumPages;
       let error = null;
@@ -49,7 +50,7 @@ export async function validateFilesWithPdflite(files, limits, checkScanned = fal
         error.errorType = 'UNDER_MIN_PAGE_COUNT';
       }
       if (error) throw error;
-      return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm, isScanned };
+      return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm, isScanned, isEmpty };
     })().catch((error) => {
       const isPageCountError = error.errorType === 'OVER_MAX_PAGE_COUNT' || error.errorType === 'UNDER_MIN_PAGE_COUNT';
       if (isPageCountError) return { file, ok: false, error, errorType: error.errorType };

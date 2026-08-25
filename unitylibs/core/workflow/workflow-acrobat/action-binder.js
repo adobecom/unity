@@ -634,6 +634,12 @@ export default class ActionBinder {
       };
       await applyPdfliteCheck(
         runIntegrityCheck,
+        (r) => r.isEmpty === true,
+        'EMPTY_FILE',
+        (n) => `${n} file(s) are empty`,
+      );
+      await applyPdfliteCheck(
+        runIntegrityCheck,
         (r) => r.isEncrypted === true || r.isPasswordProtected === true || r.isCorrupted === true,
         'PASSWORD_PROTECTED',
         (n) => `${n} file(s) encrypted, password-protected, or corrupted`,
