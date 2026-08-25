@@ -342,23 +342,30 @@ function buildDropdownCloseButton() {
   return createTag('button', { type: 'button', class: 'ia-dropdown-close', 'aria-label': 'Close' }, '×');
 }
 
-// `dimensions`, when given (Social rows only — Standard/crop pills carry a ratio and
-// nothing else), is stamped onto the pill so selecting it can set the resize output to
-// those exact authored pixels, rather than recomputing an approximation from the crop
-// rect (which would round to whatever the frame's own pixel math produces, not
-// necessarily the literal "1080x1920" the row promised).
-function buildAspectPill(label, ratio, iconHref, isActive = false, dimensions = null) {
+// Takes the row directly (rather than pre-extracted fields) so it can stamp both the
+// composed display label AND the row's raw, authored ratio string onto the pill as two
+// separate attributes — `data-label` (shown in the UI, e.g. "Square 1:1") is NOT the
+// same thing as `data-ratio-text` (the clean ratio identity, e.g. "1:1", that the
+// EditInFirefly contract's cropAspectRatioLock wants). Only rows with a literal
+// `ratio` column (crop pills, Standard) get data-ratio-text; Social rows carry
+// width/height instead — stamped on when present so selecting one can set the resize
+// output to those exact authored pixels, rather than recomputing an approximation from
+// the crop rect (which would round to whatever the frame's own pixel math produces,
+// not necessarily the literal "1080x1920" the row promised).
+function buildAspectPill(row, isActive = false) {
+  const label = composeAspectLabel(row);
   const attrs = {
     type: 'button',
     class: `ia-aspect-pill${isActive ? ' is-active' : ''}`,
-    'data-ratio': ratio ?? '',
+    'data-ratio': aspectRatioValue(row) ?? '',
     'data-label': label,
   };
-  if (dimensions) {
-    attrs['data-width'] = dimensions.width;
-    attrs['data-height'] = dimensions.height;
+  if (row.ratio) attrs['data-ratio-text'] = row.ratio;
+  if (row.width && row.height) {
+    attrs['data-width'] = row.width;
+    attrs['data-height'] = row.height;
   }
-  return buildIconButton('button', attrs, iconHref, label);
+  return buildIconButton('button', attrs, row.icon, label);
 }
 
 // downloadLabel/editLabel come from the authored config list (the same icon-download/
@@ -384,7 +391,7 @@ function buildCropAspectSection(parsedData) {
   section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
   const { pillRows, moreRows } = groupCropRows(parsedData.aspectRows || []);
-  pillRows.forEach((r, i) => row.append(buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon, i === 0)));
+  pillRows.forEach((r, i) => row.append(buildAspectPill(r, i === 0)));
   if (moreRows.length) {
     const more = createTag('div', { class: 'ia-more' });
     const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
@@ -396,6 +403,7 @@ function buildCropAspectSection(parsedData) {
         class: 'ia-more-opt',
         'data-ratio': aspectRatioValue(r) ?? '',
         'data-label': label,
+        ...(r.ratio && { 'data-ratio-text': r.ratio }),
       }, r.icon, label));
     });
     // moreRows share one repeated, localized `name` (see groupCropRows) — that's the
@@ -462,7 +470,7 @@ function buildCustomDetail(parsedData) {
 function buildStandardDetail(standardRows) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'standard' });
   const grid = createTag('div', { class: 'ia-aspect-row' });
-  standardRows.forEach((r) => grid.append(buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon)));
+  standardRows.forEach((r) => grid.append(buildAspectPill(r)));
   detail.append(grid);
   return detail;
 }
@@ -477,9 +485,7 @@ function buildSocialDetail(socialRows, platforms) {
     const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform': platform });
     socialRows
       .filter((r) => r.platform === platform)
-      .forEach((r) => grid.append(
-        buildAspectPill(composeAspectLabel(r), aspectRatioValue(r), r.icon, false, { width: r.width, height: r.height }),
-      ));
+      .forEach((r) => grid.append(buildAspectPill(r)));
     grids.append(grid);
   });
   detail.append(grids);
@@ -630,6 +636,11 @@ export class EditorEngine {
     const firstPill = this.aspectPills.find((p) => p !== this.moreTrigger);
     this.defaultAspectRatio = firstPill?.dataset.ratio ? Number(firstPill.dataset.ratio) : null;
     this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
+    // The clean, authored ratio string (e.g. "16:9") — distinct from defaultAspectLabel
+    // above, which is the composed DISPLAY text (e.g. "Landscape 16:9"). This is what
+    // the EditInFirefly contract's cropAspectRatioLock actually wants; null when the
+    // default pill has no literal ratio column (Freeform, or a Social preset).
+    this.defaultAspectRatioText = firstPill?.dataset.ratioText || null;
     // Captured once, at build time, before any click can overwrite it — the sheet's own
     // (localized) label, never a hardcoded "More" (see groupCropRows/buildCropAspectSection).
     this.moreDefaultLabel = this.moreTrigger?.textContent || 'More';
@@ -675,9 +686,13 @@ export class EditorEngine {
     this.targetW = 0;
     this.targetH = 0;
     this.selectedRatio = null;
-    // Kept alongside selectedRatio purely for the EditInFirefly contract's
-    // cropAspectRatioLock, which wants the authored label ("4:3"), not the numeric ratio.
+    // selectedRatioLabel is the composed DISPLAY text (e.g. "Landscape 16:9"), used only
+    // for the More trigger's text and pill highlighting. selectedRatioText is the clean,
+    // authored ratio string (e.g. "16:9") the EditInFirefly contract's cropAspectRatioLock
+    // actually wants — null for Freeform/Custom/Social selections, which have no literal
+    // ratio column (see buildAspectPill).
     this.selectedRatioLabel = 'Freeform';
+    this.selectedRatioText = null;
     // Matches whichever mode buildAdjustBar picked as the first/active toggle button
     // (or null if none were authored — no adjust bar exists in that case, see
     // buildEditorStage), so DOM (.is-active) and state start in sync. Stored so
@@ -1027,7 +1042,7 @@ export class EditorEngine {
     this.quality = 100;
     this.revertQualityPreview();
     if (this.isCrop) {
-      this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel);
+      this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
       this.locked = true;
       this.resizeTab = 'custom';
@@ -1057,9 +1072,9 @@ export class EditorEngine {
     this.aspectPills.forEach((pill) => {
       if (pill === this.moreTrigger) return;
       pill.addEventListener('click', () => {
-        const { ratio, label, width, height } = pill.dataset;
+        const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
-        this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions);
+        this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();
       });
     });
@@ -1070,8 +1085,8 @@ export class EditorEngine {
     // throw without the second.
     this.moreMenu?.querySelectorAll('.ia-more-opt')?.forEach((opt) => {
       opt.addEventListener('click', () => {
-        const { ratio, label } = opt.dataset;
-        this.selectAspect(Number(ratio), label, true);
+        const { ratio, label, ratioText } = opt.dataset;
+        this.selectAspect(Number(ratio), label, true, null, ratioText || null);
         this.closeMore();
       });
     });
@@ -1101,9 +1116,10 @@ export class EditorEngine {
     this.moreTrigger?.setAttribute('aria-expanded', 'false');
   }
 
-  selectAspect(ratio, label, fromMore = false, dimensions = null) {
+  selectAspect(ratio, label, fromMore = false, dimensions = null, ratioText = null) {
     this.selectedRatio = ratio;
     this.selectedRatioLabel = label;
+    this.selectedRatioText = ratioText;
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
       this.moreTrigger.textContent = label;
@@ -1151,6 +1167,18 @@ export class EditorEngine {
     const [vpW, vpH] = this.viewportSize();
     const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
     return { width: b.right - b.left, height: b.bottom - b.top };
+  }
+
+  // For the outbound resize payload only — converts to whatever unit the user actually
+  // selected in the Custom tab's unit dropdown (px/in/cm/mm), and reports that unit
+  // alongside. getResizeDimensions() itself must stay in raw pixels regardless (the
+  // canvas-based "New Size" byte estimate and computeNewSize() need real pixel counts,
+  // not a unit-converted approximation). Standard/Social have no unit picker at all —
+  // their output is always reported in px.
+  getResizeOutputDimensions() {
+    const { width, height } = this.getResizeDimensions();
+    if (this.resizeTab !== 'custom') return { width, height, unit: 'px' };
+    return { width: pxToUnit(width, this.unit), height: pxToUnit(height, this.unit), unit: this.unit };
   }
 
   // Crop and Resize's Standard/Social tabs lock drag-resize to whichever aspect pill

@@ -233,6 +233,7 @@ export default class ActionBinder {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
       acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
       removeBackground: `${unityConfig.apiEndPoint}/providers/RemoveBackground`,
+      imageOperations: `${unityConfig.apiEndPoint}/providers/imageOperations`,
     };
     return unityConfig;
   }
@@ -500,7 +501,15 @@ export default class ActionBinder {
     return el?.dataset?.nba;
   }
 
-  async buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
+  // operations/cropAspectRatioLock/aspectRatioLock are crop/resize's "Open in Firefly"
+  // fields only (see editor-flow.js's runEditInFirefly) — undefined for every other
+  // caller, so they're simply omitted from payload rather than sent as explicit nulls.
+  // cropAspectRatioLock is crop's confirmed field; aspectRatioLock is resize's own
+  // (currently proposed, not yet confirmed) equivalent — kept separate rather than
+  // reusing one field name, since resize's contract may still change independently.
+  async buildConnectorPayload({
+    defaultPrompt, verb, connectorAssetId, fileType, operations, cropAspectRatioLock, aspectRatioLock,
+  } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
     return {
@@ -515,6 +524,9 @@ export default class ActionBinder {
         widgetType: 'nba',
         locale: getLocale(),
         type: fileType,
+        ...(operations && { operations }),
+        ...(cropAspectRatioLock && { cropAspectRatioLock }),
+        ...(aspectRatioLock && { aspectRatioLock }),
       },
     };
   }
