@@ -34,6 +34,9 @@ export default class ActionBinder {
     SAME_FILE_TYPE: 'validation_error_file_same_type',
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count',
     UNDER_MIN_PAGE_COUNT: 'upload_validation_error_min_page_count',
+    PASSWORD_PROTECTED: 'validation_error_password_protected',
+    ACROFORM_NOT_SUPPORTED: 'validation_error_acroform_not_supported',
+    SCANNED_DOCUMENT: 'validation_error_scanned_document',
   };
 
   static MULTI_FILE_ERROR_MESSAGES = {
@@ -42,6 +45,9 @@ export default class ActionBinder {
     FILE_TOO_LARGE: 'validation_error_file_too_large_multi',
     SAME_FILE_TYPE: 'validation_error_file_same_type_multi',
     OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count_multi',
+    PASSWORD_PROTECTED: 'validation_error_password_protected_multi',
+    ACROFORM_NOT_SUPPORTED: 'validation_error_acroform_not_supported_multi',
+    SCANNED_DOCUMENT: 'validation_error_scanned_document_multi',
   };
 
   static LIMITS_MAP = {
@@ -87,6 +93,9 @@ export default class ActionBinder {
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'resume-builder': ['single', 'allowed-filetypes-resume', 'page-limit-10', 'max-filesize-20-mb'],
+    'gen-presentation-v2': ['single', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-filesize-100-mb'],
+    'interactive-report': ['single', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-filesize-100-mb'],
+    stylize: ['single', 'allowed-filetypes-pdf-only', 'page-limit-15', 'max-filesize-100-mb'],
   };
 
   static ERROR_MAP = {
@@ -106,12 +115,18 @@ export default class ActionBinder {
     validation_error_file_too_large: -103,
     validation_error_only_accept_one_file: -104,
     validation_error_file_same_type: -105,
+    validation_error_password_protected: -106,
+    validation_error_acroform_not_supported: -107,
+    validation_error_scanned_document: -108,
     validation_error_unsupported_type_multi: -200,
     validation_error_empty_file_multi: -201,
     validation_error_file_too_large_multi: -202,
     validation_error_multiple_invalid_files: -203,
     validation_error_max_num_files: -204,
+    validation_error_password_protected_multi: -205,
     validation_error_file_same_type_multi: -206,
+    validation_error_acroform_not_supported_multi: -207,
+    validation_error_scanned_document_multi: -208,
     upload_validation_error_max_page_count: -300,
     upload_validation_error_min_page_count: -301,
     upload_validation_error_max_page_count_multi: -303,
@@ -142,6 +157,12 @@ export default class ActionBinder {
     validation_error_file_too_large: 'verb_upload_error_file_too_large',
     validation_error_only_accept_one_file: 'verb_upload_error_only_accept_one_file',
     validation_error_file_same_type: 'verb_upload_error_file_same_type',
+    validation_error_password_protected: 'verb_upload_error_password_protected',
+    validation_error_password_protected_multi: 'verb_upload_error_password_protected_multi',
+    validation_error_acroform_not_supported: 'verb_upload_error_acroform_not_supported',
+    validation_error_acroform_not_supported_multi: 'verb_upload_error_acroform_not_supported_multi',
+    validation_error_scanned_document: 'verb_upload_error_scanned_document',
+    validation_error_scanned_document_multi: 'verb_upload_error_scanned_document_multi',
     validation_error_unsupported_type_multi: 'verb_upload_error_unsupported_type_multi',
     validation_error_empty_file_multi: 'verb_upload_error_empty_file_multi',
     validation_error_file_too_large_multi: 'verb_upload_error_file_too_large_multi',
@@ -588,12 +609,54 @@ export default class ActionBinder {
   }
 
   async filterFilesWithPdflite(files) {
-    if (!this.limits.pageLimit) return files;
+    const verb = this.workflowCfg.enabledFeatures[0];
+    const runIntegrityCheck = (this.workflowCfg.targetCfg.pdfIntegrityCheckVerbs || []).includes(verb);
+    const runAcroformCheck = (this.workflowCfg.targetCfg.pdfAcroformCheckVerbs || []).includes(verb);
+    const runScannedCheck = (this.workflowCfg.targetCfg.pdfScannedCheckVerbs || []).includes(verb);
+    const runPageCountCheck = !!this.limits.pageLimit;
+    if (!runIntegrityCheck && !runAcroformCheck && !runScannedCheck && !runPageCountCheck) return files;
+    if (!files.some((file) => file.type === 'application/pdf')) return files;
     try {
       const { validateFilesWithPdflite, getPageCountErrorCode } = await import('../../../scripts/pdflite-validator.js');
       const errorMessages = this.MULTI_FILE ? ActionBinder.MULTI_FILE_ERROR_MESSAGES : ActionBinder.SINGLE_FILE_ERROR_MESSAGES;
-      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits);
-      if (failed && failed.length > 0) {
+      const { passed, failed, results } = await validateFilesWithPdflite(files, this.limits, runScannedCheck);
+      let remaining = passed;
+      const applyPdfliteCheck = async (enabled, matches, errorKey, describe) => {
+        if (!enabled || !Array.isArray(results)) return;
+        const remainingSet = new Set(remaining);
+        const matched = results.filter((r) => r.ok && remainingSet.has(r.file) && matches(r));
+        if (matched.length === 0) return;
+        const matchedFiles = new Set(matched.map((r) => r.file));
+        remaining = remaining.filter((f) => !matchedFiles.has(f));
+        const errorCode = errorMessages[errorKey];
+        await this.dispatchErrorToast(errorCode, null, describe(matched.length), false, true, { code: 'validation_error_validate_files', subCode: errorCode });
+        if (this.MULTI_FILE) this.multiFileValidationFailure = true;
+      };
+      await applyPdfliteCheck(
+        runIntegrityCheck,
+        (r) => r.isEmpty === true,
+        'EMPTY_FILE',
+        (n) => `${n} file(s) are empty`,
+      );
+      await applyPdfliteCheck(
+        runIntegrityCheck,
+        (r) => r.isEncrypted === true || r.isPasswordProtected === true || r.isCorrupted === true,
+        'PASSWORD_PROTECTED',
+        (n) => `${n} file(s) encrypted, password-protected, or corrupted`,
+      );
+      await applyPdfliteCheck(
+        runAcroformCheck,
+        (r) => r.hasAcroForm === true,
+        'ACROFORM_NOT_SUPPORTED',
+        (n) => `${n} file(s) contain a form; forms are not supported`,
+      );
+      await applyPdfliteCheck(
+        runScannedCheck,
+        (r) => r.isScanned === true,
+        'SCANNED_DOCUMENT',
+        (n) => `${n} file(s) are scanned documents`,
+      );
+      if (runPageCountCheck && failed && failed.length > 0) {
         const errorInfo = getPageCountErrorCode(failed, results, this.MULTI_FILE, errorMessages);
         if (errorInfo?.shouldDispatch && errorInfo.errorCode) {
           await this.dispatchErrorToast(errorInfo.errorCode, null, null, false, true, { code: errorInfo.errorCode });
@@ -601,7 +664,7 @@ export default class ActionBinder {
         }
         if (errorInfo?.setValidationFailure) this.multiFileValidationFailure = true;
       }
-      return passed;
+      return remaining;
     } catch (error) {
       await this.dispatchErrorToast('error_generic', 500, `Exception during PDF validation: ${error.message}`, true);
       return files;
@@ -641,7 +704,7 @@ export default class ActionBinder {
     this.MULTI_FILE = files.length > 1;
     const prevalidatedFiles = await this.filterFilesWithPdflite(sanitizedFiles);
     if (prevalidatedFiles.length === 0) return;
-    const wordValidatedFiles = this.workflowCfg.enabledFeatures[0] === 'resume-builder'
+    const wordValidatedFiles = (this.workflowCfg.targetCfg.wordPageCountVerbs || []).includes(this.workflowCfg.enabledFeatures[0])
       ? await this.validateWordFilePageCount(prevalidatedFiles)
       : prevalidatedFiles;
     if (wordValidatedFiles.length === 0) return;

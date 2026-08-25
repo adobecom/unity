@@ -3142,6 +3142,106 @@ describe('ActionBinder', () => {
     });
   });
 
+  describe('filterFilesWithPdflite - integrity/acroform/scanned checks', () => {
+    let originalPdflite;
+    let pdfDetailsStub;
+
+    const pdf = (name) => new File(['%PDF-1.4 test'], name, { type: 'application/pdf' });
+
+    beforeEach(() => {
+      originalPdflite = window.pdflite;
+      actionBinder.MULTI_FILE = false;
+      actionBinder.multiFileValidationFailure = false;
+      actionBinder.limits = { pageLimit: { maxNumPages: 100 } };
+      actionBinder.workflowCfg = {
+        enabledFeatures: ['stylize'],
+        targetCfg: {
+          pdfIntegrityCheckVerbs: ['stylize'],
+          pdfAcroformCheckVerbs: ['stylize'],
+          pdfScannedCheckVerbs: ['stylize'],
+        },
+      };
+      sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+      pdfDetailsStub = sinon.stub().returns({ NUM_PAGES: 1 });
+      window.pdflite = { pdfDetails: pdfDetailsStub };
+    });
+
+    afterEach(() => {
+      window.pdflite = originalPdflite;
+    });
+
+    it('excludes AcroForm files and dispatches the acroform error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 1, HAS_ACROFORM: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('form.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_acroform_not_supported')).to.be.true;
+    });
+
+    it('excludes scanned files and dispatches the scanned-document error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 1, IS_SCANNED_DOCUMENT: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('scanned.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_scanned_document')).to.be.true;
+    });
+
+    it('excludes empty files with the empty-file error, not the corrupt/encrypted one', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 0, IS_EMPTY: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('empty.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_empty_file')).to.be.true;
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.false;
+    });
+
+    it('excludes encrypted/password-protected files via the integrity error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 1, IS_ENCRYPTED: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('encrypted.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.true;
+    });
+
+    it('treats a fileDetails failure as a corrupted file via the integrity error', async () => {
+      pdfDetailsStub.returns({ error: 'not found' });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('corrupt.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.true;
+    });
+
+    it('passes checkScanned=true to pdflite when the verb is in pdfScannedCheckVerbs', async () => {
+      await actionBinder.filterFilesWithPdflite([pdf('a.pdf')]);
+      expect(pdfDetailsStub.calledWith(sinon.match.any, true)).to.be.true;
+    });
+
+    it('does not request the scan when the verb is not in pdfScannedCheckVerbs', async () => {
+      actionBinder.workflowCfg.targetCfg.pdfScannedCheckVerbs = [];
+      await actionBinder.filterFilesWithPdflite([pdf('a.pdf')]);
+      expect(pdfDetailsStub.calledWith(sinon.match.any, false)).to.be.true;
+    });
+
+    it('passes a clean PDF through without dispatching an error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 5, HAS_ACROFORM: false, IS_ENCRYPTED: false, IS_SCANNED_DOCUMENT: false });
+      const file = pdf('clean.pdf');
+      const result = await actionBinder.filterFilesWithPdflite([file]);
+      expect(result).to.deep.equal([file]);
+      expect(actionBinder.dispatchErrorToast.called).to.be.false;
+    });
+
+    it('skips pdflite entirely for verbs not in any check list and without page limits', async () => {
+      actionBinder.limits = {};
+      actionBinder.workflowCfg.targetCfg = {};
+      const files = [pdf('x.pdf')];
+      const result = await actionBinder.filterFilesWithPdflite(files);
+      expect(result).to.equal(files);
+      expect(pdfDetailsStub.called).to.be.false;
+    });
+
+    it('sets multiFileValidationFailure when a file is excluded in multi-file mode', async () => {
+      actionBinder.MULTI_FILE = true;
+      pdfDetailsStub.returns({ NUM_PAGES: 1, HAS_ACROFORM: true });
+      await actionBinder.filterFilesWithPdflite([pdf('form.pdf')]);
+      expect(actionBinder.multiFileValidationFailure).to.be.true;
+    });
+  });
+
   describe('ensurePageConfig', () => {
     let originalFetch;
 
