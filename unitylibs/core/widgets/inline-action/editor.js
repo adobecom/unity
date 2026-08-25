@@ -1120,6 +1120,11 @@ export class EditorEngine {
     this.selectedRatio = ratio;
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
+    // A newly selected aspect ratio starts from an unzoomed view of the image, same as
+    // a fresh selection — carrying over a previous ratio's zoom level would leave the
+    // frame referencing a scale that no longer matches what's actually shown.
+    this.zoom = 0;
+    this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
       this.moreTrigger.textContent = label;
