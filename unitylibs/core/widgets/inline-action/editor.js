@@ -376,9 +376,13 @@ function buildCtaRow(isCrop, parsedData) {
   const row = createTag('div', { class: 'ia-cta-row' });
   const downloadLabel = parsedData.downloadLabel || (isCrop ? 'Crop and download' : 'Resize and download');
   const editLabel = parsedData.editLabel || 'Open in Firefly';
+  // ia-cta-accent/ia-cta-outline are the visual-variant classes editor.css styles by
+  // (filled vs. outlined button) — ia-editor-download/ia-editor-open-in-firefly are
+  // purely for target-config.json's actionMap to bind against, so the map reads by
+  // what the button does, not what it looks like.
   row.append(
-    buildIconButton('button', { type: 'button', class: 'ia-cta-accent' }, parsedData.downloadIconHref, downloadLabel),
-    buildIconButton('button', { type: 'button', class: 'ia-cta-outline' }, parsedData.editIconHref, editLabel),
+    buildIconButton('button', { type: 'button', class: 'ia-cta-accent ia-editor-download' }, parsedData.downloadIconHref, downloadLabel),
+    buildIconButton('button', { type: 'button', class: 'ia-cta-outline ia-editor-open-in-firefly' }, parsedData.editIconHref, editLabel),
   );
   return row;
 }

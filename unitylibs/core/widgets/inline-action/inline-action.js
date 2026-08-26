@@ -175,6 +175,28 @@ function placeholderRowText(root, iconClass) {
   return li ? normalize(li.innerText) : '';
 }
 
+// Exact-class config rows that set both a text label and an icon href. icon-upload
+// feeds the same reuploadIconHref field icon-share does — both are just different
+// authoring conventions for "the reupload icon", so either can supply it.
+const LABEL_ICON_FIELDS = {
+  'icon-download': ['downloadLabel', 'downloadIconHref'],
+  'icon-aiPhotoEditor': ['editLabel', 'editIconHref'],
+  'icon-reset': ['resetLabel', 'resetIconHref'],
+  'icon-upload': ['reuploadLabel', 'reuploadIconHref'],
+};
+
+// Exact-class config rows that set only a plain trimmed text label — the editor's
+// placeholder-* rows, none of which carry an icon.
+const TEXT_ONLY_FIELDS = {
+  'icon-placeholder-nba': 'nbaHeading',
+  'icon-placeholder-editor': 'editorTitle',
+  'icon-placeholder-aspect-ratio': 'aspectRatioLabel',
+  'icon-placeholder-original-size': 'originalSizeLabel',
+  'icon-placeholder-new-size': 'newSizeLabel',
+  'icon-placeholder-width': 'widthLabel',
+  'icon-placeholder-height': 'heightLabel',
+};
+
 export function parseInlineAuthoring(unityEl) {
   const {
     uploadPara, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
@@ -219,31 +241,17 @@ export function parseInlineAuthoring(unityEl) {
   configUl?.querySelectorAll('li').forEach((li) => {
     const cls = configRowIconClass(li);
     if (!cls) return;
-    if (cls.startsWith('icon-operation-')) config.operation = cls.replace('icon-operation-', '');
-    else if (cls.includes('icon-share')) {
+    if (cls.startsWith('icon-operation-')) {
+      config.operation = cls.replace('icon-operation-', '');
+    } else if (cls.includes('icon-share')) {
       config.reuploadIconHref = getSvgHref(li) || config.reuploadIconHref;
-    } else if (cls === 'icon-download') {
-      config.downloadLabel = stripUrls(li.textContent) || config.downloadLabel;
-      config.downloadIconHref = getSvgHref(li) || config.downloadIconHref;
-    } else if (cls === 'icon-aiPhotoEditor') {
-      config.editLabel = stripUrls(li.textContent) || config.editLabel;
-      config.editIconHref = getSvgHref(li) || config.editIconHref;
-    } else if (cls === 'icon-reset') {
-      config.resetLabel = stripUrls(li.textContent) || config.resetLabel;
-      config.resetIconHref = getSvgHref(li) || config.resetIconHref;
-    } else if (cls === 'icon-upload') {
-      config.reuploadLabel = stripUrls(li.textContent) || config.reuploadLabel;
-      // Same field icon-share already feeds — both are just different authoring
-      // conventions for "the reupload icon", so either can supply it.
-      config.reuploadIconHref = getSvgHref(li) || config.reuploadIconHref;
-    } else if (cls === 'icon-placeholder-nba') config.nbaHeading = li.textContent.trim();
-    else if (cls === 'icon-placeholder-editor') config.editorTitle = li.textContent.trim();
-    else if (cls === 'icon-placeholder-aspect-ratio') config.aspectRatioLabel = li.textContent.trim();
-    else if (cls === 'icon-placeholder-original-size') config.originalSizeLabel = li.textContent.trim();
-    else if (cls === 'icon-placeholder-new-size') config.newSizeLabel = li.textContent.trim();
-    else if (cls === 'icon-placeholder-width') config.widthLabel = li.textContent.trim();
-    else if (cls === 'icon-placeholder-height') config.heightLabel = li.textContent.trim();
-    else if (cls.startsWith('icon-placeholder-slider-')) {
+    } else if (LABEL_ICON_FIELDS[cls]) {
+      const [labelField, iconField] = LABEL_ICON_FIELDS[cls];
+      config[labelField] = stripUrls(li.textContent) || config[labelField];
+      config[iconField] = getSvgHref(li) || config[iconField];
+    } else if (TEXT_ONLY_FIELDS[cls]) {
+      config[TEXT_ONLY_FIELDS[cls]] = li.textContent.trim();
+    } else if (cls.startsWith('icon-placeholder-slider-')) {
       sliderModes.push({
         mode: cls.replace('icon-placeholder-slider-', ''),
         label: stripUrls(li.textContent),

@@ -23,8 +23,8 @@
       ".ia-edit-in-firefly": "connector",
       ".ia-download-btn": "download",
       ".ia-reupload-btn": "reupload",
-      ".ia-cta-accent": "runEditorOperation",
-      ".ia-cta-outline": "runEditInFirefly"
+      ".ia-editor-download": "runEditorOperation",
+      ".ia-editor-open-in-firefly": "runEditInFirefly"
     }
   },
   "hero-marquee": {
