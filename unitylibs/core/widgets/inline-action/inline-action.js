@@ -480,8 +480,8 @@ export default class InlineActionWidget {
     this.state = InlineActionState.INITIAL;
     this.progressScreen = null;
     this.editorEngine = null;
-    this.editorStageSlot = null;
-    this.editorPanelSlot = null;
+    this.editorLeftSlot = null;
+    this.editorRightSlot = null;
   }
 
   setState(state) {
@@ -529,7 +529,7 @@ export default class InlineActionWidget {
   async setEditorImage(url, originalSize) {
     if (!this.editorEngine) {
       const { initEditor } = await import('./editor.js');
-      this.editorEngine = await initEditor(this.editorStageSlot, this.editorPanelSlot, this.parsedData);
+      this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData);
     }
     await this.editorEngine.setImage(url, originalSize);
   }
@@ -552,10 +552,10 @@ export default class InlineActionWidget {
     if (isEditorOp) {
       // Empty slots only — editor.js/editor.css and the real stage/panel DOM are built
       // lazily in setEditorImage(), once an image is actually uploaded (see there for why).
-      completeLeft = createTag('div', { class: 'ia-editor-stage-slot' });
-      completeRight = createTag('div', { class: 'ia-editor-panel-slot' });
-      this.editorStageSlot = completeLeft;
-      this.editorPanelSlot = completeRight;
+      completeLeft = createTag('div', { class: 'ia-editor-left-slot' });
+      completeRight = createTag('div', { class: 'ia-editor-right-slot' });
+      this.editorLeftSlot = completeLeft;
+      this.editorRightSlot = completeRight;
     } else {
       completeLeft = buildResultSection(this.parsedData);
       completeRight = buildCompletePanel(this.parsedData);

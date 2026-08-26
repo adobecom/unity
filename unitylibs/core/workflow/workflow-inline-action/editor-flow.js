@@ -55,7 +55,7 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
     binder.widgetRef?.setProgress(100); // matches action-binder.js's PROGRESS.COMPLETE
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
     await binder.widgetRef?.setEditorImage(URL.createObjectURL(file), originalSize);
-    if (isFirstEditorLoad) binder.bindActionMapElements(binder.widgetRef.editorEngine.panel);
+    if (isFirstEditorLoad) binder.bindActionMapElements(binder.widgetRef.editorEngine.rightPanel);
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError('upload', e);
     binder.serviceHandler.showErrorToast(binder.uploadErrorOpts(), e, binder.lanaOptions);

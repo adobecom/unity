@@ -285,7 +285,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
   return btn;
 }
 
-// Only called when parsedData.sliderModes is non-empty (see buildEditorStage) — no
+// Only called when parsedData.sliderModes is non-empty (see buildEditorLeftPanel) — no
 // fallback to hardcoded modes: an unauthored page simply gets no adjust bar at all.
 function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
@@ -308,8 +308,8 @@ function buildAdjustBar(parsedData) {
   return bar;
 }
 
-export function buildEditorStage(parsedData) {
-  const stage = createTag('div', { class: 'ia-editor-stage' });
+export function buildEditorLeftPanel(parsedData) {
+  const leftPanel = createTag('div', { class: 'ia-editor-left-panel' });
   const viewport = createTag('div', { class: 'ia-viewport' });
   const blurImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
   const sharpImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
@@ -318,10 +318,10 @@ export function buildEditorStage(parsedData) {
     createTag('div', { class: 'ia-imglayer ia-imglayer--sharp' }, sharpImg),
     buildFrame(),
   );
-  stage.append(viewport);
+  leftPanel.append(viewport);
   // No icon-placeholder-slider-* authored at all — no adjust bar, not a fallback one.
-  if (parsedData.sliderModes.length) stage.append(buildAdjustBar(parsedData));
-  return stage;
+  if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
+  return leftPanel;
 }
 
 // Shared by every authored icon+label button/pill (reset, reupload, the two CTAs,
@@ -569,9 +569,9 @@ function buildFurtherSection(parsedData) {
   return section;
 }
 
-export function buildEditorPanel(parsedData) {
+export function buildEditorRightPanel(parsedData) {
   const isCrop = parsedData.operation === 'crop';
-  const panel = createTag('div', { class: 'ia-editor-panel' });
+  const rightPanel = createTag('div', { class: 'ia-editor-right-panel' });
   const header = createTag('div', { class: 'ia-editor-header' });
   const actions = createTag('div', { class: 'ia-editor-header-actions' });
   actions.append(buildIconButton(
@@ -601,34 +601,34 @@ export function buildEditorPanel(parsedData) {
     createTag('span', { class: 'ia-editor-title' }, parsedData.editorTitle || (isCrop ? 'Crop your image' : 'Resize your image')),
     actions,
   );
-  panel.append(header);
+  rightPanel.append(header);
   const aspectSection = isCrop ? buildCropAspectSection(parsedData) : buildResizeAspectSection(parsedData);
-  panel.append(aspectSection, buildFurtherSection(parsedData));
-  return panel;
+  rightPanel.append(aspectSection, buildFurtherSection(parsedData));
+  return rightPanel;
 }
 
 export class EditorEngine {
-  constructor(stageEl, panelEl, parsedData) {
+  constructor(leftPanelEl, rightPanelEl, parsedData) {
     this.isCrop = parsedData.operation === 'crop';
-    this.viewport = stageEl.querySelector('.ia-viewport');
-    this.blurImg = stageEl.querySelector('.ia-imglayer--blur .ia-img');
+    this.viewport = leftPanelEl.querySelector('.ia-viewport');
+    this.blurImg = leftPanelEl.querySelector('.ia-imglayer--blur .ia-img');
     // clip-path lives on this wrapper, not on sharpImg itself — see render()'s comment.
-    this.sharpLayer = stageEl.querySelector('.ia-imglayer--sharp');
+    this.sharpLayer = leftPanelEl.querySelector('.ia-imglayer--sharp');
     this.sharpImg = this.sharpLayer.querySelector('.ia-img');
-    this.frame = stageEl.querySelector('.ia-frame');
-    this.slider = stageEl.querySelector('.ia-slider');
-    this.valEl = stageEl.querySelector('.ia-val');
-    this.toggleBtns = [...stageEl.querySelectorAll('.ia-toggle__btn')];
-    this.panel = panelEl;
-    this.resetBtn = panelEl.querySelector('.ia-editor-reset');
-    this.qualityBtn = panelEl.querySelector('.ia-editor-quality');
+    this.frame = leftPanelEl.querySelector('.ia-frame');
+    this.slider = leftPanelEl.querySelector('.ia-slider');
+    this.valEl = leftPanelEl.querySelector('.ia-val');
+    this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
+    this.rightPanel = rightPanelEl;
+    this.resetBtn = rightPanelEl.querySelector('.ia-editor-reset');
+    this.qualityBtn = rightPanelEl.querySelector('.ia-editor-quality');
     this.qualityPreviewActive = false;
     this.qualityPreviewUrl = null;
     this.originalUrl = '';
     this.sourceImg = null;
-    this.aspectPills = [...panelEl.querySelectorAll('.ia-aspect-pill')];
-    this.moreTrigger = panelEl.querySelector('.ia-more-trigger');
-    this.moreMenu = panelEl.querySelector('.ia-more-menu');
+    this.aspectPills = [...rightPanelEl.querySelectorAll('.ia-aspect-pill')];
+    this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
+    this.moreMenu = rightPanelEl.querySelector('.ia-more-menu');
     // .ia-more is reused by resize's Social/unit-picker wrappers too (see buildUnitPicker/
     // buildResizeAspectSection), so this must be derived from the specific trigger via
     // closest(), never a fresh panel-wide querySelector('.ia-more') — that would be
@@ -648,24 +648,24 @@ export class EditorEngine {
     // Captured once, at build time, before any click can overwrite it — the sheet's own
     // (localized) label, never a hardcoded "More" (see groupCropRows/buildCropAspectSection).
     this.moreDefaultLabel = this.moreTrigger?.textContent || 'More';
-    this.resizeTabs = [...panelEl.querySelectorAll('.ia-resize-tab')];
-    this.resizeDetails = [...panelEl.querySelectorAll('.ia-resize-detail-panel')];
-    this.widthInput = panelEl.querySelector('.ia-width-input');
-    this.heightInput = panelEl.querySelector('.ia-height-input');
-    this.lockBtn = panelEl.querySelector('.ia-dim-lock');
-    this.unitTrigger = panelEl.querySelector('.ia-unit-trigger');
-    this.unitLabel = panelEl.querySelector('.ia-unit-label');
-    this.unitMenu = panelEl.querySelector('.ia-unit-menu');
+    this.resizeTabs = [...rightPanelEl.querySelectorAll('.ia-resize-tab')];
+    this.resizeDetails = [...rightPanelEl.querySelectorAll('.ia-resize-detail-panel')];
+    this.widthInput = rightPanelEl.querySelector('.ia-width-input');
+    this.heightInput = rightPanelEl.querySelector('.ia-height-input');
+    this.lockBtn = rightPanelEl.querySelector('.ia-dim-lock');
+    this.unitTrigger = rightPanelEl.querySelector('.ia-unit-trigger');
+    this.unitLabel = rightPanelEl.querySelector('.ia-unit-label');
+    this.unitMenu = rightPanelEl.querySelector('.ia-unit-menu');
     this.unitWrap = this.unitTrigger?.closest('.ia-more');
     this.unit = 'px';
-    this.socialTrigger = panelEl.querySelector('.ia-social-trigger');
+    this.socialTrigger = rightPanelEl.querySelector('.ia-social-trigger');
     // Same as moreDefaultLabel above — the bucket's own (localized) group value, not a
     // hardcoded "Social".
     this.socialDefaultLabel = this.socialTrigger?.textContent || 'Social';
-    this.socialMenu = panelEl.querySelector('.ia-social-menu');
+    this.socialMenu = rightPanelEl.querySelector('.ia-social-menu');
     this.socialWrap = this.socialTrigger?.closest('.ia-more');
-    this.socialGrids = [...panelEl.querySelectorAll('.ia-social-grid')];
-    this.sizeReadout = panelEl.querySelector('.ia-size-readout');
+    this.socialGrids = [...rightPanelEl.querySelectorAll('.ia-social-grid')];
+    this.sizeReadout = rightPanelEl.querySelector('.ia-size-readout');
     // Same fallback pattern as the readout's initial text in buildResizeAspectSection —
     // duplicated rather than shared, since that's a standalone builder function with no
     // access to `this`, and this is the only other place these labels are needed.
@@ -699,7 +699,7 @@ export class EditorEngine {
     this.selectedRatioText = null;
     // Matches whichever mode buildAdjustBar picked as the first/active toggle button
     // (or null if none were authored — no adjust bar exists in that case, see
-    // buildEditorStage), so DOM (.is-active) and state start in sync. Stored so
+    // buildEditorLeftPanel), so DOM (.is-active) and state start in sync. Stored so
     // reset() can return to it without re-deriving the same lookup.
     this.defaultMode = parsedData.sliderModes[0]?.mode || null;
     this.mode = this.defaultMode;
@@ -994,7 +994,7 @@ export class EditorEngine {
 
   bindSocialEvents() {
     if (!this.socialTrigger) return;
-    this.panel.querySelectorAll('.ia-social-opt').forEach((opt) => {
+    this.rightPanel.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         const { platform } = opt.dataset;
         this.socialTrigger.textContent = platform;
@@ -1026,7 +1026,7 @@ export class EditorEngine {
   bindUnitEvents() {
     if (!this.unitTrigger) return;
     this.unitTrigger.addEventListener('click', () => this.toggleUnitMenu());
-    this.panel.querySelectorAll('.ia-unit-opt').forEach((opt) => {
+    this.rightPanel.querySelectorAll('.ia-unit-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         this.unit = opt.dataset.unit;
         if (this.unitLabel) this.unitLabel.textContent = this.unit;
@@ -1261,7 +1261,7 @@ export class EditorEngine {
   setMode(mode) {
     this.mode = mode;
     this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
-    // No slider exists at all when nothing was authored (see buildEditorStage) —
+    // No slider exists at all when nothing was authored (see buildEditorLeftPanel) —
     // this.mode is still tracked for bookkeeping, but there's nothing left to update.
     if (!this.slider) return;
     this.slider.min = '0';
@@ -1307,18 +1307,18 @@ export class EditorEngine {
 // *when* to call this and cache the result, never construct the DOM itself.
 // Uses replaceWith(), not append(): the slots are plain unstyled placeholder divs, and
 // .ia-panel-left/.ia-panel-right (their parent) is a flex container whose layout the
-// real .ia-editor-stage/.ia-editor-panel depend on directly — an extra wrapper div left
-// in place would sit between them and break that flex relationship (this was a real,
-// reproduced regression, not just a theoretical one).
-export async function initEditor(stageSlot, panelSlot, parsedData) {
+// real .ia-editor-left-panel/.ia-editor-right-panel depend on directly — an extra
+// wrapper div left in place would sit between them and break that flex relationship
+// (this was a real, reproduced regression, not just a theoretical one).
+export async function initEditor(leftSlot, rightSlot, parsedData) {
   const [, aspectRows] = await Promise.all([
     new Promise((resolve) => { loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve); }),
     loadAspectRatios(parsedData.operation),
   ]);
   const fullData = { ...parsedData, aspectRows };
-  const stage = buildEditorStage(fullData);
-  const panel = buildEditorPanel(fullData);
-  stageSlot.replaceWith(stage);
-  panelSlot.replaceWith(panel);
-  return new EditorEngine(stage, panel, fullData);
+  const leftPanel = buildEditorLeftPanel(fullData);
+  const rightPanel = buildEditorRightPanel(fullData);
+  leftSlot.replaceWith(leftPanel);
+  rightSlot.replaceWith(rightPanel);
+  return new EditorEngine(leftPanel, rightPanel, fullData);
 }
