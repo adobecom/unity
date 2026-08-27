@@ -29,6 +29,11 @@ export default class PromptUploadWidget {
     return raw.trim().toLowerCase() === 'true';
   }
 
+  // True when an authoring row for this icon exists — used to infer components from content.
+  hasFlag(iconClass) {
+    return !!this.el.querySelector(`.${iconClass}`);
+  }
+
   buildLeftSection() {
     const style = placeholderText(this.el, 'icon-dropzone-style') || 'box';
     const heading = placeholderText(this.el, 'icon-dropzone-label') || 'Upload source files';
@@ -70,12 +75,12 @@ export default class PromptUploadWidget {
     this.widgetWrap?.setAttribute('data-selected-option-value', value);
   }
 
-  buildCitationStyleDropdown() {
-    const raw = placeholderText(this.el, 'icon-show-citationdropdown-values');
+  buildPromptDropdown() {
+    const raw = placeholderText(this.el, 'icon-prompt-dropdown-values');
     const options = raw.split(',').map((s) => s.trim()).filter(Boolean);
     if (!options.length) return null;
     [this.selectedOption] = options;
-    const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Citation style', menuId: 'pu-citation-style-menu', extraClass: 'pu-style-dropdown' });
+    const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Options', menuId: 'pu-prompt-dropdown-menu', extraClass: 'pu-style-dropdown' });
     nameContainer.textContent = this.selectedOption;
     setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
 
@@ -163,7 +168,7 @@ export default class PromptUploadWidget {
     this.genBtn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate');
     this.resultsEl = createTag('div', { class: 'pu-results hidden' });
     const searchField = createTag('div', { class: 'pu-search-field' });
-    // Leading icon only when authored (e.g. citation `:search-icon: search`).
+    // Leading icon only when authored (e.g. `:search-icon: search`).
     const searchIconName = placeholderText(this.el, 'icon-search-icon');
     if (searchIconName) {
       const searchIcon = createTag('span', { class: 'pu-search-icon', 'aria-hidden': 'true' });
@@ -172,7 +177,7 @@ export default class PromptUploadWidget {
     }
     searchField.append(input);
 
-    const styleDropdown = this.buildCitationStyleDropdown();
+    const styleDropdown = this.buildPromptDropdown();
     const actWrap = createTag('div', { class: 'act-wrap' });
     actWrap.append(this.searchCta, this.genBtn);
 
@@ -196,18 +201,18 @@ export default class PromptUploadWidget {
     const query = input?.value?.trim() || '';
     if (!query) return;
     try {
-      const { default: searchCitations } = await import('./citation-mock.js');
-      const citations = await searchCitations(query);
+      const { default: searchResults } = await import('./results-mock.js');
+      const results = await searchResults(query);
       this.resultsEl.innerHTML = '';
-      if (!citations.length) { this.resultsEl.classList.add('hidden'); return; }
+      if (!results.length) { this.resultsEl.classList.add('hidden'); return; }
 
-      const list = createTag('ul', { class: 'pu-results-list', role: 'listbox', 'aria-label': 'Matching citations' });
-      citations.forEach((c) => {
-        const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'data-citation-id': c.id });
-        const text = createTag('span', { class: 'model-name pu-citation-text' });
+      const list = createTag('ul', { class: 'pu-results-list', role: 'listbox', 'aria-label': 'Matching results' });
+      results.forEach((r) => {
+        const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'data-result-id': r.id });
+        const text = createTag('span', { class: 'model-name pu-result-text' });
         text.append(
-          createTag('span', { class: 'pu-citation-title' }, c.title),
-          createTag('span', { class: 'pu-citation-meta' }, `${c.authors} (${c.year}). ${c.source}`),
+          createTag('span', { class: 'pu-result-title' }, r.title),
+          createTag('span', { class: 'pu-result-meta' }, `${r.authors} (${r.year}). ${r.source}`),
         );
         link.append(text);
         const li = createTag('li', { class: 'verb-item', role: 'presentation' });
@@ -219,14 +224,14 @@ export default class PromptUploadWidget {
         if (!link) return;
         e.preventDefault();
         e.stopPropagation();
-        this.onCitationSelected(citations.find((c) => c.id === link.getAttribute('data-citation-id')));
+        this.onResultSelected(results.find((r) => r.id === link.getAttribute('data-result-id')));
       });
 
       this.resultsEl.append(list);
       this.resultsEl.classList.remove('hidden');
       this.bindResultsDismiss();
     } catch (err) {
-      window.lana?.log(`Message: citation search failed, Error: ${err}`, this.lanaOptions);
+      window.lana?.log(`Message: result search failed, Error: ${err}`, this.lanaOptions);
     }
   }
 
@@ -242,16 +247,25 @@ export default class PromptUploadWidget {
     });
   }
 
-  onCitationSelected(citation) {
-    if (!citation) return;
+  onResultSelected(result) {
+    if (!result) return;
     const input = this.widgetWrap?.querySelector('#pbuPromptInput');
-    if (input) input.value = citation.title;
+    if (input) input.value = result.title;
     this.genBtn?.click();
   }
 
   async initWidget() {
-    const showUpload = this.authoredFlag('icon-show-dropzone', false);
-    const showPrompt = this.authoredFlag('icon-show-search', false);
+    // Infer components from authored content; `show-dropzone`/`show-prompt` are optional
+    // overrides to force an empty dropzone/prompt (no content) when needed.
+    const dropzoneContent = [
+      'icon-dropzone-label', 'icon-dropzone-subtext', 'icon-dropzone-style',
+      'icon-select-file-text', 'icon-drag-text',
+    ];
+    const promptContent = ['icon-prompt-label', 'icon-placeholder-text', 'icon-prompt-dropdown-values'];
+    const showUpload = this.authoredFlag('icon-show-dropzone', false)
+      || dropzoneContent.some((f) => this.hasFlag(f));
+    const showPrompt = this.authoredFlag('icon-show-prompt', false)
+      || promptContent.some((f) => this.hasFlag(f));
 
     const main = createTag('div', { class: 'pu-main' });
     let dropZoneRefs = null;

@@ -221,20 +221,20 @@
 
 .pu-results .verb-link { padding: 14px 20px; }
 
-.pu-citation-text {
+.pu-result-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   white-space: normal;
 }
 
-.pu-citation-title {
+.pu-result-title {
   font-weight: 600;
   font-size: 15px;
   color: #3b5bf6;
 }
 
-.pu-citation-meta {
+.pu-result-meta {
   font-size: 13px;
   color: #6e6e6e;
 }
