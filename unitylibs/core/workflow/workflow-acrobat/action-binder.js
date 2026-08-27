@@ -438,9 +438,9 @@ export default class ActionBinder {
     for (const file of files) {
       let fail = false;
       const { getExtension } = await import('../../../utils/FileUtils.js');
-      const ext = getExtension(file.name).toLowerCase();
-      const extensionFallbackTypes = this.limits.extensionFallbackTypes || [];
-      const typeCheckFail = !extensionFallbackTypes.includes(ext) && !this.limits.allowedFileTypes.includes(file.type);
+      const typeCheckFail = this.limits.allowedFileTypes.includes('image/heic')
+        ? getExtension(file.name).toLowerCase() !== 'heic' && !this.limits.allowedFileTypes.includes(file.type)
+        : !this.limits.allowedFileTypes.includes(file.type);
       if (typeCheckFail) {
         let errorMessage = errorMessages.UNSUPPORTED_TYPE;
         if (this.isSameFileType(this.workflowCfg.enabledFeatures[0], file.type)) errorMessage = errorMessages.SAME_FILE_TYPE;
