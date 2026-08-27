@@ -206,7 +206,8 @@
     "allowedFileTypes": ["application/x-indesign"]
   },
   "allowed-filetypes-heic": {
-    "allowedFileTypes": ["image/heic"]
+    "allowedFileTypes": ["image/heic"],
+    "extensionFallbackTypes": ["heic"]
   },
   "allowed-filetypes-study-spaces": {
     "allowedFileTypes": [
@@ -239,6 +240,7 @@
       "image/jpeg",
       "image/png",
       "image/tiff"
-    ]
+    ],
+    "extensionFallbackTypes": ["msg"]
   }
 }
