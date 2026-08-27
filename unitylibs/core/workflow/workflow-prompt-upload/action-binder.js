@@ -319,10 +319,23 @@ export default class ActionBinder {
     if (this.workflowCfg.targetCfg.sendSplunkAnalytics) this.logAnalyticsinSplunk(analyticsName, meta);
   }
 
-  resolveErrorMessage(errorType) {
+  async resolveErrorMessage(errorType) {
+    const errors = this.workflowCfg.errors || {};
+    // When no error codes are authored in the unity block at all, fall back to the
+    // error sheet method (workflow-acrobat way). If even one error code is authored,
+    // resolve messages from the block and never load the error sheet.
+    if (Object.keys(errors).length === 0) {
+      try {
+        const getError = (await import('../../../scripts/errors.js')).default;
+        const sheetMsg = await getError(this.verb, errorType);
+        if (sheetMsg) return sheetMsg;
+      } catch (e) {
+        window.lana?.log(`Failed to resolve error message from error sheet: ${e?.message}`, this.lanaOptions);
+      }
+      return 'Unable to process the request';
+    }
     const selector = ActionBinder.ERROR_SELECTOR_MAP[errorType] || '.icon-error-request';
     const key = selector.replace('.icon-', '');
-    const errors = this.workflowCfg.errors || {};
     const fromDom = (sel) => this.unityEl?.querySelector(sel)?.closest('li')?.textContent?.trim();
     const msg = errors[key] || fromDom(selector) || errors['error-request'] || fromDom('.icon-error-request');
     return msg || 'Unable to process the request';
@@ -330,7 +343,7 @@ export default class ActionBinder {
 
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
     const sendToSplunk = this.workflowCfg.targetCfg.sendSplunkAnalytics;
-    const message = lanaOnly ? '' : this.resolveErrorMessage(errorType);
+    const message = lanaOnly ? '' : await this.resolveErrorMessage(errorType);
     window.lana?.log(
       `Error Code: ${errorType}, Status: ${status}, Message: ${message}, Info: ${info}`,
       this.lanaOptions,
