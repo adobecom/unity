@@ -518,15 +518,11 @@ export default class UploadHandler {
     }
   }
 
-  async singleFileUserUpload(file, fileData) {
-    try {
-      await this.showSplashScreen(true);
-      const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-      if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) { await this.uploadSingleFile(file, fileData, this.isPdf(file)); } else {
-        await this.actionBinder.delay(3000);
-        const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('nonpdf'), fileData);
-        if (redirectSuccess) this.actionBinder.redirectWithoutUpload = true;
-      }
+async singleFileUserUpload(file, fileData) {
+  try {
+    await this.showSplashScreen(true);
+    const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+    await this.uploadSingleFile(file, fileData, this.isPdf(file) || nonpdfSfuProductScreenVerbs);
     } catch (e) {
       await this.showSplashScreen();
       this.actionBinder.operations = [];

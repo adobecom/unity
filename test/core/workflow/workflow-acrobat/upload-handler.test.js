@@ -175,20 +175,20 @@ describe('UploadHandler', () => {
 
   describe('Utility Functions', () => {
     it('should generate guest connection payload', () => {
-      const payload = uploadHandler.getConnPayload('nonpdf');
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
       expect(payload.payload.feedback).to.equal('nonpdf');
       expect(payload.targetProduct).to.equal('test-product');
     });
 
     it('should transform pdf-ai to chat-pdf-pdf-ai in guest connection payload', () => {
       mockActionBinder.workflowCfg.enabledFeatures = ['pdf-ai'];
-      const payload = uploadHandler.getConnPayload('nonpdf');
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
       expect(payload.payload.verb).to.equal('chat-pdf-pdf-ai');
     });
 
     it('should not transform other verbs in guest connection payload', () => {
       mockActionBinder.workflowCfg.enabledFeatures = ['chat-pdf'];
-      const payload = uploadHandler.getConnPayload('nonpdf');
+      const payload = uploadHandler.getGuestConnPayload('nonpdf');
       expect(payload.payload.verb).to.equal('chat-pdf');
     });
 
