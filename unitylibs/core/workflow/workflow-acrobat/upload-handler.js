@@ -518,11 +518,11 @@ export default class UploadHandler {
     }
   }
 
-async singleFileUserUpload(file, fileData) {
-  try {
-    await this.showSplashScreen(true);
-    const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
-    await this.uploadSingleFile(file, fileData, this.isPdf(file) || nonpdfSfuProductScreenVerbs);
+  async singleFileUserUpload(file, fileData) {
+    try {
+      await this.showSplashScreen(true);
+      const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      await this.uploadSingleFile(file, fileData, this.isPdf(file) || nonpdfSfuProductScreenVerbs);
     } catch (e) {
       await this.showSplashScreen();
       this.actionBinder.operations = [];
