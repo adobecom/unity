@@ -358,7 +358,7 @@ export default class UploadHandler {
     };
   }
 
-  getGuestConnPayload(feedback) {
+  getConnPayload(feedback) {
     return {
       targetProduct: this.actionBinder.workflowCfg.productName,
       payload: {
@@ -508,7 +508,7 @@ export default class UploadHandler {
       const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
       if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) { await this.uploadSingleFile(file, fileData); } else {
         await this.actionBinder.delay(3000);
-        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
+        const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('nonpdf'), fileData);
         if (redirectSuccess) this.actionBinder.redirectWithoutUpload = true;
       }
     } catch (e) {
@@ -521,7 +521,12 @@ export default class UploadHandler {
   async singleFileUserUpload(file, fileData) {
     try {
       await this.showSplashScreen(true);
-      await this.uploadSingleFile(file, fileData, this.isPdf(file));
+      const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
+      if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) { await this.uploadSingleFile(file, fileData, this.isPdf(file)); } else {
+        await this.actionBinder.delay(3000);
+        const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('nonpdf'), fileData);
+        if (redirectSuccess) this.actionBinder.redirectWithoutUpload = true;
+      }
     } catch (e) {
       await this.showSplashScreen();
       this.actionBinder.operations = [];
@@ -667,7 +672,7 @@ export default class UploadHandler {
       if (nonpdfMfuFeedbackScreenTypeNonpdf) {
         const allNonPdf = files.every((file) => !this.isPdf(file));
         if (allNonPdf) {
-          const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), filesData);
+          const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('nonpdf'), filesData);
           if (!redirectSuccess) return;
           this.actionBinder.redirectWithoutUpload = true;
           return;
@@ -687,7 +692,7 @@ export default class UploadHandler {
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
-      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('multifile'), filesData);
+      const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('multifile'), filesData);
       if (!redirectSuccess) return;
       this.actionBinder.redirectWithoutUpload = true;
       return;
