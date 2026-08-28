@@ -358,7 +358,7 @@ export default class UploadHandler {
     };
   }
 
-  getConnPayload(feedback) {
+  getGuestConnPayload(feedback) {
     return {
       targetProduct: this.actionBinder.workflowCfg.productName,
       payload: {
@@ -508,7 +508,7 @@ export default class UploadHandler {
       const nonpdfSfuProductScreenVerbs = this.actionBinder.workflowCfg.targetCfg.nonpdfSfuProductScreen.includes(this.actionBinder.workflowCfg.enabledFeatures[0]);
       if (this.isPdf(file) || nonpdfSfuProductScreenVerbs) { await this.uploadSingleFile(file, fileData); } else {
         await this.actionBinder.delay(3000);
-        const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('nonpdf'), fileData);
+        const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), fileData);
         if (redirectSuccess) this.actionBinder.redirectWithoutUpload = true;
       }
     } catch (e) {
@@ -668,7 +668,7 @@ async singleFileUserUpload(file, fileData) {
       if (nonpdfMfuFeedbackScreenTypeNonpdf) {
         const allNonPdf = files.every((file) => !this.isPdf(file));
         if (allNonPdf) {
-          const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('nonpdf'), filesData);
+          const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('nonpdf'), filesData);
           if (!redirectSuccess) return;
           this.actionBinder.redirectWithoutUpload = true;
           return;
@@ -688,7 +688,7 @@ async singleFileUserUpload(file, fileData) {
       await this.actionBinder.delay(3000);
       this.actionBinder.LOADER_LIMIT = 85;
       this.transitionScreen.updateProgressBar(this.actionBinder.transitionScreen.splashScreenEl, 85);
-      const redirectSuccess = await this.actionBinder.handleRedirect(this.getConnPayload('multifile'), filesData);
+      const redirectSuccess = await this.actionBinder.handleRedirect(this.getGuestConnPayload('multifile'), filesData);
       if (!redirectSuccess) return;
       this.actionBinder.redirectWithoutUpload = true;
       return;
