@@ -1522,7 +1522,6 @@ describe('ActionBinder', () => {
     describe('isDirectUploadVerb', () => {
       beforeEach(() => {
         actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
-        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
         actionBinder.workflowCfg.targetCfg.directUploadMaxSize = 1048576;
       });
 
@@ -1537,11 +1536,6 @@ describe('ActionBinder', () => {
 
       it('should return false for direct upload verbs without file size', () => {
         expect(actionBinder.isDirectUploadVerb()).to.be.false;
-      });
-
-      it('should return false for verbs not configured for direct upload', () => {
-        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
-        expect(actionBinder.isDirectUploadVerb(500000)).to.be.false;
       });
     });
 
