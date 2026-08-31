@@ -636,6 +636,19 @@
   color: var(--color-black);
 }
 
+/* MWPW-204848 Firefly site-redesign theme (additive) — blue Generate button.*/
+:root:has(meta[name="theme"][content="firefly-redesign"], .theme-firefly-redesign) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
+  background: #1473E6;
+}
+
+:root:has(meta[name="theme"][content="firefly-redesign"], .theme-firefly-redesign) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn:hover {
+  background: #0D66D0;
+}
+
+:root:has(meta[name="theme"][content="firefly-redesign"], .theme-firefly-redesign) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+  color: var(--color-white);
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop {
   background: linear-gradient(0deg, rgba(255 255 255 / 100%) 0%, rgba(255 255 255 / 100%) 100%), linear-gradient(89deg, rgba(255 255 255 / 80%) 1.01%, rgba(255 255 255 / 20%) 111.14%);
   box-shadow: 0 2px 8px 0 rgba(0 0 0 / 16%);
