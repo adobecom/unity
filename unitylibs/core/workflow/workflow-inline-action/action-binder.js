@@ -251,13 +251,23 @@ export default class ActionBinder {
     return { errorToastEl: this.errorToastEl, errorType: UPLOAD_ERROR_TYPE, ...(errorCode && { errorCode }) };
   }
 
+  // Crop/resize get their own suffixed key, scoped per operation — a user who's already
+  // downloaded via removeBackground shouldn't be treated as "returning" the first time
+  // they try crop/resize (or vice versa), since handleConnector's first-time-vs-
+  // returning check now gates all three operations' download buttons off this counter.
+  // removeBackground keeps its original, un-suffixed key so existing users' download
+  // history isn't silently reset by this change.
+  downloadCountKey() {
+    return this.operation === 'removeBackground' ? DOWNLOAD_COUNT_KEY : `${DOWNLOAD_COUNT_KEY}-${this.operation}`;
+  }
+
   getUserCount() {
-    return parseInt(localStorage.getItem(DOWNLOAD_COUNT_KEY), 10) || 0;
+    return parseInt(localStorage.getItem(this.downloadCountKey()), 10) || 0;
   }
 
   incrementUserCount() {
     const next = this.getUserCount() + 1;
-    localStorage.setItem(DOWNLOAD_COUNT_KEY, String(next));
+    localStorage.setItem(this.downloadCountKey(), String(next));
     return next;
   }
 
