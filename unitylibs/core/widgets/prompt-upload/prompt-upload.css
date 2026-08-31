@@ -189,6 +189,37 @@
   color: #fff;
 }
 
+.pu-footer-container .pu-add-sources-wrap { display: inline-flex; }
+
+.pu-footer-container .pu-add-sources {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #2c2c2c;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.pu-add-sources:hover { opacity: 0.7; }
+
+.pu-add-sources-icon { display: inline-flex; }
+
+.pu-add-sources-icon svg {
+  width: 22px;
+  height: 22px;
+  color: #2c2c2c;
+}
+
 .search-cta .btn-ico {
   display: inline-flex;
   align-items: center;

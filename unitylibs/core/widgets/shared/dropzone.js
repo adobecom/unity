@@ -15,6 +15,32 @@ export default function buildDropzone({
   if (multiple) fileInputAttrs.multiple = '';
   const fileInput = createTag('input', fileInputAttrs);
 
+  const wireOpen = (zone) => {
+    zone.addEventListener('click', (e) => { if (e.target === fileInput) return; fileInput.click(); });
+    zone.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      fileInput.click();
+    });
+  };
+
+  if (style === 'compact') {
+    const compactZone = createTag('div', {
+      class: 'drop-zone pu-add-sources',
+      role: 'button',
+      tabindex: '0',
+      'aria-label': uploadLabel,
+    });
+    const ico = createTag('span', { class: 'pu-add-sources-icon', 'aria-hidden': 'true' });
+    ico.innerHTML = svgIcon('#unity-add-sources-icon');
+    compactZone.append(fileInput, ico, createTag('span', { class: 'pu-add-sources-label' }, selectFileText));
+    wireOpen(compactZone);
+
+    const compactWrap = createTag('div', { class: 'shared-drop-zone-wrap pu-add-sources-wrap' });
+    compactWrap.append(compactZone);
+    return { wrap: compactWrap, dropZone: compactZone, fileInput };
+  }
+
   if (style === 'panel') {
     const selectBtn = createTag('button', { type: 'button', class: 'unity-act-btn pu-select-file-btn' });
     const ico = createTag('span', { class: 'btn-ico', 'aria-hidden': 'true' });
@@ -48,15 +74,7 @@ export default function buildDropzone({
     'aria-label': uploadLabel,
   });
   dropZone.append(fileInput, dropContent);
-  dropZone.addEventListener('click', (e) => {
-    if (e.target === fileInput) return;
-    fileInput.click();
-  });
-  dropZone.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    fileInput.click();
-  });
+  wireOpen(dropZone);
 
   const wrap = createTag('div', { class: 'shared-drop-zone-wrap' });
   wrap.append(dropZone);

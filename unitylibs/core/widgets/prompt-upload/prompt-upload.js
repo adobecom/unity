@@ -114,8 +114,7 @@ export default class PromptUploadWidget {
     const label = labelForField(this.el, 'icon-cta-text', 'Generate');
     const cta = createTag('a', {
       href: '#',
-      class: 'unity-act-btn search-cta disabled',
-      'aria-disabled': 'true',
+      class: 'unity-act-btn search-cta',
       'aria-label': label,
       role: 'button',
     });
@@ -129,16 +128,8 @@ export default class PromptUploadWidget {
     return cta;
   }
 
-  setSearchEnabled(enabled) {
-    if (!this.searchCta) return;
-    this.searchCta.classList.toggle('disabled', !enabled);
-    this.searchCta.setAttribute('aria-disabled', enabled ? 'false' : 'true');
-  }
-
-  buildRightSection() {
+  buildRightSection({ compactUpload = false } = {}) {
     const promptHeading = placeholderText(this.el, 'icon-placeholder-text')
-      || 'Search by URL, title, ISBN, DOI, or keywords';
-    // Authored `prompt-label` → visible label above the input; absent → sr-only (a11y only).
     const promptLabelText = placeholderText(this.el, 'icon-prompt-label');
     const promptLabel = createTag('label', {
       for: 'pbuPromptInput',
@@ -148,26 +139,23 @@ export default class PromptUploadWidget {
     const input = buildPromptInput({
       ariaLabel: promptHeading,
       placeholder: promptHeading,
-      onInput: (value) => this.setSearchEnabled(!!value),
     });
     input.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' || e.shiftKey) return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      if (!this.searchCta.classList.contains('disabled')) this.onSearch();
+      this.onSearch();
     });
 
     this.searchCta = this.buildSearchCta();
     this.searchCta.addEventListener('click', (e) => {
       e.preventDefault();
-      if (this.searchCta.classList.contains('disabled')) return;
       this.onSearch();
     });
 
     this.genBtn = createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate');
     this.resultsEl = createTag('div', { class: 'pu-results hidden' });
     const searchField = createTag('div', { class: 'pu-search-field' });
-    // Leading icon only when authored (e.g. `:search-icon: search`).
     const searchIconName = placeholderText(this.el, 'icon-search-icon');
     if (searchIconName) {
       const searchIcon = createTag('span', { class: 'pu-search-icon', 'aria-hidden': 'true' });
@@ -184,6 +172,17 @@ export default class PromptUploadWidget {
     searchRow.append(searchField);
 
     const footerContainer = createTag('div', { class: 'pu-footer-container' });
+    if (compactUpload) {
+      const label = placeholderText(this.el, 'icon-dropzone-label') || 'Add sources';
+      const addSources = buildDropzone({
+        allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
+        multiple: true,
+        uploadLabel: label,
+        style: 'compact',
+        selectFileText: label,
+      });
+      footerContainer.append(addSources.wrap);
+    }
     if (styleDropdown) footerContainer.append(styleDropdown);
     footerContainer.append(actWrap);
 
@@ -265,10 +264,11 @@ export default class PromptUploadWidget {
       || dropzoneContent.some((f) => this.hasFlag(f));
     const showPrompt = this.authoredFlag('icon-show-prompt', false)
       || promptContent.some((f) => this.hasFlag(f));
+    const compactUpload = showUpload && placeholderText(this.el, 'icon-dropzone-style') === 'compact';
 
     const main = createTag('div', { class: 'pu-main' });
-    if (showUpload) main.append(this.buildLeftSection().leftSection);
-    if (showPrompt) main.append(this.buildRightSection());
+    if (showUpload && !compactUpload) main.append(this.buildLeftSection().leftSection);
+    if (showPrompt) main.append(this.buildRightSection({ compactUpload }));
 
     this.widgetWrap = mountWidget({
       el: this.el,

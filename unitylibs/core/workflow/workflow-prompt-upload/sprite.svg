@@ -61,4 +61,11 @@
     <path d="M12 2c.4 0 .74.28.82.67l.9 4.3a5 5 0 0 0 3.86 3.86l4.3.9a.83.83 0 0 1 0 1.64l-4.3.9a5 5 0 0 0-3.86 3.86l-.9 4.3a.83.83 0 0 1-1.64 0l-.9-4.3a5 5 0 0 0-3.86-3.86l-4.3-.9a.83.83 0 0 1 0-1.64l4.3-.9a5 5 0 0 0 3.86-3.86l.9-4.3A.83.83 0 0 1 12 2Z" fill="currentColor"/>
     <path d="M19 3l.4 1.6L21 5l-1.6.4L19 7l-.4-1.6L17 5l1.6-.4L19 3Z" fill="currentColor"/>
   </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="unity-add-sources-icon">
+    <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+      <path d="M14 3v5h5"/>
+      <path d="M12 12v6M9 15h6"/>
+    </g>
+  </symbol>
 </svg>
