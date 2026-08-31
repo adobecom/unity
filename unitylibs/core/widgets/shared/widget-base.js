@@ -4,9 +4,6 @@ export function svgIcon(href) {
   return `<svg><use xlink:href="${href}"></use></svg>`;
 }
 
-// Generic sprite-icon resolver: the authored value is the sprite name, mapped by
-// convention to `#unity-<name>-icon`. Adding a new icon = add the symbol to sprite.svg
-// and author its name — no per-icon conditionals in the widget.
 export function spriteIcon(name) {
   return name ? svgIcon(`#unity-${name.trim()}-icon`) : '';
 }

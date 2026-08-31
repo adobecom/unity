@@ -48,6 +48,10 @@ export default function buildDropzone({
     'aria-label': uploadLabel,
   });
   dropZone.append(fileInput, dropContent);
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === fileInput) return;
+    fileInput.click();
+  });
   dropZone.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();

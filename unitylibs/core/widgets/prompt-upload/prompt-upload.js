@@ -29,7 +29,6 @@ export default class PromptUploadWidget {
     return raw.trim().toLowerCase() === 'true';
   }
 
-  // True when an authoring row for this icon exists — used to infer components from content.
   hasFlag(iconClass) {
     return !!this.el.querySelector(`.${iconClass}`);
   }
