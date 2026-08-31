@@ -1316,3 +1316,480 @@
     padding: 0px;
   }
 }
+
+/* ==========================================================================
+   MWPW-204848 Firefly site-redesign — verb-as-title prompt widget
+   Additive: applies only when JS adds .pb-redesign to .autocomplete
+   (i.e. the firefly-redesign theme is active). Selectors use the full base
+   chain so they override base rules. Values from Figma PDF export (1440 @ 1:1).
+   ========================================================================== */
+
+/* --- Parent .interactive-area: clear its own opaque white+checkerboard base
+   background (unitylibs/core/styles/styles.css) when it hosts our redesigned
+   widget. Without this, our card's backdrop-blur only samples that opaque
+   parent layer instead of the real page background behind it — this was the
+   actual cause of the washed-out grey card, not a section/background-media bug. */
+.unity-enabled .interactive-area:has(.pb-redesign) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* --- Card (the autocomplete wrapper) --- */
+/* Values confirmed via Figma MCP get_design_context (node 20353:172009), not screenshots:
+   frosted glass card — 3% white fill + 125px backdrop blur, 2px 5%-white border, 32px radius,
+   plus the widget's own ambient drop-shadow (previously suppressed while removing the page's
+   unrelated max25 theme glow — that glow is gone, this shadow is real and wanted). */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign,
+.unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign:hover,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign:focus-within {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background-color: rgba(255 255 255 / 3%) !important;
+  background-image: none !important;
+  backdrop-filter: blur(125px) !important;
+  border: 2px solid rgba(255 255 255 / 5%) !important;
+  border-radius: 32px !important;
+  box-shadow:
+    0 132px 63.5px rgba(0 0 0 / 45%),
+    0 55.146px 26.529px rgba(0 0 0 / 32%),
+    0 29.484px 14.184px rgba(0 0 0 / 27%),
+    0 16.528px 7.951px rgba(0 0 0 / 22%),
+    0 8.778px 4.223px rgba(0 0 0 / 18%),
+    0 3.653px 1.757px rgba(0 0 0 / 13%) !important;
+  box-sizing: border-box;
+}
+
+/* Figma specs a separate, lighter 32px blur on this header row, but since it
+   never spans exactly edge-to-edge with the card, it creates a visible pill
+   seam against the card's own 125px blur. Dropped — the card's blur already
+   covers this area, and removing the seam matters more than the subtle
+   blur-intensity difference here. */
+
+/* Inner prompt box: 50% black fill + subtle 15%-black border, 24px radius (Figma). */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap {
+  background: rgba(0 0 0 / 50%) !important;
+  border: 1px solid rgba(0 0 0 / 15%) !important;
+  border-radius: 24px !important;
+  padding: 12px 16px 16px 18px !important;
+}
+
+/* --- Header: verb selector as a title --- */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  /* Base .verb-options state caps this at max-width:114px (footer pill trigger) —
+     that doesn't apply to our header-title layout, so lift it explicitly. */
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
+  /* Reset native <button> chrome — without this, WebKit/Safari renders a
+     translucent "vibrancy" pill behind the button content by default. */
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #fff;
+  font-family: var(--s2a-font-family-heading), "Adobe Clean", adobe-clean, sans-serif;
+  font-size: var(--s2a-typography-font-size-heading-5);
+  font-weight: 900;
+  line-height: var(--s2a-typography-line-height-heading-5);
+  letter-spacing: var(--s2a-font-letter-spacing-4xl);
+  white-space: nowrap;
+  text-transform: none;
+  cursor: pointer;
+}
+
+/* swap-box affordance (up/down chevron). Real exported asset from Figma
+   (node 20353:172014, "Frame 2147238474") via get_design_context/asset fetch —
+   the SVG bakes in its own rounded-rect border, so no separate CSS border is
+   drawn here. Confirmed non-scaling across breakpoints (same size on mobile). */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb::before {
+  content: '';
+  width: 25.78px;
+  height: 25.99px;
+  background: url("data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjI1Ljc3ODMiIGhlaWdodD0iMjUuOTg1NCIgdmlld0JveD0iMCAwIDI1Ljc3ODMgMjUuOTg1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgaWQ9IkZyYW1lIDIxNDcyMzg0NzQiPgo8cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjI0Ljc3ODMiIGhlaWdodD0iMjQuOTg1NCIgcng9IjMuNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIvPgo8cGF0aCBpZD0iVmVjdG9yIChTdHJva2UpIiBkPSJNMTYuNzc4MyAxNi4wOTY3TDEyLjg4ODcgMTkuOTg1NEw5IDE2LjA5NjdMOS43MDcwMyAxNS4zODk2TDEyLjg4ODcgMTguNTcxM0wxNi4wNzEzIDE1LjM4OTZMMTYuNzc4MyAxNi4wOTY3Wk0xNi43NzgzIDkuODg4NjdMMTYuMDcxMyAxMC41OTU3TDEyLjg4ODcgNy40MTMwOUw5LjcwNzAzIDEwLjU5NTdMOSA5Ljg4ODY3TDEyLjg4ODcgNkwxNi43NzgzIDkuODg4NjdaIiBmaWxsPSJ3aGl0ZSIvPgo8L2c+Cjwvc3ZnPgo=") no-repeat center;
+  background-size: contain;
+  flex-shrink: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb .menu-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb > img {
+  display: none;
+}
+
+/* --- Inner box: label + textarea + footer (base flex-wrap already rows the footer) ---
+   background/border/radius/padding for this box are set above with !important
+   (Figma-confirmed values); this rule only handles layout. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field-label {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--s2a-font-family-caption);
+  font-size: var(--s2a-typography-font-size-caption);
+  font-weight: var(--s2a-font-weight-caption);
+  line-height: var(--s2a-typography-line-height-caption);
+  letter-spacing: var(--s2a-typography-letter-spacing-caption);
+  color: rgba(248 248 248 / 70%);
+  text-align: start;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field {
+  flex: 1 1 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: none;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  /* --s2a-font-family-body resolves to just "Adobe Clean" with no generic
+     fallback baked in (unlike caption/label) — append one so a missing font
+     file falls back to sans-serif instead of the browser's default serif. */
+  font-family: var(--s2a-font-family-body), "Adobe Clean", adobe-clean, sans-serif;
+  font-size: var(--s2a-typography-font-size-body-sm);
+  font-weight: 400;
+  line-height: var(--s2a-typography-line-height-body-sm);
+  letter-spacing: var(--s2a-typography-letter-spacing-body-sm);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field::placeholder {
+  color: #fff;
+  opacity: 1;
+  /* Base widget italicizes placeholders; Figma's redesign uses upright body-sm text. */
+  font-style: normal;
+}
+
+/* footer row: model selector (left) + Generate (right) */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .action-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  order: 1;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .act-wrap {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  order: 2;
+  flex-shrink: 0;
+}
+
+/* --- Model selector (Fi icon + name + chevron) --- */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model:hover {
+  background: rgba(255 255 255 / 8%);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model > img {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model .model-name {
+  color: #fff;
+  font-family: "Adobe Clean", adobe-clean, sans-serif;
+  font-weight: 700;
+  font-size: 11.2px;
+  line-height: 14.4px;
+  letter-spacing: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model .menu-icon svg {
+  width: 12px;
+  height: 12px;
+  color: #fff;
+}
+
+/* --- Generate button --- */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 999px;
+  background: #3b63fb;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn:hover {
+  background: #2c4fd6;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn .btn-txt {
+  color: #fff;
+  /* Same underlying token as body (--s2a-font-family-adobe-clean), no generic
+     fallback baked in — append one defensively, same as the placeholder fix. */
+  font-family: var(--s2a-font-family-label), "Adobe Clean", adobe-clean, sans-serif;
+  font-size: var(--s2a-typography-font-size-label);
+  font-weight: var(--s2a-font-weight-label);
+  line-height: var(--s2a-typography-line-height-label);
+  letter-spacing: var(--s2a-typography-letter-spacing-label);
+  text-align: center;
+}
+
+/* --- Verb dropdown panel ("Select a feature") --- */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+  position: absolute;
+  z-index: 20;
+  top: -48px;
+  inset-inline-start: 20px;
+  min-width: 540px;
+  padding: 12px 16px 16px;
+  list-style: none;
+  background: #000000D9;
+  backdrop-filter: blur(300px);
+  border: 2px solid #FFFFFF0D;
+  border-radius: 32px;
+  box-shadow: 0 12px 40px rgba(0 0 0 / 50%);
+  text-align: left;
+}
+
+/* Base widget's move-down animation translateY(40px)s the footer-pill dropdown
+   into place on open — not relevant to our title-header layout, and it
+   double-offsets the top:100% position above. Only override the open state:
+   the base move-up animation on the closed state is what applies display:none
+   when the menu closes, so it must stay intact. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list {
+  animation: none;
+}
+
+/* "Select a feature" heading via pseudo-element */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list::before {
+  content: 'Select a feature';
+  display: block;
+  padding: 4px 4px 12px;
+  color: #c6c6c6;
+  font-family: var(--s2a-font-family-label), "Adobe Clean", adobe-clean, sans-serif;
+  font-size: var(--s2a-typography-font-size-label);
+  font-weight: var(--s2a-font-weight-label, 700);
+  line-height: var(--s2a-typography-line-height-label);
+  letter-spacing: var(--s2a-typography-letter-spacing-label);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  color: #fff;
+  font-family: var(--s2a-font-family-heading), "Adobe Clean", adobe-clean, sans-serif;
+  font-size: var(--s2a-typography-font-size-heading-5);
+  font-weight: 900;
+  line-height: var(--s2a-typography-line-height-heading-5);
+  letter-spacing: var(--s2a-font-letter-spacing-4xl);
+  text-transform: none;
+  text-decoration: none;
+}
+
+/* hide base checkmark + verb image in redesign verb rows */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link .selected-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link > img {
+  display: none;
+}
+
+/* circular "go" arrow via pseudo-element, shown on selected/hover */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link::after {
+  content: '';
+  margin-inline-start: auto;
+  width: 60px;
+  height: 40px;
+  border-radius: 40px;
+  background: #FFFFFF26 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 10' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 5H19M15 1l4 4-4 4'/%3E%3C/svg%3E") no-repeat center;
+  background-size: 20px 10px;
+  backdrop-filter: blur(31.14px);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item.selected .verb-link,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link:hover,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link:focus-visible {
+  background: rgba(255 255 255 / 10%);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item.selected .verb-link::after,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link:hover::after,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link:focus-visible::after {
+  opacity: 1;
+}
+
+/* close ("X") button in the "Select a feature" panel header */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close {
+  position: absolute;
+  top: 1px;
+  inset-inline-end: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: var(--s2a-color-content-inverse, #000000);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 1;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close:hover,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close:focus-visible {
+  opacity: 0.7;
+}
+
+/* --- Mobile (<768): full-width card, 18px title, circular icon-only Generate --- */
+@media (max-width: 767px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
+    font-size: 18px;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap {
+    padding: 16px 19px !important;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field-label {
+    font-size: 14px;
+    color: rgba(255 255 255 / 51%);
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field {
+    font-size: 16px;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn {
+    width: 47px;
+    height: 47px;
+    min-width: 0;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn .btn-txt {
+    display: none;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+    min-width: min(320px, calc(100vw - 48px));
+  }
+}
+
+/* MWPW-204848: neutralize the max25 theme's gradient-border/glow pseudo-elements
+   on the card (they render as a grey box behind our redesign). */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::after {
+  content: none !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* --- Model selector dropdown (open list), dark theme --- */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
+  position: absolute;
+  z-index: 20;
+  min-width: 280px;
+  margin-top: 8px;
+  padding: 8px;
+  list-style: none;
+  background-color: #1d1d1d;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0 0 0 / 50%);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link img {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link .model-name {
+  flex: 1;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link .selected-icon {
+  display: inline-flex;
+  order: 2;
+  opacity: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link .selected-icon {
+  opacity: 1;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link:hover,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link:focus-visible {
+  background: rgba(255 255 255 / 8%);
+}

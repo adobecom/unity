@@ -35,5 +35,11 @@
     "source": ".copy",
     "target": ".upload-marquee-prompt-container",
     "insert": "after"
+  },
+  "rich-content.firefly-prompt": {
+    "selector": ".content",
+    "source": ".content",
+    "target": ".content",
+    "insert": "after"
   }
 }
