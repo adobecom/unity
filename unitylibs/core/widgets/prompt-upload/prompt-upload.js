@@ -1,6 +1,6 @@
 import { createTag } from '../../../scripts/utils.js';
 import { mountWidget, placeholderText, labelForField, svgIcon, spriteIcon } from '../shared/widget-base.js';
-import { buildDropzone, wirePreview } from '../shared/dropzone.js';
+import buildDropzone from '../shared/dropzone.js';
 import buildPromptInput from '../shared/prompt-input.js';
 import {
   buildDropdownShell, attachDropdownBehavior, syncDropdownSelection,
@@ -268,12 +268,7 @@ export default class PromptUploadWidget {
       || promptContent.some((f) => this.hasFlag(f));
 
     const main = createTag('div', { class: 'pu-main' });
-    let dropZoneRefs = null;
-    if (showUpload) {
-      const left = this.buildLeftSection();
-      dropZoneRefs = left.dropZoneRefs;
-      main.append(left.leftSection);
-    }
+    if (showUpload) main.append(this.buildLeftSection().leftSection);
     if (showPrompt) main.append(this.buildRightSection());
 
     this.widgetWrap = mountWidget({
@@ -289,7 +284,6 @@ export default class PromptUploadWidget {
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     const root = this.widgetWrap?.querySelector('.unity-prompt-upload');
     if (this.resultsEl && root) root.append(this.resultsEl);
-    if (dropZoneRefs?.preview) wirePreview(this.widgetWrap, dropZoneRefs);
     return this.cfg.actionMap;
   }
 }

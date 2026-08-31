@@ -99,6 +99,22 @@
       ".gen-btn": "generate"
     }
   },
+  "student-space-marquee": {
+    "selector": ".student-space-marquee-copy",
+    "source": ".student-space-marquee-copy",
+    "target": ".student-space-marquee-copy",
+    "insert": "after",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".drop-zone": "upload",
+      "#file-upload": "upload",
+      ".gen-btn": "generate"
+    }
+  },
   "verb-widget": {
     "renderWidget": false,
     "selector": ".verb-wrapper",
