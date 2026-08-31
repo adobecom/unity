@@ -53,6 +53,23 @@ export function buildDropdownShell({ label, menuId, extraClass = '', imgEl = nul
 
 export function attachDropdownBehavior(container, triggerBtn, list) {
   const getOptions = () => [...list.querySelectorAll('a.model-link')];
+
+  // Render the menu as position:fixed under the trigger so ancestor `overflow: hidden`
+  // (e.g. the marquee block) can't clip it — it opens downward over everything.
+  const MENU_GAP = 6;
+  const positionMenu = () => {
+    const r = triggerBtn.getBoundingClientRect();
+    list.style.top = `${r.bottom + MENU_GAP}px`;
+    list.style.left = `${r.left}px`;
+  };
+  const showMenu = () => {
+    list.removeAttribute('style');
+    list.style.position = 'fixed';
+    positionMenu();
+  };
+  const reposition = () => { if (container.classList.contains('show-menu')) positionMenu(); };
+  window.addEventListener('scroll', reposition, true);
+  window.addEventListener('resize', reposition);
   const focusSelectedOrFirst = () => {
     const options = getOptions();
     if (!options.length) return;
@@ -69,7 +86,7 @@ export function attachDropdownBehavior(container, triggerBtn, list) {
       other.querySelector('.selected-model')?.setAttribute('aria-expanded', 'false');
     });
     const isOpen = container.classList.toggle('show-menu');
-    if (isOpen) list.removeAttribute('style');
+    if (isOpen) showMenu();
     else list.setAttribute('style', 'display: none;');
     triggerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   });
@@ -85,7 +102,7 @@ export function attachDropdownBehavior(container, triggerBtn, list) {
     e.preventDefault();
     if (!container.classList.contains('show-menu')) {
       container.classList.add('show-menu');
-      list.removeAttribute('style');
+      showMenu();
       triggerBtn.setAttribute('aria-expanded', 'true');
     }
     focusSelectedOrFirst();
