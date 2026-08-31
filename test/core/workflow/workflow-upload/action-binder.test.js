@@ -1920,5 +1920,28 @@ describe('Unity Upload Block', () => {
       testDiv.dispatchEvent(clickEvent);
       expect(testDiv).to.not.be.null;
     });
+
+    it('should prevent double file picker while lock is active', async () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      const container = document.createElement('div');
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.id = 'file-upload';
+      fileInput.className = 'file-upload';
+      container.appendChild(fileInput);
+
+      await actionBinder.initActionListeners(container, { '#file-upload': 'upload' });
+
+      let openCount = 0;
+      fileInput.addEventListener('click', (e) => {
+        if (e.defaultPrevented) return;
+        openCount += 1;
+      });
+
+      fileInput.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      fileInput.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(openCount).to.equal(1);
+    });
   });
 });

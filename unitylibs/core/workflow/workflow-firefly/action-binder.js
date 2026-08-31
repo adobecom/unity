@@ -433,10 +433,13 @@ export default class ActionBinder {
         },
       );
       this.logAnalytics('generate', eventData, { workflowStep: 'complete', statusCode: 0 });
-      this.query = '';
       this.id = '';
-      this.resetDropdown();
-      if (url) window.location.href = url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        this.query = '';
+        this.resetDropdown();
+      }
     } catch (err) {
       this.query = '';
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-request' }, err);

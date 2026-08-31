@@ -50,6 +50,50 @@ describe('PDFLite Validator', () => {
     });
   });
 
+  describe('encrypted / password-protected flags (black box)', () => {
+    it('returns a results entry for every input file', async () => {
+      const files = [
+        { type: 'application/pdf', name: 'a.pdf' },
+        { type: 'application/pdf', name: 'b.pdf' },
+      ];
+      const limits = { pageLimit: { maxNumPages: 100 } };
+
+      const result = await validateFilesWithPdflite(files, limits);
+
+      expect(result).to.have.property('results');
+      expect(result.results).to.have.lengthOf(files.length);
+    });
+
+    it('passes files through gracefully when pdflite cannot read them (no throw)', async () => {
+      const files = [{ type: 'application/pdf', name: 'unreadable.pdf' }];
+      const limits = { pageLimit: { maxNumPages: 100 } };
+
+      const result = await validateFilesWithPdflite(files, limits);
+
+      expect(result.passed.length + result.failed.length).to.equal(files.length);
+      result.results.forEach((r) => {
+        if (r.ok === false) {
+          expect(['OVER_MAX_PAGE_COUNT', 'UNDER_MIN_PAGE_COUNT']).to.include(r.errorType);
+        }
+      });
+    });
+
+    it('never flags non-PDF files as encrypted or password-protected', async () => {
+      const files = [
+        { type: 'image/jpeg', name: 'photo.jpg' },
+        { type: 'application/pdf', name: 'doc.pdf' },
+      ];
+      const limits = { pageLimit: { maxNumPages: 100 } };
+
+      const result = await validateFilesWithPdflite(files, limits);
+
+      const jpegResult = result.results.find((r) => r.file.name === 'photo.jpg');
+      expect(jpegResult.ok).to.equal(true);
+      expect(jpegResult.isEncrypted).to.be.undefined;
+      expect(jpegResult.isPasswordProtected).to.be.undefined;
+    });
+  });
+
   describe('getPageCountErrorCode', () => {
     const SINGLE_FILE_ERRORS = {
       OVER_MAX_PAGE_COUNT: 'upload_validation_error_max_page_count',

@@ -21,7 +21,6 @@ notifications:
       fields:
         assignee:
           name: tek10248
-        customfield_11800: MWPW-164516 # Jira epic security tickets will be assigned to.
         customfield_11900:
           value: "Unity" # Put your team name here; it must be a valid team in Jira.
         watchers: # Everyone who is an admin on your repository should be a watcher.
