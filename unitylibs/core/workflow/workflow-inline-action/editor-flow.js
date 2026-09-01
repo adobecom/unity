@@ -71,6 +71,14 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
 // doesn't need to differ from rbg's own download button once resultAssetId/resultUrl
 // are set. `el` is null: none of handleConnector's isDownload=true branches (verb
 // resolution, connector payload) actually read it.
+//
+// The result also becomes the new "current" state on acom itself — same convention as
+// removeBackground's own resultAssetId (subsequent NBA/connector actions there already
+// operate on the result, not the original upload). Concretely: the editor's displayed
+// image swaps to the cropped/resized output, binder.assetId points at it so any further
+// crop/resize or "Open in Firefly" applies to THIS image, and the selection resets to a
+// fresh, full-image state (same as a brand new upload) since the old selection's
+// percentages don't mean the same thing once the image itself has changed.
 export async function runEditorOperation(binder) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
@@ -91,6 +99,15 @@ export async function runEditorOperation(binder) {
     );
     binder.resultAssetId = res.assetId;
     binder.resultUrl = res.outputUrl;
+    binder.assetId = res.assetId;
+    // outputMediaType is always fixed to 'image/jpeg' (see buildImageOperationsPayload)
+    // — the current asset really is a jpeg now, regardless of what was first uploaded,
+    // so any later connector call's fileType should say so too.
+    binder.filesData.type = 'image/jpeg';
+    // originalSize is preserved as-is (not reset to 0) — it still means "the very first
+    // upload's size," which is what the resize readout's "Original size" label means.
+    await engine.setImage(res.outputUrl, engine.originalSize);
+    engine.reset();
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError(binder.operation, e);
     binder.serviceHandler.showErrorToast(binder.uploadErrorOpts(), e, binder.lanaOptions);
