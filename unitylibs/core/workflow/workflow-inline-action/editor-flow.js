@@ -63,25 +63,22 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
   }
 }
 
-// Only ever called from action-binder.js's executeActionMaps(), for the
-// 'runEditorOperation' action (the crop/resize CTA — never wired up for rbg). Performs
-// the real crop/resize via imageOperations, then reuses rbg's own
-// handleConnector(el, true) for the download-vs-redirect decision — first-time users
-// get a local download + redirect, returning users just redirect — since that logic
-// doesn't need to differ from rbg's own download button once resultAssetId/resultUrl
-// are set. `el` is null: none of handleConnector's isDownload=true branches (verb
-// resolution, connector payload) actually read it.
+// Shared by both callers of runEditorOperation below (the download button and each
+// "further" NBA pill) — both need the exact same imageOperations step, differing only
+// in what happens afterward (a download-vs-redirect decision vs. a straight connector
+// redirect with the clicked pill's own verb). Returns false (already handled: tracked +
+// toasted) on failure, so the caller can bail out without redirecting anywhere.
 //
-// The result also becomes the new "current" state on acom itself — same convention as
-// removeBackground's own resultAssetId (subsequent NBA/connector actions there already
-// operate on the result, not the original upload). Concretely: the editor's displayed
-// image swaps to the cropped/resized output, binder.assetId points at it so any further
-// crop/resize or "Open in Firefly" applies to THIS image, and the selection resets to a
-// fresh, full-image state (same as a brand new upload) since the old selection's
-// percentages don't mean the same thing once the image itself has changed.
-export async function runEditorOperation(binder) {
+// On success, the result also becomes the new "current" state on acom itself — same
+// convention as removeBackground's own resultAssetId (subsequent NBA/connector actions
+// there already operate on the result, not the original upload). Concretely: the
+// editor's displayed image swaps to the cropped/resized output, binder.assetId points
+// at it so any further crop/resize or "Open in Firefly" applies to THIS image, and the
+// selection resets to a fresh, full-image state (same as a brand new upload) since the
+// old selection's percentages don't mean the same thing once the image itself has changed.
+async function performEditorOperation(binder) {
   const engine = binder.widgetRef?.editorEngine;
-  if (!engine) return;
+  if (!engine) return false;
   const bounds = engine.getSourceBounds();
   const dimensions = binder.operation === 'resize' ? engine.getResizeOutputDimensions() : null;
   const payload = buildImageOperationsPayload(binder, bounds, dimensions, engine.quality);
@@ -108,12 +105,31 @@ export async function runEditorOperation(binder) {
     // upload's size," which is what the resize readout's "Original size" label means.
     await engine.setImage(res.outputUrl, engine.originalSize);
     engine.reset();
+    return true;
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError(binder.operation, e);
     binder.serviceHandler.showErrorToast(binder.uploadErrorOpts(), e, binder.lanaOptions);
-    return;
+    return false;
   }
-  await binder.handleConnector(null, true);
+}
+
+// Only ever called from action-binder.js's executeActionMaps(), for the
+// 'runEditorOperation' action — shared by both the crop/resize CTA (.ia-editor-download)
+// and each "further" NBA pill (.ia-further-pill); neither is ever wired up for rbg,
+// which has its own separate .ia-download-btn/.ia-nba-card wiring. The clicked element
+// itself tells us which case we're in: an NBA pill carries data-nba, the download
+// button doesn't — so an NBA click always redirects (never a local download) using
+// that pill's own verb, same connector mechanism/verb-resolution convention rbg's own
+// .ia-nba-card already uses (resolveConnectorVerb falls back to el.dataset.nba when
+// isDownload is false). The download button instead reuses rbg's own
+// handleConnector(el, true) download-vs-redirect decision — first-time users get a
+// local download + redirect, returning users just redirect — since that logic doesn't
+// need to differ from rbg's own download button once resultAssetId/resultUrl are set.
+export async function runEditorOperation(binder, el) {
+  const ok = await performEditorOperation(binder);
+  if (!ok) return;
+  if (el?.dataset?.nba) await binder.handleConnector(el);
+  else await binder.handleConnector(null, true);
 }
 
 // Only ever called from action-binder.js's executeActionMaps(), for the 'resetEditor'

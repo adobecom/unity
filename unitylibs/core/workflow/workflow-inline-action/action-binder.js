@@ -846,7 +846,7 @@ export default class ActionBinder {
         break;
       case 'runEditorOperation': {
         const { runEditorOperation } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
-        await runEditorOperation(this);
+        await runEditorOperation(this, el);
         break;
       }
       case 'runEditInFirefly': {

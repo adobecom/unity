@@ -24,6 +24,7 @@
       ".ia-download-btn": "download",
       ".ia-reupload-btn": "reupload",
       ".ia-editor-download": "runEditorOperation",
+      ".ia-further-pill": "runEditorOperation",
       ".ia-editor-open-in-firefly": "runEditInFirefly",
       ".ia-editor-reset": "resetEditor"
     }
