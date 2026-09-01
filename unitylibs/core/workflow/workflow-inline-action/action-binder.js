@@ -519,8 +519,15 @@ export default class ActionBinder {
     }
   }
 
+  // Crop's download-path verbs are confirmed distinct from rbg's — resize's aren't
+  // specified yet, so it still falls through to rbg's own aiPhotoEditor/download.
+  // NBA clicks (isDownload=false) are untouched for every operation, crop included —
+  // same el.dataset.nba resolution rbg's own NBA cards already use.
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
-    if (isDownload) return downloadsLocally ? 'aiPhotoEditor' : 'download';
+    if (isDownload) {
+      if (this.operation === 'crop') return downloadsLocally ? 'cropImageFirstDownload' : 'cropImageDownload';
+      return downloadsLocally ? 'aiPhotoEditor' : 'download';
+    }
     if (el?.classList?.contains('ia-edit-in-firefly')) return 'aiPhotoEditor';
     return el?.dataset?.nba;
   }
@@ -531,8 +538,10 @@ export default class ActionBinder {
   // cropAspectRatioLock is crop's confirmed field; aspectRatioLock is resize's own
   // (currently proposed, not yet confirmed) equivalent — kept separate rather than
   // reusing one field name, since resize's contract may still change independently.
+  // includeWidgetType defaults true (rbg + every NBA click, crop's included, keep it) —
+  // only crop's signed-in/first-download/returning-download connector calls pass false.
   async buildConnectorPayload({
-    defaultPrompt, verb, connectorAssetId, fileType, operations, cropAspectRatioLock, aspectRatioLock,
+    defaultPrompt, verb, connectorAssetId, fileType, operations, cropAspectRatioLock, aspectRatioLock, includeWidgetType = true,
   } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
@@ -545,7 +554,7 @@ export default class ActionBinder {
         workflow: this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
         action: 'asset-upload',
         verb: verb ?? this.operation,
-        widgetType: 'nba',
+        ...(includeWidgetType && { widgetType: 'nba' }),
         locale: getLocale(),
         type: fileType,
         ...(operations && { operations }),
@@ -673,10 +682,14 @@ export default class ActionBinder {
         }
         connectorAssetId = this.resultAssetId;
       }
+      // Crop's signed-in connector call is confirmed distinct from rbg's — resize's
+      // isn't specified yet, so it still falls through to rbg's own aiPhotoEditor verb.
+      const isCropSignedIn = !performOperation && this.operation === 'crop';
       await this.callConnector(await this.buildConnectorPayload({
-        verb: 'aiPhotoEditor',
+        verb: isCropSignedIn ? 'cropImage' : 'aiPhotoEditor',
         connectorAssetId,
         fileType: this.filesData.type,
+        includeWidgetType: !isCropSignedIn,
       }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
@@ -773,11 +786,15 @@ export default class ActionBinder {
     const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
+    // Crop's download-path connector calls (first-time/returning) omit widgetType per
+    // the confirmed contract — NBA clicks (isDownload=false) keep the existing rbg shape.
+    const includeWidgetType = !(isDownload && this.operation === 'crop');
     const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
+      includeWidgetType,
     });
     if (downloadsLocally) {
       await this.runFirstLocalDownload();
