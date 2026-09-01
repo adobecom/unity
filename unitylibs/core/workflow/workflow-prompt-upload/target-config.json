@@ -73,7 +73,7 @@
   "hero-marquee": {
     "selector": ".copy",
     "source": ".copy",
-    "target": ".copy",
+    "target": ".main-copy",
     "insert": "after",
     "showSplashScreen": true,
     "splashScreenConfig": {
