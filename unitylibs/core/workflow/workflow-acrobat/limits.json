@@ -231,14 +231,5 @@
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
-  },
-  "allowed-filetypes-eml-msg-images": {
-    "allowedFileTypes": [
-      "message/rfc822",
-      "application/vnd.ms-outlook",
-      "image/jpeg",
-      "image/png",
-      "image/tiff"
-    ]
   }
 }
