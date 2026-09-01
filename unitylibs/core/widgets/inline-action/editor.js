@@ -625,6 +625,11 @@ export class EditorEngine {
     this.qualityPreviewActive = false;
     this.qualityPreviewUrl = null;
     this.originalUrl = '';
+    // Set once per genuine upload/reupload (setImage's isOriginalUpload=true) and never
+    // touched by a post-operation setImage() call — unlike originalUrl, which always
+    // points at whatever's currently displayed. This is what a future "back to
+    // original" action would reload, regardless of how many operations ran since.
+    this.originalImageUrl = '';
     this.sourceImg = null;
     this.aspectPills = [...rightPanelEl.querySelectorAll('.ia-aspect-pill')];
     this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
@@ -714,7 +719,7 @@ export class EditorEngine {
     return [width, height];
   }
 
-  async setImage(url, originalSize = 0) {
+  async setImage(url, originalSize = 0, isOriginalUpload = false) {
     this.originalSize = originalSize;
     this.hasInteracted = false;
     if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
@@ -722,6 +727,7 @@ export class EditorEngine {
     this.qualityPreviewActive = false;
     this.updateQualityBtnState();
     this.originalUrl = url;
+    if (isOriginalUpload) this.originalImageUrl = url;
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
@@ -886,7 +892,11 @@ export class EditorEngine {
     this.bindDimensionEvents();
     this.bindSocialEvents();
     this.bindUnitEvents();
-    this.resetBtn?.addEventListener('click', () => this.reset());
+    // .ia-editor-reset is bound via target-config.json's actionMap now (resetEditor in
+    // editor-flow.js), not directly here — Reset needs to restore binder-level state
+    // (assetId, filesData.type) back to the original upload too, which this class has
+    // no reference to reach on its own. See resetEditor for the full reset sequence;
+    // this.reset() (below) still handles the selection-only part it calls afterward.
     this.qualityBtn?.addEventListener('click', () => this.toggleQualityPreview());
   }
 

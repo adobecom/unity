@@ -116,6 +116,25 @@ export async function runEditorOperation(binder) {
   await binder.handleConnector(null, true);
 }
 
+// Only ever called from action-binder.js's executeActionMaps(), for the 'resetEditor'
+// action (the crop/resize Reset button). Reset always means "go all the way back to the
+// actual originally-uploaded image" — not just whatever's currently displayed, since a
+// prior crop/resize's result may have already replaced it (see runEditorOperation).
+// Restores binder's own "current" state to match, so any further crop/resize or
+// "Open in Firefly" from here on applies to the original again, not a stale result.
+export async function resetEditor(binder) {
+  const engine = binder.widgetRef?.editorEngine;
+  if (!engine) return;
+  binder.assetId = binder.originalAssetId;
+  if (binder.originalFileType) binder.filesData.type = binder.originalFileType;
+  // isOriginalUpload left false — this restores the existing original, it doesn't
+  // establish a new one.
+  await engine.setImage(engine.originalImageUrl, engine.originalSize);
+  // Selection-only reset (zoom/quality/aspect/tab) — same method runEditorOperation
+  // uses on its own result image, now applied to the just-reloaded original instead.
+  engine.reset();
+}
+
 // Only ever called from action-binder.js's executeActionMaps(), for the
 // 'runEditInFirefly' action (the "Open in Firefly" CTA). Unlike runEditorOperation, no
 // imageOperations call happens here — the ORIGINAL uploaded asset is sent as-is, along
@@ -169,5 +188,6 @@ export default {
   buildImageOperationsPayload,
   editorUploadFlow,
   runEditorOperation,
+  resetEditor,
   runEditInFirefly,
 };

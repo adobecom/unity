@@ -531,7 +531,10 @@ export default class InlineActionWidget {
       const { initEditor } = await import('./editor.js');
       this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData);
     }
-    await this.editorEngine.setImage(url, originalSize);
+    // isOriginalUpload=true: this path only ever runs for a genuine upload/reupload
+    // (editorUploadFlow) — a post-operation refresh calls editorEngine.setImage()
+    // directly from runEditorOperation, bypassing this method entirely.
+    await this.editorEngine.setImage(url, originalSize, true);
   }
 
   async initWidget() {

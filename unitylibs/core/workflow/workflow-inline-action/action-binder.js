@@ -143,6 +143,15 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
     this.assetHref = null;
+    // Set once per genuine upload/reupload (in uploadAsset()) and never touched by a
+    // crop/resize operation — unlike assetId, which a successful runEditorOperation
+    // repoints at the operation's result. This is what the crop/resize Reset button
+    // (resetEditor, in editor-flow.js) restores assetId to.
+    this.originalAssetId = null;
+    // Same idea as originalAssetId — imageOperations' output is always forced to
+    // image/jpeg (see buildImageOperationsPayload), so filesData.type would otherwise
+    // stay wrong after Reset restores the original (possibly non-jpeg) asset.
+    this.originalFileType = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
@@ -428,6 +437,11 @@ export default class ActionBinder {
       callType = 'upload';
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
+      this.originalAssetId = id;
+      // filesData.type is already the corrected upload's real type by this point (set
+      // in uploadFile(), before this call) — captured here so Reset can restore it
+      // later even after a crop/resize operation has overwritten filesData.type.
+      this.originalFileType = this.filesData.type;
       this.assetHref = href;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
@@ -704,6 +718,11 @@ export default class ActionBinder {
     const correctedFile = await correctOrientation(file);
     this.uploadAbortController = null;
     this.assetId = null;
+    // A genuine (re)upload replaces the original entirely — uploadAsset() sets this
+    // fresh once it succeeds. Crop/resize operations never reach this reset (they only
+    // ever update assetId via runEditorOperation), so an existing original survives them.
+    this.originalAssetId = null;
+    this.originalFileType = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
@@ -833,6 +852,11 @@ export default class ActionBinder {
       case 'runEditInFirefly': {
         const { runEditInFirefly } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
         await runEditInFirefly(this);
+        break;
+      }
+      case 'resetEditor': {
+        const { resetEditor } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+        await resetEditor(this);
         break;
       }
       default:
