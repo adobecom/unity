@@ -1020,6 +1020,7 @@
   top: 0;
   left: 0;
   z-index: 1;
+  pointer-events: none;
 }
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .verb-list {
@@ -1040,6 +1041,7 @@
 .unity-enabled .interactive-area .models-container.show-menu .verb-list {
   display: block;
   animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
+  pointer-events: auto;
 }
 
 .unity-enabled .interactive-area .verb-list .verb-link {
