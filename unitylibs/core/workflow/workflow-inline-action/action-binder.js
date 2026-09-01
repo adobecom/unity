@@ -539,9 +539,11 @@ export default class ActionBinder {
   // (currently proposed, not yet confirmed) equivalent — kept separate rather than
   // reusing one field name, since resize's contract may still change independently.
   // includeWidgetType defaults true (rbg + every NBA click, crop's included, keep it) —
-  // only crop's signed-in/first-download/returning-download connector calls pass false.
+  // only crop/resize's signed-in/download/Open-in-Firefly connector calls pass false.
+  // workflow defaults to the generic supportedFeatures-derived value every rbg call
+  // uses — only Open in Firefly overrides it to the fixed 'image-operations' value.
   async buildConnectorPayload({
-    defaultPrompt, verb, connectorAssetId, fileType, operations, cropAspectRatioLock, aspectRatioLock, includeWidgetType = true,
+    defaultPrompt, verb, connectorAssetId, fileType, operations, cropAspectRatioLock, aspectRatioLock, includeWidgetType = true, workflow,
   } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
@@ -551,7 +553,7 @@ export default class ActionBinder {
       additionalQueryParams: getCgenQueryParams(this.unityEl),
       ...(query && { query }),
       payload: {
-        workflow: this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+        workflow: workflow ?? this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
         action: 'asset-upload',
         verb: verb ?? this.operation,
         ...(includeWidgetType && { widgetType: 'nba' }),

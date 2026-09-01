@@ -180,6 +180,11 @@ export async function runEditInFirefly(binder) {
     connectorAssetId: binder.assetId,
     fileType: binder.filesData.type,
     operations,
+    // Confirmed for both crop and resize's Open in Firefly call — fixed workflow value
+    // (not the generic supportedFeatures-derived one every other connector call uses),
+    // and no widgetType.
+    workflow: 'image-operations',
+    includeWidgetType: false,
   };
   if (isResize) {
     if (engine.selectedRatioText) connectorFields.aspectRatioLock = engine.selectedRatioText;
