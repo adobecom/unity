@@ -532,18 +532,17 @@ export default class ActionBinder {
     return el?.dataset?.nba;
   }
 
-  // operations/cropAspectRatioLock/aspectRatioLock are crop/resize's "Open in Firefly"
-  // fields only (see editor-flow.js's runEditInFirefly) — undefined for every other
-  // caller, so they're simply omitted from payload rather than sent as explicit nulls.
-  // cropAspectRatioLock is crop's confirmed field; aspectRatioLock is resize's own
-  // (currently proposed, not yet confirmed) equivalent — kept separate rather than
-  // reusing one field name, since resize's contract may still change independently.
+  // operations/aspectRatio are crop/resize's "Open in Firefly" fields only (see
+  // editor-flow.js's runEditInFirefly) — undefined for every other caller, so they're
+  // simply omitted from payload rather than sent as explicit nulls. aspectRatio is
+  // shared by both crop and resize (one field name, not two — crop's confirmed
+  // 'freeform'-or-ratio-string value and resize's own equivalent mean the same thing).
   // includeWidgetType defaults true (rbg + every NBA click, crop's included, keep it) —
   // only crop/resize's signed-in/download/Open-in-Firefly connector calls pass false.
   // workflow defaults to the generic supportedFeatures-derived value every rbg call
   // uses — only Open in Firefly overrides it to the fixed 'image-operations' value.
   async buildConnectorPayload({
-    defaultPrompt, verb, connectorAssetId, fileType, operations, cropAspectRatioLock, aspectRatioLock, includeWidgetType = true, workflow,
+    defaultPrompt, verb, connectorAssetId, fileType, operations, aspectRatio, includeWidgetType = true, workflow,
   } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
@@ -560,8 +559,7 @@ export default class ActionBinder {
         locale: getLocale(),
         type: fileType,
         ...(operations && { operations }),
-        ...(cropAspectRatioLock && { cropAspectRatioLock }),
-        ...(aspectRatioLock && { aspectRatioLock }),
+        ...(aspectRatio && { aspectRatio }),
       },
     };
   }

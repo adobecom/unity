@@ -159,15 +159,15 @@ export async function resetEditor(binder) {
 // (buildConnectorPayload/callConnector), not a separate endpoint, and both share the
 // same `operations` array shape imageOperations itself receives — but crop and resize
 // are treated as two distinct workflows with slightly different payloads:
-//  - crop: CONFIRMED contract — verb 'cropImage', mandatory cropAspectRatioLock
-//    ('freeform' when unlocked, else the authored ratio string).
+//  - crop: CONFIRMED contract — verb 'cropImage', mandatory aspectRatio ('freeform'
+//    when unlocked, else the authored ratio string).
 //  - resize: NOT YET CONFIRMED — this is our own proposed shape until the real
 //    contract exists. width/height already travel inside `operations` (the resize
-//    op), so the only other info worth passing is the aspect ratio lock, and only
-//    when one is actually meaningful (a Standard preset) — Social selections carry
-//    literal pixel dimensions with no named ratio, and Custom/freeform has nothing to
-//    lock to, so the field (aspectRatioLock, kept distinct from crop's
-//    cropAspectRatioLock) is omitted entirely rather than defaulted.
+//    op), so the only other info worth passing is the aspect ratio, and only when
+//    one is actually meaningful (a Standard preset) — Social selections carry literal
+//    pixel dimensions with no named ratio, and Custom/freeform has nothing to lock to,
+//    so the field is omitted entirely rather than defaulted (same aspectRatio field
+//    name as crop's — not a separate one, the two mean the same thing).
 export async function runEditInFirefly(binder) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
@@ -187,9 +187,9 @@ export async function runEditInFirefly(binder) {
     includeWidgetType: false,
   };
   if (isResize) {
-    if (engine.selectedRatioText) connectorFields.aspectRatioLock = engine.selectedRatioText;
+    if (engine.selectedRatioText) connectorFields.aspectRatio = engine.selectedRatioText;
   } else {
-    connectorFields.cropAspectRatioLock = engine.selectedRatioText || 'freeform';
+    connectorFields.aspectRatio = engine.selectedRatioText || 'freeform';
   }
   const payload = await binder.buildConnectorPayload(connectorFields);
   // TEMPORARY: remove before production — lets the payload be checked against the real

@@ -346,7 +346,7 @@ function buildDropdownCloseButton() {
 // composed display label AND the row's raw, authored ratio string onto the pill as two
 // separate attributes — `data-label` (shown in the UI, e.g. "Square 1:1") is NOT the
 // same thing as `data-ratio-text` (the clean ratio identity, e.g. "1:1", that the
-// EditInFirefly contract's cropAspectRatioLock wants). Only rows with a literal
+// EditInFirefly contract's aspectRatio field wants). Only rows with a literal
 // `ratio` column (crop pills, Standard) get data-ratio-text; Social rows carry
 // width/height instead — stamped on when present so selecting one can set the resize
 // output to those exact authored pixels, rather than recomputing an approximation from
@@ -647,7 +647,7 @@ export class EditorEngine {
     this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
     // The clean, authored ratio string (e.g. "16:9") — distinct from defaultAspectLabel
     // above, which is the composed DISPLAY text (e.g. "Landscape 16:9"). This is what
-    // the EditInFirefly contract's cropAspectRatioLock actually wants; null when the
+    // the EditInFirefly contract's aspectRatio field actually wants; null when the
     // default pill has no literal ratio column (Freeform, or a Social preset).
     this.defaultAspectRatioText = firstPill?.dataset.ratioText || null;
     // Captured once, at build time, before any click can overwrite it — the sheet's own
@@ -697,7 +697,7 @@ export class EditorEngine {
     this.selectedRatio = null;
     // selectedRatioLabel is the composed DISPLAY text (e.g. "Landscape 16:9"), used only
     // for the More trigger's text and pill highlighting. selectedRatioText is the clean,
-    // authored ratio string (e.g. "16:9") the EditInFirefly contract's cropAspectRatioLock
+    // authored ratio string (e.g. "16:9") the EditInFirefly contract's aspectRatio field
     // actually wants — null for Freeform/Custom/Social selections, which have no literal
     // ratio column (see buildAspectPill).
     this.selectedRatioLabel = 'Freeform';
