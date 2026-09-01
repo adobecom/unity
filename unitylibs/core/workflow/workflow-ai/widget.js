@@ -41,11 +41,13 @@ export default class UnityWidget {
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
+    const promptLabelText = ph['placeholder-prompt-label'] || 'Enter prompt';
     const inpField = createTag('input', {
       id: 'promptInput',
       class: 'inp-field',
       type: 'text',
       placeholder: ph['placeholder-input'],
+      'aria-label': promptLabelText,
       'aria-autocomplete': 'list',
       'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
