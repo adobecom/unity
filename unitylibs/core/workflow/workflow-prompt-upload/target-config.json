@@ -2,47 +2,34 @@
   "_defaults": {
     "renderWidget": true,
     "sendSplunkAnalytics": true,
-    "showModels": false,
-    "showUpload": true,
-    "showPrompt": true,
     "domainMap": {
       "acrobat": [
         "^(stage\\.)?acrobat\\.adobe\\.com$",
         "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
       ]
     },
-    "uploadLimits": {
-      "HIGH_END": { "files": 10, "chunks": 10 },
-      "MID_RANGE": { "files": 5, "chunks": 10 },
-      "LOW_END": { "files": 3, "chunks": 6 }
-    },
-    "verbsWithoutMfuToSfuFallback": [],
-    "awaitFinalizeVerbs": [],
-    "directUploadVerbs": ["jpg-to-pdf"],
+    "directUploadVerbs": [],
     "directUploadMaxSize": 1048576,
-    "nonpdfMfuFeedbackScreenTypeNonpdf": [],
-    "nonpdfSfuProductScreen": ["generate-pres", "citation-generator", "jpg-to-pdf"],
-    "mfuUploadAllowed": ["generate-pres", "citation-generator", "jpg-to-pdf"],
-    "mfuUploadOnlyPdfAllowed": [],
     "experimentationOn": [],
     "optionDropdownPayloadKey": "option",
     "limits": {
-      "maxNumFiles": 1,
+      "maxNumFiles": 100,
       "allowedFileTypes": [
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         "application/vnd.ms-powerpoint",
-        "text/plain"
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "text/plain",
+        "text/rtf",
+        "application/rtf",
+        "text/vtt"
       ],
       "maxFileSize": 104857600,
-      "max-char-limit": 3000
-    },
-    "limits-jpg-to-pdf": {
-      "maxNumFiles": 1,
-      "allowedFileTypes": ["image/jpeg", "image/jpg", "image/png"],
-      "maxFileSize": 104857600
+      "max-char-limit": 3000,
+      "pageLimit": { "maxNumPages": 600 }
     },
     "fetchApiConfig": {
       "finalizeAsset": {

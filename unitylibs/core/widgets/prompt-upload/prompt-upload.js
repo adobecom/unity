@@ -23,6 +23,14 @@ export default class PromptUploadWidget {
 
   get cfg() { return this.workflowCfg?.targetCfg || {}; }
 
+  // Mirror the binder's resolveLimits() (base + limits-<verb> override) so the dropzone's
+  // accept filter matches what the binder actually enforces for the active verb.
+  get verbLimits() {
+    const { cfg } = this;
+    const verb = this.workflowCfg?.enabledFeatures?.[0];
+    return { ...(cfg.limits || {}), ...(verb ? cfg[`limits-${verb}`] : {}) };
+  }
+
   authoredFlag(iconClass, fallback) {
     const raw = placeholderText(this.el, iconClass);
     if (raw === '') return fallback;
@@ -38,7 +46,7 @@ export default class PromptUploadWidget {
     const heading = placeholderText(this.el, 'icon-dropzone-label') || 'Upload source files';
     const subtext = placeholderText(this.el, 'icon-dropzone-subtext');
     const refs = buildDropzone({
-      allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
+      allowedFileTypes: this.verbLimits.allowedFileTypes || [],
       multiple: true,
       uploadLabel: heading,
       style,
@@ -130,6 +138,7 @@ export default class PromptUploadWidget {
 
   buildRightSection({ compactUpload = false } = {}) {
     const promptHeading = placeholderText(this.el, 'icon-placeholder-text')
+      || 'Search by URL, title, ISBN, DOI, or keywords';
     const promptLabelText = placeholderText(this.el, 'icon-prompt-label');
     const promptLabel = createTag('label', {
       for: 'pbuPromptInput',
@@ -175,7 +184,7 @@ export default class PromptUploadWidget {
     if (compactUpload) {
       const label = placeholderText(this.el, 'icon-dropzone-label') || 'Add sources';
       const addSources = buildDropzone({
-        allowedFileTypes: this.cfg.limits?.allowedFileTypes || [],
+        allowedFileTypes: this.verbLimits.allowedFileTypes || [],
         multiple: true,
         uploadLabel: label,
         style: 'compact',
