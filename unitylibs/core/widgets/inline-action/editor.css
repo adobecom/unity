@@ -15,6 +15,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  position: relative;
 }
 
 .ia-viewport {
@@ -573,6 +574,135 @@
   flex-shrink: 0;
 }
 
+/* Spinner swapped in for a trigger button's own .ia-btn-icon while EditorEngine is busy
+   (see toggleTriggerSpinner) — added/removed on demand, not always-present-but-hidden. */
+.ia-btn-spinner {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid rgb(255 255 255 / 30%);
+  border-top-color: var(--ia-white, #fff);
+  border-radius: 50%;
+  animation: ia-btn-spin 0.8s linear infinite;
+}
+
+@keyframes ia-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Shown only while EditorEngine.setBusy(true) is active — a dedicated overlay for this
+   editor's own processing state, not a reuse of rbg's .ia-ghost/data-state="loading"
+   machine (this is mid-panel editing, not the initial upload). Layered the same way:
+   a shifting gradient + mask over a dot pattern, all above the image and frame. */
+.ia-processing-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  border-radius: inherit;
+  overflow: hidden;
+
+  --ia-processing-dot-size: 1px;
+  --ia-processing-gradient-opacity: 0.4;
+  --ia-processing-dot-color: rgb(255 255 255 / 80%);
+  --ia-processing-dot-spacing: 12px;
+  --ia-processing-gradient-colors: #5a423f, #4b475f;
+  --ia-processing-mask-color: rgb(255 255 255 / 80%);
+  --ia-processing-gradient-duration: 3s;
+}
+
+.ia-processing-overlay.is-active {
+  display: block;
+}
+
+.ia-processing-gradient,
+.ia-processing-mask,
+.ia-processing-dots {
+  position: absolute;
+  inset: 0;
+}
+
+.ia-processing-gradient,
+.ia-processing-mask {
+  animation: ia-processing-gradient-shift var(--ia-processing-gradient-duration) ease infinite;
+  opacity: var(--ia-processing-gradient-opacity);
+}
+
+.ia-processing-gradient {
+  z-index: 3;
+  background-image: linear-gradient(to bottom right, var(--ia-processing-gradient-colors));
+  background-size: 400% 400%;
+}
+
+.ia-processing-mask {
+  z-index: 2;
+  background-image: linear-gradient(-45deg, transparent, var(--ia-processing-mask-color), transparent);
+  background-size: 400% 400%;
+}
+
+.ia-processing-dots {
+  z-index: 1;
+  background-image: radial-gradient(
+    circle,
+    var(--ia-processing-dot-color) var(--ia-processing-dot-size),
+    transparent var(--ia-processing-dot-size)
+  );
+  background-size: var(--ia-processing-dot-spacing) var(--ia-processing-dot-spacing);
+}
+
+@keyframes ia-processing-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* EditorEngine.setBusy(true) — pointer-events:none makes every control inert in one
+   rule instead of disabling each element individually, so nothing new added later gets
+   missed. The dimming itself is a scrim overlay covering the whole panel (not opacity
+   on the panel), since a child element can't opt out of an ancestor's own opacity —
+   the trigger button (.is-loading, see toggleTriggerSpinner) is instead lifted above
+   the scrim with a higher z-index, so it stays visually distinct with its own spinner
+   while everything behind it is covered. */
+.ia-editor-right-panel.is-busy {
+  pointer-events: none;
+}
+
+.ia-panel-busy-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  background: rgb(0 0 0 / 55%);
+}
+
+.ia-editor-right-panel.is-busy .ia-panel-busy-overlay {
+  display: block;
+}
+
+.ia-editor-right-panel.is-busy .is-loading {
+  position: relative;
+  z-index: 6;
+}
+
+.ia-editor-left-panel.is-busy .ia-frame,
+.ia-editor-left-panel.is-busy .ia-adjust-bar {
+  pointer-events: none;
+}
+
+.ia-editor-left-panel.is-busy .ia-adjust-bar {
+  opacity: 0.4;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ia-img {
     transition: none;
@@ -581,6 +711,12 @@
   .ia-frame,
   .ia-grid {
     transition: none;
+  }
+
+  .ia-processing-gradient,
+  .ia-processing-mask,
+  .ia-btn-spinner {
+    animation: none;
   }
 }
 

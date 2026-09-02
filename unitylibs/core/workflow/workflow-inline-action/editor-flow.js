@@ -125,11 +125,24 @@ async function performEditorOperation(binder) {
 // handleConnector(el, true) download-vs-redirect decision — first-time users get a
 // local download + redirect, returning users just redirect — since that logic doesn't
 // need to differ from rbg's own download button once resultAssetId/resultUrl are set.
+//
+// The busy state (spinner on `el`, everything else in the editor disabled, the
+// processing overlay on the image) spans the imageOperations call AND the connector
+// call that follows it — not just the former — since the user stays on this tab for
+// the whole duration in both cases (unlike "Open in Firefly", which doesn't touch
+// acom's state at all and so has nothing to show a loading state for).
 export async function runEditorOperation(binder, el) {
-  const ok = await performEditorOperation(binder);
-  if (!ok) return;
-  if (el?.dataset?.nba) await binder.handleConnector(el);
-  else await binder.handleConnector(null, true);
+  const engine = binder.widgetRef?.editorEngine;
+  if (!engine) return;
+  engine.setBusy(true, el);
+  try {
+    const ok = await performEditorOperation(binder);
+    if (!ok) return;
+    if (el?.dataset?.nba) await binder.handleConnector(el);
+    else await binder.handleConnector(null, true);
+  } finally {
+    engine.setBusy(false, el);
+  }
 }
 
 // Only ever called from action-binder.js's executeActionMaps(), for the 'resetEditor'

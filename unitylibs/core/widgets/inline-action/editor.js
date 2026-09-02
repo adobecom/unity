@@ -308,6 +308,20 @@ function buildAdjustBar(parsedData) {
   return bar;
 }
 
+// Shown only while EditorEngine.setBusy(true) is active (runEditorOperation's
+// imageOperations + connector calls) — a dedicated overlay/animation for this editor,
+// not a reuse of rbg's own .ia-ghost/data-state="loading" machine, since this is a
+// different state entirely (mid-panel editing, not the initial upload).
+function buildProcessingOverlay() {
+  const overlay = createTag('div', { class: 'ia-processing-overlay' });
+  overlay.append(
+    createTag('div', { class: 'ia-processing-gradient' }),
+    createTag('div', { class: 'ia-processing-mask' }),
+    createTag('div', { class: 'ia-processing-dots' }),
+  );
+  return overlay;
+}
+
 export function buildEditorLeftPanel(parsedData) {
   const leftPanel = createTag('div', { class: 'ia-editor-left-panel' });
   const viewport = createTag('div', { class: 'ia-viewport' });
@@ -317,6 +331,7 @@ export function buildEditorLeftPanel(parsedData) {
     createTag('div', { class: 'ia-imglayer ia-imglayer--blur' }, blurImg),
     createTag('div', { class: 'ia-imglayer ia-imglayer--sharp' }, sharpImg),
     buildFrame(),
+    buildProcessingOverlay(),
   );
   leftPanel.append(viewport);
   // No icon-placeholder-slider-* authored at all — no adjust bar, not a fallback one.
@@ -332,6 +347,28 @@ function buildIconButton(tag, attrs, iconHref, label) {
   if (iconHref) el.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
   el.append(createTag('span', {}, label));
   return el;
+}
+
+// Only ever called from EditorEngine.setBusy() — swaps a buildIconButton-shaped
+// button's own icon for a spinner (rather than just letting it go inert like every
+// other control), so the specific button the user clicked stays visually distinct
+// while busy. The spinner element is added/removed on demand rather than always
+// present-but-hidden, since only two buttons (the download CTA, each NBA pill) ever
+// need it.
+function toggleTriggerSpinner(btn, isBusy) {
+  if (!btn) return;
+  const icon = btn.querySelector('.ia-btn-icon');
+  if (isBusy) {
+    btn.classList.add('is-loading');
+    if (icon) icon.style.display = 'none';
+    if (!btn.querySelector('.ia-btn-spinner')) {
+      btn.prepend(createTag('span', { class: 'ia-btn-spinner', 'aria-hidden': 'true' }));
+    }
+  } else {
+    btn.classList.remove('is-loading');
+    if (icon) icon.style.display = '';
+    btn.querySelector('.ia-btn-spinner')?.remove();
+  }
 }
 
 // Shared by every dropdown menu (crop's More, resize's Social, the unit picker) — an
@@ -604,18 +641,26 @@ export function buildEditorRightPanel(parsedData) {
   rightPanel.append(header);
   const aspectSection = isCrop ? buildCropAspectSection(parsedData) : buildResizeAspectSection(parsedData);
   rightPanel.append(aspectSection, buildFurtherSection(parsedData));
+  // Shown only while EditorEngine.setBusy(true) is active — a scrim over the whole
+  // panel rather than dimming individual controls, since opacity on this panel itself
+  // would dim the trigger button too (a child can't opt out of an ancestor's opacity).
+  // The trigger button (.is-loading) gets a higher z-index than this overlay instead,
+  // so it visually sits above the scrim while everything else stays covered by it.
+  rightPanel.append(createTag('div', { class: 'ia-panel-busy-overlay' }));
   return rightPanel;
 }
 
 export class EditorEngine {
   constructor(leftPanelEl, rightPanelEl, parsedData) {
     this.isCrop = parsedData.operation === 'crop';
+    this.leftPanel = leftPanelEl;
     this.viewport = leftPanelEl.querySelector('.ia-viewport');
     this.blurImg = leftPanelEl.querySelector('.ia-imglayer--blur .ia-img');
     // clip-path lives on this wrapper, not on sharpImg itself — see render()'s comment.
     this.sharpLayer = leftPanelEl.querySelector('.ia-imglayer--sharp');
     this.sharpImg = this.sharpLayer.querySelector('.ia-img');
     this.frame = leftPanelEl.querySelector('.ia-frame');
+    this.processingOverlay = leftPanelEl.querySelector('.ia-processing-overlay');
     this.slider = leftPanelEl.querySelector('.ia-slider');
     this.valEl = leftPanelEl.querySelector('.ia-val');
     this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
@@ -1309,6 +1354,21 @@ export class EditorEngine {
     this.frame.classList.remove('ia-frame--idle');
     clearTimeout(this.idleTimer);
     this.idleTimer = setTimeout(() => this.frame.classList.add('ia-frame--idle'), IDLE_MS);
+  }
+
+  // Only ever called from editor-flow.js's runEditorOperation, spanning both the
+  // imageOperations call and the connector call that follows it. `.is-busy` on
+  // leftPanel/rightPanel drives one CSS rule that makes every other control inert
+  // (Reset, Upload, aspect pills, resize tabs, NBA pills, Open in Firefly, the adjust
+  // bar) rather than disabling each element individually — simpler and impossible to
+  // miss one when a new control is added later. `triggerBtn` (the specific clicked
+  // element — the download button or an NBA pill) gets its own spinner instead of just
+  // going inert, so it stays visually distinct from the rest while busy.
+  setBusy(isBusy, triggerBtn = null) {
+    this.leftPanel.classList.toggle('is-busy', isBusy);
+    this.rightPanel.classList.toggle('is-busy', isBusy);
+    this.processingOverlay?.classList.toggle('is-active', isBusy);
+    toggleTriggerSpinner(triggerBtn, isBusy);
   }
 }
 
