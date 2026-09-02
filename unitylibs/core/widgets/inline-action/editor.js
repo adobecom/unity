@@ -15,7 +15,9 @@ const HANDLE_EDGES = {
 };
 
 const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
-export const zoomScale = (zoom) => 1 + (zoom / 100);
+// zoom is the slider's raw 0-100 domain; the actual CSS scale factor this maps to now
+// tops out at 10x (was 2x) — 1 + (zoom/100)*9 so zoom=0 -> 1x and zoom=100 -> 10x.
+export const zoomScale = (zoom) => 1 + ((zoom / 100) * 9);
 
 // Aspect-ratio presets (crop pills, resize Standard/Social) are authored the same way
 // as model-picker.json: one flat sheet with a `module` column (crop/resize), fetched
@@ -303,7 +305,7 @@ function buildAdjustBar(parsedData) {
     // overwrites this via setMode() once real state (this.zoom/this.quality) exists.
     value: startMode === 'quality' ? '100' : '0',
   });
-  const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '0%');
+  const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '0.0x');
   bar.append(toggle, slider, val);
   return bar;
 }
@@ -1345,7 +1347,11 @@ export class EditorEngine {
 
   updateValLabel() {
     if (!this.valEl) return;
-    if (this.mode === 'zoom') this.valEl.textContent = `${Math.round(this.zoom)}%`;
+    // Zoom shows the slider's own 0-100 position rescaled to a friendly "0.0x"-"10.0x"
+    // range (one decimal), not the literal CSS scale factor zoomScale() computes (which
+    // runs 1x-10x, since scale(0) would shrink the image to nothing) — quality stays a
+    // plain percentage, unrelated to zoom's own display convention.
+    if (this.mode === 'zoom') this.valEl.textContent = `${(this.zoom / 10).toFixed(1)}x`;
     else if (this.mode === 'quality') this.valEl.textContent = `${Math.round(this.quality)}%`;
     else this.valEl.textContent = '--';
   }
