@@ -1345,13 +1345,14 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign:focus-within {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  gap: var(--s2a-spacing-xs);
+  width: 783px;
+  padding: var(--s2a-spacing-xs);
   background-color: rgba(255 255 255 / 3%) !important;
   background-image: none !important;
-  backdrop-filter: blur(125px) !important;
+  backdrop-filter: blur(250px) !important;
   border: 2px solid rgba(255 255 255 / 5%) !important;
-  border-radius: 32px !important;
+  border-radius: var(--s2a-border-radius-xl) !important;
   box-shadow:
     0 132px 63.5px rgba(0 0 0 / 45%),
     0 55.146px 26.529px rgba(0 0 0 / 32%),
@@ -1360,6 +1361,27 @@
     0 8.778px 4.223px rgba(0 0 0 / 18%),
     0 3.653px 1.757px rgba(0 0 0 / 13%) !important;
   box-sizing: border-box;
+}
+
+/* Tablet (768–1279): card scales down ~71% from the lg spec (783 -> 556.8,
+   32 -> 22.76, 2 -> 1.42, 8 -> 5.69, blur 250 -> 177.78). */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign {
+    width: 556.8px !important;
+    padding: 5.69px !important;
+    backdrop-filter: blur(177.78px) !important;
+    border: 1.42px solid rgba(255 255 255 / 5%) !important;
+    border-radius: 22.76px !important;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container {
+    height: 52.62px !important;
+    gap: 5.69px !important;
+    padding: 5.69px 17.07px 5.69px 12.8px !important;
+    border-radius: 14.22px !important;
+  }
 }
 
 /* Figma specs a separate, lighter 32px blur on this header row, but since it
@@ -1371,23 +1393,34 @@
 /* Inner prompt box: 50% black fill + subtle 15%-black border, 24px radius (Figma). */
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap {
   background: rgba(0 0 0 / 50%) !important;
-  border: 1px solid rgba(0 0 0 / 15%) !important;
-  border-radius: 24px !important;
-  padding: 12px 16px 16px 18px !important;
+  border: 1px solid transparent !important;
+  border-image-source: linear-gradient(180deg, rgba(0 0 0 / 2.25%) 0%, rgba(0 0 0 / 7.5%) 100%) !important;
+  border-image-slice: 1 !important;
+  border-radius: var(--s2a-border-radius-24) !important;
+  padding: var(--s2a-spacing-sm) var(--s2a-spacing-md) var(--s2a-spacing-md) 18px !important;
+  box-sizing: border-box !important;
 }
 
 /* --- Header: verb selector as a title --- */
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container,
+.unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container {
   position: relative;
   display: flex;
   align-items: center;
+  gap: var(--s2a-spacing-xs);
   width: 100%;
+  height: 74px;
   /* Base .verb-options state caps this at max-width:114px (footer pill trigger) —
      that doesn't apply to our header-title layout, so lift it explicitly. */
   max-width: none;
   box-sizing: border-box;
   margin: 0;
-  padding: 8px 12px;
+  padding: 8px 24px 8px 18px;
+  border-radius: 20px;
+  /* Figma specs a separate blur(64px) on this row, but since it's a lighter
+     blur than the card's own (250px lg), it renders as a visibly sharper
+     rectangle against the card's softer blur — a "pill" seam. Dropped in
+     favor of relying solely on the card's own backdrop-filter. */
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
@@ -1397,8 +1430,9 @@
   -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--s2a-spacing-sm);
   width: auto;
+  height: 24px;
   min-height: 0;
   padding: 0;
   border: none;
@@ -1442,7 +1476,7 @@
   flex-flow: row wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--s2a-spacing-md);
   box-sizing: border-box;
 }
 
@@ -1491,7 +1525,11 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .action-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2a-spacing-xs);
+  height: 25.6px;
+  padding-top: 4.8px;
+  padding-bottom: 4.8px;
+  box-sizing: border-box;
   margin: 0;
   order: 1;
 }
@@ -1508,7 +1546,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2a-spacing-xs);
   padding: 6px 10px;
   border: none;
   border-radius: 20px;
@@ -1525,7 +1563,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model > img {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: var(--s2a-border-radius-2xs);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .selected-model .model-name {
@@ -1547,11 +1585,26 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 24px;
-  border: none;
-  border-radius: 999px;
-  background: #3b63fb;
+  justify-content: center;
+  gap: var(--s2a-spacing-xs);
+  width: 120px;
+  height: 40px;
+  padding: 14px var(--s2a-spacing-lg);
+  border: var(--s2a-border-width-sm) solid transparent;
+  border-radius: var(--s2a-border-radius-round);
+  background: var(--s2a-color-blue-900);
+  box-sizing: border-box;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn .btn-ico {
+  width: 12px !important;
+  height: 12px !important;
+  flex-shrink: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn .btn-ico img {
+  width: 12px !important;
+  height: 12px !important;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn:hover {
@@ -1576,13 +1629,13 @@
   z-index: 20;
   top: -48px;
   inset-inline-start: 20px;
-  min-width: 540px;
-  padding: 12px 16px 16px;
+  width: 535px;
+  padding: var(--s2a-spacing-sm) var(--s2a-spacing-md) var(--s2a-spacing-md);
   list-style: none;
-  background: #000000D9;
-  backdrop-filter: blur(300px);
+  background-color: #00000080;
+  backdrop-filter: blur(40px);
   border: 2px solid #FFFFFF0D;
-  border-radius: 32px;
+  border-radius: var(--s2a-border-radius-xl);
   box-shadow: 0 12px 40px rgba(0 0 0 / 50%);
   text-align: left;
 }
@@ -1600,8 +1653,8 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list::before {
   content: 'Select a feature';
   display: block;
-  padding: 4px 4px 12px;
-  color: #c6c6c6;
+  padding: var(--s2a-spacing-2xs) var(--s2a-spacing-2xs) var(--s2a-spacing-sm);
+  color: var(--s2a-color-gray-400);
   font-family: var(--s2a-font-family-label), "Adobe Clean", adobe-clean, sans-serif;
   font-size: var(--s2a-typography-font-size-label);
   font-weight: var(--s2a-font-weight-label, 700);
@@ -1613,9 +1666,9 @@
   position: relative;
   display: flex !important;
   align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  border-radius: 16px;
+  gap: var(--s2a-spacing-sm);
+  padding: var(--s2a-spacing-md) var(--s2a-spacing-lg);
+  border-radius: var(--s2a-border-radius-md);
   color: #fff;
   font-family: var(--s2a-font-family-heading), "Adobe Clean", adobe-clean, sans-serif;
   font-size: var(--s2a-typography-font-size-heading-5);
@@ -1680,8 +1733,8 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close svg {
-  width: 16px;
-  height: 16px;
+  width: 11.378px;
+  height: 11.378px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close:hover,
@@ -1691,17 +1744,32 @@
 
 /* --- Mobile (<768): full-width card, 18px title, circular icon-only Generate --- */
 @media (max-width: 767px) {
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign {
-    padding: 12px;
-    border-radius: 20px;
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign {
+    width: 368px !important;
+    height: 280px !important;
+    max-width: 609.38px !important;
+    padding: 9.38px !important;
+    background-color: #0000004D !important;
+    backdrop-filter: blur(46.875px) !important;
+    border: 2.34px solid rgba(255 255 255 / 5%) !important;
+    border-radius: 18.75px !important;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
     font-size: 18px;
   }
 
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container {
+    height: 59.36px !important;
+    gap: 9.38px !important;
+    padding: 12px 4.69px !important;
+    border-radius: 23.44px !important;
+  }
+
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap {
-    padding: 16px 19px !important;
+    padding: var(--s2a-spacing-md) 19px !important;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field-label {
@@ -1742,54 +1810,103 @@
   box-shadow: none !important;
 }
 
-/* --- Model selector dropdown (open list), dark theme --- */
+/* --- Model selector dropdown (open list), dark theme ---
+   Same fix as the verbs-container dropdown: base widget's move-down animation
+   translateY(40px)s this into place on open, double-offsetting our top:0
+   position below. Only override the open state — the base move-up animation
+   on the closed state is what applies display:none when the menu closes. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list {
+  display: flex !important;
+  animation: none !important;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
   position: absolute;
   z-index: 20;
-  min-width: 280px;
-  margin-top: 8px;
-  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2a-spacing-xs);
+  width: fit-content;
+  min-width: 0;
+  margin-top: var(--s2a-spacing-xs);
+  padding: var(--s2a-section-spacing-xs);
   list-style: none;
-  background-color: #1d1d1d;
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0 0 0 / 50%);
+  background: #00000080;
+  backdrop-filter: blur(40px);
+  border: 2px solid #FFFFFF0D;
+  border-radius: var(--s2a-border-radius-lg);
+  box-shadow:
+    0 2.77px 2.21px 0 #0000001E,
+    0 6.65px 5.32px 0 #0000002B,
+    0 12.52px 10.02px 0 #00000036,
+    0 22.34px 17.87px 0 #00000040,
+    0 41.78px 33.42px 0 #0000004D,
+    0 100px 80px 0 #0000006B;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 10px;
+  justify-content: space-between;
+  width: 190px;
+  height: 24px;
+  gap: var(--s2a-section-spacing-5xs);
+  padding: var(--s2a-spacing-2xs);
+  border-radius: var(--s2a-border-radius-sm);
   color: #fff;
   font-size: 14px;
   font-weight: 400;
   text-decoration: none;
+  box-sizing: border-box;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link img {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3.2px;
   flex-shrink: 0;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link .model-name {
   flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #fff;
+  font-family: "Adobe Clean", adobe-clean, sans-serif;
+  font-weight: 700;
+  font-size: 11.2px;
+  line-height: 14.4px;
+  letter-spacing: 0;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link .selected-icon {
-  display: inline-flex;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  position: static !important;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: 16px;
+  height: 16px;
   order: 2;
   opacity: 0;
+  flex-shrink: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link .selected-icon svg {
+  width: 6.43px;
+  height: 5.6px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link .selected-icon {
   opacity: 1;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link:hover,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link:focus-visible {
-  background: rgba(255 255 255 / 8%);
+  background: rgba(255 255 255 / 10%);
+  border-radius: var(--s2a-border-radius-2xs);
 }
