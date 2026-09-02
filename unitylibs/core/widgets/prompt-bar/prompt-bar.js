@@ -2,9 +2,6 @@
 
 import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from '../../../scripts/utils.js';
 
-// MWPW-204848: Firefly site-redesign theme. Additive — when absent, the widget is unchanged.
-// Production trigger: <meta name="theme" content="firefly-redesign"> (or .theme-firefly-redesign).
-// Dev/preview aid: append ?ffredesign to force it.
 function isFireflyRedesign() {
   return !!(document.querySelector('meta[name="theme"][content="firefly-redesign"]')
     || document.querySelector('.theme-firefly-redesign')
@@ -34,6 +31,7 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
+    this.isFireflyRedesign = isFireflyRedesign();
   }
 
   async initWidget() {
@@ -57,9 +55,7 @@ export default class UnityWidget {
     const comboboxContainer = createTag('div', { class: 'autocomplete' });
     comboboxContainer.append(inputWrapper);
     if (dropdown) comboboxContainer.append(dropdown);
-    // MWPW-204848 redesign: promote the verb selector to a title header above the
-    // prompt box. CSS (scoped to .autocomplete.pb-redesign) handles all styling.
-    if (isFireflyRedesign()) {
+    if (this.isFireflyRedesign) {
       comboboxContainer.classList.add('pb-redesign');
       const verbsContainer = inputWrapper.querySelector('.verbs-container');
       if (verbsContainer) comboboxContainer.prepend(verbsContainer);
@@ -329,7 +325,7 @@ export default class UnityWidget {
       icon: verb.nextElementSibling?.href,
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    if (isFireflyRedesign()) {
+    if (this.isFireflyRedesign) {
       const closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>');
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -344,8 +340,6 @@ export default class UnityWidget {
 
   modelDropdown() {
     if (!this.hasModelOptions) return [];
-    // Guard: getModel() swallows fetch failures (e.g. model config 404s locally),
-    // leaving this.models null. Render without the model selector instead of crashing.
     if (!Array.isArray(this.models)) return [];
     const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
     if (!Array.isArray(models) || models.length === 0) return [];
@@ -405,9 +399,6 @@ export default class UnityWidget {
     return [selectedElement, listItems];
   }
 
-  // Resolves a per-verb placeholder (e.g. "placeholder-input-video") authored
-  // alongside the generic "placeholder-input", falling back to the generic
-  // value when no per-verb override is authored.
   resolveVerbPlaceholder(ph, verbType) {
     return ph[`placeholder-input-${verbType}`] || ph['placeholder-input'];
   }
@@ -415,8 +406,6 @@ export default class UnityWidget {
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
-    // Resolve verbDropdown first so this.selectedVerbType is set before the
-    // initial placeholder is resolved (needed for per-verb placeholder text).
     const verbDropdown = this.verbDropdown();
     const inpField = createTag('textarea', {
       id: 'promptInput',
@@ -548,8 +537,6 @@ export default class UnityWidget {
   }
 
   addWidget() {
-    // Use the host's configured selector (falls back to '.copy' for hosts that
-    // predate this config, e.g. hero-marquee/upload-marquee, to keep behavior identical).
     const interactArea = this.target.querySelector(this.workflowCfg.targetCfg.selector)
       || this.target.querySelector('.copy');
     const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
