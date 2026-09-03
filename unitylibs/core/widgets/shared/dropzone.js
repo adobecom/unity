@@ -30,7 +30,10 @@ export default function buildDropzone({
     zone.append(ico);
   }
   zone.append(createTag('span', { class: 'pu-add-sources-label' }, selectFileText));
-  if (dragText) zone.append(createTag('span', { class: 'pu-dz-drag' }, dragText));
+  if (dragText) {
+    zone.classList.add('pu-add-sources-drag');
+    zone.append(createTag('span', { class: 'pu-dz-drag' }, dragText));
+  }
 
   // Click anywhere in the zone opens the picker. The `e.target === fileInput` guard stops the
   // input's own bubbled click from re-triggering (infinite-open loop).

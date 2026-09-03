@@ -193,7 +193,10 @@ export default class PromptUploadWidget {
     if (hasPrompt) {
       const searchRow = createTag('div', { class: 'pu-search-row' });
       const field = this.buildSearchField();
-      if (ctaInline) field.append(this.genBtn);
+      if (ctaInline) {
+        field.classList.add('pu-pill');
+        field.append(this.genBtn);
+      }
       searchRow.append(field);
       main.append(searchRow);
     }
