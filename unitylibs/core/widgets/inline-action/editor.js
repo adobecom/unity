@@ -19,6 +19,12 @@ const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
 // tops out at 10x (was 2x) — 1 + (zoom/100)*9 so zoom=0 -> 1x and zoom=100 -> 10x.
 export const zoomScale = (zoom) => 1 + ((zoom / 100) * 9);
 
+// Scales a point around the center of `size` by `factor` — the one piece of math
+// behind both directions of the zoom transform: imageBoundsPct projects the base
+// (unzoomed) layout forward onto the screen with factor = zoomScale(zoom), and
+// rectPctToSourceBounds's unscale() reverses that with factor = 1 / zoomScale(zoom).
+const scaleAroundCenter = (px, size, factor) => (size / 2) + ((px - (size / 2)) * factor);
+
 // Aspect-ratio presets (crop pills, resize Standard/Social) are authored the same way
 // as model-picker.json: one flat sheet with a `module` column (crop/resize), fetched
 // once and filtered client-side to this page's own operation — see createModelMap()
@@ -178,12 +184,41 @@ function edgeDelta(movesNeg, movesPos, delta) {
   return 0;
 }
 
+// The frame must never be draggable/resizable beyond the actual displayed image, not
+// just the viewport — object-contain can letterbox/pillarbox the image within the
+// viewport (e.g. a portrait image in a wider viewport), leaving empty space on the
+// sides/top/bottom the selection shouldn't be able to reach. Zoom grows the image
+// outward from the viewport's own center (see render()'s transform), so these bounds
+// account for it the same way rectPctToSourceBounds's unscale() does, just in the
+// forward (base -> on-screen) direction instead of the reverse. Clamped to the
+// viewport's own 0-100 edge regardless, since once zoomed in enough the image covers
+// (or exceeds) the whole viewport and the old viewport-bounds behavior is correct again.
+export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 0) {
+  const { w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
+  const offsetX = (viewportW - dispW) / 2;
+  const offsetY = (viewportH - dispH) / 2;
+  const scale = zoomScale(zoom);
+  const leftPx = scaleAroundCenter(offsetX, viewportW, scale);
+  const topPx = scaleAroundCenter(offsetY, viewportH, scale);
+  const rightPx = scaleAroundCenter(offsetX + dispW, viewportW, scale);
+  const bottomPx = scaleAroundCenter(offsetY + dispH, viewportH, scale);
+
+  return {
+    left: clamp((leftPx / viewportW) * 100, 0, 100),
+    top: clamp((topPx / viewportH) * 100, 0, 100),
+    right: clamp((rightPx / viewportW) * 100, 0, 100),
+    bottom: clamp((bottomPx / viewportH) * 100, 0, 100),
+  };
+}
+
 // Resizes from a fixed anchor (the corner/edge opposite whichever the handle drags).
-// When ratioLock is set, viewport-bounds overflow is resolved by scaling BOTH
-// dimensions down together (from whichever axis is more constrained), so the ratio
-// stays exact even when a side hits the viewport edge — clamping w/h independently
-// would otherwise silently break the locked ratio right at the boundary.
-export function resizeRect(base, handle, dxPct, dyPct, ratioLock) {
+// `bounds` (viewport-%, see imageBoundsPct) replaces the old fixed 0-100 viewport
+// edges — defaults to the full viewport for any caller that doesn't care. When
+// ratioLock is set, bounds overflow is resolved by scaling BOTH dimensions down
+// together (from whichever axis is more constrained), so the ratio stays exact even
+// when a side hits the boundary — clamping w/h independently would otherwise silently
+// break the locked ratio right at the boundary.
+export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { left: 0, top: 0, right: 100, bottom: 100 }) {
   const edges = HANDLE_EDGES[handle] || [];
   const movesLeft = edges.includes('left');
   const movesRight = edges.includes('right');
@@ -201,8 +236,8 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock) {
     else if (movesTop || movesBottom) newW = newH * ratioLock;
   }
 
-  const maxW = movesLeft ? anchorX : 100 - anchorX;
-  const maxH = movesTop ? anchorY : 100 - anchorY;
+  const maxW = movesLeft ? anchorX - bounds.left : bounds.right - anchorX;
+  const maxH = movesTop ? anchorY - bounds.top : bounds.bottom - anchorY;
   if (newW > maxW || newH > maxH) {
     if (ratioLock) {
       const scale = Math.min(maxW / newW, maxH / newH);
@@ -219,8 +254,8 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock) {
   const left = movesLeft ? anchorX - newW : anchorX;
   const top = movesTop ? anchorY - newH : anchorY;
   return {
-    x: clamp(left, 0, 100 - newW),
-    y: clamp(top, 0, 100 - newH),
+    x: clamp(left, bounds.left, bounds.right - newW),
+    y: clamp(top, bounds.top, bounds.bottom - newH),
     w: newW,
     h: newH,
   };
@@ -239,7 +274,7 @@ export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewp
   const offsetX = (viewportW - dispW) / 2;
   const offsetY = (viewportH - dispH) / 2;
   const scale = zoomScale(zoom);
-  const unscale = (px, size) => (size / 2) + ((px - (size / 2)) / scale);
+  const unscale = (px, size) => scaleAroundCenter(px, size, 1 / scale);
 
   const leftPx = unscale((rect.x / 100) * viewportW, viewportW);
   const topPx = unscale((rect.y / 100) * viewportH, viewportH);
@@ -1283,16 +1318,19 @@ export class EditorEngine {
     // when vpW === vpH. Converting to percentage-space here keeps resizeRect's own
     // math axis-agnostic while still locking to the real, visual aspect ratio.
     const ratioLock = trueRatioLock ? trueRatioLock * (vpH / vpW) : null;
+    // Computed once per drag (zoom can't change mid-drag — it's a separate control) —
+    // the frame must stay within the actual displayed image, not just the viewport.
+    const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom);
     const move = (ev) => {
       const dxPct = ((ev.clientX - startX) / vpW) * 100;
       const dyPct = ((ev.clientY - startY) / vpH) * 100;
       this.rect = kind === 'move'
         ? {
           ...baseRect,
-          x: clamp(baseRect.x + dxPct, 0, 100 - baseRect.w),
-          y: clamp(baseRect.y + dyPct, 0, 100 - baseRect.h),
+          x: clamp(baseRect.x + dxPct, bounds.left, bounds.right - baseRect.w),
+          y: clamp(baseRect.y + dyPct, bounds.top, bounds.bottom - baseRect.h),
         }
-        : resizeRect(baseRect, kind, dxPct, dyPct, ratioLock);
+        : resizeRect(baseRect, kind, dxPct, dyPct, ratioLock, bounds);
       // Unlocked Custom-tab drag: rect and targetW/targetH are the same thing, so keep
       // the displayed width/height live during the drag itself, not just once it ends.
       // Locked: never touch targetW/targetH here — dragging only changes which pixels

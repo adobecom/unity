@@ -703,6 +703,14 @@
   opacity: 0.4;
 }
 
+/* Nothing is draggable while busy, so the grid lines and resize handles have no
+   meaning here — hide them rather than just disabling their pointer-events. The
+   frame's own border/dimming overlay stays, still showing what will be cropped. */
+.ia-editor-left-panel.is-busy .ia-grid,
+.ia-editor-left-panel.is-busy .ia-handle {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ia-img {
     transition: none;
