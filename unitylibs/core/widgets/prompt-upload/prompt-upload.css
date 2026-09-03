@@ -93,8 +93,8 @@
 
 .pu-search-field .inp-field::placeholder { color: #9a9a9a; }
 
-/* Citation: the search field is a white bordered pill with an inline CTA */
-.pu-v-citation-generator .pu-search-field {
+/* An inline-CTA search field renders as a white bordered pill (citation layout) */
+.pu-search-field.pu-pill {
   background: #fff;
   border: 1px solid #e2e2e2;
   border-radius: 14px;
@@ -110,6 +110,8 @@
   color: #fff;
 }
 
+.pu-cta .btn-txt { color: #fff; }
+
 .pu-cta .btn-ico {
   display: inline-flex;
   align-items: center;
@@ -118,7 +120,7 @@
 .pu-cta .btn-ico svg {
   width: 18px;
   height: 18px;
-  fill: currentcolor;
+  fill: #fff;
 }
 
 /* Footer: upload affordance (+ subtext) on the left, secondary link / CTA on the right */
@@ -189,10 +191,10 @@
 
 .pu-dz-drag { color: #6e6e6e; }
 
-/* Citation: underline the "Select files" action, plain trailing "or drag and drop" */
-.pu-v-citation-generator .pu-add-sources { gap: 5px; }
+/* "Select files or drag and drop": underline the action, plain trailing drag text */
+.pu-add-sources-drag { gap: 5px; }
 
-.pu-v-citation-generator .pu-add-sources-label {
+.pu-add-sources-drag .pu-add-sources-label {
   font-weight: 400;
   text-decoration: underline;
 }

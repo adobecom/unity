@@ -39,7 +39,10 @@ export default function buildDropzone({
       zone.append(ico);
     }
     zone.append(createTag('span', { class: 'pu-add-sources-label' }, selectFileText));
-    if (dragText) zone.append(createTag('span', { class: 'pu-dz-drag' }, dragText));
+    if (dragText) {
+      zone.classList.add('pu-add-sources-drag');
+      zone.append(createTag('span', { class: 'pu-dz-drag' }, dragText));
+    }
     wireOpen(zone);
     const wrap = createTag('div', { class: 'shared-drop-zone-wrap pu-add-sources-wrap' });
     wrap.append(zone);
