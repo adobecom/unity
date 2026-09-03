@@ -212,3 +212,137 @@
   .pu-footer-container .act-wrap,
   .pu-secondary-link { margin-inline-start: 0; }
 }
+
+/* Search results dropdown (cta-action: search) */
+.pu-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  margin-top: 6px;
+}
+
+.pu-results-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.pu-results .verb-link { padding: 14px 20px; }
+
+.pu-result-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+}
+
+.pu-result-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #3b5bf6;
+}
+
+.pu-result-meta {
+  font-size: 13px;
+  color: #6e6e6e;
+}
+
+/* Classic two-column layout (layout: classic) — big left dropzone + right prompt/footer */
+.pu-main.pu-classic {
+  flex-direction: row;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.pu-classic .pu-left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pu-classic .pu-right-section {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.pu-classic .pu-left-section + .pu-right-section {
+  padding-inline-start: 16px;
+  border-inline-start: 2px solid #e0e0e0;
+}
+
+.pu-prompt-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.pu-upload-heading {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.pu-dz-title-inside .drop-zone { gap: 8px; }
+
+.pu-dz-title-inside .pu-upload-heading {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 1;
+  color: #2c2c2c;
+}
+
+/* Panel dropzone variant (dropzone-style: panel) — full width + Select-file button */
+.pu-left-section.pu-left-panel {
+  flex: 1;
+  width: 100%;
+}
+
+.drop-zone.pu-dz-panel {
+  --pu-dz-w: 100%;
+  --pu-dz-h: auto;
+  --pu-dz-min-h: 200px;
+  --pu-dz-gap: 12px;
+}
+
+.pu-dz-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pu-select-file-btn {
+  background: #3b63fb;
+  color: #fff;
+  border-radius: 24px;
+  padding: 12px 28px;
+  font-size: 16px;
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.pu-select-file-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentcolor;
+}
+
+.pu-dz-drag-text {
+  font-weight: 700;
+  font-size: 15px;
+  color: #2c2c2c;
+}
+
+@media (max-width: 700px) {
+  .pu-main.pu-classic { flex-direction: column; }
+}

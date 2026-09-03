@@ -41,18 +41,50 @@
   align-items: stretch;
 }
 
+/* Dropzone visuals are all CSS variables so each verb can override them via `.pu-v-<verb>` */
 .drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pu-dz-gap, 8px);
+  min-width: var(--pu-dz-min-w, 160px);
+  min-height: var(--pu-dz-min-h, 120px);
+  width: var(--pu-dz-w, 150px);
+  height: var(--pu-dz-h, 150px);
+  padding: var(--pu-dz-padding, 16px);
+  border: var(--pu-dz-border, 1.5px dashed #c4c4c4);
+  border-radius: var(--pu-dz-radius, 16px);
   cursor: pointer;
   box-sizing: border-box;
+  text-align: center;
+}
+
+.pu-v-citation-generator {
+  --pu-dz-min-w: 150px;
+  --pu-dz-min-h: 150px;
+  --pu-dz-gap: 10px;
+}
+
+.pu-v-generate-pres {
+  --pu-dz-w: 200px;
+  --pu-dz-h: 120px;
 }
 
 .drop-zone:focus-visible {
   outline: 2px solid #1473e6;
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
-.drop-zone.drag-over { background: rgb(20 115 230 / 8%); }
+.drop-zone.drag-over {
+  border-color: #1473e6;
+  background: rgb(20 115 230 / 8%);
+}
+
+.shared-drop-content img {
+  width: 28px;
+  height: 28px;
+}
 
 .inp-field {
   width: 100%;
