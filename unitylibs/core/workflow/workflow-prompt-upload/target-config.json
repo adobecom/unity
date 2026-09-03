@@ -86,10 +86,10 @@
       ".gen-btn": "generate"
     }
   },
-  "student-space-marquee": {
-    "selector": ".student-space-marquee-copy",
-    "source": ".student-space-marquee-copy",
-    "target": ".student-space-marquee-copy",
+  "unity-marquee": {
+    "selector": ".unity-marquee-copy",
+    "source": ".unity-marquee-copy",
+    "target": ".unity-marquee-copy",
     "insert": "after",
     "showSplashScreen": true,
     "splashScreenConfig": {
