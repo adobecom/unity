@@ -1,0 +1,16 @@
+name: Clear Akamai On Push
+on:
+  push:
+    branches:
+      - Stage
+      - Main
+
+jobs:
+  call-clear-cache:
+    uses: ./.github/workflows/clear-cache.yml
+    with:
+      cpCode: ${{ github.ref == 'refs/heads/Main' && '1680529' || '1674434' }}
+      network: ${{ github.ref == 'refs/heads/Main' && 'production' || 'staging' }}
+      command: 'invalidate'
+    secrets:
+      EDGERC: ${{ secrets.EDGERC }}
