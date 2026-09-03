@@ -14,7 +14,11 @@ export default class PromptUploadWidget {
     this.workflowCfg = workflowCfg;
     this.spriteCon = spriteCon;
     this.widgetWrap = null;
+    this.cta = null;
     this.genBtn = null;
+    this.resultsEl = null;
+    this.searchMode = false;
+    this.dismissBound = false;
     this.selectedOption = '';
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-PU-Widget' };
   }
@@ -81,13 +85,14 @@ export default class PromptUploadWidget {
     return container;
   }
 
-  // The primary CTA. It carries the `gen-btn` class so the action-binder binds it to the
-  // generate flow (query -> BE -> redirect); Enter in the prompt also triggers it via the binder.
-  buildCta() {
+  // The primary CTA. In generate mode it carries `gen-btn` so the action-binder binds it to the
+  // generate flow (query -> BE -> redirect). In search mode it's a `search-cta` whose click opens
+  // the results dropdown; a separate hidden `.gen-btn` bridges result-selection -> generate.
+  buildCta(searchMode) {
     const label = labelForField(this.el, 'icon-cta-text', 'Generate');
     const cta = createTag('a', {
       href: '#',
-      class: 'unity-act-btn gen-btn pu-cta',
+      class: `unity-act-btn ${searchMode ? 'search-cta' : 'gen-btn'} pu-cta`,
       'aria-label': label,
       role: 'button',
     });
@@ -98,7 +103,41 @@ export default class PromptUploadWidget {
       cta.append(ico);
     }
     cta.append(createTag('div', { class: 'btn-txt' }, label));
+    if (searchMode) {
+      cta.addEventListener('click', (e) => { e.preventDefault(); this.onSearch(); });
+    }
     return cta;
+  }
+
+  async onSearch() {
+    const input = this.widgetWrap?.querySelector('#pbuPromptInput');
+    const query = input?.value?.trim() || '';
+    if (!query) return;
+    const { default: renderSearchResults } = await import('./search-results.js');
+    await renderSearchResults({
+      query,
+      resultsEl: this.resultsEl,
+      onSelect: (r) => this.onResultSelected(r),
+      lanaOptions: this.lanaOptions,
+    });
+    this.bindResultsDismiss();
+  }
+
+  onResultSelected(result) {
+    if (!result) return;
+    const input = this.widgetWrap?.querySelector('#pbuPromptInput');
+    if (input) input.value = result.title;
+    this.genBtn?.click();
+  }
+
+  bindResultsDismiss() {
+    if (this.dismissBound) return;
+    this.dismissBound = true;
+    const hide = () => this.resultsEl?.classList.add('hidden');
+    document.addEventListener('click', (e) => {
+      if (!this.widgetWrap?.contains(e.target)) hide();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
   }
 
   // Compact upload affordance (inline icon/link + optional drag text) + optional subtext line.
@@ -165,7 +204,7 @@ export default class PromptUploadWidget {
     }
     if (ctaInFooter) {
       const actWrap = createTag('div', { class: 'act-wrap' });
-      actWrap.append(this.genBtn);
+      actWrap.append(this.cta);
       footer.append(actWrap);
     }
     const hasContent = left.children.length || secondaryText || ctaInFooter;
@@ -183,7 +222,13 @@ export default class PromptUploadWidget {
     const dropdown = this.buildDropdown();
     const dropdownInHeader = placeholderText(this.el, 'icon-dropdown-placement') === 'header';
     const ctaInline = placeholderText(this.el, 'icon-cta-placement') === 'inline';
-    this.genBtn = this.buildCta();
+    this.searchMode = placeholderText(this.el, 'icon-cta-action') === 'search';
+    this.cta = this.buildCta(this.searchMode);
+    // Generate mode: the visible CTA *is* the gen-btn. Search mode: a hidden gen-btn bridges
+    // result-selection -> generate while the visible CTA opens the results.
+    this.genBtn = this.searchMode
+      ? createTag('a', { href: '#', class: 'unity-act-btn gen-btn hidden', 'aria-hidden': 'true', tabindex: '-1' }, 'Generate')
+      : this.cta;
 
     const main = createTag('div', { class: 'pu-main' });
 
@@ -193,13 +238,25 @@ export default class PromptUploadWidget {
     if (hasPrompt) {
       const searchRow = createTag('div', { class: 'pu-search-row' });
       const field = this.buildSearchField();
-      if (ctaInline) field.append(this.genBtn);
+      if (ctaInline) field.append(this.cta);
       searchRow.append(field);
       main.append(searchRow);
     }
 
     const footer = this.buildFooter(hasUpload, dropdown, !dropdownInHeader, !ctaInline);
     if (footer) main.append(footer);
+
+    if (this.searchMode) {
+      main.append(this.genBtn);
+      this.resultsEl = createTag('div', { class: 'pu-results hidden' });
+      const promptInput = main.querySelector('#pbuPromptInput');
+      promptInput?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || e.shiftKey) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        this.onSearch();
+      });
+    }
 
     this.widgetWrap = mountWidget({
       el: this.el,
@@ -212,6 +269,9 @@ export default class PromptUploadWidget {
     });
 
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
+    if (this.searchMode && this.resultsEl) {
+      this.widgetWrap?.querySelector('.unity-prompt-upload')?.append(this.resultsEl);
+    }
     return this.cfg.actionMap;
   }
 }
