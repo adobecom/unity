@@ -278,8 +278,9 @@ export default class ActionBinder {
 
   async initAnalytics() {
     if (this.analyticsModule) return;
+    if (this.workflowCfg.productName?.toLowerCase() !== 'acrobat') return;
     try {
-      this.analyticsModule = await import(`${getUnityLibs()}/core/workflow/workflow-prompt-upload/verb-analytics.js`);
+      this.analyticsModule = await import(`${getUnityLibs()}/scripts/acrobat-verb-analytics.js`);
       this.verbAnalytics = this.analyticsModule.default;
       if (this.workflowCfg.targetCfg?.sendSplunkAnalytics) {
         this.sendAnalyticsToSplunk = this.analyticsModule.sendAnalyticsToSplunk;
