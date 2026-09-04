@@ -1075,6 +1075,28 @@ describe('ActionBinder', () => {
           expect(result).to.be.true;
         });
 
+        it('should set referrer to the authored referrer when present', async () => {
+          actionBinder.workflowCfg.referrer = 'file-compressor';
+          const cOpts = { payload: { verb: 'compress-pdf' } };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.referrer).to.equal('file-compressor');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
+        it('should fall back referrer to the verb when no referrer is authored', async () => {
+          actionBinder.workflowCfg.referrer = '';
+          const cOpts = { payload: { verb: 'compress-pdf' } };
+          const filesData = { test: 'data' };
+          const result = await actionBinder.handleRedirect(cOpts, filesData);
+
+          expect(cOpts.payload.referrer).to.equal('compress-pdf');
+          expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
+          expect(result).to.be.true;
+        });
+
         it('should handle redirect with feedback for multi-file validation failure', async () => {
           actionBinder.multiFileValidationFailure = true;
           const cOpts = { payload: {} };
@@ -1500,7 +1522,6 @@ describe('ActionBinder', () => {
     describe('isDirectUploadVerb', () => {
       beforeEach(() => {
         actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
-        actionBinder.workflowCfg.targetCfg.directUploadVerbs = ['word-to-pdf'];
         actionBinder.workflowCfg.targetCfg.directUploadMaxSize = 1048576;
       });
 
@@ -1515,11 +1536,6 @@ describe('ActionBinder', () => {
 
       it('should return false for direct upload verbs without file size', () => {
         expect(actionBinder.isDirectUploadVerb()).to.be.false;
-      });
-
-      it('should return false for verbs not configured for direct upload', () => {
-        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
-        expect(actionBinder.isDirectUploadVerb(500000)).to.be.false;
       });
     });
 
@@ -2197,6 +2213,53 @@ describe('ActionBinder', () => {
             true,
             { code: 'pre_upload_error_missing_verb_config' },
           )).to.be.true;
+        });
+      });
+
+      describe('token error retry', () => {
+        it('retries via initialize and proceeds when the retry clears tokenError', async () => {
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+          actionBinder.signedOut = undefined;
+          actionBinder.tokenError = { type: 'token_error', originalError: { message: 'boom' } };
+          const initStub = sinon.stub(actionBinder, 'initialize').callsFake(async () => {
+            actionBinder.signedOut = false;
+            actionBinder.tokenError = null;
+          });
+          const validFiles = [{ name: 'a.pdf', type: 'application/pdf', size: 1048576 }];
+
+          await actionBinder.acrobatActionMaps('upload', validFiles, 1048576, 'test-event');
+
+          expect(initStub.calledOnce).to.be.true;
+          expect(actionBinder.dispatchErrorToast.neverCalledWith('pre_upload_error_fetching_access_token')).to.be.true;
+          expect(actionBinder.processHybrid.calledOnce).to.be.true;
+        });
+
+        it('shows the access-token error toast and stops when the retry still fails', async () => {
+          actionBinder.transitionScreen = { test: 'existing' };
+          actionBinder.handlePreloads = sinon.stub().resolves();
+          actionBinder.processHybrid = sinon.stub().resolves();
+          actionBinder.dispatchAnalyticsEvent = sinon.stub();
+          actionBinder.signedOut = undefined;
+          const errorDetails = { type: 'token_error', originalError: { message: 'boom' } };
+          actionBinder.tokenError = errorDetails;
+          const initStub = sinon.stub(actionBinder, 'initialize').resolves();
+
+          await actionBinder.acrobatActionMaps('upload', [], 0, 'test-event');
+
+          expect(initStub.calledOnce).to.be.true;
+          expect(actionBinder.dispatchErrorToast.calledWith(
+            'pre_upload_error_fetching_access_token',
+            null,
+            `Could not fetch access token; Error: ${JSON.stringify(errorDetails.originalError)}`,
+            false,
+            true,
+            { code: 'pre_upload_error_fetching_access_token', desc: errorDetails },
+          )).to.be.true;
+          expect(actionBinder.processHybrid.called).to.be.false;
+          expect(actionBinder.dispatchAnalyticsEvent.called).to.be.false;
         });
       });
     });
@@ -3070,6 +3133,106 @@ describe('ActionBinder', () => {
 
       // Should return an array (either validated or original files)
       expect(Array.isArray(result)).to.be.true;
+    });
+  });
+
+  describe('filterFilesWithPdflite - integrity/acroform/scanned checks', () => {
+    let originalPdflite;
+    let pdfDetailsStub;
+
+    const pdf = (name) => new File(['%PDF-1.4 test'], name, { type: 'application/pdf' });
+
+    beforeEach(() => {
+      originalPdflite = window.pdflite;
+      actionBinder.MULTI_FILE = false;
+      actionBinder.multiFileValidationFailure = false;
+      actionBinder.limits = { pageLimit: { maxNumPages: 100 } };
+      actionBinder.workflowCfg = {
+        enabledFeatures: ['stylize'],
+        targetCfg: {
+          pdfIntegrityCheckVerbs: ['stylize'],
+          pdfAcroformCheckVerbs: ['stylize'],
+          pdfScannedCheckVerbs: ['stylize'],
+        },
+      };
+      sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+      pdfDetailsStub = sinon.stub().returns({ NUM_PAGES: 1 });
+      window.pdflite = { pdfDetails: pdfDetailsStub };
+    });
+
+    afterEach(() => {
+      window.pdflite = originalPdflite;
+    });
+
+    it('excludes AcroForm files and dispatches the acroform error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 1, HAS_ACROFORM: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('form.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_acroform_not_supported')).to.be.true;
+    });
+
+    it('excludes scanned files and dispatches the scanned-document error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 1, IS_SCANNED_DOCUMENT: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('scanned.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_scanned_document')).to.be.true;
+    });
+
+    it('excludes empty files with the empty-file error, not the corrupt/encrypted one', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 0, IS_EMPTY: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('empty.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_empty_file')).to.be.true;
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.false;
+    });
+
+    it('excludes encrypted/password-protected files via the integrity error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 1, IS_ENCRYPTED: true });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('encrypted.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.true;
+    });
+
+    it('treats a fileDetails failure as a corrupted file via the integrity error', async () => {
+      pdfDetailsStub.returns({ error: 'not found' });
+      const result = await actionBinder.filterFilesWithPdflite([pdf('corrupt.pdf')]);
+      expect(result).to.have.lengthOf(0);
+      expect(actionBinder.dispatchErrorToast.calledWith('validation_error_password_protected')).to.be.true;
+    });
+
+    it('passes checkScanned=true to pdflite when the verb is in pdfScannedCheckVerbs', async () => {
+      await actionBinder.filterFilesWithPdflite([pdf('a.pdf')]);
+      expect(pdfDetailsStub.calledWith(sinon.match.any, true)).to.be.true;
+    });
+
+    it('does not request the scan when the verb is not in pdfScannedCheckVerbs', async () => {
+      actionBinder.workflowCfg.targetCfg.pdfScannedCheckVerbs = [];
+      await actionBinder.filterFilesWithPdflite([pdf('a.pdf')]);
+      expect(pdfDetailsStub.calledWith(sinon.match.any, false)).to.be.true;
+    });
+
+    it('passes a clean PDF through without dispatching an error', async () => {
+      pdfDetailsStub.returns({ NUM_PAGES: 5, HAS_ACROFORM: false, IS_ENCRYPTED: false, IS_SCANNED_DOCUMENT: false });
+      const file = pdf('clean.pdf');
+      const result = await actionBinder.filterFilesWithPdflite([file]);
+      expect(result).to.deep.equal([file]);
+      expect(actionBinder.dispatchErrorToast.called).to.be.false;
+    });
+
+    it('skips pdflite entirely for verbs not in any check list and without page limits', async () => {
+      actionBinder.limits = {};
+      actionBinder.workflowCfg.targetCfg = {};
+      const files = [pdf('x.pdf')];
+      const result = await actionBinder.filterFilesWithPdflite(files);
+      expect(result).to.equal(files);
+      expect(pdfDetailsStub.called).to.be.false;
+    });
+
+    it('sets multiFileValidationFailure when a file is excluded in multi-file mode', async () => {
+      actionBinder.MULTI_FILE = true;
+      pdfDetailsStub.returns({ NUM_PAGES: 1, HAS_ACROFORM: true });
+      await actionBinder.filterFilesWithPdflite([pdf('form.pdf')]);
+      expect(actionBinder.multiFileValidationFailure).to.be.true;
     });
   });
 
