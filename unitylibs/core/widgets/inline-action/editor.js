@@ -340,7 +340,7 @@ function buildAdjustBar(parsedData) {
     // overwrites this via setMode() once real state (this.zoom/this.quality) exists.
     value: startMode === 'quality' ? '100' : '0',
   });
-  const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '0.0x');
+  const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '1.0x');
   bar.append(toggle, slider, val);
   return bar;
 }
@@ -1385,11 +1385,10 @@ export class EditorEngine {
 
   updateValLabel() {
     if (!this.valEl) return;
-    // Zoom shows the slider's own 0-100 position rescaled to a friendly "0.0x"-"10.0x"
-    // range (one decimal), not the literal CSS scale factor zoomScale() computes (which
-    // runs 1x-10x, since scale(0) would shrink the image to nothing) — quality stays a
-    // plain percentage, unrelated to zoom's own display convention.
-    if (this.mode === 'zoom') this.valEl.textContent = `${(this.zoom / 10).toFixed(1)}x`;
+    // Zoom shows the actual CSS scale factor zoomScale() computes — 1.0x (no zoom) to
+    // 10.0x (max), one decimal — since that's the real "how zoomed in" value, not a
+    // relabeled slider position. Quality stays a plain percentage.
+    if (this.mode === 'zoom') this.valEl.textContent = `${zoomScale(this.zoom).toFixed(1)}x`;
     else if (this.mode === 'quality') this.valEl.textContent = `${Math.round(this.quality)}%`;
     else this.valEl.textContent = '--';
   }
