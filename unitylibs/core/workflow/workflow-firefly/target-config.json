@@ -41,5 +41,11 @@
     "source": ".content-container",
     "target": ".firefly-model-showcase-prompt-container",
     "insert": "after"
+  },
+  "rich-content.firefly-prompt": {
+    "selector": ".content",
+    "source": ".content",
+    "target": ".content",
+    "insert": "after"
   }
 }
