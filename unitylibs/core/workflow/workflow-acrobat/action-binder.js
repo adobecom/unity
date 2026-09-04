@@ -93,8 +93,8 @@ export default class ActionBinder {
     'flashcard-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'mindmap-maker': ['hybrid', 'allowed-filetypes-study-spaces', 'page-limit-600', 'max-numfiles-100', 'max-filesize-100-mb'],
     'resume-builder': ['single', 'allowed-filetypes-resume', 'page-limit-10', 'max-filesize-20-mb'],
-    'gen-presentation-v2': ['single', 'allowed-filetypes-study-spaces', 'allowed-filetypes-eml-msg-images', 'page-limit-600', 'max-filesize-100-mb'],
-    'interactive-report': ['single', 'allowed-filetypes-study-spaces', 'allowed-filetypes-eml-msg-images', 'page-limit-600', 'max-filesize-100-mb'],
+    'gen-presentation-v2': ['single', 'allowed-filetypes-study-spaces', 'allowed-filetypes-eml-msg', 'page-limit-600', 'max-filesize-100-mb'],
+    'interactive-report': ['single', 'allowed-filetypes-study-spaces', 'allowed-filetypes-eml-msg', 'page-limit-600', 'max-filesize-100-mb'],
     stylize: ['single', 'allowed-filetypes-pdf-only', 'page-limit-15', 'max-filesize-100-mb'],
   };
 
