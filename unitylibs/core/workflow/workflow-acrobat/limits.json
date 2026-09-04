@@ -232,13 +232,10 @@
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
   },
-  "allowed-filetypes-eml-msg-images": {
+  "allowed-filetypes-eml-msg": {
     "allowedFileTypes": [
       "message/rfc822",
-      "application/vnd.ms-outlook",
-      "image/jpeg",
-      "image/png",
-      "image/tiff"
+      "application/vnd.ms-outlook"
     ]
   }
 }
