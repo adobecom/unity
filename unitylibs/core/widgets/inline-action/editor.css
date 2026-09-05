@@ -216,6 +216,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--ia-white, #fff);
+  font-family: var(--font-family-adobe-clean);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -291,7 +292,6 @@
 .ia-editor-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
 }
 
 .ia-editor-reset,
@@ -302,11 +302,12 @@
   gap: 6px;
   width: auto;
   height: auto;
-  padding: 8px 16px;
+  padding: 6px 8px 6px 10px;
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--ia-white, #fff);
+  font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   cursor: pointer;
 }
@@ -388,11 +389,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 5px 12px 5px 10px;
   border-radius: 4px;
   border: 1px solid rgb(255 255 255 / 15%);
   background: #2a2a2a;
   color: var(--ia-white, #fff);
+  font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   cursor: pointer;
 }
@@ -409,6 +411,7 @@
    shared 4px above, which crop's .ia-aspect-pill (used elsewhere, outside this row)
    keeps as-is. */
 .ia-resize-tab {
+  padding: 6px 12px 8px 12px;
   border-radius: 8px;
 }
 
@@ -508,6 +511,7 @@
   border-radius: 4px;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
+  font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   text-align: right;
   cursor: pointer;
@@ -624,6 +628,7 @@
   border-radius: 10px;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
+  font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   cursor: pointer;
 }
@@ -671,25 +676,31 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  flex: 1;
   padding: 9px 18px 10px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 17px;
-  line-height: 26px;
+  line-height: 22px;
   font-weight: 700;
   cursor: pointer;
   text-align: center;
+  font-family: var(--font-family-adobe-clean);
+  gap: 8px;
+
+  /* Both get the SAME 2px border width (only .ia-cta-outline's is visible; the
+     accent's is transparent) with box-sizing:border-box, so the border is absorbed
+     into each button's total size instead of .ia-cta-outline alone rendering 4px
+     larger than .ia-cta-accent — the two stay flush/aligned in the row. */
+  box-sizing: border-box;
+  border: 2px solid transparent;
 }
 
 .ia-cta-accent {
-  border: none;
   background: var(--ia-accent, #3b63fb);
   color: var(--ia-white, #fff);
 }
 
 .ia-cta-outline {
-  border: 2px solid var(--ia-white, #fff);
+  border-color: var(--ia-white, #fff);
   background: transparent;
   color: var(--ia-white, #fff);
 }
@@ -709,6 +720,7 @@
   border: 1px solid rgb(255 255 255 / 15%);
   background: #2a2a2a;
   color: var(--ia-white, #fff);
+  font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   cursor: pointer;
 }
@@ -720,8 +732,8 @@
    stroke; brightness(0) first crushes it to a solid black silhouette (alpha channel
    intact), then invert(1) flips that to solid white. */
 .ia-btn-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
 }
