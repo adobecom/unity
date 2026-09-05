@@ -299,8 +299,8 @@
   width: auto;
   height: auto;
   padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 10px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--ia-white, #fff);
   font-size: 14px;
@@ -342,13 +342,42 @@
   gap: 8px;
 }
 
+/* Crop's own top-level pill row only — a single horizontally-scrollable strip instead
+   of the wrapping multi-row grid .ia-aspect-row otherwise renders (still used as-is by
+   resize's Standard/Social detail grids, which do want to wrap). flex-shrink: 0 on the
+   children keeps each pill at its natural width so they overflow into the scrollbar
+   instead of getting squeezed to fit. */
+.ia-aspect-row--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ia-aspect-row--scroll > * {
+  flex-shrink: 0;
+}
+
+/* Resize only — the heading sits inline with the Custom/Standard/Social tab row
+   (same line) instead of stacked above it, unlike crop's own heading. */
+.ia-aspect-header-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ia-aspect-header-row .ia-aspect-heading {
+  margin: 0;
+}
+
 .ia-aspect-pill,
 .ia-resize-tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid rgb(255 255 255 / 15%);
   background: #2a2a2a;
   color: var(--ia-white, #fff);
@@ -382,6 +411,18 @@
   border: 1px solid rgb(255 255 255 / 15%);
   background: #202020;
   box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+/* Crop's "More" trigger scrolls as part of .ia-aspect-row--scroll's horizontal strip,
+   so its dropdown can't be positioned absolute (a position:absolute descendant of an
+   overflow-x:auto ancestor gets clipped by it — overflow-x:auto forces overflow-y to
+   auto too). Positioned as fixed instead, with left/top set from the trigger's own
+   getBoundingClientRect() right when it opens (see toggleMore) — fixed positioning
+   escapes the scroll container's clipping entirely. */
+.ia-more-menu {
+  position: fixed;
+  top: auto;
+  right: auto;
 }
 
 .ia-more-menu.hide,

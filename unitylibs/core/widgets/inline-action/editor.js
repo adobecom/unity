@@ -467,7 +467,13 @@ function buildCtaRow(isCrop, parsedData) {
 function buildCropAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
   section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
-  const row = createTag('div', { class: 'ia-aspect-row' });
+  // --scroll: a single horizontally-scrollable strip, not the wrapping multi-row grid
+  // .ia-aspect-row otherwise renders (used as-is by resize's Standard/Social detail
+  // grids) — crop's own pill row (including the "More" trigger) scrolls as one strip
+  // instead of wrapping to a second line. Its dropdown menu (.ia-more-menu) is
+  // positioned via JS as position:fixed (see toggleMore) rather than absolute, since an
+  // absolutely-positioned menu would get clipped by this row's own overflow-x:auto.
+  const row = createTag('div', { class: 'ia-aspect-row ia-aspect-row--scroll' });
   const { pillRows, moreRows } = groupCropRows(parsedData.aspectRows || []);
   pillRows.forEach((r, i) => row.append(buildAspectPill(r, i === 0)));
   if (moreRows.length) {
@@ -576,7 +582,11 @@ function buildSocialDetail(socialRows, platforms) {
 // unauthored resize page falls back to Custom-only rather than showing an empty tab.
 function buildResizeAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
-  section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
+  // Unlike crop, the heading sits inline with the Custom/Standard/Social tab row
+  // itself (same line), not stacked above it — the detail grids/fields those tabs
+  // reveal still render below this combined row, further down in `section`.
+  const header = createTag('div', { class: 'ia-aspect-header-row' });
+  header.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
   const buckets = groupResizeRows(parsedData.aspectRows || []);
   const customBucket = buckets.find((b) => b.kind === 'custom');
@@ -623,7 +633,8 @@ function buildResizeAspectSection(parsedData) {
   const details = [buildCustomDetail(parsedData)];
   if (standardBucket) details.push(buildStandardDetail(standardBucket.rows));
   if (socialBucket) details.push(buildSocialDetail(socialBucket.rows, platforms));
-  section.append(row, ...details, readout, buildCtaRow(false, parsedData));
+  header.append(row);
+  section.append(header, ...details, readout, buildCtaRow(false, parsedData));
   return section;
 }
 
@@ -1195,6 +1206,11 @@ export class EditorEngine {
       document.addEventListener('click', (e) => {
         if (!this.moreWrap.contains(e.target)) this.closeMore();
       });
+      // The trigger itself scrolls inside .ia-aspect-row--scroll, but the open menu is
+      // position:fixed at a snapshot of the trigger's coordinates (see toggleMore) — it
+      // wouldn't follow the trigger on scroll, so close it instead of leaving it
+      // floating over the wrong spot.
+      this.moreWrap.closest('.ia-aspect-row--scroll')?.addEventListener('scroll', () => this.closeMore());
     }
   }
 
@@ -1202,6 +1218,14 @@ export class EditorEngine {
     const isOpen = !this.moreMenu.classList.contains('hide');
     if (isOpen) this.closeMore();
     else {
+      // .ia-more-menu is position:fixed (see editor.css) since the trigger scrolls
+      // inside .ia-aspect-row--scroll, so it needs its own viewport coordinates rather
+      // than relying on an absolute-positioned offset from its (clipping) ancestor.
+      // Right-aligned to the trigger's own right edge, opening just below it — same
+      // placement the old position:absolute rule produced.
+      const rect = this.moreTrigger.getBoundingClientRect();
+      this.moreMenu.style.top = `${rect.bottom + 6}px`;
+      this.moreMenu.style.right = `${window.innerWidth - rect.right}px`;
       this.moreMenu.classList.remove('hide');
       this.moreTrigger.setAttribute('aria-expanded', 'true');
     }
