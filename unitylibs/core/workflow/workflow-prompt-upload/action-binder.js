@@ -533,6 +533,7 @@ export default class ActionBinder {
     if (this.query) cOpts.query = this.query;
     const optKey = this.workflowCfg.targetCfg?.optionDropdownPayloadKey;
     if (this.optionValue && optKey) cOpts.payload[optKey] = this.optionValue;
+    [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
       const numAttempts = parseInt(localStorage.getItem(`${this.workflowCfg.enabledFeatures[0]}_attempts`), 10) || 0;
@@ -814,7 +815,8 @@ export default class ActionBinder {
       if (!(await this.runPreflight())) return;
       if (!files?.length) return;
       this.pendingFiles = files;
-      this.query = '';
+      // Capture a query/style the user typed before uploading (contract: "types then uploads").
+      this.readPromptState();
       this.limits = this.resolveLimits();
       await this.processFileUpload(eventName);
     } catch (err) {
