@@ -64,27 +64,26 @@ function aspectRatioValue(row) {
 
 // Matches the two label formats already confirmed in design: "{name} {ratio}" for
 // ratio-only rows (crop pills, Standard), "{name} {width} x {height}" for Social's
-// pixel targets. `suppressName` is used for crop's "More" overflow rows, whose shared
-// `name` is the dropdown trigger's own label, not each individual option's — pass it
-// there so an option reads "4:3", not "{localized More} 4:3".
-function composeAspectLabel(row, suppressName = false) {
-  const name = suppressName ? '' : (row.name || row.group || '');
+// pixel targets. Every row (standalone pill or "More" overflow option alike) carries
+// its own individual `name`, appended the same way — see groupCropRows for why that's
+// safe now (the overflow bucket is no longer identified via a shared `name`).
+function composeAspectLabel(row) {
+  const name = row.name || row.group || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
   if (row.ratio) return `${name} ${row.ratio}`.trim();
   return name;
 }
 
-// `name` is localized, so it can't be compared against a literal "More" — instead, the
-// overflow bucket is whichever `name` value repeats across more than one row (every
-// standalone pill's name is unique; only the overflow rows share one, translated,
-// value). That shared value is also the dropdown trigger's own label — read from the
-// sheet, never hardcoded — see buildCropAspectSection.
+// Crop's inline pills are authored with no `group` at all (blank column); only the
+// "More" overflow rows carry one (e.g. "More" — localized, but that doesn't matter
+// here since it's never compared against a literal string, just checked for presence).
+// That shared group value is also the dropdown trigger's own label — read from the
+// sheet, never hardcoded — see buildCropAspectSection. Each row keeps its own `name`
+// regardless of bucket (see composeAspectLabel).
 function groupCropRows(rows) {
-  const counts = new Map();
-  rows.forEach((r) => counts.set(r.name, (counts.get(r.name) || 0) + 1));
   return {
-    pillRows: rows.filter((r) => counts.get(r.name) === 1),
-    moreRows: rows.filter((r) => counts.get(r.name) > 1),
+    pillRows: rows.filter((r) => !r.group),
+    moreRows: rows.filter((r) => r.group),
   };
 }
 
@@ -471,8 +470,9 @@ function buildCropAspectSection(parsedData) {
   // .ia-aspect-row otherwise renders (used as-is by resize's Standard/Social detail
   // grids) — crop's own pill row (including the "More" trigger) scrolls as one strip
   // instead of wrapping to a second line. Its dropdown menu (.ia-more-menu) is
-  // positioned via JS as position:fixed (see toggleMore) rather than absolute, since an
-  // absolutely-positioned menu would get clipped by this row's own overflow-x:auto.
+  // positioned via JS as position:fixed (see positionMoreMenu/toggleMore) rather than
+  // absolute, since an absolutely-positioned menu would get clipped by this row's own
+  // overflow-x:auto.
   const row = createTag('div', { class: 'ia-aspect-row ia-aspect-row--scroll' });
   const { pillRows, moreRows } = groupCropRows(parsedData.aspectRows || []);
   pillRows.forEach((r, i) => row.append(buildAspectPill(r, i === 0)));
@@ -481,23 +481,39 @@ function buildCropAspectSection(parsedData) {
     const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
     moreMenu.append(buildDropdownCloseButton());
     moreRows.forEach((r) => {
-      const label = composeAspectLabel(r, true);
+      const label = composeAspectLabel(r);
+      const ratioVal = aspectRatioValue(r);
+      // A "More" row authored with no ratio at all (e.g. "See all") has nothing to
+      // select — it means "skip picking a preset, go straight to Firefly with
+      // whatever's already selected" instead, same as the main "Open in Firefly" CTA.
+      // Reusing its exact class hooks this into the SAME actionMap entry
+      // (bindActionMapElements picks up every .ia-editor-open-in-firefly under the
+      // panel, not just the CTA button) rather than duplicating that flow here.
+      const opensFirefly = ratioVal === null;
       moreMenu.append(buildIconButton('button', {
         type: 'button',
-        class: 'ia-more-opt',
-        'data-ratio': aspectRatioValue(r) ?? '',
+        class: `ia-more-opt${opensFirefly ? ' ia-editor-open-in-firefly' : ''}`,
+        'data-ratio': ratioVal ?? '',
         'data-label': label,
+        // Read back by selectAspect (via the click handler below) so picking this
+        // option can carry its own icon over onto the trigger, not just its label.
+        ...(r.icon && { 'data-icon': r.icon }),
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
       }, r.icon, label));
     });
-    // moreRows share one repeated, localized `name` (see groupCropRows) — that's the
-    // dropdown trigger's own default label, never a hardcoded "More".
-    const moreTrigger = createTag('button', {
+    // moreRows share one repeated, localized `group` (see groupCropRows) — that's the
+    // dropdown trigger's own default label, never a hardcoded "More". Each row's own
+    // `name` is its individual option label instead (composed above). Built via
+    // buildIconButton (icon omitted for now — the group label itself has no icon of
+    // its own) so it has the same span-wrapped-label structure every other pill/option
+    // has, letting selectAspect swap in a selected option's own icon later without
+    // clobbering the rest of the button (see setMoreTrigger).
+    const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
-    }, moreRows[0].name);
+    }, undefined, moreRows[0].group);
     more.append(moreTrigger, moreMenu);
     row.append(more);
   }
@@ -732,6 +748,9 @@ export class EditorEngine {
     // closest(), never a fresh panel-wide querySelector('.ia-more') — that would be
     // ambiguous whenever more than one such wrapper exists in the same panel.
     this.moreWrap = this.moreTrigger?.closest('.ia-more');
+    // Stable bound reference (not a fresh arrow per call) so add/removeEventListener in
+    // toggleMore/closeMore below target the exact same listener — see positionMoreMenu.
+    this.repositionMoreMenu = () => this.positionMoreMenu();
     // First authored, real ratio-selecting pill (never the More trigger itself) — used
     // by reset() so crop always returns to whatever the sheet's own first row was,
     // instead of assuming a hardcoded "Freeform" pill exists.
@@ -1191,9 +1210,17 @@ export class EditorEngine {
     // throw without the first `?.`, and calling .forEach on that undefined result would
     // throw without the second.
     this.moreMenu?.querySelectorAll('.ia-more-opt')?.forEach((opt) => {
+      // This one's actual click behavior (redirecting to Firefly) is already wired by
+      // bindActionMapElements via its .ia-editor-open-in-firefly class (see
+      // buildCropAspectSection) — it only needs the dropdown closed here, not a
+      // competing selectAspect call.
+      if (opt.classList.contains('ia-editor-open-in-firefly')) {
+        opt.addEventListener('click', () => this.closeMore());
+        return;
+      }
       opt.addEventListener('click', () => {
-        const { ratio, label, ratioText } = opt.dataset;
-        this.selectAspect(Number(ratio), label, true, null, ratioText || null);
+        const { ratio, label, ratioText, icon } = opt.dataset;
+        this.selectAspect(Number(ratio), label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });
     });
@@ -1206,37 +1233,61 @@ export class EditorEngine {
       document.addEventListener('click', (e) => {
         if (!this.moreWrap.contains(e.target)) this.closeMore();
       });
-      // The trigger itself scrolls inside .ia-aspect-row--scroll, but the open menu is
-      // position:fixed at a snapshot of the trigger's coordinates (see toggleMore) — it
-      // wouldn't follow the trigger on scroll, so close it instead of leaving it
-      // floating over the wrong spot.
-      this.moreWrap.closest('.ia-aspect-row--scroll')?.addEventListener('scroll', () => this.closeMore());
     }
+  }
+
+  // .ia-more-menu is position:fixed (see editor.css) since the trigger scrolls inside
+  // .ia-aspect-row--scroll, so it needs its own viewport coordinates rather than
+  // relying on an absolute-positioned offset from its (clipping) ancestor.
+  // Right-aligned to the trigger's own right edge, opening just below it — same
+  // placement the old position:absolute rule produced.
+  positionMoreMenu() {
+    const rect = this.moreTrigger.getBoundingClientRect();
+    this.moreMenu.style.top = `${rect.bottom + 6}px`;
+    this.moreMenu.style.right = `${window.innerWidth - rect.right}px`;
   }
 
   toggleMore() {
     const isOpen = !this.moreMenu.classList.contains('hide');
     if (isOpen) this.closeMore();
     else {
-      // .ia-more-menu is position:fixed (see editor.css) since the trigger scrolls
-      // inside .ia-aspect-row--scroll, so it needs its own viewport coordinates rather
-      // than relying on an absolute-positioned offset from its (clipping) ancestor.
-      // Right-aligned to the trigger's own right edge, opening just below it — same
-      // placement the old position:absolute rule produced.
-      const rect = this.moreTrigger.getBoundingClientRect();
-      this.moreMenu.style.top = `${rect.bottom + 6}px`;
-      this.moreMenu.style.right = `${window.innerWidth - rect.right}px`;
+      this.positionMoreMenu();
       this.moreMenu.classList.remove('hide');
       this.moreTrigger.setAttribute('aria-expanded', 'true');
+      // A fixed-position menu is otherwise just a one-time snapshot — it wouldn't
+      // follow the trigger if the page (or the trigger's own .ia-aspect-row--scroll
+      // ancestor) scrolls while open. `capture: true` is what makes this catch scroll
+      // events from that (or any other) scrollable ancestor too, since scroll events
+      // don't bubble but do fire during the capture phase on every ancestor up to
+      // window, including it.
+      window.addEventListener('scroll', this.repositionMoreMenu, true);
+      window.addEventListener('resize', this.repositionMoreMenu);
     }
   }
 
   closeMore() {
     this.moreMenu?.classList.add('hide');
     this.moreTrigger?.setAttribute('aria-expanded', 'false');
+    window.removeEventListener('scroll', this.repositionMoreMenu, true);
+    window.removeEventListener('resize', this.repositionMoreMenu);
   }
 
-  selectAspect(ratio, label, fromMore = false, dimensions = null, ratioText = null) {
+  // Swaps the More trigger's label (and optionally its icon) without disturbing the
+  // rest of the button — the trigger is built via buildIconButton (see
+  // buildCropAspectSection) specifically so its label always lives in its own <span>,
+  // never touched via a blind textContent assignment that would also wipe out an icon
+  // added here on a previous selection.
+  setMoreTrigger(label, iconHref = null) {
+    if (!this.moreTrigger) return;
+    this.moreTrigger.querySelector('.ia-btn-icon')?.remove();
+    if (iconHref) {
+      this.moreTrigger.prepend(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
+    }
+    const span = this.moreTrigger.querySelector('span');
+    if (span) span.textContent = label;
+  }
+
+  selectAspect(ratio, label, fromMore = false, dimensions = null, ratioText = null, iconHref = null) {
     this.selectedRatio = ratio;
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
@@ -1247,10 +1298,10 @@ export class EditorEngine {
     this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
-      this.moreTrigger.textContent = label;
+      this.setMoreTrigger(label, iconHref);
       this.moreTrigger.classList.add('is-active');
     } else {
-      if (this.moreTrigger) this.moreTrigger.textContent = this.moreDefaultLabel;
+      this.setMoreTrigger(this.moreDefaultLabel);
       const match = this.aspectPills.find((pill) => pill.dataset.label === label);
       match?.classList.add('is-active');
     }

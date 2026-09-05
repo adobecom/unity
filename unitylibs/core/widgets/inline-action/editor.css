@@ -350,7 +350,15 @@
 .ia-aspect-row--scroll {
   flex-wrap: nowrap;
   overflow-x: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Still scrollable (via drag/touch/wheel) — just no visible scrollbar track/thumb.
+   scrollbar-width: none above already covers Firefox; this is the Chrome/Safari/Edge
+   equivalent, which only works as a separate ::-webkit-scrollbar rule, not a property. */
+.ia-aspect-row--scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .ia-aspect-row--scroll > * {
@@ -452,6 +460,9 @@
 .ia-more-opt,
 .ia-social-opt,
 .ia-unit-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 12px;
   border: none;
   border-radius: 8px;
@@ -608,11 +619,25 @@
 }
 
 /* Shared by every authored icon+label button/pill (reset, reupload, both CTAs, each
-   NBA pill) — only rendered when that row actually authored an icon href. */
+   NBA pill) — only rendered when that row actually authored an icon href. Forced to a
+   flat white via filter regardless of the source SVG's own authored colors — these are
+   <img src="*.svg"> elements, so CSS can't reach into the SVG document's own fill/
+   stroke; brightness(0) first crushes it to a solid black silhouette (alpha channel
+   intact), then invert(1) flips that to solid white. */
 .ia-btn-icon {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+  filter: brightness(0) invert(1);
+}
+
+/* Flipped to solid black instead, same brightness(0) technique minus the invert —
+   these are the only icon-carrying controls whose .is-active state actually turns the
+   background solid white (unlike .ia-toggle__btn.is-active's translucent overlay,
+   which stays dark enough for the default white icon). */
+.ia-aspect-pill.is-active .ia-btn-icon,
+.ia-resize-tab.is-active .ia-btn-icon {
+  filter: brightness(0);
 }
 
 /* Spinner swapped in for a trigger button's own .ia-btn-icon while EditorEngine is busy
