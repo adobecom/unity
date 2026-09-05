@@ -416,9 +416,12 @@ function toggleTriggerSpinner(btn, isBusy) {
 // Shared by every dropdown menu (crop's More, resize's Social, the unit picker) — an
 // explicit close affordance inside the menu itself, in addition to the existing
 // outside-click handling in each bind*Events method. Click binding happens there too
-// (not here), since this is a pure DOM builder with no EditorEngine instance yet.
+// (not here), since this is a pure DOM builder with no EditorEngine instance yet. No
+// text content — the "X" itself is drawn in CSS (two crossed bars, see
+// .ia-dropdown-close::before/::after) for a bold, consistent glyph instead of relying
+// on a thin, font-dependent "×" character.
 function buildDropdownCloseButton() {
-  return createTag('button', { type: 'button', class: 'ia-dropdown-close', 'aria-label': 'Close' }, '×');
+  return createTag('button', { type: 'button', class: 'ia-dropdown-close', 'aria-label': 'Close' });
 }
 
 // Takes the row directly (rather than pre-extracted fields) so it can stamp both the
@@ -558,7 +561,7 @@ function buildUnitPicker() {
   });
   trigger.append(
     createTag('span', { class: 'ia-unit-label' }, 'px'),
-    createTag('span', { class: 'ia-unit-chevron', 'aria-hidden': 'true' }, '⌄'),
+    createTag('span', { class: 'ia-unit-chevron', 'aria-hidden': 'true' }),
   );
   wrap.append(trigger, menu);
   return wrap;
