@@ -44,21 +44,26 @@ export default class PromptUploadWidget {
     this.widgetWrap?.setAttribute('data-selected-option-value', value);
   }
 
-  // Options dropdown (e.g. APA editions). Returns null when no values are authored.
+  // Options dropdown (e.g. APA editions). Each authored value is `Label|payloadValue`
+  // (e.g. `APA 7th Edition|apa7`); the label shows in the UI, the payloadValue is what the
+  // widget stores (data-selected-option-value) and the binder sends. Returns null when empty.
   buildDropdown() {
     const raw = placeholderText(this.el, 'icon-prompt-dropdown-values');
-    const options = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    const options = raw.split(',').map((s) => s.trim()).filter(Boolean).map((s) => {
+      const [label, value] = s.split('|').map((p) => p.trim());
+      return { label, value: value || label };
+    });
     if (!options.length) return null;
-    [this.selectedOption] = options;
+    this.selectedOption = options[0].value;
     const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Options', menuId: 'pu-prompt-dropdown-menu', extraClass: 'pu-style-dropdown' });
-    nameContainer.textContent = this.selectedOption;
+    nameContainer.textContent = options[0].label;
     setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
 
     options.forEach((opt, idx) => {
-      const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'aria-selected': idx === 0 ? 'true' : 'false', 'data-option-value': opt });
+      const link = createTag('a', { href: '#', class: 'verb-link model-link', role: 'option', 'aria-selected': idx === 0 ? 'true' : 'false', 'data-option-value': opt.value });
       link.append(
         createTag('span', { class: 'selected-icon' }, svgIcon('#unity-checkmark-icon')),
-        createTag('span', { class: 'model-name' }, opt),
+        createTag('span', { class: 'model-name' }, opt.label),
       );
       const li = createTag('li', { class: `verb-item${idx === 0 ? ' selected' : ''}`, role: 'presentation' });
       li.append(link);
@@ -70,10 +75,9 @@ export default class PromptUploadWidget {
       if (!link) return;
       e.preventDefault();
       e.stopPropagation();
-      const value = link.getAttribute('data-option-value') || '';
-      nameContainer.textContent = value;
+      nameContainer.textContent = link.querySelector('.model-name')?.textContent || '';
       setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
-      this.setSelectedOption(value);
+      this.setSelectedOption(link.getAttribute('data-option-value') || '');
       syncDropdownSelection(list, link);
       closeDropdown(container, triggerBtn, list);
     });

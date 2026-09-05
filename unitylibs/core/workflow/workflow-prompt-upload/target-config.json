@@ -11,7 +11,7 @@
     "directUploadVerbs": [],
     "directUploadMaxSize": 1048576,
     "experimentationOn": [],
-    "optionDropdownPayloadKey": "option",
+    "optionDropdownPayloadKey": "citationStyle",
     "limits": {
       "maxNumFiles": 100,
       "allowedFileTypes": [
