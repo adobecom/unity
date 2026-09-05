@@ -1,6 +1,10 @@
 .ia-editor-left-panel,
 .ia-editor-right-panel {
   display: none;
+
+  /* Base, unconditional on data-state — needed so .ia-dropdown-scrim (an absolutely
+     positioned child, see below) has this as its containing block regardless. */
+  position: relative;
 }
 
 .ia-widget[data-state="complete"] .ia-editor-left-panel {
@@ -404,6 +408,19 @@
   position: relative;
 }
 
+/* .ia-more is shared by More/Social/unit-picker wrappers, and more than one can exist
+   in the DOM at once (resize has both Social and the unit picker) — only the ONE
+   actually open needs to rise above .ia-dropdown-scrim (z-index 4); the z-index bump
+   can't be unconditional on .ia-more itself, or a CLOSED dropdown's own wrapper would
+   also sit above the scrim and look undimmed. Toggled by JS (see toggleMore/
+   toggleSocialMenu/toggleUnitMenu) on the specific wrapper that's actually open. */
+.ia-more.is-open {
+  z-index: 5;
+}
+
+/* No shared panel background/border/shadow here anymore — each option (and the close
+   button) carries its own box instead (see .ia-more-opt etc. below), so they render as
+   separate floating pills with visible gaps between them, not one contiguous menu. */
 .ia-more-menu,
 .ia-social-menu,
 .ia-unit-menu {
@@ -413,12 +430,11 @@
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  border-radius: 12px;
-  border: 1px solid rgb(255 255 255 / 15%);
-  background: #202020;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+
+  /* Overrides the default stretch — each option (and the close button) sizes to its
+     own content width instead of all matching the widest one, right-aligned. */
+  align-items: flex-end;
+  gap: 8px;
 }
 
 /* Crop's "More" trigger scrolls as part of .ia-aspect-row--scroll's horizontal strip,
@@ -439,45 +455,59 @@
   display: none;
 }
 
+/* Styled as its own boxed value (like .ia-more-opt/.ia-social-opt above it), not a
+   small floating corner icon — appended last in each menu (see buildCropAspectSection/
+   buildResizeAspectSection) so it renders as the dropdown's own final row. */
 .ia-dropdown-close {
-  align-self: flex-end;
-  width: 24px;
-  height: 24px;
-  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border: none;
-  border-radius: 50%;
-  background: transparent;
+  border-radius: 12px;
+  background: #2a2a2a;
   color: var(--ia-white, #fff);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
 }
 
 .ia-dropdown-close:hover {
-  background: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 15%);
 }
 
+/* Each option is its own separate floating box (background/shadow/radius) rather than
+   a plain row inside a shared panel — matches the reference design, where the "More"/
+   "Social" dropdown reads as a stack of independent pills, not one contiguous menu. */
 .ia-more-opt,
 .ia-social-opt,
 .ia-unit-opt {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   padding: 8px 12px;
   border: none;
-  border-radius: 8px;
-  background: transparent;
+  border-radius: 12px;
+  background: #2a2a2a;
   color: var(--ia-white, #fff);
   font-size: 14px;
-  text-align: left;
+  text-align: right;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
 }
 
+/* Same look as a selected aspect/resize-tab pill (.ia-aspect-pill.is-active,
+   .ia-resize-tab.is-active) — solid white background, dark text; see .ia-btn-icon
+   further down for the matching icon-color override. */
 .ia-more-opt:hover,
 .ia-social-opt:hover,
 .ia-unit-opt:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--ia-white, #fff);
+  color: #111;
 }
 
 .ia-resize-detail-panel.hide {
@@ -640,6 +670,15 @@
   filter: brightness(0);
 }
 
+/* Same treatment on hover for the dropdown options (.ia-more-opt/.ia-social-opt/
+   .ia-unit-opt above) — their hover background also goes solid white, so their icon
+   needs the same black flip. */
+.ia-more-opt:hover .ia-btn-icon,
+.ia-social-opt:hover .ia-btn-icon,
+.ia-unit-opt:hover .ia-btn-icon {
+  filter: brightness(0);
+}
+
 /* Spinner swapped in for a trigger button's own .ia-btn-icon while EditorEngine is busy
    (see toggleTriggerSpinner) — added/removed on demand, not always-present-but-hidden. */
 .ia-btn-spinner {
@@ -767,6 +806,23 @@
 
 .ia-editor-left-panel.is-busy .ia-adjust-bar {
   opacity: 0.4;
+}
+
+/* EditorEngine.updateDropdownScrim() — while any dropdown (More/Social/unit) is open,
+   dims BOTH panels (not just the one the dropdown lives in), so the open dropdown's
+   own floating pills read as the only interactive thing on screen. Sits below .ia-more
+   (z-index 5, see above) so the open dropdown and its trigger stay undimmed above it. */
+.ia-dropdown-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  background: rgb(0 0 0 / 80%);
+}
+
+.ia-editor-left-panel.is-dropdown-open .ia-dropdown-scrim,
+.ia-editor-right-panel.is-dropdown-open .ia-dropdown-scrim {
+  display: block;
 }
 
 /* Nothing is draggable while busy, so the grid lines and resize handles have no

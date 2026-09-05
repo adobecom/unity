@@ -372,6 +372,12 @@ export function buildEditorLeftPanel(parsedData) {
   leftPanel.append(viewport);
   // No icon-placeholder-slider-* authored at all — no adjust bar, not a fallback one.
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
+  // Shown only while a dropdown (More/Social/unit) is open — see EditorEngine's
+  // updateDropdownScrim(). Mirrors .ia-panel-busy-overlay's approach on the right
+  // panel, but toggled by dropdown state instead of network activity, and present on
+  // BOTH panels since a dropdown open here should dim the whole widget, not just the
+  // side it lives in.
+  leftPanel.append(createTag('div', { class: 'ia-dropdown-scrim' }));
   return leftPanel;
 }
 
@@ -479,7 +485,6 @@ function buildCropAspectSection(parsedData) {
   if (moreRows.length) {
     const more = createTag('div', { class: 'ia-more' });
     const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
-    moreMenu.append(buildDropdownCloseButton());
     moreRows.forEach((r) => {
       const label = composeAspectLabel(r);
       const ratioVal = aspectRatioValue(r);
@@ -501,6 +506,10 @@ function buildCropAspectSection(parsedData) {
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
       }, r.icon, label));
     });
+    // Appended last, not first — it renders as the dropdown's own final row/value
+    // (styled like the options above it, see .ia-dropdown-close in editor.css), not a
+    // small floating corner icon.
+    moreMenu.append(buildDropdownCloseButton());
     // moreRows share one repeated, localized `group` (see groupCropRows) — that's the
     // dropdown trigger's own default label, never a hardcoded "More". Each row's own
     // `name` is its individual option label instead (composed above). Built via
@@ -535,10 +544,11 @@ function buildDimensionField(labelText, className) {
 function buildUnitPicker() {
   const wrap = createTag('div', { class: 'ia-more' });
   const menu = createTag('div', { class: 'ia-unit-menu hide' });
-  menu.append(buildDropdownCloseButton());
   UNIT_OPTIONS.forEach((unit) => {
     menu.append(createTag('button', { type: 'button', class: 'ia-unit-opt', 'data-unit': unit }, unit));
   });
+  // Appended last — see the equivalent comment in buildCropAspectSection.
+  menu.append(buildDropdownCloseButton());
   const trigger = createTag('button', {
     type: 'button',
     class: 'ia-dim-unit ia-unit-trigger',
@@ -629,10 +639,11 @@ function buildResizeAspectSection(parsedData) {
   if (socialBucket) {
     const social = createTag('div', { class: 'ia-more' });
     const socialMenu = createTag('div', { class: 'ia-social-menu hide' });
-    socialMenu.append(buildDropdownCloseButton());
     platforms.forEach((platform) => {
       socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
     });
+    // Appended last — see the equivalent comment in buildCropAspectSection.
+    socialMenu.append(buildDropdownCloseButton());
     const socialTrigger = createTag('button', {
       type: 'button',
       class: 'ia-resize-tab ia-social-trigger',
@@ -711,6 +722,9 @@ export function buildEditorRightPanel(parsedData) {
   // The trigger button (.is-loading) gets a higher z-index than this overlay instead,
   // so it visually sits above the scrim while everything else stays covered by it.
   rightPanel.append(createTag('div', { class: 'ia-panel-busy-overlay' }));
+  // See the equivalent scrim appended in buildEditorLeftPanel — this is this panel's
+  // own half of it (the dropdowns themselves live here, but the dimming covers both).
+  rightPanel.append(createTag('div', { class: 'ia-dropdown-scrim' }));
   return rightPanel;
 }
 
@@ -1107,11 +1121,13 @@ export class EditorEngine {
     const isOpen = !this.socialMenu.classList.contains('hide');
     this.socialMenu.classList.toggle('hide', isOpen);
     this.socialTrigger.setAttribute('aria-expanded', String(!isOpen));
+    this.updateDropdownScrim();
   }
 
   closeSocialMenu() {
     this.socialMenu?.classList.add('hide');
     this.socialTrigger?.setAttribute('aria-expanded', 'false');
+    this.updateDropdownScrim();
   }
 
   bindSocialEvents() {
@@ -1138,11 +1154,13 @@ export class EditorEngine {
     const isOpen = !this.unitMenu.classList.contains('hide');
     this.unitMenu.classList.toggle('hide', isOpen);
     this.unitTrigger.setAttribute('aria-expanded', String(!isOpen));
+    this.updateDropdownScrim();
   }
 
   closeUnitMenu() {
     this.unitMenu?.classList.add('hide');
     this.unitTrigger?.setAttribute('aria-expanded', 'false');
+    this.updateDropdownScrim();
   }
 
   bindUnitEvents() {
@@ -1263,6 +1281,7 @@ export class EditorEngine {
       window.addEventListener('scroll', this.repositionMoreMenu, true);
       window.addEventListener('resize', this.repositionMoreMenu);
     }
+    this.updateDropdownScrim();
   }
 
   closeMore() {
@@ -1270,6 +1289,34 @@ export class EditorEngine {
     this.moreTrigger?.setAttribute('aria-expanded', 'false');
     window.removeEventListener('scroll', this.repositionMoreMenu, true);
     window.removeEventListener('resize', this.repositionMoreMenu);
+    this.updateDropdownScrim();
+  }
+
+  // Dims the rest of the widget (both panels) while any dropdown (More/Social/unit) is
+  // open, so the floating option pills read as the only interactive thing on screen —
+  // recomputed from each menu's actual hidden state (not a boolean threaded through
+  // from whichever call site changed) so it stays correct even if more than one of
+  // these dropdowns is present in the DOM at once (resize has both Social and the unit
+  // picker, though only one is ever open in practice — outside-click closes whichever
+  // other one was open, see bind*Events). Also marks each dropdown's own wrapper with
+  // .is-open only while ITS menu is the one actually open — .ia-more is shared by all
+  // three wrappers, so the z-index bump that lifts an open dropdown above the scrim
+  // (see .ia-more.is-open in editor.css) must stay scoped to the open one specifically,
+  // or a second, CLOSED dropdown sharing the same class would also rise above the
+  // scrim and look wrongly undimmed.
+  updateDropdownScrim() {
+    let anyOpen = false;
+    [
+      [this.moreWrap, this.moreMenu],
+      [this.socialWrap, this.socialMenu],
+      [this.unitWrap, this.unitMenu],
+    ].forEach(([wrap, menu]) => {
+      const isOpen = !!menu && !menu.classList.contains('hide');
+      wrap?.classList.toggle('is-open', isOpen);
+      if (isOpen) anyOpen = true;
+    });
+    this.leftPanel.classList.toggle('is-dropdown-open', anyOpen);
+    this.rightPanel.classList.toggle('is-dropdown-open', anyOpen);
   }
 
   // Swaps the More trigger's label (and optionally its icon) without disturbing the
