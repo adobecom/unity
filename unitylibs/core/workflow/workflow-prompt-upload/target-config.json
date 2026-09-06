@@ -10,6 +10,17 @@
     },
     "directUploadVerbs": [],
     "directUploadMaxSize": 1048576,
+    "uploadLimits": {
+      "HIGH_END": { "files": 10, "chunks": 10 },
+      "MID_RANGE": { "files": 5, "chunks": 10 },
+      "LOW_END": { "files": 3, "chunks": 6 }
+    },
+    "verbsWithoutMfuToSfuFallback": [],
+    "awaitFinalizeVerbs": [],
+    "nonpdfMfuFeedbackScreenTypeNonpdf": [],
+    "nonpdfSfuProductScreen": ["citation-generator"],
+    "mfuUploadAllowed": ["citation-generator"],
+    "mfuUploadOnlyPdfAllowed": [],
     "experimentationOn": [],
     "optionDropdownPayloadKey": "option",
     "limits": {
