@@ -284,9 +284,10 @@
 }
 
 .ia-editor-title {
-  font-size: 21px;
-  font-weight: 700;
-  color: var(--ia-heading-text, #f2f2f2);
+  font-size: 18px;
+  font-weight: 500;
+  color: #fff;
+  line-height: normal;
 }
 
 .ia-editor-header-actions {
@@ -310,6 +311,10 @@
   font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   cursor: pointer;
+  font-weight: 500;
+  font-style: normal;
+  color: #dbdbdb;
+  line-height: normal;
 }
 
 .ia-editor-reset:hover,
@@ -337,8 +342,10 @@
 .ia-further-heading {
   margin: 0 0 12px;
   font-size: 16px;
-  font-weight: 600;
-  color: var(--ia-heading-text, #f2f2f2);
+  font-weight: 500;
+  color: #fff;
+  line-height: normal;
+  font-style: normal;
 }
 
 .ia-aspect-row {
@@ -397,12 +404,15 @@
   font-family: var(--font-family-adobe-clean);
   font-size: 14px;
   cursor: pointer;
+  line-height: 18px;
+  font-style: normal;
+  letter-spacing: 0;
 }
 
 .ia-aspect-pill.is-active,
 .ia-resize-tab.is-active {
   background: var(--ia-white, #fff);
-  color: #111;
+  color: #000;
   border-color: var(--ia-white, #fff);
 }
 
@@ -716,12 +726,16 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border-radius: 4px;
+  border-radius: 100px;
   border: 1px solid rgb(255 255 255 / 15%);
   background: #2a2a2a;
   color: var(--ia-white, #fff);
   font-family: var(--font-family-adobe-clean);
-  font-size: 14px;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0;
   cursor: pointer;
 }
 
