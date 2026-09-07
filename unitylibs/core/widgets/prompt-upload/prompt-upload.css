@@ -123,9 +123,9 @@
 }
 
 .pu-cta .btn-ico svg {
-  width: 18px;
-  height: 18px;
-  fill: #fff;
+  width: 20px;
+  height: 20px;
+  color: #fff;
 }
 
 /* Footer: upload affordance (+ subtext) on the left, secondary link / CTA on the right */
@@ -147,6 +147,7 @@
 .pu-secondary-link {
   align-self: flex-start;
   margin-inline-start: auto;
+  line-height: 18px;
   color: #3b63fb;
   font-size: 14px;
   text-decoration: underline;
@@ -218,5 +219,8 @@
   }
 
   .pu-footer-container .act-wrap,
-  .pu-secondary-link { margin-inline-start: 0; }
+  .pu-secondary-link { 
+    margin-inline-start: 0;
+    align-self: flex-start;
+  }
 }

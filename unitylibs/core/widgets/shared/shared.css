@@ -39,6 +39,7 @@
   position: relative;
   display: flex;
   align-items: stretch;
+  line-height: 18px;
 }
 
 .drop-zone {
@@ -71,9 +72,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 20px;
+  padding: 10px 20px 10px 18px;
+  line-height: 0;
+  background: #3b63fb;
   border-radius: 20px;
-  background: #1473e6;
   color: #fff;
   text-decoration: none;
   font-weight: 700;
