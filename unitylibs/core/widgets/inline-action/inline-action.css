@@ -1047,6 +1047,14 @@
     min-height: 500px;
   }
 
+  /* Crop/resize complete only — no gutter between the image and controls halves, so the
+     two background halves meet flush (see the split on .interactive-area below). Scoped
+     to crop/resize + complete so rbg and the shared initial/loading states keep the
+     default 16px gap. */
+  .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"] {
+    gap: 0;
+  }
+
   .ia-panel-right,
   .ia-panel-left {
     order: unset;
@@ -1082,17 +1090,17 @@
   }
 
   /* Crop/resize COMPLETE state only — split the outer block into two edge-to-edge
-     halves: left (image) #fff, right (controls) #1b1b1b, meeting at the panel gutter.
+     halves: left (image) #000, right (controls) #1b1b1b, meeting at the panel boundary.
      Scoped via :has() to crop/resize so rbg (data-operation="removeBackground") and the
      shared initial/loading states keep the default background untouched. The seam sits
-     at 524px from the block's left edge — 16px padding + 500px fixed left column + 8px
-     (half the 16px grid gutter) — so it falls inside the gutter at any block width, and
-     is clipped to the 20px rounded corners by .interactive-area's own overflow:hidden.
-     Only defined here (min-width 1200px) because below it the panels stack vertically,
-     where a left/right split has no meaning. */
+     at 516px from the block's left edge — 16px padding + 500px fixed left column, with
+     no gutter (gap:0 above) — and is clipped to the 20px rounded corners by
+     .interactive-area's own overflow:hidden. Only defined here (min-width 1200px)
+     because below it the panels stack vertically, where a left/right split has no
+     meaning. */
   .unity-inline-action.unity-enabled > .interactive-area:has(
     .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"]
   ) {
-    background: linear-gradient(to right, #000 0 524px, #1b1b1b 524px 100%);
+    background: linear-gradient(to right, #000 0 516px, #1b1b1b 516px 100%);
   }
 }

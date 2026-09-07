@@ -19,6 +19,8 @@
   flex-direction: column;
   flex: 1;
   position: relative;
+  margin-left: 16px;
+  margin-right: 0px;
 }
 
 .ia-viewport {
@@ -331,21 +333,31 @@
 
 .ia-aspect-section,
 .ia-further-section {
-  padding: 16px;
+  padding: 16px 12px 16px 12px;
   margin-bottom: 16px;
   border-radius: 12px;
   border: 1px solid rgb(255 255 255 / 10%);
   background: rgb(255 255 255 / 3%);
 }
 
+.ia-aspect-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .ia-aspect-heading,
 .ia-further-heading {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   font-size: 16px;
   font-weight: 500;
   color: #fff;
   line-height: normal;
   font-style: normal;
+}
+
+.ia-aspect-heading {
+  margin: 0;
 }
 
 .ia-aspect-row {
@@ -384,7 +396,6 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 12px;
 }
 
 .ia-aspect-header-row .ia-aspect-heading {
@@ -576,6 +587,12 @@
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
+.ia-resize-detail-panel {
+  margin-top: 12px 0 12px 0;
+  align-content: center;
+  height: 72px;
+}
+
 .ia-resize-detail-panel.hide {
   display: none;
 }
@@ -584,7 +601,7 @@
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  margin-bottom: 12px;
+  margin: 8px 0 8px 0;
 }
 
 .ia-dim-field {
@@ -595,8 +612,12 @@
 }
 
 .ia-dim-label {
-  font-size: 12px;
-  color: var(--ia-body-muted, #dbdbdb);
+  color: #FFF;
+  font-family: var(--font-family-adobe-clean);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 18px; /* 128.571% */
 }
 
 .ia-dim-field input {
@@ -658,13 +679,13 @@
 }
 
 .ia-size-readout {
-  margin: 12px 0 16px;
-  font-size: 12px;
-  color: var(--ia-body-muted, #dbdbdb);
-}
-
-.ia-social-grids {
-  margin-top: 12px;
+  margin: 0px;
+  color:  #AFAFAF;
+  font-family: var(--font-family-adobe-clean);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 18px; /* 128.571% */
 }
 
 .ia-social-grid.hide {
@@ -677,8 +698,6 @@
 .ia-cta-row {
   display: flex;
   gap: 16px;
-  margin-top: 16px;
-  margin-bottom: 16px;
 }
 
 .ia-cta-accent,
