@@ -162,10 +162,10 @@ export default class PromptUploadWidget {
 
     const secondaryText = placeholderText(this.el, 'icon-secondary-link-text');
     if (secondaryText) {
-      footer.append(createTag('a', {
-        href: placeholderText(this.el, 'icon-secondary-link-href') || '#',
-        class: 'pu-secondary-link',
-      }, secondaryText));
+      const href = placeholderText(this.el, 'icon-secondary-link-href');
+      const attrs = { class: 'pu-secondary-link' };
+      if (href) attrs.href = href;
+      footer.append(createTag('a', attrs, secondaryText));
     }
     if (ctaInFooter) {
       const actWrap = createTag('div', { class: 'act-wrap' });
@@ -177,7 +177,6 @@ export default class PromptUploadWidget {
   }
 
   async initWidget() {
-    // Components are inferred from authored content; `show-dropzone`/`show-prompt` force them on.
     const uploadContent = ['icon-dropzone-label', 'icon-dropzone-subtext', 'icon-dropzone-drag-text'];
     const promptContent = ['icon-placeholder-text', 'icon-prompt-helper', 'icon-prompt-dropdown-values'];
     const hasUpload = this.authoredFlag('icon-show-dropzone', false) || uploadContent.some((f) => this.hasFlag(f));

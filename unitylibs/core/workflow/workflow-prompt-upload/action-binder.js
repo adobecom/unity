@@ -750,9 +750,13 @@ export default class ActionBinder {
     return true;
   }
 
-  clearPendingFiles() {
+  // Clear all asset/upload state so a later generate doesn't re-run a stale file-upload route.
+  resetUploadState() {
     this.pendingFiles = [];
+    this.operations = [];
     this.filesData = {};
+    this.redirectUrl = '';
+    this.redirectWithoutUpload = false;
   }
 
   readPromptState() {
@@ -792,8 +796,14 @@ export default class ActionBinder {
       uploadType: files.length > 1 ? 'mfu' : 'sfu',
     };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
-    await this.handleFileUpload(files);
-    await this.continueInApp();
+    try {
+      await this.handleFileUpload(files);
+      await this.continueInApp();
+    } finally {
+      // No redirect => upload failed or was cancelled: clear the asset state so a subsequent
+      // generate (without a new file) takes the prompt route instead of re-uploading.
+      if (!this.redirectUrl) this.resetUploadState();
+    }
   }
 
   async runPreflight() {
@@ -855,6 +865,7 @@ export default class ActionBinder {
     const cancelPromise = Promise.reject(e);
     cancelPromise.catch(() => {});
     this.promiseStack.unshift(cancelPromise);
+    this.resetUploadState();
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
@@ -930,10 +941,33 @@ export default class ActionBinder {
         searchRoot?.querySelector('.gen-btn')?.click();
       }
     });
-    this.getWidgetWrap()?.addEventListener('pbu-delete-image', () => this.clearPendingFiles());
+    // Fill the href of an authored secondary link that has no href (e.g. "Cite manually").
+    // Building the URL here keeps the widget presentation-only and redirect logic in the binder.
+    const secondaryLink = searchRoot?.querySelector?.('.pu-secondary-link');
+    if (secondaryLink && !secondaryLink.getAttribute('href')) {
+      secondaryLink.setAttribute('href', this.buildDcRedirectUrl());
+    }
     if (b === this.block) {
       this.loadTransitionScreen();
       if (!this.pageConfigPromise) this.pageConfigPromise = this.ensurePageConfig();
     }
+  }
+
+  // Static Document Cloud redirect for the "Cite manually" flow (no BE round-trip):
+  // host by env + verb-derived params + locale prefix.
+  buildDcRedirectUrl() {
+    const path = this.workflowCfg.targetCfg?.studentSpacesPath;
+    if (!path) return '#';
+    const verb = this.workflowCfg.enabledFeatures?.[0] || '';
+    const url = new URL(`${unityConfig.dcHost}${path}`);
+    const localePrefix = getConfig()?.locale?.prefix?.replace('/', '');
+    if (localePrefix && !url.pathname.startsWith(`/${localePrefix}/`)) {
+      url.pathname = `/${localePrefix}${url.pathname}`.replace(/\/+/g, '/');
+    }
+    url.searchParams.set('x_api_client_id', 'unity');
+    url.searchParams.set('x_api_client_location', verb);
+    url.searchParams.set('context', verb);
+    url.searchParams.set('citation_flow', 'manual');
+    return url.href;
   }
 }

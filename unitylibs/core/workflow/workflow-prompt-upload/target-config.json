@@ -23,6 +23,7 @@
     "mfuUploadOnlyPdfAllowed": [],
     "experimentationOn": [],
     "optionDropdownPayloadKey": "citationStyle",
+    "studentSpacesPath": "/studentspaces/collection/create-new-project/",
     "limits": {
       "maxNumFiles": 100,
       "allowedFileTypes": [
