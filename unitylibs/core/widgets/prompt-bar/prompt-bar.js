@@ -61,6 +61,13 @@ export default class UnityWidget {
       if (verbsContainer) comboboxContainer.prepend(verbsContainer);
     }
     this.widget.append(comboboxContainer);
+    if (this.isFireflyRedesign) {
+      const legalEl = this.el.querySelector('.icon-legal-disclaimer')?.closest('li');
+      if (legalEl) {
+        legalEl.querySelector('.icon-legal-disclaimer')?.remove();
+        this.widget.append(createTag('p', { class: 'legal-disclaimer' }, legalEl.innerHTML.trim()));
+      }
+    }
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
