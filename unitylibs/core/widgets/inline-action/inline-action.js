@@ -542,7 +542,13 @@ export default class InlineActionWidget {
     this.parsedData = parseInlineAuthoring(this.el);
     const heroPreview = extractHeroMedia(viewport);
     const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
-    const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
+    // data-operation scopes CSS per operation — rbg is 'removeBackground', crop/resize
+    // get their own values. Only the COMPLETE state may differ for crop/resize; their
+    // initial/loading DOM is identical to rbg (buildLeftPanel/buildRightPanel don't branch
+    // on operation), so editor-only styling must combine BOTH attributes —
+    // .ia-widget[data-operation="crop"][data-state="complete"] (or :is() of crop/resize) —
+    // never data-operation alone, which would also reshape the shared initial/loading states.
+    const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL, 'data-operation': this.parsedData.operation });
     const progressHolder = TransitionScreen.createProgressBar();
 
     // Explicit allowlist, not "anything but removeBackground" — an unrecognized or

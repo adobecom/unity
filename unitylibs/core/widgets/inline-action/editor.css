@@ -11,8 +11,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
-  gap: 12px;
+  gap: 16px;
 }
 
 .ia-widget[data-state="complete"] .ia-editor-right-panel {
@@ -199,6 +198,7 @@
   border: 1px solid rgb(255 255 255 / 10%);
   background: #202020;
   box-sizing: border-box;
+  width: 484px;
 }
 
 .ia-toggle {

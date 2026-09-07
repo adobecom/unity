@@ -42,6 +42,7 @@
   display: flex;
   box-sizing: border-box;
   padding: 16px;
+  max-width: 1000px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 20px;
   overflow: hidden;
@@ -1043,9 +1044,7 @@
   }
 
   .ia-widget[data-state="complete"] {
-    height: 500px;
     min-height: 500px;
-    max-height: 500px;
   }
 
   .ia-panel-right,
@@ -1080,5 +1079,20 @@
     max-width: none;
     height: 150px;
     aspect-ratio: auto;
+  }
+
+  /* Crop/resize COMPLETE state only — split the outer block into two edge-to-edge
+     halves: left (image) #fff, right (controls) #1b1b1b, meeting at the panel gutter.
+     Scoped via :has() to crop/resize so rbg (data-operation="removeBackground") and the
+     shared initial/loading states keep the default background untouched. The seam sits
+     at 524px from the block's left edge — 16px padding + 500px fixed left column + 8px
+     (half the 16px grid gutter) — so it falls inside the gutter at any block width, and
+     is clipped to the 20px rounded corners by .interactive-area's own overflow:hidden.
+     Only defined here (min-width 1200px) because below it the panels stack vertically,
+     where a left/right split has no meaning. */
+  .unity-inline-action.unity-enabled > .interactive-area:has(
+    .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"]
+  ) {
+    background: linear-gradient(to right, #000 0 524px, #1b1b1b 524px 100%);
   }
 }
