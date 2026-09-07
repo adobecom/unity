@@ -30,7 +30,7 @@
 }
 
 .pu-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: #2c2c2c;
 }
@@ -42,7 +42,7 @@
 }
 
 .pu-dropdown-label {
-  font-size: 15px;
+  font-size: 14px;
   color: #6e6e6e;
   white-space: nowrap;
 }
@@ -51,10 +51,11 @@
   background: #e6e6e6;
   border: none;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 15px;
+  padding: 7px 12px;
+  font-size: 14px;
+  line-height: 18px;
   font-weight: 500;
-  color: #2c2c2c;
+  color: #292929;
   white-space: nowrap;
 }
 
@@ -144,9 +145,10 @@
 .pu-footer-container .act-wrap { margin-inline-start: auto; }
 
 .pu-secondary-link {
+  align-self: flex-start;
   margin-inline-start: auto;
   color: #3b63fb;
-  font-size: 15px;
+  font-size: 14px;
   text-decoration: underline;
   white-space: nowrap;
 }
