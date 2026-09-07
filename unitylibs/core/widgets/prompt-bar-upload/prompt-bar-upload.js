@@ -85,7 +85,7 @@ function setComboboxTriggerAriaLabel(triggerBtn, nameContainer) {
   triggerBtn.setAttribute('aria-label', v ? `${prefix}, ${v}` : prefix);
 }
 
-function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null }) {
+function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null, ariaLabelledBy = null }) {
   const container = createTag('div', {
     class: `models-container${extraClass ? ` ${extraClass}` : ''}`,
     role: 'group',
@@ -107,7 +107,9 @@ function buildDropdownShell({ label, menuId, extraClass = '', imgEl = null }) {
   if (imgEl) triggerBtn.append(imgEl, nameContainer, menuIcon);
   else triggerBtn.append(nameContainer, menuIcon);
 
-  const list = createTag('ul', { class: 'verb-list', id: menuId, role: 'listbox', 'aria-label': label });
+  const listAttrs = { class: 'verb-list', id: menuId, role: 'listbox' };
+  if (ariaLabelledBy) listAttrs['aria-labelledby'] = ariaLabelledBy;
+  const list = createTag('ul', listAttrs);
   list.setAttribute('style', 'display: none;');
 
   container.append(triggerBtn, list);
@@ -290,6 +292,7 @@ export default class PromptBarUploadWidget {
       label: 'Model options',
       menuId: 'pbu-model-menu',
       imgEl,
+      ariaLabelledBy: 'listbox-label',
     });
     nameContainer.textContent = (defaultModel?.name || '').trim();
     setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
@@ -453,21 +456,24 @@ export default class PromptBarUploadWidget {
 
   buildRightSection() {
     const promptHeading = placeholderText(this.el, 'icon-placeholder-prompt')
-      || labelForField(this.el, 'icon-label-prompt', 'Enter prompt');
+      || labelForField(this.el, 'icon-label-prompt', 'Prompt');
+    const promptLabel = createTag('label', {
+      for: 'pbuPromptInput',
+      class: 'unity-slf-copy-label unity-slf-prompt-label',
+    }, promptHeading);
 
     const promptTextarea = this.buildPromptTextarea();
 
     const actionContainer = createTag('div', { class: 'action-container' });
     this.actionContainerEl = actionContainer;
 
-    let hasDropdowns = false;
     if (this.models?.length) {
       const mp = this.buildModelPicker();
-      if (mp) { actionContainer.append(mp); hasDropdowns = true; }
+      if (mp) actionContainer.append(mp);
     }
     if (this.showAspectRatio && this.selectedModelId) {
       const ar = this.buildAspectRatioDropdown(this.selectedModelId);
-      if (ar) { actionContainer.append(ar); hasDropdowns = true; }
+      if (ar) actionContainer.append(ar);
     }
     if (this.showMore) {
       const moreBtn = this.buildMoreButton();
@@ -481,12 +487,7 @@ export default class PromptBarUploadWidget {
     controlsFooter.append(actionContainer, actWrap);
 
     const promptBarContainer = createTag('div', { class: 'pbu-prompt-bar-container' });
-    const promptGroup = hasDropdowns ? createTag('fieldset', { class: 'inp-fieldset' }) : promptBarContainer;
-    const promptLabel = hasDropdowns
-      ? createTag('legend', { class: 'unity-slf-copy-label unity-slf-prompt-label' }, promptHeading)
-      : createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, promptHeading);
-    promptGroup.append(promptLabel, promptTextarea, controlsFooter);
-    if (hasDropdowns) promptBarContainer.append(promptGroup);
+    promptBarContainer.append(promptLabel, promptTextarea, controlsFooter);
 
     const rightSection = createTag('div', { class: 'pbu-right-section' });
     rightSection.append(promptBarContainer);

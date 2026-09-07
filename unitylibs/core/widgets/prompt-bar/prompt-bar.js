@@ -263,6 +263,7 @@ export default class UnityWidget {
       'aria-label': 'media type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
+      'aria-labelledby': 'listbox-label',
       'data-selected-verb': selectedVerbType,
     }, `${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
@@ -274,7 +275,7 @@ export default class UnityWidget {
     }
     this.widgetWrap.classList.add('verb-options');
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': 'Media options' });
+    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
@@ -327,6 +328,7 @@ export default class UnityWidget {
       'aria-label': 'model type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
+      'aria-labelledby': 'listbox-label',
       'data-selected-model-id': selectedModelType,
       'data-selected-model-version': selectedModelVersion,
       'data-selected-model-module': selectedModelModule,
@@ -339,7 +341,7 @@ export default class UnityWidget {
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-label': 'Model options' });
+    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
     listItems.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
@@ -392,27 +394,24 @@ export default class UnityWidget {
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
     const actionContainer = createTag('div', { class: 'action-container' });
-    const promptLabelText = ph['placeholder-prompt-label'] || 'Enter prompt';
-    const hasDropdowns = verbDropdown.length > 1 || modelDropdown.length > 1;
-    const inpGroup = hasDropdowns ? createTag('fieldset', { class: 'inp-fieldset' }) : inpWrap;
-    const promptLabel = hasDropdowns
-      ? createTag('legend', { class: 'inp-field-label' }, promptLabelText)
-      : createTag('label', { for: 'promptInput', class: 'inp-field-label' }, promptLabelText);
-    inpGroup.append(promptLabel);
+    const hasPromptLabel = this.el.querySelector('.icon-placeholder-prompt-label');
+    if (hasPromptLabel && ph['placeholder-prompt-label']) {
+      const promptLabel = createTag('label', { for: 'promptInput', class: 'inp-field-label' }, ph['placeholder-prompt-label']);
+      inpWrap.appendChild(promptLabel);
+    }
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
       verbBtn.append(...verbDropdown);
       actionContainer.append(verbBtn);
-      inpGroup.append(inpField, actionContainer, actWrap);
+      inpWrap.append(inpField, actionContainer, actWrap);
     } else {
-      inpGroup.append(inpField, actWrap);
+      inpWrap.append(inpField, actWrap);
     }
     if (modelDropdown.length > 1) {
       const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
       modelBtn.append(...modelDropdown);
       actionContainer.append(modelBtn);
     }
-    if (hasDropdowns) inpWrap.append(inpGroup);
     return inpWrap;
   }
 

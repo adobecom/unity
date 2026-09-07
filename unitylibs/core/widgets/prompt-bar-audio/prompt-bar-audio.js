@@ -331,6 +331,7 @@ class UnityWidget {
       'aria-label': 'model type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
+      'aria-labelledby': 'listbox-label',
       'data-selected-model-id': selectedModelType,
       'data-selected-model-version': selectedModelVersion,
       'data-selected-model-module': selectedModelModule,
@@ -345,7 +346,7 @@ class UnityWidget {
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-label': 'Model options' });
+    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
     listItems.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
@@ -874,7 +875,7 @@ function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analytic
   widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
   widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
-  const promptLabelText = placeholderRowText(el, 'placeholder-prompt-label') || 'Enter prompt';
+  const promptLabelText = placeholderRowText(el, 'placeholder-prompt-label');
   const inpField = createPromptAudioInputField(widgetInstance, defaultPrompt, pws);
   const actionContainer = createPromptAudioActionContainer(widgetInstance, widgetWrap, modelParts);
   const genBtn = createPromptAudioGenerateButton(widgetInstance, el, pws);
