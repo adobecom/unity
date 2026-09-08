@@ -68,6 +68,11 @@
       "maxNumPages": 10
     }
   },
+  "page-limit-15": {
+    "pageLimit": {
+      "maxNumPages": 15
+    }
+  },
   "max-filesize-5-mb": {
     "maxFileSize": 5242880
   },
