@@ -21,8 +21,6 @@ export default class PromptUploadWidget {
 
   get cfg() { return this.workflowCfg?.targetCfg || {}; }
 
-  // Mirror the binder's resolveLimits() (base + limits-<verb> override) so the dropzone's
-  // accept filter matches what the binder actually enforces for the active verb.
   get verbLimits() {
     const { cfg } = this;
     const verb = this.workflowCfg?.enabledFeatures?.[0];
@@ -39,14 +37,17 @@ export default class PromptUploadWidget {
     return !!this.el.querySelector(`.${iconClass}`);
   }
 
+  authoredValue(prefix) {
+    const node = this.el.querySelector(`[class*="${prefix}-"]`);
+    const cls = node && [...node.classList].find((c) => c.startsWith(`${prefix}-`));
+    return cls ? cls.slice(prefix.length + 1) : '';
+  }
+
   setSelectedOption(value) {
     this.selectedOption = value;
     this.widgetWrap?.setAttribute('data-selected-option-value', value);
   }
 
-  // Options dropdown (e.g. APA editions). Each authored value is `Label|payloadValue`
-  // (e.g. `APA 7th Edition|apa7`); the label shows in the UI, the payloadValue is what the
-  // widget stores (data-selected-option-value) and the binder sends. Returns null when empty.
   buildDropdown() {
     const raw = placeholderText(this.el, 'icon-prompt-dropdown-values');
     const options = raw.split(',').map((s) => s.trim()).filter(Boolean).map((s) => {
@@ -95,7 +96,7 @@ export default class PromptUploadWidget {
       'aria-label': label,
       role: 'button',
     });
-    const iconName = placeholderText(this.el, 'icon-cta-icon');
+    const iconName = this.authoredValue('icon-cta-icon');
     if (iconName) {
       const ico = createTag('span', { class: 'btn-ico', 'aria-hidden': 'true' });
       ico.innerHTML = spriteIcon(iconName);
@@ -114,7 +115,7 @@ export default class PromptUploadWidget {
       uploadLabel: label,
       selectFileText: label,
       dragText: placeholderText(this.el, 'icon-dropzone-drag-text'),
-      showIcon: this.authoredFlag('icon-upload-icon', true),
+      showIcon: this.hasFlag('icon-upload-icon'),
     });
     const slot = createTag('div', { class: 'pu-upload-slot' });
     slot.append(refs.wrap);
@@ -184,8 +185,8 @@ export default class PromptUploadWidget {
 
     const title = placeholderText(this.el, 'icon-title');
     const dropdown = this.buildDropdown();
-    const dropdownInHeader = placeholderText(this.el, 'icon-dropdown-placement') === 'header';
-    const ctaInline = placeholderText(this.el, 'icon-cta-placement') === 'inline';
+    const dropdownInHeader = this.authoredValue('icon-dropdown-placement') === 'header';
+    const ctaInline = this.authoredValue('icon-cta-placement') === 'inline';
     this.genBtn = this.buildCta();
 
     const main = createTag('div', { class: 'pu-main' });

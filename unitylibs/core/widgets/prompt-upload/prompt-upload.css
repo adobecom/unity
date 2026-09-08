@@ -151,7 +151,6 @@
 .pu-upload-slot {
   display: flex;
   flex-direction: column;
-  gap: 3px;
 }
 
 .pu-dropzone-subtext {
@@ -205,13 +204,21 @@
     gap: 10px;
   }
 
+  .pu-search-field.pu-pill {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .pu-search-field.pu-pill .pu-input-wrap { width: 100%; }
+
   .pu-footer-container {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .pu-footer-container .act-wrap,
-  .pu-secondary-link { 
+  .pu-secondary-link {
     margin-inline-start: 0;
     align-self: flex-start;
   }
