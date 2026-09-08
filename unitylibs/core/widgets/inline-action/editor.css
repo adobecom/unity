@@ -218,7 +218,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--ia-white, #fff);
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -310,7 +310,7 @@
   border: 1px solid transparent;
   background: transparent;
   color: var(--ia-white, #fff);
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 14px;
   cursor: pointer;
   font-weight: 500;
@@ -412,7 +412,7 @@
   border: 1px solid rgb(255 255 255 / 15%);
   background: #2a2a2a;
   color: var(--ia-white, #fff);
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 14px;
   cursor: pointer;
   line-height: 18px;
@@ -532,7 +532,7 @@
   border-radius: 4px;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 14px;
   text-align: right;
   cursor: pointer;
@@ -613,7 +613,7 @@
 
 .ia-dim-label {
   color: #FFF;
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 14px;
   font-style: normal;
   font-weight: 700;
@@ -659,7 +659,7 @@
   border-radius: 10px;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 14px;
   cursor: pointer;
 }
@@ -680,7 +680,7 @@
 
 .ia-size-readout {
   color:  #AFAFAF;
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -712,7 +712,7 @@
   font-weight: 700;
   cursor: pointer;
   text-align: center;
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   gap: 8px;
 
   /* Both get the SAME 2px border width (only .ia-cta-outline's is visible; the
@@ -749,7 +749,7 @@
   border: 2px solid rgb(255 255 255 / 15%);
   background: #2a2a2a;
   color: var(--ia-white, #fff);
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--body-font-family);
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
