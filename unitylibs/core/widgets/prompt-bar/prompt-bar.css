@@ -1134,6 +1134,85 @@
   }
 }
 
+@keyframes pb-verb-panel-in {
+  0% {
+    visibility: visible;
+    clip-path: inset(
+      var(--verb-origin-y, 0px)
+      calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
+      calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
+      var(--verb-origin-x, 0px)
+      round var(--verb-panel-radius, var(--s2a-border-radius-xl))
+    );
+  }
+
+  100% {
+    visibility: visible;
+    clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
+  }
+}
+
+@keyframes pb-verb-panel-out {
+  0% {
+    clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
+  }
+
+  100% {
+    visibility: hidden;
+    clip-path: inset(
+      var(--verb-origin-y, 0px)
+      calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
+      calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
+      var(--verb-origin-x, 0px)
+      round var(--verb-panel-radius, var(--s2a-border-radius-xl))
+    );
+  }
+}
+
+@keyframes pb-verb-item-in {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pb-verb-item-out {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+@keyframes pb-verb-selected-in {
+  0% {
+    transform: translate(var(--verb-selected-dx, 0px), var(--verb-selected-dy, 0px));
+  }
+
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes pb-verb-selected-out {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(var(--verb-selected-dx, 0px), var(--verb-selected-dy, 0px));
+  }
+}
+
 @media (max-width: 1024px) {
   .unity-enabled .interactive-area .selected-verb,
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete {
@@ -1553,9 +1632,6 @@
     height: 41.24px !important;
     padding: 2.84px 6.4px 2.84px 17.07px !important;
     border-radius: 8.53px !important;
-    font-size: 17.07px !important;
-    line-height: 17.07px !important;
-    letter-spacing: -0.34px !important;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link::after {
@@ -1863,7 +1939,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
   position: absolute;
   z-index: 20;
-  animation: pb-fade-out .2s ease forwards;
+  animation: pb-verb-panel-out .25s ease forwards;
   top: -48px;
   inset-inline-start: 20px;
   width: 535px;
@@ -1876,7 +1952,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list {
-  animation: none;
+  animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list::before {
@@ -1908,6 +1984,53 @@
   letter-spacing: var(--s2a-font-letter-spacing-4xl);
   text-transform: none;
   text-decoration: none;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item:not(.selected) .verb-link {
+  animation: pb-verb-item-out .15s ease forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected) .verb-link {
+  animation: pb-verb-item-in .3s ease forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item.selected .verb-link {
+  opacity: 1;
+  animation: pb-verb-selected-out .25s ease forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item.selected .verb-link {
+  animation: pb-verb-selected-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
+  opacity: 1;
+  transition: opacity .2s ease;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .selected-verb {
+  opacity: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-model {
+  opacity: 1;
+  transition: opacity .2s ease;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .selected-model {
+  opacity: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(2) .verb-link {
+  animation-delay: .04s;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(3) .verb-link {
+  animation-delay: .08s;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(4) .verb-link {
+  animation-delay: .12s;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link .selected-icon,
@@ -2125,13 +2248,14 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list {
   display: flex !important;
-  animation: none !important;
+  animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
   position: absolute;
   z-index: 20;
-  animation: pb-fade-out .2s ease forwards;
+  animation: pb-verb-panel-out .25s ease forwards;
+  --verb-panel-radius: var(--s2a-border-radius-lg);
   inset-inline-start: -27px;
   transform: translateY(-30px);
   display: flex;
@@ -2162,6 +2286,43 @@
   font-weight: 400;
   text-decoration: none;
   box-sizing: border-box;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item:not(.selected) .verb-link {
+  animation: pb-verb-item-out .15s ease forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected) .verb-link {
+  animation: pb-verb-item-in .3s ease forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link {
+  opacity: 1;
+  animation: pb-verb-selected-out .25s ease forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item.selected .verb-link {
+  animation: pb-verb-selected-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(2) .verb-link {
+  animation-delay: .04s;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(3) .verb-link {
+  animation-delay: .08s;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(4) .verb-link {
+  animation-delay: .12s;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(5) .verb-link {
+  animation-delay: .16s;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(6) .verb-link {
+  animation-delay: .2s;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link img {

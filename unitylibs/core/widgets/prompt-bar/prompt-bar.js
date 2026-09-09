@@ -8,6 +8,22 @@ function isFireflyRedesign() {
     || new URLSearchParams(window.location.search).has('ffredesign'));
 }
 
+function getTextRect(el) {
+  const textEl = el.querySelector(':scope > .model-name') || el;
+  const textNode = [...textEl.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+  if (!textNode) return textEl.getBoundingClientRect();
+  const range = document.createRange();
+  range.selectNodeContents(textNode);
+  return range.getBoundingClientRect();
+}
+
+function setVerbSelectedOrigin(panel, btnEl, targetEl) {
+  const btnTextRect = getTextRect(btnEl);
+  const targetTextRect = getTextRect(targetEl);
+  panel.style.setProperty('--verb-selected-dx', `${btnTextRect.left - targetTextRect.left}px`);
+  panel.style.setProperty('--verb-selected-dy', `${btnTextRect.top - targetTextRect.top}px`);
+}
+
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
@@ -101,9 +117,25 @@ export default class UnityWidget {
         container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
       }
     });
+    const panel = selectedElement.nextElementSibling;
+    if (panel?.hasAttribute('style')) panel.removeAttribute('style');
+    const isVerbOrModelBtn = selectedElement.classList.contains('selected-verb')
+      || selectedElement.classList.contains('selected-model');
+    if (this.isFireflyRedesign && panel && isVerbOrModelBtn
+      && !menuContainer.classList.contains('show-menu')) {
+      const btnRect = selectedElement.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      panel.style.setProperty('--verb-origin-x', `${btnRect.left - panelRect.left}px`);
+      panel.style.setProperty('--verb-origin-y', `${btnRect.top - panelRect.top}px`);
+      panel.style.setProperty('--verb-origin-w', `${btnRect.width}px`);
+      panel.style.setProperty('--verb-origin-h', `${btnRect.height}px`);
+      const selectedLink = panel.querySelector('.verb-item.selected .verb-link');
+      if (selectedLink) {
+        setVerbSelectedOrigin(panel, selectedElement, selectedLink);
+      }
+    }
     menuContainer.classList.toggle('show-menu');
     selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
-    if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
   }
 
   hidePromptDropdown(exceptElement = null) {
@@ -161,6 +193,9 @@ export default class UnityWidget {
         if (text) verbLinkTexts.push(text);
       });
       verbLinkTexts.sort((a, b) => b.length - a.length);
+      if (this.isFireflyRedesign) {
+        setVerbSelectedOrigin(verbList, selectedElement, link);
+      }
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
