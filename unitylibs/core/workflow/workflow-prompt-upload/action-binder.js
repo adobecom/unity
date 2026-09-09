@@ -729,27 +729,6 @@ export default class ActionBinder {
     return searchRoot?.querySelector?.('.ex-unity-wrap') || searchRoot;
   }
 
-  async validateAndStoreFile(files) {
-    if (!files?.length) return false;
-    if (files.length > (this.limits.maxNumFiles || 1)) {
-      await this.dispatchErrorToast('validation_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles || 1} files allowed`, false, true, { code: 'validation_error_max_num_files' });
-      return false;
-    }
-    const file = files[0];
-    this.filesData = { count: files.length, size: file.size, type: file.type };
-    if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
-      await this.dispatchErrorToast('validation_error_unsupported_type', null, `File type: ${file.type}`, false, true, { code: 'validation_error_unsupported_type' });
-      return false;
-    }
-    if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
-      await this.dispatchErrorToast('validation_error_file_too_large', null, `File too large: ${file.size}`, false, true, { code: 'validation_error_file_too_large' });
-      return false;
-    }
-    this.pendingFiles = [file];
-    this.getWidgetWrap()?.dispatchEvent(new CustomEvent('pbu-image-selected', { detail: { file } }));
-    return true;
-  }
-
   // Clear all asset/upload state so a later generate doesn't re-run a stale file-upload route.
   resetUploadState() {
     this.pendingFiles = [];
@@ -889,21 +868,14 @@ export default class ActionBinder {
             el.classList.remove('drag-over');
             const { files } = this.extractFiles(e);
             this.dispatchAnalyticsEvent('drop');
-            if (value === 'select-file') await this.validateAndStoreFile(files);
-            else if (value === 'upload') await this.uploadFilesImmediately(files, 'drop');
+            if (value === 'upload') await this.uploadFilesImmediately(files, 'drop');
           });
-          if (value === 'select-file') {
-            el.addEventListener('click', () => {
-              searchRoot?.querySelector('#file-upload')?.click();
-            });
-          }
           break;
         case 'INPUT':
           el.addEventListener('change', async (e) => {
             const { files } = this.extractFiles(e);
             this.dispatchAnalyticsEvent('change');
-            if (value === 'select-file') await this.validateAndStoreFile(files);
-            else if (value === 'upload') await this.uploadFilesImmediately(files, 'change');
+            if (value === 'upload') await this.uploadFilesImmediately(files, 'change');
             e.target.value = '';
           });
           break;

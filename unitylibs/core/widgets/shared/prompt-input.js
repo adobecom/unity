@@ -1,17 +1,23 @@
 import { createTag } from '../../../scripts/utils.js';
 
-export default function buildPromptInput({ id = 'pbuPromptInput', defaultValue = '', ariaLabel = 'Search', placeholder = '', onInput }) {
-  const textarea = createTag('textarea', {
+// Single-line (RS TextField, horizontal scroll) by default; `multiline` renders a
+// fixed-height textarea (RS TextArea) that wraps and scrolls vertically past its rows.
+export default function buildPromptInput({
+  id = 'pbuPromptInput', defaultValue = '', ariaLabel = 'Search', placeholder = '',
+  onInput, multiline = false,
+}) {
+  const attrs = {
     id,
-    class: 'inp-field',
-    rows: '1',
     'aria-label': ariaLabel,
     'aria-autocomplete': 'list',
     ...(placeholder ? { placeholder } : {}),
-  });
-  if (defaultValue) textarea.value = defaultValue;
+  };
+  const el = multiline
+    ? createTag('textarea', { rows: '2', class: 'inp-field inp-field-multiline', ...attrs })
+    : createTag('input', { type: 'text', class: 'inp-field', ...attrs });
+  if (defaultValue) el.value = defaultValue;
   if (typeof onInput === 'function') {
-    textarea.addEventListener('input', () => onInput(textarea.value.trim()));
+    el.addEventListener('input', () => onInput(el.value.trim()));
   }
-  return textarea;
+  return el;
 }

@@ -124,8 +124,9 @@ export default class PromptUploadWidget {
     return slot;
   }
 
-  // The search/prompt pill: optional helper line above a single input.
-  buildSearchField() {
+  // The search/prompt pill: optional helper line above the input. The inline-CTA (pill) layout
+  // is a single-line search box (RS TextField); every other layout is multi-line (RS TextArea).
+  buildSearchField(ctaInline = false) {
     const placeholder = placeholderText(this.el, 'icon-placeholder-text')
       || 'URL, title, ISBN, DOI, or keywords';
     const field = createTag('div', { class: 'pu-search-field' });
@@ -134,7 +135,7 @@ export default class PromptUploadWidget {
     if (helper) inputWrap.append(createTag('div', { class: 'pu-input-helper' }, helper));
     inputWrap.append(
       createTag('label', { for: 'pbuPromptInput', class: 'unity-slf-sr-only' }, placeholder),
-      buildPromptInput({ ariaLabel: placeholder, placeholder }),
+      buildPromptInput({ ariaLabel: placeholder, placeholder, multiline: !ctaInline }),
     );
     field.append(inputWrap);
     return field;
@@ -196,7 +197,7 @@ export default class PromptUploadWidget {
 
     if (hasPrompt) {
       const searchRow = createTag('div', { class: 'pu-search-row' });
-      const field = this.buildSearchField();
+      const field = this.buildSearchField(ctaInline);
       if (ctaInline) {
         field.classList.add('pu-pill');
         field.append(this.genBtn);
