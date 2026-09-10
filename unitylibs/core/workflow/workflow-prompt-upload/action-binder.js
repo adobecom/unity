@@ -141,6 +141,7 @@ export default class ActionBinder {
     this.pendingFiles = [];
     this.query = '';
     this.optionValue = '';
+    this.optionKey = '';
     this.analyticsModule = null;
     this.sendAnalyticsToSplunk = null;
     this.verbAnalytics = null;
@@ -535,8 +536,7 @@ export default class ActionBinder {
 
   async handleRedirect(cOpts, filesData) {
     if (this.query) cOpts.query = this.query;
-    const optKey = this.workflowCfg.targetCfg?.optionDropdownPayloadKey;
-    if (this.optionValue && optKey) cOpts.payload[optKey] = this.optionValue;
+    if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
     [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
@@ -748,6 +748,7 @@ export default class ActionBinder {
     const input = searchRoot?.querySelector?.('#pbuPromptInput') || searchRoot?.querySelector?.('.inp-field');
     this.query = input?.value?.trim() || '';
     this.optionValue = wrap?.getAttribute('data-selected-option-value') || '';
+    this.optionKey = wrap?.getAttribute('data-selected-option-key') || '';
   }
 
   async continueWithPrompt() {
@@ -783,8 +784,6 @@ export default class ActionBinder {
       await this.handleFileUpload(files);
       await this.continueInApp();
     } finally {
-      // No redirect => upload failed or was cancelled: clear the asset state so a subsequent
-      // generate (without a new file) takes the prompt route instead of re-uploading.
       if (!this.redirectUrl) this.resetUploadState();
     }
   }
@@ -930,33 +929,9 @@ export default class ActionBinder {
       searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
       searchRoot.addEventListener('pu:style-select', (e) => this.dispatchAnalyticsEvent(`style-selector:${e.detail?.label || ''}`));
     }
-    // Fill the href of an authored secondary link that has no href (e.g. "Cite manually").
-    // Building the URL here keeps the widget presentation-only and redirect logic in the binder.
-    const secondaryLink = searchRoot?.querySelector?.('.pu-secondary-link');
-    if (secondaryLink && !secondaryLink.getAttribute('href')) {
-      secondaryLink.setAttribute('href', this.buildDcRedirectUrl());
-    }
     if (b === this.block) {
       this.loadTransitionScreen();
       if (!this.pageConfigPromise) this.pageConfigPromise = this.ensurePageConfig();
     }
-  }
-
-  // Static Document Cloud redirect for the "Cite manually" flow (no BE round-trip):
-  // host by env + verb-derived params + locale prefix.
-  buildDcRedirectUrl() {
-    const path = this.workflowCfg.targetCfg?.studentSpacesPath;
-    if (!path) return '#';
-    const verb = this.workflowCfg.enabledFeatures?.[0] || '';
-    const url = new URL(`${unityConfig.dcHost}${path}`);
-    const localePrefix = getConfig()?.locale?.prefix?.replace('/', '');
-    if (localePrefix && !url.pathname.startsWith(`/${localePrefix}/`)) {
-      url.pathname = `/${localePrefix}${url.pathname}`.replace(/\/+/g, '/');
-    }
-    url.searchParams.set('x_api_client_id', 'unity');
-    url.searchParams.set('x_api_client_location', verb);
-    url.searchParams.set('context', verb);
-    url.searchParams.set('citation_flow', 'manual');
-    return url.href;
   }
 }

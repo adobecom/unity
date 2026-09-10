@@ -16,6 +16,7 @@ export default class PromptUploadWidget {
     this.widgetWrap = null;
     this.genBtn = null;
     this.selectedOption = '';
+    this.optionPayloadKey = '';
     this.lanaOptions = { sampleRate: 1, tags: 'Unity-PU-Widget' };
   }
 
@@ -48,12 +49,25 @@ export default class PromptUploadWidget {
     this.widgetWrap?.setAttribute('data-selected-option-value', value);
   }
 
+  readDropdownOptions() {
+    const CODE_PREFIX = 'unity-nolocalise-dropdown-code-';
+    const keyDiv = [...this.el.querySelectorAll('div')]
+      .find((d) => !d.children.length && d.textContent.trim().startsWith(CODE_PREFIX));
+    if (!keyDiv) return [];
+    const key = keyDiv.textContent.trim().slice(CODE_PREFIX.length);
+    this.optionPayloadKey = key;
+    const codes = (keyDiv.nextElementSibling?.textContent || '')
+      .split(',').map((s) => s.trim()).filter(Boolean);
+    const labelsIcon = [...this.el.querySelectorAll('[class*="icon-"]')]
+      .find((n) => [...n.classList].some((c) => c.toLowerCase() === `icon-${key.toLowerCase()}`));
+    const labels = (labelsIcon?.closest('li')?.innerText || '')
+      .replace(/\s+/g, ' ').split(',').map((s) => s.trim())
+      .filter(Boolean);
+    return labels.map((label, i) => ({ label, value: codes[i] || label }));
+  }
+
   buildDropdown() {
-    const raw = placeholderText(this.el, 'icon-prompt-dropdown-values');
-    const options = raw.split(',').map((s) => s.trim()).filter(Boolean).map((s) => {
-      const [label, value] = s.split('|').map((p) => p.trim());
-      return { label, value: value || label };
-    });
+    const options = this.readDropdownOptions();
     if (!options.length) return null;
     this.selectedOption = options[0].value;
     const { container, triggerBtn, nameContainer, list } = buildDropdownShell({ label: 'Options', menuId: 'pu-prompt-dropdown-menu', extraClass: 'pu-style-dropdown' });
@@ -111,7 +125,6 @@ export default class PromptUploadWidget {
     return cta;
   }
 
-  // Compact upload affordance (inline icon/link + optional drag text) + optional subtext line.
   buildCompactUpload() {
     const label = placeholderText(this.el, 'icon-dropzone-label') || 'Add sources';
     const refs = buildDropzone({
@@ -165,25 +178,24 @@ export default class PromptUploadWidget {
     if (dropdown && dropdownInFooter) left.append(dropdown);
     footer.append(left);
 
-    const secondaryText = placeholderText(this.el, 'icon-secondary-link-text');
-    if (secondaryText) {
-      const href = placeholderText(this.el, 'icon-secondary-link-href');
-      const attrs = { class: 'pu-secondary-link' };
-      if (href) attrs.href = href;
-      footer.append(createTag('a', attrs, secondaryText));
+    const secondaryIcon = this.el.querySelector('[class*="icon-secondary-link-text"]');
+    const secondaryLink = secondaryIcon?.closest('li')?.querySelector('a');
+    if (secondaryLink) {
+      secondaryLink.classList.add('pu-secondary-link');
+      footer.append(secondaryLink);
     }
     if (ctaInFooter) {
       const actWrap = createTag('div', { class: 'act-wrap' });
       actWrap.append(this.genBtn);
       footer.append(actWrap);
     }
-    const hasContent = left.children.length || secondaryText || ctaInFooter;
+    const hasContent = left.children.length || secondaryLink || ctaInFooter;
     return hasContent ? footer : null;
   }
 
   async initWidget() {
     const uploadContent = ['icon-dropzone-label', 'icon-dropzone-subtext', 'icon-dropzone-drag-text'];
-    const promptContent = ['icon-placeholder-text', 'icon-prompt-helper', 'icon-prompt-dropdown-values'];
+    const promptContent = ['icon-placeholder-text', 'icon-prompt-helper'];
     const hasUpload = this.authoredFlag('icon-show-dropzone', false) || uploadContent.some((f) => this.hasFlag(f));
     const hasPrompt = this.authoredFlag('icon-show-prompt', false) || promptContent.some((f) => this.hasFlag(f));
 
@@ -223,6 +235,7 @@ export default class PromptUploadWidget {
     });
 
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
+    if (this.optionPayloadKey) this.widgetWrap?.setAttribute('data-selected-option-key', this.optionPayloadKey);
     return this.cfg.actionMap;
   }
 }
