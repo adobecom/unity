@@ -736,8 +736,12 @@ export class EditorEngine {
     this.isCrop = parsedData.operation === 'crop';
     this.leftPanel = leftPanelEl;
     this.viewport = leftPanelEl.querySelector('.ia-viewport');
-    this.blurImg = leftPanelEl.querySelector('.ia-imglayer--blur .ia-img');
-    // clip-path lives on this wrapper, not on sharpImg itself — see render()'s comment.
+    // Both layers are sized/positioned in render() to the image's own displayed
+    // footprint (containBox), not left at the viewport's full inset:0 — see render()'s
+    // comment for why, and for why sharpLayer's clip-path math has to be remapped into
+    // this now-smaller box's own local coordinates.
+    this.blurLayer = leftPanelEl.querySelector('.ia-imglayer--blur');
+    this.blurImg = this.blurLayer.querySelector('.ia-img');
     this.sharpLayer = leftPanelEl.querySelector('.ia-imglayer--sharp');
     this.sharpImg = this.sharpLayer.querySelector('.ia-img');
     this.frame = leftPanelEl.querySelector('.ia-frame');
@@ -884,13 +888,48 @@ export class EditorEngine {
     this.frame.style.top = `${y}%`;
     this.frame.style.width = `${w}%`;
     this.frame.style.height = `${h}%`;
+    // Both image layers are sized/positioned to the image's own displayed footprint —
+    // containBox's dispW/dispH, expressed as %-of-viewport — rather than filling the
+    // whole viewport (the old inset:0 + object-fit:contain approach). That's what
+    // keeps each layer's own box hugging the actual image edges instead of the full
+    // viewport rect, letterbox padding included. transform-origin: center center
+    // still scales from the image's own visual center either way, so this doesn't
+    // change zoom's behavior.
+    let imgLeftPct = 0;
+    let imgTopPct = 0;
+    let imgWPct = 100;
+    let imgHPct = 100;
+    if (this.naturalW) {
+      const [vpW, vpH] = this.viewportSize();
+      const { w: dispW, h: dispH } = containBox(this.naturalW, this.naturalH, vpW, vpH);
+      imgWPct = (dispW / vpW) * 100;
+      imgHPct = (dispH / vpH) * 100;
+      imgLeftPct = (100 - imgWPct) / 2;
+      imgTopPct = (100 - imgHPct) / 2;
+      [this.blurLayer, this.sharpLayer].forEach((layer) => {
+        layer.style.left = `${imgLeftPct}%`;
+        layer.style.top = `${imgTopPct}%`;
+        layer.style.width = `${imgWPct}%`;
+        layer.style.height = `${imgHPct}%`;
+      });
+    }
     // clip-path must live on sharpLayer (the untransformed wrapper), not sharpImg
     // itself — CSS clips an element's own box before applying its transform, so a
     // clip-path on the same element being scaled would visibly scale the "cut here"
     // window along with the zoom, drifting away from the static .ia-frame overlay
     // (which never gets a zoom transform). Clipping on the fixed wrapper keeps the
     // visible sharp window pinned to the frame regardless of zoom.
-    this.sharpLayer.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
+    // `rect` (x/y/w/h) is in viewport-relative %, but sharpLayer's own box is now only
+    // the image's footprint (imgLeftPct/imgWPct etc. above), not the full viewport —
+    // so the clip-path's inset() percentages, which are relative to sharpLayer's OWN
+    // box, need remapping into that smaller box's local coordinate space first. Drag/
+    // zoom already keep `rect` within the image's displayed bounds (imageBoundsPct),
+    // so this remap always lands inside 0-100.
+    const localX = ((x - imgLeftPct) / imgWPct) * 100;
+    const localY = ((y - imgTopPct) / imgHPct) * 100;
+    const localW = (w / imgWPct) * 100;
+    const localH = (h / imgHPct) * 100;
+    this.sharpLayer.style.clipPath = `inset(${localY}% ${100 - (localX + localW)}% ${100 - (localY + localH)}% ${localX}%)`;
     const transform = `scale(${zoomScale(this.zoom)})`;
     this.blurImg.style.transform = transform;
     this.sharpImg.style.transform = transform;

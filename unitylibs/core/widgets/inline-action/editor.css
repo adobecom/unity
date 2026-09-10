@@ -12,6 +12,19 @@
   flex-direction: column;
   width: 100%;
   gap: 16px;
+  border-radius: var(--ia-radius-sm, 8px);
+
+  /* Moved here from .ia-viewport — the checkerboard now spans the whole left panel
+     (viewport + the gap around the adjust bar below it), not just the viewport box.
+     .ia-viewport itself is transparent now so this shows through it. */
+  background-color: #0d0d0d;
+  background-image:
+    linear-gradient(45deg, #141414 25%, transparent 25%),
+    linear-gradient(-45deg, #141414 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #141414 75%),
+    linear-gradient(-45deg, transparent 75%, #141414 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
 }
 
 .ia-widget[data-state="complete"] .ia-editor-right-panel {
@@ -33,19 +46,23 @@
   aspect-ratio: 484 / 495;
   overflow: clip;
   border-radius: var(--ia-radius-sm, 8px);
-  background-color: #0d0d0d;
-  background-image:
-    linear-gradient(45deg, #141414 25%, transparent 25%),
-    linear-gradient(-45deg, #141414 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #141414 75%),
-    linear-gradient(-45deg, transparent 75%, #141414 75%);
-  background-size: 22px 22px;
-  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+
+  /* Transparent so .ia-editor-left-panel's own checkerboard (see above) shows through
+     wherever the viewport has no image content. The darker look this revealed inside
+     the viewport (vs. the panel's checkerboard outside it) isn't a background-rendering
+     issue — it's .ia-frame's own box-shadow (0 0 0 9999px rgb(0 0 0 / 40%)), which dims
+     everything outside the crop selection and gets clipped to just the viewport by this
+     element's own overflow:clip. That dimming is expected/independent of this rule. */
+  background: transparent;
 }
 
 .ia-imglayer {
+  /* left/top/width/height are set per-image in EditorEngine's render() (editor.js) —
+     sized to the image's own displayed footprint (containBox), not the full viewport,
+     so this box hugs the actual image edges rather than including its letterbox
+     padding. overflow stays visible (not hidden) since zoom scales .ia-img from its
+     own center beyond this box, up to the viewport's own overflow:clip boundary. */
   position: absolute;
-  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,7 +92,6 @@
   position: absolute;
   box-sizing: border-box;
   border: 2px solid var(--ia-white, #fff);
-  box-shadow: 0 0 0 9999px rgb(0 0 0 / 40%);
   cursor: move;
   transition: box-shadow 400ms ease, border-color 400ms ease;
 
@@ -83,10 +99,6 @@
      scroll/pan gesture before JS ever sees it — preventDefault() in startDrag() alone
      isn't enough, since touch-action is what decides this ahead of any event handler. */
   touch-action: none;
-}
-
-.ia-frame.ia-frame--idle {
-  box-shadow: 0 0 0 9999px rgb(0 0 0 / 50%);
 }
 
 .ia-grid {
