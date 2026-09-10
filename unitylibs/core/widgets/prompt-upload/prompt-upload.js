@@ -76,18 +76,23 @@ export default class PromptUploadWidget {
       if (!link) return;
       e.preventDefault();
       e.stopPropagation();
-      nameContainer.textContent = link.querySelector('.model-name')?.textContent || '';
+      const styleLabel = link.querySelector('.model-name')?.textContent || '';
+      nameContainer.textContent = styleLabel;
       setComboboxTriggerAriaLabel(triggerBtn, nameContainer);
       this.setSelectedOption(link.getAttribute('data-option-value') || '');
       syncDropdownSelection(list, link);
       closeDropdown(container, triggerBtn, list);
+      container.dispatchEvent(new CustomEvent('pu:style-select', { bubbles: true, detail: { label: styleLabel } }));
     });
     attachDropdownBehavior(container, triggerBtn, list);
+    triggerBtn.addEventListener('click', () => {
+      if (triggerBtn.getAttribute('aria-expanded') === 'true') {
+        container.dispatchEvent(new CustomEvent('pu:style-open', { bubbles: true }));
+      }
+    });
     return container;
   }
 
-  // The primary CTA. It carries the `gen-btn` class so the action-binder binds it to the
-  // generate flow (query -> BE -> redirect); Enter in the prompt also triggers it via the binder.
   buildCta() {
     const label = labelForField(this.el, 'icon-cta-text', 'Generate');
     const cta = createTag('a', {
@@ -124,8 +129,6 @@ export default class PromptUploadWidget {
     return slot;
   }
 
-  // The search/prompt pill: optional helper line above the input. The inline-CTA (pill) layout
-  // is a single-line search box (RS TextField); every other layout is multi-line (RS TextArea).
   buildSearchField(ctaInline = false) {
     const placeholder = placeholderText(this.el, 'icon-placeholder-text')
       || 'URL, title, ISBN, DOI, or keywords';

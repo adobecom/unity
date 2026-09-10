@@ -144,6 +144,7 @@ export default class ActionBinder {
     this.analyticsModule = null;
     this.sendAnalyticsToSplunk = null;
     this.verbAnalytics = null;
+    this.analyticsListenersBound = false;
     this.experimentData = null;
     this.experimentViaPageConfig = false;
     this.pageConfigLocation = null;
@@ -312,6 +313,9 @@ export default class ActionBinder {
       drop: 'files-dropped',
       change: 'choose-file:open',
       generate: 'generate:clicked',
+      'choose-file': 'dropzone:choose-file-clicked',
+      'prompt-click': 'promptbox:clicked',
+      'style-open': 'style-selector-opened',
     };
     const analyticsName = map[eventName] || eventName;
     if (!this.analyticsModule) await this.initAnalytics();
@@ -863,6 +867,11 @@ export default class ActionBinder {
         case 'DIV':
           el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
           el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+          el.addEventListener('click', (e) => {
+            // Ignore the hidden file input's own bubbled click (it re-dispatches on open).
+            if (e.target?.matches?.('input[type="file"]')) return;
+            this.dispatchAnalyticsEvent('choose-file');
+          });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             el.classList.remove('drag-over');
@@ -907,12 +916,20 @@ export default class ActionBinder {
       }
     });
     const promptInput = searchRoot?.querySelector?.('#pbuPromptInput') || searchRoot?.querySelector?.('.inp-field');
-    promptInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        searchRoot?.querySelector('.gen-btn')?.click();
-      }
-    });
+    if (searchRoot && !this.analyticsListenersBound) {
+      this.analyticsListenersBound = true;
+      promptInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          searchRoot?.querySelector('.gen-btn')?.click();
+        }
+      });
+      // promptbox:clicked -> first focus (covers click + keyboard, no repeat while focused).
+      promptInput?.addEventListener('focus', () => this.dispatchAnalyticsEvent('prompt-click'));
+      // Style dropdown open/select are emitted by the widget as bubbling CustomEvents.
+      searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
+      searchRoot.addEventListener('pu:style-select', (e) => this.dispatchAnalyticsEvent(`style-selector:${e.detail?.label || ''}`));
+    }
     // Fill the href of an authored secondary link that has no href (e.g. "Cite manually").
     // Building the URL here keeps the widget presentation-only and redirect logic in the binder.
     const secondaryLink = searchRoot?.querySelector?.('.pu-secondary-link');
