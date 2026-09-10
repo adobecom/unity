@@ -733,7 +733,6 @@ export default class ActionBinder {
     return searchRoot?.querySelector?.('.ex-unity-wrap') || searchRoot;
   }
 
-  // Clear all asset/upload state so a later generate doesn't re-run a stale file-upload route.
   resetUploadState() {
     this.pendingFiles = [];
     this.operations = [];
@@ -807,7 +806,6 @@ export default class ActionBinder {
       if (!(await this.runPreflight())) return;
       if (!files?.length) return;
       this.pendingFiles = files;
-      // Capture a query/style the user typed before uploading (contract: "types then uploads").
       this.readPromptState();
       this.limits = this.resolveLimits();
       await this.processFileUpload(eventName);

@@ -51,7 +51,7 @@ export function buildDropdownShell({ label, menuId, extraClass = '', imgEl = nul
   return { container, triggerBtn, nameContainer, menuIcon, list };
 }
 
-export function attachDropdownBehavior(container, triggerBtn, list) {
+export function attachDropdownBehavior(container, triggerBtn, list, { onOpen } = {}) {
   const getOptions = () => [...list.querySelectorAll('a.model-link')];
   const MENU_GAP = 6;
   const positionMenu = () => {
@@ -85,8 +85,10 @@ export function attachDropdownBehavior(container, triggerBtn, list) {
       other.querySelector('.selected-model')?.setAttribute('aria-expanded', 'false');
     });
     const isOpen = container.classList.toggle('show-menu');
-    if (isOpen) showMenu();
-    else list.setAttribute('style', 'display: none;');
+    if (isOpen) {
+      showMenu();
+      onOpen?.();
+    } else list.setAttribute('style', 'display: none;');
     triggerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   });
 
@@ -102,6 +104,7 @@ export function attachDropdownBehavior(container, triggerBtn, list) {
     if (!container.classList.contains('show-menu')) {
       container.classList.add('show-menu');
       showMenu();
+      onOpen?.();
       triggerBtn.setAttribute('aria-expanded', 'true');
     }
     focusSelectedOrFirst();

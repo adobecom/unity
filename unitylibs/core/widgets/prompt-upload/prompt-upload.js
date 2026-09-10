@@ -100,12 +100,8 @@ export default class PromptUploadWidget {
       closeDropdown(container, triggerBtn, list);
       container.dispatchEvent(new CustomEvent('pu:style-select', { bubbles: true, detail: { label: styleLabel } }));
     });
-    attachDropdownBehavior(container, triggerBtn, list);
-    triggerBtn.addEventListener('click', () => {
-      if (triggerBtn.getAttribute('aria-expanded') === 'true') {
-        container.dispatchEvent(new CustomEvent('pu:style-open', { bubbles: true }));
-      }
-    });
+    const onOpen = () => container.dispatchEvent(new CustomEvent('pu:style-open', { bubbles: true }));
+    attachDropdownBehavior(container, triggerBtn, list, { onOpen });
     return container;
   }
 
@@ -200,7 +196,6 @@ export default class PromptUploadWidget {
     const promptContent = ['icon-placeholder-text', 'icon-prompt-helper'];
     const hasUpload = this.authoredFlag('icon-show-dropzone', false) || uploadContent.some((f) => this.hasFlag(f));
     const hasPrompt = this.authoredFlag('icon-show-prompt', false) || promptContent.some((f) => this.hasFlag(f));
-
     const title = placeholderText(this.el, 'icon-title');
     const dropdown = this.buildDropdown();
     const dropdownInHeader = this.authoredValue('icon-dropdown-placement') === 'header';
