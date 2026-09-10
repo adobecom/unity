@@ -926,7 +926,9 @@ export default class ActionBinder {
       searchRoot.addEventListener('pu:style-select', (e) => this.dispatchAnalyticsEvent(`style-selector:${e.detail?.label || ''}`));
     }
     if (b === this.block) {
-      this.loadTransitionScreen();
+      const preloadTransitionScreen = () => this.loadTransitionScreen();
+      if ('requestIdleCallback' in window) requestIdleCallback(preloadTransitionScreen, { timeout: 3000 });
+      else setTimeout(preloadTransitionScreen, 2000);
       if (!this.pageConfigPromise) this.pageConfigPromise = this.ensurePageConfig();
     }
   }
