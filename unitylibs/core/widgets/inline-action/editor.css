@@ -23,6 +23,10 @@
   margin-right: 8px;
 }
 
+.ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
+  margin-top: 32px;
+}
+
 .ia-viewport {
   position: relative;
   width: 100%;
@@ -283,6 +287,10 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+}
+
+.ia-widget[data-operation="crop"] .ia-editor-header {
+  margin-bottom: 40px;
 }
 
 .ia-editor-title {
