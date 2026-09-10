@@ -543,7 +543,9 @@ export default class ActionBinder {
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu .verb-link');
     const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
     if (openVerbMenu || openModelMenu) {
-      const menuSelector = openVerbMenu ? '.verbs-container.show-menu .verb-link' : '.models-container.show-menu .verb-link';
+      const menuSelector = openVerbMenu
+        ? '.verbs-container.show-menu .verb-link, .verbs-container.show-menu .verb-list-close'
+        : '.models-container.show-menu .verb-link';
       return Array.from(this.block.querySelectorAll(menuSelector));
     }
     return Array.from(this.block.querySelectorAll(baseSelector));

@@ -367,14 +367,18 @@ export default class UnityWidget {
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
     if (this.isFireflyRedesign) {
-      const closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>');
+      const header = createTag('div', { class: 'verb-list-header' });
+      const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
+      const label = createTag('span', { class: 'verb-list-label' }, labelText);
+      const closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         selectedElement.parentElement.classList.remove('show-menu');
         selectedElement.setAttribute('aria-expanded', 'false');
         selectedElement.focus();
       });
-      verbList.prepend(closeBtn);
+      header.append(label, closeBtn);
+      verbList.prepend(header);
     }
     return [selectedElement, verbList];
   }
@@ -456,6 +460,8 @@ export default class UnityWidget {
       'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
       'aria-activedescendant': '',
+      'data-lenis-prevent': '',
+      ...(this.isFireflyRedesign && { rows: '1' }),
     });
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
     inpField.addEventListener('focus', () => this.hidePromptDropdown());
@@ -468,17 +474,31 @@ export default class UnityWidget {
     const promptLabelText = ph['placeholder-prompt-label'] || 'Enter prompt';
     const hasDropdowns = verbDropdown.length > 1 || modelDropdown.length > 1;
     const inpGroup = hasDropdowns ? createTag('fieldset', { class: 'inp-fieldset' }) : inpWrap;
-    const promptLabel = hasDropdowns
+    const useLegend = hasDropdowns && !this.isFireflyRedesign;
+    const promptLabel = useLegend
       ? createTag('legend', { class: 'inp-field-label' }, promptLabelText)
       : createTag('label', { for: 'promptInput', class: 'inp-field-label' }, promptLabelText);
-    inpGroup.append(promptLabel);
+    let inpFieldSlot;
+    if (this.isFireflyRedesign) {
+      inpFieldSlot = createTag('div', { class: 'inp-text-wrap' });
+      inpFieldSlot.append(promptLabel, inpField);
+    } else {
+      inpGroup.append(promptLabel);
+      inpFieldSlot = inpField;
+    }
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
       verbBtn.append(...verbDropdown);
       actionContainer.append(verbBtn);
-      inpGroup.append(inpField, actionContainer, actWrap);
+      if (this.isFireflyRedesign) {
+        const actionBar = createTag('div', { class: 'action-bar' });
+        actionBar.append(actionContainer, actWrap);
+        inpGroup.append(inpFieldSlot, actionBar);
+      } else {
+        inpGroup.append(inpFieldSlot, actionContainer, actWrap);
+      }
     } else {
-      inpGroup.append(inpField, actWrap);
+      inpGroup.append(inpFieldSlot, actWrap);
     }
     if (modelDropdown.length > 1) {
       const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
