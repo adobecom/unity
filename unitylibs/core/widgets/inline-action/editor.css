@@ -63,6 +63,7 @@
      this whole layer (and ultimately .ia-viewport, which is what actually clips the
      final result) rather than being confined to the image's own footprint. */
   position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
