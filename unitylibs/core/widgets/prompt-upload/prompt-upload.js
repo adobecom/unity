@@ -55,11 +55,13 @@ export default class PromptUploadWidget {
       .find((d) => !d.children.length && d.textContent.trim().startsWith(CODE_PREFIX));
     if (!keyDiv) return [];
     const key = keyDiv.textContent.trim().slice(CODE_PREFIX.length);
-    this.optionPayloadKey = key;
     const codes = (keyDiv.nextElementSibling?.textContent || '')
       .split(',').map((s) => s.trim()).filter(Boolean);
     const labelsIcon = [...this.el.querySelectorAll('[class*="icon-"]')]
       .find((n) => [...n.classList].some((c) => c.toLowerCase() === `icon-${key.toLowerCase()}`));
+    const valuesClass = labelsIcon && [...labelsIcon.classList]
+      .find((c) => c.toLowerCase() === `icon-${key.toLowerCase()}`);
+    this.optionPayloadKey = valuesClass ? valuesClass.slice('icon-'.length) : key;
     const labels = (labelsIcon?.closest('li')?.innerText || '')
       .replace(/\s+/g, ' ').split(',').map((s) => s.trim())
       .filter(Boolean);
