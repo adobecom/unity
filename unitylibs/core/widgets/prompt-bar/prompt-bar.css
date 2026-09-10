@@ -517,10 +517,26 @@
   scrollbar-color: #888 transparent;
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-fieldset {
+  display: flex;
+  flex-flow: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+  width: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  text-align: start;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field-label {
   font-size: var(--type-body-xs-size);
   font-weight: 400;
   margin-inline-start: 2px;
+  padding: 0;
+  border: none;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap:not(.verb-options) .ex-unity-widget .inp-wrap .inp-field-label {
