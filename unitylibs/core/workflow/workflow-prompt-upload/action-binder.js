@@ -923,9 +923,7 @@ export default class ActionBinder {
           searchRoot?.querySelector('.gen-btn')?.click();
         }
       });
-      // promptbox:clicked -> first focus (covers click + keyboard, no repeat while focused).
       promptInput?.addEventListener('focus', () => this.dispatchAnalyticsEvent('prompt-click'));
-      // Style dropdown open/select are emitted by the widget as bubbling CustomEvents.
       searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
       searchRoot.addEventListener('pu:style-select', (e) => this.dispatchAnalyticsEvent(`style-selector:${e.detail?.label || ''}`));
     }

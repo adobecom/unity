@@ -1,7 +1,5 @@
 import { createTag } from '../../../scripts/utils.js';
 
-// Single-line (RS TextField, horizontal scroll) by default; `multiline` renders a
-// fixed-height textarea (RS TextArea) that wraps and scrolls vertically past its rows.
 export default function buildPromptInput({
   id = 'pbuPromptInput', defaultValue = '', ariaLabel = 'Search', placeholder = '',
   onInput, multiline = false,

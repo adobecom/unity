@@ -53,9 +53,6 @@ export function buildDropdownShell({ label, menuId, extraClass = '', imgEl = nul
 
 export function attachDropdownBehavior(container, triggerBtn, list) {
   const getOptions = () => [...list.querySelectorAll('a.model-link')];
-
-  // Render the menu as position:fixed under the trigger so ancestor `overflow: hidden`
-  // (e.g. the marquee block) can't clip it — it opens downward over everything.
   const MENU_GAP = 6;
   const positionMenu = () => {
     const r = triggerBtn.getBoundingClientRect();

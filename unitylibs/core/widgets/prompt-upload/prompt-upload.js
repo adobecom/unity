@@ -61,7 +61,7 @@ export default class PromptUploadWidget {
       .find((n) => [...n.classList].some((c) => c.toLowerCase() === `icon-${key.toLowerCase()}`));
     const valuesClass = labelsIcon && [...labelsIcon.classList]
       .find((c) => c.toLowerCase() === `icon-${key.toLowerCase()}`);
-    this.optionPayloadKey = valuesClass ? valuesClass.slice('icon-'.length) : key;
+    this.optionPayloadKey = valuesClass ? valuesClass.slice('icon-'.length) : '';
     const labels = (labelsIcon?.closest('li')?.innerText || '')
       .replace(/\s+/g, ' ').split(',').map((s) => s.trim())
       .filter(Boolean);

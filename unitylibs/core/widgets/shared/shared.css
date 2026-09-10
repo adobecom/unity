@@ -68,7 +68,6 @@
   box-sizing: border-box;
 }
 
-/* Multi-line prompt (RS TextArea): fixed 2-row height, wraps, scrolls vertically past 2 lines */
 .inp-field-multiline {
   overflow-y: auto;
   white-space: pre-wrap;

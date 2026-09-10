@@ -1,8 +1,6 @@
 import { createTag } from '../../../scripts/utils.js';
 import { svgIcon } from './widget-base.js';
 
-// Compact upload affordance: an inline icon/link ("Add sources" / "Select files") that opens
-// the picker, plus optional trailing drag text. Also a drop target (wired by the action-binder).
 export default function buildDropzone({
   allowedFileTypes = [], multiple = false, uploadLabel = 'Upload files',
   selectFileText = 'Select file', dragText = '', showIcon = true,
@@ -34,9 +32,6 @@ export default function buildDropzone({
     zone.classList.add('pu-add-sources-drag');
     zone.append(createTag('span', { class: 'pu-dz-drag' }, dragText));
   }
-
-  // Click anywhere in the zone opens the picker. The `e.target === fileInput` guard stops the
-  // input's own bubbled click from re-triggering (infinite-open loop).
   zone.addEventListener('click', (e) => { if (e.target === fileInput) return; fileInput.click(); });
   zone.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;

@@ -65,37 +65,7 @@
       }
     }
   },
-  "prompt-upload-marquee": {
-    "selector": ".foreground",
-    "source": ".foreground .prompt-upload-container",
-    "target": ".foreground .prompt-upload-container",
-    "showSplashScreen": true,
-    "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
-      "splashScreenParent": "body"
-    },
-    "actionMap": {
-      ".drop-zone": "upload",
-      "#file-upload": "upload",
-      ".gen-btn": "generate"
-    }
-  },
-  "hero-marquee": {
-    "selector": ".copy",
-    "source": ".copy",
-    "target": ".copy",
-    "insert": "after",
-    "showSplashScreen": true,
-    "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
-      "splashScreenParent": "body"
-    },
-    "actionMap": {
-      ".drop-zone": "upload",
-      "#file-upload": "upload",
-      ".gen-btn": "generate"
-    }
-  },
+  
   "unity-marquee": {
     "selector": ".unity-marquee-copy",
     "source": ".unity-marquee-copy",
@@ -110,21 +80,6 @@
       ".drop-zone": "upload",
       "#file-upload": "upload",
       ".gen-btn": "generate"
-    }
-  },
-  "verb-widget": {
-    "renderWidget": false,
-    "selector": ".verb-wrapper",
-    "source": ".verb-wrapper .verb-container",
-    "target": ".verb-wrapper .verb-container",
-    "showSplashScreen": true,
-    "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
-      "splashScreenParent": "body"
-    },
-    "actionMap": {
-      ".verb-wrapper": "upload",
-      "#file-upload": "upload"
     }
   }
 }
