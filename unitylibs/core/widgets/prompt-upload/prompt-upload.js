@@ -175,7 +175,6 @@ export default class PromptUploadWidget {
     if (hasUpload) left.append(this.buildCompactUpload());
     if (dropdown && dropdownInFooter) left.append(dropdown);
     footer.append(left);
-
     const secondaryIcon = this.el.querySelector('[class*="icon-secondary-link-text"]');
     const secondaryLink = secondaryIcon?.closest('li')?.querySelector('a');
     if (secondaryLink) {
@@ -203,10 +202,8 @@ export default class PromptUploadWidget {
     this.genBtn = this.buildCta();
 
     const main = createTag('div', { class: 'pu-main' });
-
     const header = this.buildHeader(title, dropdown, dropdownInHeader);
     if (header) main.append(header);
-
     if (hasPrompt) {
       const searchRow = createTag('div', { class: 'pu-search-row' });
       const field = this.buildSearchField(ctaInline);

@@ -69,6 +69,8 @@ export default class ActionBinder {
     upload_error_finalize_asset: -403,
     upload_error_redirect_to_app: -500,
     upload_warn_chunk_upload: -600,
+    upload_warn_chunk_upload_exception: -601,
+    upload_warn_delete_asset: -603,
     warn_fetch_experiment: -605,
     prompt_error_max_length: -700,
     prompt_error_empty: -701,
@@ -108,6 +110,8 @@ export default class ActionBinder {
     pre_upload_error_fetch_redirect_url: 'error:fetch_redirect_url',
     pre_upload_error_fetching_access_token: 'error:fetching_access_token',
     upload_warn_chunk_upload: 'warn:verb_upload_warn_chunk_upload',
+    upload_warn_chunk_upload_exception: 'warn:verb_upload_warn_chunk_upload_exception',
+    upload_warn_delete_asset: 'warn:verb_upload_warn_delete_asset',
     error_generic: 'error',
   };
 
@@ -142,6 +146,7 @@ export default class ActionBinder {
     this.query = '';
     this.optionValue = '';
     this.optionKey = '';
+    this.selectedStyleName = '';
     this.analyticsModule = null;
     this.sendAnalyticsToSplunk = null;
     this.verbAnalytics = null;
@@ -315,6 +320,9 @@ export default class ActionBinder {
       change: 'choose-file:open',
       generate: 'generate:clicked',
       'choose-file': 'dropzone:choose-file-clicked',
+      'filepicker-shown': 'filepicker:shown',
+      entry: 'entry:clicked',
+      discover: 'discover:clicked',
       'prompt-click': 'promptbox:clicked',
       'style-open': 'style-selector-opened',
     };
@@ -733,6 +741,43 @@ export default class ActionBinder {
     return searchRoot?.querySelector?.('.ex-unity-wrap') || searchRoot;
   }
 
+  bindWidgetDropTarget() {
+    const card = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
+    if (!card || card.dataset.puDropBound) return;
+    card.dataset.puDropBound = 'true';
+    let dragDepth = 0;
+    const hasFilePayload = (e) => !!e?.dataTransfer?.types && [...e.dataTransfer.types].includes('Files');
+    const setHighlight = (on) => card.classList.toggle('drag-over', !!on);
+    card.addEventListener('dragenter', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth += 1;
+      setHighlight(true);
+    });
+    card.addEventListener('dragover', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      setHighlight(true);
+    });
+    card.addEventListener('dragleave', (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) setHighlight(false);
+    });
+    card.addEventListener('drop', async (e) => {
+      if (!hasFilePayload(e)) return;
+      e.preventDefault();
+      dragDepth = 0;
+      setHighlight(false);
+      const { files } = this.extractFiles(e);
+      this.dispatchAnalyticsEvent('drop');
+      this.dispatchEntryAnalytics();
+      await this.uploadFilesImmediately(files, 'drop');
+    });
+  }
+
   resetUploadState() {
     this.pendingFiles = [];
     this.operations = [];
@@ -748,6 +793,16 @@ export default class ActionBinder {
     this.query = input?.value?.trim() || '';
     this.optionValue = wrap?.getAttribute('data-selected-option-value') || '';
     this.optionKey = wrap?.getAttribute('data-selected-option-key') || '';
+    this.selectedStyleName = wrap?.querySelector('.selected-model .model-name')?.textContent?.trim() || '';
+  }
+
+  dispatchStyleSelection() {
+    if (this.selectedStyleName) this.dispatchAnalyticsEvent(`style-selector:${this.selectedStyleName}`);
+  }
+
+  dispatchEntryAnalytics() {
+    this.dispatchAnalyticsEvent('entry');
+    this.dispatchAnalyticsEvent('discover');
   }
 
   async continueWithPrompt() {
@@ -764,6 +819,7 @@ export default class ActionBinder {
       },
     };
     this.redirectWithoutUpload = true;
+    this.dispatchStyleSelection();
     const ok = await this.handleRedirect(cOpts, {});
     if (ok) await this.continueInApp();
   }
@@ -779,6 +835,7 @@ export default class ActionBinder {
       uploadType: files.length > 1 ? 'mfu' : 'sfu',
     };
     this.dispatchAnalyticsEvent(eventName, this.filesData);
+    this.dispatchStyleSelection();
     try {
       await this.handleFileUpload(files);
       await this.continueInApp();
@@ -867,13 +924,17 @@ export default class ActionBinder {
           el.addEventListener('click', (e) => {
             // Ignore the hidden file input's own bubbled click (it re-dispatches on open).
             if (e.target?.matches?.('input[type="file"]')) return;
+            this.dispatchAnalyticsEvent('filepicker-shown');
             this.dispatchAnalyticsEvent('choose-file');
+            this.dispatchEntryAnalytics();
           });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
+            e.stopPropagation();
             el.classList.remove('drag-over');
             const { files } = this.extractFiles(e);
             this.dispatchAnalyticsEvent('drop');
+            this.dispatchEntryAnalytics();
             if (value === 'upload') await this.uploadFilesImmediately(files, 'drop');
           });
           break;
@@ -891,6 +952,7 @@ export default class ActionBinder {
             e.preventDefault();
             const { files } = this.extractFiles(e);
             this.dispatchAnalyticsEvent('drop');
+            this.dispatchEntryAnalytics();
             await this.uploadFilesImmediately(files, 'drop');
           };
           const target = b.querySelector(this.workflowCfg.targetCfg.selector);
@@ -921,11 +983,11 @@ export default class ActionBinder {
           searchRoot?.querySelector('.gen-btn')?.click();
         }
       });
-      promptInput?.addEventListener('focus', () => this.dispatchAnalyticsEvent('prompt-click'));
+      promptInput?.addEventListener('focus', () => this.dispatchAnalyticsEvent('prompt-click'), { once: true });
       searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
-      searchRoot.addEventListener('pu:style-select', (e) => this.dispatchAnalyticsEvent(`style-selector:${e.detail?.label || ''}`));
     }
     if (b === this.block) {
+      this.bindWidgetDropTarget();
       const preloadTransitionScreen = () => this.loadTransitionScreen();
       if ('requestIdleCallback' in window) requestIdleCallback(preloadTransitionScreen, { timeout: 3000 });
       else setTimeout(preloadTransitionScreen, 2000);
