@@ -228,7 +228,12 @@
   border: 1px solid rgb(255 255 255 / 10%);
   background: #202020;
   box-sizing: border-box;
-  width: 484px;
+
+  /* Responsive by default, same as .ia-viewport (width:100% below 1200px, fixed only
+     at desktop's own breakpoint further down) — the old unconditional 484px here was
+     already wider than the panel below 1200px; it just wasn't visible because
+     .ia-widget's overflow:hidden clipped it. */
+  width: 100%;
 }
 
 .ia-toggle {
@@ -985,6 +990,14 @@
   display: none;
 }
 
+/* Mobile AND tablet — same breakpoint inline-action.css already uses for the shared
+   stacked (column-reverse) layout, since both sizes get identical behavior here. */
+@media screen and (max-width: 1199px) {
+  .ia-widget[data-state="complete"] .ia-editor-left-panel {
+    margin-bottom: 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ia-imgbox {
     transition: none;
@@ -1011,5 +1024,9 @@
     aspect-ratio: auto;
     width: 484px;
     height: 495px;
+  }
+
+  .ia-adjust-bar {
+    width: 484px;
   }
 }
