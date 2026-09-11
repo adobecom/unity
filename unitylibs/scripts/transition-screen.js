@@ -50,7 +50,8 @@ export default class TransitionScreen {
     const fill = layer.querySelector('.spectrum-ProgressBar-fill');
     spb?.setAttribute('value', p);
     spb?.setAttribute('aria-valuenow', p);
-    layer.querySelector('.spectrum-ProgressBar-percentage').innerHTML = `${p}%`;
+    const percentEl = layer.querySelector('.spectrum-ProgressBar-percentage');
+    if (percentEl) percentEl.innerHTML = `${p}%`;
     if (fill) {
       if (p >= 100) fill.style.transition = 'none';
       fill.style.width = `${p}%`;

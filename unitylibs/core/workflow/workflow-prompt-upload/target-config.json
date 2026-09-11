@@ -1,0 +1,85 @@
+{
+  "_defaults": {
+    "renderWidget": true,
+    "sendSplunkAnalytics": true,
+    "domainMap": {
+      "acrobat": [
+        "^(stage\\.)?acrobat\\.adobe\\.com$",
+        "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
+      ]
+    },
+    "directUploadVerbs": [],
+    "directUploadMaxSize": 1048576,
+    "uploadLimits": {
+      "HIGH_END": { "files": 10, "chunks": 10 },
+      "MID_RANGE": { "files": 5, "chunks": 10 },
+      "LOW_END": { "files": 3, "chunks": 6 }
+    },
+    "verbsWithoutMfuToSfuFallback": [],
+    "awaitFinalizeVerbs": [],
+    "nonpdfMfuFeedbackScreenTypeNonpdf": [],
+    "nonpdfSfuProductScreen": ["citation-generator"],
+    "mfuUploadAllowed": ["citation-generator"],
+    "mfuUploadOnlyPdfAllowed": [],
+    "experimentationOn": [],
+    "limits": {
+      "maxNumFiles": 100,
+      "allowedFileTypes": [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "text/plain",
+        "text/rtf",
+        "application/rtf",
+        "text/vtt"
+      ],
+      "maxFileSize": 104857600,
+      "max-char-limit": 3000,
+      "pageLimit": { "maxNumPages": 600 }
+    },
+    "fetchApiConfig": {
+      "finalizeAsset": {
+        "retryType": "polling",
+        "retryParams": {
+          "maxRetryDelay": 300000,
+          "defaultRetryDelay": 5000
+        }
+      },
+      "getMetadata": {
+        "retryType": "polling",
+        "retryParams": {
+          "maxRetryDelay": 5000,
+          "defaultRetryDelay": 500
+        }
+      },
+      "default": {
+        "retryType": "exponential",
+        "retryParams": {
+          "maxRetries": 4,
+          "retryDelay": 1000
+        }
+      }
+    }
+  },
+  
+  "unity-marquee": {
+    "selector": ".unity-marquee-copy",
+    "source": ".unity-marquee-copy",
+    "target": ".unity-marquee-copy",
+    "insert": "after",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".drop-zone": "upload",
+      "#file-upload": "upload",
+      ".gen-btn": "generate"
+    }
+  }
+}
