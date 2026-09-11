@@ -221,9 +221,9 @@
 .ia-adjust-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 16px 0 4px;
   border-radius: 16px;
   border: 1px solid rgb(255 255 255 / 10%);
   background: #202020;
@@ -243,12 +243,12 @@
   align-items: center;
   gap: 6px;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   background: transparent;
   color: var(--ia-white, #fff);
   font-family: var(--body-font-family);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 400;
   white-space: nowrap;
   opacity: 0.5;
   cursor: pointer;
@@ -257,7 +257,7 @@
 
 .ia-toggle__btn.is-active {
   opacity: 1;
-  background: rgb(255 255 255 / 15%);
+  background: #000;
 }
 
 /* Icon-only until this becomes the active mode — the label only appears alongside
@@ -284,7 +284,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: transparent;
+  background: #000;
   border: 2px solid var(--ia-white, #fff);
   cursor: pointer;
 }
@@ -293,7 +293,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: transparent;
+  background: #000;
   border: 2px solid var(--ia-white, #fff);
   cursor: pointer;
 }

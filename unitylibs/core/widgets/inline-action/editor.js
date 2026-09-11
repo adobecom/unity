@@ -1,5 +1,18 @@
 import { createTag, loadStyle, getUnityLibs, getUnityPromptConfigsBaseUrl } from '../../../scripts/utils.js';
 
+// Same helper as inline-action.js's own svgUse — duplicated rather than imported
+// since editor.js is otherwise fully decoupled from that file (it's lazy-loaded
+// separately, only once an image is uploaded). Builds a <svg><use></use></svg>
+// referencing a <symbol> from the workflow's sprite.svg (already injected into the
+// widget root by inline-action.js's appendSpriteSheet before editor.js ever runs).
+const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
+
+// Crop's own "More" aspect-ratio trigger — no authored icon exists for it (unlike
+// the pill row's own icons, which come from the config sheet), so it always falls
+// back to this fixed sprite icon (see setMoreTrigger) unless a specific More-menu
+// option carrying its own authored icon has been selected.
+const MORE_TRIGGER_ICON = 'icon-aspect-ratio';
+
 const MIN_PCT = 10;
 const IDLE_MS = 5000;
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
@@ -521,16 +534,20 @@ function buildCropAspectSection(parsedData) {
     // moreRows share one repeated, localized `group` (see groupCropRows) — that's the
     // dropdown trigger's own default label, never a hardcoded "More". Each row's own
     // `name` is its individual option label instead (composed above). Built via
-    // buildIconButton (icon omitted for now — the group label itself has no icon of
-    // its own) so it has the same span-wrapped-label structure every other pill/option
+    // buildIconButton with no iconHref (the group label has no AUTHORED icon of its
+    // own) so it has the same span-wrapped-label structure every other pill/option
     // has, letting selectAspect swap in a selected option's own icon later without
-    // clobbering the rest of the button (see setMoreTrigger).
+    // clobbering the rest of the button (see setMoreTrigger) — then the built-in
+    // sprite icon (MORE_TRIGGER_ICON) is prepended separately, in the same position
+    // buildIconButton would have put an authored <img>, since buildIconButton itself
+    // only knows how to build the href->img pattern, not a sprite <use> reference.
     const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
     }, undefined, moreRows[0].group);
+    moreTrigger.insertAdjacentHTML('afterbegin', svgUse(MORE_TRIGGER_ICON, 'ia-btn-icon'));
     more.append(moreTrigger, moreMenu);
     row.append(more);
   }
@@ -1366,11 +1383,19 @@ export class EditorEngine {
   // buildCropAspectSection) specifically so its label always lives in its own <span>,
   // never touched via a blind textContent assignment that would also wipe out an icon
   // added here on a previous selection.
+  // iconHref falls back to the built-in sprite icon (MORE_TRIGGER_ICON), not to no
+  // icon at all — every OTHER call site (a plain pill selection, or reset()) calls
+  // this with iconHref omitted, since neither has an authored icon of its own to
+  // pass; without this fallback the trigger would permanently lose its icon the
+  // first time either of those fires, since this always clears whatever's there
+  // first regardless of what (if anything) replaces it.
   setMoreTrigger(label, iconHref = null) {
     if (!this.moreTrigger) return;
     this.moreTrigger.querySelector('.ia-btn-icon')?.remove();
     if (iconHref) {
       this.moreTrigger.prepend(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
+    } else {
+      this.moreTrigger.insertAdjacentHTML('afterbegin', svgUse(MORE_TRIGGER_ICON, 'ia-btn-icon'));
     }
     const span = this.moreTrigger.querySelector('span');
     if (span) span.textContent = label;
