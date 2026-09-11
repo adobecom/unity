@@ -14,17 +14,12 @@
   gap: 16px;
   border-radius: var(--ia-radius-sm, 8px);
 
-  /* Moved here from .ia-viewport — the checkerboard now spans the whole left panel
-     (viewport + the gap around the adjust bar below it), not just the viewport box.
-     .ia-viewport itself is transparent now so this shows through it. */
-  background-color: #0d0d0d;
-  background-image:
-    linear-gradient(45deg, #141414 25%, transparent 25%),
-    linear-gradient(-45deg, #141414 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #141414 75%),
-    linear-gradient(-45deg, transparent 75%, #141414 75%);
-  background-size: 22px 22px;
-  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+  /* Transparent so the checkerboard painted on .interactive-area itself (see
+     inline-action.css) shows through — one shared background layer spanning the
+     outer block's margin AND this panel AND (since .ia-viewport is transparent too)
+     the viewport, all perfectly continuous since it's the same paint, not several
+     independently-tiled copies that would need hand-matched offsets. */
+  background: transparent;
 }
 
 .ia-widget[data-state="complete"] .ia-editor-right-panel {
@@ -47,12 +42,14 @@
   overflow: clip;
   border-radius: var(--ia-radius-sm, 8px);
 
-  /* Transparent so .ia-editor-left-panel's own checkerboard (see above) shows through
-     wherever the viewport has no image content. The darker look this revealed inside
-     the viewport (vs. the panel's checkerboard outside it) isn't a background-rendering
-     issue — it's .ia-frame's own box-shadow (0 0 0 9999px rgb(0 0 0 / 40%)), which dims
-     everything outside the crop selection and gets clipped to just the viewport by this
-     element's own overflow:clip. That dimming is expected/independent of this rule. */
+  /* Transparent so the checkerboard painted on .interactive-area (see
+     inline-action.css) — which .ia-editor-left-panel is also transparent to, see
+     above — shows through wherever the viewport has no image content. The darker
+     look this can reveal inside the viewport (vs. the checkerboard outside it) isn't
+     a background-rendering issue — it's .ia-frame's own box-shadow
+     (0 0 0 9999px rgb(0 0 0 / 40%)), which dims everything outside the crop selection
+     and gets clipped to just the viewport by this element's own overflow:clip. That
+     dimming is expected/independent of this rule. */
   background: transparent;
 }
 
