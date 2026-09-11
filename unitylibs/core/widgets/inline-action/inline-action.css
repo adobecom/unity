@@ -1043,8 +1043,23 @@
     max-height: 500px;
   }
 
+  /* Original, pre-crop/resize behavior — rbg's complete state is a fixed 500px box.
+     Crop/resize override this right below to a floor only (min-height), since a more
+     specific selector doesn't override properties it doesn't itself declare — height/
+     max-height here would otherwise still apply to crop/resize too. */
   .ia-widget[data-state="complete"] {
+    height: 500px;
     min-height: 500px;
+    max-height: 500px;
+  }
+
+  /* Crop/resize complete only — a floor, not a fixed box: the editor's own content
+     (aspect tabs, further pills, etc.) can be taller than 500px depending on what's
+     authored/selected, and shouldn't get clipped or forced to rbg's fixed height. */
+  .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"] {
+    height: auto;
+    min-height: 500px;
+    max-height: none;
   }
 
   /* Crop/resize complete only — no gutter between the image and controls halves, so the
@@ -1101,24 +1116,6 @@
   .unity-inline-action.unity-enabled > .interactive-area:has(
     .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"]
   ) {
-    /* Checkerboard painted here (not on .ia-editor-left-panel, which is transparent —
-       see editor.css) so the outer block's own 16px padding/margin shows the exact
-       same, perfectly continuous pattern as the panel itself — one shared background
-       layer, not two independently-tiled copies that would need to be phase-matched
-       by hand and could drift out of alignment. Layer order (topmost first): a
-       to-right gradient paints the right half solid #1b1b1b and leaves the left half
-       transparent to reveal the four checker gradients beneath it, over the #0d0d0d
-       base. Checker params (22px cell, #141414 squares) match editor.css's own values
-       exactly. */
-    background-color: #0d0d0d;
-    background-image:
-      linear-gradient(to right, transparent 0 516px, #1b1b1b 516px 100%),
-      linear-gradient(45deg, #141414 25%, transparent 25%),
-      linear-gradient(-45deg, #141414 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #141414 75%),
-      linear-gradient(-45deg, transparent 75%, #141414 75%);
-    background-size: auto, 22px 22px, 22px 22px, 22px 22px, 22px 22px;
-    background-position: 0 0, 0 0, 0 11px, 11px -11px, -11px 0;
-    background-repeat: no-repeat, repeat, repeat, repeat, repeat;
+    background: linear-gradient(to right, #000 0 516px, #1b1b1b 516px 100%);
   }
 }
