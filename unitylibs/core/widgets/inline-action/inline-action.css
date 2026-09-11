@@ -1116,6 +1116,24 @@
   .unity-inline-action.unity-enabled > .interactive-area:has(
     .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"]
   ) {
-    background: linear-gradient(to right, #000 0 516px, #1b1b1b 516px 100%);
+     /* Checkerboard painted here (not on .ia-editor-left-panel, which is transparent —
+       see editor.css) so the outer block's own 16px padding/margin shows the exact
+       same, perfectly continuous pattern as the panel itself — one shared background
+       layer, not two independently-tiled copies that would need to be phase-matched
+       by hand and could drift out of alignment. Layer order (topmost first): a
+       to-right gradient paints the right half solid #1b1b1b and leaves the left half
+       transparent to reveal the four checker gradients beneath it, over the #0d0d0d
+       base. Checker params (22px cell, #141414 squares) match editor.css's own values
+       exactly. */
+    background-color: #0d0d0d;
+    background-image:
+      linear-gradient(to right, transparent 0 516px, #1b1b1b 516px 100%),
+      linear-gradient(45deg, #141414 25%, transparent 25%),
+      linear-gradient(-45deg, #141414 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #141414 75%),
+      linear-gradient(-45deg, transparent 75%, #141414 75%);
+    background-size: auto, 22px 22px, 22px 22px, 22px 22px, 22px 22px;
+    background-position: 0 0, 0 0, 0 11px, 11px -11px, -11px 0;
+    background-repeat: no-repeat, repeat, repeat, repeat, repeat;
   }
 }
