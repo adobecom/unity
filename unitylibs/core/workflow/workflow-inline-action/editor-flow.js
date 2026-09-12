@@ -55,7 +55,20 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
     binder.widgetRef?.setProgress(100); // matches action-binder.js's PROGRESS.COMPLETE
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
     await binder.widgetRef?.setEditorImage(URL.createObjectURL(file), originalSize);
-    if (isFirstEditorLoad) binder.bindActionMapElements(binder.widgetRef.editorEngine.rightPanel);
+    // Scans BOTH panels, not just rightPanel: EditorEngine.setupResponsiveHeader()
+    // (editor.js) may have already moved .ia-editor-header (and its action-mapped
+    // .ia-editor-reset/.ia-reupload-btn) into leftPanel by this point on mobile/tablet
+    // viewports, synchronously inside its own constructor, above — a rightPanel-only
+    // scan would silently find neither button and never bind them. Deliberately NOT
+    // .closest('.ia-widget') here — ActionBinder's own block (see workflow.js) already
+    // IS .ia-widget, so walking up to it would re-scan the whole widget a second time,
+    // double-binding a second 'change' listener onto the page's one .ia-file-input
+    // (already bound once at page load) and corrupting reupload state via two
+    // concurrent uploads firing off a single event.
+    if (isFirstEditorLoad) {
+      const { leftPanel, rightPanel } = binder.widgetRef.editorEngine;
+      [leftPanel, rightPanel].forEach((panel) => binder.bindActionMapElements(panel));
+    }
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError('upload', e);
     binder.serviceHandler.showErrorToast(binder.uploadErrorOpts(), e, binder.lanaOptions);

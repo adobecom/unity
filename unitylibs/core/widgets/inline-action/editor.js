@@ -775,6 +775,7 @@ export class EditorEngine {
     this.valEl = leftPanelEl.querySelector('.ia-val');
     this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
     this.rightPanel = rightPanelEl;
+    this.header = rightPanelEl.querySelector('.ia-editor-header');
     this.resetBtn = rightPanelEl.querySelector('.ia-editor-reset');
     this.qualityBtn = rightPanelEl.querySelector('.ia-editor-quality');
     this.qualityPreviewActive = false;
@@ -870,6 +871,23 @@ export class EditorEngine {
     this.quality = 100;
     this.idleTimer = null;
     this.bindEvents();
+    this.setupResponsiveHeader();
+  }
+
+  // Mobile/tablet shows .ia-editor-header inside the left panel, before .ia-viewport
+  // (see the pill-style rules in inline-action.css); desktop keeps it at the top of the
+  // right panel. Re-parents the single header node on breakpoint change instead of
+  // building two, so Reset/Upload (queried once, above) never end up duplicated or
+  // unwired to a stale copy.
+  setupResponsiveHeader() {
+    if (!this.header) return;
+    const mq = window.matchMedia('(min-width: 1200px)');
+    const place = (isDesktop) => {
+      if (isDesktop) this.rightPanel.prepend(this.header);
+      else this.leftPanel.insertBefore(this.header, this.viewport);
+    };
+    place(mq.matches);
+    mq.addEventListener('change', (e) => place(e.matches));
   }
 
   viewportSize() {

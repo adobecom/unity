@@ -993,8 +993,71 @@
 /* Mobile AND tablet — same breakpoint inline-action.css already uses for the shared
    stacked (column-reverse) layout, since both sizes get identical behavior here. */
 @media screen and (max-width: 1199px) {
-  .ia-widget[data-state="complete"] .ia-editor-left-panel {
-    margin-bottom: 8px;
+  /* .ia-editor-header is physically moved here, before .ia-viewport, by
+     EditorEngine.setupResponsiveHeader() (editor.js) — restyled as a floating pill
+     (matching .ia-adjust-bar's look) since it now sits directly on the
+     checkerboard/panel backdrop instead of the plain right-panel background it has on
+     desktop. margin-bottom:0 overrides the desktop spacing (24px/40px, meant for
+     separating it from the aspect section below it over there) — .ia-editor-left-panel's
+     own gap:16px handles spacing from the viewport here instead. */
+  .ia-editor-header {
+    margin-bottom: 0;
+    padding: 4px 3px;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 16px;
+    background: #202020;
+  }
+
+  /* .ia-widget[data-operation="crop"] .ia-editor-header's own margin-bottom:40px
+     (further up, unconditional on screen size) outspecifies the plain .ia-editor-header
+     override right above — matched here at the same specificity so this actually wins
+     for crop on mobile/tablet instead of silently losing to it. */
+  .ia-widget[data-operation="crop"] .ia-editor-header {
+    margin-bottom: 0;
+  }
+
+  /* Unwraps the actions group so .ia-editor-reset/.ia-editor-quality/the reupload
+     button become direct flex items of .ia-editor-header alongside .ia-editor-title,
+     letting `order` place one icon on each side of a truly centered title — not
+     possible while they're nested one level deeper inside a shared wrapper. */
+  .ia-editor-header-actions {
+    display: contents;
+  }
+
+  .ia-editor-reset {
+    order: 1;
+  }
+
+  .ia-editor-title {
+    order: 2;
+    flex: 1;
+    font-size: 16px;
+    text-align: center;
+  }
+
+  .ia-editor-quality {
+    order: 3;
+  }
+
+  .ia-editor-header .ia-reupload-btn {
+    order: 4;
+  }
+
+  /* Icon-only in this pill layout, per the reference design — kept in the
+     accessibility tree (same technique as .ia-sr-only in inline-action.css) instead of
+     display:none, which would strip the button's only accessible name (.ia-editor-reset
+     has no separate aria-label; see buildEditorRightPanel in editor.js). */
+  .ia-editor-reset span,
+  .ia-editor-header .ia-reupload-btn span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 
