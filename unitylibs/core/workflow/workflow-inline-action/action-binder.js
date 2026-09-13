@@ -601,9 +601,10 @@ export default class ActionBinder {
     }
   }
 
-  static downloadFilename(mimeType = 'image/png') {
+  static downloadFilename(mimeType = 'image/png', operation = 'removeBackground') {
     const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/webp': 'webp' }[mimeType] || 'png';
-    return `Firefly_RemoveBackground.${ext}`;
+    const verb = operation.charAt(0).toUpperCase() + operation.slice(1);
+    return `Firefly_${verb}.${ext}`;
   }
 
   getImageBlobData(url) {
@@ -636,7 +637,7 @@ export default class ActionBinder {
 
   downloadBlob(blob, mimeType = 'image/png') {
     const objUrl = URL.createObjectURL(blob);
-    const a = createTag('a', { href: objUrl, download: ActionBinder.downloadFilename(mimeType) });
+    const a = createTag('a', { href: objUrl, download: ActionBinder.downloadFilename(mimeType, this.operation) });
     document.body.append(a);
     a.click();
     setTimeout(() => {

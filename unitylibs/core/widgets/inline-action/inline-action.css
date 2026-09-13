@@ -49,6 +49,16 @@
   background: rgb(41 41 41 / 60%);
   height: auto;
   max-height: none;
+
+  /* overflow:hidden alone doesn't create a stacking context — without this, internal
+     z-indexed elements (.ia-processing-overlay at 10, .alert-holder at 10, .ia-more at
+     5, etc.) compete directly against the page's own stacking order instead of staying
+     contained to this widget. If the page's sticky/fixed global nav has no z-index (or
+     a lower one) at that shared level, those internal overlays can paint above it once
+     the page is scrolled — isolation:isolate scopes all of them to this box instead,
+     so nothing inside can ever escape above external page chrome regardless of its
+     z-index. */
+  isolation: isolate;
 }
 
 .unity-inline-action.unity-enabled > .interactive-area.light {

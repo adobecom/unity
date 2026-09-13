@@ -359,7 +359,7 @@
 .ia-editor-reset:hover,
 .ia-editor-quality:hover,
 .ia-editor-header .ia-reupload-btn:hover {
-  background: rgb(255 255 255 / 10%);
+  background: #323232;
 }
 
 .ia-editor-quality.is-active {
@@ -440,14 +440,18 @@
 }
 
 .ia-aspect-pill,
-.ia-resize-tab {
+.ia-resize-tab,
+.ia-more-opt,
+.ia-social-opt,
+.ia-unit-opt,
+.ia-dropdown-close {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 12px 5px 10px;
   border-radius: 4px;
-  border: 1px solid rgb(255 255 255 / 15%);
-  background: #2a2a2a;
+  border: 0px;
+  background: #3e3e3e;
   color: var(--ia-white, #fff);
   font-family: var(--body-font-family);
   font-size: 14px;
@@ -459,9 +463,23 @@
 
 .ia-aspect-pill.is-active,
 .ia-resize-tab.is-active {
-  background: var(--ia-white, #fff);
+  background: #dbdbdb;
   color: #000;
-  border-color: var(--ia-white, #fff);
+}
+
+/* :not(.is-active) so hovering an already-selected pill/tab doesn't override its own
+   white/selected look above — same specificity as .is-active (one class + one
+   pseudo-class each), so without the guard, whichever rule came later in the file
+   would win regardless of which state actually applies. .ia-more-opt/.ia-social-opt/
+   .ia-unit-opt/.ia-dropdown-close never get .is-active (see editor.js), but the guard
+   is harmless there either way. */
+.ia-aspect-pill:hover:not(.is-active),
+.ia-resize-tab:hover:not(.is-active),
+.ia-more-opt:hover,
+.ia-social-opt:hover,
+.ia-unit-opt:hover,
+.ia-dropdown-close:hover {
+  background: #323232;
 }
 
 /* .ia-resize-tab only ever appears inside .ia-aspect-header-row (the Custom/Standard/
@@ -548,57 +566,19 @@
   display: none;
 }
 
-/* Each option (and the close button) is its own separate floating box (background/
-   shadow/radius) rather than a plain row inside a shared panel — matches the
-   reference design, where the "More"/"Social" dropdown reads as a stack of
-   independent pills, not one contiguous menu. .ia-dropdown-close shares this exact
-   rule (not a near-duplicate with its own fixed size) so its height/background/
-   radius/shadow match the options above it precisely — it only overrides
-   justify-content (centering the X, since it has no label pushing it to one side)
-   and adds position:relative for its own ::before/::after (see below). */
-.ia-more-opt,
-.ia-social-opt,
-.ia-unit-opt,
+/* .ia-social-opt/.ia-unit-opt/.ia-dropdown-close now share .ia-aspect-pill's box
+   model and hover (see above) instead of their own separate white-hover/box-shadow
+   look — all the dropdown option types (More/Social/unit) behave the same way. */
 .ia-dropdown-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  background: #2a2a2a;
-  color: var(--ia-white, #fff);
-  font-family: var(--body-font-family);
-  font-size: 14px;
-  text-align: right;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
-}
-
-/* An empty flex container (no real, in-flow children — the "X" is drawn with
-   position:absolute ::before/::after, which flex sizing ignores entirely) otherwise
-   collapses to just its own padding, much shorter than the options above it, which
-   get their height from an actual 16px icon or text line inside. Explicit height
-   here restores the match instead of relying on content that isn't really there. */
-.ia-dropdown-close {
+  /* An empty flex container (no real, in-flow children — the "X" is drawn with
+     position:absolute ::before/::after, which flex sizing ignores entirely) otherwise
+     collapses to just its own padding, much shorter than the options above it, which
+     get their height from an actual 16px icon or text line inside. Explicit size here
+     restores the match instead of relying on content that isn't really there. */
   position: relative;
   justify-content: center;
   width: 48px;
   height: 32px;
-}
-
-/* Same look as a selected aspect/resize-tab pill (.ia-aspect-pill.is-active,
-   .ia-resize-tab.is-active) — solid white background, dark text; see .ia-btn-icon
-   further down for the matching icon-color override (the close button's own X
-   flips to dark the same way, via currentcolor). */
-.ia-more-opt:hover,
-.ia-social-opt:hover,
-.ia-unit-opt:hover,
-.ia-dropdown-close:hover {
-  background: var(--ia-white, #fff);
-  color: #111;
 }
 
 /* The "X" itself — two crossed bars rather than a thin, font-dependent "×" character
@@ -685,6 +665,10 @@
   background: rgb(255 255 255 / 15%);
 }
 
+.ia-dim-lock:hover:not(.is-active) {
+  background: #323232;
+}
+
 .ia-dim-unit {
   display: inline-flex;
   align-items: center;
@@ -699,6 +683,10 @@
   font-family: var(--body-font-family);
   font-size: 14px;
   cursor: pointer;
+}
+
+.ia-dim-unit:hover {
+  background: #323232;
 }
 
 /* A bold CSS-drawn chevron instead of the thin Unicode "⌄" glyph it replaced — a
@@ -745,7 +733,7 @@
   padding: 9px 18px 10px;
   border-radius: 999px;
   font-size: 17px;
-  line-height: 22px;
+  line-height: 24px;
   font-weight: 700;
   cursor: pointer;
   text-align: center;
@@ -771,6 +759,20 @@
   color: var(--ia-white, #fff);
 }
 
+/* Same #274dea hover already used by this family's accent button elsewhere
+   (.ia-download-btn, inline-action.css). */
+.ia-cta-accent:hover {
+  background: #274dea;
+}
+
+/* .ia-cta-outline is a transparent/outlined button, not an accent one — filling it
+   solid blue on hover (like .ia-edit-in-firefly does) would make it look like a
+   second accent CTA. A subtle light overlay instead keeps it reading as "outline",
+   just lit up — border/text color stay as-is. */
+.ia-cta-outline:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
 .ia-further-grid {
   display: flex;
   flex-wrap: wrap;
@@ -781,9 +783,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 10px 15px;
   border-radius: 100px;
-  border: 2px solid rgb(255 255 255 / 15%);
+  border: 0px;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
   font-family: var(--body-font-family);
@@ -793,6 +795,10 @@
   line-height: 20px;
   letter-spacing: 0;
   cursor: pointer;
+}
+
+.ia-further-pill:hover {
+  background: #323232;
 }
 
 /* Shared by every authored icon+label button/pill (reset, reupload, both CTAs, each
@@ -824,15 +830,6 @@
    which stays dark enough for the default white icon). */
 .ia-aspect-pill.is-active .ia-btn-icon,
 .ia-resize-tab.is-active .ia-btn-icon {
-  filter: brightness(0);
-}
-
-/* Same treatment on hover for the dropdown options (.ia-more-opt/.ia-social-opt/
-   .ia-unit-opt above) — their hover background also goes solid white, so their icon
-   needs the same black flip. */
-.ia-more-opt:hover .ia-btn-icon,
-.ia-social-opt:hover .ia-btn-icon,
-.ia-unit-opt:hover .ia-btn-icon {
   filter: brightness(0);
 }
 
