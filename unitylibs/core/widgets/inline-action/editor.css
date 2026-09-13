@@ -993,6 +993,34 @@
 /* Mobile AND tablet — same breakpoint inline-action.css already uses for the shared
    stacked (column-reverse) layout, since both sizes get identical behavior here. */
 @media screen and (max-width: 1199px) {
+  .ia-widget[data-state="complete"] .ia-editor-left-panel {
+    padding-bottom: 8px;
+  }
+
+  .ia-cta-row {
+    flex-direction: column;
+  }
+
+  .ia-aspect-section {
+    margin-bottom: 8px;
+  }
+
+  /* Uniform 8px on every side — overrides the desktop-oriented margin-left:24px/
+     margin-right:8px (base rule, further up), which was meant to sit next to
+     .ia-panel-left's fixed 500px desktop column that doesn't exist in this stacked
+     layout. */
+  .ia-widget[data-state="complete"] .ia-editor-right-panel {
+    margin: 8px;
+  }
+
+  /* .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel's
+     own margin-top:32px (base rule, further up) outspecifies the plain rule right
+     above for crop specifically — matched here at the same specificity, same fix as
+     the earlier margin-bottom:40px issue on .ia-editor-header. */
+  .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
+    margin: 8px;
+  }
+
   /* .ia-editor-header is physically moved here, before .ia-viewport, by
      EditorEngine.setupResponsiveHeader() (editor.js) — restyled as a floating pill
      (matching .ia-adjust-bar's look) since it now sits directly on the
