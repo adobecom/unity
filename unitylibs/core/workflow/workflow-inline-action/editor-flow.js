@@ -4,6 +4,7 @@
 
 import { getUnityLibs } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
+import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
 
 // Shared by both the imageOperations request (below) and the "Open in Firefly"
 // connector payload (runEditInFirefly) — crop sends only a crop operation; resize
@@ -54,7 +55,15 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
     const isFirstEditorLoad = !binder.widgetRef.editorEngine;
     binder.widgetRef?.setProgress(100); // matches action-binder.js's PROGRESS.COMPLETE
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
-    await binder.widgetRef?.setEditorImage(URL.createObjectURL(file), originalSize);
+    // Passed through so EditorEngine can track aspect-ratio-pill/More-button clicks
+    // (see bindAspectEvents, editor.js) — those never go through the actionMap/
+    // executeActionMaps (no server call happens), so EditorEngine has no other way to
+    // reach binder.trackEvent().
+    await binder.widgetRef?.setEditorImage(
+      URL.createObjectURL(file),
+      originalSize,
+      (name, data) => binder.trackEvent(name, data),
+    );
     // Scans BOTH panels, not just rightPanel: EditorEngine.setupResponsiveHeader()
     // (editor.js) may have already moved .ia-editor-header (and its action-mapped
     // .ia-editor-reset/.ia-reupload-btn) into leftPanel by this point on mobile/tablet
@@ -151,8 +160,27 @@ export async function runEditorOperation(binder, el) {
   try {
     const ok = await performEditorOperation(binder);
     if (!ok) return;
-    if (el?.dataset?.nba) await binder.handleConnector(el);
-    else await binder.handleConnector(null, true);
+    if (el?.dataset?.nba) {
+      // Same event/shape as rbg's own NBA cards (action-binder.js's
+      // trackConnectorAnalytics/INLINE_ACTION_EVENTS.nbaClick) — el.dataset.nba is the
+      // verb (e.g. "sharpenImage"), same field rbg's own .ia-nba-card carries; the
+      // label falls back to it too since .ia-further-pill has no dedicated label
+      // element the way rbg's .ia-nba-label is (see buildIconButton).
+      const label = el.textContent?.trim() || el.dataset.nba;
+      binder.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), {
+        assetId: binder.resultAssetId,
+        action: 'redirect',
+        verb: el.dataset.nba,
+      });
+      await binder.handleConnector(el);
+    } else {
+      // Same event/shape as rbg's own download button (action-binder.js's
+      // executeActionMaps 'download' case) — fixed "Download|UnityWidget", not derived
+      // from this button's own label text (which differs: "Crop and download"/"Resize
+      // and download"), so crop/resize/rbg downloads all roll up under one event name.
+      binder.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, { assetId: binder.resultAssetId, action: 'redirect' });
+      await binder.handleConnector(null, true);
+    }
   } finally {
     engine.setBusy(false, el);
   }
@@ -167,6 +195,10 @@ export async function runEditorOperation(binder, el) {
 export async function resetEditor(binder) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
+  // Only ever reached via the actual Reset button click (see this function's own
+  // comment above — no other caller exists), so this can't double-count the
+  // programmatic aspect-ratio reselection engine.setImage() triggers below.
+  binder.trackEvent(INLINE_ACTION_EVENTS.RESET);
   binder.assetId = binder.originalAssetId;
   if (binder.originalFileType) binder.filesData.type = binder.originalFileType;
   // isOriginalUpload left false — this restores the existing original, it doesn't
@@ -194,9 +226,18 @@ export async function resetEditor(binder) {
 //    pixel dimensions with no named ratio, and Custom/freeform has nothing to lock to,
 //    so the field is omitted entirely rather than defaulted (same aspectRatio field
 //    name as crop's — not a separate one, the two mean the same thing).
-export async function runEditInFirefly(binder) {
+export async function runEditInFirefly(binder, el) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
+  // Unlike download (fixed "Download|UnityWidget" regardless of label), this tracks
+  // whatever text is actually on the button — defaults to "Open in Firefly" (matching
+  // rbg's own INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY string) but authored config can
+  // override it (buildCtaRow's editLabel, editor.js), and the tracked event should
+  // reflect what the user actually saw/clicked, not a stale hardcoded label.
+  binder.trackEvent(`${el?.textContent?.trim() || 'Open in Firefly'}|UnityWidget`, {
+    assetId: binder.resultAssetId,
+    action: 'redirect',
+  });
   const isResize = binder.operation === 'resize';
   const bounds = engine.getSourceBounds();
   const dimensions = isResize ? engine.getResizeOutputDimensions() : null;

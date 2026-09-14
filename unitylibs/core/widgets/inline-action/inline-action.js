@@ -526,10 +526,10 @@ export default class InlineActionWidget {
   // actually been uploaded — deferred here (rather than at initWidget()) so state 1
   // (upload-only) never pays for them, keeping LCP/initial load unaffected by an
   // operation the user hasn't triggered yet.
-  async setEditorImage(url, originalSize) {
+  async setEditorImage(url, originalSize, trackEvent) {
     if (!this.editorEngine) {
       const { initEditor } = await import('./editor.js');
-      this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData);
+      this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData, trackEvent);
     }
     // isOriginalUpload=true: this path only ever runs for a genuine upload/reupload
     // (editorUploadFlow) — a post-operation refresh calls editorEngine.setImage()

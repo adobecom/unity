@@ -754,8 +754,14 @@ export function buildEditorRightPanel(parsedData) {
 }
 
 export class EditorEngine {
-  constructor(leftPanelEl, rightPanelEl, parsedData) {
+  constructor(leftPanelEl, rightPanelEl, parsedData, trackEvent) {
     this.isCrop = parsedData.operation === 'crop';
+    // Threaded in from ActionBinder via initEditor()/setEditorImage() — EditorEngine
+    // has no binder reference of its own (kept out of action-binder.js entirely, see
+    // editor-flow.js's own top-of-file comment), so aspect-ratio-pill/More-button
+    // clicks (which never go through the actionMap — no server call happens) call
+    // this directly rather than reaching for a nonexistent this.binder.trackEvent().
+    this.trackEvent = trackEvent || (() => {});
     this.leftPanel = leftPanelEl;
     this.viewport = leftPanelEl.querySelector('.ia-viewport');
     // .ia-imglayer (blurLayer/sharpLayer) stays viewport-sized — sharpLayer's own
@@ -1295,11 +1301,19 @@ export class EditorEngine {
       pill.addEventListener('click', () => {
         const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
+        // ratioText (e.g. "16:9") over the composed label ("Landscape 16:9") when both
+        // exist — falls back to label for Freeform (whose own label is already just
+        // "Freeform") and for any ratioText-less preset (e.g. a Social pixel-dimension
+        // pill with no named ratio).
+        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();
       });
     });
-    this.moreTrigger?.addEventListener('click', () => this.toggleMore());
+    this.moreTrigger?.addEventListener('click', () => {
+      this.trackEvent('Aspect Ratio More|UnityWidget');
+      this.toggleMore();
+    });
     // Double optional-chain: moreMenu is null when the sheet authored no "More" rows
     // for this operation (see buildCropAspectSection) — querySelectorAll on null would
     // throw without the first `?.`, and calling .forEach on that undefined result would
@@ -1315,6 +1329,9 @@ export class EditorEngine {
       }
       opt.addEventListener('click', () => {
         const { ratio, label, ratioText, icon } = opt.dataset;
+        // Same tracking as a direct pill click (above) — a ratio picked from inside
+        // the More menu is still an aspect-ratio selection, not a separate event.
+        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
         this.selectAspect(Number(ratio), label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });
@@ -1630,7 +1647,7 @@ export class EditorEngine {
 // real .ia-editor-left-panel/.ia-editor-right-panel depend on directly — an extra
 // wrapper div left in place would sit between them and break that flex relationship
 // (this was a real, reproduced regression, not just a theoretical one).
-export async function initEditor(leftSlot, rightSlot, parsedData) {
+export async function initEditor(leftSlot, rightSlot, parsedData, trackEvent) {
   const [, aspectRows] = await Promise.all([
     new Promise((resolve) => { loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve); }),
     loadAspectRatios(parsedData.operation),
@@ -1640,5 +1657,5 @@ export async function initEditor(leftSlot, rightSlot, parsedData) {
   const rightPanel = buildEditorRightPanel(fullData);
   leftSlot.replaceWith(leftPanel);
   rightSlot.replaceWith(rightPanel);
-  return new EditorEngine(leftPanel, rightPanel, fullData);
+  return new EditorEngine(leftPanel, rightPanel, fullData, trackEvent);
 }

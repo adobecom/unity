@@ -10,6 +10,7 @@ export const INLINE_ACTION_EVENTS = {
   REMOVE_BACKGROUND_SUCCESS: 'Remove Background Success|UnityWidget',
   REMOVE_BACKGROUND_ERROR: 'Remove Background error|UnityWidget',
   TRY_AGAIN: 'Try again|UnityWidget',
+  RESET: 'Reset|UnityWidget',
   nbaClick: (label) => `${label} - Do more with|UnityWidget`,
 };
 
@@ -56,7 +57,7 @@ function getSessionID() {
 }
 
 function createPayloadForSplunk(metaData) {
-  const {
+  const { 
     eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation, workflow, isGuestUser,
     styleEventName, voiceEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
