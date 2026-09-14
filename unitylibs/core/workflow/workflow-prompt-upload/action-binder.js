@@ -166,7 +166,7 @@ export default class ActionBinder {
     const productTag = this.workflowCfg.targetCfg?.[`productTag-${this.workflowCfg.productName?.toLowerCase()}`] || 'PU';
     this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-PromptUpload` };
     this.initActionListeners = this.initActionListeners.bind(this);
-    this.initialize();
+    this.initPromise = this.initialize();
   }
 
   async initialize() {
@@ -476,12 +476,10 @@ export default class ActionBinder {
       if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
         await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         fail = true;
-      }
-      if (!file.size) {
+      } else if (!file.size) {
         await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
-      }
-      if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
+      } else if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
         await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
       }
@@ -849,6 +847,7 @@ export default class ActionBinder {
   }
 
   async runPreflight() {
+    await this.initPromise;
     await this.loadTransitionScreen();
     await this.handlePreloads();
     if (this.signedOut === undefined && this.tokenError) {
