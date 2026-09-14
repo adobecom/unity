@@ -54,7 +54,6 @@ async function performEditorOperation(binder) {
   const bounds = engine.getSourceBounds();
   const dimensions = binder.operation === 'resize' ? engine.getResizeOutputDimensions() : null;
   const payload = buildImageOperationsPayload(binder, bounds, dimensions, engine.quality);
-  console.log(`[inline-action editor] ${binder.operation} imageOperations payload`, payload);
   try {
     const res = await binder.serviceHandler.postCallToService(
       binder.apiConfig.endPoint.imageOperations,
@@ -134,7 +133,6 @@ export async function runEditInFirefly(binder, el) {
     connectorFields.aspectRatio = engine.selectedRatioText || 'freeform';
   }
   const payload = await binder.buildConnectorPayload(connectorFields);
-  console.log(`[inline-action editor] ${binder.operation} EditInFirefly connector payload`, payload);
   try {
     const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
     await binder.callConnector(payload, { openInSameTab: !isDesktop(), useSplashProgress: false });
