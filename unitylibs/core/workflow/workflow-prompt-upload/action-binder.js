@@ -27,6 +27,9 @@ const INVALID_CHARS_REGEX = /[\x00-\x1F\\/:"*?<>|]/g;
 const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
+const ERROR_WARNING_ICON = '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2.75 1.75 17.25h16.5L10 2.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>';
+const ERROR_CLOSE_ICON = '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+
 export default class ActionBinder {
   static SINGLE_FILE_ERROR_MESSAGES = {
     UNSUPPORTED_TYPE: 'validation_error_unsupported_type',
@@ -378,14 +381,15 @@ export default class ActionBinder {
       || this.block?.querySelector?.('.error')
       || document.querySelector('.error');
     if (existing) return existing;
-    const host = this.canvasArea || this.block;
+    const host = this.block || this.canvasArea;
     if (!host) return null;
-    const toast = createTag('div', { class: 'error hide' });
-    toast.append(
-      createTag('div', { class: 'verb-errorIcon' }),
-      createTag('p', { class: 'verb-errorText' }),
-      createTag('div', { class: 'verb-errorBtn', role: 'button', tabindex: '0', 'aria-label': 'Close error' }),
-    );
+    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide' });
+    const icon = createTag('div', { class: 'verb-errorIcon' });
+    icon.innerHTML = ERROR_WARNING_ICON;
+    const closeBtn = createTag('div', { class: 'verb-errorBtn', role: 'button', tabindex: '0', 'aria-label': 'Close error' });
+    closeBtn.innerHTML = ERROR_CLOSE_ICON;
+    toast.append(icon, createTag('p', { class: 'verb-errorText' }), closeBtn);
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.append(toast);
     return toast;
   }

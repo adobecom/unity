@@ -19,6 +19,61 @@
   outline-offset: -2px;
 }
 
+.pu-error-toast {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(560px, 92%);
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #d31510;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 15%);
+  color: #fff;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.pu-error-toast.hide { display: none; }
+
+/* stylelint-disable selector-class-pattern -- verb-error* mirrors the acrobat error-toast markup */
+.pu-error-toast .verb-errorIcon,
+.pu-error-toast .verb-errorBtn {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.pu-error-toast .verb-errorIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pu-error-toast .verb-errorText {
+  flex: 1;
+  margin: 0;
+}
+
+.pu-error-toast .verb-errorBtn {
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.pu-error-toast .verb-errorBtn:hover { opacity: 1; }
+
+.pu-error-toast .verb-errorBtn svg {
+  width: 18px;
+  height: 18px;
+}
+/* stylelint-enable selector-class-pattern */
+
 .pu-main {
   display: flex;
   flex-direction: column;
