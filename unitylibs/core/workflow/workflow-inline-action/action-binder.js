@@ -143,14 +143,7 @@ export default class ActionBinder {
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
     this.assetHref = null;
-    // Set once per genuine upload/reupload (in uploadAsset()) and never touched by a
-    // crop/resize operation — unlike assetId, which a successful runEditorOperation
-    // repoints at the operation's result. This is what the crop/resize Reset button
-    // (resetEditor, in editor-flow.js) restores assetId to.
     this.originalAssetId = null;
-    // Same idea as originalAssetId — imageOperations' output is always forced to
-    // image/jpeg (see buildImageOperationsPayload), so filesData.type would otherwise
-    // stay wrong after Reset restores the original (possibly non-jpeg) asset.
     this.originalFileType = null;
     this.resultAssetId = null;
     this.resultUrl = null;
@@ -260,12 +253,6 @@ export default class ActionBinder {
     return { errorToastEl: this.errorToastEl, errorType: UPLOAD_ERROR_TYPE, ...(errorCode && { errorCode }) };
   }
 
-  // Crop/resize get their own suffixed key, scoped per operation — a user who's already
-  // downloaded via removeBackground shouldn't be treated as "returning" the first time
-  // they try crop/resize (or vice versa), since handleConnector's first-time-vs-
-  // returning check now gates all three operations' download buttons off this counter.
-  // removeBackground keeps its original, un-suffixed key so existing users' download
-  // history isn't silently reset by this change.
   downloadCountKey() {
     return this.operation === 'removeBackground' ? DOWNLOAD_COUNT_KEY : `${DOWNLOAD_COUNT_KEY}-${this.operation}`;
   }
@@ -438,9 +425,6 @@ export default class ActionBinder {
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
       this.originalAssetId = id;
-      // filesData.type is already the corrected upload's real type by this point (set
-      // in uploadFile(), before this call) — captured here so Reset can restore it
-      // later even after a crop/resize operation has overwritten filesData.type.
       this.originalFileType = this.filesData.type;
       this.assetHref = href;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
@@ -519,10 +503,6 @@ export default class ActionBinder {
     }
   }
 
-  // Crop's download-path verbs are confirmed distinct from rbg's — resize's aren't
-  // specified yet, so it still falls through to rbg's own aiPhotoEditor/download.
-  // NBA clicks (isDownload=false) are untouched for every operation, crop included —
-  // same el.dataset.nba resolution rbg's own NBA cards already use.
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
     if (isDownload) {
       if (this.operation === 'crop') return downloadsLocally ? 'cropImageFirstDownload' : 'cropImageDownload';
@@ -532,15 +512,6 @@ export default class ActionBinder {
     return el?.dataset?.nba;
   }
 
-  // operations/aspectRatio are crop/resize's "Open in Firefly" fields only (see
-  // editor-flow.js's runEditInFirefly) — undefined for every other caller, so they're
-  // simply omitted from payload rather than sent as explicit nulls. aspectRatio is
-  // shared by both crop and resize (one field name, not two — crop's confirmed
-  // 'freeform'-or-ratio-string value and resize's own equivalent mean the same thing).
-  // includeWidgetType defaults true (rbg + every NBA click, crop's included, keep it) —
-  // only crop/resize's signed-in/download/Open-in-Firefly connector calls pass false.
-  // workflow defaults to the generic supportedFeatures-derived value every rbg call
-  // uses — only Open in Firefly overrides it to the fixed 'image-operations' value.
   async buildConnectorPayload({
     defaultPrompt, verb, connectorAssetId, fileType, operations, aspectRatio, includeWidgetType = true, workflow,
   } = {}) {
@@ -651,10 +622,6 @@ export default class ActionBinder {
     this.downloadBlob(blob, blob.type || 'image/png');
   }
 
-  // performOperation=false is crop/resize's signed-in path: no Ps API call at all — the
-  // raw uploaded asset is handed straight to Firefly, which does the actual editing
-  // there. Everything else (splash screen, upload, connector redirect) is identical to
-  // rbg's own signed-in flow, so it's the same method rather than a duplicated one.
   async signedInFlow(file, { performOperation = true } = {}) {
     if (this.signedInFlowInProgress) return;
     this.signedInFlowInProgress = true;
@@ -683,8 +650,6 @@ export default class ActionBinder {
         }
         connectorAssetId = this.resultAssetId;
       }
-      // Crop's signed-in connector call is confirmed distinct from rbg's — resize's
-      // isn't specified yet, so it still falls through to rbg's own aiPhotoEditor verb.
       const isCropSignedIn = !performOperation && this.operation === 'crop';
       await this.callConnector(await this.buildConnectorPayload({
         verb: isCropSignedIn ? 'cropImage' : 'aiPhotoEditor',
@@ -732,9 +697,6 @@ export default class ActionBinder {
     const correctedFile = await correctOrientation(file);
     this.uploadAbortController = null;
     this.assetId = null;
-    // A genuine (re)upload replaces the original entirely — uploadAsset() sets this
-    // fresh once it succeeds. Crop/resize operations never reach this reset (they only
-    // ever update assetId via runEditorOperation), so an existing original survives them.
     this.originalAssetId = null;
     this.originalFileType = null;
     this.resultAssetId = null;
@@ -744,15 +706,7 @@ export default class ActionBinder {
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
-    // Explicit allowlist, not "anything but removeBackground" — matches the same
-    // reasoning as inline-action.js's isEditorOp: an unrecognized or malformed
-    // operation should fall back to the known-good rbg path below, not be routed into
-    // the editor flow it doesn't actually support.
     if (['crop', 'resize'].includes(this.operation)) {
-      // Signed-in users skip the in-page editor entirely and redirect straight to
-      // Firefly via the same signedInFlow rbg uses, just without its Ps API call (see
-      // signedInFlow's performOperation param) — editor-flow.js is only needed at all
-      // for guest/anonymous users, who still get the in-page editor as before.
       if (isGuest === false) {
         await this.signedInFlow(correctedFile, { performOperation: false });
         return;
@@ -772,7 +726,7 @@ export default class ActionBinder {
       } else {
         await this.triggerDownload(this.resultUrl);
         this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-      } 
+      }
       this.incrementUserCount();
       this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
     } catch (e) {
@@ -787,8 +741,6 @@ export default class ActionBinder {
     const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
-    // Crop's download-path connector calls (first-time/returning) omit widgetType per
-    // the confirmed contract — NBA clicks (isDownload=false) keep the existing rbg shape.
     const includeWidgetType = !(isDownload && this.operation === 'crop');
     const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
@@ -942,7 +894,7 @@ export default class ActionBinder {
       setActive();
       const files = e.dataTransfer?.files;
       if (files?.length) {
-        try { fileInput.files = files; } catch { /* FileList assignment unsupported */ }
+        try { fileInput.files = files; } catch {  }
         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
       }
       clearActive();
@@ -995,10 +947,6 @@ export default class ActionBinder {
     });
   }
 
-  // Extracted so it can be called a second time, scoped to just the editor's lazily-built
-  // panel, once that DOM actually exists (see editorUploadFlow in editor-flow.js) — the
-  // editor's own action-mapped elements (.ia-cta-accent, .ia-editor-reupload) don't exist
-  // yet the first time this runs from initActionListeners(), at initial page load.
   bindActionMapElements(root, actMap = this.actionMap) {
     const handlers = {
       DIV: (el, action) => {
@@ -1031,7 +979,6 @@ export default class ActionBinder {
         });
       },
     };
-
     Object.entries(actMap).forEach(([key, action]) => {
       root.querySelectorAll(key).forEach((el) => {
         const handler = handlers[el.nodeName];

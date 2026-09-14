@@ -1,18 +1,7 @@
 import { createTag, loadStyle, getUnityLibs, getUnityPromptConfigsBaseUrl } from '../../../scripts/utils.js';
 
-// Same helper as inline-action.js's own svgUse — duplicated rather than imported
-// since editor.js is otherwise fully decoupled from that file (it's lazy-loaded
-// separately, only once an image is uploaded). Builds a <svg><use></use></svg>
-// referencing a <symbol> from the workflow's sprite.svg (already injected into the
-// widget root by inline-action.js's appendSpriteSheet before editor.js ever runs).
 const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
-
-// Crop's own "More" aspect-ratio trigger — no authored icon exists for it (unlike
-// the pill row's own icons, which come from the config sheet), so it always falls
-// back to this fixed sprite icon (see setMoreTrigger) unless a specific More-menu
-// option carrying its own authored icon has been selected.
 const MORE_TRIGGER_ICON = 'icon-aspect-ratio';
-
 const MIN_PCT = 10;
 const IDLE_MS = 5000;
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
@@ -26,26 +15,10 @@ const HANDLE_EDGES = {
   sw: ['left', 'bottom'],
   w: ['left'],
 };
-
 const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
-// zoom is the slider's raw 0-100 domain; the actual CSS scale factor this maps to now
-// tops out at 10x (was 2x) — 1 + (zoom/100)*9 so zoom=0 -> 1x and zoom=100 -> 10x.
 export const zoomScale = (zoom) => 1 + ((zoom / 100) * 9);
-
-// Scales a point around the center of `size` by `factor` — the one piece of math
-// behind both directions of the zoom transform: imageBoundsPct projects the base
-// (unzoomed) layout forward onto the screen with factor = zoomScale(zoom), and
-// rectPctToSourceBounds's unscale() reverses that with factor = 1 / zoomScale(zoom).
 const scaleAroundCenter = (px, size, factor) => (size / 2) + ((px - (size / 2)) * factor);
 
-// Aspect-ratio presets (crop pills, resize Standard/Social) are authored the same way
-// as model-picker.json: one flat sheet with a `module` column (crop/resize), fetched
-// once and filtered client-side to this page's own operation — see createModelMap()
-// in prompt-bar-style.js for the same module-column convention. `group` buckets each
-// row (crop's inline pills vs. its "More" overflow; resize's Custom/Standard/Social
-// tabs); `platform` only applies to Social rows. `name` is NOT unique across the whole
-// sheet (e.g. "Landscape" repeats under Standard, Instagram and Youtube with different
-// values each time), so it must never be used alone as a lookup/identity key.
 async function loadAspectRatios(operation) {
   try {
     const url = `${getUnityPromptConfigsBaseUrl()}/unity/configs/prompt/cropandresize.json`;
@@ -65,21 +38,12 @@ function parseRatioString(ratio) {
   return h ? w / h : null;
 }
 
-// Standard/crop rows carry a ratio; Social rows carry literal pixel targets instead
-// (used as-is for the real resize output, not just a display ratio) — derive a
-// numeric ratio from whichever is present. Bare trigger rows (Freeform, Custom) have
-// neither and resolve to null (freeform).
 function aspectRatioValue(row) {
   if (row.ratio) return parseRatioString(row.ratio);
   if (row.width && row.height) return row.width / row.height;
   return null;
 }
 
-// Matches the two label formats already confirmed in design: "{name} {ratio}" for
-// ratio-only rows (crop pills, Standard), "{name} {width} x {height}" for Social's
-// pixel targets. Every row (standalone pill or "More" overflow option alike) carries
-// its own individual `name`, appended the same way — see groupCropRows for why that's
-// safe now (the overflow bucket is no longer identified via a shared `name`).
 function composeAspectLabel(row) {
   const name = row.name || row.group || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
@@ -87,12 +51,6 @@ function composeAspectLabel(row) {
   return name;
 }
 
-// Crop's inline pills are authored with no `group` at all (blank column); only the
-// "More" overflow rows carry one (e.g. "More" — localized, but that doesn't matter
-// here since it's never compared against a literal string, just checked for presence).
-// That shared group value is also the dropdown trigger's own label — read from the
-// sheet, never hardcoded — see buildCropAspectSection. Each row keeps its own `name`
-// regardless of bucket (see composeAspectLabel).
 function groupCropRows(rows) {
   return {
     pillRows: rows.filter((r) => !r.group),
@@ -100,20 +58,12 @@ function groupCropRows(rows) {
   };
 }
 
-// `group` is localized (it's resize's Custom/Standard/Social tab label, shown as-is),
-// so a row's kind can't be inferred by comparing `group` to a literal English string —
-// instead it's inferred from which structural (non-localized) columns are populated:
-// Social rows carry a `platform`; Standard rows carry a `ratio` but no `platform`;
-// Custom carries neither (just the bare trigger, no preset data at all).
 function resizeRowKind(row) {
   if (row.platform) return 'social';
   if (row.ratio) return 'standard';
   return 'custom';
 }
 
-// Buckets resize rows by their (localized) `group` value — rows sharing an identical
-// group belong to the same tab, and that value is the tab's own displayed label.
-// Bucket order follows first-appearance in the authored rows.
 function groupResizeRows(rows) {
   const buckets = [];
   const byGroup = new Map();
@@ -128,9 +78,6 @@ function groupResizeRows(rows) {
   return buckets;
 }
 
-// Pixel-space stays the single source of truth for the actual rect/frame math — units
-// only matter for how the Custom fields are typed into and displayed. 300px = 1in
-// (300 DPI, the standard print-resolution basis); cm/mm are derived from that.
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
 const DPI = 300;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
@@ -166,14 +113,6 @@ export function centeredRect(ratio, naturalW, naturalH, viewportW, viewportH) {
   };
 }
 
-// Resize's frame comes from an explicit width/height (px) rather than a ratio — at
-// natural size the frame exactly hugs the displayed image (iw/ih below); growing past
-// natural size grows the frame toward the full container, per the same object-contain
-// fraction the image itself is displayed at.
-// `anchorRect`, if given, keeps the new box centered on wherever that rect's own
-// center currently is (e.g. the box the user last dragged to) instead of recentering
-// in the viewport — clamped so a larger new size can't push it out of bounds.
-// Omitting it (viewport-center) is only meaningful before any selection exists.
 export function frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH, anchorRect = null) {
   const { cs } = containBox(naturalW, naturalH, viewportW, viewportH);
   const iw = (naturalW * cs) / viewportW;
@@ -196,15 +135,6 @@ function edgeDelta(movesNeg, movesPos, delta) {
   return 0;
 }
 
-// The frame must never be draggable/resizable beyond the actual displayed image, not
-// just the viewport — object-contain can letterbox/pillarbox the image within the
-// viewport (e.g. a portrait image in a wider viewport), leaving empty space on the
-// sides/top/bottom the selection shouldn't be able to reach. Zoom grows the image
-// outward from the viewport's own center (see render()'s transform), so these bounds
-// account for it the same way rectPctToSourceBounds's unscale() does, just in the
-// forward (base -> on-screen) direction instead of the reverse. Clamped to the
-// viewport's own 0-100 edge regardless, since once zoomed in enough the image covers
-// (or exceeds) the whole viewport and the old viewport-bounds behavior is correct again.
 export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 0) {
   const { w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
@@ -214,7 +144,6 @@ export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 
   const topPx = scaleAroundCenter(offsetY, viewportH, scale);
   const rightPx = scaleAroundCenter(offsetX + dispW, viewportW, scale);
   const bottomPx = scaleAroundCenter(offsetY + dispH, viewportH, scale);
-
   return {
     left: clamp((leftPx / viewportW) * 100, 0, 100),
     top: clamp((topPx / viewportH) * 100, 0, 100),
@@ -223,31 +152,20 @@ export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 
   };
 }
 
-// Resizes from a fixed anchor (the corner/edge opposite whichever the handle drags).
-// `bounds` (viewport-%, see imageBoundsPct) replaces the old fixed 0-100 viewport
-// edges — defaults to the full viewport for any caller that doesn't care. When
-// ratioLock is set, bounds overflow is resolved by scaling BOTH dimensions down
-// together (from whichever axis is more constrained), so the ratio stays exact even
-// when a side hits the boundary — clamping w/h independently would otherwise silently
-// break the locked ratio right at the boundary.
 export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { left: 0, top: 0, right: 100, bottom: 100 }) {
   const edges = HANDLE_EDGES[handle] || [];
   const movesLeft = edges.includes('left');
   const movesRight = edges.includes('right');
   const movesTop = edges.includes('top');
   const movesBottom = edges.includes('bottom');
-
   const anchorX = movesLeft ? base.x + base.w : base.x;
   const anchorY = movesTop ? base.y + base.h : base.y;
-
   let newW = Math.max(base.w + edgeDelta(movesLeft, movesRight, dxPct), MIN_PCT);
   let newH = Math.max(base.h + edgeDelta(movesTop, movesBottom, dyPct), MIN_PCT);
-
   if (ratioLock) {
     if (movesLeft || movesRight) newH = newW / ratioLock;
     else if (movesTop || movesBottom) newW = newH * ratioLock;
   }
-
   const maxW = movesLeft ? anchorX - bounds.left : bounds.right - anchorX;
   const maxH = movesTop ? anchorY - bounds.top : bounds.bottom - anchorY;
   if (newW > maxW || newH > maxH) {
@@ -262,7 +180,6 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { lef
   }
   newW = Math.max(newW, MIN_PCT);
   newH = Math.max(newH, MIN_PCT);
-
   const left = movesLeft ? anchorX - newW : anchorX;
   const top = movesTop ? anchorY - newH : anchorY;
   return {
@@ -273,26 +190,16 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { lef
   };
 }
 
-// Converts the frame's viewport-% rect into source-image pixel bounds — this is what
-// actually feeds edits.document.crop.bounds. Folds in zoom: the image is scaled around
-// the viewport's own center (transform-origin: center) while the frame stays fixed in
-// viewport-space, so a zoomed-in image maps a fixed on-screen frame to a smaller,
-// centered source region. Un-scaling each edge around the viewport center before the
-// existing offset/cs conversion recovers that region exactly (zoom=0 reduces to the
-// original unscaled math). Rotation isn't in scope right now (removed — see
-// crop-rotation-and-quality.md), so it isn't folded in here.
 export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0) {
   const { cs, w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
   const offsetY = (viewportH - dispH) / 2;
   const scale = zoomScale(zoom);
   const unscale = (px, size) => scaleAroundCenter(px, size, 1 / scale);
-
   const leftPx = unscale((rect.x / 100) * viewportW, viewportW);
   const topPx = unscale((rect.y / 100) * viewportH, viewportH);
   const rightPx = unscale(((rect.x + rect.w) / 100) * viewportW, viewportW);
   const bottomPx = unscale(((rect.y + rect.h) / 100) * viewportH, viewportH);
-
   const left = clamp(Math.round((leftPx - offsetX) / cs), 0, naturalW);
   const top = clamp(Math.round((topPx - offsetY) / cs), 0, naturalH);
   const right = clamp(Math.round((rightPx - offsetX) / cs), left, naturalW);
@@ -312,16 +219,8 @@ function buildFrame() {
   return frame;
 }
 
-// Only 'zoom' and 'quality' are functionally wired (EditorEngine has real state and
-// slider behavior for exactly those two) — an authored icon-placeholder-slider-* with
-// any other suffix renders a real toggle button, but clicking it and moving the slider
-// won't actually change anything, since there's no matching state field to write to.
 const KNOWN_SLIDER_MODES = new Set(['zoom', 'quality']);
 
-// Icon-only until this button becomes the active mode, at which point its label
-// appears beside the icon (see .ia-toggle-label / .is-active in editor.css) — the
-// active button is whichever one setMode() last marked, same mechanism already used
-// elsewhere in this file, no extra state needed here.
 function buildToggleButton(mode, label, iconHref, isActive) {
   const btn = createTag('button', {
     type: 'button',
@@ -334,8 +233,6 @@ function buildToggleButton(mode, label, iconHref, isActive) {
   return btn;
 }
 
-// Only called when parsedData.sliderModes is non-empty (see buildEditorLeftPanel) — no
-// fallback to hardcoded modes: an unauthored page simply gets no adjust bar at all.
 function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
   const toggle = createTag('div', { class: 'ia-toggle' });
@@ -348,8 +245,6 @@ function buildAdjustBar(parsedData) {
     autocomplete: 'off',
     min: '0',
     max: '100',
-    // Just the first paint's placeholder — EditorEngine's constructor immediately
-    // overwrites this via setMode() once real state (this.zoom/this.quality) exists.
     value: startMode === 'quality' ? '100' : '0',
   });
   const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '1.0x');
@@ -357,10 +252,6 @@ function buildAdjustBar(parsedData) {
   return bar;
 }
 
-// Shown only while EditorEngine.setBusy(true) is active (runEditorOperation's
-// imageOperations + connector calls) — a dedicated overlay/animation for this editor,
-// not a reuse of rbg's own .ia-ghost/data-state="loading" machine, since this is a
-// different state entirely (mid-panel editing, not the initial upload).
 function buildProcessingOverlay() {
   const overlay = createTag('div', { class: 'ia-processing-overlay' });
   overlay.append(
@@ -376,11 +267,6 @@ export function buildEditorLeftPanel(parsedData) {
   const viewport = createTag('div', { class: 'ia-viewport' });
   const blurImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
   const sharpImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
-  // .ia-imgbox — sized to the image's static footprint and clipped there (see
-  // EditorEngine.render()'s comment) — is a SEPARATE inner element from .ia-imglayer
-  // (which stays viewport-sized) specifically so zoom can still magnify the image out
-  // to fill the whole viewport: the box clips blur's halo at native size first, then
-  // the whole (already clean-edged) box scales up as one unit via transform.
   viewport.append(
     createTag('div', { class: 'ia-imglayer ia-imglayer--blur' }, createTag('div', { class: 'ia-imgbox' }, blurImg)),
     createTag('div', { class: 'ia-imglayer ia-imglayer--sharp' }, createTag('div', { class: 'ia-imgbox' }, sharpImg)),
@@ -388,20 +274,11 @@ export function buildEditorLeftPanel(parsedData) {
     buildProcessingOverlay(),
   );
   leftPanel.append(viewport);
-  // No icon-placeholder-slider-* authored at all — no adjust bar, not a fallback one.
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
-  // Shown only while a dropdown (More/Social/unit) is open — see EditorEngine's
-  // updateDropdownScrim(). Mirrors .ia-panel-busy-overlay's approach on the right
-  // panel, but toggled by dropdown state instead of network activity, and present on
-  // BOTH panels since a dropdown open here should dim the whole widget, not just the
-  // side it lives in.
   leftPanel.append(createTag('div', { class: 'ia-dropdown-scrim' }));
   return leftPanel;
 }
 
-// Shared by every authored icon+label button/pill (reset, reupload, the two CTAs,
-// each NBA pill) — iconHref is optional (undefined when not authored), so this works
-// identically whether or not a given row actually has an icon.
 function buildIconButton(tag, attrs, iconHref, label) {
   const el = createTag(tag, attrs);
   if (iconHref) el.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
@@ -409,12 +286,6 @@ function buildIconButton(tag, attrs, iconHref, label) {
   return el;
 }
 
-// Only ever called from EditorEngine.setBusy() — swaps a buildIconButton-shaped
-// button's own icon for a spinner (rather than just letting it go inert like every
-// other control), so the specific button the user clicked stays visually distinct
-// while busy. The spinner element is added/removed on demand rather than always
-// present-but-hidden, since only two buttons (the download CTA, each NBA pill) ever
-// need it.
 function toggleTriggerSpinner(btn, isBusy) {
   if (!btn) return;
   const icon = btn.querySelector('.ia-btn-icon');
@@ -431,27 +302,10 @@ function toggleTriggerSpinner(btn, isBusy) {
   }
 }
 
-// Shared by every dropdown menu (crop's More, resize's Social, the unit picker) — an
-// explicit close affordance inside the menu itself, in addition to the existing
-// outside-click handling in each bind*Events method. Click binding happens there too
-// (not here), since this is a pure DOM builder with no EditorEngine instance yet. No
-// text content — the "X" itself is drawn in CSS (two crossed bars, see
-// .ia-dropdown-close::before/::after) for a bold, consistent glyph instead of relying
-// on a thin, font-dependent "×" character.
 function buildDropdownCloseButton() {
   return createTag('button', { type: 'button', class: 'ia-dropdown-close', 'aria-label': 'Close' });
 }
 
-// Takes the row directly (rather than pre-extracted fields) so it can stamp both the
-// composed display label AND the row's raw, authored ratio string onto the pill as two
-// separate attributes — `data-label` (shown in the UI, e.g. "Square 1:1") is NOT the
-// same thing as `data-ratio-text` (the clean ratio identity, e.g. "1:1", that the
-// EditInFirefly contract's aspectRatio field wants). Only rows with a literal
-// `ratio` column (crop pills, Standard) get data-ratio-text; Social rows carry
-// width/height instead — stamped on when present so selecting one can set the resize
-// output to those exact authored pixels, rather than recomputing an approximation from
-// the crop rect (which would round to whatever the frame's own pixel math produces,
-// not necessarily the literal "1080x1920" the row promised).
 function buildAspectPill(row, isActive = false) {
   const label = composeAspectLabel(row);
   const attrs = {
@@ -468,18 +322,10 @@ function buildAspectPill(row, isActive = false) {
   return buildIconButton('button', attrs, row.icon, label);
 }
 
-// downloadLabel/editLabel come from the authored config list (the same icon-download/
-// icon-aiPhotoEditor rows rbg's buildResultSection/buildEditInFireflyButton read) —
-// undefined when not authored, so falls back to the crop/resize-specific defaults
-// below rather than rbg's generic "Download"/"Edit in Firefly" wording.
 function buildCtaRow(isCrop, parsedData) {
   const row = createTag('div', { class: 'ia-cta-row' });
   const downloadLabel = parsedData.downloadLabel || (isCrop ? 'Crop and download' : 'Resize and download');
   const editLabel = parsedData.editLabel || 'Open in Firefly';
-  // ia-cta-accent/ia-cta-outline are the visual-variant classes editor.css styles by
-  // (filled vs. outlined button) — ia-editor-download/ia-editor-open-in-firefly are
-  // purely for target-config.json's actionMap to bind against, so the map reads by
-  // what the button does, not what it looks like.
   row.append(
     buildIconButton('button', { type: 'button', class: 'ia-cta-accent ia-editor-download' }, parsedData.downloadIconHref, downloadLabel),
     buildIconButton('button', { type: 'button', class: 'ia-cta-outline ia-editor-open-in-firefly' }, parsedData.editIconHref, editLabel),
@@ -487,19 +333,9 @@ function buildCtaRow(isCrop, parsedData) {
   return row;
 }
 
-// No fallback to hardcoded pills — an unauthored crop page (aspectRows empty) simply
-// gets an empty aspect row, same "authored or nothing" rule already applied to the
-// adjust bar's slider modes.
 function buildCropAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
   section.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
-  // --scroll: a single horizontally-scrollable strip, not the wrapping multi-row grid
-  // .ia-aspect-row otherwise renders (used as-is by resize's Standard/Social detail
-  // grids) — crop's own pill row (including the "More" trigger) scrolls as one strip
-  // instead of wrapping to a second line. Its dropdown menu (.ia-more-menu) is
-  // positioned via JS as position:fixed (see positionMoreMenu/toggleMore) rather than
-  // absolute, since an absolutely-positioned menu would get clipped by this row's own
-  // overflow-x:auto.
   const row = createTag('div', { class: 'ia-aspect-row ia-aspect-row--scroll' });
   const { pillRows, moreRows } = groupCropRows(parsedData.aspectRows || []);
   pillRows.forEach((r, i) => row.append(buildAspectPill(r, i === 0)));
@@ -509,38 +345,18 @@ function buildCropAspectSection(parsedData) {
     moreRows.forEach((r) => {
       const label = composeAspectLabel(r);
       const ratioVal = aspectRatioValue(r);
-      // A "More" row authored with no ratio at all (e.g. "See all") has nothing to
-      // select — it means "skip picking a preset, go straight to Firefly with
-      // whatever's already selected" instead, same as the main "Open in Firefly" CTA.
-      // Reusing its exact class hooks this into the SAME actionMap entry
-      // (bindActionMapElements picks up every .ia-editor-open-in-firefly under the
-      // panel, not just the CTA button) rather than duplicating that flow here.
       const opensFirefly = ratioVal === null;
       moreMenu.append(buildIconButton('button', {
         type: 'button',
         class: `ia-more-opt${opensFirefly ? ' ia-editor-open-in-firefly' : ''}`,
         'data-ratio': ratioVal ?? '',
         'data-label': label,
-        // Read back by selectAspect (via the click handler below) so picking this
-        // option can carry its own icon over onto the trigger, not just its label.
+
         ...(r.icon && { 'data-icon': r.icon }),
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
       }, r.icon, label));
     });
-    // Appended last, not first — it renders as the dropdown's own final row/value
-    // (styled like the options above it, see .ia-dropdown-close in editor.css), not a
-    // small floating corner icon.
     moreMenu.append(buildDropdownCloseButton());
-    // moreRows share one repeated, localized `group` (see groupCropRows) — that's the
-    // dropdown trigger's own default label, never a hardcoded "More". Each row's own
-    // `name` is its individual option label instead (composed above). Built via
-    // buildIconButton with no iconHref (the group label has no AUTHORED icon of its
-    // own) so it has the same span-wrapped-label structure every other pill/option
-    // has, letting selectAspect swap in a selected option's own icon later without
-    // clobbering the rest of the button (see setMoreTrigger) — then the built-in
-    // sprite icon (MORE_TRIGGER_ICON) is prepended separately, in the same position
-    // buildIconButton would have put an authored <img>, since buildIconButton itself
-    // only knows how to build the href->img pattern, not a sprite <use> reference.
     const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
@@ -564,15 +380,12 @@ function buildDimensionField(labelText, className) {
   return field;
 }
 
-// Same dropdown pattern as Crop's More / Resize's Social — a plain trigger + option
-// list, distinct classes so it doesn't get picked up by that unrelated wiring.
 function buildUnitPicker() {
   const wrap = createTag('div', { class: 'ia-more' });
   const menu = createTag('div', { class: 'ia-unit-menu hide' });
   UNIT_OPTIONS.forEach((unit) => {
     menu.append(createTag('button', { type: 'button', class: 'ia-unit-opt', 'data-unit': unit }, unit));
   });
-  // Appended last — see the equivalent comment in buildCropAspectSection.
   menu.append(buildDropdownCloseButton());
   const trigger = createTag('button', {
     type: 'button',
@@ -610,9 +423,6 @@ function buildStandardDetail(standardRows) {
   return detail;
 }
 
-// Social's detail is just the per-platform ratio grids — the platform picker itself
-// lives in the pill row (see buildResizeAspectSection), same as Crop's More trigger.
-// Platform order follows first-appearance in the authored rows, not alphabetical.
 function buildSocialDetail(socialRows, platforms) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'social' });
   const grids = createTag('div', { class: 'ia-social-grids' });
@@ -627,15 +437,8 @@ function buildSocialDetail(socialRows, platforms) {
   return detail;
 }
 
-// Custom is always available (typing width/height doesn't depend on authoring).
-// Standard/Social only render at all if the sheet actually authored rows for them —
-// same "authored or nothing" rule as the adjust bar and crop's pills — so an
-// unauthored resize page falls back to Custom-only rather than showing an empty tab.
 function buildResizeAspectSection(parsedData) {
   const section = createTag('div', { class: 'ia-aspect-section' });
-  // Unlike crop, the heading sits inline with the Custom/Standard/Social tab row
-  // itself (same line), not stacked above it — the detail grids/fields those tabs
-  // reveal still render below this combined row, further down in `section`.
   const header = createTag('div', { class: 'ia-aspect-header-row' });
   header.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
@@ -643,16 +446,7 @@ function buildResizeAspectSection(parsedData) {
   const customBucket = buckets.find((b) => b.kind === 'custom');
   const standardBucket = buckets.find((b) => b.kind === 'standard');
   const socialBucket = buckets.find((b) => b.kind === 'social');
-  // platform is NOT localized (brand names are stable across locales), so it's used
-  // directly as both the grid key and the dropdown option's own display text.
   const platforms = socialBucket ? [...new Set(socialBucket.rows.map((r) => r.platform))] : [];
-  // These are deliberately NOT .ia-aspect-pill — that class is reserved for actual
-  // ratio-selecting pills (Standard's presets, Social's per-platform grids), which
-  // already go through bindAspectEvents()/selectAspect(). Custom/Standard/Social
-  // switch tabs or open a dropdown instead, so they get their own class + CSS that
-  // matches .ia-aspect-pill visually without being picked up by that generic wiring.
-  // Each tab's label is its bucket's own (localized) `group` value — Custom falls back
-  // to the English default only when truly unauthored, same as every other label here.
   row.append(createTag('button', {
     type: 'button',
     class: 'ia-resize-tab is-active',
@@ -667,7 +461,6 @@ function buildResizeAspectSection(parsedData) {
     platforms.forEach((platform) => {
       socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
     });
-    // Appended last — see the equivalent comment in buildCropAspectSection.
     socialMenu.append(buildDropdownCloseButton());
     const socialTrigger = createTag('button', {
       type: 'button',
@@ -690,11 +483,6 @@ function buildResizeAspectSection(parsedData) {
   return section;
 }
 
-// Crop/Resize's "take it further" pills come from the same authored NBA rows rbg's
-// cards use (icon-nba-* rows), just read via parsedData.nbaPills — the simpler
-// icon+label shape, not rbg's image-card shape (see parseInlineAuthoring). One page
-// only ever authors one operation, so there's no separate crop-vs-resize content to
-// pick between here — whatever's authored applies to this page's operation directly.
 function buildFurtherSection(parsedData) {
   const section = createTag('div', { class: 'ia-further-section' });
   section.append(createTag('p', { class: 'ia-further-heading' }, parsedData.nbaHeading || 'Take your image further'));
@@ -741,14 +529,7 @@ export function buildEditorRightPanel(parsedData) {
   rightPanel.append(header);
   const aspectSection = isCrop ? buildCropAspectSection(parsedData) : buildResizeAspectSection(parsedData);
   rightPanel.append(aspectSection, buildFurtherSection(parsedData));
-  // Shown only while EditorEngine.setBusy(true) is active — a scrim over the whole
-  // panel rather than dimming individual controls, since opacity on this panel itself
-  // would dim the trigger button too (a child can't opt out of an ancestor's opacity).
-  // The trigger button (.is-loading) gets a higher z-index than this overlay instead,
-  // so it visually sits above the scrim while everything else stays covered by it.
   rightPanel.append(createTag('div', { class: 'ia-panel-busy-overlay' }));
-  // See the equivalent scrim appended in buildEditorLeftPanel — this is this panel's
-  // own half of it (the dropdowns themselves live here, but the dimming covers both).
   rightPanel.append(createTag('div', { class: 'ia-dropdown-scrim' }));
   return rightPanel;
 }
@@ -756,19 +537,9 @@ export function buildEditorRightPanel(parsedData) {
 export class EditorEngine {
   constructor(leftPanelEl, rightPanelEl, parsedData, trackEvent) {
     this.isCrop = parsedData.operation === 'crop';
-    // Threaded in from ActionBinder via initEditor()/setEditorImage() — EditorEngine
-    // has no binder reference of its own (kept out of action-binder.js entirely, see
-    // editor-flow.js's own top-of-file comment), so aspect-ratio-pill/More-button
-    // clicks (which never go through the actionMap — no server call happens) call
-    // this directly rather than reaching for a nonexistent this.binder.trackEvent().
     this.trackEvent = trackEvent || (() => {});
     this.leftPanel = leftPanelEl;
     this.viewport = leftPanelEl.querySelector('.ia-viewport');
-    // .ia-imglayer (blurLayer/sharpLayer) stays viewport-sized — sharpLayer's own
-    // crop-selection clip-path (see render()) is applied here, in plain viewport-
-    // relative %, with no remap needed. .ia-imgbox (blurBox/sharpBox), one level in,
-    // is what's actually sized to the image's static footprint, clipped there, and
-    // transform-scaled for zoom — see render()'s comment for why this split exists.
     this.blurLayer = leftPanelEl.querySelector('.ia-imglayer--blur');
     this.blurBox = this.blurLayer.querySelector('.ia-imgbox');
     this.blurImg = this.blurLayer.querySelector('.ia-img');
@@ -787,36 +558,17 @@ export class EditorEngine {
     this.qualityPreviewActive = false;
     this.qualityPreviewUrl = null;
     this.originalUrl = '';
-    // Set once per genuine upload/reupload (setImage's isOriginalUpload=true) and never
-    // touched by a post-operation setImage() call — unlike originalUrl, which always
-    // points at whatever's currently displayed. This is what a future "back to
-    // original" action would reload, regardless of how many operations ran since.
     this.originalImageUrl = '';
     this.sourceImg = null;
     this.aspectPills = [...rightPanelEl.querySelectorAll('.ia-aspect-pill')];
     this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
     this.moreMenu = rightPanelEl.querySelector('.ia-more-menu');
-    // .ia-more is reused by resize's Social/unit-picker wrappers too (see buildUnitPicker/
-    // buildResizeAspectSection), so this must be derived from the specific trigger via
-    // closest(), never a fresh panel-wide querySelector('.ia-more') — that would be
-    // ambiguous whenever more than one such wrapper exists in the same panel.
     this.moreWrap = this.moreTrigger?.closest('.ia-more');
-    // Stable bound reference (not a fresh arrow per call) so add/removeEventListener in
-    // toggleMore/closeMore below target the exact same listener — see positionMoreMenu.
     this.repositionMoreMenu = () => this.positionMoreMenu();
-    // First authored, real ratio-selecting pill (never the More trigger itself) — used
-    // by reset() so crop always returns to whatever the sheet's own first row was,
-    // instead of assuming a hardcoded "Freeform" pill exists.
     const firstPill = this.aspectPills.find((p) => p !== this.moreTrigger);
     this.defaultAspectRatio = firstPill?.dataset.ratio ? Number(firstPill.dataset.ratio) : null;
     this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
-    // The clean, authored ratio string (e.g. "16:9") — distinct from defaultAspectLabel
-    // above, which is the composed DISPLAY text (e.g. "Landscape 16:9"). This is what
-    // the EditInFirefly contract's aspectRatio field actually wants; null when the
-    // default pill has no literal ratio column (Freeform, or a Social preset).
     this.defaultAspectRatioText = firstPill?.dataset.ratioText || null;
-    // Captured once, at build time, before any click can overwrite it — the sheet's own
-    // (localized) label, never a hardcoded "More" (see groupCropRows/buildCropAspectSection).
     this.moreDefaultLabel = this.moreTrigger?.textContent || 'More';
     this.resizeTabs = [...rightPanelEl.querySelectorAll('.ia-resize-tab')];
     this.resizeDetails = [...rightPanelEl.querySelectorAll('.ia-resize-detail-panel')];
@@ -829,16 +581,11 @@ export class EditorEngine {
     this.unitWrap = this.unitTrigger?.closest('.ia-more');
     this.unit = 'px';
     this.socialTrigger = rightPanelEl.querySelector('.ia-social-trigger');
-    // Same as moreDefaultLabel above — the bucket's own (localized) group value, not a
-    // hardcoded "Social".
     this.socialDefaultLabel = this.socialTrigger?.textContent || 'Social';
     this.socialMenu = rightPanelEl.querySelector('.ia-social-menu');
     this.socialWrap = this.socialTrigger?.closest('.ia-more');
     this.socialGrids = [...rightPanelEl.querySelectorAll('.ia-social-grid')];
     this.sizeReadout = rightPanelEl.querySelector('.ia-size-readout');
-    // Same fallback pattern as the readout's initial text in buildResizeAspectSection —
-    // duplicated rather than shared, since that's a standalone builder function with no
-    // access to `this`, and this is the only other place these labels are needed.
     this.originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
     this.newSizeLabel = parsedData.newSizeLabel || 'New size';
     this.originalSize = 0;
@@ -847,30 +594,14 @@ export class EditorEngine {
     this.hasInteracted = false;
     this.locked = true;
     this.resizeTab = 'custom';
-    this.rect = {
-      x: 0,
-      y: 0,
-      w: 100,
-      h: 100,
-    };
+    this.rect = {x: 0, y: 0, w: 100, h: 100};
     this.naturalW = 0;
     this.naturalH = 0;
-    // Custom tab's independent output size — decoupled from `rect` while locked (see
-    // onDimensionCommit/startDrag). Only collapses back into `rect` when unlocked.
     this.targetW = 0;
     this.targetH = 0;
     this.selectedRatio = null;
-    // selectedRatioLabel is the composed DISPLAY text (e.g. "Landscape 16:9"), used only
-    // for the More trigger's text and pill highlighting. selectedRatioText is the clean,
-    // authored ratio string (e.g. "16:9") the EditInFirefly contract's aspectRatio field
-    // actually wants — null for Freeform/Custom/Social selections, which have no literal
-    // ratio column (see buildAspectPill).
     this.selectedRatioLabel = 'Freeform';
     this.selectedRatioText = null;
-    // Matches whichever mode buildAdjustBar picked as the first/active toggle button
-    // (or null if none were authored — no adjust bar exists in that case, see
-    // buildEditorLeftPanel), so DOM (.is-active) and state start in sync. Stored so
-    // reset() can return to it without re-deriving the same lookup.
     this.defaultMode = parsedData.sliderModes[0]?.mode || null;
     this.mode = this.defaultMode;
     this.zoom = 0;
@@ -880,11 +611,6 @@ export class EditorEngine {
     this.setupResponsiveHeader();
   }
 
-  // Mobile/tablet shows .ia-editor-header inside the left panel, before .ia-viewport
-  // (see the pill-style rules in inline-action.css); desktop keeps it at the top of the
-  // right panel. Re-parents the single header node on breakpoint change instead of
-  // building two, so Reset/Upload (queried once, above) never end up duplicated or
-  // unwired to a stale copy.
   setupResponsiveHeader() {
     if (!this.header) return;
     const mq = window.matchMedia('(min-width: 1200px)');
@@ -921,9 +647,6 @@ export class EditorEngine {
     this.naturalH = this.sharpImg.naturalHeight;
     this.targetW = this.naturalW;
     this.targetH = this.naturalH;
-    // Dedicated, never-swapped source element for pixel operations (size estimate,
-    // quality preview) so toggling the quality preview on/off can't compound
-    // re-encoding against an already-degraded image.
     this.sourceImg = new Image();
     this.sourceImg.src = url;
     const [vpW, vpH] = this.viewportSize();
@@ -937,21 +660,6 @@ export class EditorEngine {
     this.frame.style.top = `${y}%`;
     this.frame.style.width = `${w}%`;
     this.frame.style.height = `${h}%`;
-    // .ia-imgbox (blurBox/sharpBox) is sized to the image's STATIC (unzoomed)
-    // footprint — containBox — recomputed here but not itself zoom-dependent. Zoom is
-    // a transform:scale() on THIS box (not .ia-img, and not .ia-imglayer): overflow:
-    // clip on the box confines blur's filter halo to the footprint's real edges at
-    // native size — CSS clips a transformed element to its OWN untransformed border
-    // box before the transform is applied — so the halo is already gone before the
-    // scale-up ever happens. The scaled result then isn't confined by anything of its
-    // own (.ia-imglayer stays overflow:visible), so it can still grow out to fill the
-    // whole viewport at higher zoom, clipped only by .ia-viewport's own outer
-    // overflow:clip — exactly the original pre-clip zoom behavior, just with a clean
-    // (non-bleeding) edge baked in before the magnification. The box's own
-    // width/height are the only thing recomputed here (not left/top — flex centering
-    // on .ia-imglayer handles that automatically), and transform is the only thing
-    // that changes per zoom-slider tick, so this stays compositor-only/cheap exactly
-    // like the original transform-on-.ia-img approach — no per-tick layout cost.
     if (this.naturalW) {
       const [vpW, vpH] = this.viewportSize();
       const { w: dispW, h: dispH } = containBox(this.naturalW, this.naturalH, vpW, vpH);
@@ -965,22 +673,10 @@ export class EditorEngine {
     const transform = `scale(${zoomScale(this.zoom)})`;
     this.blurBox.style.transform = transform;
     this.sharpBox.style.transform = transform;
-    // clip-path must live on sharpLayer (viewport-sized, untransformed), not sharpBox
-    // (the transformed inner box) or sharpImg — CSS clips an element's own box before
-    // applying any transform, so a clip-path on the transformed box would visibly
-    // scale the "cut here" window along with zoom, drifting away from the static
-    // .ia-frame overlay (which never gets a zoom transform). Since sharpLayer is
-    // viewport-sized, `rect`'s own viewport-relative x/y/w/h apply directly — no
-    // remap needed, same as before this file ever dealt with zoom-vs-footprint sizing
-    // at all.
     this.sharpLayer.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
     if (!this.isCrop) this.syncDimensionFields();
   }
 
-  // Pure display of `targetW`/`targetH` — the Custom tab's independent output size.
-  // Never reads `rect`: while locked, dragging never touches targetW/targetH (see
-  // startDrag), so this must not resync from the frame on every render or it would
-  // silently undo that decoupling.
   syncDimensionFields() {
     if (!this.widthInput || !this.naturalW) return;
     if (document.activeElement !== this.widthInput) this.widthInput.value = pxToUnit(this.targetW, this.unit);
@@ -994,10 +690,6 @@ export class EditorEngine {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  // Real byte size via the browser's own JPEG encoder — not the w*h*3 heuristic the
-  // prototype used. Draws the full source image (not just the crop region — Resize's
-  // size estimate is about output pixel count + quality, independent of the frame) at
-  // the current target dimensions and reads the actual compressed blob size.
   computeNewSize(width, height) {
     return new Promise((resolve) => {
       if (!width || !height || !this.sourceImg) { resolve(null); return; }
@@ -1025,18 +717,11 @@ export class EditorEngine {
     const seq = this.sizeReadoutSeq;
     const { width, height } = this.getResizeDimensions();
     const newSize = await this.computeNewSize(width, height);
-    if (seq !== this.sizeReadoutSeq) return; // a newer update superseded this one
+    if (seq !== this.sizeReadoutSeq) return;
     const updated = EditorEngine.formatBytes(newSize);
     this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: ${updated}`;
   }
 
-  // Resize-only "Quality" button: an explicit, on-demand visual preview of what the
-  // current quality slider value actually does to the image, since (unlike rotation)
-  // there's no free CSS shortcut for real compression artifacts. Re-encodes the full
-  // source at its natural resolution (no crop/resample) so the swapped-in image keeps
-  // the exact same dimensions as the original and never disturbs the frame/viewport
-  // layout. Always draws from `this.sourceImg` (never the currently-displayed
-  // `sharpImg`/`blurImg`) so repeated toggles can't compound re-encoding loss.
   applyQualityPreview() {
     if (!this.sourceImg || !this.naturalW || !this.naturalH) return;
     const canvas = document.createElement('canvas');
@@ -1101,20 +786,12 @@ export class EditorEngine {
     this.bindDimensionEvents();
     this.bindSocialEvents();
     this.bindUnitEvents();
-    // .ia-editor-reset is bound via target-config.json's actionMap now (resetEditor in
-    // editor-flow.js), not directly here — Reset needs to restore binder-level state
-    // (assetId, filesData.type) back to the original upload too, which this class has
-    // no reference to reach on its own. See resetEditor for the full reset sequence;
-    // this.reset() (below) still handles the selection-only part it calls afterward.
     this.qualityBtn?.addEventListener('click', () => this.toggleQualityPreview());
   }
 
   bindResizeTabEvents() {
     this.resizeTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
-        // Social doesn't switch tabs on its own click — like Crop's More, it opens a
-        // dropdown first; picking a platform is what actually switches to it (see
-        // bindSocialEvents), same as picking a More option marks that pill active.
         if (tab.dataset.tab === 'social') {
           this.toggleSocialMenu();
           return;
@@ -1128,19 +805,11 @@ export class EditorEngine {
     this.resizeTab = tab.dataset.tab;
     this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t === tab));
     this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== tab.dataset.tab));
-    // Same as Crop's More trigger reverting to its default label when a different pill
-    // is picked (selectAspect's fromMore=false branch) — Social should only show a
-    // platform name while it's actually the active tab, not linger after Custom/Standard
-    // is chosen.
     if (tab !== this.socialTrigger && this.socialTrigger) this.socialTrigger.textContent = this.socialDefaultLabel;
   }
 
   bindDimensionEvents() {
     if (!this.widthInput) return;
-    // Commit on blur/Enter for typed digits — partial input while composing a number
-    // should never reshape the frame or recompute the size readout mid-edit. Arrow-key
-    // stepping is different: each press is already a complete, atomic change (the
-    // browser's native stepUp/stepDown), so it commits immediately, per tick.
     const commit = (axis) => () => this.onDimensionCommit(axis);
     this.widthInput.addEventListener('blur', commit('width'));
     this.heightInput.addEventListener('blur', commit('height'));
@@ -1155,8 +824,6 @@ export class EditorEngine {
         }
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown') viaArrowKey = true;
       });
-      // The native step happens between keydown and input, so input.value already
-      // reflects the new stepped value by the time this fires.
       input.addEventListener('input', () => {
         if (!viaArrowKey) return;
         viaArrowKey = false;
@@ -1170,12 +837,6 @@ export class EditorEngine {
     });
   }
 
-  // Locked: targetW/targetH are independent of the crop frame — updated here,
-  // cross-computed from their own current ratio, `rect` is never touched. Unlocked:
-  // targetW/targetH and `rect` collapse back into one thing — frameFromDimensions
-  // rebuilds the box at the new size anchored on the current rect's own center (not
-  // the viewport's), so typing/stepping a value resizes the box in place rather than
-  // snapping it back to wherever a fresh, never-touched selection would start.
   onDimensionCommit(axis) {
     if (!this.naturalW) return;
     const raw = Number(axis === 'width' ? this.widthInput.value : this.heightInput.value);
@@ -1225,9 +886,6 @@ export class EditorEngine {
       });
     });
     this.socialMenu?.querySelector('.ia-dropdown-close')?.addEventListener('click', () => this.closeSocialMenu());
-    // Scoped to the dropdown's own wrapper, not the whole panel — clicking elsewhere in
-    // the panel (e.g. the CTA row, a Standard pill) should close this like any other
-    // outside click, not just a click that lands entirely outside the panel.
     document.addEventListener('click', (e) => {
       if (!this.socialWrap?.contains(e.target)) this.closeSocialMenu();
     });
@@ -1258,7 +916,6 @@ export class EditorEngine {
       });
     });
     this.unitMenu?.querySelector('.ia-dropdown-close')?.addEventListener('click', () => this.closeUnitMenu());
-    // Scoped to the picker's own wrapper, not the whole panel — see bindSocialEvents.
     document.addEventListener('click', (e) => {
       if (!this.unitWrap?.contains(e.target)) this.closeUnitMenu();
     });
@@ -1301,10 +958,6 @@ export class EditorEngine {
       pill.addEventListener('click', () => {
         const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
-        // ratioText (e.g. "16:9") over the composed label ("Landscape 16:9") when both
-        // exist — falls back to label for Freeform (whose own label is already just
-        // "Freeform") and for any ratioText-less preset (e.g. a Social pixel-dimension
-        // pill with no named ratio).
         this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();
@@ -1314,33 +967,19 @@ export class EditorEngine {
       this.trackEvent('Aspect Ratio More|UnityWidget');
       this.toggleMore();
     });
-    // Double optional-chain: moreMenu is null when the sheet authored no "More" rows
-    // for this operation (see buildCropAspectSection) — querySelectorAll on null would
-    // throw without the first `?.`, and calling .forEach on that undefined result would
-    // throw without the second.
     this.moreMenu?.querySelectorAll('.ia-more-opt')?.forEach((opt) => {
-      // This one's actual click behavior (redirecting to Firefly) is already wired by
-      // bindActionMapElements via its .ia-editor-open-in-firefly class (see
-      // buildCropAspectSection) — it only needs the dropdown closed here, not a
-      // competing selectAspect call.
       if (opt.classList.contains('ia-editor-open-in-firefly')) {
         opt.addEventListener('click', () => this.closeMore());
         return;
       }
       opt.addEventListener('click', () => {
         const { ratio, label, ratioText, icon } = opt.dataset;
-        // Same tracking as a direct pill click (above) — a ratio picked from inside
-        // the More menu is still an aspect-ratio selection, not a separate event.
         this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
         this.selectAspect(Number(ratio), label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });
     });
     this.moreMenu?.querySelector('.ia-dropdown-close')?.addEventListener('click', () => this.closeMore());
-    // Guarded on moreTrigger existing at all (not just aspectPills.length, which can be
-    // true from standalone pills alone) — no point registering a global listener for a
-    // dropdown that was never authored. Scoped to the dropdown's own wrapper, not the
-    // whole panel, once it does exist — see bindSocialEvents.
     if (this.moreTrigger) {
       document.addEventListener('click', (e) => {
         if (!this.moreWrap.contains(e.target)) this.closeMore();
@@ -1348,11 +987,6 @@ export class EditorEngine {
     }
   }
 
-  // .ia-more-menu is position:fixed (see editor.css) since the trigger scrolls inside
-  // .ia-aspect-row--scroll, so it needs its own viewport coordinates rather than
-  // relying on an absolute-positioned offset from its (clipping) ancestor.
-  // Right-aligned to the trigger's own right edge, opening just below it — same
-  // placement the old position:absolute rule produced.
   positionMoreMenu() {
     const rect = this.moreTrigger.getBoundingClientRect();
     this.moreMenu.style.top = `${rect.bottom + 6}px`;
@@ -1366,12 +1000,6 @@ export class EditorEngine {
       this.positionMoreMenu();
       this.moreMenu.classList.remove('hide');
       this.moreTrigger.setAttribute('aria-expanded', 'true');
-      // A fixed-position menu is otherwise just a one-time snapshot — it wouldn't
-      // follow the trigger if the page (or the trigger's own .ia-aspect-row--scroll
-      // ancestor) scrolls while open. `capture: true` is what makes this catch scroll
-      // events from that (or any other) scrollable ancestor too, since scroll events
-      // don't bubble but do fire during the capture phase on every ancestor up to
-      // window, including it.
       window.addEventListener('scroll', this.repositionMoreMenu, true);
       window.addEventListener('resize', this.repositionMoreMenu);
     }
@@ -1386,18 +1014,6 @@ export class EditorEngine {
     this.updateDropdownScrim();
   }
 
-  // Dims the rest of the widget (both panels) while any dropdown (More/Social/unit) is
-  // open, so the floating option pills read as the only interactive thing on screen —
-  // recomputed from each menu's actual hidden state (not a boolean threaded through
-  // from whichever call site changed) so it stays correct even if more than one of
-  // these dropdowns is present in the DOM at once (resize has both Social and the unit
-  // picker, though only one is ever open in practice — outside-click closes whichever
-  // other one was open, see bind*Events). Also marks each dropdown's own wrapper with
-  // .is-open only while ITS menu is the one actually open — .ia-more is shared by all
-  // three wrappers, so the z-index bump that lifts an open dropdown above the scrim
-  // (see .ia-more.is-open in editor.css) must stay scoped to the open one specifically,
-  // or a second, CLOSED dropdown sharing the same class would also rise above the
-  // scrim and look wrongly undimmed.
   updateDropdownScrim() {
     let anyOpen = false;
     [
@@ -1413,17 +1029,6 @@ export class EditorEngine {
     this.rightPanel.classList.toggle('is-dropdown-open', anyOpen);
   }
 
-  // Swaps the More trigger's label (and optionally its icon) without disturbing the
-  // rest of the button — the trigger is built via buildIconButton (see
-  // buildCropAspectSection) specifically so its label always lives in its own <span>,
-  // never touched via a blind textContent assignment that would also wipe out an icon
-  // added here on a previous selection.
-  // iconHref falls back to the built-in sprite icon (MORE_TRIGGER_ICON), not to no
-  // icon at all — every OTHER call site (a plain pill selection, or reset()) calls
-  // this with iconHref omitted, since neither has an authored icon of its own to
-  // pass; without this fallback the trigger would permanently lose its icon the
-  // first time either of those fires, since this always clears whatever's there
-  // first regardless of what (if anything) replaces it.
   setMoreTrigger(label, iconHref = null) {
     if (!this.moreTrigger) return;
     this.moreTrigger.querySelector('.ia-btn-icon')?.remove();
@@ -1440,9 +1045,6 @@ export class EditorEngine {
     this.selectedRatio = ratio;
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
-    // A newly selected aspect ratio starts from an unzoomed view of the image, same as
-    // a fresh selection — carrying over a previous ratio's zoom level would leave the
-    // frame referencing a scale that no longer matches what's actually shown.
     this.zoom = 0;
     this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
@@ -1459,15 +1061,9 @@ export class EditorEngine {
       this.rect = centeredRect(ratio, this.naturalW, this.naturalH, vpW, vpH);
       if (!this.isCrop) {
         if (dimensions) {
-          // Social rows carry a literal pixel target (e.g. "1080x1920") — use it
-          // exactly, rather than rectPctToSourceBounds' rounded approximation of
-          // whatever the frame's current on-screen pixel math happens to produce.
           this.targetW = dimensions.width;
           this.targetH = dimensions.height;
         } else {
-          // Standard presets carry no literal target size, only a ratio — seed
-          // targetW/targetH from the newly-shaped rect so the Custom tab shows
-          // something coherent if the user switches back to it.
           const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
           this.targetW = b.right - b.left;
           this.targetH = b.bottom - b.top;
@@ -1483,10 +1079,6 @@ export class EditorEngine {
     return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom);
   }
 
-  // Resize's target output size. Custom tab has its own independent targetW/targetH
-  // (decoupled from the crop frame while locked — see onDimensionCommit/startDrag).
-  // Standard/Social have no such concept — they only carry an aspect ratio, so their
-  // output size is still whatever the selected rect's own natural footprint is.
   getResizeDimensions() {
     if (this.resizeTab === 'custom') return { width: this.targetW, height: this.targetH };
     const [vpW, vpH] = this.viewportSize();
@@ -1494,28 +1086,15 @@ export class EditorEngine {
     return { width: b.right - b.left, height: b.bottom - b.top };
   }
 
-  // For the outbound resize payload only — converts to whatever unit the user actually
-  // selected in the Custom tab's unit dropdown (px/in/cm/mm), and reports that unit
-  // alongside. getResizeDimensions() itself must stay in raw pixels regardless (the
-  // canvas-based "New Size" byte estimate and computeNewSize() need real pixel counts,
-  // not a unit-converted approximation). Standard/Social have no unit picker at all —
-  // their output is always reported in px.
   getResizeOutputDimensions() {
     const { width, height } = this.getResizeDimensions();
     if (this.resizeTab !== 'custom') return { width, height, unit: 'px' };
     return { width: pxToUnit(width, this.unit), height: pxToUnit(height, this.unit), unit: this.unit };
   }
 
-  // Crop and Resize's Standard/Social tabs lock drag-resize to whichever aspect pill
-  // is selected (this.selectedRatio). Resize's Custom tab has no pill selected at
-  // all — there, the lock toggle means "keep whatever ratio the box currently has"
-  // (computed from the live rect, not a fixed preset), and unlocked means freeform.
   getDragRatioLock(rect) {
     if (this.isCrop || this.resizeTab !== 'custom') return this.selectedRatio;
     if (!this.locked) return null;
-    // rect.w/rect.h are % of the same viewport, uniformly scaled by object-contain, so
-    // the object-contain factor cancels out — this is the exact source-pixel ratio,
-    // with none of the integer-pixel rounding rectPctToSourceBounds would introduce.
     const [vpW, vpH] = this.viewportSize();
     const w = rect.w * vpW;
     const h = rect.h * vpH;
@@ -1524,11 +1103,6 @@ export class EditorEngine {
 
   startDrag(e, kind) {
     e.preventDefault();
-    // preventDefault() above also suppresses pointerdown's native focus-shift, which is
-    // normally what blurs a focused input when you click elsewhere (and is what commits
-    // Width/Height's typed value). Without this, starting a drag while a dimension
-    // field is focused would leave it focused — and never committed — unlike a real
-    // click outside it. Blur explicitly to match that expected behavior.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     this.resetIdle();
     this.hasInteracted = true;
@@ -1537,13 +1111,7 @@ export class EditorEngine {
     const baseRect = { ...this.rect };
     const [vpW, vpH] = this.viewportSize();
     const trueRatioLock = this.getDragRatioLock(baseRect);
-    // resizeRect operates purely on rect.w/rect.h percentages, each normalized by a
-    // different axis (vpW vs vpH) — a true ratio (e.g. 16/9) only equals newW%/newH%
-    // when vpW === vpH. Converting to percentage-space here keeps resizeRect's own
-    // math axis-agnostic while still locking to the real, visual aspect ratio.
     const ratioLock = trueRatioLock ? trueRatioLock * (vpH / vpW) : null;
-    // Computed once per drag (zoom can't change mid-drag — it's a separate control) —
-    // the frame must stay within the actual displayed image, not just the viewport.
     const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom);
     const move = (ev) => {
       const dxPct = ((ev.clientX - startX) / vpW) * 100;
@@ -1555,13 +1123,6 @@ export class EditorEngine {
           y: clamp(baseRect.y + dyPct, bounds.top, bounds.bottom - baseRect.h),
         }
         : resizeRect(baseRect, kind, dxPct, dyPct, ratioLock, bounds);
-      // Unlocked Custom-tab drag: rect and targetW/targetH are the same thing, so keep
-      // the displayed width/height live during the drag itself, not just once it ends.
-      // Locked: never touch targetW/targetH here — dragging only changes which pixels
-      // get sampled, not the output size (see §3 of the design discussion this
-      // implements). The expensive "New Size" estimate stays debounced regardless,
-      // via scheduleSizeReadout() (called from render() -> syncDimensionFields()), so
-      // it still only actually computes once the user pauses, not on every tick.
       if (!this.isCrop && this.resizeTab === 'custom' && !this.locked) {
         const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
         this.targetW = b.right - b.left;
@@ -1580,28 +1141,20 @@ export class EditorEngine {
   setMode(mode) {
     this.mode = mode;
     this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
-    // No slider exists at all when nothing was authored (see buildEditorLeftPanel) —
-    // this.mode is still tracked for bookkeeping, but there's nothing left to update.
     if (!this.slider) return;
     this.slider.min = '0';
     this.slider.max = '100';
-    // Unrecognized authored mode (see KNOWN_SLIDER_MODES) — the button and its label
-    // still work, there's just no real state to reflect, so this is the safest inert
-    // fallback rather than showing "undefined".
     const current = { zoom: this.zoom, quality: this.quality }[mode] ?? 0;
     this.slider.value = String(current);
     this.updateValLabel();
   }
 
   onSlider() {
-    // Unrecognized authored mode (see KNOWN_SLIDER_MODES) — nothing to update.
     if (!KNOWN_SLIDER_MODES.has(this.mode)) return;
     const value = Number(this.slider.value);
     if (this.mode === 'zoom') this.zoom = value;
     else this.quality = value;
     this.hasInteracted = true;
-    // Changing quality invalidates whatever preview is currently shown — revert so the
-    // display never silently shows a stale quality level.
     if (this.mode === 'quality') this.revertQualityPreview();
     this.updateValLabel();
     this.render();
@@ -1609,9 +1162,6 @@ export class EditorEngine {
 
   updateValLabel() {
     if (!this.valEl) return;
-    // Zoom shows the actual CSS scale factor zoomScale() computes — 1.0x (no zoom) to
-    // 10.0x (max), one decimal — since that's the real "how zoomed in" value, not a
-    // relabeled slider position. Quality stays a plain percentage.
     if (this.mode === 'zoom') this.valEl.textContent = `${zoomScale(this.zoom).toFixed(1)}x`;
     else if (this.mode === 'quality') this.valEl.textContent = `${Math.round(this.quality)}%`;
     else this.valEl.textContent = '--';
@@ -1623,14 +1173,6 @@ export class EditorEngine {
     this.idleTimer = setTimeout(() => this.frame.classList.add('ia-frame--idle'), IDLE_MS);
   }
 
-  // Only ever called from editor-flow.js's runEditorOperation, spanning both the
-  // imageOperations call and the connector call that follows it. `.is-busy` on
-  // leftPanel/rightPanel drives one CSS rule that makes every other control inert
-  // (Reset, Upload, aspect pills, resize tabs, NBA pills, Open in Firefly, the adjust
-  // bar) rather than disabling each element individually — simpler and impossible to
-  // miss one when a new control is added later. `triggerBtn` (the specific clicked
-  // element — the download button or an NBA pill) gets its own spinner instead of just
-  // going inert, so it stays visually distinct from the rest while busy.
   setBusy(isBusy, triggerBtn = null) {
     this.leftPanel.classList.toggle('is-busy', isBusy);
     this.rightPanel.classList.toggle('is-busy', isBusy);
@@ -1639,14 +1181,6 @@ export class EditorEngine {
   }
 }
 
-// Builds a working editor and swaps it in for the given (already-in-document) slot
-// elements — self-contained, so the caller (inline-action.js) only needs to decide
-// *when* to call this and cache the result, never construct the DOM itself.
-// Uses replaceWith(), not append(): the slots are plain unstyled placeholder divs, and
-// .ia-panel-left/.ia-panel-right (their parent) is a flex container whose layout the
-// real .ia-editor-left-panel/.ia-editor-right-panel depend on directly — an extra
-// wrapper div left in place would sit between them and break that flex relationship
-// (this was a real, reproduced regression, not just a theoretical one).
 export async function initEditor(leftSlot, rightSlot, parsedData, trackEvent) {
   const [, aspectRows] = await Promise.all([
     new Promise((resolve) => { loadStyle(`${getUnityLibs()}/core/widgets/inline-action/editor.css`, resolve); }),

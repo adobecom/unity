@@ -2,8 +2,6 @@
 .ia-editor-right-panel {
   display: none;
 
-  /* Base, unconditional on data-state — needed so .ia-dropdown-scrim (an absolutely
-     positioned child, see below) has this as its containing block regardless. */
   position: relative;
 }
 
@@ -14,11 +12,6 @@
   gap: 16px;
   border-radius: var(--ia-radius-sm, 8px);
 
-  /* Transparent so the checkerboard painted on .interactive-area itself (see
-     inline-action.css) shows through — one shared background layer spanning the
-     outer block's margin AND this panel AND (since .ia-viewport is transparent too)
-     the viewport, all perfectly continuous since it's the same paint, not several
-     independently-tiled copies that would need hand-matched offsets. */
   background: transparent;
 }
 
@@ -42,23 +35,10 @@
   overflow: clip;
   border-radius: var(--ia-radius-sm, 8px);
 
-  /* Transparent so the checkerboard painted on .interactive-area (see
-     inline-action.css) — which .ia-editor-left-panel is also transparent to, see
-     above — shows through wherever the viewport has no image content. The darker
-     look this can reveal inside the viewport (vs. the checkerboard outside it) isn't
-     a background-rendering issue — it's .ia-frame's own box-shadow
-     (0 0 0 9999px rgb(0 0 0 / 40%)), which dims everything outside the crop selection
-     and gets clipped to just the viewport by this element's own overflow:clip. That
-     dimming is expected/independent of this rule. */
   background: transparent;
 }
 
 .ia-imglayer {
-  /* Viewport-sized (inset:0) and NOT clipped — same as the original, pre-blur-fix
-     architecture. The actual footprint-clipping + zoom-scaling happens one level in,
-     on .ia-imgbox (below), specifically so zoom can still visually grow out to fill
-     this whole layer (and ultimately .ia-viewport, which is what actually clips the
-     final result) rather than being confined to the image's own footprint. */
   position: absolute;
   inset: 0;
   display: flex;
@@ -67,16 +47,6 @@
   overflow: visible;
 }
 
-/* Sized to the image's own STATIC (unzoomed) footprint in EditorEngine's render()
-   (editor.js) — width/height only; centered within .ia-imglayer automatically via
-   its flex centering above, no left/top needed. overflow:clip here confines blur's
-   filter halo to the footprint's real edges at native size, BEFORE the transform:
-   scale() below (also set in render(), on this same element) magnifies the whole,
-   already clean-edged box as one unit for zoom. Because the clip happens pre-
-   transform, the hard edge simply moves further away (or off-viewport) as zoom
-   increases — it never re-exposes bleed. Only `transform` changes per zoom-slider
-   tick (compositor-only, no layout), so this stays exactly as cheap as animating
-   .ia-img directly used to be. */
 .ia-imgbox {
   overflow: clip;
   transform-origin: center center;
@@ -107,9 +77,6 @@
   cursor: move;
   transition: box-shadow 400ms ease, border-color 400ms ease;
 
-  /* Without this, touch browsers treat a finger-drag on the frame/handles as a page
-     scroll/pan gesture before JS ever sees it — preventDefault() in startDrag() alone
-     isn't enough, since touch-action is what decides this ahead of any event handler. */
   touch-action: none;
 }
 
@@ -229,10 +196,6 @@
   background: #202020;
   box-sizing: border-box;
 
-  /* Responsive by default, same as .ia-viewport (width:100% below 1200px, fixed only
-     at desktop's own breakpoint further down) — the old unconditional 484px here was
-     already wider than the panel below 1200px; it just wasn't visible because
-     .ia-widget's overflow:hidden clipped it. */
   width: 100%;
 }
 
@@ -265,8 +228,6 @@
   background: #000;
 }
 
-/* Icon-only until this becomes the active mode — the label only appears alongside
-   the icon once .is-active is set (by setMode(), whenever the user picks this mode). */
 .ia-toggle-label {
   display: none;
 }
@@ -403,11 +364,6 @@
   gap: 8px;
 }
 
-/* Crop's own top-level pill row only — a single horizontally-scrollable strip instead
-   of the wrapping multi-row grid .ia-aspect-row otherwise renders (still used as-is by
-   resize's Standard/Social detail grids, which do want to wrap). flex-shrink: 0 on the
-   children keeps each pill at its natural width so they overflow into the scrollbar
-   instead of getting squeezed to fit. */
 .ia-aspect-row--scroll {
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -415,9 +371,6 @@
   -ms-overflow-style: none;
 }
 
-/* Still scrollable (via drag/touch/wheel) — just no visible scrollbar track/thumb.
-   scrollbar-width: none above already covers Firefox; this is the Chrome/Safari/Edge
-   equivalent, which only works as a separate ::-webkit-scrollbar rule, not a property. */
 .ia-aspect-row--scroll::-webkit-scrollbar {
   display: none;
 }
@@ -426,8 +379,6 @@
   flex-shrink: 0;
 }
 
-/* Resize only — the heading sits inline with the Custom/Standard/Social tab row
-   (same line) instead of stacked above it, unlike crop's own heading. */
 .ia-aspect-header-row {
   display: flex;
   align-items: center;
@@ -467,12 +418,6 @@
   color: #000;
 }
 
-/* :not(.is-active) so hovering an already-selected pill/tab doesn't override its own
-   white/selected look above — same specificity as .is-active (one class + one
-   pseudo-class each), so without the guard, whichever rule came later in the file
-   would win regardless of which state actually applies. .ia-more-opt/.ia-social-opt/
-   .ia-unit-opt/.ia-dropdown-close never get .is-active (see editor.js), but the guard
-   is harmless there either way. */
 .ia-aspect-pill:hover:not(.is-active),
 .ia-resize-tab:hover:not(.is-active),
 .ia-more-opt:hover,
@@ -482,21 +427,11 @@
   background: #323232;
 }
 
-/* .ia-resize-tab only ever appears inside .ia-aspect-header-row (the Custom/Standard/
-   Social tab row, see buildResizeAspectSection) — its own radius here overrides the
-   shared 4px above, which crop's .ia-aspect-pill (used elsewhere, outside this row)
-   keeps as-is. */
 .ia-resize-tab {
   padding: 5px 12px 7px 12px;
   border-radius: 8px;
 }
 
-/* A small corner triangle marks these two specifically as dropdown triggers (unlike
-   a plain aspect pill or the Custom/Standard tabs, which just select something
-   directly) — the unit picker already has its own inline chevron instead, so it's
-   not included here. Extra right padding keeps the label clear of it. currentColor
-   keeps the triangle in sync with the text color automatically, including when
-   .is-active flips the pill to a white background with dark text. */
 .ia-more-trigger,
 .ia-social-trigger {
   position: relative;
@@ -519,19 +454,10 @@
   position: relative;
 }
 
-/* .ia-more is shared by More/Social/unit-picker wrappers, and more than one can exist
-   in the DOM at once (resize has both Social and the unit picker) — only the ONE
-   actually open needs to rise above .ia-dropdown-scrim (z-index 4); the z-index bump
-   can't be unconditional on .ia-more itself, or a CLOSED dropdown's own wrapper would
-   also sit above the scrim and look undimmed. Toggled by JS (see toggleMore/
-   toggleSocialMenu/toggleUnitMenu) on the specific wrapper that's actually open. */
 .ia-more.is-open {
   z-index: 5;
 }
 
-/* No shared panel background/border/shadow here anymore — each option (and the close
-   button) carries its own box instead (see .ia-more-opt etc. below), so they render as
-   separate floating pills with visible gaps between them, not one contiguous menu. */
 .ia-more-menu,
 .ia-social-menu,
 .ia-unit-menu {
@@ -542,18 +468,10 @@
   display: flex;
   flex-direction: column;
 
-  /* Overrides the default stretch — each option (and the close button) sizes to its
-     own content width instead of all matching the widest one, right-aligned. */
   align-items: flex-end;
   gap: 8px;
 }
 
-/* Crop's "More" trigger scrolls as part of .ia-aspect-row--scroll's horizontal strip,
-   so its dropdown can't be positioned absolute (a position:absolute descendant of an
-   overflow-x:auto ancestor gets clipped by it — overflow-x:auto forces overflow-y to
-   auto too). Positioned as fixed instead, with left/top set from the trigger's own
-   getBoundingClientRect() right when it opens (see toggleMore) — fixed positioning
-   escapes the scroll container's clipping entirely. */
 .ia-more-menu {
   position: fixed;
   top: auto;
@@ -566,24 +484,13 @@
   display: none;
 }
 
-/* .ia-social-opt/.ia-unit-opt/.ia-dropdown-close now share .ia-aspect-pill's box
-   model and hover (see above) instead of their own separate white-hover/box-shadow
-   look — all the dropdown option types (More/Social/unit) behave the same way. */
 .ia-dropdown-close {
-  /* An empty flex container (no real, in-flow children — the "X" is drawn with
-     position:absolute ::before/::after, which flex sizing ignores entirely) otherwise
-     collapses to just its own padding, much shorter than the options above it, which
-     get their height from an actual 16px icon or text line inside. Explicit size here
-     restores the match instead of relying on content that isn't really there. */
   position: relative;
   justify-content: center;
   width: 48px;
   height: 32px;
 }
 
-/* The "X" itself — two crossed bars rather than a thin, font-dependent "×" character
-   (see the empty button in buildDropdownCloseButton), for a bold glyph that renders
-   identically everywhere. */
 .ia-dropdown-close::before,
 .ia-dropdown-close::after {
   content: '';
@@ -634,7 +541,7 @@
   font-size: 14px;
   font-style: normal;
   font-weight: 700;
-  line-height: 18px; /* 128.571% */
+  line-height: 18px;
 }
 
 .ia-dim-field input {
@@ -689,10 +596,6 @@
   background: #323232;
 }
 
-/* A bold CSS-drawn chevron instead of the thin Unicode "⌄" glyph it replaced — a
-   right+bottom border square rotated 45deg forms a clean downward "v" shape that
-   renders consistently across browsers/fonts, matching the reference design. Purely
-   decorative (the span itself has no text content — see buildUnitPicker). */
 .ia-unit-chevron {
   display: inline-block;
   width: 8px;
@@ -709,7 +612,7 @@
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: 18px; /* 128.571% */
+  line-height: 18px;
   margin: 8px 0px 0px 0px;
 }
 
@@ -717,9 +620,6 @@
   display: none;
 }
 
-/* Matches Figma node 22551:65378 ("Crop tools area") — the two CTA cells there use
-   gap:16px between them, cell padding 9px/18px/10px (top/sides/bottom), and 17px/26px
-   Bold text. */
 .ia-cta-row {
   display: flex;
   gap: 16px;
@@ -740,10 +640,6 @@
   font-family: var(--body-font-family);
   gap: 8px;
 
-  /* Both get the SAME 2px border width (only .ia-cta-outline's is visible; the
-     accent's is transparent) with box-sizing:border-box, so the border is absorbed
-     into each button's total size instead of .ia-cta-outline alone rendering 4px
-     larger than .ia-cta-accent — the two stay flush/aligned in the row. */
   box-sizing: border-box;
   border: 1px solid transparent;
 }
@@ -759,16 +655,10 @@
   color: var(--ia-white, #fff);
 }
 
-/* Same #274dea hover already used by this family's accent button elsewhere
-   (.ia-download-btn, inline-action.css). */
 .ia-cta-accent:hover {
   background: #274dea;
 }
 
-/* .ia-cta-outline is a transparent/outlined button, not an accent one — filling it
-   solid blue on hover (like .ia-edit-in-firefly does) would make it look like a
-   second accent CTA. A subtle light overlay instead keeps it reading as "outline",
-   just lit up — border/text color stay as-is. */
 .ia-cta-outline:hover {
   background: rgb(255 255 255 / 10%);
 }
@@ -801,12 +691,6 @@
   background: #323232;
 }
 
-/* Shared by every authored icon+label button/pill (reset, reupload, both CTAs, each
-   NBA pill) — only rendered when that row actually authored an icon href. Forced to a
-   flat white via filter regardless of the source SVG's own authored colors — these are
-   <img src="*.svg"> elements, so CSS can't reach into the SVG document's own fill/
-   stroke; brightness(0) first crushes it to a solid black silhouette (alpha channel
-   intact), then invert(1) flips that to solid white. */
 .ia-btn-icon {
   width: 20px;
   height: 20px;
@@ -814,27 +698,17 @@
   filter: brightness(0) invert(1);
 }
 
-/* Figma sizes these two CTAs' own leading icons at 20-21px, larger than every other
-   icon+label control in this file (.ia-btn-icon's shared 16px default above) — scoped
-   here rather than changing the shared default, since nothing else in the design
-   calls for it. */
 .ia-cta-accent .ia-btn-icon,
 .ia-cta-outline .ia-btn-icon {
   width: 20px;
   height: 20px;
 }
 
-/* Flipped to solid black instead, same brightness(0) technique minus the invert —
-   these are the only icon-carrying controls whose .is-active state actually turns the
-   background solid white (unlike .ia-toggle__btn.is-active's translucent overlay,
-   which stays dark enough for the default white icon). */
 .ia-aspect-pill.is-active .ia-btn-icon,
 .ia-resize-tab.is-active .ia-btn-icon {
   filter: brightness(0);
 }
 
-/* Spinner swapped in for a trigger button's own .ia-btn-icon while EditorEngine is busy
-   (see toggleTriggerSpinner) — added/removed on demand, not always-present-but-hidden. */
 .ia-btn-spinner {
   width: 16px;
   height: 16px;
@@ -851,10 +725,6 @@
   }
 }
 
-/* Shown only while EditorEngine.setBusy(true) is active — a dedicated overlay for this
-   editor's own processing state, not a reuse of rbg's .ia-ghost/data-state="loading"
-   machine (this is mid-panel editing, not the initial upload). Layered the same way:
-   a shifting gradient + mask over a dot pattern, all above the image and frame. */
 .ia-processing-overlay {
   position: absolute;
   inset: 0;
@@ -925,13 +795,6 @@
   }
 }
 
-/* EditorEngine.setBusy(true) — pointer-events:none makes every control inert in one
-   rule instead of disabling each element individually, so nothing new added later gets
-   missed. The dimming itself is a scrim overlay covering the whole panel (not opacity
-   on the panel), since a child element can't opt out of an ancestor's own opacity —
-   the trigger button (.is-loading, see toggleTriggerSpinner) is instead lifted above
-   the scrim with a higher z-index, so it stays visually distinct with its own spinner
-   while everything behind it is covered. */
 .ia-editor-right-panel.is-busy {
   pointer-events: none;
 }
@@ -962,10 +825,6 @@
   opacity: 0.4;
 }
 
-/* EditorEngine.updateDropdownScrim() — while any dropdown (More/Social/unit) is open,
-   dims BOTH panels (not just the one the dropdown lives in), so the open dropdown's
-   own floating pills read as the only interactive thing on screen. Sits below .ia-more
-   (z-index 5, see above) so the open dropdown and its trigger stay undimmed above it. */
 .ia-dropdown-scrim {
   position: absolute;
   inset: 0;
@@ -979,16 +838,11 @@
   display: block;
 }
 
-/* Nothing is draggable while busy, so the grid lines and resize handles have no
-   meaning here — hide them rather than just disabling their pointer-events. The
-   frame's own border/dimming overlay stays, still showing what will be cropped. */
 .ia-editor-left-panel.is-busy .ia-grid,
 .ia-editor-left-panel.is-busy .ia-handle {
   display: none;
 }
 
-/* Mobile AND tablet — same breakpoint inline-action.css already uses for the shared
-   stacked (column-reverse) layout, since both sizes get identical behavior here. */
 @media screen and (max-width: 1199px) {
   .ia-widget[data-state="complete"] .ia-editor-left-panel {
     padding-bottom: 8px;
@@ -1002,29 +856,14 @@
     margin-bottom: 8px;
   }
 
-  /* Uniform 8px on every side — overrides the desktop-oriented margin-left:24px/
-     margin-right:8px (base rule, further up), which was meant to sit next to
-     .ia-panel-left's fixed 500px desktop column that doesn't exist in this stacked
-     layout. */
   .ia-widget[data-state="complete"] .ia-editor-right-panel {
     margin: 8px;
   }
 
-  /* .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel's
-     own margin-top:32px (base rule, further up) outspecifies the plain rule right
-     above for crop specifically — matched here at the same specificity, same fix as
-     the earlier margin-bottom:40px issue on .ia-editor-header. */
   .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
     margin: 8px;
   }
 
-  /* .ia-editor-header is physically moved here, before .ia-viewport, by
-     EditorEngine.setupResponsiveHeader() (editor.js) — restyled as a floating pill
-     (matching .ia-adjust-bar's look) since it now sits directly on the
-     checkerboard/panel backdrop instead of the plain right-panel background it has on
-     desktop. margin-bottom:0 overrides the desktop spacing (24px/40px, meant for
-     separating it from the aspect section below it over there) — .ia-editor-left-panel's
-     own gap:16px handles spacing from the viewport here instead. */
   .ia-editor-header {
     margin-bottom: 0;
     padding: 4px 3px;
@@ -1033,18 +872,10 @@
     background: #202020;
   }
 
-  /* .ia-widget[data-operation="crop"] .ia-editor-header's own margin-bottom:40px
-     (further up, unconditional on screen size) outspecifies the plain .ia-editor-header
-     override right above — matched here at the same specificity so this actually wins
-     for crop on mobile/tablet instead of silently losing to it. */
   .ia-widget[data-operation="crop"] .ia-editor-header {
     margin-bottom: 0;
   }
 
-  /* Unwraps the actions group so .ia-editor-reset/.ia-editor-quality/the reupload
-     button become direct flex items of .ia-editor-header alongside .ia-editor-title,
-     letting `order` place one icon on each side of a truly centered title — not
-     possible while they're nested one level deeper inside a shared wrapper. */
   .ia-editor-header-actions {
     display: contents;
   }
@@ -1068,10 +899,6 @@
     order: 4;
   }
 
-  /* Icon-only in this pill layout, per the reference design — kept in the
-     accessibility tree (same technique as .ia-sr-only in inline-action.css) instead of
-     display:none, which would strip the button's only accessible name (.ia-editor-reset
-     has no separate aria-label; see buildEditorRightPanel in editor.js). */
   .ia-editor-reset span,
   .ia-editor-header .ia-reupload-btn span {
     position: absolute;

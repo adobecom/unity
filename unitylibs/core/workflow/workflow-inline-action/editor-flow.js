@@ -1,18 +1,7 @@
-// Crop/Resize's own upload + CTA-click flow, kept out of action-binder.js entirely so
-// rbg users never fetch this code — dynamically imported only from the two call sites
-// in action-binder.js that are already editor-only branches (uploadFile, executeActionMaps).
-
 import { getUnityLibs } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
 
-// Shared by both the imageOperations request (below) and the "Open in Firefly"
-// connector payload (runEditInFirefly) — crop sends only a crop operation; resize
-// sends crop-then-resize (bounds slice the frame, resize resamples to the target
-// output size). Field names already match getSourceBounds()'s own shape
-// (top/left/right/bottom) directly. `dimensions` is engine.getResizeOutputDimensions()
-// — already converted to whichever unit the user selected in the Custom tab's unit
-// dropdown (px/in/cm/mm; always px for Standard/Social, which have no unit picker).
 function buildOperations(binder, bounds, dimensions, quality) {
   const operations = [
     { type: 'crop', top: bounds.top, left: bounds.left, bottom: bounds.bottom, right: bounds.right },
@@ -23,8 +12,6 @@ function buildOperations(binder, bounds, dimensions, quality) {
   return operations;
 }
 
-// Confirmed contract for POST {apiEndPoint}/providers/imageOperations. outputMediaType
-// is fixed to 'image/jpeg' regardless of the user's original upload type.
 export function buildImageOperationsPayload(binder, bounds, dimensions, quality) {
   return {
     operations: buildOperations(binder, bounds, dimensions, quality),
@@ -33,11 +20,6 @@ export function buildImageOperationsPayload(binder, bounds, dimensions, quality)
   };
 }
 
-// Only ever called from action-binder.js's uploadFile(), for guest/anonymous crop and
-// resize users (signed-in users skip this entirely — see signedInFlow's
-// performOperation param). `binder` is the ActionBinder instance — reuses its shared
-// uploadAsset()/error-handling rather than duplicating it, since that part genuinely is
-// shared with rbg.
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
   binder.widgetRef?.setState(InlineActionState.LOADING);
   binder.widgetRef?.setProgress(0);
@@ -47,33 +29,14 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
       binder.widgetRef?.setState(InlineActionState.INITIAL);
       return;
     }
-    // The editor panel (and its .ia-cta-accent/.ia-editor-reupload) is built lazily
-    // inside setEditorImage() the first time only — action-binder.js's one-time
-    // action-map scan at page load ran before this DOM existed, so it needs binding
-    // here, once, right after it's actually created. Captured before setEditorImage()
-    // runs, since that call is what sets widgetRef.editorEngine for the first time.
     const isFirstEditorLoad = !binder.widgetRef.editorEngine;
-    binder.widgetRef?.setProgress(100); // matches action-binder.js's PROGRESS.COMPLETE
+    binder.widgetRef?.setProgress(100);
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
-    // Passed through so EditorEngine can track aspect-ratio-pill/More-button clicks
-    // (see bindAspectEvents, editor.js) — those never go through the actionMap/
-    // executeActionMaps (no server call happens), so EditorEngine has no other way to
-    // reach binder.trackEvent().
     await binder.widgetRef?.setEditorImage(
       URL.createObjectURL(file),
       originalSize,
       (name, data) => binder.trackEvent(name, data),
     );
-    // Scans BOTH panels, not just rightPanel: EditorEngine.setupResponsiveHeader()
-    // (editor.js) may have already moved .ia-editor-header (and its action-mapped
-    // .ia-editor-reset/.ia-reupload-btn) into leftPanel by this point on mobile/tablet
-    // viewports, synchronously inside its own constructor, above — a rightPanel-only
-    // scan would silently find neither button and never bind them. Deliberately NOT
-    // .closest('.ia-widget') here — ActionBinder's own block (see workflow.js) already
-    // IS .ia-widget, so walking up to it would re-scan the whole widget a second time,
-    // double-binding a second 'change' listener onto the page's one .ia-file-input
-    // (already bound once at page load) and corrupting reupload state via two
-    // concurrent uploads firing off a single event.
     if (isFirstEditorLoad) {
       const { leftPanel, rightPanel } = binder.widgetRef.editorEngine;
       [leftPanel, rightPanel].forEach((panel) => binder.bindActionMapElements(panel));
@@ -85,32 +48,14 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
   }
 }
 
-// Shared by both callers of runEditorOperation below (the download button and each
-// "further" NBA pill) — both need the exact same imageOperations step, differing only
-// in what happens afterward (a download-vs-redirect decision vs. a straight connector
-// redirect with the clicked pill's own verb). Returns false (already handled: tracked +
-// toasted) on failure, so the caller can bail out without redirecting anywhere.
-//
-// On success, the result also becomes the new "current" state on acom itself — same
-// convention as removeBackground's own resultAssetId (subsequent NBA/connector actions
-// there already operate on the result, not the original upload). Concretely: the
-// editor's displayed image swaps to the cropped/resized output, binder.assetId points
-// at it so any further crop/resize or "Open in Firefly" applies to THIS image, and the
-// selection resets to a fresh, full-image state (same as a brand new upload) since the
-// old selection's percentages don't mean the same thing once the image itself has changed.
 async function performEditorOperation(binder) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return false;
   const bounds = engine.getSourceBounds();
   const dimensions = binder.operation === 'resize' ? engine.getResizeOutputDimensions() : null;
   const payload = buildImageOperationsPayload(binder, bounds, dimensions, engine.quality);
-  // TEMPORARY: remove before production — lets the payload be checked against the real
-  // contract while it's still being verified.
-  // eslint-disable-next-line no-console
   console.log(`[inline-action editor] ${binder.operation} imageOperations payload`, payload);
   try {
-    // Response shape assumed to match removeBackground's own provider endpoint
-    // (assetId/outputUrl) — unconfirmed specifically for imageOperations.
     const res = await binder.serviceHandler.postCallToService(
       binder.apiConfig.endPoint.imageOperations,
       { body: JSON.stringify(payload) },
@@ -119,12 +64,7 @@ async function performEditorOperation(binder) {
     binder.resultAssetId = res.assetId;
     binder.resultUrl = res.outputUrl;
     binder.assetId = res.assetId;
-    // outputMediaType is always fixed to 'image/jpeg' (see buildImageOperationsPayload)
-    // — the current asset really is a jpeg now, regardless of what was first uploaded,
-    // so any later connector call's fileType should say so too.
     binder.filesData.type = 'image/jpeg';
-    // originalSize is preserved as-is (not reset to 0) — it still means "the very first
-    // upload's size," which is what the resize readout's "Original size" label means.
     await engine.setImage(res.outputUrl, engine.originalSize);
     engine.reset();
     return true;
@@ -135,24 +75,6 @@ async function performEditorOperation(binder) {
   }
 }
 
-// Only ever called from action-binder.js's executeActionMaps(), for the
-// 'runEditorOperation' action — shared by both the crop/resize CTA (.ia-editor-download)
-// and each "further" NBA pill (.ia-further-pill); neither is ever wired up for rbg,
-// which has its own separate .ia-download-btn/.ia-nba-card wiring. The clicked element
-// itself tells us which case we're in: an NBA pill carries data-nba, the download
-// button doesn't — so an NBA click always redirects (never a local download) using
-// that pill's own verb, same connector mechanism/verb-resolution convention rbg's own
-// .ia-nba-card already uses (resolveConnectorVerb falls back to el.dataset.nba when
-// isDownload is false). The download button instead reuses rbg's own
-// handleConnector(el, true) download-vs-redirect decision — first-time users get a
-// local download + redirect, returning users just redirect — since that logic doesn't
-// need to differ from rbg's own download button once resultAssetId/resultUrl are set.
-//
-// The busy state (spinner on `el`, everything else in the editor disabled, the
-// processing overlay on the image) spans the imageOperations call AND the connector
-// call that follows it — not just the former — since the user stays on this tab for
-// the whole duration in both cases (unlike "Open in Firefly", which doesn't touch
-// acom's state at all and so has nothing to show a loading state for).
 export async function runEditorOperation(binder, el) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
@@ -161,11 +83,6 @@ export async function runEditorOperation(binder, el) {
     const ok = await performEditorOperation(binder);
     if (!ok) return;
     if (el?.dataset?.nba) {
-      // Same event/shape as rbg's own NBA cards (action-binder.js's
-      // trackConnectorAnalytics/INLINE_ACTION_EVENTS.nbaClick) — el.dataset.nba is the
-      // verb (e.g. "sharpenImage"), same field rbg's own .ia-nba-card carries; the
-      // label falls back to it too since .ia-further-pill has no dedicated label
-      // element the way rbg's .ia-nba-label is (see buildIconButton).
       const label = el.textContent?.trim() || el.dataset.nba;
       binder.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), {
         assetId: binder.resultAssetId,
@@ -174,10 +91,6 @@ export async function runEditorOperation(binder, el) {
       });
       await binder.handleConnector(el);
     } else {
-      // Same event/shape as rbg's own download button (action-binder.js's
-      // executeActionMaps 'download' case) — fixed "Download|UnityWidget", not derived
-      // from this button's own label text (which differs: "Crop and download"/"Resize
-      // and download"), so crop/resize/rbg downloads all roll up under one event name.
       binder.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD, { assetId: binder.resultAssetId, action: 'redirect' });
       await binder.handleConnector(null, true);
     }
@@ -186,54 +99,19 @@ export async function runEditorOperation(binder, el) {
   }
 }
 
-// Only ever called from action-binder.js's executeActionMaps(), for the 'resetEditor'
-// action (the crop/resize Reset button). Reset always means "go all the way back to the
-// actual originally-uploaded image" — not just whatever's currently displayed, since a
-// prior crop/resize's result may have already replaced it (see runEditorOperation).
-// Restores binder's own "current" state to match, so any further crop/resize or
-// "Open in Firefly" from here on applies to the original again, not a stale result.
 export async function resetEditor(binder) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
-  // Only ever reached via the actual Reset button click (see this function's own
-  // comment above — no other caller exists), so this can't double-count the
-  // programmatic aspect-ratio reselection engine.setImage() triggers below.
   binder.trackEvent(INLINE_ACTION_EVENTS.RESET);
   binder.assetId = binder.originalAssetId;
   if (binder.originalFileType) binder.filesData.type = binder.originalFileType;
-  // isOriginalUpload left false — this restores the existing original, it doesn't
-  // establish a new one.
   await engine.setImage(engine.originalImageUrl, engine.originalSize);
-  // Selection-only reset (zoom/quality/aspect/tab) — same method runEditorOperation
-  // uses on its own result image, now applied to the just-reloaded original instead.
   engine.reset();
 }
 
-// Only ever called from action-binder.js's executeActionMaps(), for the
-// 'runEditInFirefly' action (the "Open in Firefly" CTA). Unlike runEditorOperation, no
-// imageOperations call happens here — the ORIGINAL uploaded asset is sent as-is, along
-// with the user's selected crop/resize parameters, so Firefly applies them on its own
-// side. Both go through the same connector mechanism rbg's own download/nba calls use
-// (buildConnectorPayload/callConnector), not a separate endpoint, and both share the
-// same `operations` array shape imageOperations itself receives — but crop and resize
-// are treated as two distinct workflows with slightly different payloads:
-//  - crop: CONFIRMED contract — verb 'cropImage', mandatory aspectRatio ('freeform'
-//    when unlocked, else the authored ratio string).
-//  - resize: NOT YET CONFIRMED — this is our own proposed shape until the real
-//    contract exists. width/height already travel inside `operations` (the resize
-//    op), so the only other info worth passing is the aspect ratio, and only when
-//    one is actually meaningful (a Standard preset) — Social selections carry literal
-//    pixel dimensions with no named ratio, and Custom/freeform has nothing to lock to,
-//    so the field is omitted entirely rather than defaulted (same aspectRatio field
-//    name as crop's — not a separate one, the two mean the same thing).
 export async function runEditInFirefly(binder, el) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
-  // Unlike download (fixed "Download|UnityWidget" regardless of label), this tracks
-  // whatever text is actually on the button — defaults to "Open in Firefly" (matching
-  // rbg's own INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY string) but authored config can
-  // override it (buildCtaRow's editLabel, editor.js), and the tracked event should
-  // reflect what the user actually saw/clicked, not a stale hardcoded label.
   binder.trackEvent(`${el?.textContent?.trim() || 'Open in Firefly'}|UnityWidget`, {
     assetId: binder.resultAssetId,
     action: 'redirect',
@@ -247,9 +125,6 @@ export async function runEditInFirefly(binder, el) {
     connectorAssetId: binder.assetId,
     fileType: binder.filesData.type,
     operations,
-    // Confirmed for both crop and resize's Open in Firefly call — fixed workflow value
-    // (not the generic supportedFeatures-derived one every other connector call uses),
-    // and no widgetType.
     workflow: 'image-operations',
     includeWidgetType: false,
   };
@@ -259,10 +134,6 @@ export async function runEditInFirefly(binder, el) {
     connectorFields.aspectRatio = engine.selectedRatioText || 'freeform';
   }
   const payload = await binder.buildConnectorPayload(connectorFields);
-  // TEMPORARY: remove before production — lets the payload be checked against the real
-  // contract (especially resize's, which is only our own proposal right now) while
-  // it's still being verified.
-  // eslint-disable-next-line no-console
   console.log(`[inline-action editor] ${binder.operation} EditInFirefly connector payload`, payload);
   try {
     const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);

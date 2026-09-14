@@ -50,14 +50,6 @@
   height: auto;
   max-height: none;
 
-  /* overflow:hidden alone doesn't create a stacking context — without this, internal
-     z-indexed elements (.ia-processing-overlay at 10, .alert-holder at 10, .ia-more at
-     5, etc.) compete directly against the page's own stacking order instead of staying
-     contained to this widget. If the page's sticky/fixed global nav has no z-index (or
-     a lower one) at that shared level, those internal overlays can paint above it once
-     the page is scrolled — isolation:isolate scopes all of them to this box instead,
-     so nothing inside can ever escape above external page chrome regardless of its
-     z-index. */
   isolation: isolate;
 }
 
@@ -962,7 +954,7 @@
   .ia-widget[data-state="loading"] .ia-panel-left {
     display: none;
   }
-  
+
   .ia-widget[data-state="complete"] {
     flex-direction: column-reverse;
   }
@@ -1002,12 +994,6 @@
     scroll-snap-align: start;
   }
 
-  /* Crop/resize COMPLETE state only, stacked mobile/tablet layout — equivalent of the
-     desktop split below (same file, min-width:1200px), painted on .interactive-area for
-     the same reason as desktop (continuous with the outer 16px padding — see that
-     rule's own comment). No fixed-pixel split here since panel heights are dynamic, so
-     the whole card is checkered and .ia-panel-right gets a solid #1b1b1b mask for the
-     controls half instead. */
   .unity-inline-action.unity-enabled > .interactive-area:has(
     .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"]
   ) {
@@ -1022,21 +1008,10 @@
     background-position: 0 0, 0 11px, 11px -11px, -11px 0;
   }
 
-  /* .ia-widget's own overflow:hidden (base rule, top of file) would otherwise clip
-     .ia-panel-right's bleed below before it ever reaches .interactive-area's padding —
-     turned off here, scoped to this same crop/resize+complete+mobile case, so the mask
-     can extend into it. .interactive-area's own overflow:hidden + 20px radius (still
-     intact) becomes the effective clip boundary instead of .ia-widget's 8px one, same
-     as desktop's split already relies on. */
   .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"] {
     overflow: visible;
   }
 
-  /* Bled outward via negative margin on the sides + bottom (not top, where it's flush
-     against .ia-panel-left with no gap to fill) so the solid mask reaches all the way
-     to .interactive-area's real edge, covering the same padding the checker above
-     fills on .ia-panel-left's side (-8px matches .interactive-area's own side/bottom
-     padding right above: 16px 8px 8px). */
   .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"] .ia-panel-right {
     background: #1b1b1b;
     margin: 0 -8px -8px;
@@ -1094,29 +1069,18 @@
     max-height: 500px;
   }
 
-  /* Original, pre-crop/resize behavior — rbg's complete state is a fixed 500px box.
-     Crop/resize override this right below to a floor only (min-height), since a more
-     specific selector doesn't override properties it doesn't itself declare — height/
-     max-height here would otherwise still apply to crop/resize too. */
   .ia-widget[data-state="complete"] {
     height: 500px;
     min-height: 500px;
     max-height: 500px;
   }
 
-  /* Crop/resize complete only — a floor, not a fixed box: the editor's own content
-     (aspect tabs, further pills, etc.) can be taller than 500px depending on what's
-     authored/selected, and shouldn't get clipped or forced to rbg's fixed height. */
   .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"] {
     height: auto;
     min-height: 500px;
     max-height: none;
   }
 
-  /* Crop/resize complete only — no gutter between the image and controls halves, so the
-     two background halves meet flush (see the split on .interactive-area below). Scoped
-     to crop/resize + complete so rbg and the shared initial/loading states keep the
-     default 16px gap. */
   .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"] {
     gap: 0;
   }
@@ -1155,27 +1119,9 @@
     aspect-ratio: auto;
   }
 
-  /* Crop/resize COMPLETE state only — split the outer block into two edge-to-edge
-     halves: left (image) #000, right (controls) #1b1b1b, meeting at the panel boundary.
-     Scoped via :has() to crop/resize so rbg (data-operation="removeBackground") and the
-     shared initial/loading states keep the default background untouched. The seam sits
-     at 516px from the block's left edge — 16px padding + 500px fixed left column, with
-     no gutter (gap:0 above) — and is clipped to the 20px rounded corners by
-     .interactive-area's own overflow:hidden. Only defined here (min-width 1200px)
-     because below it the panels stack vertically, where a left/right split has no
-     meaning. */
   .unity-inline-action.unity-enabled > .interactive-area:has(
     .ia-widget:is([data-operation="crop"], [data-operation="resize"])[data-state="complete"]
   ) {
-     /* Checkerboard painted here (not on .ia-editor-left-panel, which is transparent —
-       see editor.css) so the outer block's own 16px padding/margin shows the exact
-       same, perfectly continuous pattern as the panel itself — one shared background
-       layer, not two independently-tiled copies that would need to be phase-matched
-       by hand and could drift out of alignment. Layer order (topmost first): a
-       to-right gradient paints the right half solid #1b1b1b and leaves the left half
-       transparent to reveal the four checker gradients beneath it, over the #0d0d0d
-       base. Checker params (22px cell, #141414 squares) match editor.css's own values
-       exactly. */
     background-color: #0d0d0d;
     background-image:
       linear-gradient(to right, transparent 0 516px, #1b1b1b 516px 100%),

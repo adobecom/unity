@@ -175,9 +175,6 @@ function placeholderRowText(root, iconClass) {
   return li ? normalize(li.innerText) : '';
 }
 
-// Exact-class config rows that set both a text label and an icon href. icon-upload
-// feeds the same reuploadIconHref field icon-share does — both are just different
-// authoring conventions for "the reupload icon", so either can supply it.
 const LABEL_ICON_FIELDS = {
   'icon-download': ['downloadLabel', 'downloadIconHref'],
   'icon-aiPhotoEditor': ['editLabel', 'editIconHref'],
@@ -185,8 +182,6 @@ const LABEL_ICON_FIELDS = {
   'icon-upload': ['reuploadLabel', 'reuploadIconHref'],
 };
 
-// Exact-class config rows that set only a plain trimmed text label — the editor's
-// placeholder-* rows, none of which carry an icon.
 const TEXT_ONLY_FIELDS = {
   'icon-placeholder-nba': 'nbaHeading',
   'icon-placeholder-editor': 'editorTitle',
@@ -204,34 +199,19 @@ export function parseInlineAuthoring(unityEl) {
   const uls = [...unityEl.querySelectorAll(':scope > div ul')];
   const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
   const configUl = uls.find((ul) => ul !== nbaUl && ul.querySelector('[class*="icon-"]'));
-  // The editor's adjust-bar toggle buttons (Quality/Zoom, or whatever's authored) —
-  // an array, not a single field, since any number of icon-placeholder-slider-* rows
-  // can be authored; collected in document order, same order they'll be shown in.
   const sliderModes = [];
-
   const config = {
     operation: 'removeBackground',
-    // Left undefined rather than defaulted here — each consumer (rbg's buttons below,
-    // and the crop/resize editor's CTA row) needs to tell "not authored" apart from
-    // "authored as this exact string" so it can apply its own appropriate fallback.
     downloadLabel: undefined,
     downloadIconHref: undefined,
     editIconHref: undefined,
     editLabel: undefined,
     reuploadIconHref: undefined,
-    // resetLabel/reuploadLabel: the editor's own Reset/"Upload another image" header
-    // buttons — distinct from `uploadLabel` above, which is the pre-upload CTA's own
-    // label. Named separately so the two don't collide despite both often reading
-    // "Upload".
     resetLabel: undefined,
     resetIconHref: undefined,
     reuploadLabel: undefined,
-    // Same "undefined, not defaulted here" reasoning as above — rbg's NBA heading
-    // and the crop/resize editor's title each need their own fallback wording.
     nbaHeading: undefined,
     editorTitle: undefined,
-    // Editor-only — no rbg equivalent exists for these, so no fallback-collision
-    // concern; the fallback wording lives entirely in editor.js.
     aspectRatioLabel: undefined,
     originalSizeLabel: undefined,
     newSizeLabel: undefined,
@@ -267,12 +247,6 @@ export function parseInlineAuthoring(unityEl) {
     return { label: nbaLiText(li), nba, defaultPrompt: nbaLiText(li, true), src: pic ? getImgSrc(pic) : '' };
   }).filter(Boolean);
 
-  // Crop/Resize's "take it further" row is a plain icon+label pill, not an image card —
-  // same simple shape as the reset/upload/download rows above (icon, optional link,
-  // trailing text), not rbg's richer before/after-icon-text + picture format nbaLiText
-  // expects. Parsed separately, from the same nbaUl, so rbg's card rendering (above)
-  // and the editor's pill rendering can each read the authoring convention they need
-  // from the same list without either breaking the other.
   const nbaPills = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
     const nba = parseNbaIcon(li);
     const label = nba ? stripUrls(li.textContent) : '';
@@ -522,18 +496,11 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
-  // editor.js/editor.css and the EditorEngine are only ever needed once an image has
-  // actually been uploaded — deferred here (rather than at initWidget()) so state 1
-  // (upload-only) never pays for them, keeping LCP/initial load unaffected by an
-  // operation the user hasn't triggered yet.
   async setEditorImage(url, originalSize, trackEvent) {
     if (!this.editorEngine) {
       const { initEditor } = await import('./editor.js');
       this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData, trackEvent);
     }
-    // isOriginalUpload=true: this path only ever runs for a genuine upload/reupload
-    // (editorUploadFlow) — a post-operation refresh calls editorEngine.setImage()
-    // directly from runEditorOperation, bypassing this method entirely.
     await this.editorEngine.setImage(url, originalSize, true);
   }
 
@@ -542,25 +509,12 @@ export default class InlineActionWidget {
     this.parsedData = parseInlineAuthoring(this.el);
     const heroPreview = extractHeroMedia(viewport);
     const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
-    // data-operation scopes CSS per operation — rbg is 'removeBackground', crop/resize
-    // get their own values. Only the COMPLETE state may differ for crop/resize; their
-    // initial/loading DOM is identical to rbg (buildLeftPanel/buildRightPanel don't branch
-    // on operation), so editor-only styling must combine BOTH attributes —
-    // .ia-widget[data-operation="crop"][data-state="complete"] (or :is() of crop/resize) —
-    // never data-operation alone, which would also reshape the shared initial/loading states.
     const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL, 'data-operation': this.parsedData.operation });
     const progressHolder = TransitionScreen.createProgressBar();
-
-    // Explicit allowlist, not "anything but removeBackground" — an unrecognized or
-    // malformed authored operation (e.g. a parsing edge case) should fall back to the
-    // known-good rbg path rather than silently loading the editor for an operation it
-    // doesn't actually recognize.
     const isEditorOp = ['crop', 'resize'].includes(this.parsedData.operation);
     let completeLeft;
     let completeRight;
     if (isEditorOp) {
-      // Empty slots only — editor.js/editor.css and the real stage/panel DOM are built
-      // lazily in setEditorImage(), once an image is actually uploaded (see there for why).
       completeLeft = createTag('div', { class: 'ia-editor-left-slot' });
       completeRight = createTag('div', { class: 'ia-editor-right-slot' });
       this.editorLeftSlot = completeLeft;
@@ -570,16 +524,12 @@ export default class InlineActionWidget {
       completeRight = buildCompletePanel(this.parsedData);
     }
     const right = buildRightPanel(this.parsedData, progressHolder, completeRight);
-
     this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
     this.progressScreen.progressText = this.parsedData.loadingText;
-
     appendSpriteSheet(root, this.spriteContent);
     root.append(buildLeftPanel(heroPreview, this.parsedData, completeLeft), right);
-
     insertInlineActionRoot(this.el, this, root);
     this.widget = root;
-
     return this.workflowCfg.targetCfg.actionMap;
   }
 }

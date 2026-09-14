@@ -57,7 +57,7 @@ function getSessionID() {
 }
 
 function createPayloadForSplunk(metaData) {
-  const { 
+  const {
     eventName, product, errorData, redirectUrl, assetId, statusCode, verb, action, workflowStep, fileMetaData, operation, workflow, isGuestUser,
     styleEventName, voiceEventName, modelGenEventName, aspectRatio, hasImage,
   } = metaData;
