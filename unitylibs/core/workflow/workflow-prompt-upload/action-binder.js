@@ -545,7 +545,7 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts, filesData) {
-    if (this.query) cOpts.query = this.query;
+    cOpts.query = this.query;
     if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
     [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
@@ -882,11 +882,9 @@ export default class ActionBinder {
       this.limits = this.resolveLimits();
       if (this.pendingFiles.length) {
         await this.processFileUpload();
-      } else if (this.query) {
+      } else {
         this.dispatchAnalyticsEvent('generate');
         await this.continueWithPrompt();
-      } else {
-        await this.dispatchErrorToast('prompt_error_empty', null, 'No file or prompt provided', false, true, { code: 'prompt_error_empty' });
       }
     } catch (err) {
       await this.dispatchErrorToast('error_generic', 500, `Exception during generate: ${err.message}`, false, true, { code: 'error_generic', desc: err.message });
