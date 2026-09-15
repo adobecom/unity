@@ -62,6 +62,15 @@ class WfInitiator {
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
       ],
+      'workflow-prompt-upload': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+        `${getUnityLibs()}/core/widgets/shared/widget-base.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropzone.js`,
+        `${getUnityLibs()}/core/widgets/shared/prompt-input.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropdown.js`,
+        `${getUnityLibs()}/core/widgets/shared/shared.css`,
+      ],
       'workflow-inline-action': [
         `${baseWfPath}/sprite.svg`,
         `${getUnityLibs()}/core/styles/splash-screen.css`,
@@ -285,6 +294,11 @@ class WfInitiator {
       'workflow-prompt-bar-upload': {
         productName: product || 'Firefly',
         sfList: new Set([feature || 'image-to-video']),
+      },
+      'workflow-prompt-upload': {
+        productName: product,
+        sfList: new Set([feature]),
+        psw,
       },
       'workflow-firefly': {
         productName: 'Firefly',
