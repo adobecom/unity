@@ -2,6 +2,28 @@
 
 import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from '../../../scripts/utils.js';
 
+function isFireflyRedesign() {
+  return !!(document.querySelector('meta[name="theme"][content="firefly-redesign"]')
+    || document.querySelector('.theme-firefly-redesign')
+    || new URLSearchParams(window.location.search).has('ffredesign'));
+}
+
+function getTextRect(el) {
+  const textEl = el.querySelector(':scope > .model-name') || el;
+  const textNode = [...textEl.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+  if (!textNode) return textEl.getBoundingClientRect();
+  const range = document.createRange();
+  range.selectNodeContents(textNode);
+  return range.getBoundingClientRect();
+}
+
+function setVerbSelectedOrigin(panel, btnEl, targetEl) {
+  const btnTextRect = getTextRect(btnEl);
+  const targetTextRect = getTextRect(targetEl);
+  panel.style.setProperty('--verb-selected-dx', `${btnTextRect.left - targetTextRect.left}px`);
+  panel.style.setProperty('--verb-selected-dy', `${btnTextRect.top - targetTextRect.top}px`);
+}
+
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
@@ -25,6 +47,7 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
+    this.isFireflyRedesign = isFireflyRedesign();
   }
 
   async initWidget() {
@@ -48,7 +71,19 @@ export default class UnityWidget {
     const comboboxContainer = createTag('div', { class: 'autocomplete' });
     comboboxContainer.append(inputWrapper);
     if (dropdown) comboboxContainer.append(dropdown);
+    if (this.isFireflyRedesign) {
+      comboboxContainer.classList.add('pb-redesign');
+      const verbsContainer = inputWrapper.querySelector('.verbs-container');
+      if (verbsContainer) comboboxContainer.prepend(verbsContainer);
+    }
     this.widget.append(comboboxContainer);
+    if (this.isFireflyRedesign) {
+      const legalEl = this.el.querySelector('.icon-legal-disclaimer')?.closest('li');
+      if (legalEl) {
+        legalEl.querySelector('.icon-legal-disclaimer')?.remove();
+        this.widget.append(createTag('p', { class: 'legal-disclaimer' }, legalEl.innerHTML.trim()));
+      }
+    }
     this.addWidget();
     if (this.workflowCfg.targetCfg.floatPrompt) this.initIO();
     return this.workflowCfg.targetCfg.actionMap;
@@ -82,9 +117,25 @@ export default class UnityWidget {
         container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
       }
     });
+    const panel = selectedElement.nextElementSibling;
+    if (panel?.hasAttribute('style')) panel.removeAttribute('style');
+    const isVerbOrModelBtn = selectedElement.classList.contains('selected-verb')
+      || selectedElement.classList.contains('selected-model');
+    if (this.isFireflyRedesign && panel && isVerbOrModelBtn
+      && !menuContainer.classList.contains('show-menu')) {
+      const btnRect = selectedElement.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      panel.style.setProperty('--verb-origin-x', `${btnRect.left - panelRect.left}px`);
+      panel.style.setProperty('--verb-origin-y', `${btnRect.top - panelRect.top}px`);
+      panel.style.setProperty('--verb-origin-w', `${btnRect.width}px`);
+      panel.style.setProperty('--verb-origin-h', `${btnRect.height}px`);
+      const selectedLink = panel.querySelector('.verb-item.selected .verb-link');
+      if (selectedLink) {
+        setVerbSelectedOrigin(panel, selectedElement, selectedLink);
+      }
+    }
     menuContainer.classList.toggle('show-menu');
     selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
-    if (selectedElement.nextElementSibling.hasAttribute('style')) selectedElement.nextElementSibling.removeAttribute('style');
   }
 
   hidePromptDropdown(exceptElement = null) {
@@ -142,6 +193,9 @@ export default class UnityWidget {
         if (text) verbLinkTexts.push(text);
       });
       verbLinkTexts.sort((a, b) => b.length - a.length);
+      if (this.isFireflyRedesign) {
+        setVerbSelectedOrigin(verbList, selectedElement, link);
+      }
       selectedElement.parentElement.classList.toggle('show-menu');
       selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
       link.parentElement.classList.add('selected');
@@ -161,6 +215,10 @@ export default class UnityWidget {
         this.selectedVerbText = link.textContent.trim();
         selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
+        const inpField = this.widget.querySelector('.inp-field');
+        if (inpField) {
+          inpField.placeholder = this.resolveVerbPlaceholder(this.workflowCfg.placeholder, this.selectedVerbType);
+        }
       }
       selectedElement.focus();
       this.ensureSoundModuleLoaded();
@@ -277,6 +335,25 @@ export default class UnityWidget {
     const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': 'Media options' });
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
+    let closeBtn = null;
+    let panel = verbList;
+    if (this.isFireflyRedesign) {
+      const header = createTag('div', { class: 'verb-list-header' });
+      const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
+      const label = createTag('span', { class: 'verb-list-label' }, labelText);
+      closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedElement.parentElement.classList.remove('show-menu');
+        selectedElement.setAttribute('aria-expanded', 'false');
+        selectedElement.focus();
+      });
+      header.append(label, closeBtn);
+      panel = createTag('div', { class: 'verb-list-panel' });
+      panel.setAttribute('style', 'display: none;');
+      verbList.removeAttribute('style');
+      panel.append(header, verbList);
+    }
     const handleDocumentClick = (e) => {
       const menuContainer = selectedElement.parentElement;
       if (!menuContainer.contains(e.target)) {
@@ -289,14 +366,20 @@ export default class UnityWidget {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
+      if (closeBtn && selectedElement.getAttribute('aria-expanded') === 'true') closeBtn.focus();
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
+        if (closeBtn && selectedElement.getAttribute('aria-expanded') === 'true') closeBtn.focus();
       }
       if (e.key === 'Escape' || e.code === 27) {
+        e.preventDefault();
+        e.stopPropagation();
         selectedElement.parentElement.classList?.remove('show-menu');
         selectedElement.focus();
       }
@@ -308,11 +391,12 @@ export default class UnityWidget {
       icon: verb.nextElementSibling?.href,
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    return [selectedElement, verbList];
+    return [selectedElement, panel];
   }
 
   modelDropdown() {
     if (!this.hasModelOptions) return [];
+    if (!Array.isArray(this.models)) return [];
     const models = this.models.filter((obj) => obj.module === this.selectedVerbType);
     if (!Array.isArray(models) || models.length === 0) return [];
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
@@ -350,18 +434,29 @@ export default class UnityWidget {
         selectedElement.setAttribute('aria-expanded', 'false');
       }
     };
+    const focusFirstListItem = () => {
+      if (selectedElement.getAttribute('aria-expanded') === 'true') {
+        listItems.querySelector('.verb-link')?.focus();
+      }
+    };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
+      focusFirstListItem();
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
+        focusFirstListItem();
       }
       if (e.key === 'Escape' || e.code === 27) {
+        e.preventDefault();
+        e.stopPropagation();
         selectedElement.parentElement.classList?.remove('show-menu');
         selectedElement.focus();
       }
@@ -370,24 +465,30 @@ export default class UnityWidget {
     return [selectedElement, listItems];
   }
 
+  resolveVerbPlaceholder(ph, verbType) {
+    return ph[`placeholder-input-${verbType}`] || ph['placeholder-input'];
+  }
+
   createInpWrap(ph) {
     const inpWrap = createTag('div', { class: 'inp-wrap' });
     const actWrap = createTag('div', { class: 'act-wrap' });
+    const verbDropdown = this.verbDropdown();
     const inpField = createTag('textarea', {
       id: 'promptInput',
       class: 'inp-field',
       type: 'text',
-      placeholder: ph['placeholder-input'],
+      placeholder: this.resolveVerbPlaceholder(ph, this.selectedVerbType),
       'aria-autocomplete': 'list',
       'aria-haspopup': 'listbox',
       'aria-controls': 'prompt-dropdown',
       'aria-activedescendant': '',
+      'data-lenis-prevent': '',
+      ...(this.isFireflyRedesign && { rows: '1' }),
     });
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
     inpField.addEventListener('focus', () => this.hidePromptDropdown());
     inpField.addEventListener('click', () => this.resetAllSoundVariations?.(dropdown));
     inpField.addEventListener('input', () => this.resetAllSoundVariations?.(dropdown));
-    const verbDropdown = this.verbDropdown();
     const modelDropdown = this.modelDropdown();
     const genBtn = this.createActBtn(this.el.querySelector('.icon-generate')?.closest('li'), 'gen-btn');
     actWrap.append(genBtn);
@@ -395,17 +496,31 @@ export default class UnityWidget {
     const promptLabelText = ph['placeholder-prompt-label'] || 'Enter prompt';
     const hasDropdowns = verbDropdown.length > 1 || modelDropdown.length > 1;
     const inpGroup = hasDropdowns ? createTag('fieldset', { class: 'inp-fieldset' }) : inpWrap;
-    const promptLabel = hasDropdowns
+    const useLegend = hasDropdowns && !this.isFireflyRedesign;
+    const promptLabel = useLegend
       ? createTag('legend', { class: 'inp-field-label' }, promptLabelText)
       : createTag('label', { for: 'promptInput', class: 'inp-field-label' }, promptLabelText);
-    inpGroup.append(promptLabel);
+    let inpFieldSlot;
+    if (this.isFireflyRedesign) {
+      inpFieldSlot = createTag('div', { class: 'inp-text-wrap' });
+      inpFieldSlot.append(promptLabel, inpField);
+    } else {
+      inpGroup.append(promptLabel);
+      inpFieldSlot = inpField;
+    }
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
       verbBtn.append(...verbDropdown);
       actionContainer.append(verbBtn);
-      inpGroup.append(inpField, actionContainer, actWrap);
+      if (this.isFireflyRedesign) {
+        const actionBar = createTag('div', { class: 'action-bar' });
+        actionBar.append(actionContainer, actWrap);
+        inpGroup.append(inpFieldSlot, actionBar);
+      } else {
+        inpGroup.append(inpFieldSlot, actionContainer, actWrap);
+      }
     } else {
-      inpGroup.append(inpField, actWrap);
+      inpGroup.append(inpFieldSlot, actWrap);
     }
     if (modelDropdown.length > 1) {
       const modelBtn = createTag('div', { class: 'models-container', 'aria-label': 'Model options' });
@@ -507,7 +622,8 @@ export default class UnityWidget {
   }
 
   addWidget() {
-    const interactArea = this.target.querySelector('.copy');
+    const interactArea = this.target.querySelector(this.workflowCfg.targetCfg.selector)
+      || this.target.querySelector('.copy');
     const para = interactArea?.querySelector(this.workflowCfg.targetCfg.target);
     this.widgetWrap.append(this.widget);
     if (para && this.workflowCfg.targetCfg.insert === 'before') para.before(this.widgetWrap);

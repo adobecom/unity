@@ -1184,6 +1184,86 @@ describe('Firefly Workflow Tests', () => {
     });
   });
 
+  describe('showVerbMenu - Firefly redesign origin measurement', () => {
+    let testWidget;
+    let menuContainer;
+    let selectedElement;
+    let panel;
+
+    beforeEach(() => {
+      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.isFireflyRedesign = true;
+
+      menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+
+      selectedElement = document.createElement('button');
+      selectedElement.className = 'selected-verb';
+      selectedElement.setAttribute('aria-expanded', 'false');
+      selectedElement.textContent = 'Generate image';
+
+      panel = document.createElement('ul');
+      panel.className = 'verb-list';
+      const item = document.createElement('li');
+      item.className = 'verb-item selected';
+      const link = document.createElement('a');
+      link.className = 'verb-link';
+      link.textContent = 'Generate image';
+      item.appendChild(link);
+      panel.appendChild(item);
+
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+    });
+
+    afterEach(() => {
+      document.body.removeChild(menuContainer);
+    });
+
+    it('sets --verb-origin-* custom properties on the panel when opening', () => {
+      testWidget.showVerbMenu(selectedElement);
+
+      expect(panel.style.getPropertyValue('--verb-origin-x')).to.not.equal('');
+      expect(panel.style.getPropertyValue('--verb-origin-y')).to.not.equal('');
+      expect(panel.style.getPropertyValue('--verb-origin-w')).to.not.equal('');
+      expect(panel.style.getPropertyValue('--verb-origin-h')).to.not.equal('');
+    });
+
+    it('sets --verb-selected-dx/dy when a .verb-item.selected .verb-link exists', () => {
+      testWidget.showVerbMenu(selectedElement);
+
+      expect(panel.style.getPropertyValue('--verb-selected-dx')).to.not.equal('');
+      expect(panel.style.getPropertyValue('--verb-selected-dy')).to.not.equal('');
+    });
+
+    it('does not measure when not in Firefly redesign', () => {
+      testWidget.isFireflyRedesign = false;
+
+      testWidget.showVerbMenu(selectedElement);
+
+      expect(panel.style.getPropertyValue('--verb-origin-x')).to.equal('');
+    });
+
+    it('does not measure for a trigger that is neither .selected-verb nor .selected-model', () => {
+      selectedElement.classList.remove('selected-verb');
+      selectedElement.classList.add('some-other-trigger');
+
+      testWidget.showVerbMenu(selectedElement);
+
+      expect(panel.style.getPropertyValue('--verb-origin-x')).to.equal('');
+    });
+
+    it('does not re-measure when the menu is already open (closing)', () => {
+      menuContainer.classList.add('show-menu');
+
+      testWidget.showVerbMenu(selectedElement);
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.false;
+      expect(panel.style.getPropertyValue('--verb-origin-x')).to.equal('');
+    });
+  });
+
   describe('handleVerbLinkClick function', () => {
     let testWidget;
     let link;
@@ -1421,6 +1501,34 @@ describe('Firefly Workflow Tests', () => {
 
       expect(() => handler(event)).to.not.throw();
       expect(testWidget.updateDropdownForVerb.calledWith('image')).to.be.true;
+    });
+
+    it('sets --verb-selected-dx/dy on the verb list when in Firefly redesign', () => {
+      testWidget.isFireflyRedesign = true;
+
+      const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
+      handler(event);
+
+      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.not.equal('');
+      expect(verbList.style.getPropertyValue('--verb-selected-dy')).to.not.equal('');
+    });
+
+    it('does not set origin custom properties when not in Firefly redesign', () => {
+      testWidget.isFireflyRedesign = false;
+
+      const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
+      handler(event);
+
+      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.equal('');
+    });
+
+    it('also sets origin custom properties for the model list (modelList=true)', () => {
+      testWidget.isFireflyRedesign = true;
+
+      const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, true);
+      handler(event);
+
+      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.not.equal('');
     });
   });
 
@@ -1707,6 +1815,326 @@ describe('Firefly Workflow Tests', () => {
       expect(verbItems.length).to.equal(2);
       expect(verbItems[1].querySelector('.verb-link').textContent.trim()).to.equal('');
     });
+
+    it('should not add a verb-list-header when not in Firefly redesign', () => {
+      const result = testWidget.verbDropdown();
+      const verbList = result[1];
+      expect(verbList.querySelector('.verb-list-header')).to.not.exist;
+      expect(verbList.querySelector('.verb-list-close')).to.not.exist;
+    });
+  });
+
+  describe('verbDropdown function - Firefly redesign header', () => {
+    let testWidget;
+    let mockEl;
+
+    beforeEach(() => {
+      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.isFireflyRedesign = true;
+      testWidget.widgetWrap = document.createElement('div');
+      testWidget.widgetWrap.setAttribute('data-selected-verb', 'image');
+      testWidget.widget = document.createElement('div');
+
+      mockEl = document.createElement('div');
+      const placeholderInput = document.createElement('span');
+      placeholderInput.className = 'icon-placeholder-input';
+      const placeholderParent = document.createElement('div');
+      placeholderParent.textContent = 'Enter your prompt';
+      placeholderParent.appendChild(placeholderInput);
+      mockEl.appendChild(placeholderParent);
+
+      const verb1 = document.createElement('span');
+      verb1.className = 'icon icon-verb-image';
+      const verb1Link = document.createElement('a');
+      verb1Link.href = 'image-icon.svg';
+      verb1Link.textContent = 'Image';
+      mockEl.appendChild(verb1);
+      mockEl.appendChild(verb1Link);
+
+      const verb2 = document.createElement('span');
+      verb2.className = 'icon icon-verb-video';
+      const verb2Link = document.createElement('a');
+      verb2Link.href = 'video-icon.svg';
+      verb2Link.textContent = 'Video';
+      mockEl.appendChild(verb2);
+      mockEl.appendChild(verb2Link);
+
+      testWidget.el = mockEl;
+    });
+
+    it('should wrap the "Select a feature" label and close button in a verb-list-header, as a sibling of the listbox (not nested inside it)', () => {
+      const result = testWidget.verbDropdown();
+      const panel = result[1];
+      expect(panel.classList.contains('verb-list-panel')).to.be.true;
+
+      const header = panel.querySelector('.verb-list-header');
+      expect(header).to.exist;
+      expect(panel.firstElementChild).to.equal(header);
+
+      const list = panel.querySelector('ul.verb-list');
+      expect(list).to.exist;
+      expect(panel.children[1]).to.equal(list);
+      expect(list.getAttribute('role')).to.equal('listbox');
+      expect(list.contains(header)).to.be.false;
+
+      const label = header.querySelector('.verb-list-label');
+      expect(label).to.exist;
+      expect(label.tagName).to.equal('SPAN');
+      expect(label.textContent).to.equal('Select a feature');
+
+      const closeBtn = header.querySelector('.verb-list-close');
+      expect(closeBtn).to.exist;
+      expect(closeBtn.tagName).to.equal('BUTTON');
+    });
+
+    it('should close the menu and refocus the trigger when the close button is clicked', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container show-menu';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      const closeBtn = panel.querySelector('.verb-list-close');
+      closeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.false;
+      expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
+      expect(document.activeElement).to.equal(selectedElement);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('should move focus to the close button when the menu is opened by click', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const closeBtn = panel.querySelector('.verb-list-close');
+      expect(document.activeElement).to.equal(closeBtn);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('should move focus to the close button when the menu is opened via Enter key', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const closeBtn = panel.querySelector('.verb-list-close');
+      expect(document.activeElement).to.equal(closeBtn);
+
+      document.body.removeChild(menuContainer);
+    });
+  });
+
+  describe('createInpWrap function - Firefly redesign structure', () => {
+    let testWidget;
+    let mockEl;
+    const ph = { 'placeholder-prompt-label': 'Prompt', 'placeholder-input': 'Describe what to generate' };
+
+    function buildMockEl() {
+      const el = document.createElement('div');
+      const placeholderInput = document.createElement('span');
+      placeholderInput.className = 'icon-placeholder-input';
+      const placeholderParent = document.createElement('div');
+      placeholderParent.textContent = 'Enter your prompt';
+      placeholderParent.appendChild(placeholderInput);
+      el.appendChild(placeholderParent);
+
+      const verb1 = document.createElement('span');
+      verb1.className = 'icon icon-verb-image';
+      const verb1Link = document.createElement('a');
+      verb1Link.href = 'image-icon.svg';
+      verb1Link.textContent = 'Image';
+      el.appendChild(verb1);
+      el.appendChild(verb1Link);
+
+      const verb2 = document.createElement('span');
+      verb2.className = 'icon icon-verb-video';
+      const verb2Link = document.createElement('a');
+      verb2Link.href = 'video-icon.svg';
+      verb2Link.textContent = 'Video';
+      el.appendChild(verb2);
+      el.appendChild(verb2Link);
+
+      const genCfg = document.createElement('li');
+      genCfg.innerHTML = '<img src="gen.svg" alt="" />Generate';
+      const genIcon = document.createElement('span');
+      genIcon.className = 'icon-generate';
+      genCfg.appendChild(genIcon);
+      el.appendChild(genCfg);
+
+      return el;
+    }
+
+    beforeEach(() => {
+      testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.widgetWrap = document.createElement('div');
+      testWidget.widget = document.createElement('div');
+      mockEl = buildMockEl();
+      testWidget.el = mockEl;
+    });
+
+    it('uses a <legend> and keeps the field flat when not in Firefly redesign', () => {
+      const inpWrap = testWidget.createInpWrap(ph);
+      const fieldset = inpWrap.querySelector('.inp-fieldset');
+      expect(fieldset.querySelector(':scope > legend.inp-field-label')).to.exist;
+      expect(fieldset.querySelector('.inp-text-wrap')).to.not.exist;
+      expect(fieldset.querySelector('.action-bar')).to.not.exist;
+      const inpField = fieldset.querySelector('.inp-field');
+      expect(inpField.getAttribute('rows')).to.not.equal('1');
+    });
+
+    it('wraps the label and textarea in .inp-text-wrap, and groups the action row in .action-bar', () => {
+      testWidget.isFireflyRedesign = true;
+      const inpWrap = testWidget.createInpWrap(ph);
+      const fieldset = inpWrap.querySelector('.inp-fieldset');
+
+      // legend is no longer used for the redesign - a real <label> is used instead
+      expect(fieldset.querySelector(':scope > legend')).to.not.exist;
+
+      const textWrap = fieldset.querySelector('.inp-text-wrap');
+      expect(textWrap).to.exist;
+      const label = textWrap.querySelector('label.inp-field-label');
+      expect(label).to.exist;
+      expect(label.getAttribute('for')).to.equal('promptInput');
+      const inpField = textWrap.querySelector('.inp-field');
+      expect(inpField).to.exist;
+      expect(inpField.getAttribute('rows')).to.equal('1');
+
+      const actionBar = fieldset.querySelector('.action-bar');
+      expect(actionBar).to.exist;
+      expect(actionBar.querySelector('.action-container')).to.exist;
+      expect(actionBar.querySelector('.act-wrap')).to.exist;
+      expect(actionBar.querySelector('.act-wrap .gen-btn')).to.exist;
+    });
+
+    it('falls back to appending the field directly when there are no dropdowns', () => {
+      testWidget.isFireflyRedesign = true;
+      // Remove the second verb so verbDropdown() returns a single (disabled) button
+      const verbs = mockEl.querySelectorAll('[class*="icon-verb"]');
+      verbs[1].nextElementSibling.remove();
+      verbs[1].remove();
+      const inpWrap = testWidget.createInpWrap(ph);
+      // No dropdowns means inpGroup === inpWrap itself (no <fieldset>)
+      expect(inpWrap.querySelector('.inp-fieldset')).to.not.exist;
+      const textWrap = inpWrap.querySelector('.inp-text-wrap');
+      expect(textWrap).to.exist;
+      expect(textWrap.querySelector('label.inp-field-label')).to.exist;
+      expect(inpWrap.querySelector('.action-bar')).to.not.exist;
+      expect(inpWrap.querySelector('.act-wrap .gen-btn')).to.exist;
+    });
+  });
+
+  describe('initWidget - Firefly redesign extras', () => {
+    let testWidget;
+    let mockEl;
+
+    function buildMockEl() {
+      const el = document.createElement('div');
+      const placeholderInput = document.createElement('span');
+      placeholderInput.className = 'icon-placeholder-input';
+      const placeholderParent = document.createElement('div');
+      placeholderParent.textContent = 'Enter your prompt';
+      placeholderParent.appendChild(placeholderInput);
+      el.appendChild(placeholderParent);
+
+      const verb1 = document.createElement('span');
+      verb1.className = 'icon icon-verb-image';
+      const verb1Link = document.createElement('a');
+      verb1Link.href = 'image-icon.svg';
+      verb1Link.textContent = 'Image';
+      el.appendChild(verb1);
+      el.appendChild(verb1Link);
+
+      const verb2 = document.createElement('span');
+      verb2.className = 'icon icon-verb-video';
+      const verb2Link = document.createElement('a');
+      verb2Link.href = 'video-icon.svg';
+      verb2Link.textContent = 'Video';
+      el.appendChild(verb2);
+      el.appendChild(verb2Link);
+
+      const legalLi = document.createElement('li');
+      const legalIcon = document.createElement('span');
+      legalIcon.className = 'icon-legal-disclaimer';
+      legalLi.appendChild(legalIcon);
+      legalLi.appendChild(document.createTextNode('By using Adobe Firefly, you agree to the '));
+      const legalLink = document.createElement('a');
+      legalLink.href = 'https://adobe.com/terms';
+      legalLink.textContent = 'Terms of Use';
+      legalLi.appendChild(legalLink);
+      el.appendChild(legalLi);
+
+      return el;
+    }
+
+    beforeEach(() => {
+      mockEl = buildMockEl();
+    });
+
+    it('promotes the verbs-container into the card and marks it pb-redesign', async () => {
+      testWidget = new UnityWidget(block, mockEl, { ...workflowCfg, targetCfg: { ...workflowCfg.targetCfg } }, spriteContainer);
+      testWidget.isFireflyRedesign = true;
+      await testWidget.initWidget();
+      const card = testWidget.widget.querySelector('.autocomplete');
+      expect(card.classList.contains('pb-redesign')).to.be.true;
+      expect(card.firstElementChild.classList.contains('verbs-container')).to.be.true;
+    });
+
+    it('does not promote verbs-container or add pb-redesign when not in Firefly redesign', async () => {
+      testWidget = new UnityWidget(block, mockEl, { ...workflowCfg, targetCfg: { ...workflowCfg.targetCfg } }, spriteContainer);
+      testWidget.isFireflyRedesign = false;
+      await testWidget.initWidget();
+      const card = testWidget.widget.querySelector('.autocomplete');
+      expect(card.classList.contains('pb-redesign')).to.be.false;
+      expect(card.firstElementChild.classList.contains('verbs-container')).to.be.false;
+    });
+
+    it('creates a legal-disclaimer paragraph from the authored row and strips the icon', async () => {
+      testWidget = new UnityWidget(block, mockEl, { ...workflowCfg, targetCfg: { ...workflowCfg.targetCfg } }, spriteContainer);
+      testWidget.isFireflyRedesign = true;
+      await testWidget.initWidget();
+      const legalP = testWidget.widget.querySelector('.legal-disclaimer');
+      expect(legalP).to.exist;
+      expect(legalP.tagName).to.equal('P');
+      expect(legalP.querySelector('.icon-legal-disclaimer')).to.not.exist;
+      expect(legalP.querySelector('a').textContent).to.equal('Terms of Use');
+    });
+
+    it('does not create a legal-disclaimer when not in Firefly redesign', async () => {
+      testWidget = new UnityWidget(block, mockEl, { ...workflowCfg, targetCfg: { ...workflowCfg.targetCfg } }, spriteContainer);
+      testWidget.isFireflyRedesign = false;
+      await testWidget.initWidget();
+      expect(testWidget.widget.querySelector('.legal-disclaimer')).to.not.exist;
+    });
+
+    it('does nothing when no legal-disclaimer row is authored', async () => {
+      mockEl.querySelector('.icon-legal-disclaimer').closest('li').remove();
+      testWidget = new UnityWidget(block, mockEl, { ...workflowCfg, targetCfg: { ...workflowCfg.targetCfg } }, spriteContainer);
+      testWidget.isFireflyRedesign = true;
+      await testWidget.initWidget();
+      expect(testWidget.widget.querySelector('.legal-disclaimer')).to.not.exist;
+    });
   });
 
   describe('Model dropdown and verb/model interplay', () => {
@@ -1747,6 +2175,38 @@ describe('Firefly Workflow Tests', () => {
       expect(btn.getAttribute('aria-label')).to.equal('model type');
       const firstItem = list.querySelector('.verb-item');
       expect(firstItem.classList.contains('selected')).to.be.true;
+    });
+
+    it('should move focus to the first model option when opened by click', () => {
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const container = document.createElement('div');
+      container.className = 'models-container';
+      container.append(btn, list);
+      document.body.appendChild(container);
+
+      btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(container.classList.contains('show-menu')).to.be.true;
+      expect(document.activeElement).to.equal(list.querySelector('.verb-link'));
+
+      document.body.removeChild(container);
+    });
+
+    it('should move focus to the first model option when opened via Enter key', () => {
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const container = document.createElement('div');
+      container.className = 'models-container';
+      container.append(btn, list);
+      document.body.appendChild(container);
+
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(container.classList.contains('show-menu')).to.be.true;
+      expect(document.activeElement).to.equal(list.querySelector('.verb-link'));
+
+      document.body.removeChild(container);
     });
 
     it('changing verb replaces existing models container when new verb has models', () => {
@@ -2478,6 +2938,40 @@ describe('Firefly Workflow Tests', () => {
     it('should handle getFocusElems', () => {
       const result = testActionBinder.getFocusElems();
       expect(result).to.be.an('array');
+    });
+
+    it('should include .verb-list-close alongside .verb-link when the verb menu is open', () => {
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const verbLink = document.createElement('a');
+      verbLink.className = 'verb-link';
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'verb-list-close';
+      verbsContainer.appendChild(verbLink);
+      verbsContainer.appendChild(closeBtn);
+      mockBlock.appendChild(verbsContainer);
+
+      const result = testActionBinder.getFocusElems();
+
+      expect(result).to.include(verbLink);
+      expect(result).to.include(closeBtn);
+    });
+
+    it('should not include a close button selector when the model menu is open', () => {
+      const modelsContainer = document.createElement('div');
+      modelsContainer.className = 'models-container show-menu';
+      const verbLink = document.createElement('a');
+      verbLink.className = 'verb-link';
+      const strayCloseBtn = document.createElement('button');
+      strayCloseBtn.className = 'verb-list-close';
+      modelsContainer.appendChild(verbLink);
+      modelsContainer.appendChild(strayCloseBtn);
+      mockBlock.appendChild(modelsContainer);
+
+      const result = testActionBinder.getFocusElems();
+
+      expect(result).to.include(verbLink);
+      expect(result).to.not.include(strayCloseBtn);
     });
 
     it('should handle isDropdownItemFocused', () => {
