@@ -1833,6 +1833,7 @@ describe('Firefly Workflow Tests', () => {
       testWidget.isFireflyRedesign = true;
       testWidget.widgetWrap = document.createElement('div');
       testWidget.widgetWrap.setAttribute('data-selected-verb', 'image');
+      testWidget.widget = document.createElement('div');
 
       mockEl = document.createElement('div');
       const placeholderInput = document.createElement('span');
@@ -1861,12 +1862,20 @@ describe('Firefly Workflow Tests', () => {
       testWidget.el = mockEl;
     });
 
-    it('should wrap the "Select a feature" label and close button in a verb-list-header', () => {
+    it('should wrap the "Select a feature" label and close button in a verb-list-header, as a sibling of the listbox (not nested inside it)', () => {
       const result = testWidget.verbDropdown();
-      const verbList = result[1];
-      const header = verbList.querySelector('.verb-list-header');
+      const panel = result[1];
+      expect(panel.classList.contains('verb-list-panel')).to.be.true;
+
+      const header = panel.querySelector('.verb-list-header');
       expect(header).to.exist;
-      expect(verbList.firstElementChild).to.equal(header);
+      expect(panel.firstElementChild).to.equal(header);
+
+      const list = panel.querySelector('ul.verb-list');
+      expect(list).to.exist;
+      expect(panel.children[1]).to.equal(list);
+      expect(list.getAttribute('role')).to.equal('listbox');
+      expect(list.contains(header)).to.be.false;
 
       const label = header.querySelector('.verb-list-label');
       expect(label).to.exist;
@@ -1881,19 +1890,57 @@ describe('Firefly Workflow Tests', () => {
     it('should close the menu and refocus the trigger when the close button is clicked', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
-      const verbList = result[1];
+      const panel = result[1];
       const menuContainer = document.createElement('div');
       menuContainer.className = 'verbs-container show-menu';
       menuContainer.appendChild(selectedElement);
-      menuContainer.appendChild(verbList);
+      menuContainer.appendChild(panel);
       document.body.appendChild(menuContainer);
 
-      const closeBtn = verbList.querySelector('.verb-list-close');
+      const closeBtn = panel.querySelector('.verb-list-close');
       closeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.false;
       expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
       expect(document.activeElement).to.equal(selectedElement);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('should move focus to the close button when the menu is opened by click', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const closeBtn = panel.querySelector('.verb-list-close');
+      expect(document.activeElement).to.equal(closeBtn);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('should move focus to the close button when the menu is opened via Enter key', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const closeBtn = panel.querySelector('.verb-list-close');
+      expect(document.activeElement).to.equal(closeBtn);
 
       document.body.removeChild(menuContainer);
     });
@@ -2128,6 +2175,38 @@ describe('Firefly Workflow Tests', () => {
       expect(btn.getAttribute('aria-label')).to.equal('model type');
       const firstItem = list.querySelector('.verb-item');
       expect(firstItem.classList.contains('selected')).to.be.true;
+    });
+
+    it('should move focus to the first model option when opened by click', () => {
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const container = document.createElement('div');
+      container.className = 'models-container';
+      container.append(btn, list);
+      document.body.appendChild(container);
+
+      btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(container.classList.contains('show-menu')).to.be.true;
+      expect(document.activeElement).to.equal(list.querySelector('.verb-link'));
+
+      document.body.removeChild(container);
+    });
+
+    it('should move focus to the first model option when opened via Enter key', () => {
+      testWidget.selectedVerbType = 'image';
+      const [btn, list] = testWidget.modelDropdown();
+      const container = document.createElement('div');
+      container.className = 'models-container';
+      container.append(btn, list);
+      document.body.appendChild(container);
+
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(container.classList.contains('show-menu')).to.be.true;
+      expect(document.activeElement).to.equal(list.querySelector('.verb-link'));
+
+      document.body.removeChild(container);
     });
 
     it('changing verb replaces existing models container when new verb has models', () => {

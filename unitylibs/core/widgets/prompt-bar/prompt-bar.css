@@ -1622,8 +1622,8 @@
     border-radius: 14.22px !important;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list,
-  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
     --verb-panel-radius: 22.76px;
     width: 380.44px !important;
     padding: 8.53px 11.38px 11.38px !important;
@@ -1984,7 +1984,7 @@
   }
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
   position: absolute;
   z-index: 20;
   animation: pb-verb-panel-out .25s ease forwards;
@@ -1992,14 +1992,29 @@
   inset-inline-start: 20px;
   width: 535px;
   padding: var(--s2a-spacing-sm) var(--s2a-spacing-md) var(--s2a-spacing-md);
-  list-style: none;
   background: #000000;
   border: 2px solid #FFFFFF0D;
   border-radius: var(--s2a-border-radius-xl);
-  text-align: left;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+  list-style: none;
+  text-align: left;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  min-width: auto;
+  animation: none;
+  position: static;
+  top: auto;
+  left: auto;
+  z-index: auto;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list-panel {
   animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -2126,7 +2141,7 @@
   opacity: 1;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -2144,24 +2159,24 @@
   opacity: 1;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close svg {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close svg {
   width: 11.378px;
   height: 11.378px;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close:hover,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close:focus-visible {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close:hover,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close:focus-visible {
   opacity: 0.7;
 }
 
 @media (min-width: 768px) and (max-width: 1279px) {
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close {
     width: 34.13px;
     height: 34.13px;
     padding: 11.38px;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
     backdrop-filter: blur(14.2222px) !important;
   }
 
@@ -2170,7 +2185,7 @@
     border-radius: 29.87px !important;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close svg {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close svg {
       width: 9.72px;
       height: 9.72px;
    }
@@ -2277,8 +2292,8 @@
     height: 14px !important;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list,
-  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
     --verb-panel-radius: 19.44px;
     inset-inline-start: -11.72px !important;
     width: calc(100% + 23.44px) !important;
@@ -2294,13 +2309,13 @@
     border-radius: 25.51px !important;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close {
     width: 29.16px;
     height: 29.16px;
     padding: 9.72px;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-list-close svg {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-close svg {
     width: 8px;
     height: 8px;
   }

@@ -335,6 +335,25 @@ export default class UnityWidget {
     const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': 'Media options' });
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
+    let closeBtn = null;
+    let panel = verbList;
+    if (this.isFireflyRedesign) {
+      const header = createTag('div', { class: 'verb-list-header' });
+      const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
+      const label = createTag('span', { class: 'verb-list-label' }, labelText);
+      closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedElement.parentElement.classList.remove('show-menu');
+        selectedElement.setAttribute('aria-expanded', 'false');
+        selectedElement.focus();
+      });
+      header.append(label, closeBtn);
+      panel = createTag('div', { class: 'verb-list-panel' });
+      panel.setAttribute('style', 'display: none;');
+      verbList.removeAttribute('style');
+      panel.append(header, verbList);
+    }
     const handleDocumentClick = (e) => {
       const menuContainer = selectedElement.parentElement;
       if (!menuContainer.contains(e.target)) {
@@ -347,14 +366,20 @@ export default class UnityWidget {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
+      if (closeBtn && selectedElement.getAttribute('aria-expanded') === 'true') closeBtn.focus();
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
+        if (closeBtn && selectedElement.getAttribute('aria-expanded') === 'true') closeBtn.focus();
       }
       if (e.key === 'Escape' || e.code === 27) {
+        e.preventDefault();
+        e.stopPropagation();
         selectedElement.parentElement.classList?.remove('show-menu');
         selectedElement.focus();
       }
@@ -366,21 +391,7 @@ export default class UnityWidget {
       icon: verb.nextElementSibling?.href,
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
-    if (this.isFireflyRedesign) {
-      const header = createTag('div', { class: 'verb-list-header' });
-      const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
-      const label = createTag('span', { class: 'verb-list-label' }, labelText);
-      const closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectedElement.parentElement.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
-        selectedElement.focus();
-      });
-      header.append(label, closeBtn);
-      verbList.prepend(header);
-    }
-    return [selectedElement, verbList];
+    return [selectedElement, panel];
   }
 
   modelDropdown() {
@@ -423,18 +434,29 @@ export default class UnityWidget {
         selectedElement.setAttribute('aria-expanded', 'false');
       }
     };
+    const focusFirstListItem = () => {
+      if (selectedElement.getAttribute('aria-expanded') === 'true') {
+        listItems.querySelector('.verb-link')?.focus();
+      }
+    };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
+      focusFirstListItem();
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
         this.hidePromptDropdown(selectedElement);
         this.showVerbMenu(selectedElement);
+        focusFirstListItem();
       }
       if (e.key === 'Escape' || e.code === 27) {
+        e.preventDefault();
+        e.stopPropagation();
         selectedElement.parentElement.classList?.remove('show-menu');
         selectedElement.focus();
       }
