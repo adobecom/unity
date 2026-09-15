@@ -38,7 +38,7 @@
         "text/vtt"
       ],
       "maxFileSize": 104857600,
-      "max-char-limit": 3000,
+      "max-char-limit": 1000,
       "pageLimit": { "maxNumPages": 600 }
     },
     "fetchApiConfig": {

@@ -203,6 +203,7 @@ function attachDropdownBehavior(container, triggerBtn, list) {
       e.preventDefault();
       const active = idx >= 0 ? options[idx] : options[0];
       active?.click();
+      triggerBtn.focus();
     }
   });
 

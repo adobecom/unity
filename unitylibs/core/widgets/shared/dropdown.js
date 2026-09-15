@@ -150,6 +150,7 @@ export function attachDropdownBehavior(container, triggerBtn, list, { onOpen } =
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       (idx >= 0 ? options[idx] : options[0])?.click();
+      triggerBtn.focus();
     }
   });
 
