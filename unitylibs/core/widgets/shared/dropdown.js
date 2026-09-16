@@ -57,8 +57,8 @@ export function attachDropdownBehavior(container, triggerBtn, list, { onOpen } =
   const positionMenu = () => {
     const r = triggerBtn.getBoundingClientRect();
     list.style.top = `${r.bottom + MENU_GAP}px`;
-    list.style.left = 'auto';
-    list.style.right = `${window.innerWidth - r.right}px`;
+    list.style.left = `${r.left}px`;
+    list.style.right = 'auto';
     list.style.minWidth = `${r.width}px`;
   };
   const showMenu = () => {
