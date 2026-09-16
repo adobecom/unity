@@ -367,11 +367,6 @@ function buildCropAspectSection(parsedData) {
     more.append(moreTrigger, moreMenu);
     row.append(more);
   }
-  // Non-scrolling wrapper — the fade overlay (editor.css) lives here instead of on
-  // .ia-aspect-row--scroll itself, since that element is both the position:relative
-  // containing block AND the overflow-x:auto scroller: an absolutely-positioned
-  // overlay placed directly on it gets swept into its own scrollable content and
-  // moves with the pills instead of staying pinned to the visible edges.
   const rowViewport = createTag('div', { class: 'ia-aspect-row-viewport' });
   rowViewport.append(row);
   section.append(rowViewport, buildCtaRow(true, parsedData));
@@ -573,7 +568,7 @@ export class EditorEngine {
     this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
     this.moreMenu = rightPanelEl.querySelector('.ia-more-menu');
     this.moreWrap = this.moreTrigger?.closest('.ia-more');
-    this.repositionMoreMenu = () => this.positionMoreMenu();
+    this.repositionMoreMenu = () => this.positionDropdown(this.moreTrigger, this.moreMenu);
     const firstPill = this.aspectPills.find((p) => p !== this.moreTrigger);
     this.defaultAspectRatio = firstPill?.dataset.ratio ? Number(firstPill.dataset.ratio) : null;
     this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
@@ -588,11 +583,13 @@ export class EditorEngine {
     this.unitLabel = rightPanelEl.querySelector('.ia-unit-label');
     this.unitMenu = rightPanelEl.querySelector('.ia-unit-menu');
     this.unitWrap = this.unitTrigger?.closest('.ia-more');
+    this.repositionUnitMenu = () => this.positionDropdown(this.unitTrigger, this.unitMenu);
     this.unit = 'px';
     this.socialTrigger = rightPanelEl.querySelector('.ia-social-trigger');
     this.socialDefaultLabel = this.socialTrigger?.textContent || 'Social';
     this.socialMenu = rightPanelEl.querySelector('.ia-social-menu');
     this.socialWrap = this.socialTrigger?.closest('.ia-more');
+    this.repositionSocialMenu = () => this.positionDropdown(this.socialTrigger, this.socialMenu);
     this.socialGrids = [...rightPanelEl.querySelectorAll('.ia-social-grid')];
     this.sizeReadout = rightPanelEl.querySelector('.ia-size-readout');
     this.originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
@@ -872,14 +869,20 @@ export class EditorEngine {
 
   toggleSocialMenu() {
     const isOpen = !this.socialMenu.classList.contains('hide');
-    this.socialMenu.classList.toggle('hide', isOpen);
-    this.socialTrigger.setAttribute('aria-expanded', String(!isOpen));
+    if (isOpen) { this.closeSocialMenu(); return; }
+    this.positionDropdown(this.socialTrigger, this.socialMenu);
+    this.socialMenu.classList.remove('hide');
+    this.socialTrigger.setAttribute('aria-expanded', 'true');
+    window.addEventListener('scroll', this.repositionSocialMenu, true);
+    window.addEventListener('resize', this.repositionSocialMenu);
     this.updateDropdownScrim();
   }
 
   closeSocialMenu() {
     this.socialMenu?.classList.add('hide');
     this.socialTrigger?.setAttribute('aria-expanded', 'false');
+    window.removeEventListener('scroll', this.repositionSocialMenu, true);
+    window.removeEventListener('resize', this.repositionSocialMenu);
     this.updateDropdownScrim();
   }
 
@@ -902,14 +905,20 @@ export class EditorEngine {
 
   toggleUnitMenu() {
     const isOpen = !this.unitMenu.classList.contains('hide');
-    this.unitMenu.classList.toggle('hide', isOpen);
-    this.unitTrigger.setAttribute('aria-expanded', String(!isOpen));
+    if (isOpen) { this.closeUnitMenu(); return; }
+    this.positionDropdown(this.unitTrigger, this.unitMenu);
+    this.unitMenu.classList.remove('hide');
+    this.unitTrigger.setAttribute('aria-expanded', 'true');
+    window.addEventListener('scroll', this.repositionUnitMenu, true);
+    window.addEventListener('resize', this.repositionUnitMenu);
     this.updateDropdownScrim();
   }
 
   closeUnitMenu() {
     this.unitMenu?.classList.add('hide');
     this.unitTrigger?.setAttribute('aria-expanded', 'false');
+    window.removeEventListener('scroll', this.repositionUnitMenu, true);
+    window.removeEventListener('resize', this.repositionUnitMenu);
     this.updateDropdownScrim();
   }
 
@@ -996,17 +1005,17 @@ export class EditorEngine {
     }
   }
 
-  positionMoreMenu() {
-    const rect = this.moreTrigger.getBoundingClientRect();
-    this.moreMenu.style.top = `${rect.bottom + 6}px`;
-    this.moreMenu.style.right = `${window.innerWidth - rect.right}px`;
+  positionDropdown(trigger, menu) {
+    const rect = trigger.getBoundingClientRect();
+    menu.style.top = `${rect.bottom + 6}px`;
+    menu.style.right = `${window.innerWidth - rect.right}px`;
   }
 
   toggleMore() {
     const isOpen = !this.moreMenu.classList.contains('hide');
     if (isOpen) this.closeMore();
     else {
-      this.positionMoreMenu();
+      this.positionDropdown(this.moreTrigger, this.moreMenu);
       this.moreMenu.classList.remove('hide');
       this.moreTrigger.setAttribute('aria-expanded', 'true');
       window.addEventListener('scroll', this.repositionMoreMenu, true);

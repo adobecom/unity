@@ -450,6 +450,8 @@
 .ia-social-trigger {
   position: relative;
   padding-right: 22px;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .ia-more-trigger::after,
@@ -485,7 +487,9 @@
   gap: 8px;
 }
 
-.ia-more-menu {
+.ia-more-menu,
+.ia-social-menu,
+.ia-unit-menu {
   position: fixed;
   top: auto;
   right: auto;
@@ -495,6 +499,13 @@
 .ia-social-menu.hide,
 .ia-unit-menu.hide {
   display: none;
+}
+
+.ia-more-opt,
+.ia-social-opt,
+.ia-unit-opt {
+  height: 32px;
+  box-sizing: border-box;
 }
 
 .ia-dropdown-close {
@@ -847,6 +858,10 @@
 .ia-editor-left-panel.is-dropdown-open .ia-dropdown-scrim,
 .ia-editor-right-panel.is-dropdown-open .ia-dropdown-scrim {
   display: block;
+}
+
+.ia-editor-right-panel.is-dropdown-open .ia-aspect-row--scroll {
+  overflow-x: hidden;
 }
 
 .ia-editor-left-panel.is-busy .ia-grid,
