@@ -715,6 +715,11 @@
 .ia-nba-card:is(:hover, :focus-visible) .ia-nba-arrow-hover { display: block; }
 .ia-nba-card:hover { border: 1.783px solid #fff; }
 
+.unity-inline-action.unity-enabled > .interactive-area:has(.ia-widget[data-operation="crop"]),
+.unity-inline-action.unity-enabled > .interactive-area:has(.ia-widget[data-operation="resize"]) {
+  position: relative;
+}
+
 .unity-inline-action.unity-enabled > .interactive-area:has(:is(.ia-nba-card, .ia-edit-in-firefly, .action-button):focus-visible),
 .ia-widget:has(:is(.ia-nba-card, .ia-edit-in-firefly, .action-button):focus-visible),
 .ia-panel.ia-panel-right:has(:is(.ia-nba-card, .ia-edit-in-firefly, .action-button):focus-visible),

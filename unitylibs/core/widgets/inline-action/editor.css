@@ -875,8 +875,15 @@
   background: rgb(0 0 0 / 80%);
 }
 
-.ia-editor-left-panel.is-dropdown-open .ia-dropdown-scrim,
-.ia-editor-right-panel.is-dropdown-open .ia-dropdown-scrim {
+.ia-editor-widget-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  background: rgb(0 0 0 / 80%);
+}
+
+.interactive-area.is-dropdown-open .ia-editor-widget-scrim {
   display: block;
 }
 

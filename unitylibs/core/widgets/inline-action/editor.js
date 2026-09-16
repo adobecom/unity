@@ -555,6 +555,11 @@ export class EditorEngine {
     this.valEl = leftPanelEl.querySelector('.ia-val');
     this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
     this.rightPanel = rightPanelEl;
+    this.interactiveArea = rightPanelEl.closest('.interactive-area');
+    if (this.interactiveArea && !this.interactiveArea.querySelector(':scope > .ia-editor-widget-scrim')) {
+      this.interactiveArea.append(createTag('div', { class: 'ia-editor-widget-scrim' }));
+    }
+    this.widgetScrim = this.interactiveArea?.querySelector(':scope > .ia-editor-widget-scrim');
     this.header = rightPanelEl.querySelector('.ia-editor-header');
     this.resetBtn = rightPanelEl.querySelector('.ia-editor-reset');
     this.qualityBtn = rightPanelEl.querySelector('.ia-editor-quality');
@@ -879,11 +884,13 @@ export class EditorEngine {
   }
 
   closeSocialMenu() {
+    const shouldRefocus = this.socialMenu?.contains(document.activeElement);
     this.socialMenu?.classList.add('hide');
     this.socialTrigger?.setAttribute('aria-expanded', 'false');
     window.removeEventListener('scroll', this.repositionSocialMenu, true);
     window.removeEventListener('resize', this.repositionSocialMenu);
     this.updateDropdownScrim();
+    if (shouldRefocus) this.socialTrigger?.focus();
   }
 
   bindSocialEvents() {
@@ -915,11 +922,13 @@ export class EditorEngine {
   }
 
   closeUnitMenu() {
+    const shouldRefocus = this.unitMenu?.contains(document.activeElement);
     this.unitMenu?.classList.add('hide');
     this.unitTrigger?.setAttribute('aria-expanded', 'false');
     window.removeEventListener('scroll', this.repositionUnitMenu, true);
     window.removeEventListener('resize', this.repositionUnitMenu);
     this.updateDropdownScrim();
+    if (shouldRefocus) this.unitTrigger?.focus();
   }
 
   bindUnitEvents() {
@@ -1007,28 +1016,49 @@ export class EditorEngine {
 
   positionDropdown(trigger, menu) {
     const rect = trigger.getBoundingClientRect();
+    const panelRect = this.rightPanel.getBoundingClientRect();
+    const clampedRight = Math.min(rect.right, panelRect.right);
     menu.style.top = `${rect.bottom + 6}px`;
-    menu.style.right = `${window.innerWidth - rect.right}px`;
+    menu.style.right = `${window.innerWidth - clampedRight}px`;
   }
 
-  trapDropdownTab(e, menu) {
-    if (e.key !== 'Tab') return;
+  handleDropdownKeydown(e, menu) {
     const focusable = [...menu.querySelectorAll('button:not([disabled])')];
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
+    if (e.key === 'Tab') {
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+      return;
     }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const currentIndex = focusable.indexOf(document.activeElement);
+    let nextIndex;
+    if (currentIndex === -1) nextIndex = e.key === 'ArrowDown' ? 0 : focusable.length - 1;
+    else if (e.key === 'ArrowDown') nextIndex = (currentIndex + 1) % focusable.length;
+    else nextIndex = (currentIndex - 1 + focusable.length) % focusable.length;
+    focusable[nextIndex].focus();
   }
 
   bindDropdownFocusTraps() {
-    [this.moreMenu, this.socialMenu, this.unitMenu].forEach((menu) => {
-      menu?.addEventListener('keydown', (e) => this.trapDropdownTab(e, menu));
+    [
+      [this.moreTrigger, this.moreMenu],
+      [this.socialTrigger, this.socialMenu],
+      [this.unitTrigger, this.unitMenu],
+    ].forEach(([trigger, menu]) => {
+      if (!menu) return;
+      menu.addEventListener('keydown', (e) => this.handleDropdownKeydown(e, menu));
+      trigger?.addEventListener('keydown', (e) => {
+        if (menu.classList.contains('hide')) return;
+        this.handleDropdownKeydown(e, menu);
+      });
     });
   }
 
@@ -1046,11 +1076,13 @@ export class EditorEngine {
   }
 
   closeMore() {
+    const shouldRefocus = this.moreMenu?.contains(document.activeElement);
     this.moreMenu?.classList.add('hide');
     this.moreTrigger?.setAttribute('aria-expanded', 'false');
     window.removeEventListener('scroll', this.repositionMoreMenu, true);
     window.removeEventListener('resize', this.repositionMoreMenu);
     this.updateDropdownScrim();
+    if (shouldRefocus) this.moreTrigger?.focus();
   }
 
   updateDropdownScrim() {
@@ -1066,6 +1098,7 @@ export class EditorEngine {
     });
     this.leftPanel.classList.toggle('is-dropdown-open', anyOpen);
     this.rightPanel.classList.toggle('is-dropdown-open', anyOpen);
+    this.interactiveArea?.classList.toggle('is-dropdown-open', anyOpen);
   }
 
   setMoreTrigger(label, iconHref = null) {
