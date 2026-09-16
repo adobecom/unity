@@ -1627,6 +1627,22 @@ describe('ActionBinder', () => {
       });
     });
 
+    describe('showTransitionScreen', () => {
+      it('should clear the previous transition screen progress bar timer before loading a new one', () => {
+        const splashLayer = document.createElement('div');
+        const existingTransitionScreen = {
+          splashScreenEl: splashLayer,
+          clearProgressBarHandler: sinon.stub(),
+        };
+        actionBinder.transitionScreen = existingTransitionScreen;
+        // The clear call runs before the first await, so it fires immediately.
+        // Ignore the unrelated rejection from the unmocked import below.
+        const pending = actionBinder.showTransitionScreen();
+        pending.catch(() => {});
+        expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
+      });
+    });
+
     describe('cancelAcrobatOperation', () => {
       beforeEach(() => {
         actionBinder.redirectUrl = 'https://test.com';
