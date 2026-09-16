@@ -543,7 +543,9 @@ export default class ActionBinder {
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu .verb-link');
     const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
     if (openVerbMenu || openModelMenu) {
-      const menuSelector = openVerbMenu ? '.verbs-container.show-menu .verb-link' : '.models-container.show-menu .verb-link';
+      const menuSelector = openVerbMenu
+        ? '.verbs-container.show-menu .verb-link, .verbs-container.show-menu .verb-list-close'
+        : '.models-container.show-menu .verb-link';
       return Array.from(this.block.querySelectorAll(menuSelector));
     }
     return Array.from(this.block.querySelectorAll(baseSelector));
@@ -561,6 +563,15 @@ export default class ActionBinder {
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
+    const isRedesignMenu = !!(openVerbMenu || openModelMenu)?.closest('.pb-redesign');
+    if (isMenuOpen && isRedesignMenu) {
+      event.preventDefault();
+      let wrappedIndex;
+      if (isShift) wrappedIndex = isFirstElement ? focusableElements.length - 1 : currentIndex - 1;
+      else wrappedIndex = isLastElement ? 0 : currentIndex + 1;
+      focusableElements[wrappedIndex].focus();
+      return;
+    }
     if (isMenuOpen) {
       if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
         event.preventDefault();
