@@ -2974,6 +2974,69 @@ describe('Firefly Workflow Tests', () => {
       expect(result).to.not.include(strayCloseBtn);
     });
 
+    it('base (non-redesign) verb menu closes on Tab past the last item', () => {
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const selectedVerb = document.createElement('button');
+      selectedVerb.className = 'selected-verb';
+      selectedVerb.setAttribute('aria-expanded', 'true');
+      const link1 = document.createElement('a');
+      link1.href = '#';
+      link1.className = 'verb-link';
+      link1.textContent = 'image';
+      const link2 = document.createElement('a');
+      link2.href = '#';
+      link2.className = 'verb-link';
+      link2.textContent = 'video';
+      verbsContainer.append(selectedVerb, link1, link2);
+      mockBlock.appendChild(verbsContainer);
+      document.body.appendChild(mockBlock);
+
+      link2.focus();
+      const focusElems = testActionBinder.getFocusElems();
+      const currIdx = focusElems.indexOf(document.activeElement);
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      testActionBinder.handleTab(event, focusElems, [], currIdx);
+
+      expect(verbsContainer.classList.contains('show-menu')).to.be.false;
+      expect(selectedVerb.getAttribute('aria-expanded')).to.equal('false');
+      expect(document.activeElement).to.equal(selectedVerb);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('redesign verb menu (inside .pb-redesign) wraps focus on Tab past the last item', () => {
+      const autocomplete = document.createElement('div');
+      autocomplete.className = 'autocomplete pb-redesign';
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'verb-list-close';
+      const link1 = document.createElement('a');
+      link1.href = '#';
+      link1.className = 'verb-link';
+      link1.textContent = 'Generate video';
+      const link2 = document.createElement('a');
+      link2.href = '#';
+      link2.className = 'verb-link';
+      link2.textContent = 'Generate image';
+      verbsContainer.append(closeBtn, link1, link2);
+      autocomplete.appendChild(verbsContainer);
+      mockBlock.appendChild(autocomplete);
+      document.body.appendChild(mockBlock);
+
+      link2.focus();
+      const focusElems = testActionBinder.getFocusElems();
+      const currIdx = focusElems.indexOf(document.activeElement);
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      testActionBinder.handleTab(event, focusElems, [], currIdx);
+
+      expect(verbsContainer.classList.contains('show-menu')).to.be.true;
+      expect(document.activeElement).to.equal(closeBtn);
+
+      document.body.removeChild(mockBlock);
+    });
+
     it('should handle isDropdownItemFocused', () => {
       const items = [document.createElement('div'), document.createElement('div')];
       const result = testActionBinder.isDropdownItemFocused(items);

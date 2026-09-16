@@ -563,7 +563,8 @@ export default class ActionBinder {
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
-    if (isMenuOpen) {
+    const isRedesignMenu = !!(openVerbMenu || openModelMenu)?.closest('.pb-redesign');
+    if (isMenuOpen && isRedesignMenu) {
       event.preventDefault();
       let wrappedIndex;
       if (isShift) wrappedIndex = isFirstElement ? focusableElements.length - 1 : currentIndex - 1;
@@ -571,7 +572,18 @@ export default class ActionBinder {
       focusableElements[wrappedIndex].focus();
       return;
     }
-    if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+    if (isMenuOpen) {
+      if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
+        event.preventDefault();
+        const menuButton = openVerbMenu?.querySelector('.selected-verb') || openModelMenu?.querySelector('.selected-model');
+        if (menuButton) {
+          (openVerbMenu || openModelMenu).classList.remove('show-menu');
+          menuButton.setAttribute('aria-expanded', 'false');
+          menuButton.focus();
+        }
+        return;
+      }
+    } else if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
       this.hideDropdown();
       return;
     }
