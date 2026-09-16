@@ -848,6 +848,28 @@
     padding-bottom: 8px;
   }
 
+  /* One horizontally-scrollable row instead of wrapping — same pattern rbg's own
+     .ia-nba-grid already uses at this breakpoint (inline-action.css). */
+  .ia-further-grid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .ia-further-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ia-further-pill {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
   .ia-cta-row {
     flex-direction: column;
   }

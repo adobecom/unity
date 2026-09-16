@@ -3,7 +3,7 @@ import { createTag, loadStyle, getUnityLibs, getUnityPromptConfigsBaseUrl } from
 const svgUse = (id, className = '') => `<svg aria-hidden="true"${className ? ` class="${className}"` : ''}><use xlink:href="#${id}"></use></svg>`;
 const MORE_TRIGGER_ICON = 'icon-aspect-ratio';
 const MIN_PCT = 10;
-const IDLE_MS = 5000;
+const IDLE_MS = 3000;
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 const HANDLE_EDGES = {
   nw: ['left', 'top'],
