@@ -259,6 +259,16 @@
   cursor: pointer;
 }
 
+.ia-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--ia-white, #fff);
+  outline-offset: 2px;
+}
+
+.ia-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--ia-white, #fff);
+  outline-offset: 2px;
+}
+
 .ia-val {
   flex: 0 0 auto;
   min-width: 40px;
@@ -381,6 +391,7 @@
   padding: 0 12px;
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: visible;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -439,6 +450,15 @@
 .ia-unit-opt:hover,
 .ia-dropdown-close:hover {
   background: #323232;
+}
+
+.ia-aspect-pill:focus-visible,
+.ia-resize-tab:focus-visible,
+.ia-more-opt:focus-visible,
+.ia-social-opt:focus-visible,
+.ia-unit-opt:focus-visible,
+.ia-dropdown-close:focus-visible {
+  outline-offset: -2px;
 }
 
 .ia-resize-tab {

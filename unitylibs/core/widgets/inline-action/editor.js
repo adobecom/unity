@@ -213,7 +213,6 @@ function buildFrame() {
   HANDLES.forEach((h) => frame.append(createTag('div', {
     class: `ia-handle ia-handle--${h}`,
     'data-handle': h,
-    tabindex: '0',
     role: 'presentation',
   })));
   return frame;
@@ -792,6 +791,7 @@ export class EditorEngine {
     this.bindDimensionEvents();
     this.bindSocialEvents();
     this.bindUnitEvents();
+    this.bindDropdownFocusTraps();
     this.qualityBtn?.addEventListener('click', () => this.toggleQualityPreview());
   }
 
@@ -1009,6 +1009,27 @@ export class EditorEngine {
     const rect = trigger.getBoundingClientRect();
     menu.style.top = `${rect.bottom + 6}px`;
     menu.style.right = `${window.innerWidth - rect.right}px`;
+  }
+
+  trapDropdownTab(e, menu) {
+    if (e.key !== 'Tab') return;
+    const focusable = [...menu.querySelectorAll('button:not([disabled])')];
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  bindDropdownFocusTraps() {
+    [this.moreMenu, this.socialMenu, this.unitMenu].forEach((menu) => {
+      menu?.addEventListener('keydown', (e) => this.trapDropdownTab(e, menu));
+    });
   }
 
   toggleMore() {
