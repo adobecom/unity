@@ -62,6 +62,15 @@ class WfInitiator {
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
       ],
+      'workflow-prompt-upload': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+        `${getUnityLibs()}/core/widgets/shared/widget-base.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropzone.js`,
+        `${getUnityLibs()}/core/widgets/shared/prompt-input.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropdown.js`,
+        `${getUnityLibs()}/core/widgets/shared/shared.css`,
+      ],
       'workflow-inline-action': [
         `${baseWfPath}/sprite.svg`,
         `${getUnityLibs()}/core/styles/splash-screen.css`,
@@ -209,11 +218,13 @@ class WfInitiator {
     let product = '';
     let feature = '';
     let psw = '';
+    let referrer = '';
     [...this.el.classList].forEach((cn) => {
       if (cn.match('workflow-')) wfName = cn;
       if (cn.match('product-')) product = cn.replace('product-', '');
       if (cn.match('feature-')) feature = cn.replace('feature-', '');
       if (cn.match('psw-enabled')) psw = cn;
+      if (cn.startsWith('referrer-')) referrer = cn.replace('referrer-', '');
     });
     const workflowCfg = {
       'workflow-photoshop': {
@@ -265,6 +276,9 @@ class WfInitiator {
           'flashcard-maker',
           'mindmap-maker',
           'resume-builder',
+          'gen-presentation-v2',
+          'interactive-report',
+          'stylize',
         ]),
       },
       'workflow-ai': {
@@ -280,6 +294,11 @@ class WfInitiator {
       'workflow-prompt-bar-upload': {
         productName: product || 'Firefly',
         sfList: new Set([feature || 'image-to-video']),
+      },
+      'workflow-prompt-upload': {
+        productName: product,
+        sfList: new Set([feature]),
+        psw,
       },
       'workflow-firefly': {
         productName: 'Firefly',
@@ -301,6 +320,7 @@ class WfInitiator {
       errors: {},
       supportedTexts: workflowCfg[wfName]?.stList ?? null,
       pswFeature: !!psw,
+      referrer,
     };
   }
 

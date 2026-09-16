@@ -51,7 +51,6 @@ export class UnityWidget {
       'aria-label': 'media type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
-      'aria-labelledby': 'listbox-label',
       'data-selected-verb': selectedVerbType,
     }, `${selectedVerb?.textContent.trim()}`);
     this.selectedVerbType = selectedVerbType;
@@ -63,7 +62,7 @@ export class UnityWidget {
     }
     this.widgetWrap.classList.add('verb-options');
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
+    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': 'Media options' });
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
@@ -345,7 +344,6 @@ export class UnityWidget {
       'aria-label': 'model type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
-      'aria-labelledby': 'listbox-label',
       'data-selected-model-id': selectedModelType,
       'data-selected-model-version': selectedModelVersion,
       'data-selected-model-module': selectedModelModule,
@@ -360,7 +358,7 @@ export class UnityWidget {
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-labelledby': 'listbox-label' });
+    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-label': 'Model options' });
     listItems.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
@@ -595,8 +593,12 @@ async function createPromptInputShell(widgetInstance, el, styles) {
   const modelParts = widgetInstance.modelDropdown();
   const promptLabelText = placeholderRowText(el, 'icon-placeholder-prompt');
   const inpWrap = createTag('div', { class: 'inp-wrap' });
-  const labelText = promptLabelText || 'Prompt';
-  const promptLabel = createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, labelText);
+  const labelText = promptLabelText || 'Enter prompt';
+  const hasDropdowns = verbParts.length > 1 || modelParts.length > 1;
+  const inpGroup = hasDropdowns ? createTag('fieldset', { class: 'inp-fieldset' }) : inpWrap;
+  const promptLabel = hasDropdowns
+    ? createTag('legend', { class: 'unity-slf-copy-label unity-slf-prompt-label' }, labelText)
+    : createTag('label', { for: 'promptInput', class: 'unity-slf-copy-label unity-slf-prompt-label' }, labelText);
   const inpField = createTag('textarea', {
     id: 'promptInput',
     class: 'inp-field',
@@ -659,7 +661,8 @@ async function createPromptInputShell(widgetInstance, el, styles) {
     }
   }
   actWrap.append(genBtn);
-  inpWrap.append(promptLabel, inpField, actionContainer, actWrap);
+  inpGroup.append(promptLabel, inpField, actionContainer, actWrap);
+  if (hasDropdowns) inpWrap.append(inpGroup);
   const comboboxContainer = createTag('div', { class: 'autocomplete' });
   comboboxContainer.append(inpWrap);
   widget.append(comboboxContainer);

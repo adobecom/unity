@@ -20,6 +20,7 @@ export function getMimeType(fileName) {
     ai: 'application/illustrator',
     psd: 'image/vnd.adobe.photoshop',
     form: 'application/vnd.adobe.form.fillsign',
+    msg: 'application/vnd.ms-outlook',
   };
   return extToTypeMap[getExtension(fileName)];
 }

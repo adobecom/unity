@@ -47,9 +47,9 @@ async function getRefreshToken() {
   } catch (e) {
     const errorMsg = (e?.message || e?.exception?.message || '').trim();
     if (errorMsg === 'invalid_credentials') {
-      return { 
-        token: null, 
-        isGuestToken: true 
+      return {
+        token: null,
+        isGuestToken: true,
       };
     }
     return {
@@ -99,7 +99,7 @@ async function getImsToken() {
     return {
       token: null,
       error: {
-        message: `Error getting IMS access token: ${flattenObject(error)}`,
+        message: `Error getting IMS access token: ${JSON.stringify(flattenObject(error))}`,
         type: 'token_error',
       },
     };

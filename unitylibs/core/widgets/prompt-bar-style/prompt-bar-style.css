@@ -194,10 +194,26 @@
   scrollbar-color: #888 transparent;
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-fieldset {
+  display: flex;
+  flex-flow: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+  width: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  text-align: start;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .unity-slf-copy-label {
   font-size: var(--type-body-xs-size);
   font-weight: 400;
   margin-inline-start: 2px;
+  padding: 0;
+  border: none;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap:not(.verb-options) .ex-unity-widget .inp-wrap .unity-slf-copy-label {
@@ -954,6 +970,7 @@
   background: transparent;
   resize: none;
   margin: 0;
+  color: #F8F8F8;
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
 }
@@ -1250,18 +1267,31 @@
   align-items: center;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .unity-slf-copy-label,
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-fieldset {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  align-items: center;
+  grid-column: 1 / -1;
+  width: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  text-align: start;
+}
+
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .unity-slf-copy-label,
 .unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > label {
   grid-column: 1 / -1;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .inp-field {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .inp-field {
   grid-column: 1 / -1;
-  color: #F8F8F8;
   padding: 10px 0px;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .action-container {
   grid-column: 1;
   margin-top: 24px;
   display: flex;
@@ -1271,7 +1301,7 @@
   min-width: 0;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .act-wrap {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .act-wrap {
   grid-column: 2;
   margin-top: 24px;
   display: flex;
@@ -1280,23 +1310,23 @@
   align-self: center;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container:empty {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .action-container:empty {
   display: none;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container:empty + .act-wrap {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .action-container:empty + .act-wrap {
   grid-column: 1 / -1;
   justify-self: end;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container,
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .verbs-container {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .action-container > .models-container,
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .action-container > .verbs-container {
   display: flex;
   justify-content: flex-start;
   align-items: center;
 }
 
-.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap > .action-container > .models-container {
+.unity-prompt-bar-style.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap .action-container > .models-container {
   min-width: 0;
   max-width: 173px;
 }

@@ -17,7 +17,7 @@ async function loadPdflite() {
   }
 }
 
-export async function validateFilesWithPdflite(files, limits) {
+export async function validateFilesWithPdflite(files, limits, checkScanned = false) {
   const hasPdfFiles = files.some((f) => f.type === 'application/pdf');
   if (!hasPdfFiles) return { passed: files, failed: [] };
   let pdflite;
@@ -30,9 +30,14 @@ export async function validateFilesWithPdflite(files, limits) {
   const checks = files.map((file) => {
     if (file.type !== 'application/pdf') return Promise.resolve({ file, ok: true });
     return (async () => {
-      const details = await pdflite.fileDetails(file);
+      const details = await pdflite.fileDetails(file, checkScanned);
+      const isEncrypted = details?.IS_ENCRYPTED === true;
+      const isPasswordProtected = details?.IS_PASSWORD_PROTECTED === true;
+      const hasAcroForm = details?.HAS_ACROFORM === true;
+      const isScanned = details?.IS_SCANNED_DOCUMENT === true;
+      const isEmpty = details?.IS_EMPTY === true;
       const pageCount = details?.NUM_PAGES;
-      if (pageCount === undefined || pageCount === null) return { file, ok: true };
+      if (pageCount === undefined || pageCount === null) return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm, isScanned, isEmpty };
       const overMaxPageCount = limits.pageLimit?.maxNumPages && pageCount > limits.pageLimit.maxNumPages;
       const underMinPageCount = limits.pageLimit?.minNumPages && pageCount < limits.pageLimit.minNumPages;
       let error = null;
@@ -45,11 +50,11 @@ export async function validateFilesWithPdflite(files, limits) {
         error.errorType = 'UNDER_MIN_PAGE_COUNT';
       }
       if (error) throw error;
-      return { file, ok: true };
+      return { file, ok: true, isEncrypted, isPasswordProtected, hasAcroForm, isScanned, isEmpty };
     })().catch((error) => {
       const isPageCountError = error.errorType === 'OVER_MAX_PAGE_COUNT' || error.errorType === 'UNDER_MIN_PAGE_COUNT';
       if (isPageCountError) return { file, ok: false, error, errorType: error.errorType };
-      return { file, ok: true };
+      return { file, ok: true, isCorrupted: true };
     });
   });
   const results = await Promise.all(checks);

@@ -52,14 +52,14 @@ export default class DcPdflite {
         });
     }
 
-    fileDetails(file) {
+    fileDetails(file, checkScanned = false) {
         if (file.type != 'application/pdf') {
             throw 'Not a PDF';
         }
 
         return this._readFile(file).then(result => {
             let ubuf = new Uint8Array(result);
-            let res = window.pdflite.pdfDetails(ubuf);
+            let res = window.pdflite.pdfDetails(ubuf, checkScanned);
             if (res.error !== undefined) {
                 throw res.error;
             }
