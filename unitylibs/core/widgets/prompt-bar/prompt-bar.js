@@ -4,8 +4,7 @@ import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from 
 
 function isFireflyRedesign() {
   return !!(document.querySelector('meta[name="theme"][content="firefly-redesign"]')
-    || document.querySelector('.theme-firefly-redesign')
-    || new URLSearchParams(window.location.search).has('ffredesign'));
+    || document.querySelector('.theme-firefly-redesign'));
 }
 
 function getTextRect(el) {
