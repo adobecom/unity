@@ -367,7 +367,14 @@ function buildCropAspectSection(parsedData) {
     more.append(moreTrigger, moreMenu);
     row.append(more);
   }
-  section.append(row, buildCtaRow(true, parsedData));
+  // Non-scrolling wrapper — the fade overlay (editor.css) lives here instead of on
+  // .ia-aspect-row--scroll itself, since that element is both the position:relative
+  // containing block AND the overflow-x:auto scroller: an absolutely-positioned
+  // overlay placed directly on it gets swept into its own scrollable content and
+  // moves with the pills instead of staying pinned to the visible edges.
+  const rowViewport = createTag('div', { class: 'ia-aspect-row-viewport' });
+  rowViewport.append(row);
+  section.append(rowViewport, buildCtaRow(true, parsedData));
   return section;
 }
 
@@ -490,7 +497,9 @@ function buildFurtherSection(parsedData) {
   parsedData.nbaPills.forEach(({ nba, label, iconHref }) => {
     grid.append(buildIconButton('button', { type: 'button', class: 'ia-further-pill', 'data-nba': nba }, iconHref, label));
   });
-  section.append(grid);
+  const gridViewport = createTag('div', { class: 'ia-further-grid-viewport' });
+  gridViewport.append(grid);
+  section.append(gridViewport);
   return section;
 }
 
