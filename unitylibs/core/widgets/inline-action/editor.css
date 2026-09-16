@@ -391,7 +391,7 @@
   padding: 0 12px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -971,27 +971,10 @@
     margin-bottom: 0;
   }
 
-  .ia-editor-header-actions {
-    display: contents;
-  }
-
-  .ia-editor-reset {
-    order: 1;
-  }
-
   .ia-editor-title {
-    order: 2;
     flex: 1;
     font-size: 16px;
     text-align: center;
-  }
-
-  .ia-editor-quality {
-    order: 3;
-  }
-
-  .ia-editor-header .ia-reupload-btn {
-    order: 4;
   }
 
   .ia-editor-reset span,

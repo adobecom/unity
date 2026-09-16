@@ -562,6 +562,7 @@ export class EditorEngine {
     this.widgetScrim = this.interactiveArea?.querySelector(':scope > .ia-editor-widget-scrim');
     this.header = rightPanelEl.querySelector('.ia-editor-header');
     this.resetBtn = rightPanelEl.querySelector('.ia-editor-reset');
+    this.reuploadBtn = rightPanelEl.querySelector('.ia-reupload-btn');
     this.qualityBtn = rightPanelEl.querySelector('.ia-editor-quality');
     this.qualityPreviewActive = false;
     this.qualityPreviewUrl = null;
@@ -620,6 +621,7 @@ export class EditorEngine {
     this.idleTimer = null;
     this.bindEvents();
     this.setupResponsiveHeader();
+    this.setupResponsiveActions();
   }
 
   setupResponsiveHeader() {
@@ -628,6 +630,24 @@ export class EditorEngine {
     const place = (isDesktop) => {
       if (isDesktop) this.rightPanel.prepend(this.header);
       else this.leftPanel.insertBefore(this.header, this.viewport);
+    };
+    place(mq.matches);
+    mq.addEventListener('change', (e) => place(e.matches));
+  }
+
+  setupResponsiveActions() {
+    const actionsWrap = this.header?.querySelector('.ia-editor-header-actions');
+    const title = this.header?.querySelector('.ia-editor-title');
+    if (!actionsWrap || !title || !this.resetBtn || !this.reuploadBtn) return;
+    const mq = window.matchMedia('(max-width: 1199px)');
+    const place = (isMobile) => {
+      if (isMobile) {
+        this.header.insertBefore(this.resetBtn, title);
+        if (this.qualityBtn) title.after(this.qualityBtn);
+        this.header.append(this.reuploadBtn);
+      } else {
+        actionsWrap.append(this.resetBtn, ...(this.qualityBtn ? [this.qualityBtn] : []), this.reuploadBtn);
+      }
     };
     place(mq.matches);
     mq.addEventListener('change', (e) => place(e.matches));
