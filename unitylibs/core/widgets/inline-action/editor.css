@@ -22,10 +22,6 @@
   margin-right: 8px;
 }
 
-.ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
-  margin-top: 32px;
-}
-
 .ia-viewport {
   position: relative;
   width: 100%;
@@ -876,6 +872,11 @@
     padding-bottom: 8px;
   }
 
+  .ia-viewport {
+    aspect-ratio: auto;
+    height: 213px;
+  }
+
   .ia-further-section {
     overflow: hidden;
   }
@@ -982,6 +983,10 @@
 @media screen and (min-width: 1200px) {
   .ia-widget[data-state="complete"] .ia-editor-left-panel {
     height: 100%;
+  }
+
+  .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
+    margin-top: 32px;
   }
 
   .ia-viewport {
