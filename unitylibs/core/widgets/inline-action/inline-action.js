@@ -202,21 +202,21 @@ export function parseInlineAuthoring(unityEl) {
   const sliderModes = [];
   const config = {
     operation: 'removeBackground',
-    downloadLabel: undefined,
+    downloadLabel: 'Download',
     downloadIconHref: undefined,
     editIconHref: undefined,
-    editLabel: undefined,
+    editLabel: 'Edit in Firefly',
     reuploadIconHref: undefined,
-    resetLabel: undefined,
+    resetLabel: 'Reset',
     resetIconHref: undefined,
-    reuploadLabel: undefined,
-    nbaHeading: undefined,
-    editorTitle: undefined,
-    aspectRatioLabel: undefined,
-    originalSizeLabel: undefined,
-    newSizeLabel: undefined,
-    widthLabel: undefined,
-    heightLabel: undefined,
+    reuploadLabel: 'Upload',
+    nbaHeading: 'Do more with this image',
+    editorTitle: 'Edit your image',
+    aspectRatioLabel: 'Aspect ratio',
+    originalSizeLabel: 'Original size',
+    newSizeLabel: 'New size',
+    widthLabel: 'Width',
+    heightLabel: 'Height',
   };
   configUl?.querySelectorAll('li').forEach((li) => {
     const cls = configRowIconClass(li);
