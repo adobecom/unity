@@ -312,7 +312,6 @@
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--ia-white, #fff);
   font-family: var(--body-font-family);
   font-size: 14px;
   cursor: pointer;
@@ -336,7 +335,7 @@
 
 .ia-aspect-section,
 .ia-further-section {
-  padding: 16px 12px 16px 12px;
+  padding: 16px 12px;
   border-radius: 12px;
   border: 1px solid rgb(255 255 255 / 10%);
   background: rgb(255 255 255 / 3%);
@@ -497,22 +496,12 @@
 .ia-more-menu,
 .ia-social-menu,
 .ia-unit-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
   z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-}
-
-.ia-more-menu,
-.ia-social-menu,
-.ia-unit-menu {
-  position: fixed;
-  top: auto;
-  right: auto;
 }
 
 .ia-more-menu.hide,
@@ -569,7 +558,7 @@
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  margin: 8px 0 8px 0;
+  margin: 8px 0;
 }
 
 .ia-dim-field {
@@ -657,7 +646,7 @@
   font-style: normal;
   font-weight: 400;
   line-height: 18px;
-  margin: 8px 0px 0px 0px;
+  margin: 8px 0 0;
 }
 
 .ia-social-grid.hide {
@@ -739,12 +728,6 @@
   height: 20px;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
-}
-
-.ia-cta-accent .ia-btn-icon,
-.ia-cta-outline .ia-btn-icon {
-  width: 20px;
-  height: 20px;
 }
 
 .ia-aspect-pill.is-active .ia-btn-icon,
@@ -867,14 +850,6 @@
   opacity: 0.4;
 }
 
-.ia-dropdown-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: none;
-  background: rgb(0 0 0 / 80%);
-}
-
 .ia-editor-widget-scrim {
   position: absolute;
   inset: 0;
@@ -952,10 +927,6 @@
   }
 
   .ia-widget[data-state="complete"] .ia-editor-right-panel {
-    margin: 8px;
-  }
-
-  .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
     margin: 8px;
   }
 

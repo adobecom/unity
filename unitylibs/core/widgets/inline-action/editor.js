@@ -274,7 +274,6 @@ export function buildEditorLeftPanel(parsedData) {
   );
   leftPanel.append(viewport);
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
-  leftPanel.append(createTag('div', { class: 'ia-dropdown-scrim' }));
   return leftPanel;
 }
 
@@ -533,7 +532,6 @@ export function buildEditorRightPanel(parsedData) {
   const aspectSection = isCrop ? buildCropAspectSection(parsedData) : buildResizeAspectSection(parsedData);
   rightPanel.append(aspectSection, buildFurtherSection(parsedData));
   rightPanel.append(createTag('div', { class: 'ia-panel-busy-overlay' }));
-  rightPanel.append(createTag('div', { class: 'ia-dropdown-scrim' }));
   return rightPanel;
 }
 
@@ -901,6 +899,7 @@ export class EditorEngine {
     this.socialTrigger.setAttribute('aria-expanded', 'true');
     window.addEventListener('scroll', this.repositionSocialMenu, true);
     window.addEventListener('resize', this.repositionSocialMenu);
+    this.focusFirstMenuItem(this.socialMenu);
     this.updateDropdownScrim();
   }
 
@@ -916,7 +915,7 @@ export class EditorEngine {
 
   bindSocialEvents() {
     if (!this.socialTrigger) return;
-    this.rightPanel.querySelectorAll('.ia-social-opt').forEach((opt) => {
+    this.socialMenu?.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         const { platform } = opt.dataset;
         this.socialTrigger.textContent = platform;
@@ -939,6 +938,7 @@ export class EditorEngine {
     this.unitTrigger.setAttribute('aria-expanded', 'true');
     window.addEventListener('scroll', this.repositionUnitMenu, true);
     window.addEventListener('resize', this.repositionUnitMenu);
+    this.focusFirstMenuItem(this.unitMenu);
     this.updateDropdownScrim();
   }
 
@@ -955,7 +955,7 @@ export class EditorEngine {
   bindUnitEvents() {
     if (!this.unitTrigger) return;
     this.unitTrigger.addEventListener('click', () => this.toggleUnitMenu());
-    this.rightPanel.querySelectorAll('.ia-unit-opt').forEach((opt) => {
+    this.unitMenu?.querySelectorAll('.ia-unit-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         this.unit = opt.dataset.unit;
         if (this.unitLabel) this.unitLabel.textContent = this.unit;
@@ -1043,7 +1043,16 @@ export class EditorEngine {
     menu.style.right = `${window.innerWidth - clampedRight}px`;
   }
 
-  handleDropdownKeydown(e, menu) {
+  focusFirstMenuItem(menu) {
+    menu.querySelector('button:not([disabled])')?.focus();
+  }
+
+  handleDropdownKeydown(e, menu, close) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
     const focusable = [...menu.querySelectorAll('button:not([disabled])')];
     if (!focusable.length) return;
     const first = focusable[0];
@@ -1070,15 +1079,15 @@ export class EditorEngine {
 
   bindDropdownFocusTraps() {
     [
-      [this.moreTrigger, this.moreMenu],
-      [this.socialTrigger, this.socialMenu],
-      [this.unitTrigger, this.unitMenu],
-    ].forEach(([trigger, menu]) => {
+      [this.moreTrigger, this.moreMenu, () => this.closeMore()],
+      [this.socialTrigger, this.socialMenu, () => this.closeSocialMenu()],
+      [this.unitTrigger, this.unitMenu, () => this.closeUnitMenu()],
+    ].forEach(([trigger, menu, close]) => {
       if (!menu) return;
-      menu.addEventListener('keydown', (e) => this.handleDropdownKeydown(e, menu));
+      menu.addEventListener('keydown', (e) => this.handleDropdownKeydown(e, menu, close));
       trigger?.addEventListener('keydown', (e) => {
         if (menu.classList.contains('hide')) return;
-        this.handleDropdownKeydown(e, menu);
+        this.handleDropdownKeydown(e, menu, close);
       });
     });
   }
@@ -1092,6 +1101,7 @@ export class EditorEngine {
       this.moreTrigger.setAttribute('aria-expanded', 'true');
       window.addEventListener('scroll', this.repositionMoreMenu, true);
       window.addEventListener('resize', this.repositionMoreMenu);
+      this.focusFirstMenuItem(this.moreMenu);
     }
     this.updateDropdownScrim();
   }
@@ -1117,7 +1127,6 @@ export class EditorEngine {
       wrap?.classList.toggle('is-open', isOpen);
       if (isOpen) anyOpen = true;
     });
-    this.leftPanel.classList.toggle('is-dropdown-open', anyOpen);
     this.rightPanel.classList.toggle('is-dropdown-open', anyOpen);
     this.interactiveArea?.classList.toggle('is-dropdown-open', anyOpen);
   }
