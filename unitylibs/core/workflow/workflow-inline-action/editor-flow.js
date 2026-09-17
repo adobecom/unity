@@ -38,8 +38,12 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
       (name, data) => binder.trackEvent(name, data),
     );
     if (isFirstEditorLoad) {
-      const { leftPanel, rightPanel } = binder.widgetRef.editorEngine;
-      [leftPanel, rightPanel].forEach((panel) => binder.bindActionMapElements(panel));
+      const {
+        leftPanel, rightPanel, moreMenu, socialMenu, unitMenu,
+      } = binder.widgetRef.editorEngine;
+      [leftPanel, rightPanel, moreMenu, socialMenu, unitMenu]
+        .filter(Boolean)
+        .forEach((panel) => binder.bindActionMapElements(panel));
     }
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError('upload', e);
