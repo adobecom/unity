@@ -76,21 +76,22 @@ export default class ActionBinder {
     upload_warn_delete_asset: -603,
     warn_fetch_experiment: -605,
     prompt_error_max_length: -700,
-    prompt_error_empty: -701,
   };
 
   static ERROR_SELECTOR_MAP = {
     validation_error_unsupported_type: '.icon-error-filetype',
-    validation_error_unsupported_type_multi: '.icon-error-filetype',
+    validation_error_unsupported_type_multi: '.icon-error-filetype-multi',
     validation_error_file_same_type: '.icon-error-filetype',
-    validation_error_empty_file: '.icon-error-empty',
-    validation_error_empty_file_multi: '.icon-error-empty',
+    validation_error_file_same_type_multi: '.icon-error-filetype-multi',
+    validation_error_empty_file: '.icon-error-emptyfile',
+    validation_error_empty_file_multi: '.icon-error-emptyfile-multi',
     validation_error_file_too_large: '.icon-error-filesize',
     validation_error_file_too_large_multi: '.icon-error-filesize',
     validation_error_max_num_files: '.icon-error-filecount',
     validation_error_only_accept_one_file: '.icon-error-filecount',
-    prompt_error_max_length: '.icon-error-max-length',
-    prompt_error_empty: '.icon-error-empty-prompt',
+    upload_validation_error_max_page_count: '.icon-error-numpages',
+    upload_validation_error_max_page_count_multi: '.icon-error-numpages',
+    prompt_error_max_length: '.icon-error-max-char',
     upload_error_max_quota_exceeded: '.icon-error-quota',
     upload_error_no_storage_provision: '.icon-error-storage',
     upload_validation_error_duplicate_asset: '.icon-error-duplicate',
@@ -545,7 +546,7 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts, filesData) {
-    cOpts.query = this.query;
+    if (this.query) cOpts.query = this.query;
     if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
     [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
@@ -876,8 +877,9 @@ export default class ActionBinder {
 
   async handleGenerate() {
     try {
-      if (!(await this.runPreflight())) return;
       this.readPromptState();
+      if (!this.pendingFiles.length && !this.query) return;
+      if (!(await this.runPreflight())) return;
       if (this.query && !this.validatePrompt(this.query)) return;
       this.limits = this.resolveLimits();
       if (this.pendingFiles.length) {
@@ -923,7 +925,6 @@ export default class ActionBinder {
           el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
           el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
           el.addEventListener('click', (e) => {
-            // Ignore the hidden file input's own bubbled click (it re-dispatches on open).
             if (e.target?.matches?.('input[type="file"]')) return;
             this.dispatchAnalyticsEvent('filepicker-shown');
             this.dispatchAnalyticsEvent('choose-file');
