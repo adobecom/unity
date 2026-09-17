@@ -126,5 +126,20 @@
       ".foreground": "upload",
       "#file-upload": "upload"
     }
+  },
+   "verb-widget-client-upload": {
+    "selector": ".verb-wrapper",
+    "source": ".verb-wrapper .verb-container",
+    "target": ".verb-wrapper .verb-container",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink-acrobat": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen-acrobat",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      ".verb-wrapper": "upload",
+      "#file-upload": "upload"
+    }
   }
 }
