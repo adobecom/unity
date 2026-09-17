@@ -73,7 +73,7 @@
     "insert": "after",
     "showSplashScreen": true,
     "splashScreenConfig": {
-      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/splashscreen",
+      "fragmentLink": "/dc-shared/fragments/shared-fragments/frictionless/splash-page/student-spaces-splash",
       "splashScreenParent": "body"
     },
     "actionMap": {
