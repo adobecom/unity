@@ -496,12 +496,12 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
-  async setEditorImage(url, originalSize, trackEvent) {
+  async ensureEditorEngine(trackEvent) {
     if (!this.editorEngine) {
       const { initEditor } = await import('./editor.js');
       this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData, trackEvent);
     }
-    await this.editorEngine.setImage(url, originalSize, true);
+    return this.editorEngine;
   }
 
   async initWidget() {

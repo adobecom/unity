@@ -23,20 +23,18 @@ export function buildImageOperationsPayload(binder, bounds, dimensions, quality)
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
   binder.widgetRef?.setState(InlineActionState.LOADING);
   binder.widgetRef?.setProgress(0);
+  const isFirstEditorLoad = !binder.widgetRef.editorEngine;
+  const editorReady = binder.widgetRef?.ensureEditorEngine((name, data) => binder.trackEvent(name, data));
   try {
     const ok = await binder.uploadAsset(file, true);
     if (!ok) {
       binder.widgetRef?.setState(InlineActionState.INITIAL);
       return;
     }
-    const isFirstEditorLoad = !binder.widgetRef.editorEngine;
     binder.widgetRef?.setProgress(100);
+    const engine = await editorReady;
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
-    await binder.widgetRef?.setEditorImage(
-      URL.createObjectURL(file),
-      originalSize,
-      (name, data) => binder.trackEvent(name, data),
-    );
+    await engine?.setImage(URL.createObjectURL(file), originalSize, true);
     if (isFirstEditorLoad) {
       const {
         leftPanel, rightPanel, moreMenu, socialMenu, unitMenu,
