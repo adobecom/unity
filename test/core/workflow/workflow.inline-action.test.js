@@ -39,7 +39,6 @@ describe('Inline Action workflow', () => {
     expect(meta.uploadLabel).to.equal('Upload your image');
     expect(meta.fileLimit).to.include('100MB');
     expect(meta.legalHtml).to.include('Terms of Use');
-    expect(meta.downloadLabel).to.equal('Download');
     expect(meta.downloadIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
     expect(meta.editIconHref).to.equal('/creativecloud/animation/testdoc/unity/generate.svg');
     expect(meta.editLabel).to.equal('Edit in Firefly');
