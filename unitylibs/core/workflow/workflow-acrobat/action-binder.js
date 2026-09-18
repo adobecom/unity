@@ -489,6 +489,7 @@ export default class ActionBinder {
   }
 
   async showTransitionScreen() {
+    this.transitionScreen?.clearProgressBarHandler();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();

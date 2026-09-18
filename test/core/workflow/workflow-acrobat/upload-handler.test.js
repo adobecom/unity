@@ -591,6 +591,52 @@ describe('UploadHandler', () => {
     });
   });
 
+  describe('directUploadSingleFile', () => {
+    let file;
+    let fileData;
+
+    beforeEach(() => {
+      file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+      fileData = { type: 'application/pdf', size: 1000, count: 1, uploadType: 'sfu' };
+    });
+
+    it('should show the error splash screen and return false for a genuine upload failure', async () => {
+      uploadHandler.directUploadAsset = sinon.stub().rejects(new Error('network fail'));
+
+      const result = await uploadHandler.directUploadSingleFile(file, fileData);
+
+      expect(result).to.be.false;
+      expect(uploadHandler.initSplashScreen.called).to.be.true;
+      expect(mockTransitionScreen.showSplashScreen.called).to.be.true;
+      expect(mockActionBinder.dispatchErrorToast.called).to.be.true;
+    });
+
+    it('should redirect and dispatch the uploaded event when the upload completes normally', async () => {
+      mockActionBinder.isUploading = true;
+      uploadHandler.directUploadAsset = sinon.stub().resolves({ id: 'asset-999' });
+
+      const result = await uploadHandler.directUploadSingleFile(file, fileData);
+
+      expect(result).to.be.true;
+      expect(mockActionBinder.handleRedirect.calledOnce).to.be.true;
+      expect(mockActionBinder.operations).to.include('asset-999');
+      expect(mockActionBinder.dispatchAnalyticsEvent.calledWith('uploaded')).to.be.true;
+    });
+
+    it('should skip the redirect when cancel wins the race against a completing upload', async () => {
+      // Upload can still resolve after Cancel already ran.
+      mockActionBinder.isUploading = false;
+      uploadHandler.directUploadAsset = sinon.stub().resolves({ id: 'asset-999' });
+
+      const result = await uploadHandler.directUploadSingleFile(file, fileData);
+
+      expect(result).to.be.true;
+      expect(mockActionBinder.handleRedirect.called).to.be.false;
+      expect(mockActionBinder.operations).to.not.include('asset-999');
+      expect(mockActionBinder.dispatchAnalyticsEvent.calledWith('uploaded')).to.be.false;
+    });
+  });
+
   describe('uploadMultiFile', () => {
     let files;
     let filesData;
