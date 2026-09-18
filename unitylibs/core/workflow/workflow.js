@@ -326,7 +326,7 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-redesign-test, .verb-dropzone');
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-redesign-test, .verb-dropzone, .resume-hero, .verb-express-hero');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
