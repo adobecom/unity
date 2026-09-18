@@ -797,6 +797,7 @@ export default class ActionBinder {
     this.optionValue = wrap?.getAttribute('data-selected-option-value') || '';
     this.optionKey = wrap?.getAttribute('data-selected-option-key') || '';
     this.selectedStyleName = wrap?.querySelector('.selected-model .model-name')?.textContent?.trim() || '';
+    this.ctaStaticLink = wrap?.getAttribute('data-cta-static-link') || '';
   }
 
   dispatchStyleSelection() {
@@ -878,7 +879,10 @@ export default class ActionBinder {
   async handleGenerate() {
     try {
       this.readPromptState();
-      if (!this.pendingFiles.length && !this.query) return;
+      if (!this.pendingFiles.length && !this.query) {
+        if (this.ctaStaticLink) window.location.href = this.ctaStaticLink;
+        return;
+      }
       if (!(await this.runPreflight())) return;
       if (this.query && !this.validatePrompt(this.query)) return;
       this.limits = this.resolveLimits();

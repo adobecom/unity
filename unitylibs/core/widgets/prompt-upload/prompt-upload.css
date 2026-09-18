@@ -10,7 +10,7 @@
   display: block;
   background: #f8f8f8;
   border-radius: 10px;
-  padding: 16px 16px 8px 16px;
+  padding: 16px 16px 8px;
   box-shadow: none;
 }
 
@@ -270,12 +270,16 @@
 
 /* stylelint-disable-next-line no-descending-specificity */
 .pu-add-sources-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   color: #2c2c2c;
 }
 
-.pu-add-sources-label { font-weight: 500; }
+.pu-add-sources-label { 
+  font-size: 12px;
+  font-weight: 500;
+  color: #292929;
+}
 
 .pu-dz-drag { color: #6e6e6e; }
 
@@ -311,4 +315,40 @@
     margin-inline-start: 0;
     align-self: flex-start;
   }
+}
+
+.pu-widget:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .unity-prompt-upload .interactive-area {
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 16px 16px 12px;
+}
+
+.pu-widget:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .unity-prompt-upload .interactive-area:focus-within {
+  border-color: #147af3;
+}
+
+:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .pu-main { gap: 15px; }
+
+:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .pu-input-wrap { gap: 6px; }
+
+:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .pu-input-helper {
+  font-size: 14px;
+  line-height: 18px;
+  color: #505050;
+}
+
+:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .pu-search-field .inp-field {
+  font-size: 14px;
+  line-height: 20px;
+  color: #444;
+}
+
+:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .pu-add-sources { gap: 5px; }
+
+:is(.pu-v-flashcard-maker, .pu-v-quiz-maker) .pu-cta {
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 16px;
+  font-size: 14px;
 }
