@@ -266,14 +266,16 @@ export function buildEditorLeftPanel(parsedData) {
   const viewport = createTag('div', { class: 'ia-viewport' });
   const blurImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
   const sharpImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
+  const frameClip = createTag('div', { class: 'ia-frame-clip' });
+  frameClip.append(buildFrame());
   viewport.append(
     createTag('div', { class: 'ia-imglayer ia-imglayer--blur' }, createTag('div', { class: 'ia-imgbox' }, blurImg)),
     createTag('div', { class: 'ia-imglayer ia-imglayer--sharp' }, createTag('div', { class: 'ia-imgbox' }, sharpImg)),
-    buildFrame(),
-    buildProcessingOverlay(),
+    frameClip,
   );
   leftPanel.append(viewport);
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
+  leftPanel.append(buildProcessingOverlay());
   return leftPanel;
 }
 

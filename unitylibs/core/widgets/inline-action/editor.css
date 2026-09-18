@@ -13,6 +13,25 @@
   background: transparent;
 }
 
+.ia-widget[data-operation="crop"][data-state="complete"],
+.ia-widget[data-operation="resize"][data-state="complete"] {
+  overflow: visible;
+}
+
+.ia-widget[data-operation="crop"][data-state="complete"] .ia-panel-left,
+.ia-widget[data-operation="resize"][data-state="complete"] .ia-panel-left {
+  overflow: visible;
+  clip-path: inset(-9999px -9999px 0 -9999px);
+}
+
+.ia-widget[data-operation="crop"][data-state="complete"] .ia-panel-right,
+.ia-widget[data-operation="resize"][data-state="complete"] .ia-panel-right {
+  overflow: visible;
+  min-width: 0;
+  min-height: 0;
+  clip-path: inset(0 -9999px -9999px -9999px);
+}
+
 .ia-widget[data-state="complete"] .ia-editor-right-panel {
   display: flex;
   flex-direction: column;
@@ -26,9 +45,15 @@
   position: relative;
   width: 100%;
   aspect-ratio: 484 / 495;
-  overflow: clip;
   border-radius: var(--ia-radius-sm, 8px);
   background: transparent;
+}
+
+.ia-frame-clip {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  border-radius: inherit;
 }
 
 .ia-imglayer {
@@ -178,6 +203,7 @@
 .ia-handle--w { left: -3px; }
 
 .ia-adjust-bar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -274,6 +300,8 @@
 }
 
 .ia-editor-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -749,7 +777,7 @@
 
 .ia-processing-overlay {
   position: absolute;
-  inset: 0;
+  inset: -9999px -9999px 0 -9999px;
   z-index: 10;
   display: none;
   border-radius: inherit;
@@ -822,7 +850,7 @@
 
 .ia-panel-busy-overlay {
   position: absolute;
-  inset: 0;
+  inset: -9999px;
   z-index: 5;
   display: none;
   background: rgb(0 0 0 / 55%);
@@ -983,6 +1011,20 @@
 @media screen and (min-width: 1200px) {
   .ia-widget[data-state="complete"] .ia-editor-left-panel {
     height: 100%;
+  }
+
+  .ia-widget[data-operation="crop"][data-state="complete"] .ia-panel-left,
+  .ia-widget[data-operation="resize"][data-state="complete"] .ia-panel-left {
+    clip-path: inset(-9999px 0 -9999px -9999px);
+  }
+
+  .ia-widget[data-operation="crop"][data-state="complete"] .ia-panel-right,
+  .ia-widget[data-operation="resize"][data-state="complete"] .ia-panel-right {
+    clip-path: inset(-9999px -9999px -9999px 0);
+  }
+
+  .ia-processing-overlay {
+    inset: -9999px 0 -9999px -9999px;
   }
 
   .ia-widget[data-operation="crop"][data-state="complete"] .ia-editor-right-panel {
