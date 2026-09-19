@@ -81,7 +81,7 @@
 }
 
 .ia-imglayer--blur .ia-img {
-  filter: blur(7px) brightness(0.82);
+  filter: blur(4px) brightness(0.82);
 }
 
 .ia-imglayer--sharp {
