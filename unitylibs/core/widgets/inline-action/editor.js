@@ -570,6 +570,7 @@ export class EditorEngine {
     this.originalImageUrl = '';
     this.sourceImg = null;
     this.aspectPills = [...rightPanelEl.querySelectorAll('.ia-aspect-pill')];
+    this.aspectScrollRow = rightPanelEl.querySelector('.ia-aspect-row--scroll');
     this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
     this.moreMenu = rightPanelEl.querySelector('.ia-more-menu');
     this.moreWrap = this.moreTrigger?.closest('.ia-more');
@@ -813,6 +814,8 @@ export class EditorEngine {
     this.setMode(this.mode);
     this.resetIdle();
     this.bindAspectEvents();
+    this.bindAspectScrollWheel();
+    this.bindAspectDragScroll();
     this.bindResizeTabEvents();
     this.bindDimensionEvents();
     this.bindSocialEvents();
@@ -1035,6 +1038,47 @@ export class EditorEngine {
         if (!this.moreWrap.contains(e.target) && !this.moreMenu?.contains(e.target)) this.closeMore();
       });
     }
+  }
+
+  bindAspectScrollWheel() {
+    if (!this.aspectScrollRow) return;
+    this.aspectScrollRow.addEventListener('wheel', (e) => {
+      if (!e.deltaY) return;
+      e.preventDefault();
+      this.aspectScrollRow.scrollLeft += e.deltaY;
+    }, { passive: false });
+  }
+
+  bindAspectDragScroll() {
+    const row = this.aspectScrollRow;
+    if (!row) return;
+    let dragged = false;
+    row.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return;
+      const startX = e.clientX;
+      const startScrollLeft = row.scrollLeft;
+      dragged = false;
+      const move = (ev) => {
+        const dx = ev.clientX - startX;
+        if (Math.abs(dx) > 5) dragged = true;
+        if (dragged) {
+          ev.preventDefault();
+          row.scrollLeft = startScrollLeft - dx;
+        }
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+    row.addEventListener('click', (e) => {
+      if (dragged) {
+        e.stopPropagation();
+        dragged = false;
+      }
+    }, true);
   }
 
   positionDropdown(trigger, menu, allowUpward = false) {
