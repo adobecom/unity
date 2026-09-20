@@ -356,7 +356,7 @@ function buildCropAspectSection(parsedData) {
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
       }, r.icon, label));
     });
-    moreMenu.append(buildDropdownCloseButton());
+    moreMenu.prepend(buildDropdownCloseButton());
     const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
@@ -388,7 +388,7 @@ function buildUnitPicker() {
   UNIT_OPTIONS.forEach((unit) => {
     menu.append(createTag('button', { type: 'button', class: 'ia-unit-opt', 'data-unit': unit }, unit));
   });
-  menu.append(buildDropdownCloseButton());
+  menu.prepend(buildDropdownCloseButton());
   const trigger = createTag('button', {
     type: 'button',
     class: 'ia-dim-unit ia-unit-trigger',
@@ -463,7 +463,7 @@ function buildResizeAspectSection(parsedData) {
     platforms.forEach((platform) => {
       socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
     });
-    socialMenu.append(buildDropdownCloseButton());
+    socialMenu.prepend(buildDropdownCloseButton());
     const socialTrigger = createTag('button', {
       type: 'button',
       class: 'ia-resize-tab ia-social-trigger',
@@ -573,7 +573,7 @@ export class EditorEngine {
     this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
     this.moreMenu = rightPanelEl.querySelector('.ia-more-menu');
     this.moreWrap = this.moreTrigger?.closest('.ia-more');
-    this.repositionMoreMenu = () => this.positionDropdown(this.moreTrigger, this.moreMenu);
+    this.repositionMoreMenu = () => this.positionDropdown(this.moreTrigger, this.moreMenu, true);
     const firstPill = this.aspectPills.find((p) => p !== this.moreTrigger);
     this.defaultAspectRatio = firstPill?.dataset.ratio ? Number(firstPill.dataset.ratio) : null;
     this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
@@ -1037,16 +1037,22 @@ export class EditorEngine {
     }
   }
 
-  positionDropdown(trigger, menu) {
+  positionDropdown(trigger, menu, allowUpward = false) {
     const rect = trigger.getBoundingClientRect();
     const panelRect = this.rightPanel.getBoundingClientRect();
     const clampedRight = Math.min(rect.right, panelRect.right);
-    menu.style.top = `${rect.bottom + 6}px`;
+    if (allowUpward && window.innerWidth < 1200) {
+      menu.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+      menu.style.top = 'auto';
+    } else {
+      menu.style.top = `${rect.bottom + 6}px`;
+      menu.style.bottom = 'auto';
+    }
     menu.style.right = `${window.innerWidth - clampedRight}px`;
   }
 
   focusFirstMenuItem(menu) {
-    menu.querySelector('button:not([disabled])')?.focus();
+    menu.querySelector('button:not([disabled]):not(.ia-dropdown-close)')?.focus();
   }
 
   handleDropdownKeydown(e, menu, close) {
@@ -1098,7 +1104,7 @@ export class EditorEngine {
     const isOpen = !this.moreMenu.classList.contains('hide');
     if (isOpen) this.closeMore();
     else {
-      this.positionDropdown(this.moreTrigger, this.moreMenu);
+      this.positionDropdown(this.moreTrigger, this.moreMenu, true);
       this.moreMenu.classList.remove('hide');
       this.moreTrigger.setAttribute('aria-expanded', 'true');
       window.addEventListener('scroll', this.repositionMoreMenu, true);
