@@ -857,6 +857,10 @@ export default class ActionBinder {
     return this.widgetRef?.widget?.dataset?.state === InlineActionState.INITIAL;
   }
 
+  isCompleteState() {
+    return this.widgetRef?.widget?.dataset?.state === InlineActionState.COMPLETE;
+  }
+
   openFilePicker(block = this.block) {
     block?.querySelector('.ia-file-input')?.click();
   }
@@ -868,9 +872,10 @@ export default class ActionBinder {
     const fileInput = block?.querySelector('.ia-file-input');
     if (!dragTarget || !widget || !dropZone || !fileInput) return;
 
+    const canDrop = () => this.isInitialState() || this.isCompleteState();
     let activeDropZone;
     const setActive = () => {
-      if (!this.isInitialState() || activeDropZone === dropZone) return;
+      if (!canDrop() || activeDropZone === dropZone) return;
       activeDropZone?.classList.remove('active');
       (activeDropZone = dropZone).classList.add('active');
     };
@@ -879,7 +884,7 @@ export default class ActionBinder {
       activeDropZone = null;
     };
     const onDrag = (event, fn) => {
-      if (!this.isInitialState()) return;
+      if (!canDrop()) return;
       event.preventDefault();
       fn?.(event);
     };
