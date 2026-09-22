@@ -725,7 +725,6 @@ export default class ActionBinder {
         this.downloadBlob(this.resultBlob, this.resultBlob.type || 'image/png');
       } else {
         await this.triggerDownload(this.resultUrl);
-        this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
       }
       this.incrementUserCount();
       this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
