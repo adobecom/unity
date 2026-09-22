@@ -1073,14 +1073,16 @@ export class EditorEngine {
     const rect = trigger.getBoundingClientRect();
     const panelRect = this.rightPanel.getBoundingClientRect();
     const clampedRight = Math.min(rect.right, panelRect.right);
-    if (allowUpward && window.innerWidth < 1200) {
-      menu.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+    const viewportW = document.documentElement.clientWidth;
+    const viewportH = document.documentElement.clientHeight;
+    if (allowUpward && viewportW < 1200) {
+      menu.style.bottom = `${viewportH - rect.top + 6}px`;
       menu.style.top = 'auto';
     } else {
       menu.style.top = `${rect.bottom + 6}px`;
       menu.style.bottom = 'auto';
     }
-    menu.style.right = `${window.innerWidth - clampedRight}px`;
+    menu.style.right = `${viewportW - clampedRight}px`;
   }
 
   focusFirstMenuItem(menu) {
