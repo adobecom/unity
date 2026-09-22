@@ -744,32 +744,33 @@ export default class ActionBinder {
     return searchRoot?.querySelector?.('.ex-unity-wrap') || searchRoot;
   }
 
-  bindWidgetDropTarget() {
-    const card = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
-    if (!card || card.dataset.puDropBound) return;
-    card.dataset.puDropBound = 'true';
+  bindMarqueeDropTarget() {
+    const dropTarget = this.block;
+    const highlightEl = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
+    if (!dropTarget || dropTarget.dataset.puDropBound) return;
+    dropTarget.dataset.puDropBound = 'true';
     let dragDepth = 0;
     const hasFilePayload = (e) => !!e?.dataTransfer?.types && [...e.dataTransfer.types].includes('Files');
-    const setHighlight = (on) => card.classList.toggle('drag-over', !!on);
-    card.addEventListener('dragenter', (e) => {
-      if (!hasFilePayload(e)) return;
+    const setHighlight = (on) => highlightEl?.classList.toggle('drag-over', !!on);
+    dropTarget.addEventListener('dragenter', (e) => {
       e.preventDefault();
+      if (!hasFilePayload(e)) return;
       dragDepth += 1;
       setHighlight(true);
     });
-    card.addEventListener('dragover', (e) => {
-      if (!hasFilePayload(e)) return;
+    dropTarget.addEventListener('dragover', (e) => {
       e.preventDefault();
+      if (!hasFilePayload(e)) return;
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
       setHighlight(true);
     });
-    card.addEventListener('dragleave', (e) => {
+    dropTarget.addEventListener('dragleave', (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
       dragDepth = Math.max(0, dragDepth - 1);
       if (dragDepth === 0) setHighlight(false);
     });
-    card.addEventListener('drop', async (e) => {
+    dropTarget.addEventListener('drop', async (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
       dragDepth = 0;
@@ -993,7 +994,7 @@ export default class ActionBinder {
       searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
     }
     if (b === this.block) {
-      this.bindWidgetDropTarget();
+      this.bindMarqueeDropTarget();
       const preloadTransitionScreen = () => this.loadTransitionScreen();
       if ('requestIdleCallback' in window) requestIdleCallback(preloadTransitionScreen, { timeout: 3000 });
       else setTimeout(preloadTransitionScreen, 2000);
