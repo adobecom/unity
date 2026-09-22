@@ -925,6 +925,11 @@ export default class ActionBinder {
           el.addEventListener('click', async (e) => {
             if (value === 'interrupt') { e.preventDefault(); await this.cancelOperation(); } else if (value === 'generate') { e.preventDefault(); await this.handleGenerate(); }
           });
+          if (el.nodeName === 'A') {
+            el.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); el.click(); }
+            });
+          }
           break;
         case 'DIV':
           el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
