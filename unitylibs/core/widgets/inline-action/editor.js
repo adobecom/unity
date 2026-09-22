@@ -251,16 +251,6 @@ function buildAdjustBar(parsedData) {
   return bar;
 }
 
-function buildProcessingOverlay() {
-  const overlay = createTag('div', { class: 'ia-processing-overlay' });
-  overlay.append(
-    createTag('div', { class: 'ia-processing-gradient' }),
-    createTag('div', { class: 'ia-processing-mask' }),
-    createTag('div', { class: 'ia-processing-dots' }),
-  );
-  return overlay;
-}
-
 export function buildEditorLeftPanel(parsedData) {
   const leftPanel = createTag('div', { class: 'ia-editor-left-panel' });
   const viewport = createTag('div', { class: 'ia-viewport' });
@@ -275,7 +265,6 @@ export function buildEditorLeftPanel(parsedData) {
   );
   leftPanel.append(viewport);
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
-  leftPanel.append(buildProcessingOverlay());
   return leftPanel;
 }
 
@@ -550,7 +539,6 @@ export class EditorEngine {
     this.sharpBox = this.sharpLayer.querySelector('.ia-imgbox');
     this.sharpImg = this.sharpLayer.querySelector('.ia-img');
     this.frame = leftPanelEl.querySelector('.ia-frame');
-    this.processingOverlay = leftPanelEl.querySelector('.ia-processing-overlay');
     this.slider = leftPanelEl.querySelector('.ia-slider');
     this.valEl = leftPanelEl.querySelector('.ia-val');
     this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
@@ -1330,7 +1318,6 @@ export class EditorEngine {
   setBusy(isBusy, triggerBtn = null) {
     this.leftPanel.classList.toggle('is-busy', isBusy);
     this.rightPanel.classList.toggle('is-busy', isBusy);
-    this.processingOverlay?.classList.toggle('is-active', isBusy);
     toggleTriggerSpinner(triggerBtn, isBusy);
   }
 }
