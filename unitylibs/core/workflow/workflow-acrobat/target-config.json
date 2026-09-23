@@ -99,6 +99,48 @@
       }
     }
   },
+  "verb-express-hero": {
+    "selector": ".foreground",
+    "source": ".foreground .verb-dropzone-area",
+    "target": ".foreground .verb-dropzone-area",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/express/unity/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      "body": "upload",
+      "#file-upload": "upload"
+    },
+    "redirectParams": {
+      "x_api_client_location": {
+        "source": "pageUrlPath",
+        "stripPrefix": "/express/",
+        "transform": "reverseSegments"
+      }
+    }
+  },
+  "resume-hero": {
+    "selector": ".foreground",
+    "source": ".foreground .resume-hero-dropzone-area",
+    "target": ".foreground .resume-hero-dropzone-area",
+    "showSplashScreen": true,
+    "splashScreenConfig": {
+      "fragmentLink": "/express/unity/splashscreen",
+      "splashScreenParent": "body"
+    },
+    "actionMap": {
+      "body": "upload",
+      "#file-upload": "upload"
+    },
+    "redirectParams": {
+      "x_api_client_location": {
+        "source": "pageUrlPath",
+        "stripPrefix": "/express/",
+        "transform": "reverseSegments"
+      }
+    }
+  },
   "verb-marquee": {
     "selector": ".foreground",
     "source": ".foreground .verb-marquee-container",

@@ -62,6 +62,15 @@ class WfInitiator {
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
       ],
+      'workflow-prompt-upload': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+        `${getUnityLibs()}/core/widgets/shared/widget-base.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropzone.js`,
+        `${getUnityLibs()}/core/widgets/shared/prompt-input.js`,
+        `${getUnityLibs()}/core/widgets/shared/dropdown.js`,
+        `${getUnityLibs()}/core/widgets/shared/shared.css`,
+      ],
       'workflow-inline-action': [
         `${baseWfPath}/sprite.svg`,
         `${getUnityLibs()}/core/styles/splash-screen.css`,
@@ -286,6 +295,11 @@ class WfInitiator {
         productName: product || 'Firefly',
         sfList: new Set([feature || 'image-to-video']),
       },
+      'workflow-prompt-upload': {
+        productName: product,
+        sfList: new Set([feature]),
+        psw,
+      },
       'workflow-firefly': {
         productName: 'Firefly',
         sfList: new Set(['text-to-mage']),
@@ -312,7 +326,7 @@ class WfInitiator {
 
   getEnabledFeatures() {
     const { supportedFeatures, supportedTexts } = this.workflowCfg;
-    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-redesign-test, .verb-dropzone');
+    const verbWidget = this.el.closest('.section')?.querySelector('.verb-widget, .study-marquee, .verb-marquee, .verb-redesign-test, .verb-dropzone, .resume-hero, .verb-express-hero');
     if (verbWidget) {
       const verb = [...verbWidget.classList].find((cn) => supportedFeatures.has(cn));
       if (verb) this.workflowCfg.enabledFeatures.push(verb);
