@@ -261,16 +261,6 @@ function buildAdjustBar(parsedData) {
   return bar;
 }
 
-function buildProcessingOverlay() {
-  const overlay = createTag('div', { class: 'ia-processing-overlay' });
-  overlay.append(
-    createTag('div', { class: 'ia-processing-gradient' }),
-    createTag('div', { class: 'ia-processing-mask' }),
-    createTag('div', { class: 'ia-processing-dots' }),
-  );
-  return overlay;
-}
-
 export function buildEditorLeftPanel(parsedData) {
   const leftPanel = createTag('div', { class: 'ia-editor-left-panel' });
   const viewport = createTag('div', { class: 'ia-viewport' });
@@ -285,7 +275,6 @@ export function buildEditorLeftPanel(parsedData) {
   );
   leftPanel.append(viewport);
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
-  leftPanel.append(buildProcessingOverlay());
   return leftPanel;
 }
 
@@ -560,8 +549,6 @@ export class EditorEngine {
     this.sharpBox = this.sharpLayer.querySelector('.ia-imgbox');
     this.sharpImg = this.sharpLayer.querySelector('.ia-img');
     this.frame = leftPanelEl.querySelector('.ia-frame');
-    this.frameClip = leftPanelEl.querySelector('.ia-frame-clip');
-    this.processingOverlay = leftPanelEl.querySelector('.ia-processing-overlay');
     this.slider = leftPanelEl.querySelector('.ia-slider');
     this.valEl = leftPanelEl.querySelector('.ia-val');
     this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
@@ -1127,14 +1114,16 @@ export class EditorEngine {
     const rect = trigger.getBoundingClientRect();
     const panelRect = this.rightPanel.getBoundingClientRect();
     const clampedRight = Math.min(rect.right, panelRect.right);
-    if (allowUpward && window.innerWidth < 1200) {
-      menu.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+    const viewportW = document.documentElement.clientWidth;
+    const viewportH = document.documentElement.clientHeight;
+    if (allowUpward && viewportW < 1200) {
+      menu.style.bottom = `${viewportH - rect.top + 6}px`;
       menu.style.top = 'auto';
     } else {
       menu.style.top = `${rect.bottom + 6}px`;
       menu.style.bottom = 'auto';
     }
-    menu.style.right = `${window.innerWidth - clampedRight}px`;
+    menu.style.right = `${viewportW - clampedRight}px`;
   }
 
   focusFirstMenuItem(menu) {
@@ -1410,7 +1399,6 @@ export class EditorEngine {
   setBusy(isBusy, triggerBtn = null) {
     this.leftPanel.classList.toggle('is-busy', isBusy);
     this.rightPanel.classList.toggle('is-busy', isBusy);
-    this.processingOverlay?.classList.toggle('is-active', isBusy);
     toggleTriggerSpinner(triggerBtn, isBusy);
   }
 }
