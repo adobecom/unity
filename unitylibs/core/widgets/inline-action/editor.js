@@ -1031,6 +1031,7 @@ export class EditorEngine {
     this.hasInteracted = false;
     this.setMode(this.defaultMode);
     this.scheduleSizeReadout();
+    if (this.aspectScrollRow) this.aspectScrollRow.scrollLeft = 0;
   }
 
   bindAspectEvents() {

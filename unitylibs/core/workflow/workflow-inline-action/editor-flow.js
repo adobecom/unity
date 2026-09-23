@@ -35,6 +35,7 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
     const engine = await editorReady;
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
     await engine?.setImage(URL.createObjectURL(file), originalSize, true);
+    engine?.reset();
     if (isFirstEditorLoad) {
       const {
         leftPanel, rightPanel, moreMenu, socialMenu, unitMenu,
