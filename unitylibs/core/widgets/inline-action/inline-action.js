@@ -175,23 +175,6 @@ function placeholderRowText(root, iconClass) {
   return li ? normalize(li.innerText) : '';
 }
 
-const LABEL_ICON_FIELDS = {
-  'icon-download': ['downloadLabel', 'downloadIconHref'],
-  'icon-aiPhotoEditor': ['editLabel', 'editIconHref'],
-  'icon-reset': ['resetLabel', 'resetIconHref'],
-  'icon-upload': ['reuploadLabel', 'reuploadIconHref'],
-};
-
-const TEXT_ONLY_FIELDS = {
-  'icon-placeholder-nba': 'nbaHeading',
-  'icon-placeholder-editor': 'editorTitle',
-  'icon-placeholder-aspect-ratio': 'aspectRatioLabel',
-  'icon-placeholder-original-size': 'originalSizeLabel',
-  'icon-placeholder-new-size': 'newSizeLabel',
-  'icon-placeholder-width': 'widthLabel',
-  'icon-placeholder-height': 'heightLabel',
-};
-
 export function parseInlineAuthoring(unityEl) {
   const {
     uploadPara, uploadIconHref, uploadLabel, dragHint, fileLimit, legalHtml,
@@ -199,7 +182,7 @@ export function parseInlineAuthoring(unityEl) {
   const uls = [...unityEl.querySelectorAll(':scope > div ul')];
   const nbaUl = uls.find((ul) => ul.querySelector('[class*="icon-nba-"]'));
   const configUl = uls.find((ul) => ul !== nbaUl && ul.querySelector('[class*="icon-"]'));
-  const sliderModes = [];
+
   const config = {
     operation: 'removeBackground',
     downloadLabel: 'Download',
@@ -207,37 +190,21 @@ export function parseInlineAuthoring(unityEl) {
     editIconHref: undefined,
     editLabel: 'Edit in Firefly',
     reuploadIconHref: undefined,
-    resetLabel: 'Reset',
-    resetIconHref: undefined,
-    reuploadLabel: 'Upload',
-    nbaHeading: 'Do more with this image',
-    editorTitle: 'Edit your image',
-    aspectRatioLabel: 'Aspect ratio',
-    originalSizeLabel: 'Original size',
-    newSizeLabel: 'New size',
-    widthLabel: 'Width',
-    heightLabel: 'Height',
+    nbaHeading: 'Do more with this image.',
   };
   configUl?.querySelectorAll('li').forEach((li) => {
     const cls = configRowIconClass(li);
     if (!cls) return;
-    if (cls.startsWith('icon-operation-')) {
-      config.operation = cls.replace('icon-operation-', '');
-    } else if (cls.includes('icon-share')) {
+    if (cls.startsWith('icon-operation-')) config.operation = cls.replace('icon-operation-', '');
+    else if (cls.includes('icon-share')) {
       config.reuploadIconHref = getSvgHref(li) || config.reuploadIconHref;
-    } else if (LABEL_ICON_FIELDS[cls]) {
-      const [labelField, iconField] = LABEL_ICON_FIELDS[cls];
-      config[labelField] = stripUrls(li.textContent) || config[labelField];
-      config[iconField] = getSvgHref(li) || config[iconField];
-    } else if (TEXT_ONLY_FIELDS[cls]) {
-      config[TEXT_ONLY_FIELDS[cls]] = li.textContent.trim();
-    } else if (cls.startsWith('icon-placeholder-slider-')) {
-      sliderModes.push({
-        mode: cls.replace('icon-placeholder-slider-', ''),
-        label: stripUrls(li.textContent),
-        iconHref: getSvgHref(li),
-      });
-    }
+    } else if (cls === 'icon-download') {
+      config.downloadLabel = stripUrls(li.textContent) || config.downloadLabel;
+      config.downloadIconHref = getSvgHref(li) || config.downloadIconHref;
+    } else if (cls === 'icon-aiPhotoEditor') {
+      config.editLabel = stripUrls(li.textContent) || config.editLabel;
+      config.editIconHref = getSvgHref(li) || config.editIconHref;
+    } else if (cls === 'icon-placeholder-nba') config.nbaHeading = li.textContent.trim();
   });
 
   const nbaCards = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
@@ -245,12 +212,6 @@ export function parseInlineAuthoring(unityEl) {
     if (!nba) return null;
     const pic = li.querySelector('picture');
     return { label: nbaLiText(li), nba, defaultPrompt: nbaLiText(li, true), src: pic ? getImgSrc(pic) : '' };
-  }).filter(Boolean);
-
-  const nbaPills = [...(nbaUl?.querySelectorAll('li') || [])].map((li) => {
-    const nba = parseNbaIcon(li);
-    const label = nba ? stripUrls(li.textContent) : '';
-    return nba && label ? { nba, label, iconHref: getSvgHref(li) } : null;
   }).filter(Boolean);
 
   return {
@@ -262,8 +223,6 @@ export function parseInlineAuthoring(unityEl) {
     legalHtml,
     ...config,
     nbaCards,
-    nbaPills,
-    sliderModes,
     loadingText: placeholderRowText(unityEl, 'icon-placeholder-loading'),
   };
 }
@@ -358,21 +317,20 @@ function buildNbaGrid(nbaCards) {
 }
 
 function buildEditInFireflyButton(meta) {
-  const editLabel = meta.editLabel || 'Edit in Firefly';
   const editBtn = createTag('button', {
     type: 'button',
     class: 'ia-edit-in-firefly',
-    'aria-label': editLabel,
+    'aria-label': meta.editLabel,
   });
   if (meta.editIconHref) appendIconContent(editBtn, { href: meta.editIconHref, picture: true });
-  editBtn.append(createTag('span', {}, editLabel));
+  editBtn.append(createTag('span', {}, meta.editLabel));
   return editBtn;
 }
 
 function buildCompletePanel(meta) {
   const complete = createTag('div', { class: 'ia-complete' });
   complete.append(
-    createTag('p', { class: 'ia-nba-heading' }, meta.nbaHeading || 'Do more with this image.'),
+    createTag('p', { class: 'ia-nba-heading' }, meta.nbaHeading),
     buildNbaGrid(meta.nbaCards),
     buildEditInFireflyButton(meta),
   );
@@ -401,7 +359,7 @@ function buildResultSection(meta) {
   });
   const downloadBtn = createTag('button', { type: 'button', class: 'ia-download-btn' });
   appendIconContent(downloadBtn, { href: meta.downloadIconHref, spriteId: 'ia-download-icon', size: 18 });
-  downloadBtn.append(createTag('span', {}, meta.downloadLabel || 'Download'));
+  downloadBtn.append(createTag('span', {}, meta.downloadLabel));
   resultActions.append(reuploadBtn, downloadBtn);
   checker.append(resultActions);
   const result = createTag('div', { class: 'ia-result' }, checker);
@@ -409,15 +367,15 @@ function buildResultSection(meta) {
   return result;
 }
 
-function buildLeftPanel(heroPreview, meta, completeContent) {
+function buildLeftPanel(heroPreview, meta) {
   const left = createTag('div', { class: 'ia-panel ia-panel-left' });
-  left.append(heroPreview, buildGhostOverlay(), completeContent);
+  left.append(heroPreview, buildGhostOverlay(), buildResultSection(meta));
   return left;
 }
 
-function buildRightPanel(meta, progressHolder, completeContent) {
+function buildRightPanel(meta, progressHolder) {
   const right = createTag('div', { class: 'ia-panel ia-panel-right' });
-  right.append(buildDropZoneContainer(meta, progressHolder), completeContent);
+  right.append(buildDropZoneContainer(meta, progressHolder), buildCompletePanel(meta));
   return right;
 }
 
@@ -453,9 +411,6 @@ export default class InlineActionWidget {
     this.parsedData = null;
     this.state = InlineActionState.INITIAL;
     this.progressScreen = null;
-    this.editorEngine = null;
-    this.editorLeftSlot = null;
-    this.editorRightSlot = null;
   }
 
   setState(state) {
@@ -496,40 +451,24 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
-  async setEditorImage(url, originalSize, trackEvent) {
-    if (!this.editorEngine) {
-      const { initEditor } = await import('./editor.js');
-      this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData, trackEvent);
-    }
-    await this.editorEngine.setImage(url, originalSize, true);
-  }
-
   async initWidget() {
     const viewport = getViewportBlock(this.el);
     this.parsedData = parseInlineAuthoring(this.el);
     const heroPreview = extractHeroMedia(viewport);
     const { default: TransitionScreen } = await import('../../../scripts/transition-screen.js');
-    const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL, 'data-operation': this.parsedData.operation });
+    const root = createTag('div', { class: 'ia-widget', 'data-state': InlineActionState.INITIAL });
     const progressHolder = TransitionScreen.createProgressBar();
-    const isEditorOp = ['crop', 'resize'].includes(this.parsedData.operation);
-    let completeLeft;
-    let completeRight;
-    if (isEditorOp) {
-      completeLeft = createTag('div', { class: 'ia-editor-left-slot' });
-      completeRight = createTag('div', { class: 'ia-editor-right-slot' });
-      this.editorLeftSlot = completeLeft;
-      this.editorRightSlot = completeRight;
-    } else {
-      completeLeft = buildResultSection(this.parsedData);
-      completeRight = buildCompletePanel(this.parsedData);
-    }
-    const right = buildRightPanel(this.parsedData, progressHolder, completeRight);
+    const right = buildRightPanel(this.parsedData, progressHolder);
+
     this.progressScreen = new TransitionScreen(progressHolder, () => {}, 100, this.workflowCfg);
     this.progressScreen.progressText = this.parsedData.loadingText;
+
     appendSpriteSheet(root, this.spriteContent);
-    root.append(buildLeftPanel(heroPreview, this.parsedData, completeLeft), right);
+    root.append(buildLeftPanel(heroPreview, this.parsedData), right);
+
     insertInlineActionRoot(this.el, this, root);
     this.widget = root;
+
     return this.workflowCfg.targetCfg.actionMap;
   }
 }

@@ -10,7 +10,6 @@ export const INLINE_ACTION_EVENTS = {
   REMOVE_BACKGROUND_SUCCESS: 'Remove Background Success|UnityWidget',
   REMOVE_BACKGROUND_ERROR: 'Remove Background error|UnityWidget',
   TRY_AGAIN: 'Try again|UnityWidget',
-  RESET: 'Reset|UnityWidget',
   nbaClick: (label) => `${label} - Do more with|UnityWidget`,
 };
 
