@@ -142,6 +142,9 @@ export default class ActionBinder {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF-InlineAction' };
     this.sendAnalyticsToSplunk = null;
     this.assetId = null;
+    this.assetHref = null;
+    this.originalAssetId = null;
+    this.originalFileType = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
@@ -150,7 +153,7 @@ export default class ActionBinder {
     this.signedInFlowInProgress = false;
     this.splashProgress = 0;
     this.isGuestUser = undefined;
-    this.operation = widgetRef?.meta?.operation || 'removeBackground';
+    this.operation = widgetRef?.parsedData?.operation || 'removeBackground';
     this.initActionListeners = this.initActionListeners.bind(this);
   }
 
@@ -232,6 +235,7 @@ export default class ActionBinder {
       assetUpload: `${unityConfig.apiEndPoint}/asset`,
       acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
       removeBackground: `${unityConfig.apiEndPoint}/providers/RemoveBackground`,
+      imageOperations: `${unityConfig.apiEndPoint}/providers/imageOperations`,
     };
     return unityConfig;
   }
@@ -249,13 +253,17 @@ export default class ActionBinder {
     return { errorToastEl: this.errorToastEl, errorType: UPLOAD_ERROR_TYPE, ...(errorCode && { errorCode }) };
   }
 
+  downloadCountKey() {
+    return this.operation === 'removeBackground' ? DOWNLOAD_COUNT_KEY : `${DOWNLOAD_COUNT_KEY}-${this.operation}`;
+  }
+
   getUserCount() {
-    return parseInt(localStorage.getItem(DOWNLOAD_COUNT_KEY), 10) || 0;
+    return parseInt(localStorage.getItem(this.downloadCountKey()), 10) || 0;
   }
 
   incrementUserCount() {
     const next = this.getUserCount() + 1;
-    localStorage.setItem(DOWNLOAD_COUNT_KEY, String(next));
+    localStorage.setItem(this.downloadCountKey(), String(next));
     return next;
   }
 
@@ -416,6 +424,9 @@ export default class ActionBinder {
       callType = 'upload';
       const { id, href, blocksize, uploadUrls } = resJson;
       this.assetId = id;
+      this.originalAssetId = id;
+      this.originalFileType = this.filesData.type;
+      this.assetHref = href;
       this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: this.assetId });
       const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
       const uploadHandler = new UploadHandler(this, this.serviceHandler);
@@ -493,12 +504,17 @@ export default class ActionBinder {
   }
 
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
-    if (isDownload) return downloadsLocally ? 'aiPhotoEditor' : 'download';
+    if (isDownload) {
+      if (this.operation === 'crop') return downloadsLocally ? 'cropImageFirstDownload' : 'cropImageDownload';
+      return downloadsLocally ? 'aiPhotoEditor' : 'download';
+    }
     if (el?.classList?.contains('ia-edit-in-firefly')) return 'aiPhotoEditor';
     return el?.dataset?.nba;
   }
 
-  async buildConnectorPayload({ defaultPrompt, verb, connectorAssetId, fileType } = {}) {
+  async buildConnectorPayload({
+    defaultPrompt, verb, connectorAssetId, fileType, operations, aspectRatio, includeWidgetType = true, workflow,
+  } = {}) {
     const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
     const query = defaultPrompt?.trim();
     return {
@@ -507,12 +523,14 @@ export default class ActionBinder {
       additionalQueryParams: getCgenQueryParams(this.unityEl),
       ...(query && { query }),
       payload: {
-        workflow: this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
+        workflow: workflow ?? this.workflowCfg?.supportedFeatures?.values()?.next()?.value,
         action: 'asset-upload',
         verb: verb ?? this.operation,
-        widgetType: 'nba',
+        ...(includeWidgetType && { widgetType: 'nba' }),
         locale: getLocale(),
         type: fileType,
+        ...(operations && { operations }),
+        ...(aspectRatio && { aspectRatio }),
       },
     };
   }
@@ -554,9 +572,10 @@ export default class ActionBinder {
     }
   }
 
-  static downloadFilename(mimeType = 'image/png') {
+  static downloadFilename(mimeType = 'image/png', operation = 'removeBackground') {
     const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/webp': 'webp' }[mimeType] || 'png';
-    return `Firefly_RemoveBackground.${ext}`;
+    const verb = operation.charAt(0).toUpperCase() + operation.slice(1);
+    return `Firefly_${verb}.${ext}`;
   }
 
   getImageBlobData(url) {
@@ -589,7 +608,7 @@ export default class ActionBinder {
 
   downloadBlob(blob, mimeType = 'image/png') {
     const objUrl = URL.createObjectURL(blob);
-    const a = createTag('a', { href: objUrl, download: ActionBinder.downloadFilename(mimeType) });
+    const a = createTag('a', { href: objUrl, download: ActionBinder.downloadFilename(mimeType, this.operation) });
     document.body.append(a);
     a.click();
     setTimeout(() => {
@@ -603,7 +622,7 @@ export default class ActionBinder {
     this.downloadBlob(blob, blob.type || 'image/png');
   }
 
-  async signedInFlow(file) {
+  async signedInFlow(file, { performOperation = true } = {}) {
     if (this.signedInFlowInProgress) return;
     this.signedInFlowInProgress = true;
     try {
@@ -621,16 +640,22 @@ export default class ActionBinder {
         await ts.showSplashScreen(false);
         return;
       }
-      const removeBgRes = await this.removeBackground(true);
-      if (!removeBgRes) {
-        this.uploadAbortController = null;
-        await ts.showSplashScreen(false);
-        return;
+      let connectorAssetId = this.assetId;
+      if (performOperation) {
+        const removeBgRes = await this.removeBackground(true);
+        if (!removeBgRes) {
+          this.uploadAbortController = null;
+          await ts.showSplashScreen(false);
+          return;
+        }
+        connectorAssetId = this.resultAssetId;
       }
+      const isCropSignedIn = !performOperation && this.operation === 'crop';
       await this.callConnector(await this.buildConnectorPayload({
-        verb: 'aiPhotoEditor',
-        connectorAssetId: this.resultAssetId,
+        verb: isCropSignedIn ? 'cropImage' : 'aiPhotoEditor',
+        connectorAssetId,
         fileType: this.filesData.type,
+        includeWidgetType: !isCropSignedIn,
       }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
@@ -672,6 +697,8 @@ export default class ActionBinder {
     const correctedFile = await correctOrientation(file);
     this.uploadAbortController = null;
     this.assetId = null;
+    this.originalAssetId = null;
+    this.originalFileType = null;
     this.resultAssetId = null;
     this.resultUrl = null;
     this.resultBlob = null;
@@ -679,6 +706,15 @@ export default class ActionBinder {
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
     this.trackEvent('Uploading Started|UnityWidget');
+    if (['crop', 'resize'].includes(this.operation)) {
+      if (isGuest === false) {
+        await this.signedInFlow(correctedFile, { performOperation: false });
+        return;
+      }
+      const { editorUploadFlow } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+      await editorUploadFlow(this, correctedFile, file.size);
+      return;
+    }
     if (isGuest === false) await this.signedInFlow(correctedFile);
     else await this.anonymousFlow(correctedFile);
   }
@@ -690,7 +726,7 @@ export default class ActionBinder {
       } else {
         await this.triggerDownload(this.resultUrl);
         this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
-      } 
+      }
       this.incrementUserCount();
       this.trackEvent(INLINE_ACTION_EVENTS.DOWNLOAD_SUCCESS, { assetId: this.resultAssetId, fileMetaData: this.filesData });
     } catch (e) {
@@ -705,11 +741,13 @@ export default class ActionBinder {
     const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
+    const includeWidgetType = !(isDownload && this.operation === 'crop');
     const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
       connectorAssetId: this.resultAssetId,
       fileType: this.filesData.type,
+      includeWidgetType,
     });
     if (downloadsLocally) {
       await this.runFirstLocalDownload();
@@ -776,6 +814,21 @@ export default class ActionBinder {
       case 'interrupt':
         await this.cancelUploadOperation();
         break;
+      case 'runEditorOperation': {
+        const { runEditorOperation } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+        await runEditorOperation(this, el);
+        break;
+      }
+      case 'runEditInFirefly': {
+        const { runEditInFirefly } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+        await runEditInFirefly(this, el);
+        break;
+      }
+      case 'resetEditor': {
+        const { resetEditor } = await import(`${getUnityLibs()}/core/workflow/workflow-inline-action/editor-flow.js`);
+        await resetEditor(this);
+        break;
+      }
       default:
         break;
     }
@@ -841,7 +894,7 @@ export default class ActionBinder {
       setActive();
       const files = e.dataTransfer?.files;
       if (files?.length) {
-        try { fileInput.files = files; } catch { /* FileList assignment unsupported */ }
+        try { fileInput.files = files; } catch {  }
         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
       }
       clearActive();
@@ -894,19 +947,10 @@ export default class ActionBinder {
     });
   }
 
-  async initActionListeners(b = this.block, actMap = this.actionMap) {
-    this.serviceHandler = new ServiceHandler(
-      this.canvasArea,
-      this.unityEl,
-      this.getAdditionalHeaders.bind(this),
-    );
-    await this.initAnalytics();
-    if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
-    this.bindUploadAnalytics(b);
-    this.bindInteractiveAreaDrag(b);
+  bindActionMapElements(root, actMap = this.actionMap) {
     const handlers = {
       DIV: (el, action) => {
-        if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, b);
+        if (el.classList.contains('drop-zone')) this.bindUploadDropZone(el, action, root);
       },
       A: (el, action) => {
         if (action === 'interrupt') {
@@ -916,7 +960,7 @@ export default class ActionBinder {
           });
           return;
         }
-        if (el.classList.contains('action-button')) this.bindUploadActionButton(el, b);
+        if (el.classList.contains('action-button')) this.bindUploadActionButton(el, root);
       },
       INPUT: (el, action) => {
         if (this.limits.allowedFileTypes?.length) {
@@ -935,13 +979,25 @@ export default class ActionBinder {
         });
       },
     };
-
     Object.entries(actMap).forEach(([key, action]) => {
-      b.querySelectorAll(key).forEach((el) => {
+      root.querySelectorAll(key).forEach((el) => {
         const handler = handlers[el.nodeName];
         if (handler) handler(el, action);
       });
     });
+  }
+
+  async initActionListeners(b = this.block, actMap = this.actionMap) {
+    this.serviceHandler = new ServiceHandler(
+      this.canvasArea,
+      this.unityEl,
+      this.getAdditionalHeaders.bind(this),
+    );
+    await this.initAnalytics();
+    if (this.workflowCfg.targetCfg.showSplashScreen) this.loadTransitionScreen();
+    this.bindUploadAnalytics(b);
+    this.bindInteractiveAreaDrag(b);
+    this.bindActionMapElements(b, actMap);
 
     window.addEventListener('dragover', this.preventDefault.bind(this), false);
     window.addEventListener('drop', this.preventDefault.bind(this), false);
