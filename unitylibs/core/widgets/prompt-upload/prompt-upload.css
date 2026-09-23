@@ -300,6 +300,9 @@
     transform: none;
   }
 
+  /* stylelint-disable-next-line selector-class-pattern */
+  .pu-error-toast .verb-errorText { text-align: center; }
+
   .pu-header {
     flex-direction: column;
     align-items: flex-start;

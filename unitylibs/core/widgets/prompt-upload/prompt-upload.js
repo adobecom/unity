@@ -135,6 +135,8 @@ export default class PromptUploadWidget {
       dragText: placeholderText(this.el, 'icon-dropzone-drag-text'),
       showIcon: this.hasFlag('icon-upload-icon'),
     });
+    const verb = this.workflowCfg?.enabledFeatures?.[0];
+    refs.dropZone.setAttribute('daa-ll', verb ? `${label}--${verb}` : label);
     const slot = createTag('div', { class: 'pu-upload-slot' });
     slot.append(refs.wrap);
     const subtext = placeholderText(this.el, 'icon-dropzone-subtext');
