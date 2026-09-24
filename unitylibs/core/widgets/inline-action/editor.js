@@ -135,20 +135,28 @@ function edgeDelta(movesNeg, movesPos, delta) {
   return 0;
 }
 
-export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 0) {
+export function rawImageEdgesPct(naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
   const { w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
-  const offsetX = (viewportW - dispW) / 2;
-  const offsetY = (viewportH - dispH) / 2;
+  const dispWPct = (dispW / viewportW) * 100;
+  const dispHPct = (dispH / viewportH) * 100;
+  const offsetXPct = (100 - dispWPct) / 2;
+  const offsetYPct = (100 - dispHPct) / 2;
   const scale = zoomScale(zoom);
-  const leftPx = scaleAroundCenter(offsetX, viewportW, scale);
-  const topPx = scaleAroundCenter(offsetY, viewportH, scale);
-  const rightPx = scaleAroundCenter(offsetX + dispW, viewportW, scale);
-  const bottomPx = scaleAroundCenter(offsetY + dispH, viewportH, scale);
   return {
-    left: clamp((leftPx / viewportW) * 100, 0, 100),
-    top: clamp((topPx / viewportH) * 100, 0, 100),
-    right: clamp((rightPx / viewportW) * 100, 0, 100),
-    bottom: clamp((bottomPx / viewportH) * 100, 0, 100),
+    left: scaleAroundCenter(offsetXPct, 100, scale) + panXPct,
+    top: scaleAroundCenter(offsetYPct, 100, scale) + panYPct,
+    right: scaleAroundCenter(offsetXPct + dispWPct, 100, scale) + panXPct,
+    bottom: scaleAroundCenter(offsetYPct + dispHPct, 100, scale) + panYPct,
+  };
+}
+
+export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
+  const edges = rawImageEdgesPct(naturalW, naturalH, viewportW, viewportH, zoom, panXPct, panYPct);
+  return {
+    left: clamp(edges.left, 0, 100),
+    top: clamp(edges.top, 0, 100),
+    right: clamp(edges.right, 0, 100),
+    bottom: clamp(edges.bottom, 0, 100),
   };
 }
 
@@ -190,16 +198,18 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { lef
   };
 }
 
-export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0) {
+export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
   const { cs, w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
   const offsetY = (viewportH - dispH) / 2;
   const scale = zoomScale(zoom);
+  const panXPx = (panXPct / 100) * viewportW;
+  const panYPx = (panYPct / 100) * viewportH;
   const unscale = (px, size) => scaleAroundCenter(px, size, 1 / scale);
-  const leftPx = unscale((rect.x / 100) * viewportW, viewportW);
-  const topPx = unscale((rect.y / 100) * viewportH, viewportH);
-  const rightPx = unscale(((rect.x + rect.w) / 100) * viewportW, viewportW);
-  const bottomPx = unscale(((rect.y + rect.h) / 100) * viewportH, viewportH);
+  const leftPx = unscale(((rect.x / 100) * viewportW) - panXPx, viewportW);
+  const topPx = unscale(((rect.y / 100) * viewportH) - panYPx, viewportH);
+  const rightPx = unscale((((rect.x + rect.w) / 100) * viewportW) - panXPx, viewportW);
+  const bottomPx = unscale((((rect.y + rect.h) / 100) * viewportH) - panYPx, viewportH);
   const left = clamp(Math.round((leftPx - offsetX) / cs), 0, naturalW);
   const top = clamp(Math.round((topPx - offsetY) / cs), 0, naturalH);
   const right = clamp(Math.round((rightPx - offsetX) / cs), left, naturalW);
@@ -606,6 +616,8 @@ export class EditorEngine {
     this.defaultMode = parsedData.sliderModes[0]?.mode || null;
     this.mode = this.defaultMode;
     this.zoom = 0;
+    this.panX = 0;
+    this.panY = 0;
     this.quality = 100;
     this.idleTimer = null;
     this.bindEvents();
@@ -671,7 +683,27 @@ export class EditorEngine {
     this.sourceImg.src = url;
     const [vpW, vpH] = this.viewportSize();
     this.rect = centeredRect(null, this.naturalW, this.naturalH, vpW, vpH);
+    this.panX = 0;
+    this.panY = 0;
     this.render();
+  }
+
+  computePanRange(viewportW, viewportH) {
+    const edges = rawImageEdgesPct(this.naturalW, this.naturalH, viewportW, viewportH, this.zoom);
+    const { x, y, w, h } = this.rect;
+    const boundX = [x - edges.left, (x + w) - edges.right];
+    const boundY = [y - edges.top, (y + h) - edges.bottom];
+    return {
+      minX: Math.min(...boundX),
+      maxX: Math.max(...boundX),
+      minY: Math.min(...boundY),
+      maxY: Math.max(...boundY),
+    };
+  }
+
+  updatePanAffordance(range) {
+    const isPannable = (range.maxX - range.minX > 0.01) || (range.maxY - range.minY > 0.01);
+    this.frameClip?.classList.toggle('is-pannable', isPannable);
   }
 
   render() {
@@ -680,8 +712,8 @@ export class EditorEngine {
     this.frame.style.top = `${y}%`;
     this.frame.style.width = `${w}%`;
     this.frame.style.height = `${h}%`;
+    const [vpW, vpH] = this.viewportSize();
     if (this.naturalW) {
-      const [vpW, vpH] = this.viewportSize();
       const { w: dispW, h: dispH } = containBox(this.naturalW, this.naturalH, vpW, vpH);
       const boxWPct = (dispW / vpW) * 100;
       const boxHPct = (dispH / vpH) * 100;
@@ -689,8 +721,14 @@ export class EditorEngine {
         box.style.width = `${boxWPct}%`;
         box.style.height = `${boxHPct}%`;
       });
+      const range = this.computePanRange(vpW, vpH);
+      this.panX = clamp(this.panX, range.minX, range.maxX);
+      this.panY = clamp(this.panY, range.minY, range.maxY);
+      this.updatePanAffordance(range);
     }
-    const transform = `scale(${zoomScale(this.zoom)})`;
+    const panXpx = (this.panX / 100) * vpW;
+    const panYpx = (this.panY / 100) * vpH;
+    const transform = `translate(${panXpx}px, ${panYpx}px) scale(${zoomScale(this.zoom)})`;
     this.blurBox.style.transform = transform;
     this.sharpBox.style.transform = transform;
     this.sharpLayer.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
@@ -799,6 +837,7 @@ export class EditorEngine {
     });
     this.viewport.addEventListener('pointerdown', () => this.resetIdle());
     this.viewport.addEventListener('pointermove', () => this.resetIdle());
+    this.bindPanEvents();
     this.setMode(this.mode);
     this.resetIdle();
     this.bindAspectEvents();
@@ -964,6 +1003,8 @@ export class EditorEngine {
 
   reset() {
     this.zoom = 0;
+    this.panX = 0;
+    this.panY = 0;
     this.quality = 100;
     this.revertQualityPreview();
     if (this.isCrop) {
@@ -990,6 +1031,7 @@ export class EditorEngine {
     this.hasInteracted = false;
     this.setMode(this.defaultMode);
     this.scheduleSizeReadout();
+    if (this.aspectScrollRow) this.aspectScrollRow.scrollLeft = 0;
   }
 
   bindAspectEvents() {
@@ -1220,7 +1262,7 @@ export class EditorEngine {
 
   getSourceBounds() {
     const [vpW, vpH] = this.viewportSize();
-    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom);
+    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
   }
 
   getResizeDimensions() {
@@ -1256,7 +1298,7 @@ export class EditorEngine {
     const [vpW, vpH] = this.viewportSize();
     const trueRatioLock = this.getDragRatioLock(baseRect);
     const ratioLock = trueRatioLock ? trueRatioLock * (vpH / vpW) : null;
-    const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom);
+    const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
     const move = (ev) => {
       const dxPct = ((ev.clientX - startX) / vpW) * 100;
       const dyPct = ((ev.clientY - startY) / vpH) * 100;
@@ -1277,6 +1319,44 @@ export class EditorEngine {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  bindPanEvents() {
+    this.viewport.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.ia-frame')) return;
+      this.startPan(e);
+    });
+  }
+
+  startPan(e) {
+    if (!this.naturalW) return;
+    const [vpW, vpH] = this.viewportSize();
+    const range = this.computePanRange(vpW, vpH);
+    if (range.maxX - range.minX < 0.01 && range.maxY - range.minY < 0.01) return;
+    e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    this.resetIdle();
+    this.hasInteracted = true;
+    this.viewport.classList.add('is-panning');
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const basePanX = this.panX;
+    const basePanY = this.panY;
+    const move = (ev) => {
+      const [w, h] = this.viewportSize();
+      const dxPct = ((ev.clientX - startX) / w) * 100;
+      const dyPct = ((ev.clientY - startY) / h) * 100;
+      this.panX = basePanX + dxPct;
+      this.panY = basePanY + dyPct;
+      this.render();
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      this.viewport.classList.remove('is-panning');
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
