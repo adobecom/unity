@@ -181,7 +181,10 @@
   color: #686868;
 }
 
-.pu-search-field .inp-field::placeholder { color: #686868; }
+.pu-search-field .inp-field::placeholder {
+  color: #686868;
+  opacity: 1;
+}
 
 .pu-search-field.pu-pill {
   gap: 6px;
