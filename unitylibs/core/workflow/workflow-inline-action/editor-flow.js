@@ -120,8 +120,14 @@ export async function runEditInFirefly(binder, el) {
   });
   const isResize = binder.operation === 'resize';
   const bounds = engine.getSourceBounds();
+  const fireflyBounds = {
+    left: bounds.left,
+    top: bounds.top,
+    right: engine.naturalW - bounds.right,
+    bottom: engine.naturalH - bounds.bottom,
+  };
   const dimensions = isResize ? engine.getResizeOutputDimensions() : null;
-  const operations = buildOperations(binder, bounds, dimensions, engine.quality);
+  const operations = buildOperations(binder, fireflyBounds, dimensions, engine.quality);
   const connectorFields = {
     verb: isResize ? 'resizeImage' : 'cropImage',
     connectorAssetId: binder.assetId,
