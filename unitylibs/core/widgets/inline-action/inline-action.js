@@ -330,10 +330,15 @@ function buildDropZoneContainer(meta, progressHolder) {
   progressWrap.append(progressHolder);
   loadingContent.append(createTag('p', { class: 'ia-loading-text' }, meta.loadingText), progressWrap);
   dropZone.append(createTag('div', { class: 'ia-loading-visible', 'aria-hidden': 'true' }, loadingContent));
-  const legal = createTag('p', { class: 'ia-legal' });
-  legal.innerHTML = meta.legalHtml;
-  dropZoneContainer.append(dropZone, legal);
+  dropZoneContainer.append(dropZone);
   return dropZoneContainer;
+}
+
+function buildLegalBanner(legalHtml) {
+  if (!legalHtml) return null;
+  const legal = createTag('p', { class: 'ia-legal' });
+  legal.innerHTML = legalHtml;
+  return legal;
 }
 
 function buildNbaCard(card) {
@@ -428,11 +433,13 @@ function appendSpriteSheet(root, spriteContent) {
   root.append(sprite);
 }
 
-function insertInlineActionRoot(el, widgetInstance, widgetEl) {
+function insertInlineActionRoot(el, widgetInstance, widgetEl, legalHtml) {
   const skin = el.classList.contains('light') ? 'light' : 'dark';
   if (skin === 'dark') el.classList.add('dark');
   const root = createTag('div', { class: 'unity-inline-action unity-enabled' });
   root.append(createTag('div', { class: `interactive-area ${skin}` }, widgetEl));
+  const legalBanner = buildLegalBanner(legalHtml);
+  if (legalBanner) root.append(legalBanner);
   const holder = createTag('div', { class: 'ia-config-holder ia-sr-only', 'aria-hidden': 'true' });
   while (el.firstChild) holder.append(el.firstChild);
   el.append(holder);
@@ -496,12 +503,12 @@ export default class InlineActionWidget {
     this.widget?.querySelector('.ia-file-input')?.click();
   }
 
-  async setEditorImage(url, originalSize, trackEvent) {
+  async ensureEditorEngine(trackEvent) {
     if (!this.editorEngine) {
       const { initEditor } = await import('./editor.js');
       this.editorEngine = await initEditor(this.editorLeftSlot, this.editorRightSlot, this.parsedData, trackEvent);
     }
-    await this.editorEngine.setImage(url, originalSize, true);
+    return this.editorEngine;
   }
 
   async initWidget() {
@@ -528,7 +535,7 @@ export default class InlineActionWidget {
     this.progressScreen.progressText = this.parsedData.loadingText;
     appendSpriteSheet(root, this.spriteContent);
     root.append(buildLeftPanel(heroPreview, this.parsedData, completeLeft), right);
-    insertInlineActionRoot(this.el, this, root);
+    insertInlineActionRoot(this.el, this, root, this.parsedData.legalHtml);
     this.widget = root;
     return this.workflowCfg.targetCfg.actionMap;
   }

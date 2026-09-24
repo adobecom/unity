@@ -135,20 +135,28 @@ function edgeDelta(movesNeg, movesPos, delta) {
   return 0;
 }
 
-export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 0) {
+export function rawImageEdgesPct(naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
   const { w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
-  const offsetX = (viewportW - dispW) / 2;
-  const offsetY = (viewportH - dispH) / 2;
+  const dispWPct = (dispW / viewportW) * 100;
+  const dispHPct = (dispH / viewportH) * 100;
+  const offsetXPct = (100 - dispWPct) / 2;
+  const offsetYPct = (100 - dispHPct) / 2;
   const scale = zoomScale(zoom);
-  const leftPx = scaleAroundCenter(offsetX, viewportW, scale);
-  const topPx = scaleAroundCenter(offsetY, viewportH, scale);
-  const rightPx = scaleAroundCenter(offsetX + dispW, viewportW, scale);
-  const bottomPx = scaleAroundCenter(offsetY + dispH, viewportH, scale);
   return {
-    left: clamp((leftPx / viewportW) * 100, 0, 100),
-    top: clamp((topPx / viewportH) * 100, 0, 100),
-    right: clamp((rightPx / viewportW) * 100, 0, 100),
-    bottom: clamp((bottomPx / viewportH) * 100, 0, 100),
+    left: scaleAroundCenter(offsetXPct, 100, scale) + panXPct,
+    top: scaleAroundCenter(offsetYPct, 100, scale) + panYPct,
+    right: scaleAroundCenter(offsetXPct + dispWPct, 100, scale) + panXPct,
+    bottom: scaleAroundCenter(offsetYPct + dispHPct, 100, scale) + panYPct,
+  };
+}
+
+export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
+  const edges = rawImageEdgesPct(naturalW, naturalH, viewportW, viewportH, zoom, panXPct, panYPct);
+  return {
+    left: clamp(edges.left, 0, 100),
+    top: clamp(edges.top, 0, 100),
+    right: clamp(edges.right, 0, 100),
+    bottom: clamp(edges.bottom, 0, 100),
   };
 }
 
@@ -190,16 +198,18 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { lef
   };
 }
 
-export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0) {
+export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
   const { cs, w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
   const offsetY = (viewportH - dispH) / 2;
   const scale = zoomScale(zoom);
+  const panXPx = (panXPct / 100) * viewportW;
+  const panYPx = (panYPct / 100) * viewportH;
   const unscale = (px, size) => scaleAroundCenter(px, size, 1 / scale);
-  const leftPx = unscale((rect.x / 100) * viewportW, viewportW);
-  const topPx = unscale((rect.y / 100) * viewportH, viewportH);
-  const rightPx = unscale(((rect.x + rect.w) / 100) * viewportW, viewportW);
-  const bottomPx = unscale(((rect.y + rect.h) / 100) * viewportH, viewportH);
+  const leftPx = unscale(((rect.x / 100) * viewportW) - panXPx, viewportW);
+  const topPx = unscale(((rect.y / 100) * viewportH) - panYPx, viewportH);
+  const rightPx = unscale((((rect.x + rect.w) / 100) * viewportW) - panXPx, viewportW);
+  const bottomPx = unscale((((rect.y + rect.h) / 100) * viewportH) - panYPx, viewportH);
   const left = clamp(Math.round((leftPx - offsetX) / cs), 0, naturalW);
   const top = clamp(Math.round((topPx - offsetY) / cs), 0, naturalH);
   const right = clamp(Math.round((rightPx - offsetX) / cs), left, naturalW);
@@ -251,26 +261,17 @@ function buildAdjustBar(parsedData) {
   return bar;
 }
 
-function buildProcessingOverlay() {
-  const overlay = createTag('div', { class: 'ia-processing-overlay' });
-  overlay.append(
-    createTag('div', { class: 'ia-processing-gradient' }),
-    createTag('div', { class: 'ia-processing-mask' }),
-    createTag('div', { class: 'ia-processing-dots' }),
-  );
-  return overlay;
-}
-
 export function buildEditorLeftPanel(parsedData) {
   const leftPanel = createTag('div', { class: 'ia-editor-left-panel' });
   const viewport = createTag('div', { class: 'ia-viewport' });
   const blurImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
   const sharpImg = createTag('img', { class: 'ia-img', alt: '', draggable: 'false' });
+  const frameClip = createTag('div', { class: 'ia-frame-clip' });
+  frameClip.append(buildFrame());
   viewport.append(
     createTag('div', { class: 'ia-imglayer ia-imglayer--blur' }, createTag('div', { class: 'ia-imgbox' }, blurImg)),
     createTag('div', { class: 'ia-imglayer ia-imglayer--sharp' }, createTag('div', { class: 'ia-imgbox' }, sharpImg)),
-    buildFrame(),
-    buildProcessingOverlay(),
+    frameClip,
   );
   leftPanel.append(viewport);
   if (parsedData.sliderModes.length) leftPanel.append(buildAdjustBar(parsedData));
@@ -354,7 +355,7 @@ function buildCropAspectSection(parsedData) {
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
       }, r.icon, label));
     });
-    moreMenu.append(buildDropdownCloseButton());
+    moreMenu.prepend(buildDropdownCloseButton());
     const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
@@ -386,7 +387,7 @@ function buildUnitPicker() {
   UNIT_OPTIONS.forEach((unit) => {
     menu.append(createTag('button', { type: 'button', class: 'ia-unit-opt', 'data-unit': unit }, unit));
   });
-  menu.append(buildDropdownCloseButton());
+  menu.prepend(buildDropdownCloseButton());
   const trigger = createTag('button', {
     type: 'button',
     class: 'ia-dim-unit ia-unit-trigger',
@@ -461,7 +462,7 @@ function buildResizeAspectSection(parsedData) {
     platforms.forEach((platform) => {
       socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
     });
-    socialMenu.append(buildDropdownCloseButton());
+    socialMenu.prepend(buildDropdownCloseButton());
     const socialTrigger = createTag('button', {
       type: 'button',
       class: 'ia-resize-tab ia-social-trigger',
@@ -548,7 +549,6 @@ export class EditorEngine {
     this.sharpBox = this.sharpLayer.querySelector('.ia-imgbox');
     this.sharpImg = this.sharpLayer.querySelector('.ia-img');
     this.frame = leftPanelEl.querySelector('.ia-frame');
-    this.processingOverlay = leftPanelEl.querySelector('.ia-processing-overlay');
     this.slider = leftPanelEl.querySelector('.ia-slider');
     this.valEl = leftPanelEl.querySelector('.ia-val');
     this.toggleBtns = [...leftPanelEl.querySelectorAll('.ia-toggle__btn')];
@@ -568,10 +568,11 @@ export class EditorEngine {
     this.originalImageUrl = '';
     this.sourceImg = null;
     this.aspectPills = [...rightPanelEl.querySelectorAll('.ia-aspect-pill')];
+    this.aspectScrollRow = rightPanelEl.querySelector('.ia-aspect-row--scroll');
     this.moreTrigger = rightPanelEl.querySelector('.ia-more-trigger');
     this.moreMenu = rightPanelEl.querySelector('.ia-more-menu');
     this.moreWrap = this.moreTrigger?.closest('.ia-more');
-    this.repositionMoreMenu = () => this.positionDropdown(this.moreTrigger, this.moreMenu);
+    this.repositionMoreMenu = () => this.positionDropdown(this.moreTrigger, this.moreMenu, true);
     const firstPill = this.aspectPills.find((p) => p !== this.moreTrigger);
     this.defaultAspectRatio = firstPill?.dataset.ratio ? Number(firstPill.dataset.ratio) : null;
     this.defaultAspectLabel = firstPill?.dataset.label || 'Freeform';
@@ -615,6 +616,8 @@ export class EditorEngine {
     this.defaultMode = parsedData.sliderModes[0]?.mode || null;
     this.mode = this.defaultMode;
     this.zoom = 0;
+    this.panX = 0;
+    this.panY = 0;
     this.quality = 100;
     this.idleTimer = null;
     this.bindEvents();
@@ -680,7 +683,27 @@ export class EditorEngine {
     this.sourceImg.src = url;
     const [vpW, vpH] = this.viewportSize();
     this.rect = centeredRect(null, this.naturalW, this.naturalH, vpW, vpH);
+    this.panX = 0;
+    this.panY = 0;
     this.render();
+  }
+
+  computePanRange(viewportW, viewportH) {
+    const edges = rawImageEdgesPct(this.naturalW, this.naturalH, viewportW, viewportH, this.zoom);
+    const { x, y, w, h } = this.rect;
+    const boundX = [x - edges.left, (x + w) - edges.right];
+    const boundY = [y - edges.top, (y + h) - edges.bottom];
+    return {
+      minX: Math.min(...boundX),
+      maxX: Math.max(...boundX),
+      minY: Math.min(...boundY),
+      maxY: Math.max(...boundY),
+    };
+  }
+
+  updatePanAffordance(range) {
+    const isPannable = (range.maxX - range.minX > 0.01) || (range.maxY - range.minY > 0.01);
+    this.frameClip?.classList.toggle('is-pannable', isPannable);
   }
 
   render() {
@@ -689,8 +712,8 @@ export class EditorEngine {
     this.frame.style.top = `${y}%`;
     this.frame.style.width = `${w}%`;
     this.frame.style.height = `${h}%`;
+    const [vpW, vpH] = this.viewportSize();
     if (this.naturalW) {
-      const [vpW, vpH] = this.viewportSize();
       const { w: dispW, h: dispH } = containBox(this.naturalW, this.naturalH, vpW, vpH);
       const boxWPct = (dispW / vpW) * 100;
       const boxHPct = (dispH / vpH) * 100;
@@ -698,8 +721,14 @@ export class EditorEngine {
         box.style.width = `${boxWPct}%`;
         box.style.height = `${boxHPct}%`;
       });
+      const range = this.computePanRange(vpW, vpH);
+      this.panX = clamp(this.panX, range.minX, range.maxX);
+      this.panY = clamp(this.panY, range.minY, range.maxY);
+      this.updatePanAffordance(range);
     }
-    const transform = `scale(${zoomScale(this.zoom)})`;
+    const panXpx = (this.panX / 100) * vpW;
+    const panYpx = (this.panY / 100) * vpH;
+    const transform = `translate(${panXpx}px, ${panYpx}px) scale(${zoomScale(this.zoom)})`;
     this.blurBox.style.transform = transform;
     this.sharpBox.style.transform = transform;
     this.sharpLayer.style.clipPath = `inset(${y}% ${100 - (x + w)}% ${100 - (y + h)}% ${x}%)`;
@@ -808,9 +837,12 @@ export class EditorEngine {
     });
     this.viewport.addEventListener('pointerdown', () => this.resetIdle());
     this.viewport.addEventListener('pointermove', () => this.resetIdle());
+    this.bindPanEvents();
     this.setMode(this.mode);
     this.resetIdle();
     this.bindAspectEvents();
+    this.bindAspectScrollWheel();
+    this.bindAspectDragScroll();
     this.bindResizeTabEvents();
     this.bindDimensionEvents();
     this.bindSocialEvents();
@@ -971,6 +1003,8 @@ export class EditorEngine {
 
   reset() {
     this.zoom = 0;
+    this.panX = 0;
+    this.panY = 0;
     this.quality = 100;
     this.revertQualityPreview();
     if (this.isCrop) {
@@ -997,6 +1031,7 @@ export class EditorEngine {
     this.hasInteracted = false;
     this.setMode(this.defaultMode);
     this.scheduleSizeReadout();
+    if (this.aspectScrollRow) this.aspectScrollRow.scrollLeft = 0;
   }
 
   bindAspectEvents() {
@@ -1035,16 +1070,65 @@ export class EditorEngine {
     }
   }
 
-  positionDropdown(trigger, menu) {
+  bindAspectScrollWheel() {
+    if (!this.aspectScrollRow) return;
+    this.aspectScrollRow.addEventListener('wheel', (e) => {
+      if (!e.deltaY) return;
+      e.preventDefault();
+      this.aspectScrollRow.scrollLeft += e.deltaY;
+    }, { passive: false });
+  }
+
+  bindAspectDragScroll() {
+    const row = this.aspectScrollRow;
+    if (!row) return;
+    let dragged = false;
+    row.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return;
+      const startX = e.clientX;
+      const startScrollLeft = row.scrollLeft;
+      dragged = false;
+      const move = (ev) => {
+        const dx = ev.clientX - startX;
+        if (Math.abs(dx) > 5) dragged = true;
+        if (dragged) {
+          ev.preventDefault();
+          row.scrollLeft = startScrollLeft - dx;
+        }
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+    row.addEventListener('click', (e) => {
+      if (dragged) {
+        e.stopPropagation();
+        dragged = false;
+      }
+    }, true);
+  }
+
+  positionDropdown(trigger, menu, allowUpward = false) {
     const rect = trigger.getBoundingClientRect();
     const panelRect = this.rightPanel.getBoundingClientRect();
     const clampedRight = Math.min(rect.right, panelRect.right);
-    menu.style.top = `${rect.bottom + 6}px`;
-    menu.style.right = `${window.innerWidth - clampedRight}px`;
+    const viewportW = document.documentElement.clientWidth;
+    const viewportH = document.documentElement.clientHeight;
+    if (allowUpward && viewportW < 1200) {
+      menu.style.bottom = `${viewportH - rect.top + 6}px`;
+      menu.style.top = 'auto';
+    } else {
+      menu.style.top = `${rect.bottom + 6}px`;
+      menu.style.bottom = 'auto';
+    }
+    menu.style.right = `${viewportW - clampedRight}px`;
   }
 
   focusFirstMenuItem(menu) {
-    menu.querySelector('button:not([disabled])')?.focus();
+    menu.querySelector('button:not([disabled]):not(.ia-dropdown-close)')?.focus();
   }
 
   handleDropdownKeydown(e, menu, close) {
@@ -1096,7 +1180,7 @@ export class EditorEngine {
     const isOpen = !this.moreMenu.classList.contains('hide');
     if (isOpen) this.closeMore();
     else {
-      this.positionDropdown(this.moreTrigger, this.moreMenu);
+      this.positionDropdown(this.moreTrigger, this.moreMenu, true);
       this.moreMenu.classList.remove('hide');
       this.moreTrigger.setAttribute('aria-expanded', 'true');
       window.addEventListener('scroll', this.repositionMoreMenu, true);
@@ -1178,7 +1262,7 @@ export class EditorEngine {
 
   getSourceBounds() {
     const [vpW, vpH] = this.viewportSize();
-    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom);
+    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
   }
 
   getResizeDimensions() {
@@ -1214,7 +1298,7 @@ export class EditorEngine {
     const [vpW, vpH] = this.viewportSize();
     const trueRatioLock = this.getDragRatioLock(baseRect);
     const ratioLock = trueRatioLock ? trueRatioLock * (vpH / vpW) : null;
-    const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom);
+    const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
     const move = (ev) => {
       const dxPct = ((ev.clientX - startX) / vpW) * 100;
       const dyPct = ((ev.clientY - startY) / vpH) * 100;
@@ -1235,6 +1319,44 @@ export class EditorEngine {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  bindPanEvents() {
+    this.viewport.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.ia-frame')) return;
+      this.startPan(e);
+    });
+  }
+
+  startPan(e) {
+    if (!this.naturalW) return;
+    const [vpW, vpH] = this.viewportSize();
+    const range = this.computePanRange(vpW, vpH);
+    if (range.maxX - range.minX < 0.01 && range.maxY - range.minY < 0.01) return;
+    e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    this.resetIdle();
+    this.hasInteracted = true;
+    this.viewport.classList.add('is-panning');
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const basePanX = this.panX;
+    const basePanY = this.panY;
+    const move = (ev) => {
+      const [w, h] = this.viewportSize();
+      const dxPct = ((ev.clientX - startX) / w) * 100;
+      const dyPct = ((ev.clientY - startY) / h) * 100;
+      this.panX = basePanX + dxPct;
+      this.panY = basePanY + dyPct;
+      this.render();
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      this.viewport.classList.remove('is-panning');
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -1278,7 +1400,6 @@ export class EditorEngine {
   setBusy(isBusy, triggerBtn = null) {
     this.leftPanel.classList.toggle('is-busy', isBusy);
     this.rightPanel.classList.toggle('is-busy', isBusy);
-    this.processingOverlay?.classList.toggle('is-active', isBusy);
     toggleTriggerSpinner(triggerBtn, isBusy);
   }
 }

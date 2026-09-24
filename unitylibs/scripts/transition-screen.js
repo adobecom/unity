@@ -45,7 +45,7 @@ export default class TransitionScreen {
     if (!this.progressText && TransitionScreen.lastProgressText) this.progressText = TransitionScreen.lastProgressText;
     const current = parseInt(layer.querySelector('.spectrum-ProgressBar')?.getAttribute('value'), 10) || 0;
     const p = percentage >= 100 ? 100 : Math.min(percentage, this.LOADER_LIMIT);
-    if (current >= 100 && p < 100) return;
+    if (current >= 100 && p < 100 && p !== 0) return;
     const spb = layer.querySelector('.spectrum-ProgressBar');
     const fill = layer.querySelector('.spectrum-ProgressBar-fill');
     spb?.setAttribute('value', p);

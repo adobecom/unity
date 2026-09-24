@@ -23,23 +23,26 @@ export function buildImageOperationsPayload(binder, bounds, dimensions, quality)
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
   binder.widgetRef?.setState(InlineActionState.LOADING);
   binder.widgetRef?.setProgress(0);
+  const isFirstEditorLoad = !binder.widgetRef.editorEngine;
+  const editorReady = binder.widgetRef?.ensureEditorEngine((name, data) => binder.trackEvent(name, data));
   try {
     const ok = await binder.uploadAsset(file, true);
     if (!ok) {
       binder.widgetRef?.setState(InlineActionState.INITIAL);
       return;
     }
-    const isFirstEditorLoad = !binder.widgetRef.editorEngine;
     binder.widgetRef?.setProgress(100);
+    const engine = await editorReady;
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
-    await binder.widgetRef?.setEditorImage(
-      URL.createObjectURL(file),
-      originalSize,
-      (name, data) => binder.trackEvent(name, data),
-    );
+    await engine?.setImage(URL.createObjectURL(file), originalSize, true);
+    engine?.reset();
     if (isFirstEditorLoad) {
-      const { leftPanel, rightPanel } = binder.widgetRef.editorEngine;
-      [leftPanel, rightPanel].forEach((panel) => binder.bindActionMapElements(panel));
+      const {
+        leftPanel, rightPanel, moreMenu, socialMenu, unitMenu,
+      } = binder.widgetRef.editorEngine;
+      [leftPanel, rightPanel, moreMenu, socialMenu, unitMenu]
+        .filter(Boolean)
+        .forEach((panel) => binder.bindActionMapElements(panel));
     }
   } catch (e) {
     if (!e.analyticsTracked) binder.trackServerError('upload', e);
@@ -117,8 +120,14 @@ export async function runEditInFirefly(binder, el) {
   });
   const isResize = binder.operation === 'resize';
   const bounds = engine.getSourceBounds();
+  const fireflyBounds = {
+    left: bounds.left,
+    top: bounds.top,
+    right: engine.naturalW - bounds.right,
+    bottom: engine.naturalH - bounds.bottom,
+  };
   const dimensions = isResize ? engine.getResizeOutputDimensions() : null;
-  const operations = buildOperations(binder, bounds, dimensions, engine.quality);
+  const operations = buildOperations(binder, fireflyBounds, dimensions, engine.quality);
   const connectorFields = {
     verb: isResize ? 'resizeImage' : 'cropImage',
     connectorAssetId: binder.assetId,
