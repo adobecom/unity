@@ -384,15 +384,28 @@ export default class ActionBinder {
     if (existing) return existing;
     const host = this.block || this.canvasArea;
     if (!host) return null;
-    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide' });
+    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide', role: 'alert', tabindex: '-1' });
     const icon = createTag('div', { class: 'verb-errorIcon' });
     icon.innerHTML = ERROR_WARNING_ICON;
     const closeBtn = createTag('div', { class: 'verb-errorBtn', role: 'button', tabindex: '0', 'aria-label': 'Close error' });
     closeBtn.innerHTML = ERROR_CLOSE_ICON;
     toast.append(icon, createTag('p', { class: 'verb-errorText' }), closeBtn);
-    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.append(toast);
     return toast;
+  }
+
+  getStickyTopOffset() {
+    const selectors = ['header.global-navigation', '.feds-localnav', '.global-navigation'];
+    let bottom = 0;
+    selectors.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const pos = getComputedStyle(el).position;
+      if (pos !== 'fixed' && pos !== 'sticky') return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= 1 && rect.bottom > bottom) bottom = rect.bottom;
+    });
+    return bottom;
   }
 
   showErrorToastMessage(message) {
@@ -402,9 +415,11 @@ export default class ActionBinder {
       return;
     }
     const textEl = toast.querySelector('.verb-errorText') || toast;
-    textEl.textContent = message;
     toast.classList.remove('hide');
     toast.classList.add('verb-error');
+    const stickyOffset = this.getStickyTopOffset();
+    if (stickyOffset) toast.style.top = `${stickyOffset + 12}px`;
+    textEl.textContent = message;
     const closeBtn = toast.querySelector('.verb-errorBtn');
     if (closeBtn && !closeBtn.dataset.puBound) {
       closeBtn.dataset.puBound = 'true';
@@ -414,6 +429,7 @@ export default class ActionBinder {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hide(); }
       });
     }
+    toast.focus();
   }
 
   isMixedFileTypes(files) {
