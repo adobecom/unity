@@ -107,6 +107,8 @@ export default class PromptUploadWidget {
 
   buildCta() {
     const label = labelForField(this.el, 'icon-cta-text', 'Generate');
+    const authoredLink = this.el.querySelector('.icon-cta-text')?.closest('li')?.querySelector('a')?.getAttribute('href');
+    this.ctaStaticLink = authoredLink && authoredLink !== '#' ? authoredLink : '';
     const cta = createTag('a', {
       href: '#',
       class: 'unity-act-btn gen-btn pu-cta',
@@ -230,6 +232,7 @@ export default class PromptUploadWidget {
 
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     if (this.optionPayloadKey) this.widgetWrap?.setAttribute('data-selected-option-key', this.optionPayloadKey);
+    if (this.ctaStaticLink) this.widgetWrap?.setAttribute('data-cta-static-link', this.ctaStaticLink);
     return this.cfg.actionMap;
   }
 }
