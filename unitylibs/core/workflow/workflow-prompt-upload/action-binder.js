@@ -384,15 +384,28 @@ export default class ActionBinder {
     if (existing) return existing;
     const host = this.block || this.canvasArea;
     if (!host) return null;
-    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide' });
+    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide', role: 'alert', tabindex: '-1' });
     const icon = createTag('div', { class: 'verb-errorIcon' });
     icon.innerHTML = ERROR_WARNING_ICON;
     const closeBtn = createTag('div', { class: 'verb-errorBtn', role: 'button', tabindex: '0', 'aria-label': 'Close error' });
     closeBtn.innerHTML = ERROR_CLOSE_ICON;
     toast.append(icon, createTag('p', { class: 'verb-errorText' }), closeBtn);
-    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.append(toast);
     return toast;
+  }
+
+  getStickyTopOffset() {
+    const selectors = ['header.global-navigation', '.feds-localnav', '.global-navigation'];
+    let bottom = 0;
+    selectors.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const pos = getComputedStyle(el).position;
+      if (pos !== 'fixed' && pos !== 'sticky') return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= 1 && rect.bottom > bottom) bottom = rect.bottom;
+    });
+    return bottom;
   }
 
   showErrorToastMessage(message) {
@@ -402,9 +415,11 @@ export default class ActionBinder {
       return;
     }
     const textEl = toast.querySelector('.verb-errorText') || toast;
-    textEl.textContent = message;
     toast.classList.remove('hide');
     toast.classList.add('verb-error');
+    const stickyOffset = this.getStickyTopOffset();
+    if (stickyOffset) toast.style.top = `${stickyOffset + 12}px`;
+    textEl.textContent = message;
     const closeBtn = toast.querySelector('.verb-errorBtn');
     if (closeBtn && !closeBtn.dataset.puBound) {
       closeBtn.dataset.puBound = 'true';
@@ -414,6 +429,7 @@ export default class ActionBinder {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hide(); }
       });
     }
+    toast.focus();
   }
 
   isMixedFileTypes(files) {
@@ -744,32 +760,33 @@ export default class ActionBinder {
     return searchRoot?.querySelector?.('.ex-unity-wrap') || searchRoot;
   }
 
-  bindWidgetDropTarget() {
-    const card = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
-    if (!card || card.dataset.puDropBound) return;
-    card.dataset.puDropBound = 'true';
+  bindMarqueeDropTarget() {
+    const dropTarget = this.block;
+    const highlightEl = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
+    if (!dropTarget || dropTarget.dataset.puDropBound) return;
+    dropTarget.dataset.puDropBound = 'true';
     let dragDepth = 0;
     const hasFilePayload = (e) => !!e?.dataTransfer?.types && [...e.dataTransfer.types].includes('Files');
-    const setHighlight = (on) => card.classList.toggle('drag-over', !!on);
-    card.addEventListener('dragenter', (e) => {
-      if (!hasFilePayload(e)) return;
+    const setHighlight = (on) => highlightEl?.classList.toggle('drag-over', !!on);
+    dropTarget.addEventListener('dragenter', (e) => {
       e.preventDefault();
+      if (!hasFilePayload(e)) return;
       dragDepth += 1;
       setHighlight(true);
     });
-    card.addEventListener('dragover', (e) => {
-      if (!hasFilePayload(e)) return;
+    dropTarget.addEventListener('dragover', (e) => {
       e.preventDefault();
+      if (!hasFilePayload(e)) return;
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
       setHighlight(true);
     });
-    card.addEventListener('dragleave', (e) => {
+    dropTarget.addEventListener('dragleave', (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
       dragDepth = Math.max(0, dragDepth - 1);
       if (dragDepth === 0) setHighlight(false);
     });
-    card.addEventListener('drop', async (e) => {
+    dropTarget.addEventListener('drop', async (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
       dragDepth = 0;
@@ -924,6 +941,11 @@ export default class ActionBinder {
           el.addEventListener('click', async (e) => {
             if (value === 'interrupt') { e.preventDefault(); await this.cancelOperation(); } else if (value === 'generate') { e.preventDefault(); await this.handleGenerate(); }
           });
+          if (el.nodeName === 'A') {
+            el.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); el.click(); }
+            });
+          }
           break;
         case 'DIV':
           el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
@@ -993,7 +1015,7 @@ export default class ActionBinder {
       searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
     }
     if (b === this.block) {
-      this.bindWidgetDropTarget();
+      this.bindMarqueeDropTarget();
       const preloadTransitionScreen = () => this.loadTransitionScreen();
       if ('requestIdleCallback' in window) requestIdleCallback(preloadTransitionScreen, { timeout: 3000 });
       else setTimeout(preloadTransitionScreen, 2000);
