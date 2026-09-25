@@ -62,6 +62,7 @@ export default class UploadHandler {
       this.handleUploadError(error, 'pre_upload_error_direct_upload');
       return false;
     }
+    if (abortSignal.aborted || !this.actionBinder.isUploading) return true;
     fileData.assetId = assetData.id;
     this.actionBinder.setAssetId(assetData.id);
     const effectiveFileType = await this.getEffectiveFileType(file);
