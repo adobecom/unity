@@ -19,7 +19,7 @@
     "awaitFinalizeVerbs": [],
     "nonpdfMfuFeedbackScreenTypeNonpdf": [],
     "nonpdfSfuProductScreen": ["citation-generator"],
-    "mfuUploadAllowed": ["citation-generator"],
+    "mfuUploadAllowed": ["citation-generator", "flashcard-maker", "quiz-maker"],
     "mfuUploadOnlyPdfAllowed": [],
     "experimentationOn": [],
     "limits": {

@@ -20,36 +20,43 @@
 }
 
 .pu-error-toast {
-  position: fixed;
-  top: 90px;
+  cursor: default;
+  background: #D31510;
+  max-width: 435px;
+  color: white;
+  position: absolute;
+  top: 109px;
+  transform: translate(-50%, -50%);
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+  font-size: 14px;
+  font-weight: 400;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
-  width: max-content;
-  max-width: min(560px, 92%);
-  box-sizing: border-box;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: #d31510;
-  box-shadow: 0 3px 12px rgb(0 0 0 / 15%);
-  color: #fff;
-  font-size: 15px;
-  line-height: 20px;
-  outline: none;
+  padding: 8px;
 }
 
 .pu-error-toast.hide { display: none; }
 
 /* stylelint-disable selector-class-pattern -- verb-error* mirrors the acrobat error-toast markup */
-.pu-error-toast .verb-errorIcon,
+.pu-error-toast .verb-errorIcon {
+  align-self: self-start;
+  width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  margin-right: 4px;
+  margin-top: 7px;
+
+}
 .pu-error-toast .verb-errorBtn {
   display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  color: #fff;
+  align-self: self-start;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
 }
 
 .pu-error-toast .verb-errorIcon svg {
@@ -58,8 +65,14 @@
 }
 
 .pu-error-toast .verb-errorText {
-  flex: 1;
+  border-right: 1px solid rgb(255 255 255 / 20%);
+  padding: 0;
   margin: 0;
+  margin-right: 8px;
+  padding-right: 16px;
+  max-width: 324px;
+  margin-left: 8px;
+  min-width: 100px;
 }
 
 .pu-error-toast .verb-errorBtn {
@@ -70,8 +83,8 @@
 .pu-error-toast .verb-errorBtn:hover { opacity: 1; }
 
 .pu-error-toast .verb-errorBtn svg {
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
 }
 /* stylelint-enable selector-class-pattern */
 
