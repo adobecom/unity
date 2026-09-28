@@ -241,9 +241,10 @@
   display: flex;
   align-items: flex-start;
   gap: 20px;
+  align-self: center;
 }
 
-.pu-footer-container .act-wrap { margin-inline-start: auto; }
+/* .pu-footer-container .act-wrap { margin-inline-start: auto; } */
 
 .pu-secondary-link {
   align-self: flex-start;
@@ -337,11 +338,11 @@
   .pu-search-field.pu-pill .pu-input-wrap { width: 100%; }
 
   .pu-footer-container {
-    flex-direction: column;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
-  .pu-footer-container .act-wrap,
+
   .pu-secondary-link {
     margin-inline-start: 0;
     align-self: flex-start;
