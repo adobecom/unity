@@ -235,6 +235,7 @@
   align-items: center;
   gap: 16px;
   width: 100%;
+  justify-content: space-between;
 }
 
 .pu-footer-left {
