@@ -242,7 +242,6 @@
   display: flex;
   align-items: flex-start;
   gap: 20px;
-  align-self: center;
 }
 
 /* .pu-footer-container .act-wrap { margin-inline-start: auto; } */
@@ -341,6 +340,7 @@
   .pu-footer-container {
     align-items: flex-start;
     justify-content: space-between;
+    flex-direction: column;
   }
 
 
