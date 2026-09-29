@@ -149,6 +149,7 @@ export default class ActionBinder {
     this.pendingFiles = [];
     this.query = '';
     this.optionValue = '';
+    this.promptPrefix = '';
     this.optionKey = '';
     this.selectedStyleName = '';
     this.analyticsModule = null;
@@ -562,7 +563,11 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts, filesData) {
-    if (this.query) cOpts.query = this.query;
+    if (this.query) {
+      cOpts.query = this.promptPrefix
+        ? `${this.promptPrefix} ${this.query}`
+        : this.query;
+    }
     if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
     [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
@@ -812,6 +817,7 @@ export default class ActionBinder {
     const input = searchRoot?.querySelector?.('#pbuPromptInput') || searchRoot?.querySelector?.('.inp-field');
     this.query = input?.value?.trim() || '';
     this.optionValue = wrap?.getAttribute('data-selected-option-value') || '';
+    this.promptPrefix = wrap?.getAttribute('data-prompt-prefix') || '';
     this.optionKey = wrap?.getAttribute('data-selected-option-key') || '';
     this.selectedStyleName = wrap?.querySelector('.selected-model .model-name')?.textContent?.trim() || '';
     this.ctaStaticLink = wrap?.getAttribute('data-cta-static-link') || '';
