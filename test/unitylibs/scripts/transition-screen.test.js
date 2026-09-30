@@ -160,6 +160,21 @@ describe('TransitionScreen', () => {
     });
   });
 
+  describe('toggleCancelButton', () => {
+    it('should hide and re-show the cancel button', () => {
+      splashScreenEl.innerHTML = '<a class="con-button" href="#_cancel">Cancel</a>';
+      const cancelBtn = splashScreenEl.querySelector('a.con-button');
+      screen.toggleCancelButton(false);
+      expect(cancelBtn.style.display).to.equal('none');
+      screen.toggleCancelButton(true);
+      expect(cancelBtn.style.display).to.equal('');
+    });
+
+    it('should not throw when there is no cancel button', () => {
+      expect(() => screen.toggleCancelButton(false)).to.not.throw();
+    });
+  });
+
   describe('splashVisibilityController', () => {
     beforeEach(() => {
       const parent = document.createElement('div');
@@ -191,6 +206,18 @@ describe('TransitionScreen', () => {
       expect(splashScreenEl.classList.contains('show')).to.be.true;
       expect(splashScreenEl.parentElement.classList.contains('hide-splash-overflow')).to.be.true;
       expect(document.querySelector('main').getAttribute('aria-hidden')).to.equal('true');
+      stub.restore();
+    });
+    it('should restore a hidden cancel button when the splash is shown or hidden', () => {
+      const stub = sinon.stub(screen, 'progressBarHandler');
+      splashScreenEl.innerHTML = '<a class="con-button" href="#_cancel">Cancel</a>';
+      const cancelBtn = splashScreenEl.querySelector('a.con-button');
+      screen.toggleCancelButton(false);
+      screen.splashVisibilityController(true);
+      expect(cancelBtn.style.display).to.equal('');
+      screen.toggleCancelButton(false);
+      screen.splashVisibilityController(false);
+      expect(cancelBtn.style.display).to.equal('');
       stub.restore();
     });
   });
