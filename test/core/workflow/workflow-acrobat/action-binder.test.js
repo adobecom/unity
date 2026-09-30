@@ -1642,6 +1642,45 @@ describe('ActionBinder', () => {
         expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
         expect(existingTransitionScreen.updateProgressBar.calledOnceWith(splashLayer, 100)).to.be.true;
       });
+
+      it('should not navigate when cancel clears the redirect URL during the final progress delay', async () => {
+        actionBinder.transitionScreen = {
+          splashScreenEl: document.createElement('div'),
+          clearProgressBarHandler: sinon.stub(),
+          updateProgressBar: sinon.stub(),
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        actionBinder.delay = sinon.stub().callsFake(async () => { actionBinder.redirectUrl = ''; });
+        // multiFileFailure is only read when building the navigation URL. Throwing here makes a
+        // regression fail via the catch/toast path instead of actually navigating the test page.
+        Object.defineProperty(actionBinder, 'multiFileFailure', {
+          get() { throw new Error('navigation attempted after cancel'); },
+          configurable: true,
+        });
+        try {
+          await actionBinder.continueInApp();
+          expect(actionBinder.dispatchErrorToast.called).to.be.false;
+          expect(actionBinder.transitionScreen.showSplashScreen.called).to.be.false;
+        } finally {
+          delete actionBinder.multiFileFailure;
+        }
+      });
+    });
+
+    describe('showTransitionScreen', () => {
+      it('should clear the previous transition screen progress bar timer before loading a new one', () => {
+        const splashLayer = document.createElement('div');
+        const existingTransitionScreen = {
+          splashScreenEl: splashLayer,
+          clearProgressBarHandler: sinon.stub(),
+        };
+        actionBinder.transitionScreen = existingTransitionScreen;
+        // The clear call runs before the first await, so it fires immediately.
+        // Ignore the unrelated rejection from the unmocked import below.
+        const pending = actionBinder.showTransitionScreen();
+        pending.catch(() => {});
+        expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
+      });
     });
 
     describe('cancelAcrobatOperation', () => {
@@ -1702,6 +1741,12 @@ describe('ActionBinder', () => {
         actionBinder.isUploading = false;
         await actionBinder.cancelAcrobatOperation();
         expect(actionBinder.filesData.workflowStep).to.equal('preuploading');
+      });
+
+      it('should clear recorded operations so the next upload cannot redirect with stale state', async () => {
+        actionBinder.operations = ['asset-cancelled'];
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.operations).to.deep.equal([]);
       });
     });
 
@@ -2036,6 +2081,24 @@ describe('ActionBinder', () => {
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
         expect(spy.called).to.be.true;
         spy.restore();
+      });
+
+      it('should register the RedirectReady listener only once across repeated actions', async () => {
+        actionBinder.transitionScreen = { test: 'existing' };
+        actionBinder.handlePreloads = sinon.stub().resolves();
+        const cancelStub = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
+        const addSpy = sinon.spy(window, 'addEventListener');
+        delete actionBinder.redirectReadyBound;
+        try {
+          await actionBinder.acrobatActionMaps('interrupt');
+          await actionBinder.acrobatActionMaps('interrupt');
+          await actionBinder.acrobatActionMaps('interrupt');
+          const registrations = addSpy.getCalls().filter((c) => c.args[0] === 'DCUnity:RedirectReady');
+          expect(registrations).to.have.lengthOf(1);
+        } finally {
+          addSpy.restore();
+          cancelStub.restore();
+        }
       });
 
       describe('enabledFeatures validation', () => {
