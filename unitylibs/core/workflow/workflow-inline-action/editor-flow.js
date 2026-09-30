@@ -20,18 +20,76 @@ export function buildImageOperationsPayload(binder, bounds, dimensions, quality)
   };
 }
 
+// sourceImg is used rather than sharpImg, which may hold the quality-preview JPEG.
+async function canvasResize(engine, bounds, width, height) {
+  const img = engine.sourceImg;
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(
+    img,
+    bounds.left,
+    bounds.top,
+    bounds.right - bounds.left,
+    bounds.bottom - bounds.top,
+    0,
+    0,
+    width,
+    height,
+  );
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
+      'image/jpeg',
+      engine.quality / 100,
+    );
+  });
+}
+
+// uploadAsset overwrites the original-asset fields, so restore them after uploading a resized result.
+async function uploadResizedAsset(binder, file) {
+  const { assetId, originalAssetId, originalFileType } = binder;
+  const ok = await binder.uploadAsset(file);
+  binder.originalAssetId = originalAssetId;
+  binder.originalFileType = originalFileType;
+  if (!ok) binder.assetId = assetId;
+  return ok;
+}
+
+// Resize defers the original upload until an asset is actually needed.
+function ensureAssetUploaded(binder) {
+  if (binder.assetId) return Promise.resolve(true);
+  if (!binder.originalUploadPromise) {
+    binder.originalUploadPromise = binder.uploadAsset(binder.originalFile)
+      .then((ok) => {
+        if (!ok) binder.assetId = null;
+        return ok;
+      })
+      .finally(() => { binder.originalUploadPromise = null; });
+  }
+  return binder.originalUploadPromise;
+}
+
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
   binder.widgetRef?.setState(InlineActionState.LOADING);
   binder.widgetRef?.setProgress(0);
   const isFirstEditorLoad = !binder.widgetRef.editorEngine;
   const editorReady = binder.widgetRef?.ensureEditorEngine((name, data) => binder.trackEvent(name, data));
+  const isResize = binder.operation === 'resize';
   try {
-    const ok = await binder.uploadAsset(file, true);
-    if (!ok) {
-      binder.widgetRef?.setState(InlineActionState.INITIAL);
-      return;
+    if (isResize) {
+      binder.originalFile = file;
+      binder.originalFileType = binder.filesData.type;
+      binder.widgetRef?.setProgress(100);
+    } else {
+      const ok = await binder.uploadAsset(file, true);
+      if (!ok) {
+        binder.widgetRef?.setState(InlineActionState.INITIAL);
+        return;
+      }
+      binder.widgetRef?.setProgress(100);
     }
-    binder.widgetRef?.setProgress(100);
     const engine = await editorReady;
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
     await engine?.setImage(URL.createObjectURL(file), originalSize, true);
@@ -56,6 +114,27 @@ async function performEditorOperation(binder) {
   if (!engine) return false;
   const bounds = engine.getSourceBounds();
   const dimensions = binder.operation === 'resize' ? engine.getResizeOutputDimensions() : null;
+
+  if (binder.operation === 'resize') {
+    try {
+      const { width, height } = engine.getResizeDimensions();
+      const blob = await canvasResize(engine, bounds, Math.round(width), Math.round(height));
+      const ok = await uploadResizedAsset(binder, new File([blob], binder.filesData.name, { type: 'image/jpeg' }));
+      if (!ok) return false;
+      binder.resultAssetId = binder.assetId;
+      binder.resultBlob = blob;
+      binder.resultUrl = URL.createObjectURL(blob);
+      binder.filesData.type = 'image/jpeg';
+      await engine.setImage(binder.resultUrl, engine.originalSize);
+      engine.reset();
+      return true;
+    } catch (e) {
+      if (!e.analyticsTracked) binder.trackServerError(binder.operation, e);
+      binder.serviceHandler.showErrorToast(binder.uploadErrorOpts(), e, binder.lanaOptions);
+      return false;
+    }
+  }
+
   const payload = buildImageOperationsPayload(binder, bounds, dimensions, engine.quality);
   try {
     const res = await binder.serviceHandler.postCallToService(
@@ -119,6 +198,16 @@ export async function runEditInFirefly(binder, el) {
     action: 'redirect',
   });
   const isResize = binder.operation === 'resize';
+
+  if (isResize) {
+    engine.setBusy(true, el);
+    try {
+      if (!(await ensureAssetUploaded(binder))) return;
+    } finally {
+      engine.setBusy(false, el);
+    }
+  }
+
   const bounds = engine.getSourceBounds();
   const fireflyBounds = {
     left: bounds.left,
