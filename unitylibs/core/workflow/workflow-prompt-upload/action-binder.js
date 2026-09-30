@@ -28,7 +28,7 @@ const ENDING_SPACE_PERIOD_REGEX = /[ .]+$/;
 const STARTING_SPACE_PERIOD_REGEX = /^[ .]+/;
 
 const ERROR_WARNING_ICON = '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2.75 1.75 17.25h16.5L10 2.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>';
-const ERROR_CLOSE_ICON = '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+const ERROR_CLOSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" class="close-icon error"><g clip-path="url(#clip0_15746_2423)"><g clip-path="url(#clip1_15746_2423)"><path fill-rule="evenodd" clip-rule="evenodd" d="M17.2381 15.9994L19.6944 13.5434C19.8586 13.3793 19.9509 13.1566 19.9509 12.9245C19.951 12.6923 19.8588 12.4696 19.6946 12.3054C19.5305 12.1412 19.3078 12.0489 19.0757 12.0488C18.8435 12.0488 18.6208 12.141 18.4566 12.3051L16.0002 14.7615L13.5435 12.3051C13.3793 12.141 13.1566 12.0489 12.9245 12.049C12.6923 12.0491 12.4697 12.1414 12.3057 12.3056C12.1416 12.4698 12.0495 12.6925 12.0496 12.9246C12.0497 13.1568 12.142 13.3794 12.3062 13.5434L14.7622 15.9994L12.3062 18.4555C12.1427 18.6197 12.051 18.8421 12.0512 19.0738C12.0515 19.3055 12.1436 19.5277 12.3074 19.6916C12.4711 19.8556 12.6933 19.9478 12.925 19.9482C13.1567 19.9486 13.3791 19.8571 13.5435 19.6938L16.0002 17.2374L18.4566 19.6938C18.6208 19.8579 18.8435 19.9501 19.0756 19.9501C19.3078 19.95 19.5305 19.8577 19.6946 19.6935C19.8588 19.5293 19.9509 19.3066 19.9509 19.0745C19.9509 18.8423 19.8586 18.6196 19.6944 18.4555L17.2381 15.9994Z" fill="white"></path></g></g><defs><clipPath id="clip0_15746_2423"><rect width="8" height="8" fill="white" transform="translate(12 12)"></rect></clipPath><clipPath id="clip1_15746_2423"><rect width="8" height="8" fill="white" transform="translate(12 12)"></rect></clipPath></defs></svg>';
 
 export default class ActionBinder {
   static SINGLE_FILE_ERROR_MESSAGES = {
@@ -149,6 +149,7 @@ export default class ActionBinder {
     this.pendingFiles = [];
     this.query = '';
     this.optionValue = '';
+    this.promptPrefix = '';
     this.optionKey = '';
     this.selectedStyleName = '';
     this.analyticsModule = null;
@@ -384,15 +385,28 @@ export default class ActionBinder {
     if (existing) return existing;
     const host = this.block || this.canvasArea;
     if (!host) return null;
-    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide' });
+    const toast = createTag('div', { class: 'error verb-error pu-error-toast hide', role: 'alert', tabindex: '-1' });
     const icon = createTag('div', { class: 'verb-errorIcon' });
     icon.innerHTML = ERROR_WARNING_ICON;
     const closeBtn = createTag('div', { class: 'verb-errorBtn', role: 'button', tabindex: '0', 'aria-label': 'Close error' });
     closeBtn.innerHTML = ERROR_CLOSE_ICON;
     toast.append(icon, createTag('p', { class: 'verb-errorText' }), closeBtn);
-    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.append(toast);
     return toast;
+  }
+
+  getStickyTopOffset() {
+    const selectors = ['header.global-navigation', '.feds-localnav', '.global-navigation'];
+    let bottom = 0;
+    selectors.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const pos = getComputedStyle(el).position;
+      if (pos !== 'fixed' && pos !== 'sticky') return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= 1 && rect.bottom > bottom) bottom = rect.bottom;
+    });
+    return bottom;
   }
 
   showErrorToastMessage(message) {
@@ -402,9 +416,11 @@ export default class ActionBinder {
       return;
     }
     const textEl = toast.querySelector('.verb-errorText') || toast;
-    textEl.textContent = message;
     toast.classList.remove('hide');
     toast.classList.add('verb-error');
+    const stickyOffset = this.getStickyTopOffset();
+    if (stickyOffset) toast.style.top = `${stickyOffset + 12}px`;
+    textEl.textContent = message;
     const closeBtn = toast.querySelector('.verb-errorBtn');
     if (closeBtn && !closeBtn.dataset.puBound) {
       closeBtn.dataset.puBound = 'true';
@@ -414,6 +430,7 @@ export default class ActionBinder {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hide(); }
       });
     }
+    toast.focus();
   }
 
   isMixedFileTypes(files) {
@@ -461,35 +478,61 @@ export default class ActionBinder {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
+  
     const validFiles = [];
+    const errorTypes = new Set();
     let allFilesFailed = true;
-
+  
     if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('validation_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, {
-        code: 'validation_error_validate_files',
-        subCode: 'validation_error_max_num_files',
-      });
+      await this.dispatchErrorToast(
+        'validation_error_max_num_files',
+        null,
+        `Maximum ${this.limits.maxNumFiles} files allowed`,
+        false,
+        true,
+        {
+          code: 'validation_error_validate_files',
+          subCode: 'validation_error_max_num_files',
+        },
+      );
       return { isValid: false, validFiles };
     }
-
+  
     for (const file of files) {
       let fail = false;
+  
       if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
-        await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         fail = true;
+        errorTypes.add(errorMessages.UNSUPPORTED_TYPE);
       } else if (!file.size) {
-        await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
+        errorTypes.add(errorMessages.EMPTY_FILE);
       } else if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
-        await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
+        errorTypes.add(errorMessages.FILE_TOO_LARGE);
       }
+  
       if (!fail) {
         allFilesFailed = false;
         validFiles.push(file);
       }
     }
-    return { isValid: !allFilesFailed, validFiles };
+    if (allFilesFailed) {
+      const firstErrorType = Array.from(errorTypes)[0];
+      await this.dispatchErrorToast(
+        firstErrorType,
+        null,
+        null,
+        false,
+        true,
+        {
+          code: 'validation_error_validate_files',
+          subCode: firstErrorType,
+        },
+      );
+      return { isValid: false, validFiles };
+    }
+    return { isValid: true, validFiles };
   }
 
   getComputedRedirectParams(queryString) {
@@ -546,7 +589,11 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts, filesData) {
-    if (this.query) cOpts.query = this.query;
+    if (this.query) {
+      cOpts.query = this.promptPrefix
+        ? `${this.promptPrefix} ${this.query}`
+        : this.query;
+    }
     if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
     [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
@@ -744,32 +791,33 @@ export default class ActionBinder {
     return searchRoot?.querySelector?.('.ex-unity-wrap') || searchRoot;
   }
 
-  bindWidgetDropTarget() {
-    const card = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
-    if (!card || card.dataset.puDropBound) return;
-    card.dataset.puDropBound = 'true';
+  bindMarqueeDropTarget() {
+    const dropTarget = this.block;
+    const highlightEl = this.getWidgetWrap()?.querySelector('.interactive-area') || this.getWidgetWrap();
+    if (!dropTarget || dropTarget.dataset.puDropBound) return;
+    dropTarget.dataset.puDropBound = 'true';
     let dragDepth = 0;
     const hasFilePayload = (e) => !!e?.dataTransfer?.types && [...e.dataTransfer.types].includes('Files');
-    const setHighlight = (on) => card.classList.toggle('drag-over', !!on);
-    card.addEventListener('dragenter', (e) => {
-      if (!hasFilePayload(e)) return;
+    const setHighlight = (on) => highlightEl?.classList.toggle('drag-over', !!on);
+    dropTarget.addEventListener('dragenter', (e) => {
       e.preventDefault();
+      if (!hasFilePayload(e)) return;
       dragDepth += 1;
       setHighlight(true);
     });
-    card.addEventListener('dragover', (e) => {
-      if (!hasFilePayload(e)) return;
+    dropTarget.addEventListener('dragover', (e) => {
       e.preventDefault();
+      if (!hasFilePayload(e)) return;
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
       setHighlight(true);
     });
-    card.addEventListener('dragleave', (e) => {
+    dropTarget.addEventListener('dragleave', (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
       dragDepth = Math.max(0, dragDepth - 1);
       if (dragDepth === 0) setHighlight(false);
     });
-    card.addEventListener('drop', async (e) => {
+    dropTarget.addEventListener('drop', async (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
       dragDepth = 0;
@@ -795,6 +843,7 @@ export default class ActionBinder {
     const input = searchRoot?.querySelector?.('#pbuPromptInput') || searchRoot?.querySelector?.('.inp-field');
     this.query = input?.value?.trim() || '';
     this.optionValue = wrap?.getAttribute('data-selected-option-value') || '';
+    this.promptPrefix = wrap?.getAttribute('data-prompt-prefix') || '';
     this.optionKey = wrap?.getAttribute('data-selected-option-key') || '';
     this.selectedStyleName = wrap?.querySelector('.selected-model .model-name')?.textContent?.trim() || '';
     this.ctaStaticLink = wrap?.getAttribute('data-cta-static-link') || '';
@@ -924,6 +973,11 @@ export default class ActionBinder {
           el.addEventListener('click', async (e) => {
             if (value === 'interrupt') { e.preventDefault(); await this.cancelOperation(); } else if (value === 'generate') { e.preventDefault(); await this.handleGenerate(); }
           });
+          if (el.nodeName === 'A') {
+            el.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); el.click(); }
+            });
+          }
           break;
         case 'DIV':
           el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
@@ -993,7 +1047,7 @@ export default class ActionBinder {
       searchRoot.addEventListener('pu:style-open', () => this.dispatchAnalyticsEvent('style-open'));
     }
     if (b === this.block) {
-      this.bindWidgetDropTarget();
+      this.bindMarqueeDropTarget();
       const preloadTransitionScreen = () => this.loadTransitionScreen();
       if ('requestIdleCallback' in window) requestIdleCallback(preloadTransitionScreen, { timeout: 3000 });
       else setTimeout(preloadTransitionScreen, 2000);

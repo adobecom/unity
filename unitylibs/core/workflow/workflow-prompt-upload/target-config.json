@@ -18,8 +18,8 @@
     "verbsWithoutMfuToSfuFallback": [],
     "awaitFinalizeVerbs": [],
     "nonpdfMfuFeedbackScreenTypeNonpdf": [],
-    "nonpdfSfuProductScreen": ["citation-generator"],
-    "mfuUploadAllowed": ["citation-generator"],
+    "nonpdfSfuProductScreen": ["citation-generator", "flashcard-maker", "quiz-maker"],
+    "mfuUploadAllowed": ["citation-generator", "flashcard-maker", "quiz-maker"],
     "mfuUploadOnlyPdfAllowed": [],
     "experimentationOn": [],
     "limits": {

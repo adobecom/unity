@@ -135,6 +135,9 @@ export default class PromptUploadWidget {
       dragText: placeholderText(this.el, 'icon-dropzone-drag-text'),
       showIcon: this.hasFlag('icon-upload-icon'),
     });
+    const verb = this.workflowCfg?.enabledFeatures?.[0] || '';
+    const verbLabel = verb.split('-')[0].replace(/^./, (c) => c.toUpperCase());
+    refs.dropZone.setAttribute('daa-ll', verbLabel ? `add-sources--${verbLabel}` : 'add-sources');
     const slot = createTag('div', { class: 'pu-upload-slot' });
     slot.append(refs.wrap);
     const subtext = placeholderText(this.el, 'icon-dropzone-subtext');
@@ -233,6 +236,8 @@ export default class PromptUploadWidget {
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     if (this.optionPayloadKey) this.widgetWrap?.setAttribute('data-selected-option-key', this.optionPayloadKey);
     if (this.ctaStaticLink) this.widgetWrap?.setAttribute('data-cta-static-link', this.ctaStaticLink);
+    const promptPrefix = placeholderText(this.el, 'icon-prompt-prefix')
+    if (promptPrefix) this.widgetWrap?.setAttribute('data-prompt-prefix', promptPrefix);
     return this.cfg.actionMap;
   }
 }
