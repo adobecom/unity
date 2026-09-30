@@ -82,7 +82,9 @@ function galleryLabel(li) {
 
 export function parseFaceSwapAuthoring(el) {
   const rows = directRows(el);
-  const galleryRow = rows.find((r) => r.querySelector('ul > li picture'));
+  /* Milo turns token .svg links into <picture>, so the token row must be excluded explicitly. */
+  const galleryRow = rows.find((r) => r.querySelector('ul > li picture')
+    && !r.querySelector('[class*="icon-"]'));
   const gallery = galleryRow
     ? [...galleryRow.querySelectorAll('ul > li')]
       .filter((li) => li.querySelector('picture'))

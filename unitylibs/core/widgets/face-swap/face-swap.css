@@ -18,6 +18,7 @@
 .unity-face-swap {
   width: 100%;
   box-sizing: border-box;
+  padding-bottom: 76px;
   color: #fff;
 
   --fs-border: #6d6d6d;
@@ -335,9 +336,10 @@
 .unity-face-swap .gen-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 10px 20px 10px 18px;
+  gap: 7px;
+  height: 40px;
+  min-width: 90px;
+  padding: 0 20px 0 18px;
   border: none;
   border-radius: 25px;
   background: linear-gradient(90deg, #d73220 0%, #d92361 33%, #7155fa 100%);
@@ -357,7 +359,7 @@
 .unity-face-swap .gen-btn .btn-txt {
   font-size: 16px;
   font-weight: 700;
-  line-height: normal;
+  line-height: 20px;
   white-space: nowrap;
 }
 
@@ -564,15 +566,6 @@
 
   .unity-face-swap .fs-model {
     padding: 0;
-  }
-
-  .unity-face-swap .gen-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .unity-face-swap .act-wrap {
-    flex: 1;
   }
 
   .unity-face-swap .fs-gallery-item {
