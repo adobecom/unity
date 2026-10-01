@@ -363,6 +363,22 @@
   white-space: nowrap;
 }
 
+/* ---------- legal ---------- */
+
+.unity-face-swap .fs-legal {
+  max-width: 766px;
+  margin: 16px auto 0;
+  color: #fff;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+}
+
+.unity-face-swap .fs-legal a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 /* ---------- gallery ---------- */
 
 .unity-face-swap .fs-divider {

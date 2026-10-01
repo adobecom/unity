@@ -73,6 +73,19 @@ function directRows(el) {
   return [...el.children].filter((n) => n.nodeName === 'DIV');
 }
 
+/* Moves the authored legal copy (with its links) out of the hidden config holder. */
+function extractLegal(el) {
+  const marker = el.querySelector('[class*="icon-legal-terms"]');
+  const li = marker?.closest('li');
+  if (!li) return null;
+  marker.remove();
+  const legal = createTag('p', { class: 'fs-legal' });
+  while (li.firstChild) legal.append(li.firstChild);
+  li.remove();
+  if (!legal.textContent.trim()) return null;
+  return legal;
+}
+
 function galleryLabel(li) {
   const nodes = [...li.childNodes];
   const brIdx = nodes.findIndex((n) => n.nodeName === 'BR');
@@ -446,6 +459,8 @@ export default class FaceSwapWidget extends UnityWidget {
     shell.append(main);
     const root = createTag('div', { class: 'unity-face-swap unity-enabled' });
     root.append(shell);
+    const legal = extractLegal(el);
+    if (legal) root.append(legal);
     /* A drop that misses a slot must not make the browser navigate to the file. */
     ['dragover', 'drop'].forEach((t) => root.addEventListener(t, (e) => {
       if (e.dataTransfer?.types && [...e.dataTransfer.types].includes('Files')) e.preventDefault();
