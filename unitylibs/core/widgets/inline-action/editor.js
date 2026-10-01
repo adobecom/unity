@@ -1255,6 +1255,11 @@ export class EditorEngine {
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
     this.zoom = 0;
+    if (!this.isCrop && ratio) {
+      this.locked = true;
+      this.lockBtn?.classList.add('is-active');
+      this.lockBtn?.setAttribute('aria-pressed', 'true');
+    }
     this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
