@@ -41,8 +41,8 @@ async function canvasResize(engine, bounds, width, height) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
-      'image/jpeg',
-      engine.quality / 100,
+      engine.outputType,
+      engine.encodeQuality(),
     );
   });
 }
@@ -91,6 +91,7 @@ export async function editorUploadFlow(binder, file, originalSize = file.size) {
       binder.widgetRef?.setProgress(100);
     }
     const engine = await editorReady;
+    if (isResize) engine?.setOutputType(file.type);
     binder.widgetRef?.setState(InlineActionState.COMPLETE);
     await engine?.setImage(URL.createObjectURL(file), originalSize, true);
     engine?.reset();
@@ -119,12 +120,12 @@ async function performEditorOperation(binder) {
     try {
       const { width, height } = engine.getResizeDimensions();
       const blob = await canvasResize(engine, bounds, Math.round(width), Math.round(height));
-      const ok = await uploadResizedAsset(binder, new File([blob], binder.filesData.name, { type: 'image/jpeg' }));
+      const ok = await uploadResizedAsset(binder, new File([blob], binder.filesData.name, { type: blob.type }));
       if (!ok) return false;
       binder.resultAssetId = binder.assetId;
       binder.resultBlob = blob;
       binder.resultUrl = URL.createObjectURL(blob);
-      binder.filesData.type = 'image/jpeg';
+      binder.filesData.type = blob.type;
       await engine.setImage(binder.resultUrl, engine.originalSize);
       engine.reset();
       return true;
@@ -215,7 +216,11 @@ export async function runEditInFirefly(binder, el) {
     right: engine.naturalW - bounds.right,
     bottom: engine.naturalH - bounds.bottom,
   };
-  const dimensions = isResize ? engine.getResizeOutputDimensions() : null;
+  let dimensions = null;
+  if (isResize) {
+    const { width, height } = engine.getResizeDimensions();
+    dimensions = { width: Math.round(width), height: Math.round(height), unit: 'px' };
+  }
   const operations = buildOperations(binder, fireflyBounds, dimensions, engine.quality);
   const connectorFields = {
     verb: isResize ? 'resizeImage' : 'cropImage',

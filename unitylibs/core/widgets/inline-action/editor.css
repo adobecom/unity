@@ -587,7 +587,9 @@
   height: 72px;
 }
 
-.ia-resize-detail-panel.hide {
+.ia-resize-detail-panel.hide,
+.ia-toggle__btn.hide,
+.ia-editor-quality.hide {
   display: none;
 }
 

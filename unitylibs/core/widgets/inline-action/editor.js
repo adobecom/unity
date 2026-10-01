@@ -79,7 +79,8 @@ function groupResizeRows(rows) {
 }
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
-const DPI = 300;
+// Matches Firefly's DPI so unit values convert to the same pixel size in both products.
+const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
 const pxToUnit = (px, unit) => {
@@ -619,6 +620,7 @@ export class EditorEngine {
     this.panX = 0;
     this.panY = 0;
     this.quality = 100;
+    this.outputType = 'image/jpeg';
     this.idleTimer = null;
     this.bindEvents();
     this.setupResponsiveHeader();
@@ -755,8 +757,29 @@ export class EditorEngine {
       canvas.width = width;
       canvas.height = height;
       canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, width, height);
-      canvas.toBlob((blob) => resolve(blob?.size ?? null), 'image/jpeg', this.quality / 100);
+      canvas.toBlob((blob) => resolve(blob?.size ?? null), this.outputType, this.encodeQuality());
     });
+  }
+
+  setOutputType(type) {
+    // Canvas does not recognise 'image/jpg' and would silently fall back to PNG.
+    this.outputType = type === 'image/jpg' ? 'image/jpeg' : type;
+    const showQuality = this.outputType === 'image/jpeg';
+    this.qualityBtn?.classList.toggle('hide', !showQuality);
+    this.toggleBtns
+      .filter((btn) => btn.dataset.mode === 'quality')
+      .forEach((btn) => btn.classList.toggle('hide', !showQuality));
+    if (!showQuality) {
+      this.quality = 100;
+      this.revertQualityPreview();
+    }
+    this.defaultMode = this.toggleBtns.find((btn) => !btn.classList.contains('hide'))?.dataset.mode || null;
+    this.setMode(this.defaultMode);
+  }
+
+  // Undefined lets non-JPEG formats use the browser's default quality.
+  encodeQuality() {
+    return this.outputType === 'image/jpeg' ? this.quality / 100 : undefined;
   }
 
   scheduleSizeReadout() {
