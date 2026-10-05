@@ -229,12 +229,12 @@
 }
 
 .unity-face-swap .fs-slot[data-state='ready']:hover,
-.unity-face-swap .fs-slot[data-state='ready']:focus-within {
+.unity-face-swap .fs-slot[data-state='ready']:has(.fs-delete:focus-visible) {
   --fs-filled-border: #fff;
 }
 
 .unity-face-swap .fs-slot[data-state='ready']:hover .fs-drop::after,
-.unity-face-swap .fs-slot[data-state='ready']:focus-within .fs-drop::after {
+.unity-face-swap .fs-slot[data-state='ready']:has(.fs-delete:focus-visible) .fs-drop::after {
   opacity: 1;
 }
 
