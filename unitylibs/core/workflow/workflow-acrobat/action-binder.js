@@ -489,6 +489,7 @@ export default class ActionBinder {
   }
 
   async showTransitionScreen() {
+    this.transitionScreen?.clearProgressBarHandler();
     const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
     this.transitionScreen = new TransitionScreen(this.transitionScreen.splashScreenEl, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg);
     await this.transitionScreen.showSplashScreen();
@@ -808,6 +809,8 @@ export default class ActionBinder {
     else this.transitionScreen.updateProgressBar(splashLayer, 100);
     try {
       await this.delay(500);
+      // Cancel may clear redirectUrl during the final delay; navigating now would reload the page with "&undefined".
+      if (!this.redirectUrl) return;
       const [baseUrl, queryString] = this.redirectUrl.split('?');
       if (getMatchedDomain(this.workflowCfg.targetCfg.domainMap) === 'acrobat') {
         document.cookie = `dc_fl=1;domain=.adobe.com;path=/;expires=${new Date(Date.now() + 30 * 1000).toUTCString()}`;
@@ -828,6 +831,7 @@ export default class ActionBinder {
   async cancelAcrobatOperation() {
     await this.showTransitionScreen();
     this.redirectUrl = '';
+    this.operations = [];
     this.filesData = this.filesData || {};
     this.filesData.workflowStep = this.isUploading ? 'uploading' : 'preuploading';
     this.dispatchAnalyticsEvent('cancel', this.filesData);
@@ -867,9 +871,12 @@ export default class ActionBinder {
         return;
       }
     }
-    window.addEventListener('DCUnity:RedirectReady', async () => {
-      await this.continueInApp();
-    });
+    if (!this.redirectReadyBound) {
+      this.redirectReadyBound = true;
+      window.addEventListener('DCUnity:RedirectReady', async () => {
+        await this.continueInApp();
+      });
+    }
     if (!this.workflowCfg.enabledFeatures?.length || !ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]) {
       await this.dispatchErrorToast('error_generic', 500, 'Invalid or missing verb configuration on Unity', false, true, { code: 'pre_upload_error_missing_verb_config' });
       return;

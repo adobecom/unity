@@ -8,10 +8,17 @@ describe('TransitionScreen', () => {
   let workflowCfg;
 
   beforeEach(() => {
+    document.body.innerHTML = '<main></main><header></header><footer></footer>';
     splashScreenEl = document.createElement('div');
     workflowCfg = { targetCfg: { showSplashScreen: true }, productName: 'acrobat' };
     screen = new TransitionScreen(splashScreenEl, sinon.stub(), 95, workflowCfg);
     screen.splashScreenEl = splashScreenEl;
+  });
+
+  afterEach(() => {
+    screen.clearProgressBarHandler();
+    sinon.restore();
+    document.body.innerHTML = '';
   });
 
   describe('updateProgressBar', () => {
@@ -84,33 +91,36 @@ describe('TransitionScreen', () => {
       const spy = sinon.spy(screen, 'updateProgressBar');
       const clock = sinon.useFakeTimers();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
-      clock.tick(20);
-      expect(spy.called).to.be.true;
+      expect(spy.calledOnceWith(splashScreenEl, 0)).to.be.true;
+      clock.tick(110);
+      expect(spy.calledTwice).to.be.true;
+      expect(spy.calledWith(splashScreenEl, 5)).to.be.true;
+      clock.tick(210);
+      expect(spy.calledThrice).to.be.true;
+      expect(spy.calledWith(splashScreenEl, 10)).to.be.true;
       spy.restore();
-      clock.restore();
     });
 
     it('should ignore stale callbacks after clearProgressBarHandler', () => {
       const clock = sinon.useFakeTimers();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
-      clock.tick(15);
+      clock.tick(110);
       screen.clearProgressBarHandler();
       const valueBeforeStaleTick = splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value');
-      clock.tick(100);
+      expect(clock.countTimers()).to.equal(0);
+      clock.tick(210);
       expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal(valueBeforeStaleTick);
-      clock.restore();
     });
 
     it('should restart cleanly when initialized after cancel', () => {
       const clock = sinon.useFakeTimers();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
-      clock.tick(15);
+      clock.tick(110);
       screen.clearProgressBarHandler();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
       expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('0');
-      clock.tick(15);
+      clock.tick(110);
       expect(parseInt(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value'), 10)).to.be.greaterThan(0);
-      clock.restore();
     });
   });
 
@@ -124,12 +134,12 @@ describe('TransitionScreen', () => {
       `;
       const clock = sinon.useFakeTimers();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
-      clock.tick(15);
+      clock.tick(110);
       screen.updateProgressBar(splashScreenEl, 100);
       expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('100');
-      clock.tick(100);
+      expect(clock.countTimers()).to.equal(0);
+      clock.tick(210);
       expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('100');
-      clock.restore();
     });
   });
 
@@ -164,7 +174,6 @@ describe('TransitionScreen', () => {
     beforeEach(() => {
       const parent = document.createElement('div');
       parent.appendChild(splashScreenEl);
-      document.body.innerHTML = '<main></main><header></header><footer></footer>';
     });
     it('should hide splash and reset LOADER_LIMIT when displayOn is false', () => {
       const clock = sinon.useFakeTimers();
@@ -175,15 +184,15 @@ describe('TransitionScreen', () => {
         <div id="progress-status"></div>
       `;
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
-      clock.tick(15);
+      clock.tick(110);
       screen.splashVisibilityController(false);
       const valueAtCancel = splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value');
-      clock.tick(100);
+      expect(clock.countTimers()).to.equal(0);
+      clock.tick(210);
       expect(screen.LOADER_LIMIT).to.equal(95);
       expect(splashScreenEl.classList.contains('show')).to.be.false;
       expect(splashScreenEl.parentElement.classList.contains('hide-splash-overflow')).to.be.false;
       expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal(valueAtCancel);
-      clock.restore();
     });
     it('should show splash and set aria-hidden when displayOn is true', () => {
       const stub = sinon.stub(screen, 'progressBarHandler');
