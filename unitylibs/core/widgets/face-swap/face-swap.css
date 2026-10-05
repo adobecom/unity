@@ -174,15 +174,19 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 12px;
+
+  /* Inline padding leaves room for the 208px help text inside a 222px slot */
+  padding: 24px 6px;
   text-align: center;
 }
 
 .unity-face-swap .fs-drop-icon {
+  display: flex;
   margin-bottom: 8px;
 }
 
 .unity-face-swap .fs-drop-icon svg {
+  display: block;
   width: 24px;
   height: 24px;
   fill: currentcolor;
@@ -602,6 +606,10 @@
 
   .unity-face-swap .fs-slot-help {
     display: none;
+  }
+
+  .unity-face-swap .fs-drop-empty {
+    padding: 12px 6px;
   }
 
   .unity-face-swap .fs-reset,
