@@ -208,11 +208,31 @@
 
 .unity-face-swap .fs-slot:not([data-state='empty']) .fs-drop {
   border-style: solid;
-  border-color: var(--fs-border-active);
+  border-color: var(--fs-filled-border, var(--fs-border-active));
 }
 
 .unity-face-swap .fs-slot:not([data-state='empty']) .fs-drop-empty {
   visibility: hidden;
+}
+
+.unity-face-swap .fs-drop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.unity-face-swap .fs-slot[data-state='ready']:hover,
+.unity-face-swap .fs-slot[data-state='ready']:focus-within {
+  --fs-filled-border: #fff;
+}
+
+.unity-face-swap .fs-slot[data-state='ready']:hover .fs-drop::after,
+.unity-face-swap .fs-slot[data-state='ready']:focus-within .fs-drop::after {
+  opacity: 1;
 }
 
 .unity-face-swap .fs-slot[data-state='busy'] .fs-slot-img {
@@ -263,11 +283,24 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgb(0 0 0 / 70%);
+  background: transparent;
   color: #fff;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s ease;
+}
+
+/* 24px visual per Figma; the button itself keeps a 44px hit area. */
+.unity-face-swap .fs-delete::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  background: #000;
 }
 
 .unity-face-swap .fs-delete[hidden] {
@@ -275,8 +308,9 @@
 }
 
 .unity-face-swap .fs-delete svg {
-  width: 20px;
-  height: 20px;
+  position: relative;
+  width: 18px;
+  height: 18px;
   fill: currentcolor;
 }
 
@@ -606,6 +640,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .unity-face-swap .fs-drop,
+  .unity-face-swap .fs-drop::after,
   .unity-face-swap .fs-delete {
     transition: none;
   }
