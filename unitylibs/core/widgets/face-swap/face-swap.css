@@ -481,24 +481,6 @@
   border-color: #fff;
 }
 
-/* Selection is not conveyed by colour alone. */
-.unity-face-swap .fs-gallery-item[aria-selected='true']::after {
-  content: '\2713';
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--fs-accent);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 /* ---------- preview ---------- */
 
 .unity-face-swap .fs-preview {
