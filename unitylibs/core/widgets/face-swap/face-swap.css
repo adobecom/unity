@@ -322,8 +322,17 @@
   opacity: 1;
 }
 
+/* Touch has no hover, so a filled slot always shows its hover treatment (Figma mobile frame). */
 @media (hover: none) {
   .unity-face-swap .fs-delete {
+    opacity: 1;
+  }
+
+  .unity-face-swap .fs-slot[data-state='ready'] {
+    --fs-filled-border: #fff;
+  }
+
+  .unity-face-swap .fs-slot[data-state='ready'] .fs-drop::after {
     opacity: 1;
   }
 }
