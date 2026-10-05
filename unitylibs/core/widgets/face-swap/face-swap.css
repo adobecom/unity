@@ -21,7 +21,7 @@
   padding-bottom: 76px;
   color: #fff;
 
-  --fs-border: #6d6d6d;
+  --fs-border: rgb(255 255 255 / 40%);
   --fs-border-active: #b1b1b1;
   --fs-text-muted: #b1b1b1;
   --fs-accent: #274dea;
@@ -157,7 +157,7 @@
   height: 100%;
   overflow: hidden;
   border: 1px dashed var(--fs-border);
-  border-radius: 12px;
+  border-radius: 4px;
   background: transparent;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
