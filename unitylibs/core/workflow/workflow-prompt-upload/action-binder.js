@@ -149,6 +149,7 @@ export default class ActionBinder {
     this.pendingFiles = [];
     this.query = '';
     this.optionValue = '';
+    this.promptPrefix = '';
     this.optionKey = '';
     this.selectedStyleName = '';
     this.analyticsModule = null;
@@ -477,35 +478,61 @@ export default class ActionBinder {
     const errorMessages = files.length === 1
       ? ActionBinder.SINGLE_FILE_ERROR_MESSAGES
       : ActionBinder.MULTI_FILE_ERROR_MESSAGES;
+  
     const validFiles = [];
+    const errorTypes = new Set();
     let allFilesFailed = true;
-
+  
     if (this.limits.maxNumFiles && files.length > this.limits.maxNumFiles) {
-      await this.dispatchErrorToast('validation_error_max_num_files', null, `Maximum ${this.limits.maxNumFiles} files allowed`, false, true, {
-        code: 'validation_error_validate_files',
-        subCode: 'validation_error_max_num_files',
-      });
+      await this.dispatchErrorToast(
+        'validation_error_max_num_files',
+        null,
+        `Maximum ${this.limits.maxNumFiles} files allowed`,
+        false,
+        true,
+        {
+          code: 'validation_error_validate_files',
+          subCode: 'validation_error_max_num_files',
+        },
+      );
       return { isValid: false, validFiles };
     }
-
+  
     for (const file of files) {
       let fail = false;
+  
       if (this.limits.allowedFileTypes && !this.limits.allowedFileTypes.includes(file.type)) {
-        await this.dispatchErrorToast(errorMessages.UNSUPPORTED_TYPE, null, `File type: ${file.type}`, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.UNSUPPORTED_TYPE });
         fail = true;
+        errorTypes.add(errorMessages.UNSUPPORTED_TYPE);
       } else if (!file.size) {
-        await this.dispatchErrorToast(errorMessages.EMPTY_FILE, null, null, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.EMPTY_FILE });
         fail = true;
+        errorTypes.add(errorMessages.EMPTY_FILE);
       } else if (this.limits.maxFileSize && file.size > this.limits.maxFileSize) {
-        await this.dispatchErrorToast(errorMessages.FILE_TOO_LARGE, null, `File too large: ${file.size}`, false, true, { code: 'validation_error_validate_files', subCode: errorMessages.FILE_TOO_LARGE });
         fail = true;
+        errorTypes.add(errorMessages.FILE_TOO_LARGE);
       }
+  
       if (!fail) {
         allFilesFailed = false;
         validFiles.push(file);
       }
     }
-    return { isValid: !allFilesFailed, validFiles };
+    if (allFilesFailed) {
+      const firstErrorType = Array.from(errorTypes)[0];
+      await this.dispatchErrorToast(
+        firstErrorType,
+        null,
+        null,
+        false,
+        true,
+        {
+          code: 'validation_error_validate_files',
+          subCode: firstErrorType,
+        },
+      );
+      return { isValid: false, validFiles };
+    }
+    return { isValid: true, validFiles };
   }
 
   getComputedRedirectParams(queryString) {
@@ -562,7 +589,11 @@ export default class ActionBinder {
   }
 
   async handleRedirect(cOpts, filesData) {
-    if (this.query) cOpts.query = this.query;
+    if (this.query) {
+      cOpts.query = this.promptPrefix
+        ? `${this.promptPrefix} ${this.query}`
+        : this.query;
+    }
     if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
     [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
     try {
@@ -812,6 +843,7 @@ export default class ActionBinder {
     const input = searchRoot?.querySelector?.('#pbuPromptInput') || searchRoot?.querySelector?.('.inp-field');
     this.query = input?.value?.trim() || '';
     this.optionValue = wrap?.getAttribute('data-selected-option-value') || '';
+    this.promptPrefix = wrap?.getAttribute('data-prompt-prefix') || '';
     this.optionKey = wrap?.getAttribute('data-selected-option-key') || '';
     this.selectedStyleName = wrap?.querySelector('.selected-model .model-name')?.textContent?.trim() || '';
     this.ctaStaticLink = wrap?.getAttribute('data-cta-static-link') || '';
