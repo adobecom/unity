@@ -291,6 +291,13 @@ export default class FaceSwapWidget extends UnityWidget {
       this.announce(`${title} removed`);
       input.focus();
     });
+    /* Touch has no hover: the first tap on a filled preview reveals the delete control instead of reopening the picker. */
+    label.addEventListener('click', (e) => {
+      if (slot.dataset.state !== 'ready' || slot.classList.contains('fs-revealed')) return;
+      if (!window.matchMedia('(hover: none)').matches) return;
+      e.preventDefault();
+      slot.classList.add('fs-revealed');
+    });
     this.bindDrag(slotId, slot, label);
     this.slotEls[slotId] = { slot, input, label, img, del, status };
     return slot;
@@ -465,6 +472,12 @@ export default class FaceSwapWidget extends UnityWidget {
     ['dragover', 'drop'].forEach((t) => root.addEventListener(t, (e) => {
       if (e.dataTransfer?.types && [...e.dataTransfer.types].includes('Files')) e.preventDefault();
     }));
+    this.onOutsideTap = (e) => {
+      root.querySelectorAll('.fs-slot.fs-revealed').forEach((s) => {
+        if (!s.contains(e.target)) s.classList.remove('fs-revealed');
+      });
+    };
+    document.addEventListener('pointerdown', this.onOutsideTap);
 
     const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only', 'aria-hidden': 'true' });
     while (el.firstChild) holder.append(el.firstChild);
@@ -483,6 +496,7 @@ export default class FaceSwapWidget extends UnityWidget {
   teardown() {
     this.removalObserver?.disconnect();
     this.removalObserver = null;
+    if (this.onOutsideTap) document.removeEventListener('pointerdown', this.onOutsideTap);
     this.videoObserver?.disconnect();
     this.videoObserver = null;
     SLOT_IDS.forEach((id) => this.revoke(this.slots[id]));
@@ -500,6 +514,7 @@ export default class FaceSwapWidget extends UnityWidget {
     const els = this.slotEls[slotId];
     if (!els) return;
     els.slot.dataset.state = s.status;
+    if (s.status !== 'ready') els.slot.classList.remove('fs-revealed');
     const hasImage = s.status !== 'empty';
     els.del.hidden = !hasImage;
     els.img.hidden = !s.previewUrl;

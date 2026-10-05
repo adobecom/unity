@@ -20,6 +20,7 @@
   box-sizing: border-box;
   padding-bottom: 76px;
   color: #fff;
+  -webkit-tap-highlight-color: transparent;
 
   --fs-border: rgb(255 255 255 / 40%);
   --fs-border-active: #b1b1b1;
@@ -167,10 +168,13 @@
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.unity-face-swap .fs-drop:hover {
-  border-style: solid;
-  border-color: #fff;
-  background: var(--fs-drop-active-bg);
+/* Hover styles only where hover exists; touch browsers keep :hover stuck after a tap. */
+@media (hover: hover) {
+  .unity-face-swap .fs-drop:hover {
+    border-style: solid;
+    border-color: #fff;
+    background: var(--fs-drop-active-bg);
+  }
 }
 
 .unity-face-swap .fs-drop-empty {
@@ -243,14 +247,24 @@
   transition: opacity 0.15s ease;
 }
 
-.unity-face-swap .fs-slot[data-state='ready']:hover,
+.unity-face-swap .fs-slot[data-state='ready'].fs-revealed,
 .unity-face-swap .fs-slot[data-state='ready']:has(.fs-delete:focus-visible) {
   --fs-filled-border: #fff;
 }
 
-.unity-face-swap .fs-slot[data-state='ready']:hover .fs-drop::after,
+.unity-face-swap .fs-slot[data-state='ready'].fs-revealed .fs-drop::after,
 .unity-face-swap .fs-slot[data-state='ready']:has(.fs-delete:focus-visible) .fs-drop::after {
   opacity: 1;
+}
+
+@media (hover: hover) {
+  .unity-face-swap .fs-slot[data-state='ready']:hover {
+    --fs-filled-border: #fff;
+  }
+
+  .unity-face-swap .fs-slot[data-state='ready']:hover .fs-drop::after {
+    opacity: 1;
+  }
 }
 
 .unity-face-swap .fs-slot[data-state='busy'] .fs-slot-img {
@@ -332,26 +346,21 @@
   fill: currentcolor;
 }
 
-.unity-face-swap .fs-delete:focus-visible {
+.unity-face-swap .fs-delete:focus-visible,
+.unity-face-swap .fs-slot.fs-revealed .fs-delete {
   opacity: 1;
 }
 
-.unity-face-swap .fs-slot:hover .fs-delete {
-  opacity: 1;
+@media (hover: hover) {
+  .unity-face-swap .fs-slot:hover .fs-delete {
+    opacity: 1;
+  }
 }
 
-/* Touch has no hover, so a filled slot always shows its hover treatment (Figma mobile frame). */
+/* On touch the hidden delete must not catch the first tap meant to reveal it. */
 @media (hover: none) {
-  .unity-face-swap .fs-delete {
-    opacity: 1;
-  }
-
-  .unity-face-swap .fs-slot[data-state='ready'] {
-    --fs-filled-border: #fff;
-  }
-
-  .unity-face-swap .fs-slot[data-state='ready'] .fs-drop::after {
-    opacity: 1;
+  .unity-face-swap .fs-slot:not(.fs-revealed) .fs-delete {
+    pointer-events: none;
   }
 }
 
@@ -497,8 +506,10 @@
   object-fit: cover;
 }
 
-.unity-face-swap .fs-gallery-item:hover {
-  border-color: var(--fs-border-active);
+@media (hover: hover) {
+  .unity-face-swap .fs-gallery-item:hover {
+    border-color: var(--fs-border-active);
+  }
 }
 
 .unity-face-swap .fs-gallery-item[aria-selected='true'] {
@@ -706,6 +717,9 @@
 
   .unity-face-swap .fs-gallery-list {
     gap: 10px;
+
+    /* Edge fade over the scrolling strip (Figma 25906:101658) */
+    mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
   }
 
   .unity-face-swap .fs-gallery-item {
