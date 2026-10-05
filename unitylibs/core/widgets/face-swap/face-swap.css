@@ -162,7 +162,7 @@
   overflow: hidden;
   border: 1px dashed var(--fs-border);
   border-radius: 4px;
-  background: transparent;
+  background: var(--fs-drop-bg, transparent);
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -605,17 +605,53 @@
 }
 
 /* The CTA label is intentionally NOT hidden on mobile (unlike prompt-bar-style). */
+
+/* Mobile spacing per Figma 25906:101649. */
 @media screen and (max-width: 599px) {
+  .unity-face-swap {
+    --fs-drop-bg: #1d1d1d;
+  }
+
+  .unity-face-swap > .interactive-area {
+    padding: 8px 8px 24px;
+    border: 1px solid rgb(255 255 255 / 10%);
+    background: #1b1b1b;
+  }
+
+  .unity-face-swap .unity-slf-main {
+    gap: 16px;
+  }
+
+  .unity-face-swap .unity-slf-left {
+    padding: 10px 15px;
+    border: 1px solid #2e2e2e;
+    border-radius: 12px;
+    background: #202020;
+  }
+
   .unity-face-swap .fs-preview {
-    max-height: 160px;
+    max-height: none;
+    aspect-ratio: 284 / 159;
+    border-radius: 12px;
+  }
+
+  .unity-face-swap .fs-header {
+    height: 20px;
+  }
+
+  .unity-face-swap .fs-title {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
   }
 
   .unity-face-swap .fs-slots {
-    gap: 10px;
+    gap: 8px;
+    margin-top: 24px;
   }
 
   .unity-face-swap .fs-slot {
-    aspect-ratio: 123 / 108;
+    aspect-ratio: 121 / 105;
   }
 
   .unity-face-swap .fs-slot-help {
@@ -626,11 +662,23 @@
     padding: 12px 6px;
   }
 
-  .unity-face-swap .fs-reset,
-  .unity-face-swap .fs-model {
+  .unity-face-swap .fs-footer {
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .unity-face-swap .fs-reset {
     min-width: 44px;
     min-height: 44px;
     justify-content: center;
+
+    /* 44px hit area inside the 20px header; icon sits 8px from the edge */
+    margin: -12px -4px -12px 0;
+  }
+
+  .unity-face-swap .fs-reset svg {
+    width: 20px;
+    height: 20px;
   }
 
   .unity-face-swap .fs-reset-text,
@@ -644,12 +692,25 @@
     white-space: nowrap;
   }
 
+  /* Non-interactive, so no 44px target is needed */
   .unity-face-swap .fs-model {
+    justify-content: center;
+    width: 28px;
     padding: 0;
+    background: none;
+  }
+
+  .unity-face-swap .fs-divider {
+    margin-top: 24px;
+  }
+
+  .unity-face-swap .fs-gallery-list {
+    gap: 10px;
   }
 
   .unity-face-swap .fs-gallery-item {
-    flex-basis: 40%;
+    flex: 0 0 109px;
+    border-radius: 4px;
   }
 }
 
