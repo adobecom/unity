@@ -24,7 +24,7 @@
   --fs-border: rgb(255 255 255 / 40%);
   --fs-border-active: #b1b1b1;
   --fs-text-muted: #b1b1b1;
-  --fs-accent: #274dea;
+  --fs-drop-active-bg: rgb(59 99 251 / 20%);
 }
 
 .unity-face-swap *,
@@ -164,7 +164,9 @@
 }
 
 .unity-face-swap .fs-drop:hover {
-  border-color: var(--fs-border-active);
+  border-style: solid;
+  border-color: #fff;
+  background: var(--fs-drop-active-bg);
 }
 
 .unity-face-swap .fs-drop-empty {
@@ -209,6 +211,7 @@
 .unity-face-swap .fs-slot:not([data-state='empty']) .fs-drop {
   border-style: solid;
   border-color: var(--fs-filled-border, var(--fs-border-active));
+  background: transparent;
 }
 
 .unity-face-swap .fs-slot:not([data-state='empty']) .fs-drop-empty {
@@ -241,8 +244,8 @@
 
 .unity-face-swap .fs-slot.fs-dragover .fs-drop {
   border-style: solid;
-  border-color: var(--fs-accent);
-  background: rgb(39 77 234 / 35%);
+  border-color: #fff;
+  background: var(--fs-drop-active-bg);
 }
 
 .unity-face-swap .fs-slot.fs-dragover .fs-drop-empty {
