@@ -223,6 +223,11 @@ export default class TransitionScreen {
     this.initActionListeners(this.splashScreenEl, actMap);
   }
 
+  toggleCancelButton(visible) {
+    const cancelBtn = this.splashScreenEl?.querySelector('a.con-button[href*="#_cancel"]');
+    if (cancelBtn) cancelBtn.style.display = visible ? '' : 'none';
+  }
+
   resetSplashVideos() {
     if (!this.splashScreenEl) return;
     const videos = this.splashScreenEl.querySelectorAll('video');
@@ -239,6 +244,7 @@ export default class TransitionScreen {
   }
 
   splashVisibilityController(displayOn) {
+    this.toggleCancelButton(true);
     if (!displayOn) {
       this.clearProgressBarHandler();
       this.LOADER_LIMIT = 95;

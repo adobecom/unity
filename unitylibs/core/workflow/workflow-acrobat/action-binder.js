@@ -803,6 +803,8 @@ export default class ActionBinder {
     this.LOADER_LIMIT = 100;
     this.transitionScreen.LOADER_LIMIT = 100;
     this.transitionScreen.clearProgressBarHandler();
+    // Redirect is committed from here on; Cancel can no longer stop it, so hide it (per design).
+    this.transitionScreen.toggleCancelButton(false);
     const splashLayer = this.transitionScreen.splashScreenEl;
     if (this.isDirectUploadVerb(this.filesData?.size)) await this.runProgressBarUpdate(splashLayer);
     else this.transitionScreen.updateProgressBar(splashLayer, 100);
