@@ -251,8 +251,7 @@
   --fs-drop-bg: var(--fs-drop-active-bg);
 }
 
-.unity-face-swap .fs-slot[data-state='ready'].fs-revealed,
-.unity-face-swap .fs-slot[data-state='ready']:has(.fs-delete:focus-visible) {
+.unity-face-swap .fs-slot[data-state='ready'] {
   --fs-filled-border: #fff;
 }
 
@@ -262,10 +261,6 @@
 }
 
 @media (hover: hover) {
-  .unity-face-swap .fs-slot[data-state='ready']:hover {
-    --fs-filled-border: #fff;
-  }
-
   .unity-face-swap .fs-slot[data-state='ready']:hover .fs-drop::after {
     opacity: 1;
   }
