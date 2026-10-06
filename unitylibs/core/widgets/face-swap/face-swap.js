@@ -291,12 +291,12 @@ export default class FaceSwapWidget extends UnityWidget {
       this.announce(`${title} removed`);
       input.focus();
     });
-    /* Touch has no hover: the first tap on a filled preview reveals the delete control instead of reopening the picker. */
-    label.addEventListener('click', (e) => {
-      if (slot.dataset.state !== 'ready' || slot.classList.contains('fs-revealed')) return;
-      if (!window.matchMedia('(hover: none)').matches) return;
-      e.preventDefault();
-      slot.classList.add('fs-revealed');
+    /* Touch has no hover: a tap shows the hover treatment while the picker opens (Figma mobile). */
+    label.addEventListener('click', () => {
+      if (window.matchMedia('(hover: none)').matches) slot.classList.add('fs-revealed');
+    });
+    input.addEventListener('cancel', () => {
+      if (slot.dataset.state === 'empty') slot.classList.remove('fs-revealed');
     });
     this.bindDrag(slotId, slot, label);
     this.slotEls[slotId] = { slot, input, label, img, del, status };

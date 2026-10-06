@@ -247,6 +247,10 @@
   transition: opacity 0.15s ease;
 }
 
+.unity-face-swap .fs-slot[data-state='empty'].fs-revealed {
+  --fs-drop-bg: var(--fs-drop-active-bg);
+}
+
 .unity-face-swap .fs-slot[data-state='ready'].fs-revealed,
 .unity-face-swap .fs-slot[data-state='ready']:has(.fs-delete:focus-visible) {
   --fs-filled-border: #fff;
@@ -717,9 +721,6 @@
 
   .unity-face-swap .fs-gallery-list {
     gap: 10px;
-
-    /* Edge fade over the scrolling strip (Figma 25906:101658) */
-    mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
   }
 
   .unity-face-swap .fs-gallery-item {
