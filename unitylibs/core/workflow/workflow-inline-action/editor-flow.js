@@ -249,7 +249,7 @@ export async function runEditInFirefly(binder, el) {
     verb: isResize ? 'resizeImage' : 'cropImage',
     connectorAssetId: binder.assetId,
     fileType: binder.filesData.type,
-    workflow: isResize ? 'resizeImage' : 'image-operations',
+    workflow: 'image-operations',
     includeWidgetType: false,
   };
   if (!isResize) {

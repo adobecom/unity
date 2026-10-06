@@ -506,6 +506,7 @@ export default class ActionBinder {
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
     if (isDownload) {
       if (this.operation === 'crop') return downloadsLocally ? 'cropImageFirstDownload' : 'cropImageDownload';
+      if (this.operation === 'resize') return downloadsLocally ? 'resizeImageFirstDownload' : 'resizeImageDownload';
       return downloadsLocally ? 'aiPhotoEditor' : 'download';
     }
     if (el?.classList?.contains('ia-edit-in-firefly')) return 'aiPhotoEditor';
@@ -651,11 +652,15 @@ export default class ActionBinder {
         connectorAssetId = this.resultAssetId;
       }
       const isCropSignedIn = !performOperation && this.operation === 'crop';
+      const isResizeSignedIn = !performOperation && this.operation === 'resize';
+      let signedInVerb = 'aiPhotoEditor';
+      if (isCropSignedIn) signedInVerb = 'cropImage';
+      if (isResizeSignedIn) signedInVerb = 'resizeImage';
       await this.callConnector(await this.buildConnectorPayload({
-        verb: isCropSignedIn ? 'cropImage' : 'aiPhotoEditor',
+        verb: signedInVerb,
         connectorAssetId,
         fileType: this.filesData.type,
-        includeWidgetType: !isCropSignedIn,
+        includeWidgetType: !isCropSignedIn && !isResizeSignedIn,
       }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
@@ -740,7 +745,7 @@ export default class ActionBinder {
     const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
-    const includeWidgetType = !(isDownload && this.operation === 'crop');
+    const includeWidgetType = !(isDownload && (this.operation === 'crop' || this.operation === 'resize'));
     const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
