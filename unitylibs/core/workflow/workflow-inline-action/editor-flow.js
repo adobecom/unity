@@ -87,14 +87,18 @@ function buildResizeDeeplinkFields(engine, offsets) {
     offsetRight: offsets.right,
     offsetBottom: offsets.bottom,
     dimensionsLocked: engine.locked,
-    lockedWidth: Math.round(width),
-    lockedHeight: Math.round(height),
+    outputWidth: Math.round(width),
+    outputHeight: Math.round(height),
     dimensionUnit: engine.unit,
   };
   if (expandCropMode === 'standard') fields.cropAspectRatioLock = pill.ratioText;
   if (expandCropMode === 'social') {
     fields.socialApp = pill.platform;
     fields.socialPostType = pill.name;
+    if (pill.width && pill.height) {
+      fields.outputWidth = Number(pill.width);
+      fields.outputHeight = Number(pill.height);
+    }
   }
   if (engine.outputType === 'image/jpeg') fields.downloadQuality = Math.round(engine.quality);
   return fields;
