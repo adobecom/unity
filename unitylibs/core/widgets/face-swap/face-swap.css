@@ -121,8 +121,8 @@
 }
 
 .unity-face-swap .fs-reset svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   fill: currentcolor;
 }
 
@@ -693,11 +693,6 @@
 
     /* 44px hit area inside the 20px header; icon sits 8px from the edge */
     margin: -12px -4px -12px 0;
-  }
-
-  .unity-face-swap .fs-reset svg {
-    width: 20px;
-    height: 20px;
   }
 
   .unity-face-swap .fs-reset-text,
