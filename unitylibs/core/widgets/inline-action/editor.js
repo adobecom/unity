@@ -1300,11 +1300,9 @@ export class EditorEngine {
     return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
   }
 
+  // Output size is captured on preset selection or typed input; dragging only changes the source area, as with lock on.
   getResizeDimensions() {
-    if (this.resizeTab === 'custom') return { width: this.targetW, height: this.targetH };
-    const [vpW, vpH] = this.viewportSize();
-    const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-    return { width: b.right - b.left, height: b.bottom - b.top };
+    return { width: this.targetW, height: this.targetH };
   }
 
   getDragRatioLock(rect) {
