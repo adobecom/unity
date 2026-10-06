@@ -496,10 +496,19 @@
   min-width: 90px;
   aspect-ratio: 109 / 96;
   overflow: hidden;
-  border: 2px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   scroll-snap-align: start;
+}
+
+/* Stroke drawn over the image so the image keeps the full corner radius (Figma). */
+.unity-face-swap .fs-gallery-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--fs-thumb-border, transparent);
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .unity-face-swap .fs-gallery-item picture,
@@ -512,12 +521,12 @@
 
 @media (hover: hover) {
   .unity-face-swap .fs-gallery-item:hover {
-    border-color: var(--fs-border-active);
+    --fs-thumb-border: var(--fs-border-active);
   }
 }
 
 .unity-face-swap .fs-gallery-item[aria-selected='true'] {
-  border-color: #fff;
+  --fs-thumb-border: #fff;
 }
 
 /* ---------- preview ---------- */
