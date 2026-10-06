@@ -2,19 +2,15 @@ import { getUnityLibs } from '../../../scripts/utils.js';
 import { InlineActionState } from '../../widgets/inline-action/inline-action.js';
 import { INLINE_ACTION_EVENTS } from '../../../scripts/analytics.js';
 
-function buildOperations(binder, bounds, dimensions, quality) {
-  const operations = [
+function buildOperations(bounds) {
+  return [
     { type: 'crop', top: bounds.top, left: bounds.left, bottom: bounds.bottom, right: bounds.right },
   ];
-  if (binder.operation === 'resize') {
-    operations.push({ type: 'resize', width: dimensions.width, height: dimensions.height, unit: dimensions.unit, quality });
-  }
-  return operations;
 }
 
-export function buildImageOperationsPayload(binder, bounds, dimensions, quality) {
+export function buildImageOperationsPayload(binder, bounds) {
   return {
-    operations: buildOperations(binder, bounds, dimensions, quality),
+    operations: buildOperations(bounds),
     outputMediaType: 'image/jpeg',
     assets: [{ id: binder.assetId }],
   };
@@ -147,7 +143,6 @@ async function performEditorOperation(binder) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return false;
   const bounds = engine.getSourceBounds();
-  const dimensions = binder.operation === 'resize' ? engine.getResizeOutputDimensions() : null;
 
   if (binder.operation === 'resize') {
     try {
@@ -169,7 +164,7 @@ async function performEditorOperation(binder) {
     }
   }
 
-  const payload = buildImageOperationsPayload(binder, bounds, dimensions, engine.quality);
+  const payload = buildImageOperationsPayload(binder, bounds);
   try {
     const res = await binder.serviceHandler.postCallToService(
       binder.apiConfig.endPoint.imageOperations,
@@ -257,7 +252,7 @@ export async function runEditInFirefly(binder, el) {
     includeWidgetType: false,
   };
   if (!isResize) {
-    connectorFields.operations = buildOperations(binder, fireflyBounds, null, engine.quality);
+    connectorFields.operations = buildOperations(fireflyBounds);
     connectorFields.aspectRatio = engine.selectedRatioText || 'freeform';
   }
   const payload = await binder.buildConnectorPayload(connectorFields);

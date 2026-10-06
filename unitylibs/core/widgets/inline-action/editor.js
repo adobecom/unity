@@ -1307,12 +1307,6 @@ export class EditorEngine {
     return { width: b.right - b.left, height: b.bottom - b.top };
   }
 
-  getResizeOutputDimensions() {
-    const { width, height } = this.getResizeDimensions();
-    if (this.resizeTab !== 'custom') return { width, height, unit: 'px' };
-    return { width: pxToUnit(width, this.unit), height: pxToUnit(height, this.unit), unit: this.unit };
-  }
-
   getDragRatioLock(rect) {
     if (this.isCrop || this.resizeTab !== 'custom') return this.selectedRatio;
     if (!this.locked) return null;
