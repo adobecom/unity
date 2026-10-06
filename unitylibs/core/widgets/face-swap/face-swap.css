@@ -496,7 +496,7 @@
   min-width: 90px;
   aspect-ratio: 109 / 96;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   scroll-snap-align: start;
 }
@@ -734,7 +734,6 @@
 
   .unity-face-swap .fs-gallery-item {
     flex: 0 0 109px;
-    border-radius: 4px;
   }
 }
 
