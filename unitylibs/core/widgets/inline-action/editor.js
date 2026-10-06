@@ -315,6 +315,10 @@ function buildAspectPill(row, isActive = false) {
     'data-label': label,
   };
   if (row.ratio) attrs['data-ratio-text'] = row.ratio;
+  if (row.platform) {
+    attrs['data-platform'] = row.platform;
+    attrs['data-name'] = row.name || '';
+  }
   if (row.width && row.height) {
     attrs['data-width'] = row.width;
     attrs['data-height'] = row.height;
@@ -606,6 +610,7 @@ export class EditorEngine {
     this.hasInteracted = false;
     this.locked = true;
     this.resizeTab = 'custom';
+    this.selectedPill = null;
     this.rect = {x: 0, y: 0, w: 100, h: 100};
     this.naturalW = 0;
     this.naturalH = 0;
@@ -1035,6 +1040,7 @@ export class EditorEngine {
     } else {
       this.locked = true;
       this.resizeTab = 'custom';
+      this.selectedPill = null;
       this.lockBtn?.classList.add('is-active');
       this.lockBtn?.setAttribute('aria-pressed', 'true');
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
@@ -1065,6 +1071,7 @@ export class EditorEngine {
         const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
         this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        this.selectedPill = pill;
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();
       });

@@ -71,6 +71,35 @@ function ensureAssetUploaded(binder) {
   return binder.originalUploadPromise;
 }
 
+function buildResizeDeeplinkFields(engine, offsets) {
+  const pill = engine.selectedPill?.dataset;
+  let pillMode = null;
+  if (pill?.platform) pillMode = 'social';
+  else if (pill?.ratioText) pillMode = 'standard';
+  // A preset only applies while its tab is still open; otherwise the frame is freeform.
+  const expandCropMode = pillMode && pillMode === engine.resizeTab ? pillMode : 'freeform';
+  const { width, height } = engine.getResizeDimensions();
+  const fields = {
+    intent: 'resize',
+    expandCropMode,
+    offsetTop: offsets.top,
+    offsetLeft: offsets.left,
+    offsetRight: offsets.right,
+    offsetBottom: offsets.bottom,
+    dimensionsLocked: engine.locked,
+    lockedWidth: Math.round(width),
+    lockedHeight: Math.round(height),
+    dimensionUnit: engine.unit,
+  };
+  if (expandCropMode === 'standard') fields.cropAspectRatioLock = pill.ratioText;
+  if (expandCropMode === 'social') {
+    fields.socialApp = pill.platform;
+    fields.socialPostType = pill.name;
+  }
+  if (engine.outputType === 'image/jpeg') fields.downloadQuality = Math.round(engine.quality);
+  return fields;
+}
+
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
   binder.widgetRef?.setState(InlineActionState.LOADING);
   binder.widgetRef?.setProgress(0);
@@ -216,26 +245,19 @@ export async function runEditInFirefly(binder, el) {
     right: engine.naturalW - bounds.right,
     bottom: engine.naturalH - bounds.bottom,
   };
-  let dimensions = null;
-  if (isResize) {
-    const { width, height } = engine.getResizeDimensions();
-    dimensions = { width: Math.round(width), height: Math.round(height), unit: 'px' };
-  }
-  const operations = buildOperations(binder, fireflyBounds, dimensions, engine.quality);
   const connectorFields = {
     verb: isResize ? 'resizeImage' : 'cropImage',
     connectorAssetId: binder.assetId,
     fileType: binder.filesData.type,
-    operations,
-    workflow: 'image-operations',
+    workflow: isResize ? 'resizeImage' : 'image-operations',
     includeWidgetType: false,
   };
-  if (isResize) {
-    if (engine.selectedRatioText) connectorFields.aspectRatio = engine.selectedRatioText;
-  } else {
+  if (!isResize) {
+    connectorFields.operations = buildOperations(binder, fireflyBounds, null, engine.quality);
     connectorFields.aspectRatio = engine.selectedRatioText || 'freeform';
   }
   const payload = await binder.buildConnectorPayload(connectorFields);
+  if (isResize) Object.assign(payload.payload, buildResizeDeeplinkFields(engine, fireflyBounds));
   try {
     const { default: isDesktop } = await import(`${getUnityLibs()}/utils/device-detection.js`);
     await binder.callConnector(payload, { openInSameTab: !isDesktop(), useSplashProgress: false });
