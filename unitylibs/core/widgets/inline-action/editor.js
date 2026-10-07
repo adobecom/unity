@@ -513,13 +513,6 @@ export function buildEditorRightPanel(parsedData) {
     parsedData.resetIconHref,
     parsedData.resetLabel || 'Reset',
   ));
-  if (!isCrop) {
-    actions.append(createTag('button', {
-      type: 'button',
-      class: 'ia-editor-quality',
-      'aria-pressed': 'false',
-    }, 'Quality'));
-  }
   actions.append(buildIconButton(
     'button',
     {
