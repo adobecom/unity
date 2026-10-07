@@ -70,10 +70,10 @@ function ensureAssetUploaded(binder) {
 function buildResizeOperation(engine) {
   const pill = engine.selectedPill?.dataset;
   let pillMode = null;
-  if (pill?.platform) pillMode = 'social';
-  else if (pill?.ratioText) pillMode = 'standard';
+  if (pill?.platform) pillMode = 'Social';
+  else if (pill?.ratioText) pillMode = 'Standard';
   // A preset only applies while its tab is still open; otherwise the frame is freeform.
-  const expandCropMode = pillMode && pillMode === engine.resizeTab ? pillMode : 'freeform';
+  const expandCropMode = pillMode && pillMode.toLowerCase() === engine.resizeTab ? pillMode : 'Freeform';
   const { width, height } = engine.getResizeDimensions();
   const resizeOp = {
     type: 'resize',
@@ -84,7 +84,7 @@ function buildResizeOperation(engine) {
     outputHeight: Math.round(height),
     dimensionUnit: engine.unit,
   };
-  if (expandCropMode === 'social') {
+  if (expandCropMode === 'Social') {
     resizeOp.socialApp = pill.platform;
     resizeOp.socialPostType = pill.name;
     if (pill.width && pill.height) {
@@ -93,7 +93,7 @@ function buildResizeOperation(engine) {
     }
   }
   if (engine.outputType === 'image/jpeg') resizeOp.downloadQuality = Math.round(engine.quality);
-  const aspectRatio = expandCropMode === 'standard' ? pill.ratioText : null;
+  const aspectRatio = expandCropMode === 'Standard' ? pill.ratioText : null;
   return { aspectRatio, resizeOp };
 }
 
