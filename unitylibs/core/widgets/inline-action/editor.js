@@ -604,7 +604,7 @@ export class EditorEngine {
     this.sizeReadout = rightPanelEl.querySelector('.ia-size-readout');
     this.originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
     this.newSizeLabel = parsedData.newSizeLabel || 'New size';
-    this.originalSize = 0;
+    this.currentImageSize = 0;
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
     this.hasInteracted = false;
@@ -666,15 +666,18 @@ export class EditorEngine {
     return [width, height];
   }
 
-  async setImage(url, originalSize = 0, isOriginalUpload = false) {
-    this.originalSize = originalSize;
+  async setImage(url, imageSize = 0, isOriginalUpload = false) {
+    this.currentImageSize = imageSize;
     this.hasInteracted = false;
     if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
     this.qualityPreviewUrl = null;
     this.qualityPreviewActive = false;
     this.updateQualityBtnState();
     this.originalUrl = url;
-    if (isOriginalUpload) this.originalImageUrl = url;
+    if (isOriginalUpload) {
+      this.originalImageUrl = url;
+      this.uploadedImageSize = imageSize;
+    }
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
@@ -794,7 +797,7 @@ export class EditorEngine {
   }
 
   async updateSizeReadout() {
-    const original = EditorEngine.formatBytes(this.originalSize);
+    const original = EditorEngine.formatBytes(this.currentImageSize);
     if (!this.hasInteracted) {
       this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: --`;
       return;

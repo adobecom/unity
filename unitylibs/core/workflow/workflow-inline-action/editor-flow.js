@@ -151,7 +151,7 @@ async function performEditorOperation(binder) {
       binder.resultBlob = blob;
       binder.resultUrl = URL.createObjectURL(blob);
       binder.filesData.type = blob.type;
-      await engine.setImage(binder.resultUrl, engine.originalSize);
+      await engine.setImage(binder.resultUrl, blob.size);
       engine.reset();
       return true;
     } catch (e) {
@@ -172,7 +172,7 @@ async function performEditorOperation(binder) {
     binder.resultUrl = res.outputUrl;
     binder.assetId = res.assetId;
     binder.filesData.type = 'image/jpeg';
-    await engine.setImage(res.outputUrl, engine.originalSize);
+    await engine.setImage(res.outputUrl, engine.currentImageSize);
     engine.reset();
     return true;
   } catch (e) {
@@ -212,7 +212,8 @@ export async function resetEditor(binder) {
   binder.trackEvent(INLINE_ACTION_EVENTS.RESET);
   binder.assetId = binder.originalAssetId;
   if (binder.originalFileType) binder.filesData.type = binder.originalFileType;
-  await engine.setImage(engine.originalImageUrl, engine.originalSize);
+  const size = binder.operation === 'resize' ? engine.uploadedImageSize : engine.currentImageSize;
+  await engine.setImage(engine.originalImageUrl, size);
   engine.reset();
 }
 
