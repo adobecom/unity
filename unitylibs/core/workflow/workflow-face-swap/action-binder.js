@@ -250,7 +250,7 @@ export default class ActionBinder {
     /* Focus the toast itself (as workflow-prompt-upload does) so keyboard focus leaves the
        now-inert UI without forcing a ring onto the close button for mouse/touch users. */
     const toast = shown.querySelector('.alert-toast');
-    setTimeout(() => toast?.focus({ preventScroll: true }), 0);
+    setTimeout(() => toast?.focus(), 0);
   }
 
   dismissErrorToast() {
