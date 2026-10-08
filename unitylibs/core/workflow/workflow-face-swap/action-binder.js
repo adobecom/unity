@@ -426,6 +426,8 @@ export default class ActionBinder {
   /* ---------- transition screen ---------- */
 
   async ensureTransitionScreen() {
+    const shell = this.root?.querySelector?.('.interactive-area');
+    this.workflowCfg.theme = shell?.classList.contains('dark') ? 'dark' : null;
     if (!this.transitionScreen) {
       const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
       this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
@@ -483,8 +485,6 @@ export default class ActionBinder {
         return;
       }
 
-      const shell = this.root?.querySelector?.('.interactive-area');
-      this.workflowCfg.theme = shell?.classList.contains('dark') ? 'dark' : null;
       this.abortController = new AbortController();
       const { signal } = this.abortController;
       await this.ensureTransitionScreen();
