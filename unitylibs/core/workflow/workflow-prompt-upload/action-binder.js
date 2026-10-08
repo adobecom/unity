@@ -588,14 +588,24 @@ export default class ActionBinder {
       });
   }
 
+  getApiClientLocation(hasFiles, hasPrompt) {
+    const workflow = this.workflowCfg.enabledFeatures[0];
+    if (hasFiles && hasPrompt) return `${workflow}-prompt-source`;
+    if (hasPrompt) return `${workflow}-prompt`;
+    return workflow;
+  }
+
   async handleRedirect(cOpts, filesData) {
     if (this.query) {
       cOpts.query = this.promptPrefix
         ? `${this.promptPrefix} ${this.query}`
         : this.query;
     }
+    const hasFiles = this.pendingFiles?.length > 0;
+    const hasPrompt = !!this.query;
+
     if (this.optionValue && this.optionKey) cOpts.payload[this.optionKey] = this.optionValue;
-    [cOpts.payload.referrer] = this.workflowCfg.enabledFeatures;
+    cOpts.payload.referrer = this.getApiClientLocation(hasFiles,hasPrompt);
     try {
       cOpts.payload.newUser = !localStorage.getItem('unity.user');
       const numAttempts = parseInt(localStorage.getItem(`${this.workflowCfg.enabledFeatures[0]}_attempts`), 10) || 0;
