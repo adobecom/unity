@@ -17,6 +17,10 @@ import {
 
 const CANCEL_MESSAGE = 'Operation termination requested.';
 const WIDGET_ROOT = '.unity-face-swap';
+const SLOT_NUMBER = { original: 1, face: 2 };
+const slotEventName = (slotId, status) => `Upload ${SLOT_NUMBER[slotId] ?? slotId} ${status}|UnityWidget`;
+const sampleEventName = (idx) => `Sample ${idx + 1}|UnityWidget`;
+const fileMeta = (slotId, file) => ({ slot: slotId, count: 1, size: file?.size, type: file?.type });
 
 /**
  * Client-side validation rules. Rules are data: a new case is one entry here
@@ -84,8 +88,7 @@ class ServiceHandler {
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
     sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
     if (!errorCallbackOptions.errorToastEl) return null;
-    const base = this.unityEl?.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim() || '';
-    const msg = [base, errorCallbackOptions.suffix].filter(Boolean).join(' ');
+    const msg = this.unityEl?.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim() || '';
     let shown = null;
     this.canvasArea.forEach((element) => {
       element.style.pointerEvents = 'none';
@@ -264,15 +267,21 @@ export default class ActionBinder {
     target?.focus?.();
   }
 
-  handleClientError(errorToken, slotId, fileMetaData) {
+  track(eventName, data = {}) {
+    sendAnalyticsEvent(new CustomEvent(eventName));
+    this.logAnalyticsinSplunk(eventName, data);
+  }
+
+  handleClientError(errorToken, slotId, fileMetaData = { slot: slotId }) {
     this.showToast({ errorType: `.icon-${errorToken}`, errorCode: errorToken, fileMetaData }, '', 'client', this.widget?.slotEls?.[slotId]?.input);
-    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorToken }, fileMetaData, slot: slotId });
+    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorToken }, fileMetaData });
+    this.track(slotEventName(slotId, 'error'), { errorData: { code: errorToken }, fileMetaData });
   }
 
   /* ---------- selection-time hooks ---------- */
 
   validateFiles(files, slotId) {
-    const fileMetaData = { count: files.length, size: files[0]?.size, type: files[0]?.type };
+    const fileMetaData = { ...fileMeta(slotId, files[0]), count: files.length };
     const { ok, errorToken } = validateSelection(files, this.limits);
     if (!ok) this.handleClientError(errorToken, slotId, fileMetaData);
     return ok;
@@ -391,7 +400,7 @@ export default class ActionBinder {
     );
     const { id, href, blocksize, uploadUrls } = resJson;
     ctx.assetId = id;
-    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: id, slot: slotId });
+    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: id, fileMetaData: { slot: slotId } });
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
     const uploadHandler = new UploadHandler(ctx.facade, this.serviceHandler);
     if (blocksize && Array.isArray(uploadUrls)) {
@@ -410,7 +419,7 @@ export default class ActionBinder {
       await this.uploadImgToUnity(href, file, file.type, signal);
     }
     await uploadHandler.scanImgForSafetyWithRetry(id, signal);
-    this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: id, slot: slotId });
+    this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: id, fileMetaData: { slot: slotId } });
     return { slotId, assetId: id };
   }
 
@@ -458,8 +467,15 @@ export default class ActionBinder {
       if (!this.analyticsModule) await this.initAnalytics();
       const events = this.analyticsModule.PROMPT_BAR_EVENTS;
       const filled = this.widget?.getFilledSlots?.() || [];
+      const sample = filled.find(([, s]) => s.source === 'gallery');
+      const styleEventName = sample ? sampleEventName(sample[1].galleryIndex) : undefined;
+      this.logAnalyticsinSplunk(events.GENERATE_CTA, {
+        hasImage: filled.length > 0,
+        fileMetaData: filled.map(([id, s]) => ({ ...fileMeta(id, s.file), source: s.source })),
+        ...(styleEventName && { styleEventName }),
+      });
       sendAnalyticsEvent(new CustomEvent(events.GENERATE_CTA));
-      this.logAnalyticsinSplunk(events.GENERATE_CTA, { imageCount: filled.length });
+      if (styleEventName) sendAnalyticsEvent(new CustomEvent(styleEventName));
 
       /* Zero images: redirect straight to the product, no splash. */
       if (!filled.length) {
@@ -475,8 +491,6 @@ export default class ActionBinder {
       await this.transitionScreen.showSplashScreen(true);
       const { isGuest } = await isGuestUser();
       this.isGuestUser = isGuest;
-      sendAnalyticsEvent(new CustomEvent(events.UPLOAD_STARTED));
-      this.logAnalyticsinSplunk(events.UPLOAD_STARTED, { imageCount: filled.length });
 
       const results = await Promise.allSettled(filled.map(([slotId, slot]) => this.uploadSlot(slotId, slot, signal)));
       if (signal.aborted || this.promiseStack.length) return;
@@ -500,11 +514,11 @@ export default class ActionBinder {
     /* The splash mounts on <body> above the widget, so it must go first. */
     await this.hideSplash();
     const errorToken = err?.errorToken || 'error-request';
-    const suffix = errorToken === 'error-request' ? `(${this.widget?.slotTitle?.(slotId) || slotId})` : '';
-    this.showToast({ errorType: `.icon-${errorToken}`, errorCode: errorToken, suffix }, err, 'server', this.widget?.genBtn);
+    const fileMetaData = { slot: slotId };
+    this.showToast({ errorType: `.icon-${errorToken}`, errorCode: errorToken, fileMetaData }, err, 'server', this.widget?.genBtn);
     this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
       errorData: { code: errorToken, subCode: `uploadSlot ${err?.status}`, desc: err?.message || undefined },
-      slot: slotId,
+      fileMetaData,
     });
   }
 
@@ -539,7 +553,7 @@ export default class ActionBinder {
         },
       );
       if (this.promiseStack.length > 0) return;
-      this.logAnalyticsinSplunk('Generate Complete|UnityWidget', { imageCount: uploads.length });
+      this.logAnalyticsinSplunk('Generate Complete|UnityWidget', { hasImage: uploads.length > 0 });
       if (this.transitionScreen?.splashScreenEl) {
         this.transitionScreen.LOADER_LIMIT = 100;
         this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
@@ -613,14 +627,9 @@ export default class ActionBinder {
     });
     this.widgetWrap?.addEventListener('fs-slot-selected', (e) => {
       this.warmUp();
-      const { slotId, source } = e.detail || {};
-      const eventName = this.analyticsModule?.PROMPT_BAR_EVENTS?.UPLOAD_FILE_ATTEMPT || 'Upload file attempt|UnityWidget';
-      sendAnalyticsEvent(new CustomEvent(eventName));
-      this.logAnalyticsinSplunk(eventName, { slot: slotId, action: source });
-    });
-    this.widgetWrap?.addEventListener('fs-reset', () => {
-      sendAnalyticsEvent(new CustomEvent('Reset|UnityWidget'));
-      this.logAnalyticsinSplunk('Reset|UnityWidget');
+      const { slotId, file, source, galleryIndex } = e.detail || {};
+      if (source === 'gallery') this.track(sampleEventName(galleryIndex), { fileMetaData: { slot: slotId, source } });
+      else this.track(slotEventName(slotId, 'started'), { fileMetaData: { ...fileMeta(slotId, file), source } });
     });
   }
 
