@@ -615,6 +615,15 @@
     background: var(--fs-card-bg, #1b1b1b);
   }
 
+  /* Figma 24918:342919: toast bottom lines up with the dropzone row bottom. */
+  .unity-face-swap .interactive-area .alert-holder {
+    align-items: flex-start;
+  }
+
+  .unity-face-swap .interactive-area .alert-holder .alert-toast {
+    top: 182px;
+  }
+
   .unity-face-swap .unity-slf-left {
     background: transparent;
   }
