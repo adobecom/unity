@@ -39,7 +39,7 @@
   margin: 0 auto;
   padding: 8px;
   border-radius: 20px;
-  background: #222;
+  background: var(--fs-card-bg, #222);
 }
 
 .unity-face-swap .unity-slf-main {
@@ -543,14 +543,27 @@
   object-fit: cover;
 }
 
-/* ---------- error toast (ported from prompt-bar-style) ---------- */
+/* ---------- error toast (ported from prompt-bar-style; sized per Figma 24918:345437) ---------- */
+
+/* The shared toast CSS in core/styles assumes content-box; our border-box reset collapsed the icon. */
+.unity-face-swap .alert-holder,
+.unity-face-swap .alert-holder * {
+  box-sizing: content-box;
+}
 
 .unity-face-swap .interactive-area .alert-holder {
   background: none;
   top: 0;
 }
 
-.unity-face-swap:has(.alert-holder.show) .unity-slf-main {
+/* Figma 24918:342919: the whole card, preview and legal line fade to 10%; no scrim. */
+.unity-face-swap:has(.alert-holder.show) {
+  --fs-card-bg: transparent;
+  --fs-card-border: transparent;
+}
+
+.unity-face-swap:has(.alert-holder.show) .unity-slf-main,
+.unity-face-swap:has(.alert-holder.show) .fs-legal {
   pointer-events: none;
   opacity: 0.1;
 }
@@ -560,22 +573,25 @@
 }
 
 .unity-face-swap .interactive-area .alert-holder .alert-toast {
-  width: auto;
+  width: fit-content;
   max-width: 340px;
 }
 
 .unity-face-swap .interactive-area .alert-holder .alert-toast .alert-content .alert-icon {
-  justify-content: space-between;
-  width: 100%;
+  gap: 0;
 }
 
 .unity-face-swap .interactive-area .alert-holder .alert-toast .alert-content .alert-text {
-  width: 100%;
-  text-align: center;
+  width: auto;
+  padding: 0 16px 0 8px;
+  text-align: start;
 }
 
 .unity-face-swap .interactive-area .alert-holder .alert-toast .alert-content .alert-text p {
+  margin: 18px 0 20px;
   padding-top: 0;
+  font-size: 14px;
+  line-height: 18px;
 }
 
 /* ---------- responsive ---------- */
@@ -595,8 +611,8 @@
   /* Desktop: the left column blends into the card (Figma 24797:207040). */
   .unity-face-swap > .interactive-area {
     padding: 14px;
-    border: 1px solid rgb(255 255 255 / 10%);
-    background: #1b1b1b;
+    border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
+    background: var(--fs-card-bg, #1b1b1b);
   }
 
   .unity-face-swap .unity-slf-left {
@@ -633,8 +649,8 @@
 
   .unity-face-swap > .interactive-area {
     padding: 8px 8px 24px;
-    border: 1px solid rgb(255 255 255 / 10%);
-    background: #1b1b1b;
+    border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
+    background: var(--fs-card-bg, #1b1b1b);
   }
 
   .unity-face-swap .unity-slf-main {

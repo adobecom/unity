@@ -233,10 +233,12 @@ export default class ActionBinder {
   }
 
   setMainInert(on) {
-    const main = this.root?.querySelector?.('.unity-slf-main');
-    if (!main) return;
-    if (on) main.setAttribute('inert', '');
-    else main.removeAttribute('inert');
+    ['.unity-slf-main', '.fs-legal'].forEach((sel) => {
+      const node = this.root?.querySelector?.(sel);
+      if (!node) return;
+      if (on) node.setAttribute('inert', '');
+      else node.removeAttribute('inert');
+    });
   }
 
   showToast(options, error, errorType, focusBackEl) {
