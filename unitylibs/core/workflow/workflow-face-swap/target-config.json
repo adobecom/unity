@@ -10,7 +10,7 @@
     },
     "limits": {
       "maxNumFiles": 1,
-      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/webp"],
       "maxFileSize": 50000000
     },
     "productTag-firefly": "FF",

@@ -282,6 +282,11 @@ export default class ActionBinder {
     if (!this.widget) return;
     this.widget.validateFiles = (files, slotId) => this.validateFiles(files, slotId);
     this.widget.onPreviewError = (slotId) => this.handleClientError('error-filetype', slotId);
+    if (this.limits.allowedFileTypes?.length) {
+      Object.values(this.widget.slotEls || {}).forEach(({ input }) => {
+        input?.setAttribute('accept', this.limits.allowedFileTypes.join(','));
+      });
+    }
   }
 
   /* Filling a slot signals intent: warm the CTA path during idle time only. */
