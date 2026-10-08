@@ -529,6 +529,10 @@ export default class UnityWidget {
     const promptLabel = useLegend
       ? createTag('legend', { class: 'inp-field-label' }, promptLabelText)
       : createTag('label', { for: 'promptInput', class: 'inp-field-label' }, promptLabelText);
+    if (hasDropdowns && this.isFireflyRedesign) {
+      const groupLabelText = ph['placeholder-group-label'] || 'Enter prompt and select model to generate.';
+      inpGroup.append(createTag('legend', { class: 'sr-only' }, groupLabelText));
+    }
     let inpFieldSlot;
     if (this.isFireflyRedesign) {
       inpFieldSlot = createTag('div', { class: 'inp-text-wrap' });

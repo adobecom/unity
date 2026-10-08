@@ -2011,8 +2011,14 @@ describe('Firefly Workflow Tests', () => {
       const inpWrap = testWidget.createInpWrap(ph);
       const fieldset = inpWrap.querySelector('.inp-fieldset');
 
-      // legend is no longer used for the redesign - a real <label> is used instead
-      expect(fieldset.querySelector(':scope > legend')).to.not.exist;
+      // the redesign shows a visible per-field <label> instead of a visible legend,
+      // but a <fieldset> still needs a <legend> to programmatically group the prompt
+      // input with the verb/model combobox(es) - kept visually hidden via .sr-only
+      const legend = fieldset.querySelector(':scope > legend');
+      expect(legend).to.exist;
+      expect(legend.classList.contains('sr-only')).to.be.true;
+      expect(legend.textContent).to.equal('Enter prompt and select model to generate.');
+      expect(fieldset.firstElementChild).to.equal(legend);
 
       const textWrap = fieldset.querySelector('.inp-text-wrap');
       expect(textWrap).to.exist;
@@ -3657,7 +3663,13 @@ describe('Firefly Workflow Tests', () => {
   describe('ActionBinder accessibility elements', () => {
     it('constructor should append sr-only live region', () => {
       const ab = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
-      const sr = ab.widgetWrap.querySelector('.sr-only');
+      // Scoped to a direct child: the live region is appended directly to widgetWrap
+      // (`this.widgetWrap.append(this.scrRead)`), whereas other `.sr-only` elements
+      // (e.g. a visually-hidden <legend>) can exist deeper inside the widget markup
+      // left over from other tests sharing the same `block` fixture. A plain
+      // `querySelector('.sr-only')` would match whichever comes first in document
+      // order, which is not necessarily this live region.
+      const sr = ab.widgetWrap.querySelector(':scope > .sr-only');
       expect(sr).to.exist;
       expect(sr.getAttribute('aria-live')).to.equal('polite');
       expect(sr.getAttribute('aria-atomic')).to.equal('true');
