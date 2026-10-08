@@ -198,14 +198,10 @@ export default class UnityWidget {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const verbLinkTexts = [];
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
         listLink.setAttribute('aria-selected', 'false');
-        const text = listLink.textContent.trim();
-        if (text) verbLinkTexts.push(text);
       });
-      verbLinkTexts.sort((a, b) => b.length - a.length);
       if (this.isFireflyRedesign) {
         setVerbSelectedOrigin(verbList, selectedElement, link);
       }
@@ -269,14 +265,9 @@ export default class UnityWidget {
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
         const img = this.genBtn.querySelector('img[src*=".svg"]');
-        this.genBtn.setAttribute(
-          'aria-label',
-          (this.genBtn.getAttribute('aria-label') || '').replace(
-            new RegExp(`\\b(${verbLinkTexts.join('|')})\\b`),
-            this.selectedVerbText,
-          ),
-        );
-        if (img) img.setAttribute('alt', `${this.genBtn.getAttribute('aria-label') || ''}`);
+        const label = this.computeGenBtnLabel();
+        this.genBtn.setAttribute('aria-label', label);
+        if (img) img.setAttribute('alt', label);
       }
     };
   }
@@ -642,14 +633,34 @@ export default class UnityWidget {
     return footer;
   }
 
+  // Builds the Generate button's accessible name from the static action word (e.g. "Generate")
+  // and the current verb text. Some authored verb options are bare nouns ("Image"), others are
+  // full phrases that already include the action word ("Generate video") - concatenating the two
+  // unconditionally produces a redundant, duplicated name (e.g. "Generate Generate video"), which
+  // is difficult for Voice Control/screen reader users to act on. Only prefix the static word when
+  // the verb text doesn't already start with it.
+  computeGenBtnLabel() {
+    const base = (this.genBtnBaseText || 'Generate').trim();
+    const verb = (this.selectedVerbText || '').trim();
+    if (!verb) return base;
+    return verb.toLowerCase().startsWith(base.toLowerCase()) ? verb : `${base} ${verb}`;
+  }
+
   createActBtn(cfg, cls) {
     if (!cfg) return null;
-    const txt = cfg.innerText?.trim();
+    const txt = (cfg.innerText?.trim() || '').split('\n')[0];
+    this.genBtnBaseText = txt;
     const img = cfg.querySelector('img[src*=".svg"]');
-    if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
+    const label = this.computeGenBtnLabel();
+    if (img) img.setAttribute('alt', label);
+    const btn = createTag('button', {
+      type: 'button',
+      class: `unity-act-btn ${cls}`,
+      'daa-ll': `Generate--${this.selectedVerbType}`,
+      'aria-label': label,
+    });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
-    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
+    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt));
     this.genBtn = btn;
     return btn;
   }

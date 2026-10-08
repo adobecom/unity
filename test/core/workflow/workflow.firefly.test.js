@@ -901,7 +901,7 @@ describe('Firefly Workflow Tests', () => {
       unityElement.removeChild(legalLi);
     });
 
-    it('should create action button correctly', () => {
+    it('should create action button correctly as a real <button> (not a link) with a deduplicated accessible name', () => {
       const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.selectedVerbType = 'image';
       testWidget.selectedVerbText = 'Image';
@@ -909,12 +909,26 @@ describe('Firefly Workflow Tests', () => {
       cfg.innerHTML = '<img src="test.svg" alt="Generate" />Generate\nContent';
       const button = testWidget.createActBtn(cfg, 'gen-btn');
       expect(button).to.exist;
+      expect(button.tagName).to.equal('BUTTON');
+      expect(button.getAttribute('type')).to.equal('button');
+      expect(button.hasAttribute('href')).to.be.false;
       expect(button.classList.contains('unity-act-btn')).to.be.true;
       expect(button.classList.contains('gen-btn')).to.be.true;
       expect(button.getAttribute('daa-ll')).to.equal('Generate--image');
-      expect(button.getAttribute('aria-label')).to.include('Generate');
+      expect(button.getAttribute('aria-label')).to.equal('Generate Image');
       expect(button.querySelector('.btn-ico')).to.exist;
       expect(button.querySelector('.btn-txt')).to.exist;
+    });
+
+    it('should not duplicate the action word in the action button name when the verb text already includes it', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.selectedVerbType = 'video';
+      testWidget.selectedVerbText = 'Generate video';
+      const cfg = document.createElement('div');
+      cfg.innerHTML = '<img src="test.svg" alt="Generate" />Generate';
+      const button = testWidget.createActBtn(cfg, 'gen-btn');
+      expect(button.getAttribute('aria-label')).to.equal('Generate video');
+      expect(button.querySelector('img').getAttribute('alt')).to.equal('Generate video');
     });
 
     it('should add widget to DOM correctly', () => {
@@ -1463,15 +1477,31 @@ describe('Firefly Workflow Tests', () => {
       expect(testWidget.updateAnalytics.calledWith('image')).to.be.true;
     });
 
-    it('should update genBtn aria-label when genBtn exists', () => {
+    it('should recompute genBtn aria-label from the static action word + current verb text (no duplication)', () => {
       testWidget.genBtn = document.createElement('button');
-      testWidget.genBtn.setAttribute('aria-label', 'Generate Image content');
+      testWidget.genBtn.setAttribute('aria-label', 'stale label');
+      testWidget.genBtnBaseText = 'Generate';
 
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      expect(testWidget.genBtn.getAttribute('aria-label')).to.equal('Generate Image content');
+      // link.textContent resolves to 'iconImage' in this fixture (see 'should update selected
+      // verb type and text' above) and doesn't start with 'Generate', so the base word is prefixed.
+      expect(testWidget.genBtn.getAttribute('aria-label')).to.equal('Generate iconImage');
+    });
+
+    it('should not duplicate the action word when the verb text already starts with it', () => {
+      testWidget.genBtn = document.createElement('button');
+      testWidget.genBtn.setAttribute('aria-label', 'stale label');
+      testWidget.genBtnBaseText = 'Generate';
+      link.textContent = 'Generate video';
+
+      const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
+
+      handler(event);
+
+      expect(testWidget.genBtn.getAttribute('aria-label')).to.equal('Generate video');
     });
 
     it('should handle empty verb link texts gracefully', () => {
