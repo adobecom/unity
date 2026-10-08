@@ -3704,6 +3704,71 @@ describe('Firefly Workflow Tests', () => {
       expect(sr.getAttribute('aria-live')).to.equal('polite');
       expect(sr.getAttribute('aria-atomic')).to.equal('true');
     });
+
+    it('createErrorToast renders the close control as a real <button>, not a link', async () => {
+      const toastCanvasArea = document.createElement('div');
+      const copy = document.createElement('div');
+      copy.className = 'copy';
+      const promptBarEl = document.createElement('div');
+      promptBarEl.className = 'ex-unity-wrap';
+      copy.append(promptBarEl);
+      toastCanvasArea.append(copy);
+      const ab = new ActionBinder(unityElement, workflowCfg, block, toastCanvasArea, actionMap);
+      const toastEl = await ab.createErrorToast();
+      expect(toastEl).to.exist;
+      const closeBtn = toastEl.querySelector('.alert-close');
+      expect(closeBtn).to.exist;
+      expect(closeBtn.tagName).to.equal('BUTTON');
+      expect(closeBtn.getAttribute('type')).to.equal('button');
+      expect(closeBtn.hasAttribute('href')).to.be.false;
+    });
+
+    it('showErrorToast marks the message as an alert and moves focus into it; closing returns focus to Generate', async () => {
+      const toastUnityEl = document.createElement('div');
+      const errorIcon = document.createElement('span');
+      errorIcon.className = 'icon-error-request';
+      const errorMsgEl = document.createElement('span');
+      errorMsgEl.textContent = 'Unable to process the request';
+      toastUnityEl.append(errorIcon, errorMsgEl);
+
+      const toastBlock = document.createElement('div');
+      const genBtn = document.createElement('button');
+      genBtn.className = 'gen-btn';
+      const copy = document.createElement('div');
+      copy.className = 'copy';
+      const promptBarEl = document.createElement('div');
+      promptBarEl.className = 'ex-unity-wrap';
+      copy.append(promptBarEl);
+      toastBlock.append(genBtn, copy);
+
+      const toastCanvasArea = toastBlock;
+      document.body.append(toastBlock);
+
+      const ab = new ActionBinder(toastUnityEl, workflowCfg, toastBlock, toastCanvasArea, actionMap);
+      const toastEl = await ab.createErrorToast();
+      const alertIcon = toastEl.querySelector('.alert-icon');
+      expect(alertIcon.getAttribute('role')).to.equal('alert');
+      expect(alertIcon.getAttribute('tabindex')).to.equal('-1');
+      // the close button must not be inside the focused/announced message region, otherwise
+      // screen readers summarize it as an extra item (e.g. "...plus one more item") instead of
+      // announcing just the message
+      expect(alertIcon.querySelector('.alert-close')).to.not.exist;
+      const alertImg = alertIcon.querySelector('img');
+      expect(alertImg.getAttribute('alt')).to.equal('');
+
+      ab.showErrorToast({ errorToastEl: toastEl, errorType: '.icon-error-request' }, 'err', {});
+
+      expect(toastEl.classList.contains('show')).to.be.true;
+      expect(toastEl.querySelector('.alert-text p').textContent).to.equal('Unable to process the request');
+      expect(document.activeElement).to.equal(alertIcon);
+
+      toastEl.querySelector('.alert-close').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(toastEl.classList.contains('show')).to.be.false;
+      expect(document.activeElement).to.equal(genBtn);
+
+      document.body.removeChild(toastBlock);
+    });
   });
 
   describe('Audio internals coverage', () => {
