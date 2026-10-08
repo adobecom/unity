@@ -80,16 +80,16 @@ function buildResizeOperation(engine) {
     intent: 'resize',
     expandCropMode,
     dimensionsLocked: true,
-    outputWidth: Math.round(width),
-    outputHeight: Math.round(height),
+    targetWidth: Math.round(width),
+    targetHeight: Math.round(height),
     dimensionUnit: engine.unit,
   };
   if (expandCropMode === 'Social') {
     resizeOp.socialApp = pill.platform;
     resizeOp.socialPostType = pill.name;
     if (pill.width && pill.height) {
-      resizeOp.outputWidth = Number(pill.width);
-      resizeOp.outputHeight = Number(pill.height);
+      resizeOp.targetWidth = Number(pill.width);
+      resizeOp.targetHeight = Number(pill.height);
     }
   }
   if (engine.outputType === 'image/jpeg') resizeOp.downloadQuality = Math.round(engine.quality);

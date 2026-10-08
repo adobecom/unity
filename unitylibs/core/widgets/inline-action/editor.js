@@ -44,8 +44,9 @@ function aspectRatioValue(row) {
   return null;
 }
 
-function composeAspectLabel(row) {
-  const name = row.name || row.group || '';
+// nameLoc is the localized display text; name stays unlocalized for internal use.
+function composeAspectLabel(row, localized = false) {
+  const name = (localized && row.nameLoc) || row.name || row.group || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
   if (row.ratio) return `${name} ${row.ratio}`.trim();
   return name;
@@ -323,7 +324,7 @@ function buildAspectPill(row, isActive = false) {
     attrs['data-width'] = row.width;
     attrs['data-height'] = row.height;
   }
-  return buildIconButton('button', attrs, row.icon, label);
+  return buildIconButton('button', attrs, row.icon, composeAspectLabel(row, true));
 }
 
 function buildCtaRow(isCrop, parsedData) {
@@ -348,6 +349,7 @@ function buildCropAspectSection(parsedData) {
     const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
     moreRows.forEach((r) => {
       const label = composeAspectLabel(r);
+      const displayLabel = composeAspectLabel(r, true);
       const ratioVal = aspectRatioValue(r);
       const opensFirefly = ratioVal === null;
       moreMenu.append(buildIconButton('button', {
@@ -355,10 +357,10 @@ function buildCropAspectSection(parsedData) {
         class: `ia-more-opt${opensFirefly ? ' ia-editor-open-in-firefly' : ''}`,
         'data-ratio': ratioVal ?? '',
         'data-label': label,
-
+        'data-display-label': displayLabel,
         ...(r.icon && { 'data-icon': r.icon }),
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
-      }, r.icon, label));
+      }, r.icon, displayLabel));
     });
     moreMenu.prepend(buildDropdownCloseButton());
     const moreTrigger = buildIconButton('button', {
@@ -1082,9 +1084,11 @@ export class EditorEngine {
         return;
       }
       opt.addEventListener('click', () => {
-        const { ratio, label, ratioText, icon } = opt.dataset;
+        const {
+          ratio, label, displayLabel, ratioText, icon,
+        } = opt.dataset;
         this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
-        this.selectAspect(Number(ratio), label, true, null, ratioText || null, icon || null);
+        this.selectAspect(Number(ratio), displayLabel || label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });
     });
