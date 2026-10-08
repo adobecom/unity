@@ -1,6 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-acrobat/action-binder.js';
+import { getUnityLibs, setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 
 const mockUpdateProgressBar = null;
 
@@ -1557,11 +1558,7 @@ describe('ActionBinder', () => {
     });
 
     describe('continueInApp', () => {
-      let locationSpy;
-
       beforeEach(() => {
-        locationSpy = sinon.spy();
-
         actionBinder.redirectUrl = 'https://test.com?param=value';
         actionBinder.operations = ['test-operation'];
         actionBinder.redirectWithoutUpload = false;
@@ -1570,6 +1567,7 @@ describe('ActionBinder', () => {
         actionBinder.multiFileFailure = null;
         actionBinder.showTransitionScreen = sinon.stub().resolves();
         actionBinder.transitionScreen = {
+          clearProgressBarHandler: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
@@ -1581,14 +1579,16 @@ describe('ActionBinder', () => {
         actionBinder.redirectUrl = '';
         await actionBinder.continueInApp();
         expect(actionBinder.showTransitionScreen.called).to.be.false;
-        expect(locationSpy.called).to.be.false;
+        expect(actionBinder.transitionScreen.updateProgressBar.called).to.be.false;
+        expect(actionBinder.delay.called).to.be.false;
       });
 
       it('should not proceed if no operations and not redirectWithoutUpload', async () => {
         actionBinder.operations = [];
         await actionBinder.continueInApp();
         expect(actionBinder.showTransitionScreen.called).to.be.false;
-        expect(locationSpy.called).to.be.false;
+        expect(actionBinder.transitionScreen.updateProgressBar.called).to.be.false;
+        expect(actionBinder.delay.called).to.be.false;
       });
 
       it('should log to splunk and continue when direct upload verb progress bar update throws', async () => {
@@ -1635,12 +1635,112 @@ describe('ActionBinder', () => {
           showSplashScreen: sinon.stub().resolves(),
         };
         actionBinder.transitionScreen = existingTransitionScreen;
+        // Stop after the progress update; this test does not exercise navigation.
+        actionBinder.delay.callsFake(async () => { actionBinder.redirectUrl = ''; });
         await actionBinder.continueInApp();
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
         expect(existingTransitionScreen.updateProgressBar.calledOnceWith(splashLayer, 100)).to.be.true;
+      });
+
+      it('should restore the splash and report an error when the final redirect delay fails', async () => {
+        const error = new Error('redirect delay failed');
+        actionBinder.delay.rejects(error);
+        await actionBinder.continueInApp();
+        expect(actionBinder.transitionScreen.showSplashScreen.calledOnce).to.be.true;
+        expect(actionBinder.dispatchErrorToast.calledOnceWith(
+          'error_generic',
+          500,
+          'Exception thrown when redirecting to product; redirect delay failed',
+          false,
+          undefined,
+          { code: 'upload_error_redirect_to_app', subCode: undefined, desc: error.message },
+        )).to.be.true;
+      });
+
+      it('should not navigate when cancel clears the redirect URL during the final progress delay', async () => {
+        actionBinder.transitionScreen = {
+          splashScreenEl: document.createElement('div'),
+          clearProgressBarHandler: sinon.stub(),
+          updateProgressBar: sinon.stub(),
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        actionBinder.delay = sinon.stub().callsFake(async () => { actionBinder.redirectUrl = ''; });
+        // multiFileFailure is only read when building the navigation URL. Throwing here makes a
+        // regression fail via the catch/toast path instead of actually navigating the test page.
+        Object.defineProperty(actionBinder, 'multiFileFailure', {
+          get() { throw new Error('navigation attempted after cancel'); },
+          configurable: true,
+        });
+        try {
+          await actionBinder.continueInApp();
+          expect(actionBinder.dispatchErrorToast.called).to.be.false;
+          expect(actionBinder.transitionScreen.showSplashScreen.called).to.be.false;
+        } finally {
+          delete actionBinder.multiFileFailure;
+        }
+      });
+    });
+
+    describe('showTransitionScreen', () => {
+      it('should clear the previous transition screen progress bar timer before loading a new one', async () => {
+        setUnityLibs('/unitylibs');
+        const splashLayer = document.createElement('div');
+        const existingTransitionScreen = {
+          splashScreenEl: splashLayer,
+          clearProgressBarHandler: sinon.stub(),
+        };
+        actionBinder.transitionScreen = existingTransitionScreen;
+        const pending = actionBinder.showTransitionScreen();
+        expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
+        await pending;
+        expect(actionBinder.transitionScreen).to.not.equal(existingTransitionScreen);
+        expect(actionBinder.transitionScreen.splashScreenEl).to.equal(splashLayer);
+        expect(actionBinder.transitionScreen.LOADER_LIMIT).to.equal(actionBinder.LOADER_LIMIT);
+        expect(actionBinder.transitionScreen.showSplashScreen).to.be.a('function');
+      });
+    });
+
+    describe('loadTransitionScreen', () => {
+      beforeEach(() => {
+        setUnityLibs('/unitylibs');
+        actionBinder.loadTransitionScreen.restore();
+      });
+
+      it('should load the transition screen only once and schedule its splash loader', async () => {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        const loader = sinon.stub(TransitionScreen.prototype, 'delayedSplashLoader').resolves();
+        await actionBinder.loadTransitionScreen();
+        const { transitionScreen } = actionBinder;
+        await actionBinder.loadTransitionScreen();
+        expect(transitionScreen).to.be.instanceOf(TransitionScreen);
+        expect(transitionScreen.workflowCfg).to.equal(mockWorkflowCfg);
+        expect(actionBinder.transitionScreen).to.equal(transitionScreen);
+        expect(loader.calledOnce).to.be.true;
+      });
+
+      it('should report and propagate a splash loader failure', async () => {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        const error = new Error('splash loader failed');
+        sinon.stub(TransitionScreen.prototype, 'delayedSplashLoader').rejects(error);
+        const toast = sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+        let failure;
+        try {
+          await actionBinder.loadTransitionScreen();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.equal(error);
+        expect(toast.calledOnceWith(
+          'pre_upload_error_transition_screen',
+          null,
+          `Error loading transition screen, Error: ${error}`,
+          false,
+          true,
+          { code: 'pre_upload_error_transition_screen' },
+        )).to.be.true;
       });
     });
 
@@ -1702,6 +1802,12 @@ describe('ActionBinder', () => {
         actionBinder.isUploading = false;
         await actionBinder.cancelAcrobatOperation();
         expect(actionBinder.filesData.workflowStep).to.equal('preuploading');
+      });
+
+      it('should clear recorded operations so the next upload cannot redirect with stale state', async () => {
+        actionBinder.operations = ['asset-cancelled'];
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.operations).to.deep.equal([]);
       });
     });
 
@@ -2036,6 +2142,24 @@ describe('ActionBinder', () => {
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
         expect(spy.called).to.be.true;
         spy.restore();
+      });
+
+      it('should register the RedirectReady listener only once across repeated actions', async () => {
+        actionBinder.transitionScreen = { test: 'existing' };
+        actionBinder.handlePreloads = sinon.stub().resolves();
+        const cancelStub = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
+        const addSpy = sinon.spy(window, 'addEventListener');
+        delete actionBinder.redirectReadyBound;
+        try {
+          await actionBinder.acrobatActionMaps('interrupt');
+          await actionBinder.acrobatActionMaps('interrupt');
+          await actionBinder.acrobatActionMaps('interrupt');
+          const registrations = addSpy.getCalls().filter((c) => c.args[0] === 'DCUnity:RedirectReady');
+          expect(registrations).to.have.lengthOf(1);
+        } finally {
+          addSpy.restore();
+          cancelStub.restore();
+        }
       });
 
       describe('enabledFeatures validation', () => {
