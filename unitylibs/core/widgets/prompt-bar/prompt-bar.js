@@ -674,6 +674,12 @@ export default class UnityWidget {
     return footer;
   }
 
+  // Builds the Generate button's accessible name from the static action word (e.g. "Generate")
+  // and the current verb text. Some authored verb options are bare nouns ("Image"), others are
+  // full phrases that already include the action word ("Generate video") - concatenating the two
+  // unconditionally produces a redundant, duplicated name (e.g. "Generate Generate video"), which
+  // is difficult for Voice Control/screen reader users to act on. Only prefix the static word when
+  // the verb text doesn't already start with it.
   computeGenBtnLabel() {
     const base = (this.genBtnBaseText || 'Generate').trim();
     const verb = (this.selectedVerbText || '').trim();
