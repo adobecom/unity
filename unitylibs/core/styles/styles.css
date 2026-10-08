@@ -301,6 +301,14 @@
   cursor: pointer;
 }
 
+button.alert-close {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+}
+
 [dir="rtl"] .unity-enabled .interactive-area .alert-holder .alert-toast .alert-content .alert-close,
 .upload.unity-enabled .alert-holder .alert-toast .alert-content .alert-close,
 .upload-marquee.unity-enabled .alert-holder .alert-toast .alert-content .alert-close {

@@ -901,7 +901,7 @@ describe('Firefly Workflow Tests', () => {
       unityElement.removeChild(legalLi);
     });
 
-    it('should create action button correctly', () => {
+    it('should create action button correctly as a real <button> (not a link) with a deduplicated accessible name', () => {
       const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
       testWidget.selectedVerbType = 'image';
       testWidget.selectedVerbText = 'Image';
@@ -909,12 +909,26 @@ describe('Firefly Workflow Tests', () => {
       cfg.innerHTML = '<img src="test.svg" alt="Generate" />Generate\nContent';
       const button = testWidget.createActBtn(cfg, 'gen-btn');
       expect(button).to.exist;
+      expect(button.tagName).to.equal('BUTTON');
+      expect(button.getAttribute('type')).to.equal('button');
+      expect(button.hasAttribute('href')).to.be.false;
       expect(button.classList.contains('unity-act-btn')).to.be.true;
       expect(button.classList.contains('gen-btn')).to.be.true;
       expect(button.getAttribute('daa-ll')).to.equal('Generate--image');
-      expect(button.getAttribute('aria-label')).to.include('Generate');
+      expect(button.getAttribute('aria-label')).to.equal('Generate Image');
       expect(button.querySelector('.btn-ico')).to.exist;
       expect(button.querySelector('.btn-txt')).to.exist;
+    });
+
+    it('should not duplicate the action word in the action button name when the verb text already includes it', () => {
+      const testWidget = new UnityWidget(block, unityElement, workflowCfg, spriteContainer);
+      testWidget.selectedVerbType = 'video';
+      testWidget.selectedVerbText = 'Generate video';
+      const cfg = document.createElement('div');
+      cfg.innerHTML = '<img src="test.svg" alt="Generate" />Generate';
+      const button = testWidget.createActBtn(cfg, 'gen-btn');
+      expect(button.getAttribute('aria-label')).to.equal('Generate video');
+      expect(button.querySelector('img').getAttribute('alt')).to.equal('Generate video');
     });
 
     it('should add widget to DOM correctly', () => {
@@ -1463,15 +1477,31 @@ describe('Firefly Workflow Tests', () => {
       expect(testWidget.updateAnalytics.calledWith('image')).to.be.true;
     });
 
-    it('should update genBtn aria-label when genBtn exists', () => {
+    it('should recompute genBtn aria-label from the static action word + current verb text (no duplication)', () => {
       testWidget.genBtn = document.createElement('button');
-      testWidget.genBtn.setAttribute('aria-label', 'Generate Image content');
+      testWidget.genBtn.setAttribute('aria-label', 'stale label');
+      testWidget.genBtnBaseText = 'Generate';
 
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
 
       handler(event);
 
-      expect(testWidget.genBtn.getAttribute('aria-label')).to.equal('Generate Image content');
+      // link.textContent resolves to 'iconImage' in this fixture (see 'should update selected
+      // verb type and text' above) and doesn't start with 'Generate', so the base word is prefixed.
+      expect(testWidget.genBtn.getAttribute('aria-label')).to.equal('Generate iconImage');
+    });
+
+    it('should not duplicate the action word when the verb text already starts with it', () => {
+      testWidget.genBtn = document.createElement('button');
+      testWidget.genBtn.setAttribute('aria-label', 'stale label');
+      testWidget.genBtnBaseText = 'Generate';
+      link.textContent = 'Generate video';
+
+      const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
+
+      handler(event);
+
+      expect(testWidget.genBtn.getAttribute('aria-label')).to.equal('Generate video');
     });
 
     it('should handle empty verb link texts gracefully', () => {
@@ -1591,7 +1621,7 @@ describe('Firefly Workflow Tests', () => {
       expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
       expect(selectedElement.getAttribute('aria-controls')).to.equal('media-menu');
       expect(selectedElement.getAttribute('data-selected-verb')).to.equal('image');
-      expect(selectedElement.getAttribute('aria-label')).to.equal('media type');
+      expect(selectedElement.getAttribute('aria-label')).to.equal('Select a feature, Image');
       expect(selectedElement.getAttribute('disabled')).to.equal('true');
     });
 
@@ -1885,6 +1915,8 @@ describe('Firefly Workflow Tests', () => {
       const closeBtn = header.querySelector('.verb-list-close');
       expect(closeBtn).to.exist;
       expect(closeBtn.tagName).to.equal('BUTTON');
+      expect(closeBtn.getAttribute('tabindex')).to.equal('-1');
+      expect(closeBtn.getAttribute('aria-hidden')).to.equal('true');
     });
 
     it('should close the menu and refocus the trigger when the close button is clicked', () => {
@@ -1907,7 +1939,7 @@ describe('Firefly Workflow Tests', () => {
       document.body.removeChild(menuContainer);
     });
 
-    it('should move focus to the close button when the menu is opened by click', () => {
+    it('should move focus to the selected listbox option when the menu is opened by click', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
       const panel = result[1];
@@ -1920,13 +1952,13 @@ describe('Firefly Workflow Tests', () => {
       selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      const closeBtn = panel.querySelector('.verb-list-close');
-      expect(document.activeElement).to.equal(closeBtn);
+      const selectedOption = panel.querySelector('.verb-item.selected .verb-link');
+      expect(document.activeElement).to.equal(selectedOption);
 
       document.body.removeChild(menuContainer);
     });
 
-    it('should move focus to the close button when the menu is opened via Enter key', () => {
+    it('should move focus to the selected listbox option when the menu is opened via Enter key', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
       const panel = result[1];
@@ -1939,8 +1971,8 @@ describe('Firefly Workflow Tests', () => {
       selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      const closeBtn = panel.querySelector('.verb-list-close');
-      expect(document.activeElement).to.equal(closeBtn);
+      const selectedOption = panel.querySelector('.verb-item.selected .verb-link');
+      expect(document.activeElement).to.equal(selectedOption);
 
       document.body.removeChild(menuContainer);
     });
@@ -2009,8 +2041,14 @@ describe('Firefly Workflow Tests', () => {
       const inpWrap = testWidget.createInpWrap(ph);
       const fieldset = inpWrap.querySelector('.inp-fieldset');
 
-      // legend is no longer used for the redesign - a real <label> is used instead
-      expect(fieldset.querySelector(':scope > legend')).to.not.exist;
+      // the redesign shows a visible per-field <label> instead of a visible legend,
+      // but a <fieldset> still needs a <legend> to programmatically group the prompt
+      // input with the verb/model combobox(es) - kept visually hidden via .sr-only
+      const legend = fieldset.querySelector(':scope > legend');
+      expect(legend).to.exist;
+      expect(legend.classList.contains('sr-only')).to.be.true;
+      expect(legend.textContent).to.equal('Enter prompt and select model to generate.');
+      expect(fieldset.firstElementChild).to.equal(legend);
 
       const textWrap = fieldset.querySelector('.inp-text-wrap');
       expect(textWrap).to.exist;
@@ -2172,7 +2210,7 @@ describe('Firefly Workflow Tests', () => {
       expect(testWidget.selectedModelId).to.equal('ia');
       expect(testWidget.selectedModelVersion).to.equal('1');
       expect(testWidget.selectedModelModule).to.equal('image');
-      expect(btn.getAttribute('aria-label')).to.equal('model type');
+      expect(btn.getAttribute('aria-label')).to.equal('Select a model, Img A');
       const firstItem = list.querySelector('.verb-item');
       expect(firstItem.classList.contains('selected')).to.be.true;
     });
@@ -2940,7 +2978,7 @@ describe('Firefly Workflow Tests', () => {
       expect(result).to.be.an('array');
     });
 
-    it('should include .verb-list-close alongside .verb-link when the verb menu is open', () => {
+    it('should not include .verb-list-close when the verb menu is open (close icon is mouse-only, not part of the combobox focus loop)', () => {
       const verbsContainer = document.createElement('div');
       verbsContainer.className = 'verbs-container show-menu';
       const verbLink = document.createElement('a');
@@ -2954,7 +2992,7 @@ describe('Firefly Workflow Tests', () => {
       const result = testActionBinder.getFocusElems();
 
       expect(result).to.include(verbLink);
-      expect(result).to.include(closeBtn);
+      expect(result).to.not.include(closeBtn);
     });
 
     it('should not include a close button selector when the model menu is open', () => {
@@ -3005,13 +3043,18 @@ describe('Firefly Workflow Tests', () => {
       document.body.removeChild(mockBlock);
     });
 
-    it('redesign verb menu (inside .pb-redesign) wraps focus on Tab past the last item', () => {
+    it('redesign verb menu (inside .pb-redesign) closes and refocuses the trigger on Tab past the last item (no dialog-style close-button focus stop)', () => {
       const autocomplete = document.createElement('div');
       autocomplete.className = 'autocomplete pb-redesign';
       const verbsContainer = document.createElement('div');
       verbsContainer.className = 'verbs-container show-menu';
+      const selectedVerb = document.createElement('button');
+      selectedVerb.className = 'selected-verb';
+      selectedVerb.setAttribute('aria-expanded', 'true');
       const closeBtn = document.createElement('button');
       closeBtn.className = 'verb-list-close';
+      closeBtn.setAttribute('tabindex', '-1');
+      closeBtn.setAttribute('aria-hidden', 'true');
       const link1 = document.createElement('a');
       link1.href = '#';
       link1.className = 'verb-link';
@@ -3020,7 +3063,7 @@ describe('Firefly Workflow Tests', () => {
       link2.href = '#';
       link2.className = 'verb-link';
       link2.textContent = 'Generate image';
-      verbsContainer.append(closeBtn, link1, link2);
+      verbsContainer.append(selectedVerb, closeBtn, link1, link2);
       autocomplete.appendChild(verbsContainer);
       mockBlock.appendChild(autocomplete);
       document.body.appendChild(mockBlock);
@@ -3031,8 +3074,10 @@ describe('Firefly Workflow Tests', () => {
       const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
       testActionBinder.handleTab(event, focusElems, [], currIdx);
 
-      expect(verbsContainer.classList.contains('show-menu')).to.be.true;
-      expect(document.activeElement).to.equal(closeBtn);
+      expect(focusElems).to.not.include(closeBtn);
+      expect(verbsContainer.classList.contains('show-menu')).to.be.false;
+      expect(selectedVerb.getAttribute('aria-expanded')).to.equal('false');
+      expect(document.activeElement).to.equal(selectedVerb);
 
       document.body.removeChild(mockBlock);
     });
@@ -3648,10 +3693,81 @@ describe('Firefly Workflow Tests', () => {
   describe('ActionBinder accessibility elements', () => {
     it('constructor should append sr-only live region', () => {
       const ab = new ActionBinder(unityElement, workflowCfg, block, canvasArea, actionMap);
-      const sr = ab.widgetWrap.querySelector('.sr-only');
+      // Scoped to a direct child: the live region is appended directly to widgetWrap
+      // (`this.widgetWrap.append(this.scrRead)`), whereas other `.sr-only` elements
+      // (e.g. a visually-hidden <legend>) can exist deeper inside the widget markup
+      // left over from other tests sharing the same `block` fixture. A plain
+      // `querySelector('.sr-only')` would match whichever comes first in document
+      // order, which is not necessarily this live region.
+      const sr = ab.widgetWrap.querySelector(':scope > .sr-only');
       expect(sr).to.exist;
       expect(sr.getAttribute('aria-live')).to.equal('polite');
       expect(sr.getAttribute('aria-atomic')).to.equal('true');
+    });
+
+    it('createErrorToast renders the close control as a real <button>, not a link', async () => {
+      const toastCanvasArea = document.createElement('div');
+      const copy = document.createElement('div');
+      copy.className = 'copy';
+      const promptBarEl = document.createElement('div');
+      promptBarEl.className = 'ex-unity-wrap';
+      copy.append(promptBarEl);
+      toastCanvasArea.append(copy);
+      const ab = new ActionBinder(unityElement, workflowCfg, block, toastCanvasArea, actionMap);
+      const toastEl = await ab.createErrorToast();
+      expect(toastEl).to.exist;
+      const closeBtn = toastEl.querySelector('.alert-close');
+      expect(closeBtn).to.exist;
+      expect(closeBtn.tagName).to.equal('BUTTON');
+      expect(closeBtn.getAttribute('type')).to.equal('button');
+      expect(closeBtn.hasAttribute('href')).to.be.false;
+    });
+
+    it('showErrorToast marks the message as an alert and moves focus into it; closing returns focus to Generate', async () => {
+      const toastUnityEl = document.createElement('div');
+      const errorIcon = document.createElement('span');
+      errorIcon.className = 'icon-error-request';
+      const errorMsgEl = document.createElement('span');
+      errorMsgEl.textContent = 'Unable to process the request';
+      toastUnityEl.append(errorIcon, errorMsgEl);
+
+      const toastBlock = document.createElement('div');
+      const genBtn = document.createElement('button');
+      genBtn.className = 'gen-btn';
+      const copy = document.createElement('div');
+      copy.className = 'copy';
+      const promptBarEl = document.createElement('div');
+      promptBarEl.className = 'ex-unity-wrap';
+      copy.append(promptBarEl);
+      toastBlock.append(genBtn, copy);
+
+      const toastCanvasArea = toastBlock;
+      document.body.append(toastBlock);
+
+      const ab = new ActionBinder(toastUnityEl, workflowCfg, toastBlock, toastCanvasArea, actionMap);
+      const toastEl = await ab.createErrorToast();
+      const alertIcon = toastEl.querySelector('.alert-icon');
+      expect(alertIcon.getAttribute('role')).to.equal('alert');
+      expect(alertIcon.getAttribute('tabindex')).to.equal('-1');
+      // the close button must not be inside the focused/announced message region, otherwise
+      // screen readers summarize it as an extra item (e.g. "...plus one more item") instead of
+      // announcing just the message
+      expect(alertIcon.querySelector('.alert-close')).to.not.exist;
+      const alertImg = alertIcon.querySelector('img');
+      expect(alertImg.getAttribute('alt')).to.equal('');
+
+      ab.showErrorToast({ errorToastEl: toastEl, errorType: '.icon-error-request' }, 'err', {});
+
+      expect(toastEl.classList.contains('show')).to.be.true;
+      expect(toastEl.querySelector('.alert-text p').textContent).to.equal('Unable to process the request');
+      expect(document.activeElement).to.equal(alertIcon);
+
+      toastEl.querySelector('.alert-close').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(toastEl.classList.contains('show')).to.be.false;
+      expect(document.activeElement).to.equal(genBtn);
+
+      document.body.removeChild(toastBlock);
     });
   });
 
