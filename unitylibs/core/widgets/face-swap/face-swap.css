@@ -577,6 +577,11 @@
   max-width: 340px;
 }
 
+/* Programmatic focus target only (tabindex=-1); the close button keeps its ring. */
+.unity-face-swap .interactive-area .alert-holder .alert-toast:focus {
+  outline: none;
+}
+
 .unity-face-swap .interactive-area .alert-holder .alert-toast .alert-content .alert-icon {
   gap: 0;
 }

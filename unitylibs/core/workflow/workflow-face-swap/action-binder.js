@@ -210,7 +210,7 @@ export default class ActionBinder {
         alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
         const alertContent = createTag('div', { class: 'alert-content' });
         alertContent.append(alertIcon, alertClose);
-        const alertToast = createTag('div', { class: 'alert-toast' }, alertContent);
+        const alertToast = createTag('div', { class: 'alert-toast', tabindex: '-1' }, alertContent);
         const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
         alertClose.addEventListener('click', (e) => {
           this.preventDefault(e);
@@ -247,8 +247,10 @@ export default class ActionBinder {
     /* pointer-events:none blocks the mouse but not the keyboard; inert covers both. */
     this.setMainInert(true);
     this.restoreFocusEl = focusBackEl || null;
-    const close = shown.querySelector('.alert-close');
-    setTimeout(() => close?.focus(), 0);
+    /* Focus the toast itself (as workflow-prompt-upload does) so keyboard focus leaves the
+       now-inert UI without forcing a ring onto the close button for mouse/touch users. */
+    const toast = shown.querySelector('.alert-toast');
+    setTimeout(() => toast?.focus({ preventScroll: true }), 0);
   }
 
   dismissErrorToast() {
