@@ -1591,7 +1591,7 @@ describe('Firefly Workflow Tests', () => {
       expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
       expect(selectedElement.getAttribute('aria-controls')).to.equal('media-menu');
       expect(selectedElement.getAttribute('data-selected-verb')).to.equal('image');
-      expect(selectedElement.getAttribute('aria-label')).to.equal('media type');
+      expect(selectedElement.getAttribute('aria-label')).to.equal('Select a feature, Image');
       expect(selectedElement.getAttribute('disabled')).to.equal('true');
     });
 
@@ -1885,6 +1885,8 @@ describe('Firefly Workflow Tests', () => {
       const closeBtn = header.querySelector('.verb-list-close');
       expect(closeBtn).to.exist;
       expect(closeBtn.tagName).to.equal('BUTTON');
+      expect(closeBtn.getAttribute('tabindex')).to.equal('-1');
+      expect(closeBtn.getAttribute('aria-hidden')).to.equal('true');
     });
 
     it('should close the menu and refocus the trigger when the close button is clicked', () => {
@@ -1907,7 +1909,7 @@ describe('Firefly Workflow Tests', () => {
       document.body.removeChild(menuContainer);
     });
 
-    it('should move focus to the close button when the menu is opened by click', () => {
+    it('should move focus to the selected listbox option when the menu is opened by click', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
       const panel = result[1];
@@ -1920,13 +1922,13 @@ describe('Firefly Workflow Tests', () => {
       selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      const closeBtn = panel.querySelector('.verb-list-close');
-      expect(document.activeElement).to.equal(closeBtn);
+      const selectedOption = panel.querySelector('.verb-item.selected .verb-link');
+      expect(document.activeElement).to.equal(selectedOption);
 
       document.body.removeChild(menuContainer);
     });
 
-    it('should move focus to the close button when the menu is opened via Enter key', () => {
+    it('should move focus to the selected listbox option when the menu is opened via Enter key', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
       const panel = result[1];
@@ -1939,8 +1941,8 @@ describe('Firefly Workflow Tests', () => {
       selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      const closeBtn = panel.querySelector('.verb-list-close');
-      expect(document.activeElement).to.equal(closeBtn);
+      const selectedOption = panel.querySelector('.verb-item.selected .verb-link');
+      expect(document.activeElement).to.equal(selectedOption);
 
       document.body.removeChild(menuContainer);
     });
@@ -2172,7 +2174,7 @@ describe('Firefly Workflow Tests', () => {
       expect(testWidget.selectedModelId).to.equal('ia');
       expect(testWidget.selectedModelVersion).to.equal('1');
       expect(testWidget.selectedModelModule).to.equal('image');
-      expect(btn.getAttribute('aria-label')).to.equal('model type');
+      expect(btn.getAttribute('aria-label')).to.equal('Select a model, Img A');
       const firstItem = list.querySelector('.verb-item');
       expect(firstItem.classList.contains('selected')).to.be.true;
     });
@@ -2940,7 +2942,7 @@ describe('Firefly Workflow Tests', () => {
       expect(result).to.be.an('array');
     });
 
-    it('should include .verb-list-close alongside .verb-link when the verb menu is open', () => {
+    it('should not include .verb-list-close when the verb menu is open (close icon is mouse-only, not part of the combobox focus loop)', () => {
       const verbsContainer = document.createElement('div');
       verbsContainer.className = 'verbs-container show-menu';
       const verbLink = document.createElement('a');
@@ -2954,7 +2956,7 @@ describe('Firefly Workflow Tests', () => {
       const result = testActionBinder.getFocusElems();
 
       expect(result).to.include(verbLink);
-      expect(result).to.include(closeBtn);
+      expect(result).to.not.include(closeBtn);
     });
 
     it('should not include a close button selector when the model menu is open', () => {
@@ -3005,13 +3007,18 @@ describe('Firefly Workflow Tests', () => {
       document.body.removeChild(mockBlock);
     });
 
-    it('redesign verb menu (inside .pb-redesign) wraps focus on Tab past the last item', () => {
+    it('redesign verb menu (inside .pb-redesign) closes and refocuses the trigger on Tab past the last item (no dialog-style close-button focus stop)', () => {
       const autocomplete = document.createElement('div');
       autocomplete.className = 'autocomplete pb-redesign';
       const verbsContainer = document.createElement('div');
       verbsContainer.className = 'verbs-container show-menu';
+      const selectedVerb = document.createElement('button');
+      selectedVerb.className = 'selected-verb';
+      selectedVerb.setAttribute('aria-expanded', 'true');
       const closeBtn = document.createElement('button');
       closeBtn.className = 'verb-list-close';
+      closeBtn.setAttribute('tabindex', '-1');
+      closeBtn.setAttribute('aria-hidden', 'true');
       const link1 = document.createElement('a');
       link1.href = '#';
       link1.className = 'verb-link';
@@ -3020,7 +3027,7 @@ describe('Firefly Workflow Tests', () => {
       link2.href = '#';
       link2.className = 'verb-link';
       link2.textContent = 'Generate image';
-      verbsContainer.append(closeBtn, link1, link2);
+      verbsContainer.append(selectedVerb, closeBtn, link1, link2);
       autocomplete.appendChild(verbsContainer);
       mockBlock.appendChild(autocomplete);
       document.body.appendChild(mockBlock);
@@ -3031,8 +3038,10 @@ describe('Firefly Workflow Tests', () => {
       const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
       testActionBinder.handleTab(event, focusElems, [], currIdx);
 
-      expect(verbsContainer.classList.contains('show-menu')).to.be.true;
-      expect(document.activeElement).to.equal(closeBtn);
+      expect(focusElems).to.not.include(closeBtn);
+      expect(verbsContainer.classList.contains('show-menu')).to.be.false;
+      expect(selectedVerb.getAttribute('aria-expanded')).to.equal('false');
+      expect(document.activeElement).to.equal(selectedVerb);
 
       document.body.removeChild(mockBlock);
     });
