@@ -80,6 +80,7 @@ function groupResizeRows(rows) {
 }
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
+const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
 // Matches Firefly's DPI so unit values convert to the same pixel size in both products.
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
@@ -413,9 +414,12 @@ function buildUnitPicker() {
 function buildCustomDetail(parsedData) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'custom' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
+  const lockBtn = createTag('button', {
+    type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true',
+  }, createTag('img', { src: LOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
   fields.append(
     buildDimensionField(parsedData.widthLabel || 'Width', 'ia-width-input'),
-    createTag('button', { type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true' }, '🔒'),
+    lockBtn,
     buildDimensionField(parsedData.heightLabel || 'Height', 'ia-height-input'),
     buildUnitPicker(),
   );
