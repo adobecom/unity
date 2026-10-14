@@ -3279,6 +3279,179 @@ describe('ActionBinder', () => {
     });
   });
 
+  describe('pdflite warm-up', () => {
+    const cfg = (verb, targetCfg = {}) => ({ enabledFeatures: [verb], targetCfg });
+
+    describe('shouldWarmPdflite', () => {
+      it('warms verbs whose limits include a page limit', () => {
+        actionBinder.workflowCfg = cfg('split-pdf');
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+      });
+
+      it('warms verbs enabled for integrity, acroform or scanned checks', () => {
+        actionBinder.workflowCfg = cfg('stylize', { pdfScannedCheckVerbs: ['stylize'] });
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+        actionBinder.workflowCfg = cfg('stylize', { pdfAcroformCheckVerbs: ['stylize'] });
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+        actionBinder.workflowCfg = cfg('stylize', { pdfIntegrityCheckVerbs: ['stylize'] });
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+      });
+
+      it('skips verbs that never load pdflite', () => {
+        actionBinder.workflowCfg = cfg('pdf-to-word');
+        expect(actionBinder.shouldWarmPdflite()).to.be.false;
+        actionBinder.workflowCfg = cfg('heic-to-pdf');
+        expect(actionBinder.shouldWarmPdflite()).to.be.false;
+      });
+
+      it('skips unknown verbs without throwing', () => {
+        actionBinder.workflowCfg = cfg('not-a-real-verb');
+        expect(actionBinder.shouldWarmPdflite()).to.be.false;
+      });
+    });
+
+    describe('warmPdfliteIfNeeded', () => {
+      let originalPdflite;
+
+      beforeEach(() => {
+        originalPdflite = window.pdflite;
+        window.pdflite = { pdfDetails: sinon.stub().returns({ NUM_PAGES: 1 }) };
+      });
+
+      afterEach(() => { window.pdflite = originalPdflite; });
+
+      it('does not import pdflite when the verb does not need it', async () => {
+        actionBinder.workflowCfg = cfg('heic-to-pdf');
+        const gate = sinon.spy(actionBinder, 'shouldWarmPdflite');
+        await actionBinder.warmPdfliteIfNeeded();
+        expect(gate.returned(false)).to.be.true;
+      });
+
+      it('resolves without throwing when warming runs', async () => {
+        actionBinder.workflowCfg = cfg('split-pdf');
+        await actionBinder.warmPdfliteIfNeeded();
+      });
+
+      it('never rejects, since warming is fire-and-forget', async () => {
+        actionBinder.workflowCfg = cfg('split-pdf');
+        sinon.stub(actionBinder, 'shouldWarmPdflite').throws(new Error('boom'));
+        let failure;
+        try {
+          await actionBinder.warmPdfliteIfNeeded();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.be.undefined;
+      });
+    });
+
+    it('warms pdflite when the file picker is opened', async () => {
+      const el = document.createElement('input');
+      el.type = 'file';
+      const block = { querySelector: sinon.stub().returns(el) };
+      const warm = sinon.stub(actionBinder, 'warmUploadAssets').resolves();
+
+      await actionBinder.initActionListeners(block, { input: 'upload' });
+      el.dispatchEvent(new Event('click'));
+      el.dispatchEvent(new Event('click'));
+
+      expect(warm.calledOnce).to.be.true;
+    });
+
+    it('warms on drag-over, so the drop path is covered too', async () => {
+      const el = document.createElement('div');
+      const block = { querySelector: sinon.stub().returns(el) };
+      const warm = sinon.stub(actionBinder, 'warmUploadAssets').resolves();
+
+      await actionBinder.initActionListeners(block, { div: 'upload' });
+      el.dispatchEvent(new Event('dragover'));
+
+      expect(warm.called).to.be.true;
+    });
+
+    it('warms only once across repeated triggers', async () => {
+      const limits = sinon.stub(actionBinder, 'warmVerbLimits').resolves();
+      sinon.stub(actionBinder, 'warmUploadHandler').resolves();
+      sinon.stub(actionBinder, 'warmPdfliteIfNeeded').resolves();
+
+      await actionBinder.warmUploadAssets();
+      await actionBinder.warmUploadAssets();
+      await actionBinder.warmUploadAssets();
+
+      expect(limits.calledOnce).to.be.true;
+    });
+
+    it('warms limits and pdflite together', async () => {
+      const limits = sinon.stub(actionBinder, 'warmVerbLimits').resolves();
+      const handler = sinon.stub(actionBinder, 'warmUploadHandler').resolves();
+      const pdflite = sinon.stub(actionBinder, 'warmPdfliteIfNeeded').resolves();
+      await actionBinder.warmUploadAssets();
+      expect(limits.calledOnce).to.be.true;
+      expect(handler.calledOnce).to.be.true;
+      expect(pdflite.calledOnce).to.be.true;
+    });
+
+    it('warms the upload handler module without creating the handler', async () => {
+      setUnityLibs('/unitylibs');
+      actionBinder.workflowCfg = { name: 'workflow-acrobat', enabledFeatures: ['split-pdf'], targetCfg: {} };
+      actionBinder.uploadHandler = null;
+      await actionBinder.warmUploadHandler();
+      expect(actionBinder.uploadHandler).to.be.null;
+    });
+  });
+
+  describe('getVerbLimits', () => {
+    beforeEach(() => {
+      actionBinder.limitsPromise = null;
+      actionBinder.workflowCfg = { name: 'workflow-acrobat', enabledFeatures: ['split-pdf'], targetCfg: {} };
+    });
+
+    it('fetches once and reuses the cached limits', async () => {
+      const load = sinon.stub(actionBinder, 'loadVerbLimits').resolves({ maxNumFiles: 1 });
+      const first = await actionBinder.getVerbLimits();
+      const second = await actionBinder.getVerbLimits();
+      expect(load.calledOnce).to.be.true;
+      expect(first).to.deep.equal({ maxNumFiles: 1 });
+      expect(second).to.deep.equal({ maxNumFiles: 1 });
+    });
+
+    it('does not cache an empty result, so a failed load is retried', async () => {
+      const load = sinon.stub(actionBinder, 'loadVerbLimits').resolves({});
+      await actionBinder.getVerbLimits();
+      await actionBinder.getVerbLimits();
+      expect(load.calledTwice).to.be.true;
+      expect(actionBinder.limitsPromise).to.be.null;
+    });
+  });
+
+  describe('warmVerbLimits', () => {
+    let originalFetch;
+
+    beforeEach(() => {
+      originalFetch = window.fetch;
+      actionBinder.workflowCfg = { name: 'workflow-acrobat', enabledFeatures: ['split-pdf'], targetCfg: {} };
+    });
+
+    afterEach(() => { window.fetch = originalFetch; });
+
+    it('primes the limits request', async () => {
+      window.fetch = sinon.stub().resolves({ ok: true });
+      await actionBinder.warmVerbLimits();
+      expect(window.fetch.calledOnceWith(actionBinder.getVerbLimitsUrl())).to.be.true;
+    });
+
+    it('never rejects when priming fails', async () => {
+      window.fetch = sinon.stub().rejects(new Error('offline'));
+      let failure;
+      try {
+        await actionBinder.warmVerbLimits();
+      } catch (caught) {
+        failure = caught;
+      }
+      expect(failure).to.be.undefined;
+    });
+  });
+
   describe('filterFilesWithPdflite', () => {
     beforeEach(() => {
       actionBinder.MULTI_FILE = false;

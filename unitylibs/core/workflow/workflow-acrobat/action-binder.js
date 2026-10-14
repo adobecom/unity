@@ -192,6 +192,8 @@ export default class ActionBinder {
     this.canvasArea = canvasArea;
     this.actionMap = actionMap;
     this.limits = {};
+    this.limitsPromise = null;
+    this.assetsWarmed = false;
     this.operations = [];
     this.acrobatApiConfig = null;
     this.networkUtils = new NetworkUtils();
@@ -610,14 +612,56 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
+  getUploadHandlerUrl() {
+    return `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`;
+  }
+
   async initUploadHandler() {
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    const { default: UploadHandler } = await import(this.getUploadHandlerUrl());
     this.uploadHandler = new UploadHandler(this, this.networkUtils);
+  }
+
+  // Warms only the module: the handler instance is still created per upload.
+  async warmUploadHandler() {
+    try {
+      await import(this.getUploadHandlerUrl());
+    } catch (error) {
+      // Best effort: initUploadHandler imports it again and surfaces any failure.
+    }
   }
 
   async getMimeType(file) {
     const { getMimeType } = await import('../../../utils/FileUtils.js');
     return getMimeType(file.name);
+  }
+
+  async warmUploadAssets() {
+    if (this.assetsWarmed) return;
+    this.assetsWarmed = true;
+    await Promise.all([
+      this.warmVerbLimits(),
+      this.warmUploadHandler(),
+      this.warmPdfliteIfNeeded(),
+    ]);
+  }
+
+  shouldWarmPdflite() {
+    const verb = this.workflowCfg.enabledFeatures[0];
+    const { targetCfg } = this.workflowCfg;
+    return (targetCfg.pdfIntegrityCheckVerbs || []).includes(verb)
+      || (targetCfg.pdfAcroformCheckVerbs || []).includes(verb)
+      || (targetCfg.pdfScannedCheckVerbs || []).includes(verb)
+      || (ActionBinder.LIMITS_MAP[verb] || []).some((key) => key.includes('page-limit'));
+  }
+
+  async warmPdfliteIfNeeded() {
+    try {
+      if (!this.shouldWarmPdflite()) return;
+      const { warmPdflite } = await import('../../../scripts/pdflite-validator.js');
+      await warmPdflite();
+    } catch (error) {
+      // Best effort: validation imports pdflite again and surfaces any failure.
+    }
   }
 
   async filterFilesWithPdflite(files) {
@@ -732,9 +776,34 @@ export default class ActionBinder {
     }
   }
 
+  getVerbLimitsUrl(workflowName = this.workflowCfg.name) {
+    return `${getUnityLibs()}/core/workflow/${workflowName}/limits.json`;
+  }
+
+  async getVerbLimits() {
+    if (!this.limitsPromise) {
+      this.limitsPromise = this.loadVerbLimits(
+        this.workflowCfg.name,
+        ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]],
+      );
+    }
+    const limits = await this.limitsPromise;
+    // Only successful lookups stay cached, so a failed load can be retried.
+    if (!limits || Object.keys(limits).length === 0) this.limitsPromise = null;
+    return limits;
+  }
+
+  async warmVerbLimits() {
+    try {
+      await fetch(this.getVerbLimitsUrl());
+    } catch (error) {
+      // Best effort: the real request re-runs and reports failures.
+    }
+  }
+
   async loadVerbLimits(workflowName, keys) {
     try {
-      const response = await fetch(`${getUnityLibs()}/core/workflow/${workflowName}/limits.json`);
+      const response = await fetch(this.getVerbLimitsUrl(workflowName));
       if (!response.ok) throw new Error('Error loading verb limits');
       const limits = await response.json();
       const combinedLimits = keys.reduce((acc, key) => {
@@ -764,7 +833,7 @@ export default class ActionBinder {
   }
 
   async processSingleFile(files) {
-    this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
+    this.limits = await this.getVerbLimits();
     if (!this.limits || Object.keys(this.limits).length === 0) return;
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('validation_error_only_accept_one_file');
@@ -780,7 +849,7 @@ export default class ActionBinder {
       await this.dispatchErrorToast('validation_error_only_accept_one_file');
       return;
     }
-    this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
+    this.limits = await this.getVerbLimits();
     if (!this.limits || Object.keys(this.limits).length === 0) return;
     await this.handleFileUpload(files);
   }
@@ -947,7 +1016,11 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
-          el.addEventListener('dragover', (e) => e.preventDefault());
+          // Warm on drag-over: the drop path has no picker click to hook.
+          el.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.warmUploadAssets();
+          });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
@@ -955,7 +1028,10 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'BODY': {
-          const onDragOver = (e) => e.preventDefault();
+          const onDragOver = (e) => {
+            e.preventDefault();
+            this.warmUploadAssets();
+          };
           const onDrop = async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
@@ -974,6 +1050,8 @@ export default class ActionBinder {
           break;
         }
         case el.nodeName === 'INPUT':
+          // Warm while the file picker is open: after LCP, and off the upload path.
+          el.addEventListener('click', () => { this.warmUploadAssets(); }, { once: true });
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'change');
