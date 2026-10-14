@@ -130,7 +130,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .unity-face-swap .fs-slot {
@@ -355,7 +355,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 26px;
+  margin-top: 24px;
 }
 
 .unity-face-swap .fs-model {
@@ -400,6 +400,7 @@
   border-radius: 25px;
   background: linear-gradient(90deg, #d73220 0%, #d92361 33%, #7155fa 100%);
   color: #fff;
+  font-family: inherit;
   cursor: pointer;
 }
 
@@ -435,16 +436,16 @@
 
 .unity-face-swap .fs-divider {
   height: 2px;
-  margin-top: 20px;
+  margin-top: 24px;
   background: #272727;
 }
 
 .unity-face-swap .fs-gallery {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
-  margin-top: 16px;
+  margin-top: 24px;
 }
 
 .unity-face-swap .fs-gallery-label {
@@ -468,7 +469,7 @@
   position: relative;
   flex: 0 0 calc((100% - 24px) / 4);
   min-width: 90px;
-  aspect-ratio: 109 / 96;
+  aspect-ratio: 1;
   overflow: hidden;
   border-radius: 4px;
   cursor: pointer;
@@ -583,7 +584,7 @@
 
 @media screen and (min-width: 1200px) {
   .unity-face-swap > .interactive-area {
-    padding: 14px;
+    padding: 16px;
     border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
     background: var(--fs-card-bg, #1b1b1b);
   }
@@ -602,14 +603,15 @@
 
   .unity-face-swap .unity-slf-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 500px;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) 504px;
+    gap: 0;
+    align-items: center;
   }
 
   .unity-face-swap .unity-slf-right {
     position: relative;
-    width: 500px;
-    min-height: 464px;
+    width: 504px;
+    height: 493px;
     flex: none;
   }
 
