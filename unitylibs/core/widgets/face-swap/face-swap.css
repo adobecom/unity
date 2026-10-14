@@ -584,7 +584,7 @@
 
 @media screen and (min-width: 1200px) {
   .unity-face-swap > .interactive-area {
-    padding: 16px;
+    padding: 15px;
     border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
     background: var(--fs-card-bg, #1b1b1b);
   }
@@ -598,7 +598,16 @@
   }
 
   .unity-face-swap .unity-slf-left {
+    padding: 16px 24px 16px 16px;
     background: transparent;
+  }
+
+  .unity-face-swap .fs-divider {
+    height: 1px;
+  }
+
+  .unity-face-swap .fs-gallery-list {
+    margin: -2px;
   }
 
   .unity-face-swap .unity-slf-main {
