@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 
 import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from '../../../scripts/utils.js';
+import TypeaheadUtils from '../../../utils/TypeaheadUtils.js';
 
 function isFireflyRedesign() {
   return !!(document.querySelector('meta[name="theme"][content="firefly-redesign"]')
@@ -21,6 +22,12 @@ function setVerbSelectedOrigin(panel, btnEl, targetEl) {
   const targetTextRect = getTextRect(targetEl);
   panel.style.setProperty('--verb-selected-dx', `${btnTextRect.left - targetTextRect.left}px`);
   panel.style.setProperty('--verb-selected-dy', `${btnTextRect.top - targetTextRect.top}px`);
+}
+
+function setComboboxTriggerAriaLabel(triggerBtn, labelText, valueText) {
+  const label = (labelText || '').trim();
+  const value = (valueText || '').trim();
+  triggerBtn.setAttribute('aria-label', value ? `${label}, ${value}` : label);
 }
 
 export default class UnityWidget {
@@ -108,6 +115,14 @@ export default class UnityWidget {
     );
   }
 
+  closeVerbOrModelMenu(selectedElement, { focusTrigger = true } = {}) {
+    const menuContainer = selectedElement?.parentElement;
+    if (!menuContainer) return;
+    menuContainer.classList.remove('show-menu');
+    selectedElement.setAttribute('aria-expanded', 'false');
+    if (focusTrigger) selectedElement.focus();
+  }
+
   showVerbMenu(selectedElement) {
     const menuContainer = selectedElement.parentElement;
     document.querySelectorAll('.verbs-container').forEach((container) => {
@@ -184,14 +199,10 @@ export default class UnityWidget {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const verbLinkTexts = [];
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
         listLink.setAttribute('aria-selected', 'false');
-        const text = listLink.textContent.trim();
-        if (text) verbLinkTexts.push(text);
       });
-      verbLinkTexts.sort((a, b) => b.length - a.length);
       if (this.isFireflyRedesign) {
         setVerbSelectedOrigin(verbList, selectedElement, link);
       }
@@ -209,11 +220,13 @@ export default class UnityWidget {
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedModelId = this.selectedModelId;
         selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
+        setComboboxTriggerAriaLabel(selectedElement, verbList.getAttribute('aria-label'), this.selectedModelText);
       } else {
         this.selectedVerbType = link.getAttribute('data-verb-type');
         this.selectedVerbText = link.textContent.trim();
         selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
+        setComboboxTriggerAriaLabel(selectedElement, verbList.getAttribute('aria-label'), this.selectedVerbText);
         const inpField = this.widget.querySelector('.inp-field');
         if (inpField) {
           inpField.placeholder = this.resolveVerbPlaceholder(this.workflowCfg.placeholder, this.selectedVerbType);
@@ -253,14 +266,9 @@ export default class UnityWidget {
       this.updateAnalytics(this.selectedVerbType);
       if (this.genBtn) {
         const img = this.genBtn.querySelector('img[src*=".svg"]');
-        this.genBtn.setAttribute(
-          'aria-label',
-          (this.genBtn.getAttribute('aria-label') || '').replace(
-            new RegExp(`\\b(${verbLinkTexts.join('|')})\\b`),
-            this.selectedVerbText,
-          ),
-        );
-        if (img) img.setAttribute('alt', `${this.genBtn.getAttribute('aria-label') || ''}`);
+        const label = this.computeGenBtnLabel();
+        this.genBtn.setAttribute('aria-label', label);
+        if (img) img.setAttribute('alt', label);
       }
     };
   }
@@ -313,11 +321,11 @@ export default class UnityWidget {
     const inputPlaceHolder = this.el.querySelector('.icon-placeholder-input').parentElement.textContent;
     const selectedVerbType = verbs[0]?.className.split('-')[2];
     const selectedVerb = verbs[0]?.nextElementSibling;
+    const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
     const selectedElement = createTag('button', {
       class: 'selected-verb',
       'aria-expanded': 'false',
       'aria-controls': 'media-menu',
-      'aria-label': 'media type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
       'data-selected-verb': selectedVerbType,
@@ -325,27 +333,37 @@ export default class UnityWidget {
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedVerbText = selectedVerb?.textContent.trim();
+    setComboboxTriggerAriaLabel(selectedElement, labelText, this.selectedVerbText);
     if (verbs.length <= 1) {
       selectedElement.setAttribute('disabled', 'true');
       return [selectedElement];
     }
     this.widgetWrap.classList.add('verb-options');
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': 'Media options' });
+    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': labelText });
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
-    let closeBtn = null;
+
+    const focusSelectedOrFirstOption = () => {
+      if (selectedElement.getAttribute('aria-expanded') !== 'true') return;
+      const options = [...verbList.querySelectorAll('.verb-link')];
+      const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
+      (selected || options[0])?.focus();
+    };
+    const matchVerbTypeahead = TypeaheadUtils.createMatcher();
     let panel = verbList;
     if (this.isFireflyRedesign) {
       const header = createTag('div', { class: 'verb-list-header' });
-      const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
       const label = createTag('span', { class: 'verb-list-label' }, labelText);
-      closeBtn = createTag('button', { type: 'button', class: 'verb-list-close', 'aria-label': 'Close' }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
+      const closeBtn = createTag('button', {
+        type: 'button',
+        class: 'verb-list-close',
+        tabindex: '-1',
+        'aria-hidden': 'true',
+      }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        selectedElement.parentElement.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
-        selectedElement.focus();
+        this.closeVerbOrModelMenu(selectedElement);
       });
       header.append(label, closeBtn);
       panel = createTag('div', { class: 'verb-list-panel' });
@@ -357,30 +375,50 @@ export default class UnityWidget {
       const menuContainer = selectedElement.parentElement;
       if (!menuContainer.contains(e.target)) {
         document.removeEventListener('click', handleDocumentClick);
-        menuContainer.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
+        this.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
       }
+    };
+    const openVerbMenuIfClosed = () => {
+      if (selectedElement.getAttribute('aria-expanded') === 'true') return;
+      this.hidePromptDropdown(selectedElement);
+      this.showVerbMenu(selectedElement);
+      document.addEventListener('click', handleDocumentClick);
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
-      if (closeBtn && selectedElement.getAttribute('aria-expanded') === 'true') closeBtn.focus();
+      focusSelectedOrFirstOption();
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-        if (closeBtn && selectedElement.getAttribute('aria-expanded') === 'true') closeBtn.focus();
+        openVerbMenuIfClosed();
+        focusSelectedOrFirstOption();
+        return;
+      }
+      if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        e.stopPropagation();
+        openVerbMenuIfClosed();
+        const options = [...verbList.querySelectorAll('.verb-link')];
+        (e.key === 'Home' ? options[0] : options[options.length - 1])?.focus();
+        return;
+      }
+      if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        openVerbMenuIfClosed();
+        const options = [...verbList.querySelectorAll('.verb-link')];
+        matchVerbTypeahead(options, e.key)?.focus();
+        return;
       }
       if (e.key === 'Escape' || e.code === 27) {
         e.preventDefault();
         e.stopPropagation();
-        selectedElement.parentElement.classList?.remove('show-menu');
-        selectedElement.focus();
+        this.closeVerbOrModelMenu(selectedElement);
       }
     });
     verbs[0]?.classList.add('selected');
@@ -403,11 +441,11 @@ export default class UnityWidget {
     const selectedModelVersion = models[0].version;
     const selectedModelModule = models[0].module;
     const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
+    const labelText = this.workflowCfg?.placeholder?.['placeholder-model-label'] || 'Select a model';
     const selectedElement = createTag('button', {
       class: 'selected-model',
       'aria-expanded': 'false',
       'aria-controls': 'model-menu',
-      'aria-label': 'model type',
       'aria-haspopup': 'listbox',
       role: 'combobox',
       'data-selected-model-id': selectedModelType,
@@ -421,43 +459,67 @@ export default class UnityWidget {
     this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedModelText = models[0].name.trim();
+    setComboboxTriggerAriaLabel(selectedElement, labelText, this.selectedModelText);
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-label': 'Model options' });
+    const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-label': labelText });
     listItems.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
     const handleDocumentClick = (e) => {
       const menuContainer = selectedElement.parentElement;
       if (!menuContainer.contains(e.target)) {
         document.removeEventListener('click', handleDocumentClick);
-        menuContainer.classList.remove('show-menu');
-        selectedElement.setAttribute('aria-expanded', 'false');
+        this.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
       }
     };
-    const focusFirstListItem = () => {
-      if (selectedElement.getAttribute('aria-expanded') === 'true') {
-        listItems.querySelector('.verb-link')?.focus();
-      }
+
+    const focusSelectedOrFirstOption = () => {
+      if (selectedElement.getAttribute('aria-expanded') !== 'true') return;
+      const options = [...listItems.querySelectorAll('.verb-link')];
+      const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
+      (selected || options[0])?.focus();
+    };
+    const matchModelTypeahead = TypeaheadUtils.createMatcher();
+    const openModelMenuIfClosed = () => {
+      if (selectedElement.getAttribute('aria-expanded') === 'true') return;
+      this.hidePromptDropdown(selectedElement);
+      this.showVerbMenu(selectedElement);
+      document.addEventListener('click', handleDocumentClick);
     };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
       this.showVerbMenu(selectedElement);
-      focusFirstListItem();
+      focusSelectedOrFirstOption();
       document.addEventListener('click', handleDocumentClick);
     }, true);
     selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        this.hidePromptDropdown(selectedElement);
-        this.showVerbMenu(selectedElement);
-        focusFirstListItem();
+        openModelMenuIfClosed();
+        focusSelectedOrFirstOption();
+        return;
+      }
+      if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        e.stopPropagation();
+        openModelMenuIfClosed();
+        const options = [...listItems.querySelectorAll('.verb-link')];
+        (e.key === 'Home' ? options[0] : options[options.length - 1])?.focus();
+        return;
+      }
+      if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        openModelMenuIfClosed();
+        const options = [...listItems.querySelectorAll('.verb-link')];
+        matchModelTypeahead(options, e.key)?.focus();
+        return;
       }
       if (e.key === 'Escape' || e.code === 27) {
         e.preventDefault();
         e.stopPropagation();
-        selectedElement.parentElement.classList?.remove('show-menu');
-        selectedElement.focus();
+        this.closeVerbOrModelMenu(selectedElement);
       }
     });
     this.createDropdownItems(models, listItems, selectedElement, menuIcon, inputPlaceHolder, true);
@@ -499,6 +561,10 @@ export default class UnityWidget {
     const promptLabel = useLegend
       ? createTag('legend', { class: 'inp-field-label' }, promptLabelText)
       : createTag('label', { for: 'promptInput', class: 'inp-field-label' }, promptLabelText);
+    if (hasDropdowns && this.isFireflyRedesign) {
+      const groupLabelText = ph['placeholder-group-label'] || 'Enter prompt and select model to generate.';
+      inpGroup.append(createTag('legend', { class: 'sr-only' }, groupLabelText));
+    }
     let inpFieldSlot;
     if (this.isFireflyRedesign) {
       inpFieldSlot = createTag('div', { class: 'inp-text-wrap' });
@@ -608,14 +674,28 @@ export default class UnityWidget {
     return footer;
   }
 
+  computeGenBtnLabel() {
+    const base = (this.genBtnBaseText || 'Generate').trim();
+    const verb = (this.selectedVerbText || '').trim();
+    if (!verb) return base;
+    return verb.toLowerCase().startsWith(base.toLowerCase()) ? verb : `${base} ${verb}`;
+  }
+
   createActBtn(cfg, cls) {
     if (!cfg) return null;
-    const txt = cfg.innerText?.trim();
+    const txt = (cfg.innerText?.trim() || '').split('\n')[0];
+    this.genBtnBaseText = txt;
     const img = cfg.querySelector('img[src*=".svg"]');
-    if (img) img.setAttribute('alt', `${txt?.split('\n')[0]} ${this.selectedVerbText}`);
-    const btn = createTag('a', { href: '#', class: `unity-act-btn ${cls}`, 'daa-ll': `Generate--${this.selectedVerbType}`, 'aria-label': `${txt?.split('\n')[0]} ${this.selectedVerbText}` });
+    const label = this.computeGenBtnLabel();
+    if (img) img.setAttribute('alt', label);
+    const btn = createTag('button', {
+      type: 'button',
+      class: `unity-act-btn ${cls}`,
+      'daa-ll': `Generate--${this.selectedVerbType}`,
+      'aria-label': label,
+    });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
-    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt.split('\n')[0]));
+    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt));
     this.genBtn = btn;
     return btn;
   }
