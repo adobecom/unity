@@ -626,7 +626,7 @@
   }
 
   .unity-face-swap > .interactive-area {
-    padding: 8px 8px 24px;
+    padding: 8px;
     border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
     background: var(--fs-card-bg, #1b1b1b);
   }
@@ -636,7 +636,7 @@
   }
 
   .unity-face-swap .unity-slf-left {
-    padding: 10px 15px;
+    padding: 16px;
     border: 1px solid #2e2e2e;
     border-radius: 12px;
     background: #202020;
@@ -709,8 +709,27 @@
     margin-top: 24px;
   }
 
+  .unity-face-swap .fs-gallery {
+    position: relative;
+    margin-top: 16px;
+  }
+
+  .unity-face-swap .fs-gallery::after {
+    content: '';
+    position: absolute;
+    right: -16px;
+    bottom: 0;
+    left: -16px;
+    height: 113px;
+    background: linear-gradient(90deg, #212121 0%, rgb(33 33 33 / 0%) 4.77%, rgb(33 33 33 / 0%) 95%, #212121 100%);
+    pointer-events: none;
+  }
+
   .unity-face-swap .fs-gallery-list {
     gap: 10px;
+    margin: 0 -16px;
+    padding: 2px 16px;
+    scroll-padding-inline: 16px;
   }
 
   .unity-face-swap .fs-gallery-item {
