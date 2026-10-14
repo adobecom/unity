@@ -1647,6 +1647,67 @@ describe('Firefly Workflow Tests', () => {
       expect(verbList.getAttribute('style')).to.equal('display: none;');
     });
 
+    it('Home key opens the menu (if closed) and focuses the first option', () => {
+      testWidget.widget = document.createElement('div');
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const options = panel.querySelectorAll('.verb-link');
+      expect(document.activeElement).to.equal(options[0]);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('End key opens the menu (if closed) and focuses the last option', () => {
+      testWidget.widget = document.createElement('div');
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const options = panel.querySelectorAll('.verb-link');
+      expect(document.activeElement).to.equal(options[options.length - 1]);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('typing a printable character opens the menu and focuses the first matching option', () => {
+      testWidget.widget = document.createElement('div');
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', bubbles: true, cancelable: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.true;
+      const options = [...panel.querySelectorAll('.verb-link')];
+      const video = options.find((o) => o.textContent.trim() === 'Video');
+      expect(document.activeElement).to.equal(video);
+
+      document.body.removeChild(menuContainer);
+    });
+
     it('should set widget properties correctly', () => {
       testWidget.verbDropdown();
 
@@ -3078,6 +3139,159 @@ describe('Firefly Workflow Tests', () => {
       expect(verbsContainer.classList.contains('show-menu')).to.be.false;
       expect(selectedVerb.getAttribute('aria-expanded')).to.equal('false');
       expect(document.activeElement).to.equal(selectedVerb);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('Home/End move focus to the first/last option when the verb menu is open', () => {
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const link1 = document.createElement('a');
+      link1.href = '#';
+      link1.className = 'verb-link';
+      link1.textContent = 'Generate video';
+      const link2 = document.createElement('a');
+      link2.href = '#';
+      link2.className = 'verb-link';
+      link2.textContent = 'Generate image';
+      const link3 = document.createElement('a');
+      link3.href = '#';
+      link3.className = 'verb-link';
+      link3.textContent = 'Generate audio';
+      verbsContainer.append(link1, link2, link3);
+      mockBlock.appendChild(verbsContainer);
+      document.body.appendChild(mockBlock);
+
+      link2.focus();
+      link2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(link1);
+
+      link2.focus();
+      link2.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(link3);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('Home/End do nothing (no stray jump into the prompt-suggestions dropdown) when no verb/model menu is open', () => {
+      // e.g. a widget whose trigger button doesn't yet intercept Home/End locally and lets it
+      // bubble up while its combobox is still closed - this must not fall through to navigating
+      // an unrelated, possibly hidden prompt-suggestions dropdown.
+      const dropdown = mockBlock.querySelector('.drop');
+      const dropItem1 = document.createElement('div');
+      dropItem1.className = 'drop-item';
+      const dropItem2 = document.createElement('div');
+      dropItem2.className = 'drop-item';
+      dropdown.append(dropItem1, dropItem2);
+
+      const genBtn = document.createElement('button');
+      genBtn.className = 'gen-btn';
+      mockBlock.appendChild(genBtn);
+      document.body.appendChild(mockBlock);
+
+      genBtn.focus();
+      genBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(genBtn);
+
+      genBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(genBtn);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('Home/End in the prompt textarea keep native cursor-to-line-start/end behavior (not prevented)', () => {
+      const dropdown = mockBlock.querySelector('.drop');
+      const dropItem = document.createElement('div');
+      dropItem.className = 'drop-item';
+      dropdown.append(dropItem);
+      const inpField = mockBlock.querySelector('.inp-field');
+      document.body.appendChild(mockBlock);
+
+      inpField.focus();
+      const homeEvent = new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true });
+      inpField.dispatchEvent(homeEvent);
+      expect(homeEvent.defaultPrevented).to.be.false;
+      expect(document.activeElement).to.equal(inpField);
+
+      const endEvent = new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true });
+      inpField.dispatchEvent(endEvent);
+      expect(endEvent.defaultPrevented).to.be.false;
+      expect(document.activeElement).to.equal(inpField);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('typing a character while an option is focused jumps to the first matching option (typeahead)', () => {
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const link1 = document.createElement('a');
+      link1.href = '#';
+      link1.className = 'verb-link';
+      link1.textContent = 'Generate video';
+      const link2 = document.createElement('a');
+      link2.href = '#';
+      link2.className = 'verb-link';
+      link2.textContent = 'Generate image';
+      const link3 = document.createElement('a');
+      link3.href = '#';
+      link3.className = 'verb-link';
+      link3.textContent = 'Generate audio';
+      verbsContainer.append(link1, link2, link3);
+      mockBlock.appendChild(verbsContainer);
+      document.body.appendChild(mockBlock);
+
+      link1.focus();
+      link1.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(link3);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('typing does not get intercepted as typeahead when focus is on the prompt textarea', () => {
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const link1 = document.createElement('a');
+      link1.href = '#';
+      link1.className = 'verb-link';
+      link1.textContent = 'Generate video';
+      verbsContainer.append(link1);
+      const inpField = mockBlock.querySelector('.inp-field');
+      mockBlock.appendChild(verbsContainer);
+      document.body.appendChild(mockBlock);
+
+      inpField.value = '';
+      inpField.focus();
+      const event = new KeyboardEvent('keydown', { key: 'v', bubbles: true, cancelable: true });
+      inpField.dispatchEvent(event);
+      expect(document.activeElement).to.equal(inpField);
+
+      document.body.removeChild(mockBlock);
+    });
+
+    it('Space still selects/activates the focused option instead of being treated as typeahead', () => {
+      const verbsContainer = document.createElement('div');
+      verbsContainer.className = 'verbs-container show-menu';
+      const link1 = document.createElement('a');
+      link1.href = '#';
+      link1.className = 'verb-link';
+      link1.textContent = 'Generate video';
+      const link2 = document.createElement('a');
+      link2.href = '#';
+      link2.className = 'verb-link';
+      link2.textContent = 'Generate image';
+      verbsContainer.append(link1, link2);
+      mockBlock.appendChild(verbsContainer);
+      document.body.appendChild(mockBlock);
+
+      const typeaheadSpy = sinon.spy(testActionBinder, 'matchTypeahead');
+      const enterStub = sinon.stub(testActionBinder, 'handleEnter');
+      link2.focus();
+      link2.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+
+      // Space must be handled by the existing select/activate path (same as Enter), not be
+      // swallowed as a typeahead character
+      expect(typeaheadSpy.called).to.be.false;
+      expect(enterStub.calledOnce).to.be.true;
 
       document.body.removeChild(mockBlock);
     });

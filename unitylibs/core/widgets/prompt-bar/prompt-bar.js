@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 
 import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from '../../../scripts/utils.js';
+import TypeaheadUtils from '../../../utils/TypeaheadUtils.js';
 
 function isFireflyRedesign() {
   return !!(document.querySelector('meta[name="theme"][content="firefly-redesign"]')
@@ -349,6 +350,7 @@ export default class UnityWidget {
       const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
       (selected || options[0])?.focus();
     };
+    const matchVerbTypeahead = TypeaheadUtils.createMatcher();
     let panel = verbList;
     if (this.isFireflyRedesign) {
       const header = createTag('div', { class: 'verb-list-header' });
@@ -376,6 +378,12 @@ export default class UnityWidget {
         this.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
       }
     };
+    const openVerbMenuIfClosed = () => {
+      if (selectedElement.getAttribute('aria-expanded') === 'true') return;
+      this.hidePromptDropdown(selectedElement);
+      this.showVerbMenu(selectedElement);
+      document.addEventListener('click', handleDocumentClick);
+    };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
@@ -387,12 +395,25 @@ export default class UnityWidget {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        if (selectedElement.getAttribute('aria-expanded') !== 'true') {
-          this.hidePromptDropdown(selectedElement);
-          this.showVerbMenu(selectedElement);
-          document.addEventListener('click', handleDocumentClick);
-        }
+        openVerbMenuIfClosed();
         focusSelectedOrFirstOption();
+        return;
+      }
+      if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        e.stopPropagation();
+        openVerbMenuIfClosed();
+        const options = [...verbList.querySelectorAll('.verb-link')];
+        (e.key === 'Home' ? options[0] : options[options.length - 1])?.focus();
+        return;
+      }
+      if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        openVerbMenuIfClosed();
+        const options = [...verbList.querySelectorAll('.verb-link')];
+        matchVerbTypeahead(options, e.key)?.focus();
+        return;
       }
       if (e.key === 'Escape' || e.code === 27) {
         e.preventDefault();
@@ -457,6 +478,13 @@ export default class UnityWidget {
       const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
       (selected || options[0])?.focus();
     };
+    const matchModelTypeahead = TypeaheadUtils.createMatcher();
+    const openModelMenuIfClosed = () => {
+      if (selectedElement.getAttribute('aria-expanded') === 'true') return;
+      this.hidePromptDropdown(selectedElement);
+      this.showVerbMenu(selectedElement);
+      document.addEventListener('click', handleDocumentClick);
+    };
     selectedElement.addEventListener('click', (e) => {
       e.stopPropagation();
       this.hidePromptDropdown(selectedElement);
@@ -468,12 +496,25 @@ export default class UnityWidget {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        if (selectedElement.getAttribute('aria-expanded') !== 'true') {
-          this.hidePromptDropdown(selectedElement);
-          this.showVerbMenu(selectedElement);
-          document.addEventListener('click', handleDocumentClick);
-        }
+        openModelMenuIfClosed();
         focusSelectedOrFirstOption();
+        return;
+      }
+      if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        e.stopPropagation();
+        openModelMenuIfClosed();
+        const options = [...listItems.querySelectorAll('.verb-link')];
+        (e.key === 'Home' ? options[0] : options[options.length - 1])?.focus();
+        return;
+      }
+      if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        openModelMenuIfClosed();
+        const options = [...listItems.querySelectorAll('.verb-link')];
+        matchModelTypeahead(options, e.key)?.focus();
+        return;
       }
       if (e.key === 'Escape' || e.code === 27) {
         e.preventDefault();
@@ -633,12 +674,6 @@ export default class UnityWidget {
     return footer;
   }
 
-  // Builds the Generate button's accessible name from the static action word (e.g. "Generate")
-  // and the current verb text. Some authored verb options are bare nouns ("Image"), others are
-  // full phrases that already include the action word ("Generate video") - concatenating the two
-  // unconditionally produces a redundant, duplicated name (e.g. "Generate Generate video"), which
-  // is difficult for Voice Control/screen reader users to act on. Only prefix the static word when
-  // the verb text doesn't already start with it.
   computeGenBtnLabel() {
     const base = (this.genBtnBaseText || 'Generate').trim();
     const verb = (this.selectedVerbText || '').trim();

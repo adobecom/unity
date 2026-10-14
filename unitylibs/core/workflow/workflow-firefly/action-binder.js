@@ -14,9 +14,10 @@ import {
   getLocale,
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
+import TypeaheadUtils from '../../../utils/TypeaheadUtils.js';
 
 export default class ActionBinder {
-  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
+  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', 'Escape', ' '];
 
   boundHandleKeyDown = this.handleKeyDown.bind(this);
 
@@ -42,6 +43,7 @@ export default class ActionBinder {
     this.query = '';
     this.activeIndex = -1;
     this.id = '';
+    this.matchTypeahead = TypeaheadUtils.createMatcher();
     this.apiConfig = { ...unityConfig };
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
@@ -474,12 +476,22 @@ export default class ActionBinder {
   }
 
   handleKeyDown(ev) {
-    if (!ActionBinder.VALID_KEYS.includes(ev.key)) return;
-    if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
-    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && ev.target?.classList?.contains('inp-field')) return;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
+    const isMenuOptionFocused = !!(isMenuOpen && document.activeElement?.classList?.contains('verb-link'));
+    const isTypeaheadKey = isMenuOptionFocused && ev.key.length === 1 && ev.key !== ' '
+      && !ev.ctrlKey && !ev.metaKey && !ev.altKey;
+    if (!ActionBinder.VALID_KEYS.includes(ev.key) && !isTypeaheadKey) return;
+    if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && ev.target?.classList?.contains('inp-field')) return;
+    if (isTypeaheadKey) {
+      ev.preventDefault();
+      const focusElems = this.getFocusElems();
+      const match = this.matchTypeahead(focusElems, ev.key);
+      match?.focus();
+      return;
+    }
     switch (ev.key) {
       case 'Tab': {
         const isDropVisi = this.isDropdownVisible();
@@ -501,6 +513,16 @@ export default class ActionBinder {
         } else {
           this.moveFocusWithArrow(this.getDropdownItems(), direction);
         }
+        break;
+      }
+      case 'Home':
+      case 'End': {
+        if (!isMenuOpen) break;
+        ev.preventDefault();
+        const edge = ev.key === 'Home' ? 0 : -1;
+        const focusElems = this.getFocusElems();
+        if (!focusElems.length) break;
+        focusElems[edge < 0 ? focusElems.length - 1 : edge]?.focus();
         break;
       }
       case 'Enter':
