@@ -77,9 +77,7 @@ function buildResizeOperation(engine) {
   const { width, height } = engine.getResizeDimensions();
   const resizeOp = {
     type: 'resize',
-    intent: 'resize',
     expandCropMode,
-    dimensionsLocked: true,
     targetWidth: Math.round(width),
     targetHeight: Math.round(height),
     dimensionUnit: engine.unit,
