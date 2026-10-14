@@ -81,6 +81,7 @@ function groupResizeRows(rows) {
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
 const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
+const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg';
 // Matches Firefly's DPI so unit values convert to the same pixel size in both products.
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
@@ -923,10 +924,17 @@ export class EditorEngine {
       });
     });
     this.lockBtn.addEventListener('click', () => {
-      this.locked = !this.locked;
-      this.lockBtn.classList.toggle('is-active', this.locked);
-      this.lockBtn.setAttribute('aria-pressed', String(this.locked));
+      this.setLocked(!this.locked);
     });
+  }
+
+  setLocked(locked) {
+    this.locked = locked;
+    if (!this.lockBtn) return;
+    this.lockBtn.classList.toggle('is-active', locked);
+    this.lockBtn.setAttribute('aria-pressed', String(locked));
+    const icon = this.lockBtn.querySelector('.ia-dim-lock-icon');
+    if (icon) icon.src = locked ? LOCK_ICON_HREF : UNLOCK_ICON_HREF;
   }
 
   onDimensionCommit(axis) {
@@ -1040,11 +1048,9 @@ export class EditorEngine {
     if (this.isCrop) {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
-      this.locked = true;
+      this.setLocked(true);
       this.resizeTab = 'custom';
       this.selectedPill = null;
-      this.lockBtn?.classList.add('is-active');
-      this.lockBtn?.setAttribute('aria-pressed', 'true');
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
@@ -1266,11 +1272,7 @@ export class EditorEngine {
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
     this.zoom = 0;
-    if (!this.isCrop && ratio) {
-      this.locked = true;
-      this.lockBtn?.classList.add('is-active');
-      this.lockBtn?.setAttribute('aria-pressed', 'true');
-    }
+    if (!this.isCrop && ratio) this.setLocked(true);
     this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {

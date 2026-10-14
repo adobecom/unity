@@ -640,31 +640,32 @@
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  border: 1px solid rgb(255 255 255 / 15%);
+  border: none;
   background: #2a2a2a;
   color: var(--ia-white, #fff);
-  opacity: 0.5;
   cursor: pointer;
   margin-bottom: 3px;
 }
 
 .ia-dim-lock.is-active {
-  opacity: 1;
-  background: rgb(255 255 255 / 15%);
-  margin-bottom: 2px;
+  background: #dbdbdb;
 }
 
 .ia-dim-lock:hover:not(.is-active) {
   background: #323232;
 }
 
-/* The source SVG is dark (#292929); invert it to read on the dark button. */
+/* The source SVGs are dark (#292929); invert them on the dark (unlocked) button. */
 .ia-dim-lock-icon {
   display: block;
   width: 20px;
   height: 20px;
   margin: auto;
   filter: invert(1);
+}
+
+.ia-dim-lock.is-active .ia-dim-lock-icon {
+  filter: none;
 }
 
 .ia-dim-unit {
