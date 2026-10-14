@@ -1347,6 +1347,21 @@ describe('ActionBinder', () => {
         actionBinder.uploadHandler = null;
       });
 
+      it('should start the upload without waiting for pending experiment resolution', async () => {
+        const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
+        actionBinder.pageConfigFetched = true;
+        let finishExperiment;
+        actionBinder.pageConfigPromise = new Promise((resolve) => { finishExperiment = resolve; });
+        actionBinder.applyApiConfig();
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.calledWith(files)).to.be.true;
+        finishExperiment();
+      });
+
       it('should handle single file upload', async () => {
         const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
         actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
@@ -2775,6 +2790,28 @@ describe('ActionBinder', () => {
           expect(cOpts.payload.variationId).to.equal('test-variant');
           expect(actionBinder.getRedirectUrl.calledWith(cOpts)).to.be.true;
           expect(result).to.be.true;
+        });
+
+        it('should wait for a pending page config promise before reading experiment data', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { experimentationOn: ['add-comment'] },
+          };
+          actionBinder.experimentData = null;
+          let finishExperiment;
+          actionBinder.pageConfigPromise = new Promise((resolve) => {
+            finishExperiment = () => {
+              actionBinder.experimentData = { variationId: 'late-variant' };
+              resolve();
+            };
+          });
+
+          const cOpts = { payload: {} };
+          const redirect = actionBinder.handleRedirect(cOpts, { test: 'data' });
+          finishExperiment();
+          await redirect;
+
+          expect(cOpts.payload.variationId).to.equal('late-variant');
         });
 
         it('should not add variationId when experimentation is disabled for the feature', async () => {

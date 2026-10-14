@@ -218,6 +218,16 @@ export default class ActionBinder {
     this.pageConfigLocation = null;
     this.pageConfigFetched = false;
     this.pageConfigPromise = null;
+    // Settles as soon as API endpoints are known, so upload never waits on experiment resolution.
+    this.pageConfigReady = new Promise((resolve) => { this.resolvePageConfigReady = resolve; });
+  }
+
+  applyApiConfig() {
+    this.acrobatApiConfig = this.getAcrobatApiConfig();
+    if (this.resolvePageConfigReady) {
+      this.resolvePageConfigReady();
+      this.resolvePageConfigReady = null;
+    }
   }
 
   async initialize() {
@@ -302,6 +312,7 @@ export default class ActionBinder {
       const { default: getExperimentData } = await import('../../../utils/experiment-provider.js');
       pageConfig = await fetchPageConfig({ product: 'acrobat', verb });
       this.pageConfigLocation = pageConfig.location;
+      this.applyApiConfig();
       if (pageConfig.config?.target?.enabled) {
         this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
         this.experimentViaPageConfig = true;
@@ -320,7 +331,7 @@ export default class ActionBinder {
       this.pageConfigFetched = false;
       this.pageConfigPromise = null;
     }
-    this.acrobatApiConfig = this.getAcrobatApiConfig();
+    this.applyApiConfig();
   }
 
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
@@ -571,6 +582,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
+    if (this.pageConfigPromise) await this.pageConfigPromise;
     if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
@@ -711,7 +723,8 @@ export default class ActionBinder {
     if (wordValidatedFiles.length === 0) return;
     const { isValid, validFiles } = await this.validateFiles(wordValidatedFiles);
     if (!isValid) return;
-    await (this.pageConfigPromise || this.ensurePageConfig());
+    if (!this.pageConfigPromise && !this.pageConfigFetched) this.pageConfigPromise = this.ensurePageConfig();
+    await this.pageConfigReady;
     await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
