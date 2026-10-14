@@ -218,7 +218,6 @@ export default class ActionBinder {
     this.pageConfigLocation = null;
     this.pageConfigFetched = false;
     this.pageConfigPromise = null;
-    // Settles as soon as API endpoints are known, so upload never waits on experiment resolution.
     this.pageConfigReady = new Promise((resolve) => { this.resolvePageConfigReady = resolve; });
   }
 
