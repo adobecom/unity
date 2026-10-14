@@ -22,11 +22,6 @@ const slotEventName = (slotId, status) => `Upload ${SLOT_NUMBER[slotId] ?? slotI
 const sampleEventName = (idx) => `Sample ${idx + 1}|UnityWidget`;
 const fileMeta = (slotId, file) => ({ slot: slotId, count: 1, size: file?.size, type: file?.type });
 
-/**
- * Client-side validation rules. Rules are data: a new case is one entry here
- * plus one authored `:error-*:` token — no new code path.
- * PLACEHOLDER — MWPW-206550: the confirmed validation matrix is pending with PdM.
- */
 export const RULES = [
   { id: 'filecount', scope: 'all', test: (files, limits) => files.length <= (limits.maxNumFiles || 1), token: 'error-filecount' },
   { id: 'filetype', scope: 'each', test: (f, limits) => !limits.allowedFileTypes || limits.allowedFileTypes.includes(f.type), token: 'error-filetype' },
@@ -39,17 +34,22 @@ export function validateSelection(files, limits = {}) {
   return failed ? { ok: false, errorToken: failed.token } : { ok: true };
 }
 
-/**
- * PLACEHOLDER — MWPW-206550. The dual-asset connector contract is being defined
- * with the Unity backend team; this is the ONLY function that changes when it lands.
- * `generate` rides the existing `payload.generate` field; `assetIds` sits at the body top level.
- */
-export function buildFaceSwapAssetPayload(uploads = []) {
-  const assetIds = uploads.map((u) => u.assetId).filter(Boolean);
-  return {
-    ...(assetIds.length && { assetIds }),
-    generate: assetIds.length === 2,
-  };
+const ROLE = { original: 'baseImage', face: 'faceImage' };
+const SLOT_ORDER = ['original', 'face'];
+
+export function cdnHref(path) {
+  return `${new URL(unityConfig.pageConfigEndPoint).origin}${path}`;
+}
+
+export function buildFaceSwapAssetPayload(entries = []) {
+  const assets = [...entries]
+    .filter((e) => ROLE[e.slotId] && (e.assetId || e.href))
+    .sort((a, b) => SLOT_ORDER.indexOf(a.slotId) - SLOT_ORDER.indexOf(b.slotId))
+    .map((e) => ({
+      ...(e.assetId ? { id: e.assetId } : { href: e.href }),
+      metadata: { referenceImage: ROLE[e.slotId] },
+    }));
+  return assets.length ? { assets } : {};
 }
 
 class ServiceHandler {
@@ -193,8 +193,6 @@ export default class ActionBinder {
     );
   }
 
-  /* ---------- error toast (ported from workflow-prompt-bar-upload) ---------- */
-
   async createErrorToast() {
     try {
       const [alertImg, closeImg] = await Promise.all([
@@ -247,11 +245,8 @@ export default class ActionBinder {
   showToast(options, error, errorType, focusBackEl) {
     const shown = this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, ...options }, error, this.lanaOptions, errorType);
     if (!shown) return;
-    /* pointer-events:none blocks the mouse but not the keyboard; inert covers both. */
     this.setMainInert(true);
     this.restoreFocusEl = focusBackEl || null;
-    /* Focus the toast itself (as workflow-prompt-upload does) so keyboard focus leaves the
-       now-inert UI without forcing a ring onto the close button for mouse/touch users. */
     const toast = shown.querySelector('.alert-toast');
     setTimeout(() => toast?.focus(), 0);
   }
@@ -278,8 +273,6 @@ export default class ActionBinder {
     this.track(slotEventName(slotId, 'error'), { errorData: { code: errorToken }, fileMetaData });
   }
 
-  /* ---------- selection-time hooks ---------- */
-
   validateFiles(files, slotId) {
     const fileMetaData = { ...fileMeta(slotId, files[0]), count: files.length };
     const { ok, errorToken } = validateSelection(files, this.limits);
@@ -290,7 +283,7 @@ export default class ActionBinder {
   installWidgetHooks() {
     if (!this.widget) return;
     this.widget.validateFiles = (files, slotId) => this.validateFiles(files, slotId);
-    this.widget.onPreviewError = (slotId) => this.handleClientError('error-filetype', slotId);
+    this.widget.onPreviewError = (slotId, source) => this.handleClientError(source === 'gallery' ? 'error-request' : 'error-filetype', slotId);
     if (this.limits.allowedFileTypes?.length) {
       Object.values(this.widget.slotEls || {}).forEach(({ input }) => {
         input?.setAttribute('accept', this.limits.allowedFileTypes.join(','));
@@ -298,7 +291,6 @@ export default class ActionBinder {
     }
   }
 
-  /* Filling a slot signals intent: warm the CTA path during idle time only. */
   warmUp() {
     if (this.warmed) return;
     this.warmed = true;
@@ -319,8 +311,6 @@ export default class ActionBinder {
     if ('requestIdleCallback' in window) window.requestIdleCallback(() => run(), { timeout: 2000 });
     else setTimeout(run, 200);
   }
-
-  /* ---------- upload ---------- */
 
   async uploadImgToUnity(storageUrl, blobData, fileType, signal) {
     let response;
@@ -346,10 +336,6 @@ export default class ActionBinder {
     }
   }
 
-  /**
-   * upload-handler reads `actionBinder.assetId` (singular). Both slots upload
-   * concurrently, so each gets its own facade with its own assetId view.
-   */
   createUploadContext() {
     const ctx = { assetId: null };
     const self = this;
@@ -364,22 +350,9 @@ export default class ActionBinder {
     return ctx;
   }
 
-  async materializeFile(slot, signal) {
-    if (slot.file) return slot.file;
-    const res = await fetch(slot.assetUrl, { mode: 'cors', signal });
-    if (!res.ok) {
-      const error = new Error(`Gallery asset fetch failed: ${slot.assetUrl}`);
-      error.status = res.status;
-      throw error;
-    }
-    const blob = await res.blob();
-    const name = decodeURIComponent(new URL(slot.assetUrl, window.location.href).pathname.split('/').pop() || 'gallery-image');
-    return new File([blob], name, { type: blob.type });
-  }
-
   async uploadSlot(slotId, slot, signal) {
     const ctx = this.createUploadContext();
-    const file = await this.materializeFile(slot, signal);
+    const { file } = slot;
     const { ok, errorToken } = validateSelection([file], this.limits);
     if (!ok) {
       const error = new Error(`Validation failed: ${errorToken}`);
@@ -423,8 +396,6 @@ export default class ActionBinder {
     return { slotId, assetId: id };
   }
 
-  /* ---------- transition screen ---------- */
-
   async ensureTransitionScreen() {
     const shell = this.root?.querySelector?.('.interactive-area');
     this.workflowCfg.theme = shell?.classList.contains('dark') ? 'dark' : null;
@@ -459,8 +430,6 @@ export default class ActionBinder {
     }
   }
 
-  /* ---------- generate ---------- */
-
   async handleGenerate() {
     if (this.inFlight) return;
     this.inFlight = true;
@@ -479,9 +448,13 @@ export default class ActionBinder {
       sendAnalyticsEvent(new CustomEvent(events.GENERATE_CTA));
       if (styleEventName) sendAnalyticsEvent(new CustomEvent(styleEventName));
 
-      /* Zero images: redirect straight to the product, no splash. */
-      if (!filled.length) {
-        await this.continueInApp([]);
+      const galleryEntries = filled
+        .filter(([, s]) => !s.file && s.cdnPath)
+        .map(([slotId, s]) => ({ slotId, href: cdnHref(s.cdnPath) }));
+      const uploads = filled.filter(([, s]) => s.file);
+
+      if (!uploads.length) {
+        await this.continueInApp(galleryEntries);
         return;
       }
 
@@ -492,18 +465,22 @@ export default class ActionBinder {
       const { isGuest } = await isGuestUser();
       this.isGuestUser = isGuest;
 
-      const results = await Promise.allSettled(filled.map(([slotId, slot]) => this.uploadSlot(slotId, slot, signal)));
+      const results = await Promise.allSettled(uploads.map(([slotId, slot]) => this.uploadSlot(slotId, slot, signal)));
       if (signal.aborted || this.promiseStack.length) return;
 
       const failedIdx = results.findIndex((r) => r.status === 'rejected');
       if (failedIdx >= 0) {
-        /* Fail safe (Q16 pending): never redirect with a partial payload; keep previews for retry. */
-        await this.handleUploadFailure(filled[failedIdx][0], results[failedIdx].reason);
+        await this.handleUploadFailure(uploads[failedIdx][0], results[failedIdx].reason);
         return;
       }
-      await this.continueInApp(results.map((r) => r.value));
+      await this.continueInApp([...galleryEntries, ...results.map((r) => r.value)]);
     } catch (err) {
       window.lana?.log(`Message: Face swap generate failed, Error: ${err}`, this.lanaOptions);
+      if (!this.abortController?.signal.aborted && err?.message !== CANCEL_MESSAGE) {
+        await this.hideSplash();
+        this.showToast({ errorType: '.icon-error-request', errorCode: 'error-request' }, err, 'server', this.widget?.genBtn);
+        this.logAnalyticsinSplunk('Upload server error|UnityWidget', { errorData: { code: 'error-request', subCode: `handleGenerate ${err?.status}`, desc: err?.message || undefined } });
+      }
     } finally {
       this.inFlight = false;
       this.abortController = null;
@@ -511,7 +488,6 @@ export default class ActionBinder {
   }
 
   async handleUploadFailure(slotId, err) {
-    /* The splash mounts on <body> above the widget, so it must go first. */
     await this.hideSplash();
     const errorToken = err?.errorToken || 'error-request';
     const fileMetaData = { slot: slotId };
@@ -522,22 +498,22 @@ export default class ActionBinder {
     });
   }
 
-  async continueInApp(uploads) {
-    const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
-    const { generate, ...assetFields } = buildFaceSwapAssetPayload(uploads);
-    const connectorBody = {
-      targetProduct: this.workflowCfg.productName,
-      additionalQueryParams: getCgenQueryParams(this.unityEl),
-      ...assetFields,
-      payload: {
-        workflow: this.workflowCfg.supportedFeatures.values().next().value,
-        verb: this.verb,
-        action: uploads.length ? 'asset-upload' : 'redirect',
-        locale: getLocale(),
-        generate,
-      },
-    };
+  async continueInApp(entries) {
     try {
+      const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+      const assetFields = buildFaceSwapAssetPayload(entries);
+      const hasImage = !!assetFields.assets;
+      const connectorBody = {
+        targetProduct: this.workflowCfg.productName,
+        additionalQueryParams: getCgenQueryParams(this.unityEl),
+        ...assetFields,
+        payload: {
+          workflow: this.workflowCfg.supportedFeatures.values().next().value,
+          action: 'asset-upload',
+          locale: getLocale(),
+          verb: this.verb,
+        },
+      };
       const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders(), { body: JSON.stringify(connectorBody) });
       const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
       const { url } = await new NetworkUtils().fetchFromService(
@@ -553,12 +529,17 @@ export default class ActionBinder {
         },
       );
       if (this.promiseStack.length > 0) return;
-      this.logAnalyticsinSplunk('Generate Complete|UnityWidget', { hasImage: uploads.length > 0 });
+      if (!url) {
+        const error = new Error('Connector response missing url');
+        error.status = 200;
+        throw error;
+      }
+      this.logAnalyticsinSplunk('Generate Complete|UnityWidget', { hasImage });
       if (this.transitionScreen?.splashScreenEl) {
         this.transitionScreen.LOADER_LIMIT = 100;
         this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
       }
-      if (url) window.location.href = url;
+      window.location.href = url;
     } catch (err) {
       if (err.message === CANCEL_MESSAGE) return;
       await this.hideSplash();
@@ -566,8 +547,6 @@ export default class ActionBinder {
       this.logAnalyticsinSplunk('Upload server error|UnityWidget', { errorData: { code: 'error-request', subCode: `continueInApp ${err.status}`, desc: err.message || undefined } });
     }
   }
-
-  /* ---------- wiring ---------- */
 
   async handlePreloads() {
     if (this.workflowCfg.targetCfg?.showSplashScreen) {
@@ -584,7 +563,6 @@ export default class ActionBinder {
     if (value === 'interrupt') await this.cancelUploadOperation();
   }
 
-  /* Called back by transition-screen for the splash's Cancel link. */
   async bindStringActionMap(b, actMap) {
     Object.entries(actMap).forEach(([selector, action]) => {
       b.querySelectorAll(selector).forEach((el) => {

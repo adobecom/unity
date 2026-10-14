@@ -82,8 +82,6 @@
   flex-direction: column;
 }
 
-/* ---------- header ---------- */
-
 .unity-face-swap .fs-header {
   display: flex;
   align-items: center;
@@ -106,8 +104,6 @@
   gap: 6px;
   min-height: 24px;
   padding: 2px 4px;
-
-  /* Keeps the 24px hit area without growing the 16px header row */
   margin: -4px -4px -4px 0;
   border: 0;
   border-radius: 6px;
@@ -129,8 +125,6 @@
 .unity-face-swap .fs-reset:hover .fs-reset-text {
   text-decoration: underline;
 }
-
-/* ---------- slots ---------- */
 
 .unity-face-swap .fs-slots {
   display: grid;
@@ -167,8 +161,6 @@
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-
-/* Hover styles only where hover exists; touch browsers keep :hover stuck after a tap. */
 @media (hover: hover) {
   .unity-face-swap .fs-drop:hover {
     border-style: solid;
@@ -182,8 +174,6 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-
-  /* Inline padding leaves room for the 208px help text inside a 222px slot */
   padding: 24px 6px;
   text-align: center;
 }
@@ -321,7 +311,6 @@
   transition: opacity 0.15s ease;
 }
 
-/* 24px visual per Figma; the button itself keeps a 44px hit area. */
 .unity-face-swap .fs-delete::before {
   content: '';
   position: absolute;
@@ -355,15 +344,11 @@
     opacity: 1;
   }
 }
-
-/* On touch the hidden delete must not catch the first tap meant to reveal it. */
 @media (hover: none) {
   .unity-face-swap .fs-slot:not(.fs-revealed) .fs-delete {
     pointer-events: none;
   }
 }
-
-/* ---------- footer ---------- */
 
 .unity-face-swap .fs-footer {
   display: flex;
@@ -434,8 +419,6 @@
   white-space: nowrap;
 }
 
-/* ---------- legal ---------- */
-
 .unity-face-swap .fs-legal {
   max-width: 766px;
   margin: 16px auto 0;
@@ -450,8 +433,6 @@
   text-decoration: underline;
 }
 
-/* ---------- gallery ---------- */
-
 .unity-face-swap .fs-divider {
   height: 2px;
   margin-top: 20px;
@@ -461,8 +442,6 @@
 .unity-face-swap .fs-gallery {
   display: flex;
   flex-direction: column;
-
-  /* 8px + the list's 2px focus-ring padding = 10px label-to-thumb (Figma) */
   gap: 8px;
   min-width: 0;
   margin-top: 16px;
@@ -496,7 +475,6 @@
   scroll-snap-align: start;
 }
 
-/* Stroke drawn over the image so the image keeps the full corner radius (Figma). */
 .unity-face-swap .fs-gallery-item::after {
   content: '';
   position: absolute;
@@ -524,8 +502,6 @@
   --fs-thumb-border: #fff;
 }
 
-/* ---------- preview ---------- */
-
 .unity-face-swap .fs-preview {
   height: 100%;
   overflow: hidden;
@@ -543,9 +519,6 @@
   object-fit: cover;
 }
 
-/* ---------- error toast (ported from prompt-bar-style; sized per Figma 24918:345437) ---------- */
-
-/* The shared toast CSS in core/styles assumes content-box; our border-box reset collapsed the icon. */
 .unity-face-swap .alert-holder,
 .unity-face-swap .alert-holder * {
   box-sizing: content-box;
@@ -556,7 +529,6 @@
   top: 0;
 }
 
-/* Figma 24918:342919: the whole card, preview and legal line fade to 10%; no scrim. */
 .unity-face-swap:has(.alert-holder.show) {
   --fs-card-bg: transparent;
   --fs-card-border: transparent;
@@ -577,7 +549,6 @@
   max-width: 340px;
 }
 
-/* Programmatic focus target only (tabindex=-1); the close button keeps its ring. */
 .unity-face-swap .interactive-area .alert-holder .alert-toast:focus {
   outline: none;
 }
@@ -599,8 +570,6 @@
   line-height: 18px;
 }
 
-/* ---------- responsive ---------- */
-
 @media screen and (max-width: 1199px) {
   .unity-face-swap {
     width: var(--grid-container-width);
@@ -613,14 +582,12 @@
 }
 
 @media screen and (min-width: 1200px) {
-  /* Desktop: the left column blends into the card (Figma 24797:207040). */
   .unity-face-swap > .interactive-area {
     padding: 14px;
     border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
     background: var(--fs-card-bg, #1b1b1b);
   }
 
-  /* Figma 24918:342919: toast bottom lines up with the dropzone row bottom. */
   .unity-face-swap .interactive-area .alert-holder {
     align-items: flex-start;
   }
@@ -646,16 +613,11 @@
     flex: none;
   }
 
-  /* Fill the pane without letting the video's intrinsic size set the row height */
   .unity-face-swap .fs-preview {
     position: absolute;
     inset: 0;
   }
 }
-
-/* The CTA label is intentionally NOT hidden on mobile (unlike prompt-bar-style). */
-
-/* Mobile spacing per Figma 25906:101649. */
 @media screen and (max-width: 599px) {
   .unity-face-swap {
     --fs-drop-bg: #1d1d1d;
@@ -720,8 +682,6 @@
     min-width: 44px;
     min-height: 44px;
     justify-content: center;
-
-    /* 44px hit area inside the 20px header; icon sits 8px from the edge */
     margin: -12px -4px -12px 0;
   }
 
@@ -736,7 +696,6 @@
     white-space: nowrap;
   }
 
-  /* Non-interactive, so no 44px target is needed */
   .unity-face-swap .fs-model {
     justify-content: center;
     width: 28px;

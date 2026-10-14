@@ -15,7 +15,6 @@ let instanceSeq = 0;
 
 const normalize = (text) => (text || '').replace(/\s+/g, ' ').trim();
 const stripUrls = (text) => normalize((text || '').replace(/https?:\/\/\S+/g, ''));
-/* Authored icon links render their URL as text flush against the label, so drop those nodes, not a regex match. */
 const labelText = (node) => {
   if (!node) return '';
   const clone = node.cloneNode(true);
@@ -29,7 +28,7 @@ const emptySlot = () => ({
   file: null,
   previewUrl: null,
   objectUrl: null,
-  assetUrl: null,
+  cdnPath: null,
   name: null,
   source: null,
   status: 'empty',
@@ -56,10 +55,6 @@ export function tokenText(root, name) {
   return labelText(tokenLi(root, name));
 }
 
-/**
- * Reads a token whose <li> carries an authored SVG icon plus a label
- * (`:generate:`, `:model-name:`). A plain text read would drop the icon.
- */
 export function iconAndText(root, name) {
   const li = tokenLi(root, name);
   if (!li) return { src: '', txt: '' };
@@ -73,7 +68,6 @@ function directRows(el) {
   return [...el.children].filter((n) => n.nodeName === 'DIV');
 }
 
-/* Moves the authored legal copy (with its links) out of the hidden config holder. */
 function extractLegal(el) {
   const marker = el.querySelector('[class*="icon-legal-terms"]');
   const li = marker?.closest('li');
@@ -93,17 +87,28 @@ function galleryLabel(li) {
   return stripUrls(head.filter((n) => n.nodeName !== 'PICTURE').map((n) => n.textContent).join(' '));
 }
 
+const CDN_PATH_RE = /^\/(?!\/)\S+$/;
+
+export function galleryCdnPath(li) {
+  const nodes = [...li.childNodes];
+  const brIdx = nodes.findIndex((n) => n.nodeName === 'BR');
+  if (brIdx < 0) return null;
+  const tail = nodes.slice(brIdx + 1);
+  const link = tail.map((n) => (n.nodeName === 'A' ? n : n.querySelector?.('a'))).find(Boolean);
+  const raw = (link?.getAttribute('href') || tail.map((n) => n.textContent).join('')).trim().split(/\s+/)[0];
+  return CDN_PATH_RE.test(raw || '') ? raw : null;
+}
+
 export function parseFaceSwapAuthoring(el) {
   const rows = directRows(el);
-  /* Milo turns token .svg links into <picture>, so the token row must be excluded explicitly. */
   const galleryRow = rows.find((r) => r.querySelector('ul > li picture')
     && !r.querySelector('[class*="icon-"]'));
   const gallery = galleryRow
     ? [...galleryRow.querySelectorAll('ul > li')]
       .filter((li) => li.querySelector('picture'))
-      .map((li) => ({ picture: li.querySelector('picture'), label: galleryLabel(li) }))
+      .map((li) => ({ picture: li.querySelector('picture'), label: galleryLabel(li), cdnPath: galleryCdnPath(li) }))
+      .filter(({ cdnPath }) => cdnPath)
     : [];
-  /* Last qualifying row: the video row is authored at the bottom of the block. */
   const mediaRow = rows.findLast((r) => r !== galleryRow
     && !r.querySelector('ul')
     && r.children.length >= 2
@@ -165,20 +170,6 @@ function wirePreviewVideo(preview) {
   return io;
 }
 
-/**
- * EDS serves authored images as `media_<hash>.<ext>?width=…&optimize=…` renditions.
- * Dropping the query returns the original, so the CTA uploads full quality, not the thumbnail.
- */
-export function originalAssetUrl(src) {
-  try {
-    const url = new URL(src, window.location.href);
-    if (/\/media_[0-9a-f]+\.[a-z0-9]+$/i.test(url.pathname)) url.search = '';
-    return url.href;
-  } catch {
-    return src;
-  }
-}
-
 export function pickViewportCell(mediaRow, device = defineDeviceByScreenSize()) {
   if (!mediaRow) return null;
   const cells = [...mediaRow.children];
@@ -199,7 +190,6 @@ export default class FaceSwapWidget extends UnityWidget {
     this.liveRegion = null;
     this.videoObserver = null;
     this.removalObserver = null;
-    /* Hooks installed by the action-binder; the widget works standalone without them. */
     this.validateFiles = null;
     this.onPreviewError = null;
   }
@@ -227,14 +217,12 @@ export default class FaceSwapWidget extends UnityWidget {
   getFilledSlots() {
     return SLOT_IDS
       .map((id) => [id, this.slots[id]])
-      .filter(([, s]) => s.file || s.assetUrl);
+      .filter(([, s]) => s.file || s.cdnPath);
   }
 
   focusSlot(slotId) {
     this.slotEls[slotId]?.input.focus();
   }
-
-  /* ---------- DOM ---------- */
 
   buildHeader() {
     const { title, reset } = this.parsed;
@@ -291,7 +279,6 @@ export default class FaceSwapWidget extends UnityWidget {
       this.announce(`${title} removed`);
       input.focus();
     });
-    /* Touch has no hover: a tap shows the hover treatment while the picker opens (Figma mobile). */
     label.addEventListener('click', () => {
       if (window.matchMedia('(hover: none)').matches) slot.classList.add('fs-revealed');
     });
@@ -304,7 +291,6 @@ export default class FaceSwapWidget extends UnityWidget {
   }
 
   bindDrag(slotId, slot, label) {
-    /* Counter, not a bare dragleave: crossing onto a child fires dragleave. */
     let depth = 0;
     const hasFiles = (e) => !!e.dataTransfer?.types && [...e.dataTransfer.types].includes('Files');
     const setOver = (on) => slot.classList.toggle('fs-dragover', on);
@@ -336,7 +322,6 @@ export default class FaceSwapWidget extends UnityWidget {
     const { model, generate } = this.parsed;
     const footer = createTag('div', { class: 'fs-footer' });
     if (model.txt || model.src) {
-      /* Static by design: the model cannot be changed, so it is not a control. */
       const modelEl = createTag('div', { class: 'fs-model' });
       if (model.src) {
         modelEl.append(createTag('img', { src: model.src, alt: '', class: 'fs-model-icon', width: 20, height: 20 }));
@@ -421,7 +406,6 @@ export default class FaceSwapWidget extends UnityWidget {
 
   buildPreview() {
     const preview = createTag('div', { class: 'fs-preview' });
-    /* Pick one viewport cell at mount; re-picking on resize would restart the video. */
     const cell = pickViewportCell(this.parsed.mediaRow);
     [...(this.parsed.mediaRow?.children || [])].forEach((c) => {
       if (c === cell) return;
@@ -468,7 +452,6 @@ export default class FaceSwapWidget extends UnityWidget {
     root.append(shell);
     const legal = extractLegal(el);
     if (legal) root.append(legal);
-    /* A drop that misses a slot must not make the browser navigate to the file. */
     ['dragover', 'drop'].forEach((t) => root.addEventListener(t, (e) => {
       if (e.dataTransfer?.types && [...e.dataTransfer.types].includes('Files')) e.preventDefault();
     }));
@@ -502,8 +485,6 @@ export default class FaceSwapWidget extends UnityWidget {
     SLOT_IDS.forEach((id) => this.revoke(this.slots[id]));
   }
 
-  /* ---------- slot state ---------- */
-
   revoke(slot) {
     if (slot.objectUrl) URL.revokeObjectURL(slot.objectUrl);
     slot.objectUrl = null;
@@ -526,7 +507,6 @@ export default class FaceSwapWidget extends UnityWidget {
     const els = this.slotEls[slotId];
     this.revoke(s);
     Object.assign(s, emptySlot(), next, { status: 'busy' });
-    /* Spinner is driven by the real <img> lifecycle; a stale load for a replaced image is ignored. */
     const token = Symbol('load');
     els.loadToken = token;
     const done = (ok) => {
@@ -536,8 +516,9 @@ export default class FaceSwapWidget extends UnityWidget {
         this.render(slotId);
         this.announce(`${this.slotTitle(slotId)} added`);
       } else {
+        const { source } = s;
         this.clearSlot(slotId);
-        this.onPreviewError?.(slotId);
+        this.onPreviewError?.(slotId, source);
       }
     };
     els.img.onload = () => done(true);
@@ -570,11 +551,9 @@ export default class FaceSwapWidget extends UnityWidget {
     if (!img) return;
     const slotId = SLOT_IDS[0];
     this.markGallery(idx);
-    /* No fetch here: the thumb is already loaded, so the preview is a cache hit.
-       The File is materialised from `assetUrl` only when the CTA is clicked. */
     this.setSlot(slotId, {
       previewUrl: img.currentSrc || img.src,
-      assetUrl: originalAssetUrl(img.src),
+      cdnPath: this.parsed.gallery[idx].cdnPath,
       name: item.getAttribute('aria-label') || '',
       source: 'gallery',
       galleryIndex: idx,
