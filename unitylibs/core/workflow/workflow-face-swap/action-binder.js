@@ -218,7 +218,7 @@ export default class ActionBinder {
           this.dismissErrorToast();
         });
         errholder.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
+          if (e.key === 'Escape' || (e.key === ' ' && e.target.closest('.alert-close'))) {
             this.preventDefault(e);
             this.dismissErrorToast();
           }
