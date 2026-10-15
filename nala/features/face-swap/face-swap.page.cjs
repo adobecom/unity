@@ -39,6 +39,12 @@ export default class FaceSwapPage {
     return this.slot(slotId).locator('.fs-slot-title');
   }
 
+  async revealDelete(slotId) {
+    const touch = await this.page.evaluate(() => window.matchMedia('(hover: none)').matches);
+    if (touch) await this.slot(slotId).locator('label.fs-drop').click();
+    else await this.slot(slotId).hover();
+  }
+
   async open(url) {
     await this.page.goto(url, { waitUntil: 'load' });
     await this.page.waitForLoadState('domcontentloaded');

@@ -72,7 +72,7 @@ test.describe('Unity Face Swap test suite', () => {
     });
 
     await test.step('step-3: Delete the original image', async () => {
-      await faceSwap.originalSlot.hover();
+      await faceSwap.revealDelete('original');
       await faceSwap.slotDelete('original').click();
       await expect(faceSwap.originalSlot).toHaveAttribute('data-state', 'empty');
       await expect(faceSwap.slotImage('original')).toBeHidden();
