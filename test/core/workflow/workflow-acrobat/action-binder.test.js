@@ -3385,10 +3385,43 @@ describe('ActionBinder', () => {
       const limits = sinon.stub(actionBinder, 'warmVerbLimits').resolves();
       const handler = sinon.stub(actionBinder, 'warmUploadHandler').resolves();
       const pdflite = sinon.stub(actionBinder, 'warmPdfliteIfNeeded').resolves();
+      const fragment = sinon.stub(actionBinder, 'warmSplashFragment').resolves();
       await actionBinder.warmUploadAssets();
       expect(limits.calledOnce).to.be.true;
       expect(handler.calledOnce).to.be.true;
       expect(pdflite.calledOnce).to.be.true;
+      expect(fragment.calledOnce).to.be.true;
+    });
+
+    describe('warmSplashFragment', () => {
+      it('loads the fragment ahead of the upload', async () => {
+        const loadSplashFragment = sinon.stub().resolves();
+        actionBinder.transitionScreen = { loadSplashFragment };
+        await actionBinder.warmSplashFragment();
+        expect(loadSplashFragment.calledOnce).to.be.true;
+      });
+
+      it('is a no-op before the transition screen exists', async () => {
+        actionBinder.transitionScreen = null;
+        let failure;
+        try {
+          await actionBinder.warmSplashFragment();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.be.undefined;
+      });
+
+      it('never rejects when the fragment fails to load', async () => {
+        actionBinder.transitionScreen = { loadSplashFragment: sinon.stub().rejects(new Error('404')) };
+        let failure;
+        try {
+          await actionBinder.warmSplashFragment();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.be.undefined;
+      });
     });
 
     it('warms the upload handler module without creating the handler', async () => {

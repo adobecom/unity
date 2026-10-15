@@ -635,10 +635,21 @@ export default class ActionBinder {
     return getMimeType(file.name);
   }
 
+  // Gives the fragment a head start: otherwise it waits on delayedSplashLoader's
+  // interaction listeners or its 8s timeout, and a fast upload can outrun it.
+  async warmSplashFragment() {
+    try {
+      if (this.transitionScreen) await this.transitionScreen.loadSplashFragment();
+    } catch (error) {
+      // Best effort: delayedSplashLoader still loads it on interaction or timeout.
+    }
+  }
+
   async warmUploadAssets() {
     if (this.assetsWarmed) return;
     this.assetsWarmed = true;
     await Promise.all([
+      this.warmSplashFragment(),
       this.warmVerbLimits(),
       this.warmUploadHandler(),
       this.warmPdfliteIfNeeded(),
