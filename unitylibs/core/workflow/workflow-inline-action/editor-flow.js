@@ -73,25 +73,25 @@ function buildResizeOperation(engine) {
   if (pill?.platform) pillMode = 'Social';
   else if (pill?.ratioText) pillMode = 'Standard';
   // A preset only applies while its tab is still open; otherwise the frame is freeform.
-  const expandCropMode = pillMode && pillMode.toLowerCase() === engine.resizeTab ? pillMode : 'Freeform';
+  const resizeMode = pillMode && pillMode.toLowerCase() === engine.resizeTab ? pillMode : 'Freeform';
   const { width, height } = engine.getResizeDimensions();
   const resizeOp = {
     type: 'resize',
-    expandCropMode,
-    targetWidth: Math.round(width),
-    targetHeight: Math.round(height),
-    dimensionUnit: engine.unit,
+    resizeMode,
+    width: Math.round(width),
+    height: Math.round(height),
+    displayUnit: engine.unit,
   };
-  if (expandCropMode === 'Social') {
+  if (resizeMode === 'Social') {
     resizeOp.socialApp = pill.platform;
     resizeOp.socialPostType = pill.name;
     if (pill.width && pill.height) {
-      resizeOp.targetWidth = Number(pill.width);
-      resizeOp.targetHeight = Number(pill.height);
+      resizeOp.width = Number(pill.width);
+      resizeOp.height = Number(pill.height);
     }
   }
-  if (engine.outputType === 'image/jpeg') resizeOp.downloadQuality = Math.round(engine.quality);
-  const aspectRatio = expandCropMode === 'Standard' ? pill.ratioText : null;
+  if (engine.outputType === 'image/jpeg') resizeOp.quality = Math.round(engine.quality);
+  const aspectRatio = resizeMode === 'Standard' ? pill.ratioText : null;
   return { aspectRatio, resizeOp };
 }
 
