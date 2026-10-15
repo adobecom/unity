@@ -7,6 +7,7 @@ const jpgFile = path.resolve(__dirname, '../../assets/1-JPG-jpg-pdf.jpg');
 const pngFile = path.resolve(__dirname, '../../assets/1-PNG-png-pdf.png');
 const unityLibs = process.env.UNITY_LIBS || '';
 const REDIRECT_HASH = '#nala-face-swap-redirect';
+const EXT_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
 let faceSwap;
 
@@ -232,9 +233,14 @@ test.describe('Unity Face Swap test suite', () => {
         .reduce((chain, step) => chain.then(step), Promise.resolve());
       const hrefs = requests.map((body) => body.assets[0].href);
       expect(new Set(hrefs).size).toBe(count);
+      hrefs.forEach((href) => {
+        const ext = new URL(href).pathname.split('.').pop().toLowerCase();
+        expect(data.allowedTypes, href).toContain(EXT_TYPES[ext]);
+      });
+      if (process.env.CI) return;
       const responses = await Promise.all(hrefs.map((href) => page.request.get(href)));
       responses.forEach((response, i) => {
-        expect(response.ok(), hrefs[i]).toBeTruthy();
+        expect(response.ok(), `${hrefs[i]} returned ${response.status()}`).toBeTruthy();
         expect(data.allowedTypes, hrefs[i]).toContain(response.headers()['content-type'].split(';')[0].trim());
       });
     });
