@@ -1890,14 +1890,14 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn .btn-ico {
-  width: 12px !important;
-  height: 12px !important;
+  width: 16px !important;
+  height: 16px !important;
   flex-shrink: 0;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn .btn-ico img {
-  width: 12px !important;
-  height: 12px !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .act-wrap .gen-btn:hover {
