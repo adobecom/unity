@@ -283,7 +283,7 @@ export default class ActionBinder {
   installWidgetHooks() {
     if (!this.widget) return;
     this.widget.validateFiles = (files, slotId) => this.validateFiles(files, slotId);
-    this.widget.onPreviewError = (slotId, source) => this.handleClientError(source === 'gallery' ? 'error-request' : 'error-filetype', slotId);
+    this.widget.onPreviewError = (slotId) => this.handleClientError('error-request', slotId);
     if (this.limits.allowedFileTypes?.length) {
       Object.values(this.widget.slotEls || {}).forEach(({ input }) => {
         input?.setAttribute('accept', this.limits.allowedFileTypes.join(','));
