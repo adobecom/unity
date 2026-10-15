@@ -431,7 +431,11 @@ function buildCustomDetail(parsedData) {
 function buildStandardDetail(standardRows) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'standard' });
   const grid = createTag('div', { class: 'ia-aspect-row' });
-  standardRows.forEach((r) => grid.append(buildAspectPill(r)));
+  standardRows.forEach((r) => {
+    const pill = buildAspectPill(r);
+    pill.dataset.name = r.name || '';
+    grid.append(pill);
+  });
   detail.append(grid);
   return detail;
 }
@@ -864,7 +868,13 @@ export class EditorEngine {
     });
     this.slider?.addEventListener('input', () => this.onSlider());
     this.toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
+      btn.addEventListener('click', () => {
+        const { mode } = btn.dataset;
+        if (!this.isCrop && KNOWN_SLIDER_MODES.has(mode)) {
+          this.trackEvent(`${mode.charAt(0).toUpperCase()}${mode.slice(1)}|UnityWidget`);
+        } 
+        this.setMode(mode);
+      });
     });
     this.viewport.addEventListener('pointerdown', () => this.resetIdle());
     this.viewport.addEventListener('pointermove', () => this.resetIdle());
@@ -885,6 +895,8 @@ export class EditorEngine {
   bindResizeTabEvents() {
     this.resizeTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        this.trackEvent(`Aspect Ratio ${tabName.charAt(0).toUpperCase()}${tabName.slice(1)}|UnityWidget`);
         if (tab.dataset.tab === 'social') {
           this.toggleSocialMenu();
           return;
@@ -908,6 +920,9 @@ export class EditorEngine {
     this.heightInput.addEventListener('blur', commit('height'));
     [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
       let viaArrowKey = false;
+      input.addEventListener('click', () => {
+        this.trackEvent(`Aspect Ratio Custom - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
+      });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -988,6 +1003,7 @@ export class EditorEngine {
     this.socialMenu?.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         const { platform } = opt.dataset;
+        this.trackEvent(`Aspect Ratio Social - ${platform}|UnityWidget`);
         this.socialTrigger.textContent = platform;
         this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platform !== platform));
         this.closeSocialMenu();
@@ -1024,10 +1040,14 @@ export class EditorEngine {
 
   bindUnitEvents() {
     if (!this.unitTrigger) return;
-    this.unitTrigger.addEventListener('click', () => this.toggleUnitMenu());
+    this.unitTrigger.addEventListener('click', () => {
+      this.trackEvent('Aspect Ratio Custom - Unit|UnityWidget');
+      this.toggleUnitMenu();
+    });
     this.unitMenu?.querySelectorAll('.ia-unit-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         this.unit = opt.dataset.unit;
+        this.trackEvent(`Aspect Ratio Custom - Unit - ${this.unit}|UnityWidget`);
         if (this.unitLabel) this.unitLabel.textContent = this.unit;
         this.closeUnitMenu();
         this.syncDimensionFields();
@@ -1078,7 +1098,12 @@ export class EditorEngine {
       pill.addEventListener('click', () => {
         const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
-        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        const panelTab = pill.closest('.ia-resize-detail-panel')?.dataset.tab;
+        if (panelTab === 'standard') {
+          this.trackEvent(`Aspect Ratio Standard - ${pill.dataset.name}|UnityWidget`);
+        } else if (panelTab !== 'social') {
+          this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        }
         this.selectedPill = pill;
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();

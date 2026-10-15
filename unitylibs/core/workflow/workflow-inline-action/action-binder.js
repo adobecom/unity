@@ -411,6 +411,7 @@ export default class ActionBinder {
       size: file.size,
       format: file.type,
     };
+    this.trackEvent('Uploading Started|UnityWidget');
     this.uploadAbortController = new AbortController();
     const { signal } = this.uploadAbortController;
     let callType = 'asset';
@@ -710,7 +711,6 @@ export default class ActionBinder {
     this.filesData = { count: 1, size: correctedFile.size, type: correctedFile.type, name: correctedFile.name };
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
-    this.trackEvent('Uploading Started|UnityWidget');
     if (['crop', 'resize'].includes(this.operation)) {
       if (isGuest === false) {
         await this.signedInFlow(correctedFile, { performOperation: false });
@@ -849,12 +849,14 @@ export default class ActionBinder {
         if (e.target.closest('.upload-action-container')) return;
         this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
       });
-      dropZone.addEventListener('drop', (e) => {
-        if (e.dataTransfer?.files?.length) {
-          this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
-        }
-      });
     });
+    // Capture phase so a drop anywhere in the widget is counted once, even where a handler stops propagation.
+    b.querySelector('.interactive-area')?.addEventListener('drop', (e) => {
+      if (!this.isInitialState() && !this.isCompleteState()) return;
+      if (e.dataTransfer?.files?.length) {
+        this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
+      }
+    }, true);
   }
 
   isInitialState() {
