@@ -621,13 +621,8 @@ export default class ActionBinder {
     this.uploadHandler = new UploadHandler(this, this.networkUtils);
   }
 
-  // Warms only the module: the handler instance is still created per upload.
   async warmUploadHandler() {
-    try {
-      await import(this.getUploadHandlerUrl());
-    } catch (error) {
-      // Best effort: initUploadHandler imports it again and surfaces any failure.
-    }
+    await import(this.getUploadHandlerUrl());
   }
 
   async getMimeType(file) {
@@ -635,20 +630,14 @@ export default class ActionBinder {
     return getMimeType(file.name);
   }
 
-  // Gives the fragment a head start: otherwise it waits on delayedSplashLoader's
-  // interaction listeners or its 8s timeout, and a fast upload can outrun it.
   async warmSplashFragment() {
-    try {
-      if (this.transitionScreen) await this.transitionScreen.loadSplashFragment();
-    } catch (error) {
-      // Best effort: delayedSplashLoader still loads it on interaction or timeout.
-    }
+    if (this.transitionScreen) await this.transitionScreen.loadSplashFragment();
   }
 
   async warmUploadAssets() {
     if (this.assetsWarmed) return;
     this.assetsWarmed = true;
-    await Promise.all([
+    await Promise.allSettled([
       this.warmSplashFragment(),
       this.warmVerbLimits(),
       this.warmUploadHandler(),
@@ -666,13 +655,9 @@ export default class ActionBinder {
   }
 
   async warmPdfliteIfNeeded() {
-    try {
-      if (!this.shouldWarmPdflite()) return;
-      const { warmPdflite } = await import('../../../scripts/pdflite-validator.js');
-      await warmPdflite();
-    } catch (error) {
-      // Best effort: validation imports pdflite again and surfaces any failure.
-    }
+    if (!this.shouldWarmPdflite()) return;
+    const { warmPdflite } = await import('../../../scripts/pdflite-validator.js');
+    await warmPdflite();
   }
 
   async filterFilesWithPdflite(files) {
@@ -799,17 +784,12 @@ export default class ActionBinder {
       );
     }
     const limits = await this.limitsPromise;
-    // Only successful lookups stay cached, so a failed load can be retried.
     if (!limits || Object.keys(limits).length === 0) this.limitsPromise = null;
     return limits;
   }
 
   async warmVerbLimits() {
-    try {
-      await fetch(this.getVerbLimitsUrl());
-    } catch (error) {
-      // Best effort: the real request re-runs and reports failures.
-    }
+    await fetch(this.getVerbLimitsUrl());
   }
 
   async loadVerbLimits(workflowName, keys) {
@@ -1027,7 +1007,6 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
-          // Warm on drag-over: the drop path has no picker click to hook.
           el.addEventListener('dragover', (e) => {
             e.preventDefault();
             this.warmUploadAssets();
@@ -1061,7 +1040,6 @@ export default class ActionBinder {
           break;
         }
         case el.nodeName === 'INPUT':
-          // Warm while the file picker is open: after LCP, and off the upload path.
           el.addEventListener('click', () => { this.warmUploadAssets(); }, { once: true });
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);

@@ -21,6 +21,30 @@ describe('TransitionScreen', () => {
     document.body.innerHTML = '';
   });
 
+  describe('loadSplashFragment', () => {
+    it('fetches once when triggered concurrently', async () => {
+      screen.splashScreenEl = null;
+      const fetchSplashFragment = sinon.stub(screen, 'fetchSplashFragment').callsFake(async () => {
+        await new Promise((resolve) => { setTimeout(resolve, 10); });
+        screen.splashScreenEl = splashScreenEl;
+      });
+
+      await Promise.all([
+        screen.loadSplashFragment(),
+        screen.loadSplashFragment(),
+        screen.loadSplashFragment(),
+      ]);
+
+      expect(fetchSplashFragment.calledOnce).to.be.true;
+    });
+
+    it('skips work once the fragment is loaded', async () => {
+      const fetchSplashFragment = sinon.stub(screen, 'fetchSplashFragment').resolves();
+      await screen.loadSplashFragment();
+      expect(fetchSplashFragment.called).to.be.false;
+    });
+  });
+
   describe('updateProgressBar', () => {
     it('should update progress bar attributes and text', () => {
       splashScreenEl.innerHTML = `

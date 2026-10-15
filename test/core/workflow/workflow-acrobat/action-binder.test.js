@@ -3335,9 +3335,12 @@ describe('ActionBinder', () => {
       it('never rejects, since warming is fire-and-forget', async () => {
         actionBinder.workflowCfg = cfg('split-pdf');
         sinon.stub(actionBinder, 'shouldWarmPdflite').throws(new Error('boom'));
+        sinon.stub(actionBinder, 'warmSplashFragment').rejects(new Error('fragment'));
+        sinon.stub(actionBinder, 'warmVerbLimits').rejects(new Error('offline'));
+        sinon.stub(actionBinder, 'warmUploadHandler').rejects(new Error('import'));
         let failure;
         try {
-          await actionBinder.warmPdfliteIfNeeded();
+          await actionBinder.warmUploadAssets();
         } catch (caught) {
           failure = caught;
         }
@@ -3411,17 +3414,6 @@ describe('ActionBinder', () => {
         }
         expect(failure).to.be.undefined;
       });
-
-      it('never rejects when the fragment fails to load', async () => {
-        actionBinder.transitionScreen = { loadSplashFragment: sinon.stub().rejects(new Error('404')) };
-        let failure;
-        try {
-          await actionBinder.warmSplashFragment();
-        } catch (caught) {
-          failure = caught;
-        }
-        expect(failure).to.be.undefined;
-      });
     });
 
     it('warms the upload handler module without creating the handler', async () => {
@@ -3471,17 +3463,6 @@ describe('ActionBinder', () => {
       window.fetch = sinon.stub().resolves({ ok: true });
       await actionBinder.warmVerbLimits();
       expect(window.fetch.calledOnceWith(actionBinder.getVerbLimitsUrl())).to.be.true;
-    });
-
-    it('never rejects when priming fails', async () => {
-      window.fetch = sinon.stub().rejects(new Error('offline'));
-      let failure;
-      try {
-        await actionBinder.warmVerbLimits();
-      } catch (caught) {
-        failure = caught;
-      }
-      expect(failure).to.be.undefined;
     });
   });
 
