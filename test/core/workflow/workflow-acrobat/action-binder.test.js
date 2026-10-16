@@ -1646,6 +1646,7 @@ describe('ActionBinder', () => {
           splashScreenEl: splashLayer,
           LOADER_LIMIT: 95,
           clearProgressBarHandler: sinon.stub(),
+          toggleCancelButton: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
@@ -1653,6 +1654,8 @@ describe('ActionBinder', () => {
         // Stop after the progress update; this test does not exercise navigation.
         actionBinder.delay.callsFake(async () => { actionBinder.redirectUrl = ''; });
         await actionBinder.continueInApp();
+        expect(existingTransitionScreen.toggleCancelButton.calledOnceWith(false)).to.be.true;
+        expect(existingTransitionScreen.toggleCancelButton.calledBefore(existingTransitionScreen.updateProgressBar)).to.be.true;
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
