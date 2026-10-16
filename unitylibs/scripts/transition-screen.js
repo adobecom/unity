@@ -22,6 +22,7 @@ export default class TransitionScreen {
     this.progressText = '';
     this.progressBarTimeoutId = null;
     this.progressBarGeneration = 0;
+    this.splashFragmentPromise = null;
   }
 
   clearProgressBarHandler() {
@@ -145,6 +146,11 @@ export default class TransitionScreen {
   async loadSplashFragment() {
     if (!this.workflowCfg.targetCfg.showSplashScreen) return;
     if (this.splashScreenEl) return;
+    if (!this.splashFragmentPromise) this.splashFragmentPromise = this.fetchSplashFragment();
+    await this.splashFragmentPromise;
+  }
+
+  async fetchSplashFragment() {
     const fragmentLink = this.getFragmentLink();
     if (!fragmentLink) return;
     this.splashFragmentLink = localizeLink(`${window.location.origin}${fragmentLink}`);
