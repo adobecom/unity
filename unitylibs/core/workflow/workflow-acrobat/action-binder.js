@@ -192,6 +192,8 @@ export default class ActionBinder {
     this.canvasArea = canvasArea;
     this.actionMap = actionMap;
     this.limits = {};
+    this.limitsPromise = null;
+    this.assetsWarmed = false;
     this.operations = [];
     this.acrobatApiConfig = null;
     this.networkUtils = new NetworkUtils();
@@ -218,6 +220,15 @@ export default class ActionBinder {
     this.pageConfigLocation = null;
     this.pageConfigFetched = false;
     this.pageConfigPromise = null;
+    this.pageConfigReady = new Promise((resolve) => { this.resolvePageConfigReady = resolve; });
+  }
+
+  applyApiConfig() {
+    this.acrobatApiConfig = this.getAcrobatApiConfig();
+    if (this.resolvePageConfigReady) {
+      this.resolvePageConfigReady();
+      this.resolvePageConfigReady = null;
+    }
   }
 
   async initialize() {
@@ -302,6 +313,7 @@ export default class ActionBinder {
       const { default: getExperimentData } = await import('../../../utils/experiment-provider.js');
       pageConfig = await fetchPageConfig({ product: 'acrobat', verb });
       this.pageConfigLocation = pageConfig.location;
+      this.applyApiConfig();
       if (pageConfig.config?.target?.enabled) {
         this.experimentData = await getExperimentData(pageConfig.config.target.decisionScopes);
         this.experimentViaPageConfig = true;
@@ -320,7 +332,7 @@ export default class ActionBinder {
       this.pageConfigFetched = false;
       this.pageConfigPromise = null;
     }
-    this.acrobatApiConfig = this.getAcrobatApiConfig();
+    this.applyApiConfig();
   }
 
   async dispatchErrorToast(errorType, status, info = null, lanaOnly = false, showError = true, errorMetaData = {}) {
@@ -571,6 +583,7 @@ export default class ActionBinder {
       if (this.multiFileValidationFailure) cOpts.payload.feedback = 'uploaderror';
       if (this.showInfoToast) cOpts.payload.feedback = 'nonpdf';
     }
+    if (this.pageConfigPromise) await this.pageConfigPromise;
     if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
@@ -599,14 +612,52 @@ export default class ActionBinder {
     else await this.uploadHandler.multiFileUserUpload(files, this.filesData);
   }
 
+  getUploadHandlerUrl() {
+    return `${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`;
+  }
+
   async initUploadHandler() {
-    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/${this.workflowCfg.name}/upload-handler.js`);
+    const { default: UploadHandler } = await import(this.getUploadHandlerUrl());
     this.uploadHandler = new UploadHandler(this, this.networkUtils);
+  }
+
+  async warmUploadHandler() {
+    await import(this.getUploadHandlerUrl());
   }
 
   async getMimeType(file) {
     const { getMimeType } = await import('../../../utils/FileUtils.js');
     return getMimeType(file.name);
+  }
+
+  async warmSplashFragment() {
+    if (this.transitionScreen) await this.transitionScreen.loadSplashFragment();
+  }
+
+  async warmUploadAssets() {
+    if (this.assetsWarmed) return;
+    this.assetsWarmed = true;
+    await Promise.allSettled([
+      this.warmSplashFragment(),
+      this.warmVerbLimits(),
+      this.warmUploadHandler(),
+      this.warmPdfliteIfNeeded(),
+    ]);
+  }
+
+  shouldWarmPdflite() {
+    const verb = this.workflowCfg.enabledFeatures[0];
+    const { targetCfg } = this.workflowCfg;
+    return (targetCfg.pdfIntegrityCheckVerbs || []).includes(verb)
+      || (targetCfg.pdfAcroformCheckVerbs || []).includes(verb)
+      || (targetCfg.pdfScannedCheckVerbs || []).includes(verb)
+      || (ActionBinder.LIMITS_MAP[verb] || []).some((key) => key.includes('page-limit'));
+  }
+
+  async warmPdfliteIfNeeded() {
+    if (!this.shouldWarmPdflite()) return;
+    const { warmPdflite } = await import('../../../scripts/pdflite-validator.js');
+    await warmPdflite();
   }
 
   async filterFilesWithPdflite(files) {
@@ -711,7 +762,8 @@ export default class ActionBinder {
     if (wordValidatedFiles.length === 0) return;
     const { isValid, validFiles } = await this.validateFiles(wordValidatedFiles);
     if (!isValid) return;
-    await (this.pageConfigPromise || this.ensurePageConfig());
+    if (!this.pageConfigPromise && !this.pageConfigFetched) this.pageConfigPromise = this.ensurePageConfig();
+    await this.pageConfigReady;
     await this.initUploadHandler();
     if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
       await this.handleSingleFileUpload(validFiles);
@@ -720,9 +772,29 @@ export default class ActionBinder {
     }
   }
 
+  getVerbLimitsUrl(workflowName = this.workflowCfg.name) {
+    return `${getUnityLibs()}/core/workflow/${workflowName}/limits.json`;
+  }
+
+  async getVerbLimits() {
+    if (!this.limitsPromise) {
+      this.limitsPromise = this.loadVerbLimits(
+        this.workflowCfg.name,
+        ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]],
+      );
+    }
+    const limits = await this.limitsPromise;
+    if (!limits || Object.keys(limits).length === 0) this.limitsPromise = null;
+    return limits;
+  }
+
+  async warmVerbLimits() {
+    await fetch(this.getVerbLimitsUrl());
+  }
+
   async loadVerbLimits(workflowName, keys) {
     try {
-      const response = await fetch(`${getUnityLibs()}/core/workflow/${workflowName}/limits.json`);
+      const response = await fetch(this.getVerbLimitsUrl(workflowName));
       if (!response.ok) throw new Error('Error loading verb limits');
       const limits = await response.json();
       const combinedLimits = keys.reduce((acc, key) => {
@@ -752,7 +824,7 @@ export default class ActionBinder {
   }
 
   async processSingleFile(files) {
-    this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
+    this.limits = await this.getVerbLimits();
     if (!this.limits || Object.keys(this.limits).length === 0) return;
     if (!files || files.length > this.limits.maxNumFiles) {
       await this.dispatchErrorToast('validation_error_only_accept_one_file');
@@ -768,7 +840,7 @@ export default class ActionBinder {
       await this.dispatchErrorToast('validation_error_only_accept_one_file');
       return;
     }
-    this.limits = await this.loadVerbLimits(this.workflowCfg.name, ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]]);
+    this.limits = await this.getVerbLimits();
     if (!this.limits || Object.keys(this.limits).length === 0) return;
     await this.handleFileUpload(files);
   }
@@ -935,7 +1007,10 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'DIV':
-          el.addEventListener('dragover', (e) => e.preventDefault());
+          el.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.warmUploadAssets();
+          });
           el.addEventListener('drop', async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
@@ -943,7 +1018,10 @@ export default class ActionBinder {
           });
           break;
         case el.nodeName === 'BODY': {
-          const onDragOver = (e) => e.preventDefault();
+          const onDragOver = (e) => {
+            e.preventDefault();
+            this.warmUploadAssets();
+          };
           const onDrop = async (e) => {
             e.preventDefault();
             const { files, totalFileSize } = this.extractFiles(e);
@@ -962,6 +1040,7 @@ export default class ActionBinder {
           break;
         }
         case el.nodeName === 'INPUT':
+          el.addEventListener('click', () => { this.warmUploadAssets(); }, { once: true });
           el.addEventListener('change', async (e) => {
             const { files, totalFileSize } = this.extractFiles(e);
             await this.acrobatActionMaps(value, files, totalFileSize, 'change');
