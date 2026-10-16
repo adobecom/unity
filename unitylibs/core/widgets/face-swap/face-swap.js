@@ -430,7 +430,6 @@ export default class FaceSwapWidget extends UnityWidget {
     sprite.innerHTML = this.spriteCon || '';
     this.widgetWrap = widgetWrap;
     this.widget = widget;
-
     const slots = createTag('div', { class: 'fs-slots' });
     SLOT_IDS.forEach((id) => slots.append(this.buildSlot(id)));
     widget.append(this.buildHeader(), slots, this.buildFooter());
@@ -438,7 +437,6 @@ export default class FaceSwapWidget extends UnityWidget {
     if (gallery) widget.append(createTag('div', { class: 'fs-divider', role: 'presentation' }), gallery);
     this.liveRegion = createTag('div', { class: 'fs-live unity-slf-sr-only', 'aria-live': 'polite', role: 'status' });
     widgetWrap.append(sprite, widget, this.liveRegion);
-
     const left = createTag('div', { class: 'unity-slf-left' });
     left.append(widgetWrap);
     const right = createTag('div', { class: 'unity-slf-right' });
@@ -461,7 +459,6 @@ export default class FaceSwapWidget extends UnityWidget {
       });
     };
     document.addEventListener('pointerdown', this.onOutsideTap);
-
     const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only', 'aria-hidden': 'true' });
     while (el.firstChild) holder.append(el.firstChild);
     el.append(holder);
