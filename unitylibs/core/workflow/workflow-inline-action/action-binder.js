@@ -548,7 +548,7 @@ export default class ActionBinder {
         error.status = res?.status;
         throw error;
       }
-      const trackSuccessPromise = this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
+      const trackSuccessPromise = Promise.resolve(this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId));
       if (openInSameTab) {
         await trackSuccessPromise.catch(() => {});
         if (useSplashProgress && this.transitionScreen?.splashScreenEl) {

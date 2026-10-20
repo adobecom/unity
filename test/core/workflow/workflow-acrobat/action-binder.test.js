@@ -1641,6 +1641,8 @@ describe('ActionBinder', () => {
       });
 
       it('should reuse the existing transition screen and set LOADER_LIMIT to 100', async () => {
+        const originalUrl = window.location.href;
+        actionBinder.redirectUrl = '#continue-in-app-test';
         const splashLayer = document.createElement('div');
         const existingTransitionScreen = {
           splashScreenEl: splashLayer,
@@ -1653,6 +1655,7 @@ describe('ActionBinder', () => {
         // Stop after the progress update; this test does not exercise navigation.
         actionBinder.delay.callsFake(async () => { actionBinder.redirectUrl = ''; });
         await actionBinder.continueInApp();
+        window.history.replaceState(null, '', originalUrl);
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
