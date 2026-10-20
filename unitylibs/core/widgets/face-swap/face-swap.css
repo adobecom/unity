@@ -571,7 +571,17 @@
   line-height: 18px;
 }
 
+.hero-marquee:has(+ .unity-face-swap) .foreground .copy h1 {
+  font-weight: 800;
+}
+
 @media screen and (max-width: 1199px) {
+  .hero-marquee:has(+ .unity-face-swap) .foreground .copy h1 {
+    font-size: 40px;
+    line-height: 98%;
+    letter-spacing: -1.8px;
+  }
+
   .unity-face-swap {
     width: var(--grid-container-width);
     margin: auto;
@@ -583,6 +593,12 @@
 }
 
 @media screen and (min-width: 1200px) {
+  .hero-marquee:has(+ .unity-face-swap) .foreground .copy h1 {
+    font-size: 64px;
+    line-height: 100%;
+    letter-spacing: -1.92px;
+  }
+
   .unity-face-swap > .interactive-area {
     padding: 15px;
     border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
