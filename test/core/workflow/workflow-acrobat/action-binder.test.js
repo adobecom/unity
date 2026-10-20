@@ -1,6 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-acrobat/action-binder.js';
+import { getUnityLibs, setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 
 const mockUpdateProgressBar = null;
 
@@ -1346,6 +1347,21 @@ describe('ActionBinder', () => {
         actionBinder.uploadHandler = null;
       });
 
+      it('should start the upload without waiting for pending experiment resolution', async () => {
+        const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
+        actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
+        actionBinder.pageConfigFetched = true;
+        let finishExperiment;
+        actionBinder.pageConfigPromise = new Promise((resolve) => { finishExperiment = resolve; });
+        actionBinder.applyApiConfig();
+
+        await actionBinder.handleFileUpload(files);
+
+        expect(actionBinder.initUploadHandler.called).to.be.true;
+        expect(actionBinder.handleSingleFileUpload.calledWith(files)).to.be.true;
+        finishExperiment();
+      });
+
       it('should handle single file upload', async () => {
         const files = [{ name: 'test.pdf', type: 'application/pdf', size: 1048576 }];
         actionBinder.validateFiles.resolves({ isValid: true, validFiles: files });
@@ -1537,14 +1553,27 @@ describe('ActionBinder', () => {
       it('should return false for direct upload verbs without file size', () => {
         expect(actionBinder.isDirectUploadVerb()).to.be.false;
       });
+
+      it('should use the extended max size for verbs in the extended list', () => {
+        actionBinder.workflowCfg.enabledFeatures = ['word-to-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtended = 3145728;
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtendedVerbs = ['word-to-pdf'];
+        expect(actionBinder.isDirectUploadVerb(3145728)).to.be.true;
+        expect(actionBinder.isDirectUploadVerb(1048577)).to.be.true;
+        expect(actionBinder.isDirectUploadVerb(3145729)).to.be.false;
+      });
+
+      it('should fall back to the global max size for verbs not in the extended list', () => {
+        actionBinder.workflowCfg.enabledFeatures = ['compress-pdf'];
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtended = 3145728;
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtendedVerbs = ['word-to-pdf'];
+        expect(actionBinder.isDirectUploadVerb(1048576)).to.be.true;
+        expect(actionBinder.isDirectUploadVerb(1048577)).to.be.false;
+      });
     });
 
     describe('continueInApp', () => {
-      let locationSpy;
-
       beforeEach(() => {
-        locationSpy = sinon.spy();
-
         actionBinder.redirectUrl = 'https://test.com?param=value';
         actionBinder.operations = ['test-operation'];
         actionBinder.redirectWithoutUpload = false;
@@ -1553,6 +1582,7 @@ describe('ActionBinder', () => {
         actionBinder.multiFileFailure = null;
         actionBinder.showTransitionScreen = sinon.stub().resolves();
         actionBinder.transitionScreen = {
+          clearProgressBarHandler: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
@@ -1564,14 +1594,16 @@ describe('ActionBinder', () => {
         actionBinder.redirectUrl = '';
         await actionBinder.continueInApp();
         expect(actionBinder.showTransitionScreen.called).to.be.false;
-        expect(locationSpy.called).to.be.false;
+        expect(actionBinder.transitionScreen.updateProgressBar.called).to.be.false;
+        expect(actionBinder.delay.called).to.be.false;
       });
 
       it('should not proceed if no operations and not redirectWithoutUpload', async () => {
         actionBinder.operations = [];
         await actionBinder.continueInApp();
         expect(actionBinder.showTransitionScreen.called).to.be.false;
-        expect(locationSpy.called).to.be.false;
+        expect(actionBinder.transitionScreen.updateProgressBar.called).to.be.false;
+        expect(actionBinder.delay.called).to.be.false;
       });
 
       it('should log to splunk and continue when direct upload verb progress bar update throws', async () => {
@@ -1618,12 +1650,112 @@ describe('ActionBinder', () => {
           showSplashScreen: sinon.stub().resolves(),
         };
         actionBinder.transitionScreen = existingTransitionScreen;
+        // Stop after the progress update; this test does not exercise navigation.
+        actionBinder.delay.callsFake(async () => { actionBinder.redirectUrl = ''; });
         await actionBinder.continueInApp();
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
         expect(existingTransitionScreen.updateProgressBar.calledOnceWith(splashLayer, 100)).to.be.true;
+      });
+
+      it('should restore the splash and report an error when the final redirect delay fails', async () => {
+        const error = new Error('redirect delay failed');
+        actionBinder.delay.rejects(error);
+        await actionBinder.continueInApp();
+        expect(actionBinder.transitionScreen.showSplashScreen.calledOnce).to.be.true;
+        expect(actionBinder.dispatchErrorToast.calledOnceWith(
+          'error_generic',
+          500,
+          'Exception thrown when redirecting to product; redirect delay failed',
+          false,
+          undefined,
+          { code: 'upload_error_redirect_to_app', subCode: undefined, desc: error.message },
+        )).to.be.true;
+      });
+
+      it('should not navigate when cancel clears the redirect URL during the final progress delay', async () => {
+        actionBinder.transitionScreen = {
+          splashScreenEl: document.createElement('div'),
+          clearProgressBarHandler: sinon.stub(),
+          updateProgressBar: sinon.stub(),
+          showSplashScreen: sinon.stub().resolves(),
+        };
+        actionBinder.delay = sinon.stub().callsFake(async () => { actionBinder.redirectUrl = ''; });
+        // multiFileFailure is only read when building the navigation URL. Throwing here makes a
+        // regression fail via the catch/toast path instead of actually navigating the test page.
+        Object.defineProperty(actionBinder, 'multiFileFailure', {
+          get() { throw new Error('navigation attempted after cancel'); },
+          configurable: true,
+        });
+        try {
+          await actionBinder.continueInApp();
+          expect(actionBinder.dispatchErrorToast.called).to.be.false;
+          expect(actionBinder.transitionScreen.showSplashScreen.called).to.be.false;
+        } finally {
+          delete actionBinder.multiFileFailure;
+        }
+      });
+    });
+
+    describe('showTransitionScreen', () => {
+      it('should clear the previous transition screen progress bar timer before loading a new one', async () => {
+        setUnityLibs('/unitylibs');
+        const splashLayer = document.createElement('div');
+        const existingTransitionScreen = {
+          splashScreenEl: splashLayer,
+          clearProgressBarHandler: sinon.stub(),
+        };
+        actionBinder.transitionScreen = existingTransitionScreen;
+        const pending = actionBinder.showTransitionScreen();
+        expect(existingTransitionScreen.clearProgressBarHandler.calledOnce).to.be.true;
+        await pending;
+        expect(actionBinder.transitionScreen).to.not.equal(existingTransitionScreen);
+        expect(actionBinder.transitionScreen.splashScreenEl).to.equal(splashLayer);
+        expect(actionBinder.transitionScreen.LOADER_LIMIT).to.equal(actionBinder.LOADER_LIMIT);
+        expect(actionBinder.transitionScreen.showSplashScreen).to.be.a('function');
+      });
+    });
+
+    describe('loadTransitionScreen', () => {
+      beforeEach(() => {
+        setUnityLibs('/unitylibs');
+        actionBinder.loadTransitionScreen.restore();
+      });
+
+      it('should load the transition screen only once and schedule its splash loader', async () => {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        const loader = sinon.stub(TransitionScreen.prototype, 'delayedSplashLoader').resolves();
+        await actionBinder.loadTransitionScreen();
+        const { transitionScreen } = actionBinder;
+        await actionBinder.loadTransitionScreen();
+        expect(transitionScreen).to.be.instanceOf(TransitionScreen);
+        expect(transitionScreen.workflowCfg).to.equal(mockWorkflowCfg);
+        expect(actionBinder.transitionScreen).to.equal(transitionScreen);
+        expect(loader.calledOnce).to.be.true;
+      });
+
+      it('should report and propagate a splash loader failure', async () => {
+        const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+        const error = new Error('splash loader failed');
+        sinon.stub(TransitionScreen.prototype, 'delayedSplashLoader').rejects(error);
+        const toast = sinon.stub(actionBinder, 'dispatchErrorToast').resolves();
+        let failure;
+        try {
+          await actionBinder.loadTransitionScreen();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.equal(error);
+        expect(toast.calledOnceWith(
+          'pre_upload_error_transition_screen',
+          null,
+          `Error loading transition screen, Error: ${error}`,
+          false,
+          true,
+          { code: 'pre_upload_error_transition_screen' },
+        )).to.be.true;
       });
     });
 
@@ -1685,6 +1817,12 @@ describe('ActionBinder', () => {
         actionBinder.isUploading = false;
         await actionBinder.cancelAcrobatOperation();
         expect(actionBinder.filesData.workflowStep).to.equal('preuploading');
+      });
+
+      it('should clear recorded operations so the next upload cannot redirect with stale state', async () => {
+        actionBinder.operations = ['asset-cancelled'];
+        await actionBinder.cancelAcrobatOperation();
+        expect(actionBinder.operations).to.deep.equal([]);
       });
     });
 
@@ -2019,6 +2157,24 @@ describe('ActionBinder', () => {
         await actionBinder.acrobatActionMaps('interrupt', files, 123, 'test-event');
         expect(spy.called).to.be.true;
         spy.restore();
+      });
+
+      it('should register the RedirectReady listener only once across repeated actions', async () => {
+        actionBinder.transitionScreen = { test: 'existing' };
+        actionBinder.handlePreloads = sinon.stub().resolves();
+        const cancelStub = sinon.stub(actionBinder, 'cancelAcrobatOperation').resolves();
+        const addSpy = sinon.spy(window, 'addEventListener');
+        delete actionBinder.redirectReadyBound;
+        try {
+          await actionBinder.acrobatActionMaps('interrupt');
+          await actionBinder.acrobatActionMaps('interrupt');
+          await actionBinder.acrobatActionMaps('interrupt');
+          const registrations = addSpy.getCalls().filter((c) => c.args[0] === 'DCUnity:RedirectReady');
+          expect(registrations).to.have.lengthOf(1);
+        } finally {
+          addSpy.restore();
+          cancelStub.restore();
+        }
       });
 
       describe('enabledFeatures validation', () => {
@@ -2636,6 +2792,28 @@ describe('ActionBinder', () => {
           expect(result).to.be.true;
         });
 
+        it('should wait for a pending page config promise before reading experiment data', async () => {
+          actionBinder.workflowCfg = {
+            enabledFeatures: ['add-comment'],
+            targetCfg: { experimentationOn: ['add-comment'] },
+          };
+          actionBinder.experimentData = null;
+          let finishExperiment;
+          actionBinder.pageConfigPromise = new Promise((resolve) => {
+            finishExperiment = () => {
+              actionBinder.experimentData = { variationId: 'late-variant' };
+              resolve();
+            };
+          });
+
+          const cOpts = { payload: {} };
+          const redirect = actionBinder.handleRedirect(cOpts, { test: 'data' });
+          finishExperiment();
+          await redirect;
+
+          expect(cOpts.payload.variationId).to.equal('late-variant');
+        });
+
         it('should not add variationId when experimentation is disabled for the feature', async () => {
           actionBinder.workflowCfg = {
             enabledFeatures: ['add-comment'],
@@ -3098,6 +3276,193 @@ describe('ActionBinder', () => {
       const result = await actionBinder.validateFiles(files);
       expect(result.isValid).to.be.false;
       expect(actionBinder.dispatchErrorToast.calledWith('validation_error_unsupported_type')).to.be.true;
+    });
+  });
+
+  describe('pdflite warm-up', () => {
+    const cfg = (verb, targetCfg = {}) => ({ enabledFeatures: [verb], targetCfg });
+
+    describe('shouldWarmPdflite', () => {
+      it('warms verbs whose limits include a page limit', () => {
+        actionBinder.workflowCfg = cfg('split-pdf');
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+      });
+
+      it('warms verbs enabled for integrity, acroform or scanned checks', () => {
+        actionBinder.workflowCfg = cfg('stylize', { pdfScannedCheckVerbs: ['stylize'] });
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+        actionBinder.workflowCfg = cfg('stylize', { pdfAcroformCheckVerbs: ['stylize'] });
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+        actionBinder.workflowCfg = cfg('stylize', { pdfIntegrityCheckVerbs: ['stylize'] });
+        expect(actionBinder.shouldWarmPdflite()).to.be.true;
+      });
+
+      it('skips verbs that never load pdflite', () => {
+        actionBinder.workflowCfg = cfg('pdf-to-word');
+        expect(actionBinder.shouldWarmPdflite()).to.be.false;
+        actionBinder.workflowCfg = cfg('heic-to-pdf');
+        expect(actionBinder.shouldWarmPdflite()).to.be.false;
+      });
+
+      it('skips unknown verbs without throwing', () => {
+        actionBinder.workflowCfg = cfg('not-a-real-verb');
+        expect(actionBinder.shouldWarmPdflite()).to.be.false;
+      });
+    });
+
+    describe('warmPdfliteIfNeeded', () => {
+      let originalPdflite;
+
+      beforeEach(() => {
+        originalPdflite = window.pdflite;
+        window.pdflite = { pdfDetails: sinon.stub().returns({ NUM_PAGES: 1 }) };
+      });
+
+      afterEach(() => { window.pdflite = originalPdflite; });
+
+      it('does not import pdflite when the verb does not need it', async () => {
+        actionBinder.workflowCfg = cfg('heic-to-pdf');
+        const gate = sinon.spy(actionBinder, 'shouldWarmPdflite');
+        await actionBinder.warmPdfliteIfNeeded();
+        expect(gate.returned(false)).to.be.true;
+      });
+
+      it('resolves without throwing when warming runs', async () => {
+        actionBinder.workflowCfg = cfg('split-pdf');
+        await actionBinder.warmPdfliteIfNeeded();
+      });
+
+      it('never rejects, since warming is fire-and-forget', async () => {
+        actionBinder.workflowCfg = cfg('split-pdf');
+        sinon.stub(actionBinder, 'shouldWarmPdflite').throws(new Error('boom'));
+        sinon.stub(actionBinder, 'warmSplashFragment').rejects(new Error('fragment'));
+        sinon.stub(actionBinder, 'warmVerbLimits').rejects(new Error('offline'));
+        sinon.stub(actionBinder, 'warmUploadHandler').rejects(new Error('import'));
+        let failure;
+        try {
+          await actionBinder.warmUploadAssets();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.be.undefined;
+      });
+    });
+
+    it('warms pdflite when the file picker is opened', async () => {
+      const el = document.createElement('input');
+      el.type = 'file';
+      const block = { querySelector: sinon.stub().returns(el) };
+      const warm = sinon.stub(actionBinder, 'warmUploadAssets').resolves();
+
+      await actionBinder.initActionListeners(block, { input: 'upload' });
+      el.dispatchEvent(new Event('click'));
+      el.dispatchEvent(new Event('click'));
+
+      expect(warm.calledOnce).to.be.true;
+    });
+
+    it('warms on drag-over, so the drop path is covered too', async () => {
+      const el = document.createElement('div');
+      const block = { querySelector: sinon.stub().returns(el) };
+      const warm = sinon.stub(actionBinder, 'warmUploadAssets').resolves();
+
+      await actionBinder.initActionListeners(block, { div: 'upload' });
+      el.dispatchEvent(new Event('dragover'));
+
+      expect(warm.called).to.be.true;
+    });
+
+    it('warms only once across repeated triggers', async () => {
+      const limits = sinon.stub(actionBinder, 'warmVerbLimits').resolves();
+      sinon.stub(actionBinder, 'warmUploadHandler').resolves();
+      sinon.stub(actionBinder, 'warmPdfliteIfNeeded').resolves();
+
+      await actionBinder.warmUploadAssets();
+      await actionBinder.warmUploadAssets();
+      await actionBinder.warmUploadAssets();
+
+      expect(limits.calledOnce).to.be.true;
+    });
+
+    it('warms limits and pdflite together', async () => {
+      const limits = sinon.stub(actionBinder, 'warmVerbLimits').resolves();
+      const handler = sinon.stub(actionBinder, 'warmUploadHandler').resolves();
+      const pdflite = sinon.stub(actionBinder, 'warmPdfliteIfNeeded').resolves();
+      const fragment = sinon.stub(actionBinder, 'warmSplashFragment').resolves();
+      await actionBinder.warmUploadAssets();
+      expect(limits.calledOnce).to.be.true;
+      expect(handler.calledOnce).to.be.true;
+      expect(pdflite.calledOnce).to.be.true;
+      expect(fragment.calledOnce).to.be.true;
+    });
+
+    describe('warmSplashFragment', () => {
+      it('loads the fragment ahead of the upload', async () => {
+        const loadSplashFragment = sinon.stub().resolves();
+        actionBinder.transitionScreen = { loadSplashFragment };
+        await actionBinder.warmSplashFragment();
+        expect(loadSplashFragment.calledOnce).to.be.true;
+      });
+
+      it('is a no-op before the transition screen exists', async () => {
+        actionBinder.transitionScreen = null;
+        let failure;
+        try {
+          await actionBinder.warmSplashFragment();
+        } catch (caught) {
+          failure = caught;
+        }
+        expect(failure).to.be.undefined;
+      });
+    });
+
+    it('warms the upload handler module without creating the handler', async () => {
+      setUnityLibs('/unitylibs');
+      actionBinder.workflowCfg = { name: 'workflow-acrobat', enabledFeatures: ['split-pdf'], targetCfg: {} };
+      actionBinder.uploadHandler = null;
+      await actionBinder.warmUploadHandler();
+      expect(actionBinder.uploadHandler).to.be.null;
+    });
+  });
+
+  describe('getVerbLimits', () => {
+    beforeEach(() => {
+      actionBinder.limitsPromise = null;
+      actionBinder.workflowCfg = { name: 'workflow-acrobat', enabledFeatures: ['split-pdf'], targetCfg: {} };
+    });
+
+    it('fetches once and reuses the cached limits', async () => {
+      const load = sinon.stub(actionBinder, 'loadVerbLimits').resolves({ maxNumFiles: 1 });
+      const first = await actionBinder.getVerbLimits();
+      const second = await actionBinder.getVerbLimits();
+      expect(load.calledOnce).to.be.true;
+      expect(first).to.deep.equal({ maxNumFiles: 1 });
+      expect(second).to.deep.equal({ maxNumFiles: 1 });
+    });
+
+    it('does not cache an empty result, so a failed load is retried', async () => {
+      const load = sinon.stub(actionBinder, 'loadVerbLimits').resolves({});
+      await actionBinder.getVerbLimits();
+      await actionBinder.getVerbLimits();
+      expect(load.calledTwice).to.be.true;
+      expect(actionBinder.limitsPromise).to.be.null;
+    });
+  });
+
+  describe('warmVerbLimits', () => {
+    let originalFetch;
+
+    beforeEach(() => {
+      originalFetch = window.fetch;
+      actionBinder.workflowCfg = { name: 'workflow-acrobat', enabledFeatures: ['split-pdf'], targetCfg: {} };
+    });
+
+    afterEach(() => { window.fetch = originalFetch; });
+
+    it('primes the limits request', async () => {
+      window.fetch = sinon.stub().resolves({ ok: true });
+      await actionBinder.warmVerbLimits();
+      expect(window.fetch.calledOnceWith(actionBinder.getVerbLimitsUrl())).to.be.true;
     });
   });
 

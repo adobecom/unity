@@ -14,9 +14,10 @@ import {
   getLocale,
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
+import TypeaheadUtils from '../../../utils/TypeaheadUtils.js';
 
 export default class ActionBinder {
-  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Enter', 'Escape', ' '];
+  static VALID_KEYS = ['Tab', 'ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', 'Escape', ' '];
 
   boundHandleKeyDown = this.handleKeyDown.bind(this);
 
@@ -42,6 +43,7 @@ export default class ActionBinder {
     this.query = '';
     this.activeIndex = -1;
     this.id = '';
+    this.matchTypeahead = TypeaheadUtils.createMatcher();
     this.apiConfig = { ...unityConfig };
     this.inputField = this.getElement('.inp-field');
     this.dropdown = this.getElement('.drop');
@@ -111,6 +113,7 @@ export default class ActionBinder {
     if (!alertText) return;
     alertText.innerText = msg;
     errorToast.classList.add('show');
+    errorToast.querySelector('.alert-icon')?.focus();
     window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
   }
 
@@ -135,15 +138,15 @@ export default class ActionBinder {
   async createErrorToast() {
     try {
       const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
-      const alertImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/alert.svg` });
-      const closeImg = createTag('img', { loading: 'lazy', src: `${getUnityLibs()}/img/icons/close.svg` });
+      const alertImg = createTag('img', { loading: 'lazy', alt: '', 'aria-hidden': 'true', src: `${getUnityLibs()}/img/icons/alert.svg` });
+      const closeImg = createTag('img', { loading: 'lazy', alt: '', src: `${getUnityLibs()}/img/icons/close.svg` });
       const promptBarEl = this.canvasArea.querySelector('.copy .ex-unity-wrap')
         || this.canvasArea.querySelector('.ex-unity-wrap');
       if (!promptBarEl) return null;
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
-      const alertIcon = createTag('div', { class: 'alert-icon' });
+      const alertIcon = createTag('div', { class: 'alert-icon', role: 'alert', tabindex: '-1' });
       alertIcon.append(alertImg, alertText);
-      const alertClose = createTag('a', { class: 'alert-close', href: '#' });
+      const alertClose = createTag('button', { type: 'button', class: 'alert-close' });
       alertClose.append(closeImg, createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
       const alertContent = createTag('div', { class: 'alert-content' });
       alertContent.append(alertIcon, alertClose);
@@ -154,6 +157,7 @@ export default class ActionBinder {
         e.stopPropagation();
         errholder.classList.remove('show');
         if (promptBarEl) promptBarEl.style.pointerEvents = 'auto';
+        this.block.querySelector('.gen-btn')?.focus();
       };
       alertClose.addEventListener('click', closeToast);
       alertClose.addEventListener('keydown', (e) => {
@@ -472,12 +476,22 @@ export default class ActionBinder {
   }
 
   handleKeyDown(ev) {
-    if (!ActionBinder.VALID_KEYS.includes(ev.key)) return;
-    if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
-    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && ev.target?.classList?.contains('inp-field')) return;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
+    const isMenuOptionFocused = !!(isMenuOpen && document.activeElement?.classList?.contains('verb-link'));
+    const isTypeaheadKey = isMenuOptionFocused && ev.key.length === 1 && ev.key !== ' '
+      && !ev.ctrlKey && !ev.metaKey && !ev.altKey;
+    if (!ActionBinder.VALID_KEYS.includes(ev.key) && !isTypeaheadKey) return;
+    if (ev.key === ' ' && (ev.target === this.inputField || ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && ev.target?.classList?.contains('inp-field')) return;
+    if (isTypeaheadKey) {
+      ev.preventDefault();
+      const focusElems = this.getFocusElems();
+      const match = this.matchTypeahead(focusElems, ev.key);
+      match?.focus();
+      return;
+    }
     switch (ev.key) {
       case 'Tab': {
         const isDropVisi = this.isDropdownVisible();
@@ -499,6 +513,16 @@ export default class ActionBinder {
         } else {
           this.moveFocusWithArrow(this.getDropdownItems(), direction);
         }
+        break;
+      }
+      case 'Home':
+      case 'End': {
+        if (!isMenuOpen) break;
+        ev.preventDefault();
+        const edge = ev.key === 'Home' ? 0 : -1;
+        const focusElems = this.getFocusElems();
+        if (!focusElems.length) break;
+        focusElems[edge < 0 ? focusElems.length - 1 : edge]?.focus();
         break;
       }
       case 'Enter':
@@ -544,7 +568,7 @@ export default class ActionBinder {
     const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
     if (openVerbMenu || openModelMenu) {
       const menuSelector = openVerbMenu
-        ? '.verbs-container.show-menu .verb-link, .verbs-container.show-menu .verb-list-close'
+        ? '.verbs-container.show-menu .verb-link'
         : '.models-container.show-menu .verb-link';
       return Array.from(this.block.querySelectorAll(menuSelector));
     }
@@ -563,15 +587,6 @@ export default class ActionBinder {
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
-    const isRedesignMenu = !!(openVerbMenu || openModelMenu)?.closest('.pb-redesign');
-    if (isMenuOpen && isRedesignMenu) {
-      event.preventDefault();
-      let wrappedIndex;
-      if (isShift) wrappedIndex = isFirstElement ? focusableElements.length - 1 : currentIndex - 1;
-      else wrappedIndex = isLastElement ? 0 : currentIndex + 1;
-      focusableElements[wrappedIndex].focus();
-      return;
-    }
     if (isMenuOpen) {
       if ((isShift && isFirstElement) || (!isShift && isLastElement)) {
         event.preventDefault();

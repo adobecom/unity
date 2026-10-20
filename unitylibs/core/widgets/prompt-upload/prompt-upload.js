@@ -236,6 +236,8 @@ export default class PromptUploadWidget {
     if (this.selectedOption) this.setSelectedOption(this.selectedOption);
     if (this.optionPayloadKey) this.widgetWrap?.setAttribute('data-selected-option-key', this.optionPayloadKey);
     if (this.ctaStaticLink) this.widgetWrap?.setAttribute('data-cta-static-link', this.ctaStaticLink);
+    const promptPrefix = placeholderText(this.el, 'icon-prompt-prefix')
+    if (promptPrefix) this.widgetWrap?.setAttribute('data-prompt-prefix', promptPrefix);
     return this.cfg.actionMap;
   }
 }
