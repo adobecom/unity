@@ -219,8 +219,7 @@ export default class ActionBinder {
     if (el?.classList?.contains('ia-edit-in-firefly')) {
       this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, redirectMeta);
     } else if (el?.classList?.contains('ia-nba-card')) {
-      const label = el.querySelector('.ia-nba-label')?.textContent?.trim() || el.dataset.nba;
-      this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), { ...redirectMeta, verb: el.dataset.nba });
+      this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(el.dataset.nba), { ...redirectMeta, verb: el.dataset.nba });
     }
   }
 
@@ -850,7 +849,6 @@ export default class ActionBinder {
         this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
       });
     });
-    // Capture phase so a drop anywhere in the widget is counted once, even where a handler stops propagation.
     b.querySelector('.interactive-area')?.addEventListener('drop', (e) => {
       if (!this.isInitialState() && !this.isCompleteState()) return;
       if (e.dataTransfer?.files?.length) {

@@ -16,7 +16,6 @@ export function buildImageOperationsPayload(binder, bounds) {
   };
 }
 
-// sourceImg is used rather than sharpImg, which may hold the quality-preview JPEG.
 async function canvasResize(engine, bounds, width, height) {
   const img = engine.sourceImg;
   await img.decode();
@@ -43,7 +42,6 @@ async function canvasResize(engine, bounds, width, height) {
   });
 }
 
-// uploadAsset overwrites the original-asset fields, so restore them after uploading a resized result.
 async function uploadResizedAsset(binder, file) {
   const { assetId, originalAssetId, originalFileType } = binder;
   const ok = await binder.uploadAsset(file);
@@ -53,7 +51,6 @@ async function uploadResizedAsset(binder, file) {
   return ok;
 }
 
-// Resize defers the original upload until an asset is actually needed.
 function ensureAssetUploaded(binder) {
   if (binder.assetId) return Promise.resolve(true);
   if (!binder.originalUploadPromise) {
@@ -72,7 +69,6 @@ function buildResizeOperation(engine) {
   let pillMode = null;
   if (pill?.platform) pillMode = 'Social';
   else if (pill?.ratioText) pillMode = 'Standard';
-  // A preset only applies while its tab is still open; otherwise the frame is freeform.
   const resizeMode = pillMode && pillMode.toLowerCase() === engine.resizeTab ? pillMode : 'Freeform';
   const { width, height } = engine.getResizeDimensions();
   const resizeOp = {
@@ -188,8 +184,7 @@ export async function runEditorOperation(binder, el) {
     const ok = await performEditorOperation(binder);
     if (!ok) return;
     if (el?.dataset?.nba) {
-      const label = el.textContent?.trim() || el.dataset.nba;
-      binder.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), {
+      binder.trackEvent(INLINE_ACTION_EVENTS.nbaClick(el.dataset.nba), {
         assetId: binder.resultAssetId,
         action: 'redirect',
         verb: el.dataset.nba,

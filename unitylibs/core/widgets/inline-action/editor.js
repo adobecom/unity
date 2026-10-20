@@ -44,7 +44,6 @@ function aspectRatioValue(row) {
   return null;
 }
 
-// nameLoc is the localized display text; name stays unlocalized for internal use.
 function composeAspectLabel(row, localized = false) {
   const name = (localized && row.nameLoc) || row.name || row.group || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
@@ -82,7 +81,6 @@ function groupResizeRows(rows) {
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
 const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
 const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg';
-// Matches Firefly's DPI so unit values convert to the same pixel size in both products.
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
@@ -789,7 +787,6 @@ export class EditorEngine {
     this.setMode(this.defaultMode);
   }
 
-  // Undefined lets non-JPEG formats use the browser's default quality.
   encodeQuality() {
     return this.outputType === 'image/jpeg' ? this.quality / 100 : undefined;
   }
@@ -1331,7 +1328,6 @@ export class EditorEngine {
     return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
   }
 
-  // Output size is captured on preset selection or typed input; dragging only changes the source area, as with lock on.
   getResizeDimensions() {
     return { width: this.targetW, height: this.targetH };
   }
