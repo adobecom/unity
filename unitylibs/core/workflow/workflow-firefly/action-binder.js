@@ -146,7 +146,7 @@ export default class ActionBinder {
       const alertText = createTag('div', { class: 'alert-text' }, createTag('p', {}, 'Alert Text'));
       const alertIcon = createTag('div', { class: 'alert-icon', role: 'alert', tabindex: '-1' });
       alertIcon.append(alertImg, alertText);
-      const alertClose = createTag('button', { type: 'button', class: 'alert-close' });
+      const alertClose = createTag('button', { type: 'button', class: 'alert-close', 'aria-label': 'Close' });
       alertClose.append(closeImg, createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
       const alertContent = createTag('div', { class: 'alert-content' });
       alertContent.append(alertIcon, alertClose);

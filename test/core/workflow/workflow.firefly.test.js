@@ -3935,6 +3935,7 @@ describe('Firefly Workflow Tests', () => {
       expect(closeBtn.tagName).to.equal('BUTTON');
       expect(closeBtn.getAttribute('type')).to.equal('button');
       expect(closeBtn.hasAttribute('href')).to.be.false;
+      expect(closeBtn.getAttribute('aria-label')).to.equal('Close');
     });
 
     it('showErrorToast marks the message as an alert and moves focus into it; closing returns focus to Generate', async () => {
