@@ -772,7 +772,6 @@ export class EditorEngine {
   }
 
   setOutputType(type) {
-    // Canvas does not recognise 'image/jpg' and would silently fall back to PNG.
     this.outputType = type === 'image/jpg' ? 'image/jpeg' : type;
     const showQuality = this.outputType === 'image/jpeg';
     this.qualityBtn?.classList.toggle('hide', !showQuality);

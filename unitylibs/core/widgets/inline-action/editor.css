@@ -655,7 +655,6 @@
   background: #323232;
 }
 
-/* The source SVGs are dark (#292929); invert them on the dark (unlocked) button. */
 .ia-dim-lock-icon {
   display: block;
   width: 20px;
