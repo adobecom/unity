@@ -1062,12 +1062,12 @@ export class EditorEngine {
     this.panY = 0;
     this.quality = 100;
     this.revertQualityPreview();
+    this.selectedPill = null;
     if (this.isCrop) {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
       this.setLocked(true);
       this.resizeTab = 'custom';
-      this.selectedPill = null;
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
@@ -1302,7 +1302,9 @@ export class EditorEngine {
       this.moreTrigger.classList.add('is-active');
     } else {
       this.setMoreTrigger(this.moreDefaultLabel);
-      const match = this.aspectPills.find((pill) => pill.dataset.label === label);
+      const match = this.selectedPill?.dataset.label === label
+        ? this.selectedPill
+        : this.aspectPills.find((pill) => pill.dataset.label === label);
       match?.classList.add('is-active');
     }
     if (this.naturalW) {

@@ -755,6 +755,63 @@ describe('EditorEngine responsive layout and extras', () => {
     });
   });
 
+  it('highlights the clicked Crop pill when labels repeat and resets to the default pill', async () => {
+    ctx = await makeEngine({
+      ...cropData,
+      aspectRows: [
+        { name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
+        { name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
+        { group: 'More', name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
+      ],
+    });
+    const { engine } = ctx;
+    const [first, second] = engine.aspectPills;
+    second.click();
+    expect(second.textContent).to.equal('Carré 1:1');
+    expect(engine.selectedPill).to.equal(second);
+    expect(engine.selectedRatio).to.equal(1);
+    expect(engine.aspectPills.filter((pill) => pill.classList.contains('is-active'))).to.deep.equal([second]);
+    engine.moreMenu.querySelector('.ia-more-opt').click();
+    expect(engine.moreTrigger.textContent).to.equal('Carré 1:1');
+    expect(engine.aspectPills.filter((pill) => pill.classList.contains('is-active'))).to.deep.equal([engine.moreTrigger]);
+    engine.reset();
+    expect(engine.aspectPills.filter((pill) => pill.classList.contains('is-active'))).to.deep.equal([first]);
+  });
+
+  ['LinkedIn', 'Snapchat'].forEach((platform) => {
+    it(`highlights the clicked ${platform} preset when another platform has the same label`, async () => {
+      const landscape = { name: 'Landscape', width: 1920, height: 1080 };
+      const story = { name: 'Story', width: 1080, height: 1920 };
+      ctx = await makeEngine({
+        ...resizeData,
+        aspectRows: [
+          ...resizeData.aspectRows,
+          { group: 'Social', platform: 'Facebook', ...landscape },
+          { group: 'Social', platform: 'Instagram', ...story },
+          { group: 'Social', platform: 'LinkedIn', ...landscape },
+          { group: 'Social', platform: 'LinkedIn', name: 'Square', width: 1080, height: 1080 },
+          { group: 'Social', platform: 'LinkedIn', name: 'Portrait', width: 1080, height: 1350 },
+          { group: 'Social', platform: 'LinkedIn', name: 'Cover', width: 1128, height: 191 },
+          { group: 'Social', platform: 'Snapchat', ...story },
+        ],
+      });
+      const { engine } = ctx;
+      engine.socialTrigger.click();
+      engine.socialMenu.querySelector(`[data-platform="${platform}"]`).click();
+      const grid = ctx.right.querySelector(`.ia-social-grid[data-platform="${platform}"]`);
+      const pill = grid.querySelector('.ia-aspect-pill');
+      expect(grid.classList.contains('hide')).to.equal(false);
+      pill.click();
+      expect(engine.getResizeDimensions()).to.deep.equal(platform === 'LinkedIn'
+        ? { width: 1920, height: 1080 } : { width: 1080, height: 1920 });
+      expect(engine.selectedPill).to.equal(pill);
+      expect(engine.aspectPills.filter((p) => p.classList.contains('is-active'))).to.deep.equal([pill]);
+      engine.reset();
+      expect(engine.selectedPill).to.equal(null);
+      expect(engine.aspectPills.some((p) => p.classList.contains('is-active'))).to.equal(false);
+    });
+  });
+
   it('keeps output dimensions independent of zoom while source bounds shrink', async () => {
     ctx = await makeEngine(resizeData);
     const before = ctx.engine.getSourceBounds();
