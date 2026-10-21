@@ -377,3 +377,29 @@
   border-radius: 16px;
   font-size: 14px;
 }
+
+@media (max-width: 700px) {
+  .pu-widget .pu-cta:has(.btn-ico) {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    gap: 0;
+    border-radius: 50%;
+  }
+
+  .pu-widget .pu-cta:has(.btn-ico) .btn-txt { display: none; }
+
+  .pu-footer-container:has(.act-wrap .btn-ico) {
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
+  .pu-footer-container:has(.act-wrap .btn-ico) .pu-footer-left {
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+}
