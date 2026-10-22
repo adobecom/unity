@@ -30,6 +30,71 @@ function setComboboxTriggerAriaLabel(triggerBtn, labelText, valueText) {
   triggerBtn.setAttribute('aria-label', value ? `${label}, ${value}` : label);
 }
 
+// Walks up from `target` to document.body and inerts every sibling branch along the way,
+// leaving a visible "tunnel" down to `target`. Used to make the verb selection dialog a true
+// modal (background unreachable by pointer, keyboard, and AT) without moving the dialog's
+// markup out of the widget's own DOM subtree. `tracker` is an array the caller owns so the
+// exact set of elements touched can be restored later without guessing.
+function setBackgroundInert(target, isActive, tracker) {
+  if (isActive) {
+    tracker.length = 0;
+    let node = target;
+    while (node && node !== document.body) {
+      const current = node;
+      const parent = node.parentElement;
+      if (parent) {
+        [...parent.children].forEach((sibling) => {
+          if (sibling !== current && !sibling.hasAttribute('inert')) {
+            sibling.setAttribute('inert', '');
+            sibling.setAttribute('aria-hidden', 'true');
+            tracker.push(sibling);
+          }
+        });
+      }
+      node = parent;
+    }
+  } else {
+    tracker.forEach((el) => {
+      el.removeAttribute('inert');
+      el.removeAttribute('aria-hidden');
+    });
+    tracker.length = 0;
+  }
+}
+
+// Focus-trap for the verb selection dialog: close button + option buttons only (the heading
+// is non-interactive and never receives focus). Also owns Escape-to-close and fully isolates
+// the dialog's keyboard handling by stopping propagation on every keydown while it's open, so
+// the widget's block-level keydown handler (action-binder.js) - which has its own, different
+// rules for the model combobox and prompt-suggestions listbox - never sees events sourced from
+// inside this dialog (no Arrow/Home/End/typeahead leaking out, no double-handling of Tab or
+// Escape). Returns a keydown handler to attach/detach on the dialog panel while it's open.
+function createVerbDialogTrapHandler(panel, closeBtn, closeDialog) {
+  return (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDialog();
+      e.stopPropagation();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const focusable = [closeBtn, ...panel.querySelectorAll('.verb-link')];
+      if (focusable.length) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    e.stopPropagation();
+  };
+}
+
 export default class UnityWidget {
   constructor(target, el, workflowCfg, spriteCon) {
     this.el = el;
@@ -54,6 +119,8 @@ export default class UnityWidget {
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
     this.isFireflyRedesign = isFireflyRedesign();
+    this.verbDialogInertedEls = [];
+    this.verbDialogTrapHandler = null;
   }
 
   async initWidget() {
@@ -119,8 +186,25 @@ export default class UnityWidget {
     const menuContainer = selectedElement?.parentElement;
     if (!menuContainer) return;
     menuContainer.classList.remove('show-menu');
-    selectedElement.setAttribute('aria-expanded', 'false');
+    if (selectedElement.hasAttribute('aria-expanded')) {
+      selectedElement.setAttribute('aria-expanded', 'false');
+    }
+    if (this.isFireflyRedesign && menuContainer.classList.contains('verbs-container')) {
+      this.teardownVerbDialog(menuContainer);
+    }
     if (focusTrigger) selectedElement.focus();
+  }
+
+  // Reverses the dialog-only side effects set up in verbDropdown()'s open flow: removes the
+  // Tab focus-trap listener and restores inert/aria-hidden on whatever this dialog hid.
+  teardownVerbDialog(menuContainer) {
+    const panel = menuContainer.querySelector('.verb-list-panel');
+    if (!panel) return;
+    if (this.verbDialogTrapHandler) {
+      panel.removeEventListener('keydown', this.verbDialogTrapHandler);
+      this.verbDialogTrapHandler = null;
+    }
+    setBackgroundInert(panel, false, this.verbDialogInertedEls);
   }
 
   showVerbMenu(selectedElement) {
@@ -128,7 +212,9 @@ export default class UnityWidget {
     document.querySelectorAll('.verbs-container').forEach((container) => {
       if (container !== menuContainer) {
         container.classList.remove('show-menu');
-        container.querySelector('.selected-verb')?.setAttribute('aria-expanded', 'false');
+        const otherTrigger = container.querySelector('.selected-verb');
+        if (otherTrigger?.hasAttribute('aria-expanded')) otherTrigger.setAttribute('aria-expanded', 'false');
+        if (this.isFireflyRedesign) this.teardownVerbDialog(container);
       }
     });
     const panel = selectedElement.nextElementSibling;
@@ -149,7 +235,9 @@ export default class UnityWidget {
       }
     }
     menuContainer.classList.toggle('show-menu');
-    selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
+    if (selectedElement.hasAttribute('aria-expanded')) {
+      selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
+    }
   }
 
   hidePromptDropdown(exceptElement = null) {
@@ -172,7 +260,8 @@ export default class UnityWidget {
     const verbButton = verbDropdown?.querySelector('.selected-verb');
     if (verbDropdown && verbDropdown.classList.contains('show-menu') && verbButton !== exceptElement) {
       verbDropdown.classList.remove('show-menu');
-      verbButton?.setAttribute('aria-expanded', 'false');
+      if (verbButton?.hasAttribute('aria-expanded')) verbButton.setAttribute('aria-expanded', 'false');
+      if (this.isFireflyRedesign) this.teardownVerbDialog(verbDropdown);
     }
   }
 
@@ -199,17 +288,26 @@ export default class UnityWidget {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const useDialogButton = !modelList && this.isFireflyRedesign;
       verbList.querySelectorAll('.verb-link').forEach((listLink) => {
         listLink.parentElement.classList.remove('selected');
-        listLink.setAttribute('aria-selected', 'false');
+        if (useDialogButton) listLink.removeAttribute('aria-current');
+        else listLink.setAttribute('aria-selected', 'false');
       });
       if (this.isFireflyRedesign) {
         setVerbSelectedOrigin(verbList, selectedElement, link);
       }
-      selectedElement.parentElement.classList.toggle('show-menu');
-      selectedElement.setAttribute('aria-expanded', selectedElement.parentElement.classList.contains('show-menu') ? 'true' : 'false');
+      const menuContainer = selectedElement.parentElement;
+      menuContainer.classList.toggle('show-menu');
+      if (selectedElement.hasAttribute('aria-expanded')) {
+        selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
+      }
       link.parentElement.classList.add('selected');
-      link.setAttribute('aria-selected', 'true');
+      if (useDialogButton) link.setAttribute('aria-current', 'true');
+      else link.setAttribute('aria-selected', 'true');
+      if (useDialogButton && !menuContainer.classList.contains('show-menu')) {
+        this.teardownVerbDialog(menuContainer);
+      }
       if (modelList) {
         this.selectedModelId = link.getAttribute('data-model-id');
         this.selectedModelVersion = link.getAttribute('data-model-version');
@@ -220,13 +318,13 @@ export default class UnityWidget {
         selectedElement.replaceChildren(...copiedNodes, menuIcon);
         selectedElement.dataset.selectedModelId = this.selectedModelId;
         selectedElement.dataset.selectedModelVersion = this.selectedModelVersion;
-        setComboboxTriggerAriaLabel(selectedElement, verbList.getAttribute('aria-label'), this.selectedModelText);
+        setComboboxTriggerAriaLabel(selectedElement, verbList.dataset.triggerLabel || verbList.getAttribute('aria-label'), this.selectedModelText);
       } else {
         this.selectedVerbType = link.getAttribute('data-verb-type');
         this.selectedVerbText = link.textContent.trim();
         selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
-        setComboboxTriggerAriaLabel(selectedElement, verbList.getAttribute('aria-label'), this.selectedVerbText);
+        setComboboxTriggerAriaLabel(selectedElement, verbList.dataset.triggerLabel || verbList.getAttribute('aria-label'), this.selectedVerbText);
         const inpField = this.widget.querySelector('.inp-field');
         if (inpField) {
           inpField.placeholder = this.resolveVerbPlaceholder(this.workflowCfg.placeholder, this.selectedVerbType);
@@ -275,6 +373,7 @@ export default class UnityWidget {
 
   createDropdownItems(items, listContainer, selectedElement, menuIcon, inputPlaceHolder, isModelList) {
     const fragment = document.createDocumentFragment();
+    const useDialogButton = !isModelList && this.isFireflyRedesign;
     items.forEach((item, idx) => {
       const {
         name,
@@ -290,19 +389,27 @@ export default class UnityWidget {
       });
       const selectedIcon = createTag('span', { class: 'selected-icon' }, '<svg><use xlink:href="#unity-checkmark-icon"></use></svg>');
       const nameContainer = isModelList && createTag('span', { class: 'model-name' }, name.trim());
-      const link = createTag('a', {
-        href: '#',
-        class: isModelList ? 'verb-link model-link' : 'verb-link',
-        ...(!isModelList && { 'data-verb-type': type }),
-        ...(isModelList && { 'data-model-module': module }),
-        ...(isModelList && { 'data-model-id': id }),
-        ...(isModelList && { 'data-model-version': version }),
-        'aria-selected': 'false',
-        role: 'option',
-      }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`);
+      const content = `<img loading="lazy" src="${icon}" alt="" />${nameContainer ? nameContainer.outerHTML : name}`;
+      const link = useDialogButton
+        ? createTag('button', {
+          type: 'button',
+          class: 'verb-link',
+          'data-verb-type': type,
+        }, content)
+        : createTag('a', {
+          href: '#',
+          class: isModelList ? 'verb-link model-link' : 'verb-link',
+          ...(!isModelList && { 'data-verb-type': type }),
+          ...(isModelList && { 'data-model-module': module }),
+          ...(isModelList && { 'data-model-id': id }),
+          ...(isModelList && { 'data-model-version': version }),
+          'aria-selected': 'false',
+          role: 'option',
+        }, content);
       if (idx === 0) {
         listItem.classList.add('selected');
-        link.setAttribute('aria-selected', 'true');
+        if (useDialogButton) link.setAttribute('aria-current', 'true');
+        else link.setAttribute('aria-selected', 'true');
       }
       link.prepend(selectedIcon);
       listItem.append(link);
@@ -324,12 +431,17 @@ export default class UnityWidget {
     const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
     const selectedElement = createTag('button', {
       class: 'selected-verb',
-      'aria-expanded': 'false',
-      'aria-controls': 'media-menu',
-      'aria-haspopup': 'listbox',
-      role: 'combobox',
       'data-selected-verb': selectedVerbType,
     }, `${selectedVerb?.textContent.trim()}`);
+    if (this.isFireflyRedesign) {
+      selectedElement.setAttribute('aria-haspopup', 'dialog');
+      selectedElement.setAttribute('aria-controls', 'verb-dialog');
+    } else {
+      selectedElement.setAttribute('aria-expanded', 'false');
+      selectedElement.setAttribute('aria-controls', 'media-menu');
+      selectedElement.setAttribute('aria-haspopup', 'listbox');
+      selectedElement.setAttribute('role', 'combobox');
+    }
     this.selectedVerbType = selectedVerbType;
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
     this.selectedVerbText = selectedVerb?.textContent.trim();
@@ -339,8 +451,14 @@ export default class UnityWidget {
       return [selectedElement];
     }
     this.widgetWrap.classList.add('verb-options');
-    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
-    const verbList = createTag('ul', { class: 'verb-list', id: 'media-menu', role: 'listbox', 'aria-label': labelText });
+    const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg aria-hidden="true" focusable="false"><use xlink:href="#unity-chevron-icon"></use></svg>');
+    const verbList = createTag('ul', { class: 'verb-list' });
+    verbList.dataset.triggerLabel = labelText;
+    if (!this.isFireflyRedesign) {
+      verbList.id = 'media-menu';
+      verbList.setAttribute('role', 'listbox');
+      verbList.setAttribute('aria-label', labelText);
+    }
     verbList.setAttribute('style', 'display: none;');
     selectedElement.append(menuIcon);
 
@@ -352,75 +470,120 @@ export default class UnityWidget {
     };
     const matchVerbTypeahead = TypeaheadUtils.createMatcher();
     let panel = verbList;
+    let closeBtn;
     if (this.isFireflyRedesign) {
+      const headingId = 'verb-dialog-title';
       const header = createTag('div', { class: 'verb-list-header' });
-      const label = createTag('span', { class: 'verb-list-label' }, labelText);
-      const closeBtn = createTag('button', {
+      const label = createTag('h2', { class: 'verb-list-label', id: headingId }, labelText);
+      closeBtn = createTag('button', {
         type: 'button',
         class: 'verb-list-close',
-        tabindex: '-1',
-        'aria-hidden': 'true',
-      }, '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
+        'aria-label': 'Close',
+      }, '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>');
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.closeVerbOrModelMenu(selectedElement);
       });
       header.append(label, closeBtn);
-      panel = createTag('div', { class: 'verb-list-panel' });
+      panel = createTag('div', {
+        class: 'verb-list-panel',
+        id: 'verb-dialog',
+        role: 'dialog',
+        'aria-modal': 'true',
+        'aria-labelledby': headingId,
+        tabindex: '-1',
+      });
       panel.setAttribute('style', 'display: none;');
       verbList.removeAttribute('style');
       panel.append(header, verbList);
     }
-    const handleDocumentClick = (e) => {
-      const menuContainer = selectedElement.parentElement;
-      if (!menuContainer.contains(e.target)) {
-        document.removeEventListener('click', handleDocumentClick);
-        this.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
-      }
-    };
-    const openVerbMenuIfClosed = () => {
-      if (selectedElement.getAttribute('aria-expanded') === 'true') return;
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      document.addEventListener('click', handleDocumentClick);
-    };
-    selectedElement.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.hidePromptDropdown(selectedElement);
-      this.showVerbMenu(selectedElement);
-      focusSelectedOrFirstOption();
-      document.addEventListener('click', handleDocumentClick);
-    }, true);
-    selectedElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
+    if (this.isFireflyRedesign) {
+      const toggleVerbDialog = () => {
+        this.hidePromptDropdown(selectedElement);
+        this.showVerbMenu(selectedElement);
+        const menuContainer = selectedElement.parentElement;
+        if (!menuContainer.classList.contains('show-menu')) {
+          this.teardownVerbDialog(menuContainer);
+          return;
+        }
+        setBackgroundInert(panel, true, this.verbDialogInertedEls);
+        this.verbDialogTrapHandler = createVerbDialogTrapHandler(
+          panel,
+          closeBtn,
+          () => this.closeVerbOrModelMenu(selectedElement),
+        );
+        panel.addEventListener('keydown', this.verbDialogTrapHandler);
+        closeBtn.focus();
+      };
+      selectedElement.addEventListener('click', (e) => {
         e.stopPropagation();
-        openVerbMenuIfClosed();
+        toggleVerbDialog();
+      }, true);
+      selectedElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleVerbDialog();
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.closeVerbOrModelMenu(selectedElement);
+        }
+      });
+    } else {
+      const handleDocumentClick = (e) => {
+        const menuContainer = selectedElement.parentElement;
+        if (!menuContainer.contains(e.target)) {
+          document.removeEventListener('click', handleDocumentClick);
+          this.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
+        }
+      };
+      const openVerbMenuIfClosed = () => {
+        if (selectedElement.getAttribute('aria-expanded') === 'true') return;
+        this.hidePromptDropdown(selectedElement);
+        this.showVerbMenu(selectedElement);
+        document.addEventListener('click', handleDocumentClick);
+      };
+      selectedElement.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hidePromptDropdown(selectedElement);
+        this.showVerbMenu(selectedElement);
         focusSelectedOrFirstOption();
-        return;
-      }
-      if (e.key === 'Home' || e.key === 'End') {
-        e.preventDefault();
-        e.stopPropagation();
-        openVerbMenuIfClosed();
-        const options = [...verbList.querySelectorAll('.verb-link')];
-        (e.key === 'Home' ? options[0] : options[options.length - 1])?.focus();
-        return;
-      }
-      if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        openVerbMenuIfClosed();
-        const options = [...verbList.querySelectorAll('.verb-link')];
-        matchVerbTypeahead(options, e.key)?.focus();
-        return;
-      }
-      if (e.key === 'Escape' || e.code === 27) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.closeVerbOrModelMenu(selectedElement);
-      }
-    });
+        document.addEventListener('click', handleDocumentClick);
+      }, true);
+      selectedElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          openVerbMenuIfClosed();
+          focusSelectedOrFirstOption();
+          return;
+        }
+        if (e.key === 'Home' || e.key === 'End') {
+          e.preventDefault();
+          e.stopPropagation();
+          openVerbMenuIfClosed();
+          const options = [...verbList.querySelectorAll('.verb-link')];
+          (e.key === 'Home' ? options[0] : options[options.length - 1])?.focus();
+          return;
+        }
+        if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          openVerbMenuIfClosed();
+          const options = [...verbList.querySelectorAll('.verb-link')];
+          matchVerbTypeahead(options, e.key)?.focus();
+          return;
+        }
+        if (e.key === 'Escape' || e.code === 27) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.closeVerbOrModelMenu(selectedElement);
+        }
+      });
+    }
     verbs[0]?.classList.add('selected');
     const verbsData = Array.from(verbs).map((verb) => ({
       name: verb.nextElementSibling?.textContent.trim(),
