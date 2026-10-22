@@ -9,7 +9,7 @@
       ]
     },
     "directUploadVerbs": [],
-    "directUploadMaxSize": 1048576,
+    "directUploadMaxSize": 3145728,
     "uploadLimits": {
       "HIGH_END": { "files": 10, "chunks": 10 },
       "MID_RANGE": { "files": 5, "chunks": 10 },
