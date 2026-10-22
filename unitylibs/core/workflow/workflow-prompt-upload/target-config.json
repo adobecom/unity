@@ -8,7 +8,7 @@
         "^.+--dc-frictionless--adobecom\\.aem\\.(page|live)$"
       ]
     },
-    "directUploadVerbs": [],
+    "directUploadVerbs": ["flashcard-maker", "quiz-maker"],
     "directUploadMaxSize": 3145728,
     "uploadLimits": {
       "HIGH_END": { "files": 10, "chunks": 10 },
