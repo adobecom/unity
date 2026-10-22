@@ -851,8 +851,10 @@ export default class ActionBinder {
 
   isDirectUploadVerb(fileSize) {
     const { targetCfg, enabledFeatures } = this.workflowCfg;
-    const directUploadMaxSize = (targetCfg.directUploadMaxSizeExtendedVerbs?.includes(enabledFeatures?.[0])
-      ? targetCfg.directUploadMaxSizeExtended : targetCfg.directUploadMaxSize) || 0;
+    const isExtendedVerb = targetCfg.directUploadMaxSizeExtendedVerbs?.includes(enabledFeatures?.[0]);
+    const directUploadMaxSize = (isExtendedVerb
+      ? targetCfg.directUploadMaxSizeExtended ?? targetCfg.directUploadMaxSize
+      : targetCfg.directUploadMaxSize) || 0;
     return fileSize != null && fileSize <= directUploadMaxSize;
   }
 
