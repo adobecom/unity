@@ -11,8 +11,8 @@ export default class FaceSwapPage {
     this.generateButton = this.widget.locator('button.gen-btn');
     this.generateLabel = this.generateButton.locator('.btn-txt');
     this.galleryLabel = this.widget.locator('.fs-gallery-label');
-    this.galleryList = this.widget.locator('.fs-gallery-list[role="listbox"]');
-    this.galleryItems = this.galleryList.locator('.fs-gallery-item[role="option"]');
+    this.galleryList = this.widget.locator('.fs-gallery-list[role="group"]');
+    this.galleryItems = this.galleryList.locator('button.fs-gallery-item');
     this.preview = this.root.locator('.fs-preview');
     this.errorToast = this.page.locator('.alert-holder.show');
     this.errorText = this.errorToast.locator('.alert-text');

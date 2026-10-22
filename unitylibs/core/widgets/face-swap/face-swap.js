@@ -349,18 +349,16 @@ export default class FaceSwapWidget extends UnityWidget {
     const labelId = `fs-gallery-label-${this.uid}`;
     const wrap = createTag('div', { class: 'fs-gallery' });
     if (heading) wrap.append(createTag('p', { class: 'fs-gallery-label', id: labelId }, heading));
-    const list = createTag('ul', {
+    const list = createTag('div', {
       class: 'fs-gallery-list',
-      role: 'listbox',
-      'aria-orientation': 'horizontal',
+      role: 'group',
       ...(heading ? { 'aria-labelledby': labelId } : { 'aria-label': 'Image gallery' }),
     });
     this.galleryItems = gallery.map(({ picture, label }, idx) => {
-      const item = createTag('li', {
+      const item = createTag('button', {
+        type: 'button',
         class: 'fs-gallery-item',
-        role: 'option',
-        'aria-selected': 'false',
-        tabindex: idx === 0 ? '0' : '-1',
+        'aria-pressed': 'false',
         'aria-label': label || `Gallery image ${idx + 1} of ${gallery.length}`,
       });
       const img = picture.querySelector('img');
@@ -391,17 +389,11 @@ export default class FaceSwapWidget extends UnityWidget {
       Home: 0,
       End: items.length - 1,
     };
-    if (e.key in move) {
-      e.preventDefault();
-      const next = (move[e.key] + items.length) % items.length;
-      items[cur].setAttribute('tabindex', '-1');
-      items[next].setAttribute('tabindex', '0');
-      items[next].focus();
-      items[next].scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      this.selectGallery(cur);
-    }
+    if (!(e.key in move)) return;
+    e.preventDefault();
+    const next = (move[e.key] + items.length) % items.length;
+    items[next].focus();
+    items[next].scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   }
 
   buildPreview() {
@@ -562,8 +554,7 @@ export default class FaceSwapWidget extends UnityWidget {
     this.galleryItems.forEach((it, i) => {
       const on = i === idx;
       it.classList.toggle('selected', on);
-      it.setAttribute('aria-selected', on ? 'true' : 'false');
-      if (idx >= 0) it.setAttribute('tabindex', on ? '0' : '-1');
+      it.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
   }
 
@@ -587,7 +578,6 @@ export default class FaceSwapWidget extends UnityWidget {
 
   reset() {
     const cleared = SLOT_IDS.map((id) => this.clearSlot(id)).some(Boolean);
-    this.galleryItems.forEach((it, i) => it.setAttribute('tabindex', i === 0 ? '0' : '-1'));
     if (!cleared) return false;
     this.emit('fs-reset');
     this.announce('Images cleared');
