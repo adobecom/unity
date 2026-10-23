@@ -569,6 +569,10 @@
   text-align: start;
 }
 
+.hero-marquee:has(+ .unity-face-swap) .foreground .main-copy h1 + p {
+  line-height: 1.36;
+}
+
 .unity-face-swap .interactive-area .alert-holder .alert-toast .alert-content .alert-text p {
   margin: 18px 0 20px;
   padding-top: 0;
@@ -576,7 +580,17 @@
   line-height: 18px;
 }
 
+.hero-marquee:has(+ .unity-face-swap) .foreground .copy h1 {
+  font-weight: 800;
+}
+
 @media screen and (max-width: 1199px) {
+  .hero-marquee:has(+ .unity-face-swap) .foreground .copy h1 {
+    font-size: 40px;
+    line-height: 98%;
+    letter-spacing: -1.8px;
+  }
+
   .unity-face-swap {
     width: var(--grid-container-width);
     margin: auto;
@@ -588,6 +602,26 @@
 }
 
 @media screen and (min-width: 1200px) {
+  .hero-marquee:has(+ .unity-face-swap) > .foreground {
+    max-width: 1036px;
+    min-width: unset;
+  }
+
+  .hero-marquee:has(+ .unity-face-swap) .foreground .main-copy {
+    align-items: center;
+  }
+
+  .hero-marquee:has(+ .unity-face-swap) .foreground .main-copy h1 + p {
+    max-width: 824px;
+    text-shadow: 0 4px 39px rgb(0 0 0 / 25%);
+  }
+
+  .hero-marquee:has(+ .unity-face-swap) .foreground .copy h1 {
+    font-size: 64px;
+    line-height: 100%;
+    letter-spacing: -1.92px;
+  }
+
   .unity-face-swap > .interactive-area {
     padding: 15px;
     border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
