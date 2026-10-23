@@ -30,11 +30,6 @@ function setComboboxTriggerAriaLabel(triggerBtn, labelText, valueText) {
   triggerBtn.setAttribute('aria-label', value ? `${label}, ${value}` : label);
 }
 
-// Walks up from `target` to document.body and inerts every sibling branch along the way,
-// leaving a visible "tunnel" down to `target`. Used to make the verb selection dialog a true
-// modal (background unreachable by pointer, keyboard, and AT) without moving the dialog's
-// markup out of the widget's own DOM subtree. `tracker` is an array the caller owns so the
-// exact set of elements touched can be restored later without guessing.
 function setBackgroundInert(target, isActive, tracker) {
   if (isActive) {
     tracker.length = 0;
@@ -62,13 +57,6 @@ function setBackgroundInert(target, isActive, tracker) {
   }
 }
 
-// Focus-trap for the verb selection dialog: close button + option buttons only (the heading
-// is non-interactive and never receives focus). Also owns Escape-to-close and fully isolates
-// the dialog's keyboard handling by stopping propagation on every keydown while it's open, so
-// the widget's block-level keydown handler (action-binder.js) - which has its own, different
-// rules for the model combobox and prompt-suggestions listbox - never sees events sourced from
-// inside this dialog (no Arrow/Home/End/typeahead leaking out, no double-handling of Tab or
-// Escape). Returns a keydown handler to attach/detach on the dialog panel while it's open.
 function createVerbDialogTrapHandler(panel, closeBtn, closeDialog) {
   return (e) => {
     if (e.key === 'Escape') {
@@ -195,8 +183,6 @@ export default class UnityWidget {
     if (focusTrigger) selectedElement.focus();
   }
 
-  // Reverses the dialog-only side effects set up in verbDropdown()'s open flow: removes the
-  // Tab focus-trap listener and restores inert/aria-hidden on whatever this dialog hid.
   teardownVerbDialog(menuContainer) {
     const panel = menuContainer.querySelector('.verb-list-panel');
     if (!panel) return;
