@@ -1570,6 +1570,20 @@ describe('ActionBinder', () => {
         expect(actionBinder.isDirectUploadVerb(1048576)).to.be.true;
         expect(actionBinder.isDirectUploadVerb(1048577)).to.be.false;
       });
+
+      it('should use the global max size when the extended verb list is empty', () => {
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtended = 5242880;
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtendedVerbs = [];
+        expect(actionBinder.isDirectUploadVerb(1048576)).to.be.true;
+        expect(actionBinder.isDirectUploadVerb(1048577)).to.be.false;
+      });
+
+      it('should fall back to the global max size when the extended size is missing', () => {
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtended = undefined;
+        actionBinder.workflowCfg.targetCfg.directUploadMaxSizeExtendedVerbs = ['word-to-pdf'];
+        expect(actionBinder.isDirectUploadVerb(1048576)).to.be.true;
+        expect(actionBinder.isDirectUploadVerb(1048577)).to.be.false;
+      });
     });
 
     describe('continueInApp', () => {
@@ -1641,6 +1655,8 @@ describe('ActionBinder', () => {
       });
 
       it('should reuse the existing transition screen and set LOADER_LIMIT to 100', async () => {
+        const originalUrl = window.location.href;
+        actionBinder.redirectUrl = '#continue-in-app-test';
         const splashLayer = document.createElement('div');
         const existingTransitionScreen = {
           splashScreenEl: splashLayer,
@@ -1653,6 +1669,7 @@ describe('ActionBinder', () => {
         // Stop after the progress update; this test does not exercise navigation.
         actionBinder.delay.callsFake(async () => { actionBinder.redirectUrl = ''; });
         await actionBinder.continueInApp();
+        window.history.replaceState(null, '', originalUrl);
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);

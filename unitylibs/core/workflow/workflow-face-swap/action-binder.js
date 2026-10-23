@@ -9,7 +9,6 @@ import {
   createTag,
   getLocale,
   getLibs,
-  getHeaders,
   getApiCallOptions,
   sendAnalyticsEvent,
   isGuestUser,
@@ -53,36 +52,9 @@ export function buildFaceSwapAssetPayload(entries = []) {
 }
 
 class ServiceHandler {
-  constructor(canvasArea = [], unityEl = null, getAdditionalHeaders = null) {
+  constructor(canvasArea = [], unityEl = null) {
     this.canvasArea = canvasArea;
     this.unityEl = unityEl;
-    this.getAdditionalHeaders = getAdditionalHeaders;
-  }
-
-  async postCallToService(api, options, failOnError = true) {
-    const postOpts = {
-      method: 'POST',
-      headers: await getHeaders(unityConfig.apiKey, this.getAdditionalHeaders?.() || {}),
-      ...options,
-    };
-    let response;
-    try {
-      response = await fetch(api, postOpts);
-    } catch (e) {
-      if (e instanceof TypeError) {
-        const error = new Error(`Network error. URL: ${api}; Error message: ${e.message}`);
-        error.status = 0;
-        throw error;
-      }
-      throw e;
-    }
-    if (failOnError && response.status !== 200) {
-      const error = new Error('Operation failed');
-      error.status = response.status;
-      throw error;
-    }
-    if (!failOnError) return response;
-    return response.json();
   }
 
   showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
@@ -312,6 +284,14 @@ export default class ActionBinder {
     else setTimeout(run, 200);
   }
 
+  async getNetworkUtils() {
+    if (!this.networkUtils) {
+      const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
+      this.networkUtils = new NetworkUtils();
+    }
+    return this.networkUtils;
+  }
+
   async uploadImgToUnity(storageUrl, blobData, fileType, signal) {
     let response;
     try {
@@ -359,19 +339,16 @@ export default class ActionBinder {
       error.errorToken = errorToken;
       throw error;
     }
-    const resJson = await this.serviceHandler.postCallToService(
-      this.apiConfig.endPoint.assetUpload,
-      {
-        body: JSON.stringify({
-          targetProduct: this.workflowCfg.productName,
-          name: file.name,
-          size: file.size,
-          format: file.type,
-        }),
-        signal,
-      },
-    );
-    const { id, href, blocksize, uploadUrls } = resJson;
+    const body = JSON.stringify({
+      targetProduct: this.workflowCfg.productName,
+      name: file.name,
+      size: file.size,
+      format: file.type,
+    });
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders(), { body, signal });
+    const networkUtils = await this.getNetworkUtils();
+    const { response } = await networkUtils.fetchFromServiceWithRetry(this.apiConfig.endPoint.assetUpload, postOpts);
+    const { id, href, blocksize, uploadUrls } = response;
     ctx.assetId = id;
     this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: id, fileMetaData: { slot: slotId } });
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
@@ -515,19 +492,9 @@ export default class ActionBinder {
         },
       };
       const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders(), { body: JSON.stringify(connectorBody) });
-      const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
-      const { url } = await new NetworkUtils().fetchFromService(
-        this.apiConfig.connectorApiEndPoint,
-        postOpts,
-        async (response) => {
-          if (response.status !== 200) {
-            const error = new Error('Connector call failed');
-            error.status = response.status;
-            throw error;
-          }
-          return response.json();
-        },
-      );
+      const networkUtils = await this.getNetworkUtils();
+      const { response } = await networkUtils.fetchFromServiceWithRetry(this.apiConfig.connectorApiEndPoint, postOpts);
+      const url = response?.url;
       if (this.promiseStack.length > 0) return;
       if (!url) {
         const error = new Error('Connector response missing url');
@@ -575,11 +542,7 @@ export default class ActionBinder {
   }
 
   setupServiceHandler() {
-    this.serviceHandler = new ServiceHandler(
-      this.toastCanvasAreas,
-      this.unityEl,
-      this.getAdditionalHeaders.bind(this),
-    );
+    this.serviceHandler = new ServiceHandler(this.toastCanvasAreas, this.unityEl);
   }
 
   async initActionListeners(b = this.block, actMap = this.actionMap) {
