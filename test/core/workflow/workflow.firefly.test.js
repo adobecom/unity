@@ -1955,11 +1955,6 @@ describe('Firefly Workflow Tests', () => {
     });
 
     afterEach(() => {
-      // Defensive cleanup scoped to exactly what this widget instance inerted (not a global
-      // sweep): a test that opens the dialog without explicitly closing it would otherwise
-      // leave stray inert/aria-hidden on shared DOM (the background-inert walk reaches all the
-      // way up to document.body). Every test below already closes explicitly, so in practice
-      // this is a no-op safety net, not a fix for a live leak.
       testWidget.verbDialogInertedEls.forEach((el) => {
         el.removeAttribute('inert');
         el.removeAttribute('aria-hidden');
