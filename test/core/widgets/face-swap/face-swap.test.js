@@ -121,13 +121,18 @@ describe('Face Swap widget', () => {
       });
     });
 
-    it('renders the gallery as a labelled listbox with one tab stop', async () => {
+    it('renders the gallery as a labelled group of tabbable toggle buttons', async () => {
       const { widget } = await mountWidget();
-      const list = widget.extendedRoot.querySelector('[role="listbox"]');
+      const list = widget.extendedRoot.querySelector('.fs-gallery-list[role="group"]');
       const label = document.getElementById(list.getAttribute('aria-labelledby'));
       expect(label.textContent).to.equal('Image gallery');
       expect(widget.galleryItems).to.have.length(3);
-      expect(widget.galleryItems.map((i) => i.getAttribute('tabindex'))).to.deep.equal(['0', '-1', '-1']);
+      widget.galleryItems.forEach((i) => {
+        expect(i.tagName).to.equal('BUTTON');
+        expect(i.type).to.equal('button');
+        expect(i.tabIndex).to.equal(0);
+        expect(i.getAttribute('aria-pressed')).to.equal('false');
+      });
       expect(widget.galleryItems[0].querySelector('img').loading).to.equal('lazy');
     });
 
@@ -290,9 +295,8 @@ describe('Face Swap widget', () => {
       widget.widgetWrap.addEventListener('fs-slot-selected', selected);
       widget.galleryItems[1].click();
       expect(widget.slots.original).to.include({ source: 'gallery', cdnPath: '/cc-shared/assets/face-swap/two.jpg', galleryIndex: 1 });
-      expect(widget.galleryItems[1].getAttribute('aria-selected')).to.equal('true');
-      expect(widget.galleryItems[1].getAttribute('tabindex')).to.equal('0');
-      expect(widget.galleryItems[0].getAttribute('tabindex')).to.equal('-1');
+      expect(widget.galleryItems[1].getAttribute('aria-pressed')).to.equal('true');
+      expect(widget.galleryItems[0].getAttribute('aria-pressed')).to.equal('false');
       expect(selected.firstCall.args[0].detail).to.deep.equal({ slotId: 'original', source: 'gallery', galleryIndex: 1 });
       await waitFor(() => widget.slots.original.status === 'ready');
       expect(widget.getFilledSlots().map(([id]) => id)).to.deep.equal(['original']);
@@ -302,19 +306,18 @@ describe('Face Swap widget', () => {
       const { widget } = await mountWidget();
       widget.selectGallery(0);
       widget.handleFiles('original', [pngFile()], 'upload');
-      expect(widget.galleryItems.every((i) => i.getAttribute('aria-selected') === 'false')).to.be.true;
+      expect(widget.galleryItems.every((i) => i.getAttribute('aria-pressed') === 'false')).to.be.true;
       expect(widget.slots.original.cdnPath).to.equal(null);
     });
 
-    it('supports arrow, Home, End and Enter keys with a roving tab stop', async () => {
+    it('keeps every tile a tab stop and moves focus with arrow, Home and End keys', async () => {
       const { widget } = await mountWidget();
       const items = widget.galleryItems;
       const key = (k) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
       items[0].focus();
       key('ArrowRight');
       expect(document.activeElement).to.equal(items[1]);
-      expect(items[1].getAttribute('tabindex')).to.equal('0');
-      expect(items[0].getAttribute('tabindex')).to.equal('-1');
+      expect(items.every((i) => i.tabIndex === 0)).to.be.true;
       key('End');
       expect(document.activeElement).to.equal(items[2]);
       key('ArrowDown');
@@ -323,8 +326,6 @@ describe('Face Swap widget', () => {
       expect(document.activeElement).to.equal(items[2]);
       key('Home');
       expect(document.activeElement).to.equal(items[0]);
-      key('Enter');
-      expect(widget.slots.original.galleryIndex).to.equal(0);
       key('Tab');
       expect(document.activeElement).to.equal(items[0]);
     });
@@ -347,8 +348,7 @@ describe('Face Swap widget', () => {
       widget.handleFiles('face', [pngFile()], 'upload');
       widget.resetBtn.click();
       expect(SLOT_IDS.every((id) => widget.slots[id].status === 'empty')).to.be.true;
-      expect(widget.galleryItems.map((i) => i.getAttribute('tabindex'))).to.deep.equal(['0', '-1', '-1']);
-      expect(widget.galleryItems.every((i) => i.getAttribute('aria-selected') === 'false')).to.be.true;
+      expect(widget.galleryItems.every((i) => i.getAttribute('aria-pressed') === 'false')).to.be.true;
       expect(reset.calledOnce).to.be.true;
       expect(document.activeElement).to.equal(widget.slotEls.original.input);
       await waitFor(() => widget.liveRegion.textContent === 'Images cleared');

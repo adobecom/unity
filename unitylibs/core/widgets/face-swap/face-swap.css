@@ -458,9 +458,8 @@
 .unity-face-swap .fs-gallery-list {
   display: flex;
   gap: 8px;
-  margin: 0;
-  padding: 2px;
-  list-style: none;
+  margin: -2px;
+  padding: 4px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
 }
@@ -471,7 +470,12 @@
   min-width: 90px;
   aspect-ratio: 1;
   overflow: hidden;
+  padding: 0;
+  border: 0;
   border-radius: 4px;
+  background: none;
+  font: inherit;
+  color: inherit;
   cursor: pointer;
   scroll-snap-align: start;
 }
@@ -499,7 +503,7 @@
   }
 }
 
-.unity-face-swap .fs-gallery-item[aria-selected='true'] {
+.unity-face-swap .fs-gallery-item[aria-pressed='true'] {
   --fs-thumb-border: #fff;
 }
 
@@ -607,7 +611,7 @@
   }
 
   .unity-face-swap .fs-gallery-list {
-    margin: -2px;
+    margin: -4px;
   }
 
   .unity-face-swap .unity-slf-main {
@@ -736,8 +740,8 @@
 
   .unity-face-swap .fs-gallery-list {
     gap: 10px;
-    margin: 0 -16px;
-    padding: 2px 16px;
+    margin: -2px -16px;
+    padding: 4px 16px;
     scroll-padding-inline: 16px;
   }
 
