@@ -101,6 +101,9 @@ export default class ActionBinder {
     this.desktop = false;
     this.warmed = false;
     this.restoreFocusEl = null;
+    this.tokenRefresh = null;
+    this.assetQueue = Promise.resolve();
+    this.assetJobs = {};
     this.toastCanvasAreas = canvasArea ? [canvasArea] : [];
     this.apiConfig = this.getApiConfig();
     this.verb = this.getVerbFromDom();
@@ -331,15 +334,12 @@ export default class ActionBinder {
     return ctx;
   }
 
-  async uploadSlot(slotId, slot, signal) {
-    const ctx = this.createUploadContext();
-    const { file } = slot;
-    const { ok, errorToken } = validateSelection([file], this.limits);
-    if (!ok) {
-      const error = new Error(`Validation failed: ${errorToken}`);
-      error.errorToken = errorToken;
-      throw error;
-    }
+  ensureTokenRefresh() {
+    this.tokenRefresh ||= this.refreshImsToken();
+    return this.tokenRefresh;
+  }
+
+  async createAsset(slotId, file, signal) {
     const body = JSON.stringify({
       targetProduct: this.workflowCfg.productName,
       name: file.name,
@@ -349,9 +349,54 @@ export default class ActionBinder {
     const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders(), { body, signal });
     const networkUtils = await this.getNetworkUtils();
     const { response } = await networkUtils.fetchFromServiceWithRetry(this.apiConfig.endPoint.assetUpload, postOpts);
-    const { id, href, blocksize, uploadUrls } = response;
+    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: response.id, fileMetaData: { slot: slotId } });
+    return response;
+  }
+
+  enqueueAssetCreate(slotId, file, signal) {
+    const run = async () => {
+      await this.ensureTokenRefresh();
+      return this.createAsset(slotId, file, signal);
+    };
+    const promise = this.assetQueue.then(run);
+    this.assetQueue = promise.catch(() => {});
+    return promise;
+  }
+
+  queueAssetCreate(slotId, file) {
+    const promise = this.enqueueAssetCreate(slotId, file).then(
+      (data) => ({ ok: true, data }),
+      (error) => {
+        this.logAnalyticsinSplunk('Asset Create Failed|UnityWidget', {
+          errorData: { code: 'error-request', subCode: `createAsset ${error?.status}`, desc: error?.message || undefined },
+          fileMetaData: { slot: slotId },
+        });
+        return { ok: false, error };
+      },
+    );
+    this.assetJobs[slotId] = { file, promise };
+  }
+
+  async takeAsset(slotId, file, signal) {
+    const job = this.assetJobs[slotId];
+    delete this.assetJobs[slotId];
+    if (job?.file !== file) return this.enqueueAssetCreate(slotId, file, signal);
+    const result = await job.promise;
+    if (!result.ok) throw result.error;
+    return result.data;
+  }
+
+  async uploadSlot(slotId, slot, signal) {
+    const ctx = this.createUploadContext();
+    const { file } = slot;
+    const { ok, errorToken } = validateSelection([file], this.limits);
+    if (!ok) {
+      const error = new Error(`Validation failed: ${errorToken}`);
+      error.errorToken = errorToken;
+      throw error;
+    }
+    const { id, href, blocksize, uploadUrls } = await this.takeAsset(slotId, file, signal);
     ctx.assetId = id;
-    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: id, fileMetaData: { slot: slotId } });
     const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
     const uploadHandler = new UploadHandler(ctx.facade, this.serviceHandler);
     if (blocksize && Array.isArray(uploadUrls)) {
@@ -438,7 +483,7 @@ export default class ActionBinder {
 
       this.abortController = new AbortController();
       const { signal } = this.abortController;
-      const tokenRefresh = this.refreshImsToken();
+      const tokenRefresh = this.ensureTokenRefresh();
       await this.ensureTransitionScreen();
       await this.transitionScreen.showSplashScreen(true);
       await tokenRefresh;
@@ -588,8 +633,16 @@ export default class ActionBinder {
     this.widgetWrap?.addEventListener('fs-slot-selected', (e) => {
       this.warmUp();
       const { slotId, file, source, galleryIndex } = e.detail || {};
+      if (file) this.queueAssetCreate(slotId, file);
+      else delete this.assetJobs[slotId];
       if (source === 'gallery') this.track(sampleEventName(galleryIndex), { fileMetaData: { slot: slotId, source } });
       else this.track(slotEventName(slotId, 'started'), { fileMetaData: { ...fileMeta(slotId, file), source } });
+    });
+    this.widgetWrap?.addEventListener('fs-slot-cleared', (e) => {
+      delete this.assetJobs[e.detail?.slotId];
+    });
+    this.widgetWrap?.addEventListener('fs-reset', () => {
+      this.assetJobs = {};
     });
   }
 

@@ -274,18 +274,15 @@ describe('Face Swap action binder', () => {
       ]);
     });
 
-    it('refreshes the IMS token in parallel with the splash, before uploading', async () => {
-      const order = [];
-      window.adobeIMS.refreshToken = sinon.stub().callsFake(async () => { order.push('refresh-start'); await tick(); order.push('refresh-end'); });
-      ctx.binder.ensureTransitionScreen.callsFake(async () => {
-        order.push('splash');
-        ctx.binder.transitionScreen ||= fakeTransition();
-      });
-      sinon.stub(ctx.binder, 'uploadSlot').callsFake(async (slotId) => { order.push('upload'); return { slotId, assetId: 'id' }; });
-      ctx.widget.handleFiles('face', [pngFile()], 'upload');
+    it('refreshes the IMS token once, before the first early asset create, and not again at the CTA', async () => {
+      window.adobeIMS.refreshToken = sinon.stub().resolves();
+      sinon.stub(ctx.binder, 'uploadSlot').callsFake(async (slotId) => ({ slotId, assetId: 'id' }));
+      ctx.widget.handleFiles('original', [pngFile('a.png')], 'upload');
+      ctx.widget.handleFiles('face', [pngFile('b.png')], 'upload');
       await ctx.binder.handleGenerate();
+      const { callCount } = window.adobeIMS.refreshToken;
       delete window.adobeIMS.refreshToken;
-      expect(order).to.deep.equal(['refresh-start', 'splash', 'refresh-end', 'upload']);
+      expect(callCount).to.equal(1);
     });
 
     it('does not refresh the token when nothing needs uploading', async () => {
@@ -497,6 +494,111 @@ describe('Face Swap action binder', () => {
       const err = await ctx.binder.uploadSlot('face', { file: pngFile() }).catch((e) => e);
       expect(err.status).to.equal(429);
       expect(fetchStub.callCount).to.equal(4);
+    });
+  });
+
+  describe('early asset creation', () => {
+    let ctx;
+    let creates;
+
+    const createCalls = () => fetchStub.getCalls().filter((c) => String(c.args[0]).endsWith('/asset'));
+
+    beforeEach(async () => {
+      ctx = await setup();
+      await ctx.binder.initActionListeners();
+      sinon.stub(UploadHandler.prototype, 'scanImgForSafetyWithRetry').resolves();
+      creates = [];
+      fetchStub.callsFake(async (url, opts) => {
+        if (opts?.method === 'PUT') return { status: 200 };
+        if (!String(url).endsWith('/asset')) return { status: 200, ok: true, text: async () => '', json: async () => ({}) };
+        const n = creates.length + 1;
+        const entry = { n, done: false };
+        creates.push(entry);
+        await tick(5);
+        entry.done = true;
+        return jsonRes({ id: `asset-${n}`, href: 'https://storage/put' });
+      });
+    });
+
+    it('creates the asset as soon as a file is selected', async () => {
+      ctx.widget.handleFiles('face', [pngFile()], 'upload');
+      await ctx.binder.assetQueue;
+      expect(createCalls()).to.have.length(1);
+    });
+
+    it('never overlaps asset creates across slots', async () => {
+      fetchStub.resetHistory();
+      ctx.widget.handleFiles('original', [pngFile('a.png')], 'upload');
+      ctx.widget.handleFiles('face', [pngFile('b.png')], 'upload');
+      await tick(2);
+      expect(createCalls()).to.have.length(1);
+      await ctx.binder.assetQueue;
+      expect(createCalls()).to.have.length(2);
+      expect(creates.map((c) => c.done)).to.deep.equal([true, true]);
+    });
+
+    it('reuses the early asset at upload time instead of creating another', async () => {
+      const file = pngFile();
+      ctx.widget.handleFiles('face', [file], 'upload');
+      const result = await ctx.binder.uploadSlot('face', { file });
+      expect(result).to.deep.equal({ slotId: 'face', assetId: 'asset-1' });
+      expect(createCalls()).to.have.length(1);
+    });
+
+    it('creates a fresh asset when the job belongs to a different file', async () => {
+      ctx.widget.handleFiles('face', [pngFile('old.png')], 'upload');
+      const result = await ctx.binder.uploadSlot('face', { file: pngFile('new.png') });
+      expect(result.assetId).to.equal('asset-2');
+      expect(ctx.binder.assetJobs.face).to.be.undefined;
+    });
+
+    it('replaces the job when a new file is selected for the slot', async () => {
+      ctx.widget.handleFiles('face', [pngFile('old.png')], 'upload');
+      const replacement = pngFile('new.png');
+      ctx.widget.handleFiles('face', [replacement], 'upload');
+      expect(ctx.binder.assetJobs.face.file).to.equal(replacement);
+      const result = await ctx.binder.uploadSlot('face', { file: replacement });
+      expect(result.assetId).to.equal('asset-2');
+      expect(createCalls()).to.have.length(2);
+    });
+
+    it('discards the early asset when the slot is cleared, reset or switched to a gallery pick', async () => {
+      ctx.widget.handleFiles('original', [pngFile('a.png')], 'upload');
+      ctx.widget.handleFiles('face', [pngFile('b.png')], 'upload');
+      ctx.widget.clearSlot('face');
+      expect(ctx.binder.assetJobs.face).to.be.undefined;
+      ctx.widget.selectGallery(0);
+      expect(ctx.binder.assetJobs.original).to.be.undefined;
+      ctx.widget.handleFiles('face', [pngFile('c.png')], 'upload');
+      ctx.widget.reset();
+      expect(ctx.binder.assetJobs).to.deep.equal({});
+      await ctx.binder.assetQueue;
+    });
+
+    it('logs an early failure without a toast and surfaces it only at upload time', async () => {
+      fetchStub.callsFake(async () => jsonRes({}, 400));
+      const splunk = sinon.spy(ctx.binder, 'logAnalyticsinSplunk');
+      const toast = sinon.spy(ctx.binder, 'showToast');
+      const file = pngFile();
+      ctx.widget.handleFiles('face', [file], 'upload');
+      await ctx.binder.assetQueue;
+      expect(splunk.calledWith('Asset Create Failed|UnityWidget')).to.be.true;
+      expect(toast.called).to.be.false;
+      const err = await ctx.binder.uploadSlot('face', { file }).catch((e) => e);
+      expect(err.status).to.equal(400);
+      expect(fetchStub.getCalls().filter((c) => c.args[1]?.method === 'PUT')).to.have.length(0);
+    });
+
+    it('keeps the queue running after a failed create', async () => {
+      let first = true;
+      fetchStub.callsFake(async () => {
+        if (first) { first = false; return jsonRes({}, 400); }
+        return jsonRes({ id: 'asset-ok', href: 'https://storage/put' });
+      });
+      ctx.widget.handleFiles('original', [pngFile('a.png')], 'upload');
+      ctx.widget.handleFiles('face', [pngFile('b.png')], 'upload');
+      const results = await Promise.all([ctx.binder.assetJobs.original.promise, ctx.binder.assetJobs.face.promise]);
+      expect(results.map((r) => r.ok)).to.deep.equal([false, true]);
     });
   });
 
