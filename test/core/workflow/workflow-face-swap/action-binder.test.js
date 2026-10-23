@@ -25,6 +25,11 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAY
 const pngFile = (name = 'face.png') => new File([Uint8Array.from(atob(PNG), (c) => c.charCodeAt(0))], name, { type: 'image/png' });
 const limits = { maxNumFiles: 1, allowedFileTypes: ['image/jpeg', 'image/png'], maxFileSize: 1000 };
 const tick = (ms = 0) => new Promise((r) => { setTimeout(r, ms); });
+const jsonRes = (data, status = 200) => new Response(JSON.stringify(data), { status });
+const skipRetryDelays = () => {
+  const realSetTimeout = window.setTimeout;
+  sinon.stub(window, 'setTimeout').callsFake((fn, ms, ...args) => realSetTimeout(fn, ms >= 1000 && ms < 60000 ? 0 : ms, ...args));
+};
 
 const workflowCfg = () => ({
   name: 'workflow-face-swap',
@@ -339,7 +344,7 @@ describe('Face Swap action binder', () => {
     it('creates the asset, uploads it and runs the safety scan', async () => {
       fetchStub.callsFake(async (url, opts) => {
         if (opts?.method === 'PUT') return { status: 200 };
-        return { status: 200, json: async () => ({ id: 'asset-1', href: 'https://storage/put' }) };
+        return jsonRes({ id: 'asset-1', href: 'https://storage/put' });
       });
       const result = await ctx.binder.uploadSlot('face', { file: pngFile() });
       expect(result).to.deep.equal({ slotId: 'face', assetId: 'asset-1' });
@@ -355,7 +360,7 @@ describe('Face Swap action binder', () => {
         n += 1;
         const id = `asset-${n}`;
         await tick(n === 1 ? 20 : 0);
-        return { status: 200, json: async () => ({ id, href: 'https://storage/put' }) };
+        return jsonRes({ id, href: 'https://storage/put' });
       });
       const seen = [];
       UploadHandler.prototype.scanImgForSafetyWithRetry.callsFake(function scan(assetId) {
@@ -371,14 +376,14 @@ describe('Face Swap action binder', () => {
     });
 
     it('uses chunked upload when the service returns upload URLs', async () => {
-      fetchStub.resolves({ status: 200, json: async () => ({ id: 'c1', blocksize: 5, uploadUrls: [{ href: 'u1' }] }) });
+      fetchStub.callsFake(async () => jsonRes({ id: 'c1', blocksize: 5, uploadUrls: [{ href: 'u1' }] }));
       const chunks = sinon.stub(UploadHandler.prototype, 'uploadChunksToUnity').resolves({ failedChunks: new Set(), attemptMap: new Map() });
       await ctx.binder.uploadSlot('face', { file: pngFile() });
       expect(chunks.calledOnce).to.be.true;
     });
 
     it('fails when any chunk fails', async () => {
-      fetchStub.resolves({ status: 200, json: async () => ({ id: 'c1', blocksize: 5, uploadUrls: [{ href: 'u1' }] }) });
+      fetchStub.callsFake(async () => jsonRes({ id: 'c1', blocksize: 5, uploadUrls: [{ href: 'u1' }] }));
       sinon.stub(UploadHandler.prototype, 'uploadChunksToUnity').resolves({ failedChunks: new Set([1]), attemptMap: new Map([[1, 4]]) });
       const err = await ctx.binder.uploadSlot('face', { file: pngFile() }).catch((e) => e);
       expect(err.status).to.equal(504);
@@ -393,15 +398,40 @@ describe('Face Swap action binder', () => {
     it('surfaces storage and network failures with a status', async () => {
       fetchStub.callsFake(async (url, opts) => {
         if (opts?.method === 'PUT') return { status: 403 };
-        return { status: 200, json: async () => ({ id: 'x', href: 'https://storage/put' }) };
+        return jsonRes({ id: 'x', href: 'https://storage/put' });
       });
       expect((await ctx.binder.uploadSlot('face', { file: pngFile() }).catch((e) => e)).status).to.equal(403);
       fetchStub.rejects(new TypeError('Failed to fetch'));
       expect((await ctx.binder.uploadImgToUnity('u', pngFile(), 'image/png').catch((e) => e)).status).to.equal(0);
-      expect((await ctx.binder.serviceHandler.postCallToService('u', {}).catch((e) => e)).status).to.equal(0);
-      fetchStub.resolves({ status: 500 });
-      expect((await ctx.binder.serviceHandler.postCallToService('u', {}).catch((e) => e)).status).to.equal(500);
-      expect((await ctx.binder.serviceHandler.postCallToService('u', {}, false)).status).to.equal(500);
+      expect((await ctx.binder.uploadSlot('face', { file: pngFile() }).catch((e) => e)).status).to.equal(0);
+    });
+
+    it('retries asset creation after a 429 and continues the upload', async () => {
+      skipRetryDelays();
+      let creates = 0;
+      fetchStub.callsFake(async (url, opts) => {
+        if (opts?.method === 'PUT') return { status: 200 };
+        creates += 1;
+        return creates === 1 ? jsonRes({ reason: 'busy' }, 429) : jsonRes({ id: 'asset-retry', href: 'https://storage/put' });
+      });
+      const result = await ctx.binder.uploadSlot('face', { file: pngFile() });
+      expect(creates).to.equal(2);
+      expect(result).to.deep.equal({ slotId: 'face', assetId: 'asset-retry' });
+    });
+
+    it('does not retry asset creation on a client error', async () => {
+      fetchStub.callsFake(async () => jsonRes({}, 400));
+      const err = await ctx.binder.uploadSlot('face', { file: pngFile() }).catch((e) => e);
+      expect(err.status).to.equal(400);
+      expect(fetchStub.callCount).to.equal(1);
+    });
+
+    it('gives up after the maximum retries when the service keeps throttling', async () => {
+      skipRetryDelays();
+      fetchStub.callsFake(async () => jsonRes({}, 429));
+      const err = await ctx.binder.uploadSlot('face', { file: pngFile() }).catch((e) => e);
+      expect(err.status).to.equal(429);
+      expect(fetchStub.callCount).to.equal(4);
     });
   });
 
@@ -420,7 +450,7 @@ describe('Face Swap action binder', () => {
     const connectorBody = () => JSON.parse(fetchStub.getCalls().find((c) => c.args[0] === unityConfig.connectorApiEndPoint).args[1].body);
 
     it('posts the dual-asset payload and redirects to the returned url', async () => {
-      fetchStub.callsFake(async () => ({ status: 200, json: async () => ({ url: '#fs-redirect' }) }));
+      fetchStub.callsFake(async () => jsonRes({ url: '#fs-redirect' }));
       await ctx.binder.continueInApp([{ slotId: 'face', assetId: 'f' }, { slotId: 'original', href: 'https://cdn/o.jpg' }]);
       const body = connectorBody();
       expect(body.assets.map((a) => a.metadata.referenceImage)).to.deep.equal(['baseImage', 'faceImage']);
@@ -430,23 +460,35 @@ describe('Face Swap action binder', () => {
     });
 
     it('sends no assets for the empty redirect', async () => {
-      fetchStub.callsFake(async () => ({ status: 200, json: async () => ({ url: '#fs-empty' }) }));
+      fetchStub.callsFake(async () => jsonRes({ url: '#fs-empty' }));
       await ctx.binder.continueInApp([]);
       expect(connectorBody()).to.not.have.property('assets');
     });
 
+    it('retries the connector after a 429 and still redirects', async () => {
+      skipRetryDelays();
+      let calls = 0;
+      fetchStub.callsFake(async () => {
+        calls += 1;
+        return calls === 1 ? jsonRes({}, 429) : jsonRes({ url: '#fs-retried' });
+      });
+      await ctx.binder.continueInApp([]);
+      expect(calls).to.equal(2);
+      expect(window.location.hash).to.equal('#fs-retried');
+    });
+
     it('shows the request error when the connector fails or returns no url', async () => {
       const toast = sinon.spy(ctx.binder, 'showToast');
-      fetchStub.callsFake(async () => ({ status: 500, json: async () => ({}) }));
+      fetchStub.callsFake(async () => jsonRes({}, 403));
       await ctx.binder.continueInApp([]);
-      fetchStub.callsFake(async () => ({ status: 200, json: async () => ({}) }));
+      fetchStub.callsFake(async () => jsonRes({}));
       await ctx.binder.continueInApp([]);
       expect(toast.callCount).to.equal(2);
       expect(toast.alwaysCalledWithMatch({ errorType: '.icon-error-request' })).to.be.true;
     });
 
     it('does not redirect once the user has cancelled', async () => {
-      fetchStub.callsFake(async () => ({ status: 200, json: async () => ({ url: '#fs-cancelled' }) }));
+      fetchStub.callsFake(async () => jsonRes({ url: '#fs-cancelled' }));
       ctx.binder.promiseStack = [Promise.resolve()];
       await ctx.binder.continueInApp([]);
       expect(window.location.hash).to.equal('');
