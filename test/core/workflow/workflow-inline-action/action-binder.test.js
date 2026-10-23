@@ -2,6 +2,7 @@ import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-inline-action/action-binder.js';
 import { setUnityLibs, getUnityLibs, unityConfig } from '../../../../unitylibs/scripts/utils.js';
+import sendAnalyticsToSplunk from '../../../../unitylibs/scripts/analytics.js';
 
 setUnityLibs('/unitylibs');
 const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
@@ -27,6 +28,7 @@ describe('Inline action binder', () => {
   let oldLana;
   let oldConfig;
   let objectUrls;
+  let oldSatellite;
 
   function editor() {
     widget.editorEngine = { setOutputType: sinon.spy(), setImage: sinon.stub().resolves(), reset: sinon.spy() };
@@ -36,6 +38,7 @@ describe('Inline action binder', () => {
 
   beforeEach(async () => {
     oldIMS = window.adobeIMS;
+    oldSatellite = window._satellite; // eslint-disable-line no-underscore-dangle
     oldLana = window.lana;
     oldConfig = { ...unityConfig };
     guest = true;
@@ -98,6 +101,7 @@ describe('Inline action binder', () => {
     objectUrls.returnValues.forEach((url) => URL.revokeObjectURL(url));
     sinon.restore();
     window.adobeIMS = oldIMS;
+    window._satellite = oldSatellite; // eslint-disable-line no-underscore-dangle
     window.lana = oldLana;
     Object.keys(unityConfig).forEach((key) => { delete unityConfig[key]; });
     Object.assign(unityConfig, oldConfig);
@@ -147,6 +151,86 @@ describe('Inline action binder', () => {
     expect(binder.sendAnalyticsToSplunk.args[2][2].errorData.subCode).to.equal('upload');
     expect(binder.sendAnalyticsToSplunk.args[4][2].errorData.subCode).to.equal('removeBackground');
     expect(binder.sendAnalyticsToSplunk.lastCall.args[2]).to.include({ assetId: 'fallback', verb: 'verb' });
+  });
+
+  ['crop', 'resize', 'removeBackground'].forEach((operation) => {
+    it(`maps explicit ${operation} file metadata to Adobe and preserves Splunk metadata`, async () => {
+      const track = sinon.spy();
+      window._satellite = { track }; // eslint-disable-line no-underscore-dangle
+      window.adobeIMS.getAccessToken = () => ({ token: `header.${btoa(JSON.stringify({ sub: 'test-user' }))}.signature` });
+      binder.operation = operation;
+      binder.sendAnalyticsToSplunk = sendAnalyticsToSplunk;
+      binder.filesData = { type: 'image/jpeg', size: 500, name: 'processed.jpg' };
+      await binder.trackEvent('Uploading Started|UnityWidget', { fileMetaData: binder.filesData });
+      const adobePayload = track.lastCall.args[1];
+      expect(adobePayload.data.web.webInteraction.name).to.equal('Uploading Started|UnityWidget');
+      // eslint-disable-next-line no-underscore-dangle
+      expect(adobePayload.data._adobe_corpnew.digitalData).to.deep.equal({ workflow: 'inline-action', fileType: 'image/jpeg', fileSize: 500 });
+      const splunkPayload = JSON.parse(fetchStub.lastCall.args[1].body);
+      expect(fetchStub.lastCall.args[0]).to.equal('/test-api/log');
+      expect(splunkPayload.content).to.deep.equal({
+        workflow: 'inline-action',
+        fileMetaData: { type: 'image/jpeg', size: 500, name: 'processed.jpg' },
+      });
+      await binder.trackEvent('Uploading Started|UnityWidget');
+      await binder.trackEvent('Download Success|UnityWidget');
+      await binder.trackEvent('Reset|UnityWidget');
+      track.args.slice(1).forEach(([, payload]) => {
+        // eslint-disable-next-line no-underscore-dangle
+        expect(payload.data._adobe_corpnew.digitalData).to.deep.equal({ workflow: 'inline-action' });
+      });
+      await binder.trackEvent('Connector Success|UnityWidget', { fileMetaData: binder.filesData });
+      // eslint-disable-next-line no-underscore-dangle
+      expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.include({ fileType: 'image/jpeg', fileSize: 500 });
+    });
+  });
+
+  it('omits file fields before selection and preserves other workflows Splunk payloads', async () => {
+    const track = sinon.spy();
+    window._satellite = { track }; // eslint-disable-line no-underscore-dangle
+    binder.trackEvent('Upload asset CTA|UnityWidget');
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.deep.equal({ workflow: 'inline-action' });
+    expect(binder.sendAnalyticsToSplunk.lastCall.args[2]).to.deep.equal({ workflow: 'inline-action' });
+    window.adobeIMS.getAccessToken = () => ({ token: `header.${btoa('{}')}.signature` });
+    await sendAnalyticsToSplunk('Other event', 'Firefly', { workflow: 'other', fileType: 'image/png', fileSize: 6, fileMetaData: binder.filesData }, '/test-api/log');
+    expect(JSON.parse(fetchStub.lastCall.args[1].body).content).to.deep.equal({ workflow: 'other', fileMetaData: binder.filesData });
+  });
+
+  it('maps zero-byte and partial metadata without an event-name check', async () => {
+    const track = sinon.spy();
+    window._satellite = { track }; // eslint-disable-line no-underscore-dangle
+    binder.sendAnalyticsToSplunk = sendAnalyticsToSplunk;
+    window.adobeIMS.getAccessToken = () => ({ token: `header.${btoa('{}')}.signature` });
+    await binder.trackEvent('Any event', { fileMetaData: { type: 'image/jpeg', size: 0 } });
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.include({ fileType: 'image/jpeg', fileSize: 0 });
+    expect(JSON.parse(fetchStub.lastCall.args[1].body).content).not.to.have.property('fileSize');
+    expect(JSON.parse(fetchStub.lastCall.args[1].body).content.fileMetaData).to.deep.equal({ type: 'image/jpeg', size: 0 });
+    await binder.trackEvent('Any event', { fileMetaData: { type: 'image/png' } });
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.deep.equal({ workflow: 'inline-action', fileType: 'image/png' });
+    await binder.trackEvent('Any event', { fileMetaData: { size: 5 } });
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.deep.equal({ workflow: 'inline-action', fileSize: 5 });
+    binder.trackEvent('Uploading Started|UnityWidget');
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.deep.equal({ workflow: 'inline-action' });
+  });
+
+  it('uses the replacement file metadata when another image is uploaded', async () => {
+    const track = sinon.spy();
+    window._satellite = { track }; // eslint-disable-line no-underscore-dangle
+    binder.operation = 'crop';
+    editor();
+    sinon.stub(UploadHandler.prototype, 'scanImgForSafetyWithRetry').resolves();
+    await binder.uploadFile([file]);
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.include({ fileType: file.type, fileSize: file.size });
+    const replacement = new File(['new pixels'], 'replacement.jpg', { type: 'image/jpeg' });
+    await binder.uploadFile([replacement]);
+    // eslint-disable-next-line no-underscore-dangle
+    expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.include({ fileType: 'image/jpeg', fileSize: replacement.size });
   });
 
   it('loads Splunk analytics only when enabled and reuses the function', async () => {
@@ -585,6 +669,7 @@ describe('Inline action binder', () => {
     const area = root.querySelector('.interactive-area');
     area.dispatchEvent(new DragEvent('drop', { dataTransfer: files, bubbles: true, cancelable: true }));
     expect(track.calledWith('Click Drag and drop|UnityWidget')).to.equal(true);
+    expect(binder.sendAnalyticsToSplunk.lastCall.args[2]).not.to.have.property('fileType');
     track.resetHistory();
     widget.widget.dataset.state = 'loading';
     area.dispatchEvent(new DragEvent('drop', { dataTransfer: files, bubbles: true }));
@@ -693,6 +778,8 @@ describe('Inline action binder', () => {
 
   ['crop', 'resize'].forEach((operation) => {
     it(`routes guest ${operation} to the editor and uploads only when required`, async () => {
+      const track = sinon.spy();
+      window._satellite = { track }; // eslint-disable-line no-underscore-dangle
       const engine = editor();
       binder.operation = operation;
       sinon.stub(UploadHandler.prototype, 'scanImgForSafetyWithRetry').resolves();
@@ -702,6 +789,19 @@ describe('Inline action binder', () => {
       expect(engine.setImage.firstCall.args.slice(1)).to.deep.equal([file.size, true]);
       expect(widget.widget.dataset.state).to.equal('complete');
       expect(fetchStub.args.some(([url]) => url === '/test-api/asset')).to.equal(operation === 'crop');
+      let uploadEvents = track.args.filter(([, payload]) => payload.data.web.webInteraction.name === 'Uploading Started|UnityWidget');
+      expect(uploadEvents.length).to.equal(operation === 'crop' ? 1 : 0);
+      if (operation === 'resize') {
+        await binder.uploadAsset(file);
+        uploadEvents = track.args.filter(([, payload]) => payload.data.web.webInteraction.name === 'Uploading Started|UnityWidget');
+      }
+      // eslint-disable-next-line no-underscore-dangle
+      expect(uploadEvents[0][1].data._adobe_corpnew.digitalData).to.include({ fileType: file.type, fileSize: file.size });
+      expect(binder.sendAnalyticsToSplunk.args.find(([name]) => name === 'Uploading Started|UnityWidget')[2].fileMetaData)
+        .to.deep.equal(binder.filesData);
+      await binder.uploadAsset(new File(['result'], 'result.jpg', { type: 'image/jpeg' }));
+      // eslint-disable-next-line no-underscore-dangle
+      expect(track.lastCall.args[1].data._adobe_corpnew.digitalData).to.include({ fileType: binder.filesData.type, fileSize: binder.filesData.size });
     });
 
     it(`routes signed-in ${operation} without server pixel processing`, async () => {

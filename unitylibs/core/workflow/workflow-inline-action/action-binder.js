@@ -167,8 +167,13 @@ export default class ActionBinder {
 
   trackEvent(eventName, data = {}) {
     const metaData = this.getAnalyticsMeta(data);
+    const { fileMetaData } = data;
     sendAnalyticsEvent(new CustomEvent(eventName, {
-      detail: { workflow: metaData.workflow },
+      detail: {
+        workflow: metaData.workflow,
+        ...(fileMetaData?.type && { fileType: fileMetaData.type }),
+        ...(fileMetaData?.size !== undefined && { fileSize: fileMetaData.size }),
+      },
     }));
     return this.logAnalyticsinSplunk(eventName, data);
   }
@@ -410,7 +415,7 @@ export default class ActionBinder {
       size: file.size,
       format: file.type,
     };
-    this.trackEvent('Uploading Started|UnityWidget');
+    this.trackEvent('Uploading Started|UnityWidget', { fileMetaData: this.filesData });
     this.uploadAbortController = new AbortController();
     const { signal } = this.uploadAbortController;
     let callType = 'asset';
