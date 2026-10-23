@@ -48,8 +48,7 @@ test.describe('Unity Face Swap test suite', () => {
       expect(await faceSwap.model.locator('button, [tabindex]').count()).toBe(0);
       await expect(faceSwap.galleryLabel).toHaveText(data.galleryLabel);
       expect(await faceSwap.galleryItems.count()).toBeGreaterThan(0);
-      await expect(faceSwap.galleryItems.first()).toHaveAttribute('tabindex', '0');
-      await expect(faceSwap.galleryItems.first()).toHaveAttribute('aria-selected', 'false');
+      await expect(faceSwap.galleryItems.first()).toHaveAttribute('aria-pressed', 'false');
       await expect(faceSwap.preview).toBeVisible();
     });
   });
@@ -102,7 +101,7 @@ test.describe('Unity Face Swap test suite', () => {
       await faceSwap.resetButton.click();
       await expect(faceSwap.originalSlot).toHaveAttribute('data-state', 'empty');
       await expect(faceSwap.faceSlot).toHaveAttribute('data-state', 'empty');
-      await expect(faceSwap.galleryList.locator('[aria-selected="true"]')).toHaveCount(0);
+      await expect(faceSwap.galleryList.locator('[aria-pressed="true"]')).toHaveCount(0);
       await expect(faceSwap.slotInput('original')).toBeFocused();
     });
   });
@@ -118,19 +117,21 @@ test.describe('Unity Face Swap test suite', () => {
 
     await test.step('step-2: Select a gallery image', async () => {
       await faceSwap.galleryItems.first().click();
-      await expect(faceSwap.galleryItems.first()).toHaveAttribute('aria-selected', 'true');
+      await expect(faceSwap.galleryItems.first()).toHaveAttribute('aria-pressed', 'true');
       await expect(faceSwap.originalSlot).toHaveAttribute('data-state', 'ready');
       await expect(faceSwap.slotImage('original')).toBeVisible();
       await expect(faceSwap.faceSlot).toHaveAttribute('data-state', 'empty');
     });
 
-    await test.step('step-3: Arrow keys move the gallery focus', async () => {
+    await test.step('step-3: Tab and arrow keys reach every gallery tile', async () => {
       if (await faceSwap.galleryItems.count() < 2) return;
       await faceSwap.galleryItems.first().focus();
-      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('Tab');
       await expect(faceSwap.galleryItems.nth(1)).toBeFocused();
-      await expect(faceSwap.galleryItems.nth(1)).toHaveAttribute('tabindex', '0');
-      await expect(faceSwap.galleryItems.first()).toHaveAttribute('tabindex', '-1');
+      await page.keyboard.press('ArrowLeft');
+      await expect(faceSwap.galleryItems.first()).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(faceSwap.galleryItems.first()).toHaveAttribute('aria-pressed', 'true');
     });
   });
 
