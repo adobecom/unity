@@ -67,9 +67,9 @@ function ensureAssetUploaded(binder) {
 function buildResizeOperation(engine) {
   const pill = engine.selectedPill?.dataset;
   let pillMode = null;
-  if (pill?.platform) pillMode = 'Social';
-  else if (pill?.ratioText) pillMode = 'Standard';
-  const resizeMode = pillMode && pillMode.toLowerCase() === engine.resizeTab ? pillMode : 'Freeform';
+  if (pill?.platform) pillMode = 'social';
+  else if (pill?.ratioText) pillMode = 'standard';
+  const resizeMode = pillMode === engine.resizeTab ? pillMode : 'freeform';
   const { width, height } = engine.getResizeDimensions();
   const resizeOp = {
     type: 'resize',
@@ -78,8 +78,8 @@ function buildResizeOperation(engine) {
     height: Math.round(height),
     displayUnit: engine.unit,
   };
-  if (resizeMode === 'Social') {
-    resizeOp.socialApp = pill.platform;
+  if (resizeMode === 'social') {
+    resizeOp.socialPlatform = pill.platform;
     resizeOp.socialPostType = pill.name;
     if (pill.width && pill.height) {
       resizeOp.width = Number(pill.width);
@@ -87,7 +87,7 @@ function buildResizeOperation(engine) {
     }
   }
   if (engine.outputType === 'image/jpeg') resizeOp.quality = Math.round(engine.quality);
-  const aspectRatio = resizeMode === 'Standard' ? pill.ratioText : null;
+  const aspectRatio = resizeMode === 'standard' ? pill.ratioText : null;
   return { aspectRatio, resizeOp };
 }
 
