@@ -320,7 +320,11 @@ class UnityWidget {
       ? this.models.filter((obj) => obj.module === this.selectedVerbType)
       : [];
     if (models.length === 0) return [];
-    const authoredId = placeholderRowText(this.el, `icon-model-${this.selectedVerbType}-default`).toLowerCase();
+    const defaultPrefix = `icon-model-default-${this.selectedVerbType}-`;
+    const defaultMarker = [...this.el.querySelectorAll('[class*="icon-model-default-"]')]
+      .flatMap((el) => [...el.classList])
+      .find((className) => className.startsWith(defaultPrefix));
+    const authoredId = defaultMarker?.slice(defaultPrefix.length).toLowerCase();
     const authoredIdx = authoredId ? models.findIndex((m) => String(m.id).trim().toLowerCase() === authoredId) : -1;
     const defaultIdx = Math.max(authoredIdx, 0);
     const defaultModel = models[defaultIdx];
