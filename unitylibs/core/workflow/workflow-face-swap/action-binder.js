@@ -15,6 +15,7 @@ import {
 } from '../../../scripts/utils.js';
 
 const CANCEL_MESSAGE = 'Operation termination requested.';
+const TOKEN_REFRESH_TIMEOUT_MS = 2000;
 const WIDGET_ROOT = '.unity-face-swap';
 const SLOT_NUMBER = { original: 1, face: 2 };
 const slotEventName = (slotId, status) => `Upload ${SLOT_NUMBER[slotId] ?? slotId} ${status}|UnityWidget`;
@@ -437,8 +438,10 @@ export default class ActionBinder {
 
       this.abortController = new AbortController();
       const { signal } = this.abortController;
+      const tokenRefresh = this.refreshImsToken();
       await this.ensureTransitionScreen();
       await this.transitionScreen.showSplashScreen(true);
+      await tokenRefresh;
       const { isGuest } = await isGuestUser();
       this.isGuestUser = isGuest;
 
@@ -461,6 +464,22 @@ export default class ActionBinder {
     } finally {
       this.inFlight = false;
       this.abortController = null;
+    }
+  }
+
+  async refreshImsToken() {
+    let timer;
+    try {
+      await Promise.race([
+        window.adobeIMS?.refreshToken?.(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`Timed out after ${TOKEN_REFRESH_TIMEOUT_MS}ms`)), TOKEN_REFRESH_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (e) {
+      this.logAnalyticsinSplunk('Token Refresh Failed|UnityWidget', { errorData: { code: 'token-refresh', desc: e?.message || String(e) } });
+    } finally {
+      clearTimeout(timer);
     }
   }
 
