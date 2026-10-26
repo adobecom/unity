@@ -1725,7 +1725,7 @@
   background: transparent;
   box-shadow: none;
   color: #fff;
-  font-family: var(--s2a-font-family-heading), "Adobe Clean", adobe-clean, sans-serif;
+  font-family: var(--heading-font-family);
   font-size: var(--s2a-typography-font-size-heading-5);
   font-weight: 900;
   line-height: var(--s2a-typography-line-height-heading-5);
@@ -2049,7 +2049,7 @@
   padding: 4px 9px 4px 24px;
   border-radius: 12px;
   color: #fff;
-  font-family: var(--s2a-font-family-heading), "Adobe Clean", adobe-clean, sans-serif;
+  font-family: var(--heading-font-family);
   font-size: var(--s2a-typography-font-size-heading-5);
   font-weight: 900;
   line-height: var(--s2a-typography-line-height-heading-5);
