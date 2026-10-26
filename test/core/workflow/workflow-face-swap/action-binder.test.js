@@ -274,6 +274,29 @@ describe('Face Swap action binder', () => {
       ]);
     });
 
+    it('refreshes the IMS token in parallel with the splash, before uploading', async () => {
+      const order = [];
+      window.adobeIMS.refreshToken = sinon.stub().callsFake(async () => { order.push('refresh-start'); await tick(); order.push('refresh-end'); });
+      ctx.binder.ensureTransitionScreen.callsFake(async () => {
+        order.push('splash');
+        ctx.binder.transitionScreen ||= fakeTransition();
+      });
+      sinon.stub(ctx.binder, 'uploadSlot').callsFake(async (slotId) => { order.push('upload'); return { slotId, assetId: 'id' }; });
+      ctx.widget.handleFiles('face', [pngFile()], 'upload');
+      await ctx.binder.handleGenerate();
+      delete window.adobeIMS.refreshToken;
+      expect(order).to.deep.equal(['refresh-start', 'splash', 'refresh-end', 'upload']);
+    });
+
+    it('does not refresh the token when nothing needs uploading', async () => {
+      window.adobeIMS.refreshToken = sinon.stub().resolves();
+      ctx.widget.selectGallery(0);
+      await ctx.binder.handleGenerate();
+      const { called } = window.adobeIMS.refreshToken;
+      delete window.adobeIMS.refreshToken;
+      expect(called).to.be.false;
+    });
+
     it('ignores repeat clicks while a request is in flight', async () => {
       let release;
       sinon.stub(ctx.binder, 'uploadSlot').callsFake(() => new Promise((r) => { release = r; }));
@@ -329,6 +352,48 @@ describe('Face Swap action binder', () => {
       await ctx.binder.handleUploadFailure('face', Object.assign(new Error('x'), { errorToken: 'error-filesize' }));
       expect(ctx.binder.transitionScreen.showSplashScreen.calledBefore(toast)).to.be.true;
       expect(toast.firstCall.args[0]).to.include({ errorType: '.icon-error-filesize' });
+    });
+  });
+
+  describe('refreshImsToken', () => {
+    let binder;
+    let splunk;
+
+    beforeEach(async () => {
+      ({ binder } = await setup());
+      splunk = sinon.stub(binder, 'logAnalyticsinSplunk');
+    });
+
+    afterEach(() => {
+      delete window.adobeIMS.refreshToken;
+    });
+
+    it('resolves once IMS refreshes the token', async () => {
+      window.adobeIMS.refreshToken = sinon.stub().resolves();
+      await binder.refreshImsToken();
+      expect(window.adobeIMS.refreshToken.calledOnce).to.be.true;
+      expect(splunk.called).to.be.false;
+    });
+
+    it('resolves without IMS refreshToken available', async () => {
+      await binder.refreshImsToken();
+      expect(splunk.called).to.be.false;
+    });
+
+    it('logs to Splunk, not lana, and continues when the refresh fails', async () => {
+      window.adobeIMS.refreshToken = sinon.stub().rejects(new Error('invalid_credentials'));
+      await binder.refreshImsToken();
+      expect(splunk.calledOnceWith('Token Refresh Failed|UnityWidget', { errorData: { code: 'token-refresh', desc: 'invalid_credentials' } })).to.be.true;
+      expect(window.lana.log.called).to.be.false;
+    });
+
+    it('gives up after the timeout so a hung refresh cannot block the splash', async () => {
+      const clock = sinon.useFakeTimers();
+      window.adobeIMS.refreshToken = sinon.stub().returns(new Promise(() => {}));
+      const pending = binder.refreshImsToken();
+      await clock.tickAsync(2000);
+      await pending;
+      expect(splunk.firstCall.args[1].errorData.desc).to.equal('Timed out after 2000ms');
     });
   });
 
