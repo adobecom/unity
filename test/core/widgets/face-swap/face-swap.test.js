@@ -147,6 +147,24 @@ describe('Face Swap widget', () => {
       expect(widget.videoObserver).to.exist;
     });
 
+    it('labels every interactive control for analytics', async () => {
+      document.querySelectorAll('.video-container.video-holder').forEach((holder) => {
+        holder.append(Object.assign(document.createElement('a'), { className: 'pause-play-wrapper' }));
+      });
+      const { widget } = await mountWidget();
+      const root = widget.extendedRoot;
+      const ll = (node) => node.getAttribute('daa-ll');
+      expect(ll(root.querySelector('.fs-reset'))).to.equal('Reset|UnityWidget');
+      expect(ll(widget.slotEls.original.input)).to.equal('Upload 1|UnityWidget');
+      expect(ll(widget.slotEls.face.input)).to.equal('Upload 2|UnityWidget');
+      expect(ll(widget.slotEls.original.del)).to.equal('Remove 1|UnityWidget');
+      expect(ll(widget.slotEls.face.del)).to.equal('Remove 2|UnityWidget');
+      expect(ll(widget.genBtn)).to.equal('Click on Generate CTA|UnityWidget');
+      expect(widget.galleryItems.map(ll)).to.deep.equal(['Sample 1|UnityWidget', 'Sample 2|UnityWidget', 'Sample 3|UnityWidget']);
+      expect(ll(root.querySelector('.fs-preview .pause-play-wrapper'))).to.equal('Pause motion|UnityWidget');
+      expect(ll(root.querySelector('.fs-legal a'))).to.equal('Terms of Use-1--');
+    });
+
     it('does not autoplay the video when reduced motion is requested', async () => {
       const original = window.matchMedia;
       sinon.stub(window, 'matchMedia').callsFake((q) => (q.includes('reduced-motion')
