@@ -23,6 +23,8 @@ const labelText = (node) => {
   });
   return normalize(clone.textContent);
 };
+const trackLabel = (name) => `${name}|UnityWidget`;
+const GENERATE_CTA_LABEL = 'Click on Generate CTA|UnityWidget';
 const svgUse = (id) => `<svg aria-hidden="true" focusable="false"><use xlink:href="#${id}"></use></svg>`;
 const emptySlot = () => ({
   file: null,
@@ -77,6 +79,10 @@ function extractLegal(el) {
   while (li.firstChild) legal.append(li.firstChild);
   li.remove();
   if (!legal.textContent.trim()) return null;
+  legal.querySelectorAll('a').forEach((a, idx) => {
+    const text = a.textContent.replace(/[^\u00C0-\u1FFF\u2C00-\uD7FF\w]+/g, ' ').trim().slice(0, 20);
+    a.setAttribute('daa-ll', `${text}-${idx + 1}--`);
+  });
   return legal;
 }
 
@@ -228,7 +234,7 @@ export default class FaceSwapWidget extends UnityWidget {
     const { title, reset } = this.parsed;
     const header = createTag('div', { class: 'fs-header' });
     header.append(createTag('p', { class: 'fs-title' }, title));
-    const resetBtn = createTag('button', { type: 'button', class: 'fs-reset' });
+    const resetBtn = createTag('button', { type: 'button', class: 'fs-reset', 'daa-ll': trackLabel('Reset') });
     resetBtn.innerHTML = svgUse('unity-refresh-icon');
     resetBtn.append(createTag('span', { class: 'fs-reset-text' }, reset));
     resetBtn.addEventListener('click', () => this.reset());
@@ -240,12 +246,14 @@ export default class FaceSwapWidget extends UnityWidget {
   buildSlot(slotId) {
     const { title, help } = this.parsed.slots[slotId];
     const inputId = `fs-input-${slotId}-${this.uid}`;
+    const slotNum = SLOT_IDS.indexOf(slotId) + 1;
     const slot = createTag('div', { class: 'fs-slot', 'data-slot': slotId, 'data-state': 'empty' });
     const input = createTag('input', {
       type: 'file',
       id: inputId,
       class: 'fs-input',
       accept: 'image/*',
+      'daa-ll': trackLabel(`Upload ${slotNum}`),
     });
     const label = createTag('label', { class: 'fs-drop', for: inputId });
     const empty = createTag('span', { class: 'fs-drop-empty' });
@@ -264,6 +272,7 @@ export default class FaceSwapWidget extends UnityWidget {
       type: 'button',
       class: 'fs-delete',
       'aria-label': `Remove ${title}`,
+      'daa-ll': trackLabel(`Remove ${slotNum}`),
       hidden: '',
     });
     del.innerHTML = svgUse('unity-trash-icon');
@@ -330,7 +339,7 @@ export default class FaceSwapWidget extends UnityWidget {
       footer.append(modelEl);
     }
     const actWrap = createTag('div', { class: 'act-wrap' });
-    const genBtn = createTag('button', { type: 'button', class: 'unity-act-btn gen-btn' });
+    const genBtn = createTag('button', { type: 'button', class: 'unity-act-btn gen-btn', 'daa-ll': GENERATE_CTA_LABEL });
     if (generate.src) {
       const ico = createTag('span', { class: 'btn-ico' });
       ico.append(createTag('img', { src: generate.src, alt: '', width: 22, height: 22 }));
@@ -360,6 +369,7 @@ export default class FaceSwapWidget extends UnityWidget {
         class: 'fs-gallery-item',
         'aria-pressed': 'false',
         'aria-label': label || `Gallery image ${idx + 1} of ${gallery.length}`,
+        'daa-ll': trackLabel(`Sample ${idx + 1}`),
       });
       const img = picture.querySelector('img');
       if (img) {
@@ -409,6 +419,7 @@ export default class FaceSwapWidget extends UnityWidget {
     const media = cell?.querySelector(HERO_MEDIA_SELECTOR);
     if (!media) return preview;
     preview.append(media);
+    preview.querySelector('.pause-play-wrapper, .play-pause-button')?.setAttribute('daa-ll', trackLabel('Pause motion'));
     makeHeroMediaDecorative(preview);
     this.videoObserver = wirePreviewVideo(preview);
     return preview;
