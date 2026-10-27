@@ -1,0 +1,653 @@
+/* eslint-disable max-len */
+/* eslint-disable max-classes-per-file */
+/* eslint-disable class-methods-use-this */
+
+import {
+  unityConfig,
+  getUnityLibs,
+  priorityLoad,
+  createTag,
+  getLocale,
+  getLibs,
+  getApiCallOptions,
+  sendAnalyticsEvent,
+  isGuestUser,
+} from '../../../scripts/utils.js';
+
+const CANCEL_MESSAGE = 'Operation termination requested.';
+const TOKEN_REFRESH_TIMEOUT_MS = 2000;
+const WIDGET_ROOT = '.unity-face-swap';
+const SLOT_NUMBER = { original: 1, face: 2 };
+const slotEventName = (slotId, status) => `Upload ${SLOT_NUMBER[slotId] ?? slotId} ${status}|UnityWidget`;
+const sampleEventName = (idx) => `Sample ${idx + 1}|UnityWidget`;
+const fileMeta = (slotId, file) => ({ slot: slotId, count: 1, size: file?.size, type: file?.type });
+
+export const RULES = [
+  { id: 'filecount', scope: 'all', test: (files, limits) => files.length <= (limits.maxNumFiles || 1), token: 'error-filecount' },
+  { id: 'filetype', scope: 'each', test: (f, limits) => !limits.allowedFileTypes || limits.allowedFileTypes.includes(f.type), token: 'error-filetype' },
+  { id: 'filesize', scope: 'each', test: (f, limits) => f.size > 0 && (!limits.maxFileSize || f.size <= limits.maxFileSize), token: 'error-filesize' },
+];
+
+export function validateSelection(files, limits = {}) {
+  const list = [...(files || [])];
+  const failed = RULES.find((r) => (r.scope === 'all' ? !r.test(list, limits) : !list.every((f) => r.test(f, limits))));
+  return failed ? { ok: false, errorToken: failed.token } : { ok: true };
+}
+
+const ROLE = { original: 'baseImage', face: 'faceImage' };
+const SLOT_ORDER = ['original', 'face'];
+
+export function cdnHref(path) {
+  return `${new URL(unityConfig.pageConfigEndPoint).origin}${path}`;
+}
+
+export function buildFaceSwapAssetPayload(entries = []) {
+  const assets = [...entries]
+    .filter((e) => ROLE[e.slotId] && (e.assetId || e.href))
+    .sort((a, b) => SLOT_ORDER.indexOf(a.slotId) - SLOT_ORDER.indexOf(b.slotId))
+    .map((e) => ({
+      ...(e.assetId ? { id: e.assetId } : { href: e.href }),
+      metadata: { referenceImage: ROLE[e.slotId] },
+    }));
+  return assets.length ? { assets } : {};
+}
+
+class ServiceHandler {
+  constructor(canvasArea = [], unityEl = null) {
+    this.canvasArea = canvasArea;
+    this.unityEl = unityEl;
+  }
+
+  showErrorToast(errorCallbackOptions, error, lanaOptions, errorType = 'server') {
+    sendAnalyticsEvent(new CustomEvent(`Upload ${errorType} error|UnityWidget|${errorCallbackOptions.errorCode || ''}|${JSON.stringify(errorCallbackOptions.fileMetaData) || ''}`));
+    if (!errorCallbackOptions.errorToastEl) return null;
+    const msg = this.unityEl?.querySelector(errorCallbackOptions.errorType)?.closest('li')?.textContent?.trim() || '';
+    let shown = null;
+    this.canvasArea.forEach((element) => {
+      element.style.pointerEvents = 'none';
+      const errorToast = element.querySelector('.alert-holder');
+      if (!errorToast) return;
+      const closeBtn = errorToast.querySelector('.alert-close');
+      if (closeBtn) closeBtn.style.pointerEvents = 'auto';
+      const alertText = errorToast.querySelector('.alert-text p');
+      if (!alertText) return;
+      alertText.innerText = msg;
+      errorToast.classList.add('show');
+      shown = errorToast;
+    });
+    window.lana?.log(`Message: ${msg}, Error: ${error || ''}`, lanaOptions);
+    return shown;
+  }
+}
+
+export default class ActionBinder {
+  constructor(unityEl, workflowCfg, block, canvasArea, actionMap = {}, widget = null) {
+    this.unityEl = unityEl;
+    this.workflowCfg = workflowCfg;
+    this.block = block;
+    this.canvasArea = canvasArea;
+    this.actionMap = actionMap;
+    this.widget = widget;
+    this.errorToastEl = null;
+    this.transitionScreen = null;
+    this.LOADER_LIMIT = 95;
+    this.serviceHandler = null;
+    this.abortController = null;
+    this.inFlight = false;
+    this.isGuestUser = undefined;
+    this.sendAnalyticsToSplunk = null;
+    this.analyticsModule = null;
+    this.promiseStack = [];
+    this.desktop = false;
+    this.warmed = false;
+    this.restoreFocusEl = null;
+    this.tokenRefresh = null;
+    this.assetQueue = Promise.resolve();
+    this.assetJobs = {};
+    this.toastCanvasAreas = canvasArea ? [canvasArea] : [];
+    this.apiConfig = this.getApiConfig();
+    this.verb = this.getVerbFromDom();
+    this.initActionListeners = this.initActionListeners.bind(this);
+    const searchRoot = canvasArea || block;
+    this.root = searchRoot?.closest?.(WIDGET_ROOT) || searchRoot?.querySelector?.(WIDGET_ROOT) || searchRoot;
+    this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') ?? searchRoot;
+    this.limits = workflowCfg.targetCfg?.limits || {};
+    const productTag = workflowCfg.targetCfg?.[`productTag-${workflowCfg.productName?.toLowerCase()}`] || 'FF';
+    this.lanaOptions = { sampleRate: 1, tags: `Unity-${productTag}-FaceSwap` };
+  }
+
+  getApiConfig() {
+    unityConfig.endPoint = {
+      assetUpload: `${unityConfig.apiEndPoint}/asset`,
+      acmpCheck: `${unityConfig.apiEndPoint}/asset/finalize`,
+    };
+    return unityConfig;
+  }
+
+  getAdditionalHeaders() {
+    const baseAction = this.workflowCfg?.supportedFeatures?.values()?.next()?.value;
+    const xUnityAction = this.verb ? `${baseAction}-${this.verb}` : baseAction;
+    return {
+      'x-unity-product': this.workflowCfg?.productName,
+      'x-unity-action': xUnityAction,
+    };
+  }
+
+  getVerbFromDom() {
+    const verbEl = this.unityEl?.querySelector('[class*="icon-operation-"]');
+    if (verbEl) {
+      const verbClass = Array.from(verbEl.classList).find((cls) => cls.startsWith('icon-operation-'));
+      const fromDom = verbClass?.slice('icon-operation-'.length);
+      if (fromDom) return fromDom;
+    }
+    return this.workflowCfg?.enabledFeatures?.[0];
+  }
+
+  async initAnalytics() {
+    if (this.analyticsModule) return;
+    this.analyticsModule = await import(`${getUnityLibs()}/scripts/analytics.js`);
+    if (this.workflowCfg.targetCfg?.sendSplunkAnalytics) {
+      this.sendAnalyticsToSplunk = this.analyticsModule.default;
+    }
+  }
+
+  getAnalyticsMeta(data = {}) {
+    return {
+      workflow: this.workflowCfg?.name,
+      ...(this.isGuestUser !== undefined && { isGuestUser: this.isGuestUser }),
+      ...data,
+    };
+  }
+
+  logAnalyticsinSplunk(eventName, data = {}) {
+    this.sendAnalyticsToSplunk?.(
+      eventName,
+      this.workflowCfg.productName,
+      this.getAnalyticsMeta({ ...data, operation: this.verb, action: 'upload-generate' }),
+      `${unityConfig.apiEndPoint}/log`,
+      true,
+    );
+  }
+
+  async createErrorToast() {
+    try {
+      const [alertImg, closeImg] = await Promise.all([
+        fetch(`${getUnityLibs()}/img/icons/alert.svg`).then((res) => res.text()),
+        fetch(`${getUnityLibs()}/img/icons/close.svg`).then((res) => res.text()),
+      ]);
+      const { decorateDefaultLinkAnalytics } = await import(`${getLibs()}/martech/attributes.js`);
+      this.toastCanvasAreas.forEach((canvasEl) => {
+        const mount = canvasEl.querySelector('.interactive-area') || canvasEl;
+        const alertText = createTag('div', { class: 'alert-text', role: 'alert' }, createTag('p', {}, ''));
+        const alertIcon = createTag('div', { class: 'alert-icon' });
+        alertIcon.innerHTML = alertImg;
+        alertIcon.append(alertText);
+        const alertClose = createTag('a', { class: 'alert-close', href: '#', role: 'button' });
+        alertClose.innerHTML = closeImg;
+        alertClose.append(createTag('span', { class: 'alert-close-text' }, 'Close error toast'));
+        const alertContent = createTag('div', { class: 'alert-content' });
+        alertContent.append(alertIcon, alertClose);
+        const alertToast = createTag('div', { class: 'alert-toast', tabindex: '-1' }, alertContent);
+        const errholder = createTag('div', { class: 'alert-holder' }, alertToast);
+        alertClose.addEventListener('click', (e) => {
+          this.preventDefault(e);
+          this.dismissErrorToast();
+        });
+        errholder.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' || (e.key === ' ' && e.target.closest('.alert-close'))) {
+            this.preventDefault(e);
+            this.dismissErrorToast();
+          }
+        });
+        decorateDefaultLinkAnalytics(errholder);
+        mount.append(errholder);
+      });
+      return this.toastCanvasAreas[0]?.querySelector('.alert-holder') || null;
+    } catch (e) {
+      window.lana?.log(`Message: Error creating error toast, Error: ${e}`, this.lanaOptions);
+      return null;
+    }
+  }
+
+  setMainInert(on) {
+    ['.unity-slf-main', '.fs-legal'].forEach((sel) => {
+      const node = this.root?.querySelector?.(sel);
+      if (!node) return;
+      if (on) node.setAttribute('inert', '');
+      else node.removeAttribute('inert');
+    });
+  }
+
+  showToast(options, error, errorType, focusBackEl) {
+    const shown = this.serviceHandler.showErrorToast({ errorToastEl: this.errorToastEl, ...options }, error, this.lanaOptions, errorType);
+    if (!shown) return;
+    this.setMainInert(true);
+    this.restoreFocusEl = focusBackEl || null;
+    const toast = shown.querySelector('.alert-toast');
+    setTimeout(() => toast?.focus(), 0);
+  }
+
+  dismissErrorToast() {
+    this.toastCanvasAreas.forEach((el) => {
+      el.style.pointerEvents = 'auto';
+      el.querySelector('.alert-holder')?.classList.remove('show');
+    });
+    this.setMainInert(false);
+    const target = this.restoreFocusEl;
+    this.restoreFocusEl = null;
+    target?.focus?.();
+  }
+
+  track(eventName, data = {}) {
+    sendAnalyticsEvent(new CustomEvent(eventName));
+    this.logAnalyticsinSplunk(eventName, data);
+  }
+
+  handleClientError(errorToken, slotId, fileMetaData = { slot: slotId }) {
+    this.showToast({ errorType: `.icon-${errorToken}`, errorCode: errorToken, fileMetaData }, '', 'client', this.widget?.slotEls?.[slotId]?.input);
+    this.logAnalyticsinSplunk('Upload client error|UnityWidget', { errorData: { code: errorToken }, fileMetaData });
+    this.track(slotEventName(slotId, 'error'), { errorData: { code: errorToken }, fileMetaData });
+  }
+
+  validateFiles(files, slotId) {
+    const fileMetaData = { ...fileMeta(slotId, files[0]), count: files.length };
+    const { ok, errorToken } = validateSelection(files, this.limits);
+    if (!ok) this.handleClientError(errorToken, slotId, fileMetaData);
+    return ok;
+  }
+
+  installWidgetHooks() {
+    if (!this.widget) return;
+    this.widget.validateFiles = (files, slotId) => this.validateFiles(files, slotId);
+    this.widget.onPreviewError = (slotId) => this.handleClientError('error-request', slotId);
+    if (this.limits.allowedFileTypes?.length) {
+      Object.values(this.widget.slotEls || {}).forEach(({ input }) => {
+        input?.setAttribute('accept', this.limits.allowedFileTypes.join(','));
+      });
+    }
+  }
+
+  warmUp() {
+    if (this.warmed) return;
+    this.warmed = true;
+    const run = async () => {
+      try {
+        const origin = unityConfig.apiEndPoint ? new URL(unityConfig.apiEndPoint).origin : null;
+        if (origin && !document.head.querySelector(`link[rel="preconnect"][href="${origin}"]`)) {
+          document.head.append(createTag('link', { rel: 'preconnect', href: origin, crossorigin: '' }));
+        }
+        await Promise.all([
+          import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`),
+          this.ensureTransitionScreen(),
+        ]);
+      } catch (e) {
+        window.lana?.log(`Message: Face swap warm-up failed, Error: ${e}`, this.lanaOptions);
+      }
+    };
+    if ('requestIdleCallback' in window) window.requestIdleCallback(() => run(), { timeout: 2000 });
+    else setTimeout(run, 200);
+  }
+
+  async getNetworkUtils() {
+    if (!this.networkUtils) {
+      const { default: NetworkUtils } = await import(`${getUnityLibs()}/utils/NetworkUtils.js`);
+      this.networkUtils = new NetworkUtils();
+    }
+    return this.networkUtils;
+  }
+
+  async uploadImgToUnity(storageUrl, blobData, fileType, signal) {
+    let response;
+    try {
+      response = await fetch(storageUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': fileType },
+        body: blobData,
+        ...(signal && { signal }),
+      });
+    } catch (e) {
+      if (e instanceof TypeError) {
+        const error = new Error(`Network error. URL: ${storageUrl}; Error message: ${e.message}`);
+        error.status = 0;
+        throw error;
+      }
+      throw e;
+    }
+    if (response.status !== 200) {
+      const error = new Error('Failed to upload image to Unity');
+      error.status = response.status;
+      throw error;
+    }
+  }
+
+  createUploadContext() {
+    const ctx = { assetId: null };
+    const self = this;
+    ctx.facade = {
+      get assetId() { return ctx.assetId; },
+      lanaOptions: this.lanaOptions,
+      workflowCfg: this.workflowCfg,
+      apiConfig: this.apiConfig,
+      logAnalyticsinSplunk: (...a) => self.logAnalyticsinSplunk(...a),
+      getAdditionalHeaders: () => self.getAdditionalHeaders(),
+    };
+    return ctx;
+  }
+
+  ensureTokenRefresh() {
+    this.tokenRefresh ||= this.refreshImsToken();
+    return this.tokenRefresh;
+  }
+
+  async createAsset(slotId, file, signal) {
+    const body = JSON.stringify({
+      targetProduct: this.workflowCfg.productName,
+      name: file.name,
+      size: file.size,
+      format: file.type,
+    });
+    const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders(), { body, signal });
+    const networkUtils = await this.getNetworkUtils();
+    const { response } = await networkUtils.fetchFromServiceWithRetry(this.apiConfig.endPoint.assetUpload, postOpts);
+    this.logAnalyticsinSplunk('Asset Created|UnityWidget', { assetId: response.id, fileMetaData: { slot: slotId } });
+    return response;
+  }
+
+  enqueueAssetCreate(slotId, file, signal) {
+    const run = async () => {
+      await this.ensureTokenRefresh();
+      return this.createAsset(slotId, file, signal);
+    };
+    const promise = this.assetQueue.then(run);
+    this.assetQueue = promise.catch(() => {});
+    return promise;
+  }
+
+  queueAssetCreate(slotId, file) {
+    const promise = this.enqueueAssetCreate(slotId, file).then(
+      (data) => ({ ok: true, data }),
+      (error) => {
+        this.logAnalyticsinSplunk('Asset Create Failed|UnityWidget', {
+          errorData: { code: 'error-request', subCode: `createAsset ${error?.status}`, desc: error?.message || undefined },
+          fileMetaData: { slot: slotId },
+        });
+        return { ok: false, error };
+      },
+    );
+    this.assetJobs[slotId] = { file, promise };
+  }
+
+  async takeAsset(slotId, file, signal) {
+    const job = this.assetJobs[slotId];
+    delete this.assetJobs[slotId];
+    if (job?.file !== file) return this.enqueueAssetCreate(slotId, file, signal);
+    const result = await job.promise;
+    if (!result.ok) throw result.error;
+    return result.data;
+  }
+
+  async uploadSlot(slotId, slot, signal) {
+    const ctx = this.createUploadContext();
+    const { file } = slot;
+    const { ok, errorToken } = validateSelection([file], this.limits);
+    if (!ok) {
+      const error = new Error(`Validation failed: ${errorToken}`);
+      error.errorToken = errorToken;
+      throw error;
+    }
+    const { id, href, blocksize, uploadUrls } = await this.takeAsset(slotId, file, signal);
+    ctx.assetId = id;
+    const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
+    const uploadHandler = new UploadHandler(ctx.facade, this.serviceHandler);
+    if (blocksize && Array.isArray(uploadUrls)) {
+      const { failedChunks, attemptMap } = await uploadHandler.uploadChunksToUnity(uploadUrls, file, blocksize, signal);
+      if (failedChunks?.size > 0) {
+        const error = new Error(`One or more chunks failed for asset: ${id}`);
+        error.status = 504;
+        this.logAnalyticsinSplunk('Chunked Upload Failed|UnityWidget', {
+          assetId: id,
+          failedChunks: failedChunks.size,
+          maxRetryCount: Math.max(...Array.from(attemptMap.values())),
+        });
+        throw error;
+      }
+    } else {
+      await this.uploadImgToUnity(href, file, file.type, signal);
+    }
+    await uploadHandler.scanImgForSafetyWithRetry(id, signal);
+    this.logAnalyticsinSplunk('Upload Completed|UnityWidget', { assetId: id, fileMetaData: { slot: slotId } });
+    return { slotId, assetId: id };
+  }
+
+  async ensureTransitionScreen() {
+    const shell = this.root?.querySelector?.('.interactive-area');
+    this.workflowCfg.theme = shell?.classList.contains('dark') ? 'dark' : null;
+    if (!this.transitionScreen) {
+      const { default: TransitionScreen } = await import(`${getUnityLibs()}/scripts/transition-screen.js`);
+      this.transitionScreen = new TransitionScreen(null, this.initActionListeners, this.LOADER_LIMIT, this.workflowCfg, this.desktop);
+    }
+    if (!this.transitionScreen.splashScreenEl) {
+      await this.transitionScreen.loadSplashFragment();
+    }
+  }
+
+  async hideSplash() {
+    await this.transitionScreen?.showSplashScreen();
+  }
+
+  async cancelUploadOperation() {
+    try {
+      this.abortController?.abort();
+      sendAnalyticsEvent(new CustomEvent('Cancel|UnityWidget'));
+      this.logAnalyticsinSplunk('Cancel|UnityWidget');
+      await this.ensureTransitionScreen();
+      await this.hideSplash();
+      const cancelPromise = Promise.reject(new Error(CANCEL_MESSAGE));
+      cancelPromise.catch(() => {});
+      this.promiseStack.unshift(cancelPromise);
+      this.widget?.genBtn?.focus();
+    } catch (error) {
+      await this.hideSplash();
+      window.lana?.log(`Message: Error cancelling upload operation, Error: ${error}`, this.lanaOptions);
+      throw error;
+    }
+  }
+
+  async handleGenerate() {
+    if (this.inFlight) return;
+    this.inFlight = true;
+    this.promiseStack = [];
+    try {
+      if (!this.analyticsModule) await this.initAnalytics();
+      const events = this.analyticsModule.PROMPT_BAR_EVENTS;
+      const filled = this.widget?.getFilledSlots?.() || [];
+      const sample = filled.find(([, s]) => s.source === 'gallery');
+      const styleEventName = sample ? sampleEventName(sample[1].galleryIndex) : undefined;
+      this.logAnalyticsinSplunk(events.GENERATE_CTA, {
+        hasImage: filled.length > 0,
+        fileMetaData: filled.map(([id, s]) => ({ ...fileMeta(id, s.file), source: s.source })),
+        ...(styleEventName && { styleEventName }),
+      });
+      sendAnalyticsEvent(new CustomEvent(events.GENERATE_CTA));
+      if (styleEventName) sendAnalyticsEvent(new CustomEvent(styleEventName));
+
+      const galleryEntries = filled
+        .filter(([, s]) => !s.file && s.cdnPath)
+        .map(([slotId, s]) => ({ slotId, href: cdnHref(s.cdnPath) }));
+      const uploads = filled.filter(([, s]) => s.file);
+
+      if (!uploads.length) {
+        await this.continueInApp(galleryEntries);
+        return;
+      }
+
+      this.abortController = new AbortController();
+      const { signal } = this.abortController;
+      const tokenRefresh = this.ensureTokenRefresh();
+      await this.ensureTransitionScreen();
+      await this.transitionScreen.showSplashScreen(true);
+      await tokenRefresh;
+      const { isGuest } = await isGuestUser();
+      this.isGuestUser = isGuest;
+
+      const results = await Promise.allSettled(uploads.map(([slotId, slot]) => this.uploadSlot(slotId, slot, signal)));
+      if (signal.aborted || this.promiseStack.length) return;
+
+      const failedIdx = results.findIndex((r) => r.status === 'rejected');
+      if (failedIdx >= 0) {
+        await this.handleUploadFailure(uploads[failedIdx][0], results[failedIdx].reason);
+        return;
+      }
+      await this.continueInApp([...galleryEntries, ...results.map((r) => r.value)]);
+    } catch (err) {
+      window.lana?.log(`Message: Face swap generate failed, Error: ${err}`, this.lanaOptions);
+      if (!this.abortController?.signal.aborted && err?.message !== CANCEL_MESSAGE) {
+        await this.hideSplash();
+        this.showToast({ errorType: '.icon-error-request', errorCode: 'error-request' }, err, 'server', this.widget?.genBtn);
+        this.logAnalyticsinSplunk('Upload server error|UnityWidget', { errorData: { code: 'error-request', subCode: `handleGenerate ${err?.status}`, desc: err?.message || undefined } });
+      }
+    } finally {
+      this.inFlight = false;
+      this.abortController = null;
+    }
+  }
+
+  async refreshImsToken() {
+    let timer;
+    try {
+      await Promise.race([
+        window.adobeIMS?.refreshToken?.(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`Timed out after ${TOKEN_REFRESH_TIMEOUT_MS}ms`)), TOKEN_REFRESH_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (e) {
+      this.logAnalyticsinSplunk('Token Refresh Failed|UnityWidget', { errorData: { code: 'token-refresh', desc: e?.message || String(e) } });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async handleUploadFailure(slotId, err) {
+    await this.hideSplash();
+    const errorToken = err?.errorToken || 'error-request';
+    const fileMetaData = { slot: slotId };
+    this.showToast({ errorType: `.icon-${errorToken}`, errorCode: errorToken, fileMetaData }, err, 'server', this.widget?.genBtn);
+    this.logAnalyticsinSplunk('Upload server error|UnityWidget', {
+      errorData: { code: errorToken, subCode: `uploadSlot ${err?.status}`, desc: err?.message || undefined },
+      fileMetaData,
+    });
+  }
+
+  async continueInApp(entries) {
+    try {
+      const { getCgenQueryParams } = await import(`${getUnityLibs()}/utils/cgen-utils.js`);
+      const assetFields = buildFaceSwapAssetPayload(entries);
+      const hasImage = !!assetFields.assets;
+      const connectorBody = {
+        targetProduct: this.workflowCfg.productName,
+        additionalQueryParams: getCgenQueryParams(this.unityEl),
+        ...assetFields,
+        payload: {
+          workflow: this.workflowCfg.supportedFeatures.values().next().value,
+          action: 'asset-upload',
+          locale: getLocale(),
+          verb: this.verb,
+        },
+      };
+      const postOpts = await getApiCallOptions('POST', unityConfig.apiKey, this.getAdditionalHeaders(), { body: JSON.stringify(connectorBody) });
+      const networkUtils = await this.getNetworkUtils();
+      const { response } = await networkUtils.fetchFromServiceWithRetry(this.apiConfig.connectorApiEndPoint, postOpts);
+      const url = response?.url;
+      if (this.promiseStack.length > 0) return;
+      if (!url) {
+        const error = new Error('Connector response missing url');
+        error.status = 200;
+        throw error;
+      }
+      this.logAnalyticsinSplunk('Generate Complete|UnityWidget', { hasImage });
+      if (this.transitionScreen?.splashScreenEl) {
+        this.transitionScreen.LOADER_LIMIT = 100;
+        this.transitionScreen.updateProgressBar(this.transitionScreen.splashScreenEl, 100);
+      }
+      window.location.href = url;
+    } catch (err) {
+      if (err.message === CANCEL_MESSAGE) return;
+      await this.hideSplash();
+      this.showToast({ errorType: '.icon-error-request', errorCode: 'error-request' }, err, 'server', this.widget?.genBtn);
+      this.logAnalyticsinSplunk('Upload server error|UnityWidget', { errorData: { code: 'error-request', subCode: `continueInApp ${err.status}`, desc: err.message || undefined } });
+    }
+  }
+
+  async handlePreloads() {
+    if (this.workflowCfg.targetCfg?.showSplashScreen) {
+      await priorityLoad([`${getUnityLibs()}/core/styles/splash-screen.css`]);
+    }
+  }
+
+  isStringActionMap(actMap) {
+    return actMap && typeof actMap === 'object' && Object.keys(actMap).length > 0
+      && Object.values(actMap).every((v) => typeof v === 'string');
+  }
+
+  async executeActionMaps(value) {
+    if (value === 'interrupt') await this.cancelUploadOperation();
+  }
+
+  async bindStringActionMap(b, actMap) {
+    Object.entries(actMap).forEach(([selector, action]) => {
+      b.querySelectorAll(selector).forEach((el) => {
+        el.addEventListener('click', async (e) => {
+          if (action !== 'redirect') e.preventDefault();
+          await this.executeActionMaps(action);
+        });
+      });
+    });
+  }
+
+  setupServiceHandler() {
+    this.serviceHandler = new ServiceHandler(this.toastCanvasAreas, this.unityEl);
+  }
+
+  async initActionListeners(b = this.block, actMap = this.actionMap) {
+    if (this.isStringActionMap(actMap)) {
+      await this.bindStringActionMap(b, actMap);
+      return;
+    }
+    this.setupServiceHandler();
+    this.installWidgetHooks();
+    await Promise.all([this.initAnalytics(), this.handlePreloads()]);
+    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+    const scope = this.widgetWrap || b;
+    Object.entries(actMap || {}).forEach(([selector, actionsList]) => {
+      const primary = (Array.isArray(actionsList) ? actionsList : [actionsList])[0]?.actionType;
+      scope?.querySelectorAll(selector).forEach((el) => {
+        if (el.dataset.fsBound) return;
+        el.dataset.fsBound = 'true';
+        el.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (primary === 'generate') await this.handleGenerate();
+        });
+      });
+    });
+    this.widgetWrap?.addEventListener('fs-slot-selected', (e) => {
+      this.warmUp();
+      const { slotId, file, source, galleryIndex } = e.detail || {};
+      if (file) this.queueAssetCreate(slotId, file);
+      else delete this.assetJobs[slotId];
+      if (source === 'gallery') this.track(sampleEventName(galleryIndex), { fileMetaData: { slot: slotId, source } });
+      else this.track(slotEventName(slotId, 'started'), { fileMetaData: { ...fileMeta(slotId, file), source } });
+    });
+    this.widgetWrap?.addEventListener('fs-slot-cleared', (e) => {
+      delete this.assetJobs[e.detail?.slotId];
+    });
+    this.widgetWrap?.addEventListener('fs-reset', () => {
+      this.assetJobs = {};
+    });
+  }
+
+  preventDefault(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
