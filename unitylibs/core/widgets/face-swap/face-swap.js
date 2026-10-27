@@ -94,6 +94,18 @@ function galleryLabel(li) {
 }
 
 const CDN_PATH_RE = /^\/(?!\/)\S+$/;
+const CDN_HOSTS = ['cdn-unity.adobe.com', 'cdn-unity.stage.adobe.com'];
+
+function toCdnPath(raw) {
+  if (CDN_PATH_RE.test(raw)) return raw;
+  if (!raw.startsWith('https://')) return null;
+  try {
+    const { hostname, pathname } = new URL(raw);
+    return CDN_HOSTS.includes(hostname) && pathname !== '/' ? pathname : null;
+  } catch {
+    return null;
+  }
+}
 
 export function galleryCdnPath(li) {
   const nodes = [...li.childNodes];
@@ -102,7 +114,7 @@ export function galleryCdnPath(li) {
   const tail = nodes.slice(brIdx + 1);
   const link = tail.map((n) => (n.nodeName === 'A' ? n : n.querySelector?.('a'))).find(Boolean);
   const raw = (link?.getAttribute('href') || tail.map((n) => n.textContent).join('')).trim().split(/\s+/)[0];
-  return CDN_PATH_RE.test(raw || '') ? raw : null;
+  return toCdnPath(raw || '');
 }
 
 export function parseFaceSwapAuthoring(el) {
@@ -462,7 +474,7 @@ export default class FaceSwapWidget extends UnityWidget {
       });
     };
     document.addEventListener('pointerdown', this.onOutsideTap);
-    const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only', 'aria-hidden': 'true' });
+    const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only', 'aria-hidden': 'true', inert: '' });
     while (el.firstChild) holder.append(el.firstChild);
     el.append(holder);
     el.classList.add('unity-face-swap-host');
