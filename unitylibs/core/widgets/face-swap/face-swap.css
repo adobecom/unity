@@ -38,6 +38,7 @@
   max-width: 1036px;
   margin: 0 auto;
   padding: 8px;
+  border: 1px solid var(--fs-card-border, #323232);
   border-radius: 20px;
   background: var(--fs-card-bg, #222);
 }
@@ -624,7 +625,6 @@
 
   .unity-face-swap > .interactive-area {
     padding: 15px;
-    border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
     background: var(--fs-card-bg, #1b1b1b);
   }
 
@@ -675,7 +675,6 @@
 
   .unity-face-swap > .interactive-area {
     padding: 8px;
-    border: 1px solid var(--fs-card-border, rgb(255 255 255 / 10%));
     background: var(--fs-card-bg, #1b1b1b);
   }
 
