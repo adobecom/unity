@@ -107,26 +107,35 @@ function toCdnPath(raw) {
   }
 }
 
-export function galleryCdnPath(li) {
+function galleryRawPath(li) {
   const nodes = [...li.childNodes];
   const brIdx = nodes.findIndex((n) => n.nodeName === 'BR');
-  if (brIdx < 0) return null;
+  if (brIdx < 0) return '';
   const tail = nodes.slice(brIdx + 1);
   const link = tail.map((n) => (n.nodeName === 'A' ? n : n.querySelector?.('a'))).find(Boolean);
-  const raw = (link?.getAttribute('href') || tail.map((n) => n.textContent).join('')).trim().split(/\s+/)[0];
-  return toCdnPath(raw || '');
+  return (link?.getAttribute('href') || tail.map((n) => n.textContent).join('')).trim().split(/\s+/)[0] || '';
+}
+
+export function galleryCdnPath(li) {
+  return toCdnPath(galleryRawPath(li));
 }
 
 export function parseFaceSwapAuthoring(el) {
   const rows = directRows(el);
   const galleryRow = rows.find((r) => r.querySelector('ul > li picture')
     && !r.querySelector('[class*="icon-"]'));
-  const gallery = galleryRow
+  const galleryAll = galleryRow
     ? [...galleryRow.querySelectorAll('ul > li')]
       .filter((li) => li.querySelector('picture'))
-      .map((li) => ({ picture: li.querySelector('picture'), label: galleryLabel(li), cdnPath: galleryCdnPath(li) }))
-      .filter(({ cdnPath }) => cdnPath)
+      .map((li) => ({
+        picture: li.querySelector('picture'),
+        label: galleryLabel(li),
+        cdnPath: galleryCdnPath(li),
+        raw: galleryRawPath(li),
+      }))
     : [];
+  const gallery = galleryAll.filter(({ cdnPath }) => cdnPath).map(({ raw, ...item }) => item);
+  const galleryDropped = galleryAll.filter(({ cdnPath }) => !cdnPath).map(({ raw }) => raw.slice(0, 200));
   const mediaRow = rows.findLast((r) => r !== galleryRow
     && !r.querySelector('ul')
     && r.children.length >= 2
@@ -143,6 +152,7 @@ export function parseFaceSwapAuthoring(el) {
     model: iconAndText(el, 'model-name'),
     slots,
     gallery,
+    galleryDropped,
     mediaRow,
   };
 }
@@ -214,8 +224,21 @@ export default class FaceSwapWidget extends UnityWidget {
 
   async initWidget() {
     this.parsed = parseFaceSwapAuthoring(this.el);
+    this.logDroppedGallery();
     this.mount();
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  logDroppedGallery() {
+    const { gallery, galleryDropped } = this.parsed;
+    if (!galleryDropped.length) return;
+    const { targetCfg = {}, productName } = this.workflowCfg;
+    const productTag = targetCfg[`productTag-${productName?.toLowerCase()}`] || 'FF';
+    const total = gallery.length + galleryDropped.length;
+    window.lana?.log(
+      `Message: Face swap gallery items dropped (invalid CDN URL), Count: ${galleryDropped.length}/${total}, Values: ${galleryDropped.join(', ')}`,
+      { sampleRate: 1, tags: `Unity-${productTag}-FaceSwap`, severity: 'warning' },
+    );
   }
 
   emit(name, detail = {}) {

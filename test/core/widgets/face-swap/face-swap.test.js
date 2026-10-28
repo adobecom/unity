@@ -60,6 +60,7 @@ describe('Face Swap widget', () => {
         '/cc-shared/assets/face-swap/three.jpg',
       ]);
       expect(parsed.gallery[0].label).to.equal('Portrait');
+      expect(parsed.galleryDropped).to.deep.equal(['https://example.com/absolute.jpg']);
       expect(parsed.mediaRow.children).to.have.length(3);
     });
 
@@ -102,6 +103,24 @@ describe('Face Swap widget', () => {
   });
 
   describe('mount', () => {
+    it('logs dropped gallery items to lana once', async () => {
+      window.lana = { log: sinon.stub() };
+      await mountWidget();
+      expect(window.lana.log.calledOnce).to.be.true;
+      const [msg, opts] = window.lana.log.firstCall.args;
+      expect(msg).to.include('Count: 1/4');
+      expect(msg).to.include('https://example.com/absolute.jpg');
+      expect(opts).to.deep.equal({ sampleRate: 1, tags: 'Unity-FF-FaceSwap', severity: 'warning' });
+      delete window.lana;
+    });
+
+    it('does not log when every gallery item is valid', async () => {
+      document.querySelector('img[alt="skip"]').closest('li').remove();
+      window.lana = { log: sinon.stub() };
+      await mountWidget();
+      expect(window.lana.log.called).to.be.false;
+      delete window.lana;
+    });
     it('inserts the root before the host and hides authored markup', async () => {
       const { el, widget, actionMap } = await mountWidget();
       expect(actionMap).to.equal(cfg.targetCfg.actionMap);
