@@ -295,12 +295,12 @@ describe('Inline action editor workflow', () => {
   });
 
   [
-    { tab: 'custom', pill: null, mode: 'freeform' },
-    { tab: 'standard', pill: { ratioText: '4:3' }, mode: 'standard', aspectRatio: '4:3' },
-    { tab: 'social', pill: { platform: 'Instagram', name: 'Story', width: '1080', height: '1920' }, mode: 'social' },
-    { tab: 'social', pill: { platform: 'Facebook', name: 'Post' }, mode: 'social' },
-    { tab: 'custom', pill: { ratioText: '4:3' }, mode: 'freeform' },
-    { tab: 'custom', pill: {}, mode: 'freeform' },
+    { tab: 'custom', pill: null, mode: 'Freeform' },
+    { tab: 'standard', pill: { ratioText: '4:3' }, mode: 'Standard', aspectRatio: '4:3' },
+    { tab: 'social', pill: { platform: 'Instagram', name: 'Story', width: '1080', height: '1920' }, mode: 'Social' },
+    { tab: 'social', pill: { platform: 'Facebook', name: 'Post' }, mode: 'Social' },
+    { tab: 'custom', pill: { ratioText: '4:3' }, mode: 'Freeform' },
+    { tab: 'custom', pill: {}, mode: 'Freeform' },
   ].forEach(({ tab, pill, mode, aspectRatio }) => {
     it(`builds resize operations for ${tab}/${JSON.stringify(pill)}`, async () => {
       binder.operation = 'resize';
@@ -311,8 +311,8 @@ describe('Inline action editor workflow', () => {
       await runEditInFirefly(binder);
       const fields = binder.buildConnectorPayload.firstCall.args[0];
       const expected = { type: 'resize', resizeMode: mode, width: 50, height: 100, displayUnit: 'in', quality: 80 };
-      if (mode === 'social') {
-        expected.socialPlatform = pill.platform;
+      if (mode === 'Social') {
+        expected.socialApp = pill.platform;
         expected.socialPostType = pill.name;
         if (pill.width) Object.assign(expected, { width: 1080, height: 1920 });
       }
@@ -332,7 +332,7 @@ describe('Inline action editor workflow', () => {
     await Promise.all([runEditInFirefly(binder), runEditInFirefly(binder)]);
     expect(binder.uploadAsset.calledOnceWithExactly(file)).to.equal(true);
     expect(binder.originalUploadPromise).to.equal(null);
-    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.deep.equal({ type: 'resize', resizeMode: 'freeform', width: 50, height: 100, displayUnit: 'px' });
+    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.deep.equal({ type: 'resize', resizeMode: 'Freeform', width: 50, height: 100, displayUnit: 'px' });
     await runEditInFirefly(binder);
     expect(binder.uploadAsset.callCount).to.equal(1);
   });

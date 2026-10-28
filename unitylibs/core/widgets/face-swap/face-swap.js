@@ -23,6 +23,8 @@ const labelText = (node) => {
   });
   return normalize(clone.textContent);
 };
+const trackLabel = (name) => `${name}|UnityWidget`;
+const GENERATE_CTA_LABEL = 'Click on Generate CTA|UnityWidget';
 const svgUse = (id) => `<svg aria-hidden="true" focusable="false"><use xlink:href="#${id}"></use></svg>`;
 const emptySlot = () => ({
   file: null,
@@ -77,6 +79,10 @@ function extractLegal(el) {
   while (li.firstChild) legal.append(li.firstChild);
   li.remove();
   if (!legal.textContent.trim()) return null;
+  legal.querySelectorAll('a').forEach((a, idx) => {
+    const text = a.textContent.replace(/[^\u00C0-\u1FFF\u2C00-\uD7FF\w]+/g, ' ').trim().slice(0, 20);
+    a.setAttribute('daa-ll', `${text}-${idx + 1}--`);
+  });
   return legal;
 }
 
@@ -88,27 +94,48 @@ function galleryLabel(li) {
 }
 
 const CDN_PATH_RE = /^\/(?!\/)\S+$/;
+const CDN_HOSTS = ['cdn-unity.adobe.com', 'cdn-unity.stage.adobe.com'];
 
-export function galleryCdnPath(li) {
+function toCdnPath(raw) {
+  if (CDN_PATH_RE.test(raw)) return raw;
+  if (!raw.startsWith('https://')) return null;
+  try {
+    const { hostname, pathname } = new URL(raw);
+    return CDN_HOSTS.includes(hostname) && pathname !== '/' ? pathname : null;
+  } catch {
+    return null;
+  }
+}
+
+function galleryRawPath(li) {
   const nodes = [...li.childNodes];
   const brIdx = nodes.findIndex((n) => n.nodeName === 'BR');
-  if (brIdx < 0) return null;
+  if (brIdx < 0) return '';
   const tail = nodes.slice(brIdx + 1);
   const link = tail.map((n) => (n.nodeName === 'A' ? n : n.querySelector?.('a'))).find(Boolean);
-  const raw = (link?.getAttribute('href') || tail.map((n) => n.textContent).join('')).trim().split(/\s+/)[0];
-  return CDN_PATH_RE.test(raw || '') ? raw : null;
+  return (link?.getAttribute('href') || tail.map((n) => n.textContent).join('')).trim().split(/\s+/)[0] || '';
+}
+
+export function galleryCdnPath(li) {
+  return toCdnPath(galleryRawPath(li));
 }
 
 export function parseFaceSwapAuthoring(el) {
   const rows = directRows(el);
   const galleryRow = rows.find((r) => r.querySelector('ul > li picture')
     && !r.querySelector('[class*="icon-"]'));
-  const gallery = galleryRow
+  const galleryAll = galleryRow
     ? [...galleryRow.querySelectorAll('ul > li')]
       .filter((li) => li.querySelector('picture'))
-      .map((li) => ({ picture: li.querySelector('picture'), label: galleryLabel(li), cdnPath: galleryCdnPath(li) }))
-      .filter(({ cdnPath }) => cdnPath)
+      .map((li) => ({
+        picture: li.querySelector('picture'),
+        label: galleryLabel(li),
+        cdnPath: galleryCdnPath(li),
+        raw: galleryRawPath(li),
+      }))
     : [];
+  const gallery = galleryAll.filter(({ cdnPath }) => cdnPath).map(({ raw, ...item }) => item);
+  const galleryDropped = galleryAll.filter(({ cdnPath }) => !cdnPath).map(({ raw }) => raw.slice(0, 200));
   const mediaRow = rows.findLast((r) => r !== galleryRow
     && !r.querySelector('ul')
     && r.children.length >= 2
@@ -125,6 +152,7 @@ export function parseFaceSwapAuthoring(el) {
     model: iconAndText(el, 'model-name'),
     slots,
     gallery,
+    galleryDropped,
     mediaRow,
   };
 }
@@ -196,8 +224,21 @@ export default class FaceSwapWidget extends UnityWidget {
 
   async initWidget() {
     this.parsed = parseFaceSwapAuthoring(this.el);
+    this.logDroppedGallery();
     this.mount();
     return this.workflowCfg.targetCfg.actionMap;
+  }
+
+  logDroppedGallery() {
+    const { gallery, galleryDropped } = this.parsed;
+    if (!galleryDropped.length) return;
+    const { targetCfg = {}, productName } = this.workflowCfg;
+    const productTag = targetCfg[`productTag-${productName?.toLowerCase()}`] || 'FF';
+    const total = gallery.length + galleryDropped.length;
+    window.lana?.log(
+      `Message: Face swap gallery items dropped (invalid CDN URL), Count: ${galleryDropped.length}/${total}, Values: ${galleryDropped.join(', ')}`,
+      { sampleRate: 1, tags: `Unity-${productTag}-FaceSwap`, severity: 'warning' },
+    );
   }
 
   emit(name, detail = {}) {
@@ -228,7 +269,7 @@ export default class FaceSwapWidget extends UnityWidget {
     const { title, reset } = this.parsed;
     const header = createTag('div', { class: 'fs-header' });
     header.append(createTag('p', { class: 'fs-title' }, title));
-    const resetBtn = createTag('button', { type: 'button', class: 'fs-reset' });
+    const resetBtn = createTag('button', { type: 'button', class: 'fs-reset', 'daa-ll': trackLabel('Reset') });
     resetBtn.innerHTML = svgUse('unity-refresh-icon');
     resetBtn.append(createTag('span', { class: 'fs-reset-text' }, reset));
     resetBtn.addEventListener('click', () => this.reset());
@@ -240,12 +281,14 @@ export default class FaceSwapWidget extends UnityWidget {
   buildSlot(slotId) {
     const { title, help } = this.parsed.slots[slotId];
     const inputId = `fs-input-${slotId}-${this.uid}`;
+    const slotNum = SLOT_IDS.indexOf(slotId) + 1;
     const slot = createTag('div', { class: 'fs-slot', 'data-slot': slotId, 'data-state': 'empty' });
     const input = createTag('input', {
       type: 'file',
       id: inputId,
       class: 'fs-input',
       accept: 'image/*',
+      'daa-ll': trackLabel(`Upload ${slotNum}`),
     });
     const label = createTag('label', { class: 'fs-drop', for: inputId });
     const empty = createTag('span', { class: 'fs-drop-empty' });
@@ -264,6 +307,7 @@ export default class FaceSwapWidget extends UnityWidget {
       type: 'button',
       class: 'fs-delete',
       'aria-label': `Remove ${title}`,
+      'daa-ll': trackLabel(`Remove ${slotNum}`),
       hidden: '',
     });
     del.innerHTML = svgUse('unity-trash-icon');
@@ -330,7 +374,7 @@ export default class FaceSwapWidget extends UnityWidget {
       footer.append(modelEl);
     }
     const actWrap = createTag('div', { class: 'act-wrap' });
-    const genBtn = createTag('button', { type: 'button', class: 'unity-act-btn gen-btn' });
+    const genBtn = createTag('button', { type: 'button', class: 'unity-act-btn gen-btn', 'daa-ll': GENERATE_CTA_LABEL });
     if (generate.src) {
       const ico = createTag('span', { class: 'btn-ico' });
       ico.append(createTag('img', { src: generate.src, alt: '', width: 22, height: 22 }));
@@ -360,6 +404,7 @@ export default class FaceSwapWidget extends UnityWidget {
         class: 'fs-gallery-item',
         'aria-pressed': 'false',
         'aria-label': label || `Gallery image ${idx + 1} of ${gallery.length}`,
+        'daa-ll': trackLabel(`Sample ${idx + 1}`),
       });
       const img = picture.querySelector('img');
       if (img) {
@@ -409,6 +454,7 @@ export default class FaceSwapWidget extends UnityWidget {
     const media = cell?.querySelector(HERO_MEDIA_SELECTOR);
     if (!media) return preview;
     preview.append(media);
+    preview.querySelector('.pause-play-wrapper, .play-pause-button')?.setAttribute('daa-ll', trackLabel('Pause motion'));
     makeHeroMediaDecorative(preview);
     this.videoObserver = wirePreviewVideo(preview);
     return preview;
@@ -451,7 +497,7 @@ export default class FaceSwapWidget extends UnityWidget {
       });
     };
     document.addEventListener('pointerdown', this.onOutsideTap);
-    const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only', 'aria-hidden': 'true' });
+    const holder = createTag('div', { class: 'unity-slf-config-holder unity-slf-sr-only', 'aria-hidden': 'true', inert: '' });
     while (el.firstChild) holder.append(el.firstChild);
     el.append(holder);
     el.classList.add('unity-face-swap-host');
