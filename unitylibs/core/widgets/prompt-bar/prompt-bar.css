@@ -2511,8 +2511,8 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .legal-disclaimer {
   position: relative;
   z-index: 1;
-  width: 371px;
-  height: 32px;
+  width: 260px;
+  height: auto;
   margin: var(--s2a-spacing-md) auto 0;
   font-family: var(--s2a-font-family-caption), "Adobe Clean", adobe-clean, sans-serif;
   font-weight: var(--s2a-font-weight-caption);
@@ -2532,25 +2532,4 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget:has(.models-container.show-menu) .legal-disclaimer {
   position: static;
   z-index: auto;
-}
-
-@media (min-width: 768px) and (max-width: 1279px) {
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .legal-disclaimer {
-    width: 263.82px;
-    height: 23px;
-    font-size: 8.53px;
-    line-height: 11.38px;
-    letter-spacing: 0;
-  }
-}
-
-@media (max-width: 767px) {
-  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .legal-disclaimer {
-    width: 297px;
-    height: 57px;
-    font-family: var(--s2a-font-family-body), "Adobe Clean", adobe-clean, sans-serif;
-    font-size: 14.06px;
-    line-height: 18.75px;
-    letter-spacing: 0;
-  }
 }
