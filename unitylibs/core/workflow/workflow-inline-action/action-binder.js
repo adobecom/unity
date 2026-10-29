@@ -219,7 +219,8 @@ export default class ActionBinder {
     if (el?.classList?.contains('ia-edit-in-firefly')) {
       this.trackEvent(INLINE_ACTION_EVENTS.EDIT_IN_FIREFLY, redirectMeta);
     } else if (el?.classList?.contains('ia-nba-card')) {
-      this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(el.dataset.nba), { ...redirectMeta, verb: el.dataset.nba });
+      const label = el.querySelector('.ia-nba-label')?.textContent?.trim() || el.dataset.nba;
+      this.trackEvent(INLINE_ACTION_EVENTS.nbaClick(label), { ...redirectMeta, verb: el.dataset.nba });
     }
   }
 
@@ -410,7 +411,6 @@ export default class ActionBinder {
       size: file.size,
       format: file.type,
     };
-    this.trackEvent('Uploading Started|UnityWidget');
     this.uploadAbortController = new AbortController();
     const { signal } = this.uploadAbortController;
     let callType = 'asset';
@@ -506,7 +506,6 @@ export default class ActionBinder {
   resolveConnectorVerb(el, isDownload = false, downloadsLocally = false) {
     if (isDownload) {
       if (this.operation === 'crop') return downloadsLocally ? 'cropImageFirstDownload' : 'cropImageDownload';
-      if (this.operation === 'resize') return downloadsLocally ? 'resizeImageFirstDownload' : 'resizeImageDownload';
       return downloadsLocally ? 'aiPhotoEditor' : 'download';
     }
     if (el?.classList?.contains('ia-edit-in-firefly')) return 'aiPhotoEditor';
@@ -548,7 +547,7 @@ export default class ActionBinder {
         error.status = res?.status;
         throw error;
       }
-      const trackSuccessPromise = Promise.resolve(this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId));
+      const trackSuccessPromise = this.trackConnectorSuccess(cOpts.payload?.verb, cOpts.assetId);
       if (openInSameTab) {
         await trackSuccessPromise.catch(() => {});
         if (useSplashProgress && this.transitionScreen?.splashScreenEl) {
@@ -652,15 +651,11 @@ export default class ActionBinder {
         connectorAssetId = this.resultAssetId;
       }
       const isCropSignedIn = !performOperation && this.operation === 'crop';
-      const isResizeSignedIn = !performOperation && this.operation === 'resize';
-      let signedInVerb = 'aiPhotoEditor';
-      if (isCropSignedIn) signedInVerb = 'cropImage';
-      if (isResizeSignedIn) signedInVerb = 'resizeImage';
       await this.callConnector(await this.buildConnectorPayload({
-        verb: signedInVerb,
+        verb: isCropSignedIn ? 'cropImage' : 'aiPhotoEditor',
         connectorAssetId,
         fileType: this.filesData.type,
-        includeWidgetType: !isCropSignedIn && !isResizeSignedIn,
+        includeWidgetType: !isCropSignedIn,
       }), { openInSameTab: true, useSplashProgress: true });
     } catch (e) {
       await this.transitionScreen?.showSplashScreen(false);
@@ -710,6 +705,7 @@ export default class ActionBinder {
     this.filesData = { count: 1, size: correctedFile.size, type: correctedFile.type, name: correctedFile.name };
     const { isGuest } = await isGuestUser();
     this.isGuestUser = isGuest;
+    this.trackEvent('Uploading Started|UnityWidget');
     if (['crop', 'resize'].includes(this.operation)) {
       if (isGuest === false) {
         await this.signedInFlow(correctedFile, { performOperation: false });
@@ -744,7 +740,7 @@ export default class ActionBinder {
     const openInSameTab = !isDesktop();
     const downloadsLocally = isDownload && userCount < 1;
     const verb = this.resolveConnectorVerb(el, isDownload, downloadsLocally);
-    const includeWidgetType = !(isDownload && (this.operation === 'crop' || this.operation === 'resize'));
+    const includeWidgetType = !(isDownload && this.operation === 'crop');
     const connectorPayload = await this.buildConnectorPayload({
       defaultPrompt: el?.dataset?.defaultPrompt,
       verb,
@@ -848,13 +844,12 @@ export default class ActionBinder {
         if (e.target.closest('.upload-action-container')) return;
         this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
       });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer?.files?.length) {
+          this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
+        }
+      });
     });
-    b.querySelector('.interactive-area')?.addEventListener('drop', (e) => {
-      if (!this.isInitialState() && !this.isCompleteState()) return;
-      if (e.dataTransfer?.files?.length) {
-        this.trackEvent(INLINE_ACTION_EVENTS.DRAG_AND_DROP, { fileMetaData: this.filesData });
-      }
-    }, true);
   }
 
   isInitialState() {

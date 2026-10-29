@@ -237,7 +237,7 @@ describe('Inline Action workflow', () => {
     expect(trackedEvents.filter((name) => name === 'Click Drag and drop|UnityWidget')).to.have.length(0);
     expect(trackedEvents).to.include('Download|UnityWidget');
     expect(trackedEvents).to.include('Edit in Firefly|UnityWidget');
-    expect(trackedEvents).to.include('upscale - Do more with|UnityWidget');
+    expect(trackedEvents).to.include('Upscale - Do more with|UnityWidget');
     delete window._satellite;
   });
 
