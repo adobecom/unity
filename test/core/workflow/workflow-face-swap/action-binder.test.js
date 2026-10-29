@@ -379,6 +379,7 @@ describe('Face Swap action binder', () => {
 
     it('logs to Splunk, not lana, and continues when the refresh fails', async () => {
       window.adobeIMS.refreshToken = sinon.stub().rejects(new Error('invalid_credentials'));
+      window.lana.log.resetHistory();
       await binder.refreshImsToken();
       expect(splunk.calledOnceWith('Token Refresh Failed|UnityWidget', { errorData: { code: 'token-refresh', desc: 'invalid_credentials' } })).to.be.true;
       expect(window.lana.log.called).to.be.false;

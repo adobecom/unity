@@ -1055,7 +1055,7 @@
 
 .unity-prompt-bar-style.unity-enabled .interactive-area .verb-list .verb-link {
   color: inherit;
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 10px;
   padding: 10px;
