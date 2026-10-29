@@ -44,8 +44,8 @@ function aspectRatioValue(row) {
   return null;
 }
 
-function composeAspectLabel(row) {
-  const name = row.name || row.group || '';
+function composeAspectLabel(row, localized = false) {
+  const name = (localized && row.nameLoc) || row.name || row.group || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
   if (row.ratio) return `${name} ${row.ratio}`.trim();
   return name;
@@ -79,7 +79,9 @@ function groupResizeRows(rows) {
 }
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
-const DPI = 300;
+const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
+const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg';
+const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
 const pxToUnit = (px, unit) => {
@@ -314,11 +316,15 @@ function buildAspectPill(row, isActive = false) {
     'data-label': label,
   };
   if (row.ratio) attrs['data-ratio-text'] = row.ratio;
+  if (row.platform) {
+    attrs['data-platform'] = row.platform;
+    attrs['data-name'] = row.name || '';
+  }
   if (row.width && row.height) {
     attrs['data-width'] = row.width;
     attrs['data-height'] = row.height;
   }
-  return buildIconButton('button', attrs, row.icon, label);
+  return buildIconButton('button', attrs, row.icon, composeAspectLabel(row, true));
 }
 
 function buildCtaRow(isCrop, parsedData) {
@@ -343,6 +349,7 @@ function buildCropAspectSection(parsedData) {
     const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
     moreRows.forEach((r) => {
       const label = composeAspectLabel(r);
+      const displayLabel = composeAspectLabel(r, true);
       const ratioVal = aspectRatioValue(r);
       const opensFirefly = ratioVal === null;
       moreMenu.append(buildIconButton('button', {
@@ -350,10 +357,10 @@ function buildCropAspectSection(parsedData) {
         class: `ia-more-opt${opensFirefly ? ' ia-editor-open-in-firefly' : ''}`,
         'data-ratio': ratioVal ?? '',
         'data-label': label,
-
+        'data-display-label': displayLabel,
         ...(r.icon && { 'data-icon': r.icon }),
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
-      }, r.icon, label));
+      }, r.icon, displayLabel));
     });
     moreMenu.prepend(buildDropdownCloseButton());
     const moreTrigger = buildIconButton('button', {
@@ -406,9 +413,12 @@ function buildUnitPicker() {
 function buildCustomDetail(parsedData) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'custom' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
+  const lockBtn = createTag('button', {
+    type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true',
+  }, createTag('img', { src: LOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
   fields.append(
     buildDimensionField(parsedData.widthLabel || 'Width', 'ia-width-input'),
-    createTag('button', { type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true' }, '🔒'),
+    lockBtn,
     buildDimensionField(parsedData.heightLabel || 'Height', 'ia-height-input'),
     buildUnitPicker(),
   );
@@ -419,7 +429,11 @@ function buildCustomDetail(parsedData) {
 function buildStandardDetail(standardRows) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'standard' });
   const grid = createTag('div', { class: 'ia-aspect-row' });
-  standardRows.forEach((r) => grid.append(buildAspectPill(r)));
+  standardRows.forEach((r) => {
+    const pill = buildAspectPill(r);
+    pill.dataset.name = r.name || '';
+    grid.append(pill);
+  });
   detail.append(grid);
   return detail;
 }
@@ -508,13 +522,6 @@ export function buildEditorRightPanel(parsedData) {
     parsedData.resetIconHref,
     parsedData.resetLabel || 'Reset',
   ));
-  if (!isCrop) {
-    actions.append(createTag('button', {
-      type: 'button',
-      class: 'ia-editor-quality',
-      'aria-pressed': 'false',
-    }, 'Quality'));
-  }
   actions.append(buildIconButton(
     'button',
     {
@@ -599,12 +606,13 @@ export class EditorEngine {
     this.sizeReadout = rightPanelEl.querySelector('.ia-size-readout');
     this.originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
     this.newSizeLabel = parsedData.newSizeLabel || 'New size';
-    this.originalSize = 0;
+    this.currentImageSize = 0;
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
     this.hasInteracted = false;
     this.locked = true;
     this.resizeTab = 'custom';
+    this.selectedPill = null;
     this.rect = {x: 0, y: 0, w: 100, h: 100};
     this.naturalW = 0;
     this.naturalH = 0;
@@ -619,6 +627,7 @@ export class EditorEngine {
     this.panX = 0;
     this.panY = 0;
     this.quality = 100;
+    this.outputType = 'image/jpeg';
     this.idleTimer = null;
     this.bindEvents();
     this.setupResponsiveHeader();
@@ -659,15 +668,18 @@ export class EditorEngine {
     return [width, height];
   }
 
-  async setImage(url, originalSize = 0, isOriginalUpload = false) {
-    this.originalSize = originalSize;
+  async setImage(url, imageSize = 0, isOriginalUpload = false) {
+    this.currentImageSize = imageSize;
     this.hasInteracted = false;
     if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
     this.qualityPreviewUrl = null;
     this.qualityPreviewActive = false;
     this.updateQualityBtnState();
     this.originalUrl = url;
-    if (isOriginalUpload) this.originalImageUrl = url;
+    if (isOriginalUpload) {
+      this.originalImageUrl = url;
+      this.uploadedImageSize = imageSize;
+    }
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
@@ -755,8 +767,27 @@ export class EditorEngine {
       canvas.width = width;
       canvas.height = height;
       canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, width, height);
-      canvas.toBlob((blob) => resolve(blob?.size ?? null), 'image/jpeg', this.quality / 100);
+      canvas.toBlob((blob) => resolve(blob?.size ?? null), this.outputType, this.encodeQuality());
     });
+  }
+
+  setOutputType(type) {
+    this.outputType = type === 'image/jpg' ? 'image/jpeg' : type;
+    const showQuality = this.outputType === 'image/jpeg';
+    this.qualityBtn?.classList.toggle('hide', !showQuality);
+    this.toggleBtns
+      .filter((btn) => btn.dataset.mode === 'quality')
+      .forEach((btn) => btn.classList.toggle('hide', !showQuality));
+    if (!showQuality) {
+      this.quality = 100;
+      this.revertQualityPreview();
+    }
+    this.defaultMode = this.toggleBtns.find((btn) => !btn.classList.contains('hide'))?.dataset.mode || null;
+    this.setMode(this.defaultMode);
+  }
+
+  encodeQuality() {
+    return this.outputType === 'image/jpeg' ? this.quality / 100 : undefined;
   }
 
   scheduleSizeReadout() {
@@ -766,7 +797,7 @@ export class EditorEngine {
   }
 
   async updateSizeReadout() {
-    const original = EditorEngine.formatBytes(this.originalSize);
+    const original = EditorEngine.formatBytes(this.currentImageSize);
     if (!this.hasInteracted) {
       this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: --`;
       return;
@@ -833,7 +864,13 @@ export class EditorEngine {
     });
     this.slider?.addEventListener('input', () => this.onSlider());
     this.toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
+      btn.addEventListener('click', () => {
+        const { mode } = btn.dataset;
+        if (!this.isCrop && KNOWN_SLIDER_MODES.has(mode)) {
+          this.trackEvent(`${mode.charAt(0).toUpperCase()}${mode.slice(1)}|UnityWidget`);
+        } 
+        this.setMode(mode);
+      });
     });
     this.viewport.addEventListener('pointerdown', () => this.resetIdle());
     this.viewport.addEventListener('pointermove', () => this.resetIdle());
@@ -854,6 +891,8 @@ export class EditorEngine {
   bindResizeTabEvents() {
     this.resizeTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        this.trackEvent(`Aspect Ratio ${tabName.charAt(0).toUpperCase()}${tabName.slice(1)}|UnityWidget`);
         if (tab.dataset.tab === 'social') {
           this.toggleSocialMenu();
           return;
@@ -877,6 +916,9 @@ export class EditorEngine {
     this.heightInput.addEventListener('blur', commit('height'));
     [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
       let viaArrowKey = false;
+      input.addEventListener('click', () => {
+        this.trackEvent(`Aspect Ratio Custom - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
+      });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -893,10 +935,17 @@ export class EditorEngine {
       });
     });
     this.lockBtn.addEventListener('click', () => {
-      this.locked = !this.locked;
-      this.lockBtn.classList.toggle('is-active', this.locked);
-      this.lockBtn.setAttribute('aria-pressed', String(this.locked));
+      this.setLocked(!this.locked);
     });
+  }
+
+  setLocked(locked) {
+    this.locked = locked;
+    if (!this.lockBtn) return;
+    this.lockBtn.classList.toggle('is-active', locked);
+    this.lockBtn.setAttribute('aria-pressed', String(locked));
+    const icon = this.lockBtn.querySelector('.ia-dim-lock-icon');
+    if (icon) icon.src = locked ? LOCK_ICON_HREF : UNLOCK_ICON_HREF;
   }
 
   onDimensionCommit(axis) {
@@ -950,6 +999,7 @@ export class EditorEngine {
     this.socialMenu?.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         const { platform } = opt.dataset;
+        this.trackEvent(`Aspect Ratio Social - ${platform}|UnityWidget`);
         this.socialTrigger.textContent = platform;
         this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platform !== platform));
         this.closeSocialMenu();
@@ -986,10 +1036,14 @@ export class EditorEngine {
 
   bindUnitEvents() {
     if (!this.unitTrigger) return;
-    this.unitTrigger.addEventListener('click', () => this.toggleUnitMenu());
+    this.unitTrigger.addEventListener('click', () => {
+      this.trackEvent('Aspect Ratio Custom - Unit|UnityWidget');
+      this.toggleUnitMenu();
+    });
     this.unitMenu?.querySelectorAll('.ia-unit-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         this.unit = opt.dataset.unit;
+        this.trackEvent(`Aspect Ratio Custom - Unit - ${this.unit}|UnityWidget`);
         if (this.unitLabel) this.unitLabel.textContent = this.unit;
         this.closeUnitMenu();
         this.syncDimensionFields();
@@ -1007,13 +1061,12 @@ export class EditorEngine {
     this.panY = 0;
     this.quality = 100;
     this.revertQualityPreview();
+    this.selectedPill = null;
     if (this.isCrop) {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
-      this.locked = true;
+      this.setLocked(true);
       this.resizeTab = 'custom';
-      this.lockBtn?.classList.add('is-active');
-      this.lockBtn?.setAttribute('aria-pressed', 'true');
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
@@ -1041,7 +1094,13 @@ export class EditorEngine {
       pill.addEventListener('click', () => {
         const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
-        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        const panelTab = pill.closest('.ia-resize-detail-panel')?.dataset.tab;
+        if (panelTab === 'standard') {
+          this.trackEvent(`Aspect Ratio Standard - ${pill.dataset.name}|UnityWidget`);
+        } else if (panelTab !== 'social') {
+          this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        }
+        this.selectedPill = pill;
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();
       });
@@ -1056,9 +1115,11 @@ export class EditorEngine {
         return;
       }
       opt.addEventListener('click', () => {
-        const { ratio, label, ratioText, icon } = opt.dataset;
+        const {
+          ratio, label, displayLabel, ratioText, icon,
+        } = opt.dataset;
         this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
-        this.selectAspect(Number(ratio), label, true, null, ratioText || null, icon || null);
+        this.selectAspect(Number(ratio), displayLabel || label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });
     });
@@ -1232,6 +1293,7 @@ export class EditorEngine {
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
     this.zoom = 0;
+    if (!this.isCrop && ratio) this.setLocked(true);
     this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
@@ -1239,7 +1301,9 @@ export class EditorEngine {
       this.moreTrigger.classList.add('is-active');
     } else {
       this.setMoreTrigger(this.moreDefaultLabel);
-      const match = this.aspectPills.find((pill) => pill.dataset.label === label);
+      const match = this.selectedPill?.dataset.label === label
+        ? this.selectedPill
+        : this.aspectPills.find((pill) => pill.dataset.label === label);
       match?.classList.add('is-active');
     }
     if (this.naturalW) {
@@ -1266,16 +1330,7 @@ export class EditorEngine {
   }
 
   getResizeDimensions() {
-    if (this.resizeTab === 'custom') return { width: this.targetW, height: this.targetH };
-    const [vpW, vpH] = this.viewportSize();
-    const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-    return { width: b.right - b.left, height: b.bottom - b.top };
-  }
-
-  getResizeOutputDimensions() {
-    const { width, height } = this.getResizeDimensions();
-    if (this.resizeTab !== 'custom') return { width, height, unit: 'px' };
-    return { width: pxToUnit(width, this.unit), height: pxToUnit(height, this.unit), unit: this.unit };
+    return { width: this.targetW, height: this.targetH };
   }
 
   getDragRatioLock(rect) {
