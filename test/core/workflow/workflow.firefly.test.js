@@ -473,6 +473,7 @@ describe('Firefly Workflow Tests', () => {
       verbs.className = 'verbs-container show-menu';
       const selectedVerbBtn = document.createElement('button');
       selectedVerbBtn.className = 'selected-verb';
+      selectedVerbBtn.setAttribute('aria-expanded', 'true');
       verbs.appendChild(selectedVerbBtn);
       w.widget.appendChild(models);
       w.widget.appendChild(verbs);
@@ -1953,10 +1954,21 @@ describe('Firefly Workflow Tests', () => {
       testWidget.el = mockEl;
     });
 
-    it('should wrap the "Select a feature" label and close button in a verb-list-header, as a sibling of the listbox (not nested inside it)', () => {
+    afterEach(() => {
+      testWidget.verbDialogInertedEls.forEach((el) => {
+        el.removeAttribute('inert');
+        el.removeAttribute('aria-hidden');
+      });
+      testWidget.verbDialogInertedEls.length = 0;
+    });
+
+    it('should wrap the "Select a feature" heading and close button in a verb-list-header, as a sibling of the option list (not nested inside it)', () => {
       const result = testWidget.verbDropdown();
       const panel = result[1];
       expect(panel.classList.contains('verb-list-panel')).to.be.true;
+      expect(panel.getAttribute('role')).to.equal('dialog');
+      expect(panel.getAttribute('aria-modal')).to.equal('true');
+      expect(panel.id).to.equal('verb-dialog');
 
       const header = panel.querySelector('.verb-list-header');
       expect(header).to.exist;
@@ -1965,19 +1977,31 @@ describe('Firefly Workflow Tests', () => {
       const list = panel.querySelector('ul.verb-list');
       expect(list).to.exist;
       expect(panel.children[1]).to.equal(list);
-      expect(list.getAttribute('role')).to.equal('listbox');
+      // The option list is no longer a listbox in the dialog pattern - options are buttons.
+      expect(list.hasAttribute('role')).to.be.false;
       expect(list.contains(header)).to.be.false;
 
       const label = header.querySelector('.verb-list-label');
       expect(label).to.exist;
-      expect(label.tagName).to.equal('SPAN');
+      expect(label.tagName).to.equal('H2');
       expect(label.textContent).to.equal('Select a feature');
+      expect(panel.getAttribute('aria-labelledby')).to.equal(label.id);
 
       const closeBtn = header.querySelector('.verb-list-close');
       expect(closeBtn).to.exist;
       expect(closeBtn.tagName).to.equal('BUTTON');
-      expect(closeBtn.getAttribute('tabindex')).to.equal('-1');
-      expect(closeBtn.getAttribute('aria-hidden')).to.equal('true');
+      expect(closeBtn.hasAttribute('tabindex')).to.be.false;
+      expect(closeBtn.hasAttribute('aria-hidden')).to.be.false;
+      expect(closeBtn.getAttribute('aria-label')).to.equal('Close');
+    });
+
+    it('trigger has no role=combobox/aria-expanded, and uses aria-haspopup=dialog instead', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      expect(selectedElement.hasAttribute('role')).to.be.false;
+      expect(selectedElement.hasAttribute('aria-expanded')).to.be.false;
+      expect(selectedElement.getAttribute('aria-haspopup')).to.equal('dialog');
+      expect(selectedElement.getAttribute('aria-controls')).to.equal('verb-dialog');
     });
 
     it('should close the menu and refocus the trigger when the close button is clicked', () => {
@@ -1994,13 +2018,13 @@ describe('Firefly Workflow Tests', () => {
       closeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.false;
-      expect(selectedElement.getAttribute('aria-expanded')).to.equal('false');
+      expect(selectedElement.hasAttribute('aria-expanded')).to.be.false;
       expect(document.activeElement).to.equal(selectedElement);
 
       document.body.removeChild(menuContainer);
     });
 
-    it('should move focus to the selected listbox option when the menu is opened by click', () => {
+    it('should move focus to the close button (not an option) when the menu is opened by click', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
       const panel = result[1];
@@ -2013,13 +2037,14 @@ describe('Firefly Workflow Tests', () => {
       selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      const selectedOption = panel.querySelector('.verb-item.selected .verb-link');
-      expect(document.activeElement).to.equal(selectedOption);
+      const closeBtn = panel.querySelector('.verb-list-close');
+      expect(document.activeElement).to.equal(closeBtn);
 
+      testWidget.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
       document.body.removeChild(menuContainer);
     });
 
-    it('should move focus to the selected listbox option when the menu is opened via Enter key', () => {
+    it('should move focus to the close button when the menu is opened via Enter key', () => {
       const result = testWidget.verbDropdown();
       const selectedElement = result[0];
       const panel = result[1];
@@ -2032,10 +2057,97 @@ describe('Firefly Workflow Tests', () => {
       selectedElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(menuContainer.classList.contains('show-menu')).to.be.true;
-      const selectedOption = panel.querySelector('.verb-item.selected .verb-link');
-      expect(document.activeElement).to.equal(selectedOption);
+      const closeBtn = panel.querySelector('.verb-list-close');
+      expect(document.activeElement).to.equal(closeBtn);
+
+      testWidget.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
+      document.body.removeChild(menuContainer);
+    });
+
+    it('makes the rest of the page inert while open, and restores it on close', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      const outsideSibling = document.createElement('div');
+      outsideSibling.id = 'outside-sibling-probe';
+      document.body.append(menuContainer, outsideSibling);
+
+      selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(outsideSibling.hasAttribute('inert')).to.be.true;
+      expect(selectedElement.hasAttribute('inert')).to.be.true;
+      expect(panel.hasAttribute('inert')).to.be.false;
+
+      testWidget.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
+      expect(outsideSibling.hasAttribute('inert')).to.be.false;
+      expect(selectedElement.hasAttribute('inert')).to.be.false;
 
       document.body.removeChild(menuContainer);
+      document.body.removeChild(outsideSibling);
+    });
+
+    it('traps Tab between the close button and the option buttons', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      const closeBtn = panel.querySelector('.verb-list-close');
+      const options = [...panel.querySelectorAll('.verb-link')];
+      const lastOption = options[options.length - 1];
+
+      lastOption.focus();
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(closeBtn);
+
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+      expect(document.activeElement).to.equal(lastOption);
+
+      testWidget.closeVerbOrModelMenu(selectedElement, { focusTrigger: false });
+      document.body.removeChild(menuContainer);
+    });
+
+    it('closes on Escape from inside the panel (e.g. focus on an option)', () => {
+      const result = testWidget.verbDropdown();
+      const selectedElement = result[0];
+      const panel = result[1];
+      const menuContainer = document.createElement('div');
+      menuContainer.className = 'verbs-container';
+      menuContainer.appendChild(selectedElement);
+      menuContainer.appendChild(panel);
+      document.body.appendChild(menuContainer);
+
+      selectedElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      const options = [...panel.querySelectorAll('.verb-link')];
+      options[0].focus();
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+      expect(menuContainer.classList.contains('show-menu')).to.be.false;
+      expect(document.activeElement).to.equal(selectedElement);
+
+      document.body.removeChild(menuContainer);
+    });
+
+    it('option buttons carry no role=option/aria-selected; the selected one gets aria-current', () => {
+      const result = testWidget.verbDropdown();
+      const panel = result[1];
+      const options = [...panel.querySelectorAll('.verb-link')];
+      expect(options.length).to.equal(2);
+      options.forEach((opt) => {
+        expect(opt.tagName).to.equal('BUTTON');
+        expect(opt.hasAttribute('role')).to.be.false;
+        expect(opt.hasAttribute('aria-selected')).to.be.false;
+      });
+      expect(options[0].getAttribute('aria-current')).to.equal('true');
+      expect(options[1].hasAttribute('aria-current')).to.be.false;
     });
   });
 
@@ -3935,6 +4047,7 @@ describe('Firefly Workflow Tests', () => {
       expect(closeBtn.tagName).to.equal('BUTTON');
       expect(closeBtn.getAttribute('type')).to.equal('button');
       expect(closeBtn.hasAttribute('href')).to.be.false;
+      expect(closeBtn.getAttribute('aria-label')).to.equal('Close');
     });
 
     it('showErrorToast marks the message as an alert and moves focus into it; closing returns focus to Generate', async () => {
