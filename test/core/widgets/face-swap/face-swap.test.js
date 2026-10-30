@@ -60,6 +60,7 @@ describe('Face Swap widget', () => {
         '/cc-shared/assets/face-swap/three.jpg',
       ]);
       expect(parsed.gallery[0].label).to.equal('Portrait');
+      expect(parsed.galleryDropped).to.deep.equal(['https://example.com/absolute.jpg']);
       expect(parsed.mediaRow.children).to.have.length(3);
     });
 
@@ -73,10 +74,19 @@ describe('Face Swap widget', () => {
       expect(parsed.mediaRow).to.equal(null);
     });
 
-    it('accepts only root-relative gallery CDN paths', () => {
+    it('accepts root-relative paths and Unity CDN URLs as gallery CDN paths', () => {
       const li = (html) => Object.assign(document.createElement('li'), { innerHTML: html });
+      const prod = 'https://cdn-unity.adobe.com/assets/a/b_1x1_2x.jpg';
+      const stage = 'https://cdn-unity.stage.adobe.com/assets/a/b.jpg';
       expect(galleryCdnPath(li('Label<br>/a/b.jpg'))).to.equal('/a/b.jpg');
+      expect(galleryCdnPath(li(`Label<br><a href="${prod}">${prod}</a>`))).to.equal('/assets/a/b_1x1_2x.jpg');
+      expect(galleryCdnPath(li(`Label<br><a href="${stage}">${stage}</a>`))).to.equal('/assets/a/b.jpg');
+      expect(galleryCdnPath(li(`Label<br>${prod}`))).to.equal('/assets/a/b_1x1_2x.jpg');
       expect(galleryCdnPath(li('Label<br>https://x.com/b.jpg'))).to.equal(null);
+      expect(galleryCdnPath(li('Label<br>https://cdn-unity.adobe.com.evil.com/b.jpg'))).to.equal(null);
+      expect(galleryCdnPath(li('Label<br>http://cdn-unity.adobe.com/b.jpg'))).to.equal(null);
+      expect(galleryCdnPath(li('Label<br>https://cdn-unity.adobe.com/'))).to.equal(null);
+      expect(galleryCdnPath(li('Label<br>https://'))).to.equal(null);
       expect(galleryCdnPath(li('Label<br>//x.com/b.jpg'))).to.equal(null);
       expect(galleryCdnPath(li('Label only'))).to.equal(null);
     });
@@ -93,6 +103,24 @@ describe('Face Swap widget', () => {
   });
 
   describe('mount', () => {
+    it('logs dropped gallery items to lana once', async () => {
+      window.lana = { log: sinon.stub() };
+      await mountWidget();
+      expect(window.lana.log.calledOnce).to.be.true;
+      const [msg, opts] = window.lana.log.firstCall.args;
+      expect(msg).to.include('Count: 1/4');
+      expect(msg).to.include('https://example.com/absolute.jpg');
+      expect(opts).to.deep.equal({ sampleRate: 1, tags: 'Unity-FF-FaceSwap', severity: 'warning' });
+      delete window.lana;
+    });
+
+    it('does not log when every gallery item is valid', async () => {
+      document.querySelector('img[alt="skip"]').closest('li').remove();
+      window.lana = { log: sinon.stub() };
+      await mountWidget();
+      expect(window.lana.log.called).to.be.false;
+      delete window.lana;
+    });
     it('inserts the root before the host and hides authored markup', async () => {
       const { el, widget, actionMap } = await mountWidget();
       expect(actionMap).to.equal(cfg.targetCfg.actionMap);
@@ -100,6 +128,7 @@ describe('Face Swap widget', () => {
       expect(el.classList.contains('unity-face-swap-host')).to.be.true;
       const holder = el.querySelector('.unity-slf-config-holder');
       expect(holder.getAttribute('aria-hidden')).to.equal('true');
+      expect(holder.hasAttribute('inert')).to.equal(true);
       expect(widget.extendedRoot.querySelector('.interactive-area.dark')).to.exist;
       expect(widget.extendedRoot.querySelector('.fs-legal').textContent).to.include('Terms of Use');
       expect(widget.extendedRoot.querySelector('.fs-model-name').textContent).to.equal('Gemini 3.1 (Nano Banana 2)');
