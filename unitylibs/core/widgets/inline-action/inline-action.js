@@ -280,7 +280,7 @@ function appendIconContent(el, { href, spriteId, size, picture = false }) {
 function buildUploadActionButton(uploadPara, uploadIconHref, uploadLabel) {
   const button = createTag('a', {
     tabindex: '0',
-    class: 'con-button blue action-button button-xl',
+    class: 'con-button blue action-button button-xl no-track',
     href: '#',
   });
   appendAuthoredUploadIcon(button, {
