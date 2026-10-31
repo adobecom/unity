@@ -967,7 +967,7 @@
     height: auto;
   }
 
-  .ia-widget[data-operation="resize"] .ia-resize-detail-panel[data-tab="custom"] {
+  .ia-widget[data-operation="resize"] .ia-resize-detail-panel[data-tab="freeform"] {
     margin: 8px 0;
   }
 

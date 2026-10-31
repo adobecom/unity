@@ -67,7 +67,7 @@ function ensureAssetUploaded(binder) {
 function buildResizeOperation(engine) {
   const pill = engine.selectedPill?.dataset;
   let pillMode = null;
-  if (pill?.platform) pillMode = 'social';
+  if (pill?.platformId) pillMode = 'social';
   else if (pill?.ratioText) pillMode = 'standard';
   const resizeMode = pillMode === engine.resizeTab ? pillMode : 'freeform';
   const { width, height } = engine.getResizeDimensions();
@@ -79,8 +79,8 @@ function buildResizeOperation(engine) {
     displayUnit: engine.unit,
   };
   if (resizeMode === 'social') {
-    resizeOp.socialPlatform = pill.platform;
-    resizeOp.socialPostType = pill.name;
+    resizeOp.socialPlatform = pill.platformId;
+    resizeOp.socialPostType = pill.nameId;
     if (pill.width && pill.height) {
       resizeOp.width = Number(pill.width);
       resizeOp.height = Number(pill.height);

@@ -1,6 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
+import { buildEditorRightPanel } from '../../../../unitylibs/core/widgets/inline-action/editor.js';
 import {
   buildImageOperationsPayload, editorUploadFlow, runEditorOperation,
   resetEditor, runEditInFirefly,
@@ -29,7 +30,7 @@ describe('Inline action editor workflow', () => {
       currentImageSize: 1000,
       uploadedImageSize: 2000,
       originalImageUrl: 'original-url',
-      resizeTab: 'custom',
+      resizeTab: 'freeform',
       unit: 'px',
       setImage: sinon.stub().resolves(),
       setOutputType: sinon.spy(),
@@ -295,12 +296,12 @@ describe('Inline action editor workflow', () => {
   });
 
   [
-    { tab: 'custom', pill: null, mode: 'freeform' },
+    { tab: 'freeform', pill: null, mode: 'freeform' },
     { tab: 'standard', pill: { ratioText: '4:3' }, mode: 'standard', aspectRatio: '4:3' },
-    { tab: 'social', pill: { platform: 'Instagram', name: 'Story', width: '1080', height: '1920' }, mode: 'social' },
-    { tab: 'social', pill: { platform: 'Facebook', name: 'Post' }, mode: 'social' },
-    { tab: 'custom', pill: { ratioText: '4:3' }, mode: 'freeform' },
-    { tab: 'custom', pill: {}, mode: 'freeform' },
+    { tab: 'social', pill: { platformId: 'instagram', nameId: 'story', width: '1080', height: '1920' }, mode: 'social' },
+    { tab: 'social', pill: { platformId: 'facebook', nameId: 'feedLandscape' }, mode: 'social' },
+    { tab: 'freeform', pill: { ratioText: '4:3' }, mode: 'freeform' },
+    { tab: 'freeform', pill: {}, mode: 'freeform' },
   ].forEach(({ tab, pill, mode, aspectRatio }) => {
     it(`builds resize operations for ${tab}/${JSON.stringify(pill)}`, async () => {
       binder.operation = 'resize';
@@ -312,8 +313,8 @@ describe('Inline action editor workflow', () => {
       const fields = binder.buildConnectorPayload.firstCall.args[0];
       const expected = { type: 'resize', resizeMode: mode, width: 50, height: 100, displayUnit: 'in', quality: 80 };
       if (mode === 'social') {
-        expected.socialPlatform = pill.platform;
-        expected.socialPostType = pill.name;
+        expected.socialPlatform = pill.platformId;
+        expected.socialPostType = pill.nameId;
         if (pill.width) Object.assign(expected, { width: 1080, height: 1920 });
       }
       expect(fields.operations).to.deep.equal([
@@ -323,6 +324,38 @@ describe('Inline action editor workflow', () => {
       expect(fields.verb).to.equal('resizeImage');
       expect(fields.workflow).to.equal('image-operations');
       expect(binder.uploadAsset.called).to.equal(false);
+    });
+  });
+
+  it('uses platformId and nameId from configured presets in the connector payload', async () => {
+    const panel = buildEditorRightPanel({
+      operation: 'resize',
+      nbaPills: [],
+      aspectRows: [{
+        groupId: 'social',
+        groupLabel: 'Social',
+        platformId: 'x',
+        platformLabel: 'Twitter',
+        nameId: 'portrait',
+        nameLabel: 'Portrait',
+        width: 720,
+        height: 1280,
+      }],
+    });
+    binder.operation = 'resize';
+    engine.resizeTab = 'social';
+    engine.selectedPill = panel.querySelector('.ia-aspect-pill');
+    expect(panel.querySelector('.ia-social-opt').textContent).to.equal('Twitter');
+    expect(engine.selectedPill.textContent).to.equal('Portrait 720 x 1280');
+    await runEditInFirefly(binder);
+    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.deep.equal({
+      type: 'resize',
+      resizeMode: 'social',
+      width: 720,
+      height: 1280,
+      displayUnit: 'px',
+      socialPlatform: 'x',
+      socialPostType: 'portrait',
     });
   });
 

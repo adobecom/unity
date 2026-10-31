@@ -45,7 +45,8 @@ function aspectRatioValue(row) {
 }
 
 function composeAspectLabel(row, localized = false) {
-  const name = (localized && row.nameLoc) || row.name || row.group || '';
+  const name = (localized && row.nameLabel) || row.nameId
+    || (localized && row.groupLabel) || row.groupId || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
   if (row.ratio) return `${name} ${row.ratio}`.trim();
   return name;
@@ -53,29 +54,9 @@ function composeAspectLabel(row, localized = false) {
 
 function groupCropRows(rows) {
   return {
-    pillRows: rows.filter((r) => !r.group),
-    moreRows: rows.filter((r) => r.group),
+    pillRows: rows.filter((r) => r.groupId !== 'more'),
+    moreRows: rows.filter((r) => r.groupId === 'more'),
   };
-}
-
-function resizeRowKind(row) {
-  if (row.platform) return 'social';
-  if (row.ratio) return 'standard';
-  return 'custom';
-}
-
-function groupResizeRows(rows) {
-  const buckets = [];
-  const byGroup = new Map();
-  rows.forEach((row) => {
-    if (!byGroup.has(row.group)) {
-      const bucket = { group: row.group, kind: resizeRowKind(row), rows: [] };
-      byGroup.set(row.group, bucket);
-      buckets.push(bucket);
-    }
-    byGroup.get(row.group).rows.push(row);
-  });
-  return buckets;
 }
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
@@ -316,9 +297,9 @@ function buildAspectPill(row, isActive = false) {
     'data-label': label,
   };
   if (row.ratio) attrs['data-ratio-text'] = row.ratio;
-  if (row.platform) {
-    attrs['data-platform'] = row.platform;
-    attrs['data-name'] = row.name || '';
+  if (row.platformId) {
+    attrs['data-platform-id'] = row.platformId;
+    attrs['data-name-id'] = row.nameId || '';
   }
   if (row.width && row.height) {
     attrs['data-width'] = row.width;
@@ -368,7 +349,7 @@ function buildCropAspectSection(parsedData) {
       class: 'ia-aspect-pill ia-more-trigger',
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
-    }, undefined, moreRows[0].group);
+    }, undefined, moreRows[0].groupLabel || 'More');
     moreTrigger.insertAdjacentHTML('afterbegin', svgUse(MORE_TRIGGER_ICON, 'ia-btn-icon'));
     more.append(moreTrigger, moreMenu);
     row.append(more);
@@ -410,8 +391,8 @@ function buildUnitPicker() {
   return wrap;
 }
 
-function buildCustomDetail(parsedData) {
-  const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'custom' });
+function buildFreeformDetail(parsedData) {
+  const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'freeform' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
   const lockBtn = createTag('button', {
     type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true',
@@ -431,7 +412,7 @@ function buildStandardDetail(standardRows) {
   const grid = createTag('div', { class: 'ia-aspect-row' });
   standardRows.forEach((r) => {
     const pill = buildAspectPill(r);
-    pill.dataset.name = r.name || '';
+    pill.dataset.nameId = r.nameId || '';
     grid.append(pill);
   });
   detail.append(grid);
@@ -442,9 +423,9 @@ function buildSocialDetail(socialRows, platforms) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'social' });
   const grids = createTag('div', { class: 'ia-social-grids' });
   platforms.forEach((platform) => {
-    const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform': platform });
+    const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform-id': platform });
     socialRows
-      .filter((r) => r.platform === platform)
+      .filter((r) => r.platformId === platform)
       .forEach((r) => grid.append(buildAspectPill(r)));
     grids.append(grid);
   });
@@ -457,24 +438,26 @@ function buildResizeAspectSection(parsedData) {
   const header = createTag('div', { class: 'ia-aspect-header-row' });
   header.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
-  const buckets = groupResizeRows(parsedData.aspectRows || []);
-  const customBucket = buckets.find((b) => b.kind === 'custom');
-  const standardBucket = buckets.find((b) => b.kind === 'standard');
-  const socialBucket = buckets.find((b) => b.kind === 'social');
-  const platforms = socialBucket ? [...new Set(socialBucket.rows.map((r) => r.platform))] : [];
+  const rows = parsedData.aspectRows || [];
+  const freeformRow = rows.find((r) => r.groupId === 'freeform');
+  const standardRows = rows.filter((r) => r.groupId === 'standard');
+  const socialRows = rows.filter((r) => r.groupId === 'social');
+  const platforms = new Map(
+    socialRows.map((r) => [r.platformId, r.platformLabel || r.platformId]),
+  );
   row.append(createTag('button', {
     type: 'button',
     class: 'ia-resize-tab is-active',
-    'data-tab': 'custom',
-  }, customBucket?.group || 'Custom'));
-  if (standardBucket) {
-    row.append(createTag('button', { type: 'button', class: 'ia-resize-tab', 'data-tab': 'standard' }, standardBucket.group));
+    'data-tab': 'freeform',
+  }, freeformRow?.groupLabel || 'Custom'));
+  if (standardRows.length) {
+    row.append(createTag('button', { type: 'button', class: 'ia-resize-tab', 'data-tab': 'standard' }, standardRows[0].groupLabel || 'Standard'));
   }
-  if (socialBucket) {
+  if (socialRows.length) {
     const social = createTag('div', { class: 'ia-more' });
     const socialMenu = createTag('div', { class: 'ia-social-menu hide' });
-    platforms.forEach((platform) => {
-      socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
+    platforms.forEach((label, platform) => {
+      socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform-id': platform }, label));
     });
     socialMenu.prepend(buildDropdownCloseButton());
     const socialTrigger = createTag('button', {
@@ -483,16 +466,16 @@ function buildResizeAspectSection(parsedData) {
       'data-tab': 'social',
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
-    }, socialBucket.group);
+    }, socialRows[0].groupLabel || 'Social');
     social.append(socialTrigger, socialMenu);
     row.append(social);
   }
   const originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
   const newSizeLabel = parsedData.newSizeLabel || 'New size';
   const readout = createTag('p', { class: 'ia-size-readout' }, `${originalSizeLabel}: -- ${newSizeLabel}: --`);
-  const details = [buildCustomDetail(parsedData)];
-  if (standardBucket) details.push(buildStandardDetail(standardBucket.rows));
-  if (socialBucket) details.push(buildSocialDetail(socialBucket.rows, platforms));
+  const details = [buildFreeformDetail(parsedData)];
+  if (standardRows.length) details.push(buildStandardDetail(standardRows));
+  if (socialRows.length) details.push(buildSocialDetail(socialRows, [...platforms.keys()]));
   header.append(row);
   section.append(header, ...details, readout, buildCtaRow(false, parsedData));
   return section;
@@ -611,7 +594,7 @@ export class EditorEngine {
     this.sizeReadoutSeq = 0;
     this.hasInteracted = false;
     this.locked = true;
-    this.resizeTab = 'custom';
+    this.resizeTab = 'freeform';
     this.selectedPill = null;
     this.rect = {x: 0, y: 0, w: 100, h: 100};
     this.naturalW = 0;
@@ -998,10 +981,10 @@ export class EditorEngine {
     if (!this.socialTrigger) return;
     this.socialMenu?.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
-        const { platform } = opt.dataset;
-        this.trackEvent(`Aspect Ratio Social - ${platform}|UnityWidget`);
-        this.socialTrigger.textContent = platform;
-        this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platform !== platform));
+        const { platformId } = opt.dataset;
+        this.trackEvent(`Aspect Ratio Social - ${platformId}|UnityWidget`);
+        this.socialTrigger.textContent = opt.textContent;
+        this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platformId !== platformId));
         this.closeSocialMenu();
         this.selectResizeTab(this.socialTrigger);
       });
@@ -1066,9 +1049,9 @@ export class EditorEngine {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
       this.setLocked(true);
-      this.resizeTab = 'custom';
-      this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
-      this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
+      this.resizeTab = 'freeform';
+      this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'freeform'));
+      this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'freeform'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
       if (this.socialTrigger) this.socialTrigger.textContent = this.socialDefaultLabel;
       this.unit = 'px';
@@ -1096,9 +1079,9 @@ export class EditorEngine {
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
         const panelTab = pill.closest('.ia-resize-detail-panel')?.dataset.tab;
         if (panelTab === 'standard') {
-          this.trackEvent(`Aspect Ratio Standard - ${pill.dataset.name}|UnityWidget`);
+          this.trackEvent(`Aspect Ratio Standard - ${pill.dataset.nameId}|UnityWidget`);
         } else if (panelTab !== 'social') {
-          this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+          this.trackEvent(`Aspect Ratio ${ratioText || (ratio && label) || 'Freeform'}|UnityWidget`);
         }
         this.selectedPill = pill;
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
@@ -1334,7 +1317,7 @@ export class EditorEngine {
   }
 
   getDragRatioLock(rect) {
-    if (this.isCrop || this.resizeTab !== 'custom') return this.selectedRatio;
+    if (this.isCrop || this.resizeTab !== 'freeform') return this.selectedRatio;
     if (!this.locked) return null;
     const [vpW, vpH] = this.viewportSize();
     const w = rect.w * vpW;
@@ -1364,7 +1347,7 @@ export class EditorEngine {
           y: clamp(baseRect.y + dyPct, bounds.top, bounds.bottom - baseRect.h),
         }
         : resizeRect(baseRect, kind, dxPct, dyPct, ratioLock, bounds);
-      if (!this.isCrop && this.resizeTab === 'custom' && !this.locked) {
+      if (!this.isCrop && this.resizeTab === 'freeform' && !this.locked) {
         const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
         this.targetW = b.right - b.left;
         this.targetH = b.bottom - b.top;

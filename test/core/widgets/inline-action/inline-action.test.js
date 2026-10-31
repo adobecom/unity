@@ -192,7 +192,7 @@ describe('Inline action widget', () => {
 
   ['crop', 'resize'].forEach((operation) => {
     it(`lazily creates and reuses the ${operation} editor`, async () => {
-      sinon.stub(window, 'fetch').resolves(new Response(JSON.stringify({ content: { data: [{ module: 'resize', group: 'Custom' }, { module: 'crop', name: 'Freeform' }] } })));
+      sinon.stub(window, 'fetch').resolves(new Response(JSON.stringify({ content: { data: [{ module: 'resize', groupId: 'freeform', groupLabel: 'Custom' }, { module: 'crop', nameId: 'freeform', nameLabel: 'Freeform' }] } })));
       const widget = await mount(operation);
       const track = sinon.spy();
       const engine = await widget.ensureEditorEngine(track);
