@@ -292,7 +292,22 @@ describe('Inline action editor workflow', () => {
     await runEditInFirefly(binder, { textContent: 'Edit' });
     expect(binder.buildConnectorPayload.firstCall.args[0].aspectRatio).to.equal('freeform');
     expect(binder.serviceHandler.showErrorToast.firstCall.args[1]).to.equal(error);
-    expect(binder.trackEvent.firstCall.args[0]).to.equal('Edit|UnityWidget');
+    expect(binder.trackEvent.firstCall.args[0]).to.equal('Open in Firefly|UnityWidget');
+  });
+
+  ['crop', 'resize'].forEach((operation) => {
+    it(`uses fixed Open in Firefly analytics for a localized ${operation} CTA`, async () => {
+      binder.operation = operation;
+      const button = document.createElement('button');
+      button.textContent = 'Ouvrir dans Firefly';
+      await runEditInFirefly(binder, button);
+      expect(binder.trackEvent.calledOnceWithExactly('Open in Firefly|UnityWidget', {
+        assetId: binder.resultAssetId,
+        action: 'redirect',
+      })).to.equal(true);
+      expect(button.textContent).to.equal('Ouvrir dans Firefly');
+      expect(binder.callConnector.calledOnce).to.equal(true);
+    });
   });
 
   it('tracks seeAll using its ID instead of its localized display label', async () => {
