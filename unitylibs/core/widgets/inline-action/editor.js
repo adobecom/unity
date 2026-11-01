@@ -226,7 +226,8 @@ function buildToggleButton(mode, label, iconHref, isActive) {
 }
 
 function buildAdjustBar(parsedData) {
-  const bar = createTag('div', { class: 'ia-adjust-bar' });
+  const isResize = parsedData.operation === 'resize';
+  const bar = createTag('div', { class: `ia-adjust-bar${isResize ? ' ia-adjust-bar-resize' : ''}` });
   const toggle = createTag('div', { class: 'ia-toggle' });
   const { sliderModes } = parsedData;
   sliderModes.forEach(({ mode, label, iconHref }, i) => toggle.append(buildToggleButton(mode, label, iconHref, i === 0)));
@@ -241,6 +242,19 @@ function buildAdjustBar(parsedData) {
   });
   const val = createTag('span', { class: 'ia-val' }, startMode === 'quality' ? '100%' : '1.0x');
   bar.append(toggle, slider, val);
+  const qualityMode = sliderModes.find(({ mode }) => mode === 'quality');
+  if (isResize && qualityMode) {
+    const label = parsedData.qualityPreviewLabel || 'Preview quality';
+    const previewBtn = createTag('button', {
+      type: 'button',
+      class: 'ia-editor-quality',
+      'aria-label': label,
+      'aria-pressed': 'false',
+      title: label,
+    });
+    if (qualityMode.iconHref) previewBtn.append(createTag('img', { src: qualityMode.iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
+    bar.append(previewBtn);
+  }
   return bar;
 }
 
@@ -553,9 +567,10 @@ export class EditorEngine {
     this.header = rightPanelEl.querySelector('.ia-editor-header');
     this.resetBtn = rightPanelEl.querySelector('.ia-editor-reset');
     this.reuploadBtn = rightPanelEl.querySelector('.ia-reupload-btn');
-    this.qualityBtn = rightPanelEl.querySelector('.ia-editor-quality');
+    this.qualityBtn = leftPanelEl.querySelector('.ia-editor-quality');
     this.qualityPreviewActive = false;
     this.qualityPreviewUrl = null;
+    this.qualityPreviewSeq = 0;
     this.originalUrl = '';
     this.originalImageUrl = '';
     this.sourceImg = null;
@@ -638,10 +653,9 @@ export class EditorEngine {
     const place = (isMobile) => {
       if (isMobile) {
         this.header.insertBefore(this.resetBtn, title);
-        if (this.qualityBtn) title.after(this.qualityBtn);
         this.header.append(this.reuploadBtn);
       } else {
-        actionsWrap.append(this.resetBtn, ...(this.qualityBtn ? [this.qualityBtn] : []), this.reuploadBtn);
+        actionsWrap.append(this.resetBtn, this.reuploadBtn);
       }
     };
     place(mq.matches);
@@ -656,10 +670,7 @@ export class EditorEngine {
   async setImage(url, imageSize = 0, isOriginalUpload = false) {
     this.currentImageSize = imageSize;
     this.hasInteracted = false;
-    if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
-    this.qualityPreviewUrl = null;
-    this.qualityPreviewActive = false;
-    this.updateQualityBtnState();
+    this.revertQualityPreview();
     this.originalUrl = url;
     if (isOriginalUpload) {
       this.originalImageUrl = url;
@@ -759,7 +770,6 @@ export class EditorEngine {
   setOutputType(type) {
     this.outputType = type === 'image/jpg' ? 'image/jpeg' : type;
     const showQuality = this.outputType === 'image/jpeg';
-    this.qualityBtn?.classList.toggle('hide', !showQuality);
     this.toggleBtns
       .filter((btn) => btn.dataset.mode === 'quality')
       .forEach((btn) => btn.classList.toggle('hide', !showQuality));
@@ -796,28 +806,43 @@ export class EditorEngine {
     this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: ${updated}`;
   }
 
-  applyQualityPreview() {
-    if (!this.sourceImg || !this.naturalW || !this.naturalH) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = this.naturalW;
-    canvas.height = this.naturalH;
-    canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, this.naturalW, this.naturalH);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
-      const url = URL.createObjectURL(blob);
-      this.qualityPreviewUrl = url;
-      this.blurImg.src = url;
-      this.sharpImg.src = url;
-      this.qualityPreviewActive = true;
-      this.updateQualityBtnState();
-    }, 'image/jpeg', this.quality / 100);
+  async applyQualityPreview() {
+    if (this.mode !== 'quality') return;
+    if (!this.sourceImg || !this.naturalW || !this.naturalH || this.outputType !== 'image/jpeg') return;
+    this.revertQualityPreview();
+    const seq = this.qualityPreviewSeq;
+    this.qualityPreviewActive = true;
+    this.updateQualityBtnState();
+    try {
+      await this.sourceImg.decode();
+      if (seq !== this.qualityPreviewSeq) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = this.naturalW;
+      canvas.height = this.naturalH;
+      canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, this.naturalW, this.naturalH);
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error('Quality preview encoding failed'));
+        }, 'image/jpeg', this.encodeQuality());
+      });
+      if (seq !== this.qualityPreviewSeq) return;
+      this.qualityPreviewUrl = URL.createObjectURL(blob);
+      this.blurImg.src = this.qualityPreviewUrl;
+      this.sharpImg.src = this.qualityPreviewUrl;
+    } catch (e) {
+      if (seq !== this.qualityPreviewSeq) return;
+      this.revertQualityPreview();
+      window.lana?.log(`Message: Error generating quality preview, Error: ${e}`);
+    }
   }
 
   revertQualityPreview() {
-    if (!this.qualityPreviewActive) return;
-    this.blurImg.src = this.originalUrl;
-    this.sharpImg.src = this.originalUrl;
+    this.qualityPreviewSeq += 1;
+    if (this.qualityPreviewActive) {
+      this.blurImg.src = this.originalUrl;
+      this.sharpImg.src = this.originalUrl;
+    }
     if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
     this.qualityPreviewUrl = null;
     this.qualityPreviewActive = false;
@@ -826,14 +851,15 @@ export class EditorEngine {
 
   toggleQualityPreview() {
     if (this.qualityPreviewActive) this.revertQualityPreview();
-    else this.applyQualityPreview();
+    else return this.applyQualityPreview();
+    return undefined;
   }
 
   updateQualityBtnState() {
     if (!this.qualityBtn) return;
+    this.qualityBtn.classList.toggle('hide', this.mode !== 'quality' || this.outputType !== 'image/jpeg');
     this.qualityBtn.classList.toggle('is-active', this.qualityPreviewActive);
     this.qualityBtn.setAttribute('aria-pressed', String(this.qualityPreviewActive));
-    this.qualityBtn.textContent = this.qualityPreviewActive ? 'Original' : 'Quality';
   }
 
   bindEvents() {
@@ -1404,6 +1430,8 @@ export class EditorEngine {
 
   setMode(mode) {
     this.mode = mode;
+    if (mode !== 'quality') this.revertQualityPreview();
+    else this.updateQualityBtnState();
     this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
     if (!this.slider) return;
     this.slider.min = '0';

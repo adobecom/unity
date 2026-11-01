@@ -86,6 +86,7 @@ describe('Inline action widget', () => {
       <li><span class="icon icon-placeholder-aspect-ratio"></span>Format</li>
       <li><span class="icon icon-placeholder-original-size"></span>Actuelle</li>
       <li><span class="icon icon-placeholder-new-size"></span>Nouvelle</li>
+      <li><span class="icon icon-placeholder-quality-preview"></span>Aperçu de la qualité</li>
       <li><span class="icon icon-placeholder-slider-quality"></span><img src="/quality.svg">Qualité</li>
       <li>ignored</li>`);
     const data = parseInlineAuthoring(host);
@@ -101,6 +102,7 @@ describe('Inline action widget', () => {
       aspectRatioLabel: 'Format',
       originalSizeLabel: 'Actuelle',
       newSizeLabel: 'Nouvelle',
+      qualityPreviewLabel: 'Aperçu de la qualité',
     });
     expect(data.sliderModes).to.deep.equal([{ mode: 'quality', label: 'Qualité', iconHref: '/quality.svg' }]);
   });
