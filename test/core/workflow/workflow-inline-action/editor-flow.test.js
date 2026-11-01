@@ -217,7 +217,12 @@ describe('Inline action editor workflow', () => {
       expect(engine.setImage.firstCall.args.slice(1)).to.deep.equal([999, true]);
       expect(engine.reset.calledOnce).to.equal(true);
       expect(binder.bindActionMapElements.callCount).to.equal(3);
-      expect(binder.widgetRef.setState.args.map(([s]) => s)).to.deep.equal(['loading', 'complete']);
+      expect(binder.widgetRef.setState.args.map(([s]) => s)).to.deep.equal(
+        operation === 'crop' ? ['loading', 'complete'] : ['complete'],
+      );
+      expect(binder.widgetRef.setProgress.args).to.deep.equal(
+        operation === 'crop' ? [[0], [100]] : [],
+      );
       expect(binder.trackEvent.calledWith('editor-event', { test: true })).to.equal(true);
     });
 
@@ -244,14 +249,17 @@ describe('Inline action editor workflow', () => {
     expect(binder.widgetRef.setState.lastCall.args).to.deep.equal(['initial']);
   });
 
-  [false, true].forEach((tracked) => {
-    it(`reports editor initialization failures (${tracked})`, async () => {
-      const error = Object.assign(new Error('decode'), { analyticsTracked: tracked });
-      engine.setImage.rejects(error);
-      await editorUploadFlow(binder, file);
-      expect(binder.trackServerError.called).to.equal(!tracked);
-      expect(binder.serviceHandler.showErrorToast.firstCall.args[1]).to.equal(error);
-      expect(binder.widgetRef.setState.lastCall.args).to.deep.equal(['initial']);
+  ['crop', 'resize'].forEach((operation) => {
+    [false, true].forEach((tracked) => {
+      it(`reports ${operation} editor initialization failures (${tracked})`, async () => {
+        binder.operation = operation;
+        const error = Object.assign(new Error('decode'), { analyticsTracked: tracked });
+        engine.setImage.rejects(error);
+        await editorUploadFlow(binder, file);
+        expect(binder.trackServerError.called).to.equal(!tracked);
+        expect(binder.serviceHandler.showErrorToast.firstCall.args[1]).to.equal(error);
+        expect(binder.widgetRef.setState.lastCall.args).to.deep.equal(['initial']);
+      });
     });
   });
 
