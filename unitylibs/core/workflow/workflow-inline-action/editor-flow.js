@@ -213,7 +213,8 @@ export async function resetEditor(binder) {
 export async function runEditInFirefly(binder, el) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
-  binder.trackEvent(`${el?.textContent?.trim() || 'Open in Firefly'}|UnityWidget`, {
+  const analyticsLabel = el?.dataset?.nameId || el?.textContent?.trim() || 'Open in Firefly';
+  binder.trackEvent(`${analyticsLabel}|UnityWidget`, {
     assetId: binder.resultAssetId,
     action: 'redirect',
   });

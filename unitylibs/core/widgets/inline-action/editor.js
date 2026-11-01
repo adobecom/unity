@@ -293,13 +293,13 @@ function buildAspectPill(row, isActive = false) {
   const attrs = {
     type: 'button',
     class: `ia-aspect-pill${isActive ? ' is-active' : ''}`,
+    'data-name-id': row.nameId || row.groupId || '',
     'data-ratio': aspectRatioValue(row) ?? '',
     'data-label': label,
   };
   if (row.ratio) attrs['data-ratio-text'] = row.ratio;
   if (row.platformId) {
     attrs['data-platform-id'] = row.platformId;
-    attrs['data-name-id'] = row.nameId || '';
   }
   if (row.width && row.height) {
     attrs['data-width'] = row.width;
@@ -332,10 +332,11 @@ function buildCropAspectSection(parsedData) {
       const label = composeAspectLabel(r);
       const displayLabel = composeAspectLabel(r, true);
       const ratioVal = aspectRatioValue(r);
-      const opensFirefly = ratioVal === null;
+      const opensFirefly = r.nameId === 'seeAll';
       moreMenu.append(buildIconButton('button', {
         type: 'button',
         class: `ia-more-opt${opensFirefly ? ' ia-editor-open-in-firefly' : ''}`,
+        'data-name-id': r.nameId || '',
         'data-ratio': ratioVal ?? '',
         'data-label': label,
         'data-display-label': displayLabel,
@@ -347,6 +348,7 @@ function buildCropAspectSection(parsedData) {
     const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
+      'data-group-id': moreRows[0].groupId,
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
     }, undefined, moreRows[0].groupLabel || 'More');
@@ -875,7 +877,7 @@ export class EditorEngine {
     this.resizeTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
         const tabName = tab.dataset.tab;
-        this.trackEvent(`Aspect Ratio ${tabName.charAt(0).toUpperCase()}${tabName.slice(1)}|UnityWidget`);
+        this.trackEvent(`Aspect Ratio ${tabName}|UnityWidget`);
         if (tab.dataset.tab === 'social') {
           this.toggleSocialMenu();
           return;
@@ -900,7 +902,7 @@ export class EditorEngine {
     [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
       let viaArrowKey = false;
       input.addEventListener('click', () => {
-        this.trackEvent(`Aspect Ratio Custom - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
+        this.trackEvent(`Aspect Ratio freeform - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
       });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -982,7 +984,7 @@ export class EditorEngine {
     this.socialMenu?.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         const { platformId } = opt.dataset;
-        this.trackEvent(`Aspect Ratio Social - ${platformId}|UnityWidget`);
+        this.trackEvent(`Aspect Ratio ${this.socialTrigger.dataset.tab} - ${platformId}|UnityWidget`);
         this.socialTrigger.textContent = opt.textContent;
         this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platformId !== platformId));
         this.closeSocialMenu();
@@ -1020,13 +1022,13 @@ export class EditorEngine {
   bindUnitEvents() {
     if (!this.unitTrigger) return;
     this.unitTrigger.addEventListener('click', () => {
-      this.trackEvent('Aspect Ratio Custom - Unit|UnityWidget');
+      this.trackEvent('Aspect Ratio freeform - Unit|UnityWidget');
       this.toggleUnitMenu();
     });
     this.unitMenu?.querySelectorAll('.ia-unit-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         this.unit = opt.dataset.unit;
-        this.trackEvent(`Aspect Ratio Custom - Unit - ${this.unit}|UnityWidget`);
+        this.trackEvent(`Aspect Ratio freeform - Unit - ${this.unit}|UnityWidget`);
         if (this.unitLabel) this.unitLabel.textContent = this.unit;
         this.closeUnitMenu();
         this.syncDimensionFields();
@@ -1079,9 +1081,9 @@ export class EditorEngine {
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
         const panelTab = pill.closest('.ia-resize-detail-panel')?.dataset.tab;
         if (panelTab === 'standard') {
-          this.trackEvent(`Aspect Ratio Standard - ${pill.dataset.nameId}|UnityWidget`);
+          this.trackEvent(`Aspect Ratio ${panelTab} - ${pill.dataset.nameId}|UnityWidget`);
         } else if (panelTab !== 'social') {
-          this.trackEvent(`Aspect Ratio ${ratioText || (ratio && label) || 'Freeform'}|UnityWidget`);
+          this.trackEvent(`Aspect Ratio ${ratioText || pill.dataset.nameId || 'freeform'}|UnityWidget`);
         }
         this.selectedPill = pill;
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
@@ -1089,7 +1091,7 @@ export class EditorEngine {
       });
     });
     this.moreTrigger?.addEventListener('click', () => {
-      this.trackEvent('Aspect Ratio More|UnityWidget');
+      this.trackEvent(`Aspect Ratio ${this.moreTrigger.dataset.groupId}|UnityWidget`);
       this.toggleMore();
     });
     this.moreMenu?.querySelectorAll('.ia-more-opt')?.forEach((opt) => {
@@ -1101,7 +1103,7 @@ export class EditorEngine {
         const {
           ratio, label, displayLabel, ratioText, icon,
         } = opt.dataset;
-        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        this.trackEvent(`Aspect Ratio ${ratioText || opt.dataset.nameId || 'freeform'}|UnityWidget`);
         this.selectAspect(Number(ratio), displayLabel || label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });

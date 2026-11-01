@@ -212,6 +212,20 @@ describe('editor panel builders', () => {
     expect(p.querySelector('.ia-more-opt').dataset.label).to.equal('landscape 16:9');
   });
 
+  it('identifies See all by nameId rather than missing ratio or localized text', () => {
+    const p = buildEditorRightPanel({
+      ...cropData,
+      aspectRows: [
+        { groupId: 'more', nameId: 'seeAll', nameLabel: 'Tout afficher', ratio: '1:1' },
+        { groupId: 'more', nameId: 'portrait', nameLabel: 'See all' },
+      ],
+    });
+    const [seeAll, preset] = p.querySelectorAll('.ia-more-opt');
+    expect(seeAll.classList.contains('ia-editor-open-in-firefly')).to.equal(true);
+    expect(seeAll.dataset.nameId).to.equal('seeAll');
+    expect(preset.classList.contains('ia-editor-open-in-firefly')).to.equal(false);
+  });
+
   it('resize right panel builds tabs, inputs and platform menu', () => {
     const p = buildEditorRightPanel(resizeData);
     expect(p.querySelector('.ia-editor-title').textContent).to.equal('Resize your image');
@@ -281,11 +295,11 @@ describe('EditorEngine (crop)', () => {
   beforeEach(async () => { ctx = await makeEngine(cropData); });
   afterEach(() => cleanup(ctx.area));
 
-  it('tracks the freeform preset as Freeform while keeping its lowercase ID', () => {
+  it('tracks the freeform preset using its lowercase ID', () => {
     const pill = ctx.engine.aspectPills[0];
     expect(pill.dataset.label).to.equal('freeform');
     pill.click();
-    expect(ctx.track.calledWith('Aspect Ratio Freeform|UnityWidget')).to.equal(true);
+    expect(ctx.track.calledWith('Aspect Ratio freeform|UnityWidget')).to.equal(true);
   });
 
   it('setImage stores natural size and renders a full-width frame', () => {
@@ -494,8 +508,8 @@ describe('EditorEngine (resize)', () => {
   it('clicking Width and Height sends analytics', () => {
     ctx.engine.widthInput.click();
     ctx.engine.heightInput.click();
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Width|UnityWidget')).to.be.true;
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Height|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Width|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Height|UnityWidget')).to.be.true;
   });
 
   it('unit conversion uses 72 dpi', () => {
@@ -513,8 +527,8 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.unitMenu.querySelector('[data-unit="cm"]').click();
     expect(ctx.engine.unit).to.equal('cm');
     expect(ctx.engine.unitLabel.textContent).to.equal('cm');
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Unit|UnityWidget')).to.be.true;
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Unit - cm|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Unit|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Unit - cm|UnityWidget')).to.be.true;
     ctx.engine.unitTrigger.click();
     ctx.engine.unitMenu.querySelector('.ia-dropdown-close').click();
     expect(ctx.engine.unitMenu.classList.contains('hide')).to.be.true;
@@ -534,7 +548,7 @@ describe('EditorEngine (resize)', () => {
     const std = ctx.engine.resizeTabs.find((t) => t.dataset.tab === 'standard');
     std.click();
     expect(ctx.engine.resizeTab).to.equal('standard');
-    expect(ctx.track.calledWith('Aspect Ratio Standard|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio standard|UnityWidget')).to.be.true;
     const panel = ctx.engine.resizeDetails.find((d) => d.dataset.tab === 'standard');
     expect(panel.classList.contains('hide')).to.be.false;
   });
@@ -542,7 +556,7 @@ describe('EditorEngine (resize)', () => {
   it('standard pill sends the name analytics and applies dimensions', () => {
     const pill = ctx.engine.aspectPills.find((p) => p.dataset.nameId === 'square');
     pill.click();
-    expect(ctx.track.calledWith('Aspect Ratio Standard - square|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio standard - square|UnityWidget')).to.be.true;
     expect(ctx.engine.selectedPill).to.equal(pill);
   });
 
@@ -551,7 +565,7 @@ describe('EditorEngine (resize)', () => {
     social.click();
     expect(ctx.engine.socialMenu.classList.contains('hide')).to.be.false;
     ctx.engine.socialMenu.querySelector('.ia-social-opt').click();
-    expect(ctx.track.calledWith('Aspect Ratio Social - instagram|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio social - instagram|UnityWidget')).to.be.true;
     expect(social.textContent).to.equal('Instagram');
     ctx.track.resetHistory();
     const pill = ctx.engine.aspectPills.find((p) => p.dataset.platformId === 'instagram');
@@ -563,6 +577,19 @@ describe('EditorEngine (resize)', () => {
     social.click();
     social.click();
     document.body.click();
+  });
+
+  it('tracks Resize tab IDs independently of their display text', () => {
+    ctx.track.resetHistory();
+    ctx.engine.resizeTabs.forEach((tab) => {
+      tab.textContent = 'Libellé localisé';
+      tab.click();
+    });
+    expect(ctx.track.args.map(([name]) => name)).to.deep.equal([
+      'Aspect Ratio freeform|UnityWidget',
+      'Aspect Ratio standard|UnityWidget',
+      'Aspect Ratio social|UnityWidget',
+    ]);
   });
 
   it('uses platformLabel for display while grouping and tracking by platformId', async () => {
@@ -581,13 +608,13 @@ describe('EditorEngine (resize)', () => {
     options[0].click();
     expect(options[0].textContent).to.equal('Instagram localisé');
     expect(ctx.engine.socialTrigger.textContent).to.equal('Instagram localisé');
-    expect(ctx.track.calledWith('Aspect Ratio Social - instagram|UnityWidget')).to.equal(true);
+    expect(ctx.track.calledWith('Aspect Ratio social - instagram|UnityWidget')).to.equal(true);
     const instagramGrid = ctx.right.querySelector('.ia-social-grid[data-platform-id="instagram"]');
     expect(instagramGrid.classList.contains('hide')).to.equal(false);
     expect(instagramGrid.querySelectorAll('.ia-aspect-pill').length).to.equal(2);
     ctx.engine.socialTrigger.click();
     options[1].click();
-    expect(ctx.track.calledWith('Aspect Ratio Social - facebook|UnityWidget')).to.equal(true);
+    expect(ctx.track.calledWith('Aspect Ratio social - facebook|UnityWidget')).to.equal(true);
     expect(instagramGrid.classList.contains('hide')).to.equal(true);
     const facebookGrid = ctx.right.querySelector('.ia-social-grid[data-platform-id="facebook"]');
     expect(facebookGrid.classList.contains('hide')).to.equal(false);
@@ -619,7 +646,7 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.socialTrigger.click();
     ctx.engine.socialMenu.querySelector('.ia-social-opt').click();
     expect(ctx.engine.socialTrigger.textContent).to.equal('Twitter');
-    expect(ctx.track.calledWith('Aspect Ratio Social - x|UnityWidget')).to.equal(true);
+    expect(ctx.track.calledWith('Aspect Ratio social - x|UnityWidget')).to.equal(true);
     expect(ctx.engine.aspectPills[0].dataset.platformId).to.equal('x');
     expect(ctx.engine.aspectPills[0].textContent).to.equal('Portrait 720 x 1280');
   });
@@ -950,7 +977,7 @@ describe('EditorEngine responsive layout and extras', () => {
     const pill = ctx.engine.aspectPills[0];
     expect(pill.textContent).to.equal('Paysage 4:3');
     pill.click();
-    expect(ctx.track.firstCall.args[0]).to.equal('Aspect Ratio Standard - landscape|UnityWidget');
+    expect(ctx.track.firstCall.args[0]).to.equal('Aspect Ratio standard - landscape|UnityWidget');
     expect(ctx.engine.resizeTabs[0].textContent).to.equal('Personnalisé');
   });
 
@@ -967,6 +994,7 @@ describe('EditorEngine responsive layout and extras', () => {
     ctx.engine.aspectPills[0].click();
     expect(ctx.track.firstCall.args[0]).to.equal('Aspect Ratio 1:1|UnityWidget');
     ctx.engine.moreTrigger.click();
+    expect(ctx.track.lastCall.args[0]).to.equal('Aspect Ratio more|UnityWidget');
     ctx.engine.moreMenu.querySelector('.ia-more-opt').click();
     expect(ctx.engine.moreTrigger.textContent).to.equal('Paysage 4:3');
     expect(ctx.track.lastCall.args[0]).to.equal('Aspect Ratio 4:3|UnityWidget');

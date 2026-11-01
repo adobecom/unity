@@ -295,6 +295,28 @@ describe('Inline action editor workflow', () => {
     expect(binder.trackEvent.firstCall.args[0]).to.equal('Edit|UnityWidget');
   });
 
+  it('tracks seeAll using its ID instead of its localized display label', async () => {
+    const panel = buildEditorRightPanel({
+      operation: 'crop',
+      nbaPills: [],
+      aspectRows: [{
+        groupId: 'more',
+        groupLabel: 'Plus',
+        nameId: 'seeAll',
+        nameLabel: 'Tout afficher',
+      }],
+    });
+    const option = panel.querySelector('.ia-more-opt.ia-editor-open-in-firefly');
+    expect(option.textContent).to.equal('Tout afficher');
+    expect(option.dataset.nameId).to.equal('seeAll');
+    await runEditInFirefly(binder, option);
+    expect(binder.trackEvent.calledOnceWithExactly('seeAll|UnityWidget', {
+      assetId: binder.resultAssetId,
+      action: 'redirect',
+    })).to.equal(true);
+    expect(binder.callConnector.calledOnce).to.equal(true);
+  });
+
   [
     { tab: 'freeform', pill: null, mode: 'freeform' },
     { tab: 'standard', pill: { ratioText: '4:3' }, mode: 'standard', aspectRatio: '4:3' },
