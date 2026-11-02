@@ -76,6 +76,10 @@ class WfInitiator {
         `${getUnityLibs()}/core/styles/splash-screen.css`,
         ...this.getWidgetPaths(),
       ],
+      'workflow-face-swap': [
+        `${baseWfPath}/sprite.svg`,
+        ...this.getWidgetPaths(),
+      ],
     };
     const commonResources = [
       `${baseWfPath}/target-config.json`,
@@ -308,6 +312,10 @@ class WfInitiator {
       'workflow-inline-action': {
         productName: product || 'Firefly',
         sfList: new Set([feature]),
+      },
+      'workflow-face-swap': {
+        productName: product || 'Firefly',
+        sfList: new Set([feature || 'face-swap']),
       },
     };
     if (!wfName || !workflowCfg[wfName]) return [];

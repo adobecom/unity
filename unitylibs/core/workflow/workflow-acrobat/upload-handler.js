@@ -57,11 +57,14 @@ export default class UploadHandler {
     try {
       assetData = await this.directUploadAsset(file, abortSignal);
     } catch (error) {
+      // A cancel-triggered abort is not a failure: skip the error splash and the chunked-upload fallback.
+      if (abortSignal.aborted || error?.name === 'AbortError') return true;
       this.initSplashScreen();
       await this.transitionScreen.showSplashScreen();
       this.handleUploadError(error, 'pre_upload_error_direct_upload');
       return false;
     }
+    if (abortSignal.aborted || !this.actionBinder.isUploading) return true;
     fileData.assetId = assetData.id;
     this.actionBinder.setAssetId(assetData.id);
     const effectiveFileType = await this.getEffectiveFileType(file);
@@ -77,6 +80,8 @@ export default class UploadHandler {
       },
     };
     const redirectSuccess = await this.actionBinder.handleRedirect(cOpts, fileData);
+    // Only the signal: a newer upload may have already set isUploading back to true.
+    if (abortSignal.aborted) return true;
     if (!redirectSuccess) return false;
 
     this.actionBinder.operations.push(assetData.id);

@@ -17,6 +17,15 @@ async function loadPdflite() {
   }
 }
 
+export async function warmPdflite() {
+  try {
+    await loadPdflite();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export async function validateFilesWithPdflite(files, limits, checkScanned = false) {
   const hasPdfFiles = files.some((f) => f.type === 'application/pdf');
   if (!hasPdfFiles) return { passed: files, failed: [] };

@@ -1,0 +1,67 @@
+module.exports = {
+  FeatureName: 'Face Swap',
+  features: [
+    {
+      tcid: '0',
+      name: '@face-swap-ui',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: {
+        title: 'Get started',
+        originalTitle: 'Original Image',
+        faceTitle: 'Face Image',
+        galleryLabel: 'Image gallery',
+        ctaLabel: 'Try face swap',
+      },
+      tags: '@face-swap @smoke @regression @unity',
+    },
+    {
+      tcid: '1',
+      name: '@face-swap-upload',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: {},
+      tags: '@face-swap @smoke @regression @unity',
+    },
+    {
+      tcid: '2',
+      name: '@face-swap-reset',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: {},
+      tags: '@face-swap @regression @unity',
+    },
+    {
+      tcid: '3',
+      name: '@face-swap-gallery',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: {},
+      tags: '@face-swap @smoke @regression @unity',
+    },
+    {
+      tcid: '4',
+      name: '@face-swap-error-filetype',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: { errorText: 'This media type is not supported. Please upload a new file.' },
+      tags: '@face-swap @regression @unity',
+    },
+    {
+      tcid: '5',
+      name: '@face-swap-mobile-cta',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: { ctaLabel: 'Try face swap', viewport: { width: 375, height: 812 } },
+      tags: '@face-swap @regression @unity',
+    },
+    {
+      tcid: '6',
+      name: '@face-swap-no-image-redirect',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: {},
+      tags: '@face-swap @smoke @regression @unity',
+    },
+    {
+      tcid: '7',
+      name: '@face-swap-gallery-redirect',
+      path: '/drafts/nala/unity/face-swap?georouting=off',
+      data: { allowedTypes: ['image/jpeg', 'image/png', 'image/webp'] },
+      tags: '@face-swap @smoke @regression @unity',
+    },
+  ],
+};
