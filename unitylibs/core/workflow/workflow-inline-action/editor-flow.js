@@ -67,9 +67,9 @@ function ensureAssetUploaded(binder) {
 function buildResizeOperation(engine) {
   const pill = engine.selectedPill?.dataset;
   let pillMode = null;
-  if (pill?.platform) pillMode = 'Social';
-  else if (pill?.ratioText) pillMode = 'Standard';
-  const resizeMode = pillMode && pillMode.toLowerCase() === engine.resizeTab ? pillMode : 'Freeform';
+  if (pill?.platformId) pillMode = 'social';
+  else if (pill?.ratioText) pillMode = 'standard';
+  const resizeMode = pillMode === engine.resizeTab ? pillMode : 'freeform';
   const { width, height } = engine.getResizeDimensions();
   const resizeOp = {
     type: 'resize',
@@ -78,30 +78,31 @@ function buildResizeOperation(engine) {
     height: Math.round(height),
     displayUnit: engine.unit,
   };
-  if (resizeMode === 'Social') {
-    resizeOp.socialApp = pill.platform;
-    resizeOp.socialPostType = pill.name;
+  if (resizeMode === 'social') {
+    resizeOp.socialPlatform = pill.platformId;
+    resizeOp.socialPostType = pill.nameId;
     if (pill.width && pill.height) {
       resizeOp.width = Number(pill.width);
       resizeOp.height = Number(pill.height);
     }
   }
   if (engine.outputType === 'image/jpeg') resizeOp.quality = Math.round(engine.quality);
-  const aspectRatio = resizeMode === 'Standard' ? pill.ratioText : null;
+  const aspectRatio = resizeMode === 'standard' ? pill.ratioText : null;
   return { aspectRatio, resizeOp };
 }
 
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
-  binder.widgetRef?.setState(InlineActionState.LOADING);
-  binder.widgetRef?.setProgress(0);
+  const isResize = binder.operation === 'resize';
+  if (!isResize) {
+    binder.widgetRef?.setState(InlineActionState.LOADING);
+    binder.widgetRef?.setProgress(0);
+  }
   const isFirstEditorLoad = !binder.widgetRef.editorEngine;
   const editorReady = binder.widgetRef?.ensureEditorEngine((name, data) => binder.trackEvent(name, data));
-  const isResize = binder.operation === 'resize';
   try {
     if (isResize) {
       binder.originalFile = file;
       binder.originalFileType = binder.filesData.type;
-      binder.widgetRef?.setProgress(100);
     } else {
       const ok = await binder.uploadAsset(file, true);
       if (!ok) {
@@ -213,7 +214,8 @@ export async function resetEditor(binder) {
 export async function runEditInFirefly(binder, el) {
   const engine = binder.widgetRef?.editorEngine;
   if (!engine) return;
-  binder.trackEvent(`${el?.textContent?.trim() || 'Open in Firefly'}|UnityWidget`, {
+  const analyticsLabel = el?.dataset?.nameId || 'Open in Firefly';
+  binder.trackEvent(`${analyticsLabel}|UnityWidget`, {
     assetId: binder.resultAssetId,
     action: 'redirect',
   });

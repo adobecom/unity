@@ -1,6 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
+import { buildEditorRightPanel } from '../../../../unitylibs/core/widgets/inline-action/editor.js';
 import {
   buildImageOperationsPayload, editorUploadFlow, runEditorOperation,
   resetEditor, runEditInFirefly,
@@ -29,7 +30,7 @@ describe('Inline action editor workflow', () => {
       currentImageSize: 1000,
       uploadedImageSize: 2000,
       originalImageUrl: 'original-url',
-      resizeTab: 'custom',
+      resizeTab: 'freeform',
       unit: 'px',
       setImage: sinon.stub().resolves(),
       setOutputType: sinon.spy(),
@@ -216,7 +217,12 @@ describe('Inline action editor workflow', () => {
       expect(engine.setImage.firstCall.args.slice(1)).to.deep.equal([999, true]);
       expect(engine.reset.calledOnce).to.equal(true);
       expect(binder.bindActionMapElements.callCount).to.equal(3);
-      expect(binder.widgetRef.setState.args.map(([s]) => s)).to.deep.equal(['loading', 'complete']);
+      expect(binder.widgetRef.setState.args.map(([s]) => s)).to.deep.equal(
+        operation === 'crop' ? ['loading', 'complete'] : ['complete'],
+      );
+      expect(binder.widgetRef.setProgress.args).to.deep.equal(
+        operation === 'crop' ? [[0], [100]] : [],
+      );
       expect(binder.trackEvent.calledWith('editor-event', { test: true })).to.equal(true);
     });
 
@@ -243,14 +249,17 @@ describe('Inline action editor workflow', () => {
     expect(binder.widgetRef.setState.lastCall.args).to.deep.equal(['initial']);
   });
 
-  [false, true].forEach((tracked) => {
-    it(`reports editor initialization failures (${tracked})`, async () => {
-      const error = Object.assign(new Error('decode'), { analyticsTracked: tracked });
-      engine.setImage.rejects(error);
-      await editorUploadFlow(binder, file);
-      expect(binder.trackServerError.called).to.equal(!tracked);
-      expect(binder.serviceHandler.showErrorToast.firstCall.args[1]).to.equal(error);
-      expect(binder.widgetRef.setState.lastCall.args).to.deep.equal(['initial']);
+  ['crop', 'resize'].forEach((operation) => {
+    [false, true].forEach((tracked) => {
+      it(`reports ${operation} editor initialization failures (${tracked})`, async () => {
+        binder.operation = operation;
+        const error = Object.assign(new Error('decode'), { analyticsTracked: tracked });
+        engine.setImage.rejects(error);
+        await editorUploadFlow(binder, file);
+        expect(binder.trackServerError.called).to.equal(!tracked);
+        expect(binder.serviceHandler.showErrorToast.firstCall.args[1]).to.equal(error);
+        expect(binder.widgetRef.setState.lastCall.args).to.deep.equal(['initial']);
+      });
     });
   });
 
@@ -291,16 +300,53 @@ describe('Inline action editor workflow', () => {
     await runEditInFirefly(binder, { textContent: 'Edit' });
     expect(binder.buildConnectorPayload.firstCall.args[0].aspectRatio).to.equal('freeform');
     expect(binder.serviceHandler.showErrorToast.firstCall.args[1]).to.equal(error);
-    expect(binder.trackEvent.firstCall.args[0]).to.equal('Edit|UnityWidget');
+    expect(binder.trackEvent.firstCall.args[0]).to.equal('Open in Firefly|UnityWidget');
+  });
+
+  ['crop', 'resize'].forEach((operation) => {
+    it(`uses fixed Open in Firefly analytics for a localized ${operation} CTA`, async () => {
+      binder.operation = operation;
+      const button = document.createElement('button');
+      button.textContent = 'Ouvrir dans Firefly';
+      await runEditInFirefly(binder, button);
+      expect(binder.trackEvent.calledOnceWithExactly('Open in Firefly|UnityWidget', {
+        assetId: binder.resultAssetId,
+        action: 'redirect',
+      })).to.equal(true);
+      expect(button.textContent).to.equal('Ouvrir dans Firefly');
+      expect(binder.callConnector.calledOnce).to.equal(true);
+    });
+  });
+
+  it('tracks seeAll using its ID instead of its localized display label', async () => {
+    const panel = buildEditorRightPanel({
+      operation: 'crop',
+      nbaPills: [],
+      aspectRows: [{
+        groupId: 'more',
+        groupLabel: 'Plus',
+        nameId: 'seeAll',
+        nameLabel: 'Tout afficher',
+      }],
+    });
+    const option = panel.querySelector('.ia-more-opt.ia-editor-open-in-firefly');
+    expect(option.textContent).to.equal('Tout afficher');
+    expect(option.dataset.nameId).to.equal('seeAll');
+    await runEditInFirefly(binder, option);
+    expect(binder.trackEvent.calledOnceWithExactly('seeAll|UnityWidget', {
+      assetId: binder.resultAssetId,
+      action: 'redirect',
+    })).to.equal(true);
+    expect(binder.callConnector.calledOnce).to.equal(true);
   });
 
   [
-    { tab: 'custom', pill: null, mode: 'Freeform' },
-    { tab: 'standard', pill: { ratioText: '4:3' }, mode: 'Standard', aspectRatio: '4:3' },
-    { tab: 'social', pill: { platform: 'Instagram', name: 'Story', width: '1080', height: '1920' }, mode: 'Social' },
-    { tab: 'social', pill: { platform: 'Facebook', name: 'Post' }, mode: 'Social' },
-    { tab: 'custom', pill: { ratioText: '4:3' }, mode: 'Freeform' },
-    { tab: 'custom', pill: {}, mode: 'Freeform' },
+    { tab: 'freeform', pill: null, mode: 'freeform' },
+    { tab: 'standard', pill: { ratioText: '4:3' }, mode: 'standard', aspectRatio: '4:3' },
+    { tab: 'social', pill: { platformId: 'instagram', nameId: 'story', width: '1080', height: '1920' }, mode: 'social' },
+    { tab: 'social', pill: { platformId: 'facebook', nameId: 'feedLandscape' }, mode: 'social' },
+    { tab: 'freeform', pill: { ratioText: '4:3' }, mode: 'freeform' },
+    { tab: 'freeform', pill: {}, mode: 'freeform' },
   ].forEach(({ tab, pill, mode, aspectRatio }) => {
     it(`builds resize operations for ${tab}/${JSON.stringify(pill)}`, async () => {
       binder.operation = 'resize';
@@ -311,9 +357,9 @@ describe('Inline action editor workflow', () => {
       await runEditInFirefly(binder);
       const fields = binder.buildConnectorPayload.firstCall.args[0];
       const expected = { type: 'resize', resizeMode: mode, width: 50, height: 100, displayUnit: 'in', quality: 80 };
-      if (mode === 'Social') {
-        expected.socialApp = pill.platform;
-        expected.socialPostType = pill.name;
+      if (mode === 'social') {
+        expected.socialPlatform = pill.platformId;
+        expected.socialPostType = pill.nameId;
         if (pill.width) Object.assign(expected, { width: 1080, height: 1920 });
       }
       expect(fields.operations).to.deep.equal([
@@ -326,13 +372,45 @@ describe('Inline action editor workflow', () => {
     });
   });
 
+  it('uses platformId and nameId from configured presets in the connector payload', async () => {
+    const panel = buildEditorRightPanel({
+      operation: 'resize',
+      nbaPills: [],
+      aspectRows: [{
+        groupId: 'social',
+        groupLabel: 'Social',
+        platformId: 'x',
+        platformLabel: 'Twitter',
+        nameId: 'portrait',
+        nameLabel: 'Portrait',
+        width: 720,
+        height: 1280,
+      }],
+    });
+    binder.operation = 'resize';
+    engine.resizeTab = 'social';
+    engine.selectedPill = panel.querySelector('.ia-aspect-pill');
+    expect(panel.querySelector('.ia-social-opt').textContent).to.equal('Twitter');
+    expect(engine.selectedPill.textContent).to.equal('Portrait 720 x 1280');
+    await runEditInFirefly(binder);
+    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.deep.equal({
+      type: 'resize',
+      resizeMode: 'social',
+      width: 720,
+      height: 1280,
+      displayUnit: 'px',
+      socialPlatform: 'x',
+      socialPostType: 'portrait',
+    });
+  });
+
   it('uploads lazily once and omits quality for non-JPEG', async () => {
     binder.operation = 'resize';
     binder.assetId = null;
     await Promise.all([runEditInFirefly(binder), runEditInFirefly(binder)]);
     expect(binder.uploadAsset.calledOnceWithExactly(file)).to.equal(true);
     expect(binder.originalUploadPromise).to.equal(null);
-    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.deep.equal({ type: 'resize', resizeMode: 'Freeform', width: 50, height: 100, displayUnit: 'px' });
+    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.deep.equal({ type: 'resize', resizeMode: 'freeform', width: 50, height: 100, displayUnit: 'px' });
     await runEditInFirefly(binder);
     expect(binder.uploadAsset.callCount).to.equal(1);
   });

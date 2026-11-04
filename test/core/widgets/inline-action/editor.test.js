@@ -14,10 +14,10 @@ const cropData = {
   operation: 'crop',
   sliderModes: [{ mode: 'zoom', label: 'Zoom' }],
   aspectRows: [
-    { name: 'Freeform' },
-    { name: 'Square', ratio: '1:1' },
-    { group: 'More', name: 'Wide', ratio: '16:9' },
-    { group: 'More', name: 'Other' },
+    { nameId: 'freeform', nameLabel: 'Freeform' },
+    { nameId: 'square', nameLabel: 'Square', ratio: '1:1' },
+    { groupId: 'more', groupLabel: 'More', nameId: 'landscape', nameLabel: 'Landscape', ratio: '16:9' },
+    { groupId: 'more', groupLabel: 'More', nameId: 'seeAll', nameLabel: 'See all' },
   ],
   nbaPills: [{ nba: 'removeBackground', label: 'Remove', iconHref: '' }],
 };
@@ -25,9 +25,9 @@ const resizeData = {
   operation: 'resize',
   sliderModes: [{ mode: 'zoom', label: 'Zoom' }, { mode: 'quality', label: 'Quality' }],
   aspectRows: [
-    { group: 'Custom' },
-    { group: 'Standard', ratio: '1:1', name: 'Square' },
-    { group: 'Social', platform: 'Instagram', name: 'Post', width: 1080, height: 1080 },
+    { groupId: 'freeform', groupLabel: 'Custom' },
+    { groupId: 'standard', groupLabel: 'Standard', ratio: '1:1', nameId: 'square', nameLabel: 'Square' },
+    { groupId: 'social', groupLabel: 'Social', platformId: 'instagram', platformLabel: 'Instagram', nameId: 'square', nameLabel: 'Square', width: 1080, height: 1080 },
   ],
   nbaPills: [{ nba: 'cropImage', label: 'Crop', iconHref: '' }],
 };
@@ -194,8 +194,36 @@ describe('editor panel builders', () => {
   });
 
   it('crop right panel omits More when there are no grouped rows', () => {
-    const p = buildEditorRightPanel({ ...cropData, aspectRows: [{ name: 'Freeform' }] });
+    const p = buildEditorRightPanel({ ...cropData, aspectRows: [{ nameId: 'freeform', nameLabel: 'Freeform' }] });
     expect(p.querySelector('.ia-more-trigger')).to.not.exist;
+  });
+
+  it('routes only the lowercase more group to the localized Crop menu', () => {
+    const p = buildEditorRightPanel({
+      ...cropData,
+      aspectRows: [
+        { groupId: 'primary', groupLabel: 'Formats', nameId: 'square', nameLabel: 'Square', ratio: '1:1' },
+        { groupId: 'more', groupLabel: 'Plus', nameId: 'landscape', nameLabel: 'Landscape', ratio: '16:9' },
+      ],
+    });
+    expect(p.querySelector('.ia-aspect-pill:not(.ia-more-trigger)').textContent).to.equal('Square 1:1');
+    expect(p.querySelector('.ia-more-trigger').textContent).to.equal('Plus');
+    expect(p.querySelectorAll('.ia-more-opt').length).to.equal(1);
+    expect(p.querySelector('.ia-more-opt').dataset.label).to.equal('landscape 16:9');
+  });
+
+  it('identifies See all by nameId rather than missing ratio or localized text', () => {
+    const p = buildEditorRightPanel({
+      ...cropData,
+      aspectRows: [
+        { groupId: 'more', nameId: 'seeAll', nameLabel: 'Tout afficher', ratio: '1:1' },
+        { groupId: 'more', nameId: 'portrait', nameLabel: 'See all' },
+      ],
+    });
+    const [seeAll, preset] = p.querySelectorAll('.ia-more-opt');
+    expect(seeAll.classList.contains('ia-editor-open-in-firefly')).to.equal(true);
+    expect(seeAll.dataset.nameId).to.equal('seeAll');
+    expect(preset.classList.contains('ia-editor-open-in-firefly')).to.equal(false);
   });
 
   it('resize right panel builds tabs, inputs and platform menu', () => {
@@ -208,9 +236,49 @@ describe('editor panel builders', () => {
     expect(p.querySelectorAll('.ia-social-opt').length).to.equal(1);
   });
 
-  it('resize right panel works with only the custom tab', () => {
-    const p = buildEditorRightPanel({ ...resizeData, aspectRows: [{ group: 'Custom' }] });
+  it('resize right panel works with only the freeform tab', () => {
+    const p = buildEditorRightPanel({ ...resizeData, aspectRows: [{ groupId: 'freeform', groupLabel: 'Custom' }] });
     expect(p.querySelectorAll('.ia-resize-tab').length).to.equal(1);
+    expect(p.querySelector('.ia-resize-tab').dataset.tab).to.equal('freeform');
+    expect(p.querySelector('.ia-resize-tab').textContent).to.equal('Custom');
+    expect(p.querySelector('.ia-resize-detail-panel').dataset.tab).to.equal('freeform');
+  });
+
+  it('routes Resize rows by groupId even when labels repeat or fields suggest another group', () => {
+    const p = buildEditorRightPanel({
+      ...resizeData,
+      aspectRows: [
+        { groupId: 'social', groupLabel: 'Formats', platformId: 'instagram', platformLabel: 'Instagram', nameId: 'square', nameLabel: 'Square', width: 1080, height: 1080 },
+        { groupId: 'freeform', groupLabel: 'Formats', ratio: '4:3' },
+        { groupId: 'standard', groupLabel: 'Formats', nameId: 'square', nameLabel: 'Square', width: 1000, height: 1000 },
+      ],
+    });
+    const tabs = [...p.querySelectorAll('.ia-resize-tab')];
+    expect(tabs.map((tab) => tab.dataset.tab)).to.deep.equal(['freeform', 'standard', 'social']);
+    expect(tabs.map((tab) => tab.textContent)).to.deep.equal(['Formats', 'Formats', 'Formats']);
+    expect(p.querySelector('[data-tab="standard"] .ia-aspect-pill').dataset.nameId).to.equal('square');
+    expect(p.querySelector('[data-tab="social"] .ia-aspect-pill').dataset.platformId).to.equal('instagram');
+  });
+
+  it('uses nameLabel for social preset text and nameId for preset metadata', () => {
+    const p = buildEditorRightPanel({
+      ...resizeData,
+      aspectRows: [
+        { groupId: 'social', groupLabel: 'Social', platformId: 'instagram', platformLabel: 'Instagram', nameId: 'square', nameLabel: 'Publication', width: 1080, height: 1080 },
+      ],
+    });
+    const pill = p.querySelector('.ia-aspect-pill');
+    expect(pill.textContent).to.equal('Publication 1080 x 1080');
+    expect(pill.dataset.nameId).to.equal('square');
+    expect(pill.dataset.label).to.equal('square 1080 x 1080');
+  });
+
+  it('falls back to nameId when nameLabel is empty', () => {
+    const p = buildEditorRightPanel({
+      ...cropData,
+      aspectRows: [{ nameId: 'square', nameLabel: '', ratio: '1:1' }],
+    });
+    expect(p.querySelector('.ia-aspect-pill').textContent).to.equal('square 1:1');
   });
 
   it('uses authored labels when provided', () => {
@@ -227,6 +295,13 @@ describe('EditorEngine (crop)', () => {
   beforeEach(async () => { ctx = await makeEngine(cropData); });
   afterEach(() => cleanup(ctx.area));
 
+  it('tracks the freeform preset using its lowercase ID', () => {
+    const pill = ctx.engine.aspectPills[0];
+    expect(pill.dataset.label).to.equal('freeform');
+    pill.click();
+    expect(ctx.track.calledWith('Aspect Ratio freeform|UnityWidget')).to.equal(true);
+  });
+
   it('setImage stores natural size and renders a full-width frame', () => {
     expect(ctx.engine.naturalW).to.equal(200);
     expect(ctx.engine.naturalH).to.equal(100);
@@ -235,7 +310,7 @@ describe('EditorEngine (crop)', () => {
   });
 
   it('selectAspect applies the ratio and marks the pill active', () => {
-    const pill = ctx.engine.aspectPills.find((p) => p.dataset.label === 'Square 1:1');
+    const pill = ctx.engine.aspectPills.find((p) => p.dataset.label === 'square 1:1');
     pill.click();
     expect(ctx.engine.selectedRatio).to.equal(1);
     expect(pill.classList.contains('is-active')).to.be.true;
@@ -433,8 +508,8 @@ describe('EditorEngine (resize)', () => {
   it('clicking Width and Height sends analytics', () => {
     ctx.engine.widthInput.click();
     ctx.engine.heightInput.click();
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Width|UnityWidget')).to.be.true;
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Height|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Width|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Height|UnityWidget')).to.be.true;
   });
 
   it('unit conversion uses 72 dpi', () => {
@@ -452,7 +527,8 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.unitMenu.querySelector('[data-unit="cm"]').click();
     expect(ctx.engine.unit).to.equal('cm');
     expect(ctx.engine.unitLabel.textContent).to.equal('cm');
-    expect(ctx.track.calledWith('Aspect Ratio Custom - Unit - cm|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Unit|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio freeform - Unit - cm|UnityWidget')).to.be.true;
     ctx.engine.unitTrigger.click();
     ctx.engine.unitMenu.querySelector('.ia-dropdown-close').click();
     expect(ctx.engine.unitMenu.classList.contains('hide')).to.be.true;
@@ -472,15 +548,15 @@ describe('EditorEngine (resize)', () => {
     const std = ctx.engine.resizeTabs.find((t) => t.dataset.tab === 'standard');
     std.click();
     expect(ctx.engine.resizeTab).to.equal('standard');
-    expect(ctx.track.calledWith('Aspect Ratio Standard|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio standard|UnityWidget')).to.be.true;
     const panel = ctx.engine.resizeDetails.find((d) => d.dataset.tab === 'standard');
     expect(panel.classList.contains('hide')).to.be.false;
   });
 
   it('standard pill sends the name analytics and applies dimensions', () => {
-    const pill = ctx.engine.aspectPills.find((p) => p.dataset.name === 'Square');
+    const pill = ctx.engine.aspectPills.find((p) => p.dataset.nameId === 'square');
     pill.click();
-    expect(ctx.track.calledWith('Aspect Ratio Standard - Square|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio standard - square|UnityWidget')).to.be.true;
     expect(ctx.engine.selectedPill).to.equal(pill);
   });
 
@@ -489,10 +565,10 @@ describe('EditorEngine (resize)', () => {
     social.click();
     expect(ctx.engine.socialMenu.classList.contains('hide')).to.be.false;
     ctx.engine.socialMenu.querySelector('.ia-social-opt').click();
-    expect(ctx.track.calledWith('Aspect Ratio Social - Instagram|UnityWidget')).to.be.true;
+    expect(ctx.track.calledWith('Aspect Ratio social - instagram|UnityWidget')).to.be.true;
     expect(social.textContent).to.equal('Instagram');
     ctx.track.resetHistory();
-    const pill = ctx.engine.aspectPills.find((p) => p.dataset.platform === 'Instagram');
+    const pill = ctx.engine.aspectPills.find((p) => p.dataset.platformId === 'instagram');
     pill.click();
     expect(ctx.track.called).to.be.false;
     expect(ctx.engine.targetW).to.equal(1080);
@@ -503,10 +579,76 @@ describe('EditorEngine (resize)', () => {
     document.body.click();
   });
 
+  it('tracks Resize tab IDs independently of their display text', () => {
+    ctx.track.resetHistory();
+    ctx.engine.resizeTabs.forEach((tab) => {
+      tab.textContent = 'Libellé localisé';
+      tab.click();
+    });
+    expect(ctx.track.args.map(([name]) => name)).to.deep.equal([
+      'Aspect Ratio freeform|UnityWidget',
+      'Aspect Ratio standard|UnityWidget',
+      'Aspect Ratio social|UnityWidget',
+    ]);
+  });
+
+  it('uses platformLabel for display while grouping and tracking by platformId', async () => {
+    cleanup(ctx.area);
+    ctx = await makeEngine({
+      ...resizeData,
+      aspectRows: [
+        { groupId: 'social', platformId: 'instagram', platformLabel: 'Instagram localisé', nameId: 'square', nameLabel: 'Square', width: 1080, height: 1080 },
+        { groupId: 'social', platformId: 'instagram', platformLabel: 'Instagram localisé', nameId: 'story', nameLabel: 'Story', width: 1080, height: 1920 },
+        { groupId: 'social', platformId: 'facebook', platformLabel: 'Instagram localisé', nameId: 'feedLandscape', nameLabel: 'Feed Landscape', width: 1200, height: 630 },
+      ],
+    });
+    const options = ctx.engine.socialMenu.querySelectorAll('.ia-social-opt');
+    expect(options.length).to.equal(2);
+    ctx.engine.socialTrigger.click();
+    options[0].click();
+    expect(options[0].textContent).to.equal('Instagram localisé');
+    expect(ctx.engine.socialTrigger.textContent).to.equal('Instagram localisé');
+    expect(ctx.track.calledWith('Aspect Ratio social - instagram|UnityWidget')).to.equal(true);
+    const instagramGrid = ctx.right.querySelector('.ia-social-grid[data-platform-id="instagram"]');
+    expect(instagramGrid.classList.contains('hide')).to.equal(false);
+    expect(instagramGrid.querySelectorAll('.ia-aspect-pill').length).to.equal(2);
+    ctx.engine.socialTrigger.click();
+    options[1].click();
+    expect(ctx.track.calledWith('Aspect Ratio social - facebook|UnityWidget')).to.equal(true);
+    expect(instagramGrid.classList.contains('hide')).to.equal(true);
+    const facebookGrid = ctx.right.querySelector('.ia-social-grid[data-platform-id="facebook"]');
+    expect(facebookGrid.classList.contains('hide')).to.equal(false);
+    facebookGrid.querySelector('.ia-aspect-pill').click();
+    expect(ctx.engine.selectedPill.dataset.platformId).to.equal('facebook');
+  });
+
   it('switching away from the social tab restores its label', () => {
     ctx.engine.socialTrigger.textContent = 'Instagram';
-    ctx.engine.resizeTabs.find((t) => t.dataset.tab === 'custom').click();
+    ctx.engine.resizeTabs.find((t) => t.dataset.tab === 'freeform').click();
     expect(ctx.engine.socialTrigger.textContent).to.equal(ctx.engine.socialDefaultLabel);
+  });
+
+  it('displays Twitter while tracking the configured x platform ID', async () => {
+    cleanup(ctx.area);
+    ctx = await makeEngine({
+      ...resizeData,
+      aspectRows: [{
+        groupId: 'social',
+        groupLabel: 'Social',
+        platformId: 'x',
+        platformLabel: 'Twitter',
+        nameId: 'portrait',
+        nameLabel: 'Portrait',
+        width: 720,
+        height: 1280,
+      }],
+    });
+    ctx.engine.socialTrigger.click();
+    ctx.engine.socialMenu.querySelector('.ia-social-opt').click();
+    expect(ctx.engine.socialTrigger.textContent).to.equal('Twitter');
+    expect(ctx.track.calledWith('Aspect Ratio social - x|UnityWidget')).to.equal(true);
+    expect(ctx.engine.aspectPills[0].dataset.platformId).to.equal('x');
+    expect(ctx.engine.aspectPills[0].textContent).to.equal('Portrait 720 x 1280');
   });
 
   it('zoom and quality toggles send analytics', () => {
@@ -575,18 +717,20 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.revertQualityPreview();
   });
 
-  it('reset restores the custom tab, unit, lock and size', () => {
+  it('reset restores the freeform tab, unit, lock and size', () => {
     ctx.engine.setLocked(false);
     ctx.engine.unit = 'in';
     ctx.engine.resizeTabs.find((t) => t.dataset.tab === 'standard').click();
     ctx.engine.reset();
     expect(ctx.engine.locked).to.be.true;
     expect(ctx.engine.unit).to.equal('px');
-    expect(ctx.engine.resizeTab).to.equal('custom');
+    expect(ctx.engine.resizeTab).to.equal('freeform');
+    expect(ctx.engine.resizeDetails.filter((panel) => !panel.classList.contains('hide'))
+      .map((panel) => panel.dataset.tab)).to.deep.equal(['freeform']);
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
   });
 
-  it('unlocked custom drag updates the target size', () => {
+  it('unlocked freeform drag updates the target size', () => {
     ctx.engine.setLocked(false);
     const handle = ctx.engine.frame.querySelector('.ia-handle--e');
     handle.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0, bubbles: true }));
@@ -736,7 +880,7 @@ describe('EditorEngine responsive layout and extras', () => {
         const { engine } = ctx;
         engine.resizeTab = tab;
         const pill = engine.aspectPills.find((p) => (tab === 'social'
-          ? p.dataset.platform === 'Instagram' : p.dataset.name === 'Square'));
+          ? p.dataset.platformId === 'instagram' : p.dataset.nameId === 'square'));
         engine.setLocked(false);
         pill.click();
         expect(engine.locked).to.equal(true);
@@ -759,9 +903,9 @@ describe('EditorEngine responsive layout and extras', () => {
     ctx = await makeEngine({
       ...cropData,
       aspectRows: [
-        { name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
-        { name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
-        { group: 'More', name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
+        { nameId: 'square', nameLabel: 'Carré', ratio: '1:1' },
+        { nameId: 'square', nameLabel: 'Carré', ratio: '1:1' },
+        { groupId: 'more', groupLabel: 'More', nameId: 'square', nameLabel: 'Carré', ratio: '1:1' },
       ],
     });
     const { engine } = ctx;
@@ -778,31 +922,31 @@ describe('EditorEngine responsive layout and extras', () => {
     expect(engine.aspectPills.filter((pill) => pill.classList.contains('is-active'))).to.deep.equal([first]);
   });
 
-  ['LinkedIn', 'Snapchat'].forEach((platform) => {
+  ['linkedin', 'snapchat'].forEach((platform) => {
     it(`highlights the clicked ${platform} preset when another platform has the same label`, async () => {
-      const landscape = { name: 'Landscape', width: 1920, height: 1080 };
-      const story = { name: 'Story', width: 1080, height: 1920 };
+      const landscape = { nameId: 'landscape', nameLabel: 'Landscape', width: 1920, height: 1080 };
+      const story = { nameId: 'story', nameLabel: 'Story', width: 1080, height: 1920 };
       ctx = await makeEngine({
         ...resizeData,
         aspectRows: [
           ...resizeData.aspectRows,
-          { group: 'Social', platform: 'Facebook', ...landscape },
-          { group: 'Social', platform: 'Instagram', ...story },
-          { group: 'Social', platform: 'LinkedIn', ...landscape },
-          { group: 'Social', platform: 'LinkedIn', name: 'Square', width: 1080, height: 1080 },
-          { group: 'Social', platform: 'LinkedIn', name: 'Portrait', width: 1080, height: 1350 },
-          { group: 'Social', platform: 'LinkedIn', name: 'Cover', width: 1128, height: 191 },
-          { group: 'Social', platform: 'Snapchat', ...story },
+          { groupId: 'social', platformId: 'facebook', platformLabel: 'Facebook', ...landscape },
+          { groupId: 'social', platformId: 'instagram', platformLabel: 'Instagram', ...story },
+          { groupId: 'social', platformId: 'linkedin', platformLabel: 'Linkedin', ...landscape },
+          { groupId: 'social', platformId: 'linkedin', platformLabel: 'Linkedin', nameId: 'post', nameLabel: 'Post', width: 1920, height: 1920 },
+          { groupId: 'social', platformId: 'linkedin', platformLabel: 'Linkedin', nameId: 'vertical', nameLabel: 'Vertical', width: 1080, height: 1920 },
+          { groupId: 'social', platformId: 'linkedin', platformLabel: 'Linkedin', nameId: 'blogPost', nameLabel: 'Blog Post', width: 1200, height: 628 },
+          { groupId: 'social', platformId: 'snapchat', platformLabel: 'Snapchat', ...story },
         ],
       });
       const { engine } = ctx;
       engine.socialTrigger.click();
-      engine.socialMenu.querySelector(`[data-platform="${platform}"]`).click();
-      const grid = ctx.right.querySelector(`.ia-social-grid[data-platform="${platform}"]`);
+      engine.socialMenu.querySelector(`[data-platform-id="${platform}"]`).click();
+      const grid = ctx.right.querySelector(`.ia-social-grid[data-platform-id="${platform}"]`);
       const pill = grid.querySelector('.ia-aspect-pill');
       expect(grid.classList.contains('hide')).to.equal(false);
       pill.click();
-      expect(engine.getResizeDimensions()).to.deep.equal(platform === 'LinkedIn'
+      expect(engine.getResizeDimensions()).to.deep.equal(platform === 'linkedin'
         ? { width: 1920, height: 1080 } : { width: 1080, height: 1920 });
       expect(engine.selectedPill).to.equal(pill);
       expect(engine.aspectPills.filter((p) => p.classList.contains('is-active'))).to.deep.equal([pill]);
@@ -826,14 +970,14 @@ describe('EditorEngine responsive layout and extras', () => {
     ctx = await makeEngine({
       ...resizeData,
       aspectRows: [
-        { group: 'Personnalisé' },
-        { group: 'Standard', ratio: '4:3', name: 'Landscape', nameLoc: 'Paysage' },
+        { groupId: 'freeform', groupLabel: 'Personnalisé' },
+        { groupId: 'standard', groupLabel: 'Standard', ratio: '4:3', nameId: 'landscape', nameLabel: 'Paysage' },
       ],
     });
     const pill = ctx.engine.aspectPills[0];
     expect(pill.textContent).to.equal('Paysage 4:3');
     pill.click();
-    expect(ctx.track.firstCall.args[0]).to.equal('Aspect Ratio Standard - Landscape|UnityWidget');
+    expect(ctx.track.firstCall.args[0]).to.equal('Aspect Ratio standard - landscape|UnityWidget');
     expect(ctx.engine.resizeTabs[0].textContent).to.equal('Personnalisé');
   });
 
@@ -841,17 +985,21 @@ describe('EditorEngine responsive layout and extras', () => {
     ctx = await makeEngine({
       ...cropData,
       aspectRows: [
-        { name: 'Square', nameLoc: 'Carré', ratio: '1:1' },
-        { group: 'Plus', name: 'Landscape', nameLoc: 'Paysage', ratio: '4:3' },
+        { nameId: 'square', nameLabel: 'Carré', ratio: '1:1' },
+        { groupId: 'more', groupLabel: 'Plus', nameId: 'landscape', nameLabel: 'Paysage', ratio: '4:3' },
       ],
     });
     expect(ctx.engine.aspectPills[0].textContent).to.equal('Carré 1:1');
+    expect(ctx.engine.moreTrigger.textContent).to.equal('Plus');
     ctx.engine.aspectPills[0].click();
     expect(ctx.track.firstCall.args[0]).to.equal('Aspect Ratio 1:1|UnityWidget');
     ctx.engine.moreTrigger.click();
+    expect(ctx.track.lastCall.args[0]).to.equal('Aspect Ratio more|UnityWidget');
     ctx.engine.moreMenu.querySelector('.ia-more-opt').click();
     expect(ctx.engine.moreTrigger.textContent).to.equal('Paysage 4:3');
     expect(ctx.track.lastCall.args[0]).to.equal('Aspect Ratio 4:3|UnityWidget');
+    ctx.engine.reset();
+    expect(ctx.engine.moreTrigger.textContent).to.equal('Plus');
   });
 
   it('updates current byte size but retains uploaded byte size for reset', async () => {
@@ -959,7 +1107,7 @@ describe('initEditor', () => {
   it('loads the rows for the operation and builds the engine', async () => {
     sinon.stub(window, 'fetch').resolves({
       ok: true,
-      json: async () => ({ content: { data: [{ module: 'crop', name: 'Freeform' }, { module: 'resize', group: 'Custom' }] } }),
+      json: async () => ({ content: { data: [{ module: 'crop', nameId: 'freeform', nameLabel: 'Freeform' }, { module: 'resize', groupId: 'freeform', groupLabel: 'Custom' }] } }),
     });
     const [l, r] = mount();
     const engine = await initEditor(l, r, { ...cropData, aspectRows: undefined });
