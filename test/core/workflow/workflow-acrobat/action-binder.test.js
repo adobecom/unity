@@ -1597,6 +1597,7 @@ describe('ActionBinder', () => {
         actionBinder.showTransitionScreen = sinon.stub().resolves();
         actionBinder.transitionScreen = {
           clearProgressBarHandler: sinon.stub(),
+          toggleCancelButton: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
@@ -1662,6 +1663,7 @@ describe('ActionBinder', () => {
           splashScreenEl: splashLayer,
           LOADER_LIMIT: 95,
           clearProgressBarHandler: sinon.stub(),
+          toggleCancelButton: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
@@ -1670,6 +1672,8 @@ describe('ActionBinder', () => {
         actionBinder.delay.callsFake(async () => { actionBinder.redirectUrl = ''; });
         await actionBinder.continueInApp();
         window.history.replaceState(null, '', originalUrl);
+        expect(existingTransitionScreen.toggleCancelButton.calledOnceWith(false)).to.be.true;
+        expect(existingTransitionScreen.toggleCancelButton.calledBefore(existingTransitionScreen.updateProgressBar)).to.be.true;
         expect(actionBinder.transitionScreen).to.equal(existingTransitionScreen);
         expect(actionBinder.LOADER_LIMIT).to.equal(100);
         expect(existingTransitionScreen.LOADER_LIMIT).to.equal(100);
@@ -1696,6 +1700,7 @@ describe('ActionBinder', () => {
         actionBinder.transitionScreen = {
           splashScreenEl: document.createElement('div'),
           clearProgressBarHandler: sinon.stub(),
+          toggleCancelButton: sinon.stub(),
           updateProgressBar: sinon.stub(),
           showSplashScreen: sinon.stub().resolves(),
         };
