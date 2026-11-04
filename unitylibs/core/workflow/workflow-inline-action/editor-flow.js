@@ -92,16 +92,17 @@ function buildResizeOperation(engine) {
 }
 
 export async function editorUploadFlow(binder, file, originalSize = file.size) {
-  binder.widgetRef?.setState(InlineActionState.LOADING);
-  binder.widgetRef?.setProgress(0);
+  const isResize = binder.operation === 'resize';
+  if (!isResize) {
+    binder.widgetRef?.setState(InlineActionState.LOADING);
+    binder.widgetRef?.setProgress(0);
+  }
   const isFirstEditorLoad = !binder.widgetRef.editorEngine;
   const editorReady = binder.widgetRef?.ensureEditorEngine((name, data) => binder.trackEvent(name, data));
-  const isResize = binder.operation === 'resize';
   try {
     if (isResize) {
       binder.originalFile = file;
       binder.originalFileType = binder.filesData.type;
-      binder.widgetRef?.setProgress(100);
     } else {
       const ok = await binder.uploadAsset(file, true);
       if (!ok) {
