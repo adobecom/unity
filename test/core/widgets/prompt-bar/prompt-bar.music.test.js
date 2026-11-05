@@ -57,13 +57,18 @@ describe('Music prompt bar', () => {
     redesign = false,
     limits = {},
     models = [],
+    v2 = false,
+    generateLabel = 'Generate audio',
   } = {}) {
     const author = document.querySelector('.unity');
+    author.classList.toggle('prompt-bar-v2', v2);
     author.innerHTML = `<ul>
       ${verbs.map((verb) => `<li><span class="icon icon-verb-${verb}"></span><a href="/test/assets/img.svg">${verb === 'music' ? 'audio' : verb}</a></li>`).join('')}
       <li><span class="icon icon-placeholder-input"></span>Describe the audio you want to generate</li>
       <li><span class="icon icon-placeholder-prompt-label"></span>Enter prompt</li>
-      <li><span class="icon icon-generate"></span><img src="/test/assets/img.svg" alt="">Generate audio</li>
+      <li><span class="icon icon-generate"></span><img src="/test/assets/img.svg" alt="">${generateLabel}</li>
+      <li><span class="icon icon-placeholder-input-image"></span>Describe an image</li>
+      <li><span class="icon icon-placeholder-input-video"></span>Describe a video</li>
       ${shuffle ? '<li><span class="icon icon-shuffle"></span><img src="/test/assets/img.svg" alt="">Shuffle</li>' : ''}
       ${models.length ? '<li><span class="icon icon-model"></span></li>' : ''}
       ${suggestions ? '<li><span class="icon icon-placeholder-prompt"></span>Prompt</li><li><span class="icon icon-placeholder-suggestions"></span>Suggestions</li>' : ''}
@@ -94,7 +99,11 @@ describe('Music prompt bar', () => {
     widget.isFireflyRedesign = redesign;
     widget.models = models;
     sandbox.stub(widget, 'loadPrompts').callsFake(async () => {
-      widget.prompts = { image: [{ prompt: 'An image suggestion', assetid: 'image-asset' }] };
+      widget.prompts = {
+        image: [{ prompt: 'An image suggestion', assetid: 'image-asset' }],
+        video: [{ prompt: 'A video suggestion', assetid: 'video-asset' }],
+        sound: [{ prompt: 'A sound suggestion', assetid: 'sound-asset', variations: [] }],
+      };
     });
     await widget.initWidget();
     binder = new ActionBinder(author, cfg, host, host, actionMap);
@@ -459,6 +468,155 @@ describe('Music prompt bar', () => {
     expect(actWrap.parentElement).to.equal(actionBar);
   });
 
+  describe('Opt-in prompt bar v2', () => {
+    it('does not apply the v2 theme to music without the authoring flag', async () => {
+      await createWidget({ verbs: ['music', 'image'] });
+      expect(widget.widgetWrap.classList.contains('prompt-bar-v2')).to.be.false;
+      expect(widget.widget.querySelector('.verb-segments')).to.equal(null);
+      expect(widget.widget.querySelector('.selected-verb')).to.exist;
+      expect(getComputedStyle(widget.widget.querySelector('.autocomplete')).backgroundColor).not.to.equal('rgb(27, 27, 27)');
+      widget.shuffleMusicPrompt();
+      expect(widget.musicCounter.textContent).not.to.equal('0/500');
+    });
+
+    ['image', 'video', 'sound', 'music'].forEach((verb) => {
+      it(`applies the authored theme to a single ${verb} verb without adding a selector`, async () => {
+        await createWidget({ v2: true, verbs: [verb] });
+        expect(widget.widgetWrap.classList.contains('prompt-bar-v2')).to.be.true;
+        expect(getComputedStyle(widget.widget.querySelector('.autocomplete')).backgroundColor).to.equal('rgb(27, 27, 27)');
+        expect(widget.widget.querySelector('.verb-segments')).to.equal(null);
+        expect(widget.widget.querySelector('.selected-verb')).to.equal(null);
+        expect(!!widget.widget.querySelector('.shuffle-btn')).to.equal(verb === 'music');
+        expect(!!widget.widget.querySelector('.music-char-count')).to.equal(verb === 'music');
+        expect(binder.getSelectedVerbType()).to.equal(verb);
+      });
+    });
+
+    it('uses the authored order, labels and initial selection with radiogroup semantics', async () => {
+      await createWidget({ v2: true, verbs: ['video', 'image', 'music'], generateLabel: 'Generate' });
+      const buttons = [...widget.widget.querySelectorAll('.verb-segment')];
+      expect(buttons.map((button) => button.textContent)).to.deep.equal(['video', 'image', 'audio']);
+      expect(buttons.map((button) => button.dataset.verbType)).to.deep.equal(['video', 'image', 'music']);
+      expect(buttons.map((button) => button.tabIndex)).to.deep.equal([0, -1, -1]);
+      expect(buttons.map((button) => button.getAttribute('aria-checked'))).to.deep.equal(['true', 'false', 'false']);
+      expect(widget.widget.querySelector('.verb-segments').getAttribute('role')).to.equal('radiogroup');
+      expect(widget.widget.querySelector('.selected-verb')).to.equal(null);
+      expect(widget.widget.querySelector('.verb-list-panel')).to.equal(null);
+      expect(widget.genBtn.querySelector('.btn-txt').textContent).to.equal('Generate video');
+    });
+
+    it('reuses verb selection for placeholders, models, analytics and music-only controls', async () => {
+      await createWidget({
+        v2: true,
+        verbs: ['image', 'music', 'video'],
+        generateLabel: 'Generate',
+        models: [
+          { module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' },
+          { module: 'music', id: 'music-one', version: '1', name: 'Music One', icon: '/test/assets/img.svg' },
+        ],
+      });
+      const actWrap = widget.genBtn.parentElement;
+      const parent = actWrap.parentElement;
+      expect(widget.musicShuffle.hidden).to.be.true;
+      widget.widget.querySelector('[data-verb-type="music"]').click();
+      expect(binder.getSelectedVerbType()).to.equal('music');
+      expect(binder.getSelectedModelId()).to.equal('music-one');
+      expect(binder.getMaxPromptCharLimit()).to.equal(500);
+      expect(widget.musicInput.placeholder).to.equal('Describe the audio you want to generate');
+      expect(widget.musicShuffle.hidden).to.be.false;
+      expect(widget.musicCounter.hidden).to.be.false;
+      expect(widget.genBtn.getAttribute('daa-ll')).to.equal('Generate--music');
+      expect(widget.genBtn.querySelector('.btn-txt').textContent).to.equal('Generate audio');
+      widget.widget.querySelector('[data-verb-type="video"]').click();
+      expect(widget.musicInput.placeholder).to.equal('Describe a video');
+      expect(binder.getSelectedModelId()).to.equal(null);
+      expect(binder.getMaxPromptCharLimit()).to.equal(750);
+      expect(widget.musicShuffle.hidden).to.be.true;
+      expect(widget.musicCounter.hidden).to.be.true;
+      expect(widget.genBtn.querySelector('.btn-txt').textContent).to.equal('Generate video');
+      expect(widget.widgetWrap.classList.contains('prompt-bar-v2')).to.be.true;
+      expect(widget.widget.querySelector('.verbs-container.show-menu')).to.equal(null);
+      expect(widget.genBtn.parentElement).to.equal(actWrap);
+      expect(actWrap.parentElement).to.equal(parent);
+    });
+
+    ['image', 'video', 'sound'].forEach((verb) => {
+      it(`keeps ${verb} catalog suggestions available after switching features`, async () => {
+        await createWidget({ v2: true, verbs: ['music', 'image', 'video', 'sound'], suggestions: true });
+        widget.widget.querySelector(`[data-verb-type="${verb}"]`).click();
+        await widget.updateDropdownForVerb(verb);
+        expect(widget.widget.querySelector('.drop-item').id).to.equal(`${verb}-asset`);
+        expect(widget.widget.querySelector('.drop-item').getAttribute('daa-ll')).to.include(`--${verb}--`);
+        expect(binder.getSelectedVerbType()).to.equal(verb);
+        if (verb === 'sound') expect(widget.soundAugmented).to.be.true;
+      });
+    });
+
+    it('supports arrow keys, Home/End, RTL and a single Tab stop without generating', async () => {
+      await createWidget({ v2: true, verbs: ['image', 'video', 'music'] });
+      const generate = sandbox.stub(binder, 'generateContent');
+      const buttons = [...widget.widget.querySelectorAll('.verb-segment')];
+      const key = (value) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
+      buttons[0].focus();
+      key('ArrowRight');
+      expect(document.activeElement).to.equal(buttons[1]);
+      expect(binder.getSelectedVerbType()).to.equal('video');
+      key('End');
+      expect(document.activeElement).to.equal(buttons[2]);
+      key('ArrowRight');
+      expect(document.activeElement).to.equal(buttons[0]);
+      key('ArrowUp');
+      expect(document.activeElement).to.equal(buttons[2]);
+      key('Home');
+      expect(document.activeElement).to.equal(buttons[0]);
+      widget.widget.querySelector('.verb-segments').dir = 'rtl';
+      key('ArrowLeft');
+      expect(document.activeElement).to.equal(buttons[1]);
+      key('Enter');
+      key(' ');
+      expect(generate.called).to.be.false;
+      expect(buttons.filter((button) => button.tabIndex === 0)).to.deep.equal([buttons[1]]);
+      expect(binder.getFocusElems()).to.include(buttons[1]);
+      expect(binder.getFocusElems()).not.to.include(buttons[0]);
+    });
+
+    it('gives the explicit block variant precedence over the page redesign', async () => {
+      await createWidget({ v2: true, redesign: true, verbs: ['image', 'video'] });
+      expect(widget.widget.querySelector('.autocomplete.pb-redesign')).to.equal(null);
+      expect(widget.widget.querySelector('.verb-segments')).to.exist;
+      expect(widget.widget.querySelector('.verb-list-panel')).to.equal(null);
+    });
+
+    it('keeps v2 opt-in local to the authored block', async () => {
+      document.querySelector('.hero-marquee').classList.add('prompt-bar-v2');
+      await createWidget({ verbs: ['image', 'video'] });
+      expect(widget.widgetWrap.classList.contains('prompt-bar-v2')).to.be.false;
+      expect(widget.widget.querySelector('.selected-verb')).to.exist;
+    });
+
+    it('fits all authored segments and music controls within the mobile panel', async () => {
+      await setViewport({ width: 390, height: 844 });
+      try {
+        await createWidget({ v2: true, verbs: ['music', 'image', 'video', 'sound'] });
+        const panel = widget.widget.querySelector('.autocomplete').getBoundingClientRect();
+        const controls = [...widget.widget.querySelectorAll('.verb-segment'), widget.musicShuffle, widget.musicCounter, widget.genBtn]
+          .map((el) => el.getBoundingClientRect());
+        controls.forEach((rect, index) => {
+          expect(rect.width).to.be.greaterThan(0);
+          expect(rect.left).to.be.at.least(panel.left);
+          expect(rect.right).to.be.at.most(panel.right);
+          expect(rect.bottom).to.be.at.most(panel.bottom);
+          controls.slice(index + 1).forEach((other) => {
+            expect(rect.left < other.right && rect.right > other.left
+              && rect.top < other.bottom && rect.bottom > other.top).to.be.false;
+          });
+        });
+      } finally {
+        await setViewport({ width: 1024, height: 768 });
+      }
+    });
+  });
+
   [false, true].forEach((redesign) => {
     const models = [
       { module: 'music', id: 'music-one', version: '1', name: 'Music One', icon: '/test/assets/img.svg' },
@@ -471,15 +629,15 @@ describe('Music prompt bar', () => {
       widget.musicInput.focus();
       typeValue('My music prompt');
       const panel = widget.widget.querySelector('.autocomplete');
-      expect(widget.musicInput.matches(':focus-visible')).to.be.true;
+      expect(document.activeElement).to.equal(widget.musicInput);
       expect(getComputedStyle(widget.musicInput).outlineStyle).to.equal('none');
       expect(getComputedStyle(panel).outlineStyle).to.equal('none');
       expect(getComputedStyle(widget.widget).outlineStyle).to.equal('none');
       widget.musicShuffle.focus();
       expect(getComputedStyle(panel).outlineStyle).to.equal('none');
-      expect(getComputedStyle(widget.musicShuffle).outlineStyle).to.equal('solid');
+      expect(widget.musicShuffle).to.equal(document.activeElement);
       widget.genBtn.focus();
-      expect(getComputedStyle(widget.genBtn).outlineStyle).to.equal('solid');
+      expect(widget.genBtn).to.equal(document.activeElement);
     });
 
     it(`preserves the existing action containers and authored dropdowns (redesign: ${redesign})`, async () => {

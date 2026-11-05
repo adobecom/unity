@@ -47,6 +47,32 @@ All though the core Unity functionality resides in this repo, Milo has a light w
 ### Unity with Custom Block
 Unity block can be added after any other block to take the effect. We need to pass a target element(selector) where we need unity feature/ 
 
+### Prompt bar v2 (opt-in)
+
+Add `prompt-bar-v2` to the Unity block heading to enable the new dark appearance
+and segmented feature selector for that prompt bar:
+
+```text
+unity (workflow-firefly, product-firefly, feature-upload-image, dark, prompt-bar-v2)
+```
+
+Without this flag, the existing appearance and verb dropdown remain unchanged,
+including for music. The flag is independent of the selected verb and does not
+enable music controls. Existing `dark`/`light` authoring keeps its current meaning.
+An explicit `prompt-bar-v2` takes precedence over the page-level
+`firefly-redesign` prompt-bar presentation.
+
+Segments use the existing authored verb labels and order; the first authored
+verb is initially selected. With one verb, the selector is omitted. Arrow keys
+and Home/End select a segment, and Tab enters the group at its selected segment.
+The existing verb-switching logic still controls suggestions, model options,
+validation, analytics and submission. Model selection remains a dropdown.
+Author a generic localized Generate label when using multiple verbs; v2 appends
+the selected verb label to the visible button, matching its accessible label.
+
+This variant reuses the existing action containers and responsive sizing. It
+does not add an input or widget focus outline.
+
 ### Music prompt bar
 
 The Firefly prompt bar supports a `music` verb. Use the existing verb authoring

@@ -582,7 +582,7 @@ export default class ActionBinder {
     let elmSelector = '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
     const extras = this.getSelectedVerbType() === 'music' ? '.shuffle-btn:not(:disabled)' : elmSelector;
-    const baseSelector = `.selected-verb, .selected-model, .inp-field, .gen-btn, ${extras}`;
+    const baseSelector = `.selected-verb, .verb-segment[tabindex="0"], .selected-model, .inp-field, .gen-btn, ${extras}`;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu .verb-link');
     const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
     if (openVerbMenu || openModelMenu) {

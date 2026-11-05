@@ -2483,25 +2483,21 @@
   z-index: auto;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .autocomplete {
   background: #1b1b1b !important;
   border-color: #3d3d3d;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete.pb-redesign .inp-wrap:not(:has(.inp-fieldset)) {
-  flex-flow: row wrap;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field-label {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .inp-field-label {
   color: #999;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .inp-field {
   color: #fff;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field::placeholder,
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field.music-suggestion-pending {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .inp-field::placeholder,
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .inp-field.music-suggestion-pending {
   color: #aaa;
 }
 
@@ -2520,43 +2516,48 @@
   white-space: nowrap;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap .action-container {
+.unity-enabled .interactive-area .ex-unity-wrap .action-container:has(.shuffle-btn:not([hidden])),
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .action-container {
   display: flex;
   align-items: center;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .act-wrap {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .action-container {
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .inp-wrap .act-wrap,
+.unity-enabled .interactive-area .ex-unity-wrap .act-wrap:has(.music-char-count:not([hidden])) {
   align-items: center;
   gap: 8px;
   margin-inline-start: auto;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .models-container {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .models-container,
+.unity-enabled .interactive-area .ex-unity-wrap .action-container:has(.shuffle-btn:not([hidden])) .models-container {
   display: flex;
   position: relative;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .models-container .selected-model,
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .models-container .selected-model .model-name {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .models-container .selected-model,
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .models-container .selected-model .model-name {
   color: #eee;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .music-char-count {
-  color: #aaa;
+.unity-enabled .interactive-area .ex-unity-wrap .music-char-count {
+  color: inherit;
   font-size: 14px;
   white-space: nowrap;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt:has(.inp-field[aria-invalid="true"]) .music-char-count {
-  color: #ff9a9a;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .shuffle-btn {
+.unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 4px;
-  color: #eee;
+  color: inherit;
   background: transparent;
   border: none;
   border-radius: 4px;
@@ -2565,30 +2566,71 @@
   cursor: pointer;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .shuffle-btn:disabled {
+.unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .shuffle-btn img {
+.unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn img {
   width: 20px;
   height: 20px;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .act-wrap .gen-btn {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .music-char-count,
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .shuffle-btn {
+  color: #aaa;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap:has(.inp-field[aria-invalid="true"]) .music-char-count {
+  color: #ff9a9a;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .act-wrap .gen-btn {
   background: #4164ff;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .act-wrap .gen-btn .btn-txt {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .act-wrap .gen-btn .btn-txt {
   color: #fff;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .act-wrap .gen-btn .btn-ico img {
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .act-wrap .gen-btn .btn-ico img {
   filter: none;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .shuffle-btn:focus-visible,
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .gen-btn:focus-visible {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .shuffle-btn:focus-visible,
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .ex-unity-widget .gen-btn:focus-visible {
   outline: 2px solid #8da6ff;
   outline-offset: 4px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .verbs-container {
+  max-width: 100%;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .verb-segments {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 3px;
+  border-radius: 24px;
+  background: #141414;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .verb-segment {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 22px;
+  background: transparent;
+  color: #aaa;
+  font: inherit;
+  cursor: pointer;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .verb-segment[aria-checked="true"] {
+  background: #393939;
+  color: #fff;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.prompt-bar-v2 .verb-segment:focus-visible {
+  outline: 2px solid #8da6ff;
+  outline-offset: -2px;
 }

@@ -108,6 +108,7 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
+    this.isPromptBarV2 = el.classList.contains('prompt-bar-v2');
     this.isFireflyRedesign = isFireflyRedesign();
     this.verbDialogInertedEls = [];
     this.verbDialogTrapHandler = null;
@@ -118,9 +119,11 @@ export default class UnityWidget {
   }
 
   async initWidget() {
+    if (this.isPromptBarV2) this.isFireflyRedesign = false;
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
+    this.widgetWrap.classList.toggle('prompt-bar-v2', this.isPromptBarV2);
     this.widget = widget;
     unitySprite.innerHTML = this.spriteCon;
     this.widgetWrap.append(unitySprite);
@@ -280,22 +283,29 @@ export default class UnityWidget {
     return (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const segmented = !modelList && this.isPromptBarV2;
       const useDialogButton = !modelList && this.isFireflyRedesign;
-      verbList.querySelectorAll('.verb-link').forEach((listLink) => {
-        listLink.parentElement.classList.remove('selected');
-        if (useDialogButton) listLink.removeAttribute('aria-current');
+      verbList.querySelectorAll(segmented ? '.verb-segment' : '.verb-link').forEach((listLink) => {
+        if (!segmented) listLink.parentElement.classList.remove('selected');
+        if (segmented) {
+          listLink.setAttribute('aria-checked', 'false');
+          listLink.tabIndex = -1;
+        } else if (useDialogButton) listLink.removeAttribute('aria-current');
         else listLink.setAttribute('aria-selected', 'false');
       });
       if (this.isFireflyRedesign) {
         setVerbSelectedOrigin(verbList, selectedElement, link);
       }
       const menuContainer = selectedElement.parentElement;
-      menuContainer.classList.toggle('show-menu');
+      if (!segmented) menuContainer.classList.toggle('show-menu');
       if (selectedElement.hasAttribute('aria-expanded')) {
         selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
       }
-      link.parentElement.classList.add('selected');
-      if (useDialogButton) link.setAttribute('aria-current', 'true');
+      if (!segmented) link.parentElement.classList.add('selected');
+      if (segmented) {
+        link.setAttribute('aria-checked', 'true');
+        link.tabIndex = 0;
+      } else if (useDialogButton) link.setAttribute('aria-current', 'true');
       else link.setAttribute('aria-selected', 'true');
       if (useDialogButton && !menuContainer.classList.contains('show-menu')) {
         this.teardownVerbDialog(menuContainer);
@@ -314,9 +324,11 @@ export default class UnityWidget {
       } else {
         this.selectedVerbType = link.getAttribute('data-verb-type');
         this.selectedVerbText = link.textContent.trim();
-        selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
-        selectedElement.dataset.selectedVerb = this.selectedVerbType;
-        setComboboxTriggerAriaLabel(selectedElement, verbList.dataset.triggerLabel || verbList.getAttribute('aria-label'), this.selectedVerbText);
+        if (!segmented) {
+          selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
+          selectedElement.dataset.selectedVerb = this.selectedVerbType;
+          setComboboxTriggerAriaLabel(selectedElement, verbList.dataset.triggerLabel || verbList.getAttribute('aria-label'), this.selectedVerbText);
+        }
         const inpField = this.widget.querySelector('.inp-field');
         if (inpField) {
           inpField.placeholder = this.resolveVerbPlaceholder(this.workflowCfg.placeholder, this.selectedVerbType);
@@ -360,6 +372,10 @@ export default class UnityWidget {
         const label = this.computeGenBtnLabel();
         this.genBtn.setAttribute('aria-label', label);
         if (img) img.setAttribute('alt', this.selectedVerbType === 'music' ? '' : label);
+        if (this.isPromptBarV2) {
+          const text = this.genBtn.querySelector('.btn-txt');
+          if (text) text.textContent = label;
+        }
       }
     };
   }
@@ -422,6 +438,61 @@ export default class UnityWidget {
     const selectedVerbType = verbs[0]?.className.split('-')[2];
     const selectedVerb = verbs[0]?.nextElementSibling;
     const labelText = this.workflowCfg?.placeholder?.['placeholder-verb-label'] || 'Select a feature';
+    if (this.isPromptBarV2) {
+      this.selectedVerbType = selectedVerbType;
+      this.selectedVerbText = selectedVerb?.textContent.trim();
+      this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      if (verbs.length <= 1) return [];
+      this.widgetWrap.classList.add('verb-options');
+      const group = createTag('div', {
+        class: 'verb-segments',
+        role: 'radiogroup',
+        'aria-label': labelText,
+      });
+      verbs.forEach((verb, index) => {
+        const button = createTag('button', {
+          class: 'verb-segment',
+          type: 'button',
+          role: 'radio',
+          'aria-checked': index === 0 ? 'true' : 'false',
+          tabindex: index === 0 ? '0' : '-1',
+          'data-verb-type': verb.classList[1].split('-')[2],
+        }, verb.nextElementSibling?.textContent.trim());
+        button.addEventListener('click', (event) => {
+          if (button.getAttribute('aria-checked') === 'true') return;
+          this.hidePromptDropdown();
+          this.handleVerbLinkClick(button, group, button, null, inputPlaceHolder, false)(event);
+        });
+        group.append(button);
+      });
+      group.addEventListener('keydown', (event) => {
+        const buttons = [...group.querySelectorAll('.verb-segment')];
+        const index = buttons.indexOf(event.target);
+        if (index < 0 || event.isComposing) return;
+        let next;
+        const rtl = getComputedStyle(group).direction === 'rtl';
+        switch (event.key) {
+          case 'ArrowRight': next = (index + (rtl ? -1 : 1) + buttons.length) % buttons.length; break;
+          case 'ArrowLeft': next = (index + (rtl ? 1 : -1) + buttons.length) % buttons.length; break;
+          case 'ArrowDown': next = (index + 1) % buttons.length; break;
+          case 'ArrowUp': next = (index - 1 + buttons.length) % buttons.length; break;
+          case 'Home': next = 0; break;
+          case 'End': next = buttons.length - 1; break;
+          case 'Enter':
+          case ' ':
+            event.preventDefault();
+            event.stopPropagation();
+            event.target.click();
+            return;
+          default: return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        buttons[next].click();
+        buttons[next].focus();
+      });
+      return [group];
+    }
     const selectedElement = createTag('button', {
       class: 'selected-verb',
       'data-selected-verb': selectedVerbType,
@@ -711,7 +782,8 @@ export default class UnityWidget {
     actWrap.append(genBtn);
     const actionContainer = createTag('div', { class: 'action-container' });
     const promptLabelText = ph['placeholder-prompt-label'] || 'Enter prompt';
-    const hasDropdowns = verbDropdown.length > 1 || modelDropdown.length > 1;
+    const hasVerbSelector = this.isPromptBarV2 ? verbDropdown.length > 0 : verbDropdown.length > 1;
+    const hasDropdowns = hasVerbSelector || modelDropdown.length > 1;
     const inpGroup = hasDropdowns ? createTag('fieldset', { class: 'inp-fieldset' }) : inpWrap;
     const useLegend = hasDropdowns && !this.isFireflyRedesign;
     const promptLabel = useLegend
@@ -729,7 +801,7 @@ export default class UnityWidget {
       inpGroup.append(promptLabel);
       inpFieldSlot = inpField;
     }
-    if (verbDropdown.length > 1) {
+    if (hasVerbSelector) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
       verbBtn.append(...verbDropdown);
       actionContainer.append(verbBtn);
@@ -749,6 +821,7 @@ export default class UnityWidget {
       actionContainer.append(modelBtn);
     }
     if (hasDropdowns) inpWrap.append(inpGroup);
+    if (this.isPromptBarV2 && !actionContainer.parentElement) actWrap.before(actionContainer);
     if (this.el.querySelector('.icon-verb-music')) {
       if (!actionContainer.parentElement
         && (actionContainer.children.length || this.el.querySelector('.icon-shuffle'))) {
@@ -994,7 +1067,7 @@ export default class UnityWidget {
       'aria-label': label,
     });
     if (img) btn.append(createTag('div', { class: 'btn-ico' }, img));
-    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, txt));
+    if (txt) btn.append(createTag('div', { class: 'btn-txt' }, this.isPromptBarV2 ? label : txt));
     this.genBtn = btn;
     return btn;
   }
