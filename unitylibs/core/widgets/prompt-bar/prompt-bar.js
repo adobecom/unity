@@ -750,20 +750,21 @@ export default class UnityWidget {
     }
     if (hasDropdowns) inpWrap.append(inpGroup);
     if (this.el.querySelector('.icon-verb-music')) {
-      this.createMusicControls(inpField, inpGroup, actWrap);
+      if (!actionContainer.parentElement
+        && (actionContainer.children.length || this.el.querySelector('.icon-shuffle'))) {
+        actWrap.before(actionContainer);
+      }
+      this.createMusicControls(inpField, actionContainer, actWrap);
     }
     return inpWrap;
   }
 
-  createMusicControls(input, group, actWrap) {
+  createMusicControls(input, actionContainer, actWrap) {
     this.musicPromptLimit = Number(this.workflowCfg.targetCfg.limits?.['music-max-char-limit']);
     if (!Number.isInteger(this.musicPromptLimit) || this.musicPromptLimit <= 0) {
       throw new Error('Music prompt requires a positive integer limits.music-max-char-limit in the target config.');
     }
     this.musicInput = input;
-    this.musicActWrap = actWrap;
-    this.musicActParent = actWrap.parentElement;
-    this.musicActNext = actWrap.nextSibling;
     this.musicInputAria = ['aria-autocomplete', 'aria-haspopup', 'aria-controls', 'aria-activedescendant']
       .map((name) => [name, input.getAttribute(name)]);
     this.musicPrompts = [...new Set([...this.el.querySelectorAll('.icon-music-prompt')].map((icon) => {
@@ -776,7 +777,6 @@ export default class UnityWidget {
       }
       return prompt;
     }).filter(Boolean))];
-    this.musicToolbar = createTag('div', { class: 'music-toolbar', hidden: '' });
     const shuffleRow = this.el.querySelector('.icon-shuffle')?.closest('li');
     if (shuffleRow) {
       const labelRow = shuffleRow.cloneNode(true);
@@ -800,14 +800,15 @@ export default class UnityWidget {
         window.lana?.log('Music Shuffle is authored without any valid music prompt suggestions.', this.lanaOptions);
       }
       shuffle.addEventListener('click', () => this.shuffleMusicPrompt());
-      this.musicToolbar.append(shuffle);
+      this.musicShuffle = shuffle;
+      actionContainer.prepend(shuffle);
       this.musicAnnouncement = createTag('span', {
         class: 'music-prompt-announcement',
         role: 'status',
         'aria-live': 'polite',
         'aria-atomic': 'true',
       });
-      this.musicToolbar.append(this.musicAnnouncement);
+      actionContainer.append(this.musicAnnouncement);
     }
     musicCounterId += 1;
     this.musicCounter = createTag('span', {
@@ -816,7 +817,6 @@ export default class UnityWidget {
       hidden: '',
     });
     actWrap.prepend(this.musicCounter);
-    group.append(this.musicToolbar);
     input.addEventListener('input', () => {
       if (this.selectedVerbType !== 'music') return;
       this.musicSuggestionPending = false;
@@ -840,7 +840,8 @@ export default class UnityWidget {
     const active = this.selectedVerbType === 'music';
     const input = this.musicInput;
     this.widgetWrap.classList.toggle('music-prompt', active);
-    this.musicToolbar.hidden = !active;
+    if (this.musicShuffle) this.musicShuffle.hidden = !active;
+    if (this.musicAnnouncement) this.musicAnnouncement.hidden = !active;
     this.musicCounter.hidden = !active;
     this.musicSuggestionPending = false;
     input.classList.remove('music-suggestion-pending');
@@ -850,7 +851,6 @@ export default class UnityWidget {
       const description = new Set((input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
       description.add(this.musicCounter.id);
       input.setAttribute('aria-describedby', [...description].join(' '));
-      this.musicToolbar.append(this.musicActWrap);
       this.hidePromptDropdown();
       this.updateMusicCount();
     } else {
@@ -863,7 +863,6 @@ export default class UnityWidget {
         .filter((id) => id && id !== this.musicCounter.id).join(' ');
       if (description) input.setAttribute('aria-describedby', description);
       else input.removeAttribute('aria-describedby');
-      this.musicActParent.insertBefore(this.musicActWrap, this.musicActNext);
     }
   }
 

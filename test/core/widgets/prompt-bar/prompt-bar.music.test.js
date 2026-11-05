@@ -56,6 +56,7 @@ describe('Music prompt bar', () => {
     suggestions = false,
     redesign = false,
     limits = {},
+    models = [],
   } = {}) {
     const author = document.querySelector('.unity');
     author.innerHTML = `<ul>
@@ -64,6 +65,7 @@ describe('Music prompt bar', () => {
       <li><span class="icon icon-placeholder-prompt-label"></span>Enter prompt</li>
       <li><span class="icon icon-generate"></span><img src="/test/assets/img.svg" alt="">Generate audio</li>
       ${shuffle ? '<li><span class="icon icon-shuffle"></span><img src="/test/assets/img.svg" alt="">Shuffle</li>' : ''}
+      ${models.length ? '<li><span class="icon icon-model"></span></li>' : ''}
       ${suggestions ? '<li><span class="icon icon-placeholder-prompt"></span>Prompt</li><li><span class="icon icon-placeholder-suggestions"></span>Suggestions</li>' : ''}
     </ul>`;
     prompts.forEach((prompt) => {
@@ -90,6 +92,7 @@ describe('Music prompt bar', () => {
     const host = document.querySelector('.hero-marquee');
     widget = new UnityWidget(host.querySelector('.interactive-area'), author, cfg, '<svg></svg>');
     widget.isFireflyRedesign = redesign;
+    widget.models = models;
     sandbox.stub(widget, 'loadPrompts').callsFake(async () => {
       widget.prompts = { image: [{ prompt: 'An image suggestion', assetid: 'image-asset' }] };
     });
@@ -140,7 +143,9 @@ describe('Music prompt bar', () => {
     await createWidget({ shuffle: false });
     expect(widget.widget.querySelector('.shuffle-btn')).to.equal(null);
     expect(widget.musicCounter.hidden).to.be.false;
-    expect(widget.musicToolbar.contains(widget.genBtn)).to.be.true;
+    expect(widget.genBtn.parentElement.classList.contains('act-wrap')).to.be.true;
+    expect(widget.genBtn.parentElement.contains(widget.musicCounter)).to.be.true;
+    expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
     typeValue('My own music prompt');
     expect(widget.musicCounter.textContent).to.equal('19/500');
   });
@@ -387,21 +392,29 @@ describe('Music prompt bar', () => {
 
   it('cleans up music state and restores existing limits when switching features', async () => {
     await createWidget({ verbs: ['music', 'image'] });
+    const actWrap = widget.genBtn.parentElement;
+    const actionParent = actWrap.parentElement;
     widget.shuffleMusicPrompt();
     const text = widget.musicInput.value;
     widget.widget.querySelector('[data-verb-type="image"]').click();
     expect(widget.widgetWrap.classList.contains('music-prompt')).to.be.false;
     expect(widget.musicCounter.hidden).to.be.true;
-    expect(widget.musicToolbar.hidden).to.be.true;
+    expect(widget.musicShuffle.hidden).to.be.true;
+    expect(widget.musicAnnouncement.hidden).to.be.true;
+    expect(getComputedStyle(widget.musicShuffle).display).to.equal('none');
     expect(widget.musicInput.hasAttribute('maxlength')).to.be.false;
     expect(widget.musicInput.value).to.equal(text);
     expect(widget.musicSuggestionPending).to.be.false;
     expect(binder.getMaxPromptCharLimit()).to.equal(750);
-    expect(widget.musicActParent.contains(widget.genBtn)).to.be.true;
+    expect(widget.genBtn.parentElement).to.equal(actWrap);
+    expect(actWrap.parentElement).to.equal(actionParent);
     widget.widget.querySelector('[data-verb-type="music"]').click();
     expect(widget.musicInput.maxLength).to.equal(500);
     expect(widget.musicCounter.hidden).to.be.false;
-    expect(widget.musicToolbar.contains(widget.genBtn)).to.be.true;
+    expect(widget.genBtn.parentElement).to.equal(actWrap);
+    expect(actWrap.parentElement).to.equal(actionParent);
+    expect(widget.musicShuffle.hidden).to.be.false;
+    expect(widget.musicAnnouncement.hidden).to.be.false;
     expect(widget.musicInput.value).to.equal(text);
   });
 
@@ -435,10 +448,104 @@ describe('Music prompt bar', () => {
 
   it('renders music controls in the redesign without losing Generate', async () => {
     await createWidget({ redesign: true, verbs: ['music', 'image'] });
+    const actWrap = widget.genBtn.parentElement;
+    const actionBar = actWrap.parentElement;
     expect(widget.widget.querySelector('.autocomplete.pb-redesign')).to.exist;
-    expect(widget.musicToolbar.contains(widget.genBtn)).to.be.true;
+    expect(actionBar.classList.contains('action-bar')).to.be.true;
+    expect(actionBar.querySelector('.action-container').contains(widget.musicShuffle)).to.be.true;
+    expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
     widget.widget.querySelector('[data-verb-type="image"]').click();
-    expect(widget.musicActParent.contains(widget.genBtn)).to.be.true;
+    expect(widget.genBtn.parentElement).to.equal(actWrap);
+    expect(actWrap.parentElement).to.equal(actionBar);
+  });
+
+  [false, true].forEach((redesign) => {
+    const models = [
+      { module: 'music', id: 'music-one', version: '1', name: 'Music One', icon: '/test/assets/img.svg' },
+      { module: 'music', id: 'music-two', version: '2', name: 'Music Two', icon: '/test/assets/img.svg' },
+      { module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' },
+    ];
+
+    it(`preserves the existing action containers and authored dropdowns (redesign: ${redesign})`, async () => {
+      await createWidget({ verbs: ['music', 'image'], models, redesign });
+      const actions = widget.widget.querySelector('.action-container');
+      const actWrap = widget.genBtn.parentElement;
+      const actionParent = actWrap.parentElement;
+      expect(actions.firstElementChild).to.equal(widget.musicShuffle);
+      expect(actions.querySelector('.models-container')).to.exist;
+      expect(widget.widget.querySelector('.selected-verb')).to.exist;
+      expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
+      expect(binder.getFocusElems()).to.include.members([
+        widget.musicShuffle,
+        widget.widget.querySelector('.selected-verb'),
+        widget.widget.querySelector('.selected-model'),
+      ]);
+      widget.widget.querySelector('.selected-model').click();
+      expect(widget.widget.querySelector('.models-container').classList.contains('show-menu')).to.be.true;
+      widget.widget.querySelector('[data-model-id="music-two"].model-link').click();
+      expect(binder.getSelectedModelId()).to.equal('music-two');
+      widget.widget.querySelector('[data-verb-type="image"]').click();
+      expect(widget.widget.querySelector('.selected-model').dataset.selectedModelId).to.equal('image-one');
+      expect(widget.musicShuffle.hidden).to.be.true;
+      expect(widget.genBtn.parentElement).to.equal(actWrap);
+      expect(actWrap.parentElement).to.equal(actionParent);
+      widget.widget.querySelector('[data-verb-type="music"]').click();
+      expect(widget.widget.querySelector('.selected-model').dataset.selectedModelId).to.equal('music-one');
+      expect(widget.musicShuffle.hidden).to.be.false;
+      expect(widget.genBtn.parentElement).to.equal(actWrap);
+      expect(actWrap.parentElement).to.equal(actionParent);
+    });
+
+    it(`renders an authored model picker with a single music verb (redesign: ${redesign})`, async () => {
+      await createWidget({ models, redesign });
+      const actions = widget.widget.querySelector('.action-container');
+      const picker = actions.querySelector('.selected-model');
+      expect(picker).to.exist;
+      expect(picker.getBoundingClientRect().width).to.be.greaterThan(0);
+      expect(actions.firstElementChild).to.equal(widget.musicShuffle);
+      picker.click();
+      expect(picker.getAttribute('aria-expanded')).to.equal('true');
+      widget.widget.querySelector('[data-model-id="music-two"].model-link').click();
+      expect(binder.getSelectedModelId()).to.equal('music-two');
+    });
+
+    it(`keeps the existing dropdowns without authored Shuffle (redesign: ${redesign})`, async () => {
+      await createWidget({ verbs: ['music', 'image'], models, redesign, shuffle: false });
+      expect(widget.widget.querySelector('.shuffle-btn')).to.equal(null);
+      expect(widget.widget.querySelector('.selected-model')).to.exist;
+      expect(widget.widget.querySelector('.selected-verb')).to.exist;
+      expect(widget.genBtn.parentElement.contains(widget.musicCounter)).to.be.true;
+      expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
+    });
+
+    it(`fits Shuffle, authored dropdowns, counter and Generate on mobile (redesign: ${redesign})`, async () => {
+      await setViewport({ width: 390, height: 844 });
+      try {
+        await createWidget({ verbs: ['music', 'image'], models, redesign });
+        const bar = widget.widget.querySelector('.autocomplete').getBoundingClientRect();
+        const controls = [
+          widget.musicShuffle,
+          widget.widget.querySelector('.selected-verb'),
+          widget.widget.querySelector('.selected-model'),
+          widget.musicCounter,
+          widget.genBtn,
+        ].map((el) => el.getBoundingClientRect());
+        controls.forEach((rect, index) => {
+          expect(rect.width).to.be.greaterThan(0);
+          expect(rect.left).to.be.at.least(bar.left);
+          expect(rect.right).to.be.at.most(bar.right);
+          expect(rect.top).to.be.at.least(bar.top);
+          expect(rect.bottom).to.be.at.most(bar.bottom);
+          controls.slice(index + 1).forEach((other) => {
+            const overlap = rect.left < other.right && rect.right > other.left
+              && rect.top < other.bottom && rect.bottom > other.top;
+            expect(overlap).to.be.false;
+          });
+        });
+      } finally {
+        await setViewport({ width: 1024, height: 768 });
+      }
+    });
   });
 
   it('keeps the shuffle, counter and Generate within the mobile prompt bar', async () => {

@@ -67,6 +67,10 @@ Author the following rows in the Unity block:
 Music suggestions come only from the authored rows, not the remote prompt
 catalog. The existing `:icon-placeholder-prompt:` and
 `:icon-placeholder-suggestions:` rows are not needed for music.
+Music reuses the existing prompt-bar action containers: optional Shuffle is
+prepended to the left-side actions, while the counter sits beside Generate.
+Authored feature and model selectors keep their existing behaviour and placement;
+switching features does not move Generate into a separate toolbar.
 Keep the usual localized `:icon-error-empty:`, `:icon-error-max-length:` and
 `:icon-error-request:` rows, with music's maximum-length message matching the
 configured limit.

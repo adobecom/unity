@@ -2495,9 +2495,9 @@
   display: none;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap {
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap {
   display: flex;
-  flex-direction: column;
+  flex-flow: row wrap;
   align-items: stretch;
   gap: 12px;
   width: 100% !important;
@@ -2508,18 +2508,19 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-fieldset {
-  flex-direction: column;
+  flex-flow: row wrap;
   align-items: stretch;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field-label {
+  width: 100%;
   color: #999;
   font-size: 14px !important;
   line-height: 20px !important;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field {
-  flex: none;
+  flex: 0 0 100%;
   min-height: 100px;
   margin: 0;
   padding: 0;
@@ -2535,7 +2536,8 @@
   font-style: normal;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .music-toolbar[hidden],
+.unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn[hidden],
+.unity-enabled .interactive-area .ex-unity-wrap .music-prompt-announcement[hidden],
 .unity-enabled .interactive-area .ex-unity-wrap .music-char-count[hidden] {
   display: none;
 }
@@ -2549,18 +2551,42 @@
   white-space: nowrap;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .music-toolbar {
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap .action-container {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  padding: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .action-bar {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-text-wrap {
+  flex: 0 0 100%;
   width: 100%;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .music-toolbar .act-wrap {
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .act-wrap {
   align-items: center;
+  flex-shrink: 0;
   gap: 20px;
   margin-inline-start: auto;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .models-container {
+  display: flex;
+  position: relative;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .models-container .selected-model,
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .models-container .selected-model .model-name {
+  color: #eee;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .music-char-count {
@@ -2621,15 +2647,11 @@
 }
 
 @media (max-width: 599px) {
-  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap {
+  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap {
     padding: 16px !important;
   }
 
-  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .music-toolbar .act-wrap {
+  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .act-wrap {
     gap: 12px;
-  }
-
-  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .music-toolbar {
-    gap: 8px;
   }
 }
