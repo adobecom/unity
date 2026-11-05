@@ -71,6 +71,8 @@ Music reuses the existing prompt-bar action containers: optional Shuffle is
 prepended to the left-side actions, while the counter sits beside Generate.
 Authored feature and model selectors keep their existing behaviour and placement;
 switching features does not move Generate into a separate toolbar.
+Music inherits the existing prompt-bar dimensions, spacing, textarea sizing and
+responsive Generate button sizing rather than introducing a larger panel.
 Keep the usual localized `:icon-error-empty:`, `:icon-error-max-length:` and
 `:icon-error-request:` rows, with music's maximum-length message matching the
 configured limit.

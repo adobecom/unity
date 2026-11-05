@@ -2484,56 +2484,25 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete {
-  height: auto !important;
-  padding: 0 !important;
   background: #1b1b1b !important;
-  border: 2px solid #3d3d3d !important;
-  border-radius: 20px !important;
+  border-color: #3d3d3d;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete::after {
-  display: none;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap {
-  display: flex;
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete.pb-redesign .inp-wrap:not(:has(.inp-fieldset)) {
   flex-flow: row wrap;
-  align-items: stretch;
-  gap: 12px;
-  width: 100% !important;
-  padding: 20px !important;
-  background: transparent !important;
-  border: none !important;
-  box-sizing: border-box;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-fieldset {
-  flex-flow: row wrap;
-  align-items: stretch;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field-label {
-  width: 100%;
   color: #999;
-  font-size: 14px !important;
-  line-height: 20px !important;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field {
-  flex: 0 0 100%;
-  min-height: 100px;
-  margin: 0;
-  padding: 0;
   color: #fff;
-  font-size: 16px;
-  line-height: 24px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field::placeholder,
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-field.music-suggestion-pending {
   color: #aaa;
-  font-size: 16px;
-  font-style: normal;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn[hidden],
@@ -2554,28 +2523,11 @@
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap .action-container {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  min-width: 0;
-  max-width: 100%;
-  height: auto;
-  padding: 0;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .action-bar {
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .inp-text-wrap {
-  flex: 0 0 100%;
-  width: 100%;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .act-wrap {
   align-items: center;
-  flex-shrink: 0;
-  gap: 20px;
+  gap: 8px;
   margin-inline-start: auto;
 }
 
@@ -2603,7 +2555,6 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
   padding: 4px;
   color: #eee;
   background: transparent;
@@ -2625,9 +2576,6 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .act-wrap .gen-btn {
-  width: auto;
-  min-height: 44px;
-  padding: 10px 16px;
   background: #4164ff;
 }
 
@@ -2644,14 +2592,4 @@
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .gen-btn:focus-visible {
   outline: 2px solid #8da6ff;
   outline-offset: 4px;
-}
-
-@media (max-width: 599px) {
-  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete .inp-wrap {
-    padding: 16px !important;
-  }
-
-  .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-wrap .act-wrap {
-    gap: 12px;
-  }
 }
