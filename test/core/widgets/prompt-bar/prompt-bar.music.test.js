@@ -466,15 +466,15 @@ describe('Music prompt bar', () => {
       { module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' },
     ];
 
-    it(`shows input focus on the outer panel instead of the textarea (redesign: ${redesign})`, async () => {
+    it(`does not outline the textarea or widget while typing (redesign: ${redesign})`, async () => {
       await createWidget({ redesign });
       widget.musicInput.focus();
       typeValue('My music prompt');
       const panel = widget.widget.querySelector('.autocomplete');
       expect(widget.musicInput.matches(':focus-visible')).to.be.true;
       expect(getComputedStyle(widget.musicInput).outlineStyle).to.equal('none');
-      expect(getComputedStyle(panel).outlineStyle).to.equal('solid');
-      expect(getComputedStyle(panel).outlineWidth).to.equal('2px');
+      expect(getComputedStyle(panel).outlineStyle).to.equal('none');
+      expect(getComputedStyle(widget.widget).outlineStyle).to.equal('none');
       widget.musicShuffle.focus();
       expect(getComputedStyle(panel).outlineStyle).to.equal('none');
       expect(getComputedStyle(widget.musicShuffle).outlineStyle).to.equal('solid');
