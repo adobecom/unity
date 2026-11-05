@@ -2587,7 +2587,7 @@
   filter: none;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .inp-field:focus-visible,
+.unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .autocomplete:has(.inp-field:focus-visible),
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .shuffle-btn:focus-visible,
 .unity-enabled .interactive-area .ex-unity-wrap.music-prompt .ex-unity-widget .gen-btn:focus-visible {
   outline: 2px solid #8da6ff;

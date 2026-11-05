@@ -466,6 +466,22 @@ describe('Music prompt bar', () => {
       { module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' },
     ];
 
+    it(`shows input focus on the outer panel instead of the textarea (redesign: ${redesign})`, async () => {
+      await createWidget({ redesign });
+      widget.musicInput.focus();
+      typeValue('My music prompt');
+      const panel = widget.widget.querySelector('.autocomplete');
+      expect(widget.musicInput.matches(':focus-visible')).to.be.true;
+      expect(getComputedStyle(widget.musicInput).outlineStyle).to.equal('none');
+      expect(getComputedStyle(panel).outlineStyle).to.equal('solid');
+      expect(getComputedStyle(panel).outlineWidth).to.equal('2px');
+      widget.musicShuffle.focus();
+      expect(getComputedStyle(panel).outlineStyle).to.equal('none');
+      expect(getComputedStyle(widget.musicShuffle).outlineStyle).to.equal('solid');
+      widget.genBtn.focus();
+      expect(getComputedStyle(widget.genBtn).outlineStyle).to.equal('solid');
+    });
+
     it(`preserves the existing action containers and authored dropdowns (redesign: ${redesign})`, async () => {
       await createWidget({ verbs: ['music', 'image'], models, redesign });
       const actions = widget.widget.querySelector('.action-container');
