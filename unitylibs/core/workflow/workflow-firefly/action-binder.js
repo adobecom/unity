@@ -216,13 +216,21 @@ export default class ActionBinder {
   }
 
   addInputEvents(el) {
+    el.addEventListener('input', () => {
+      if (this.getSelectedVerbType() !== 'music') return;
+      this.id = '';
+      this.query = '';
+      this.activeIndex = -1;
+    });
     el.addEventListener('focus', () => this.showDropdown());
     el.addEventListener('focusout', ({ relatedTarget, currentTarget }) => {
       if (!relatedTarget && this.widget?.contains(currentTarget)) return;
       if (!this.widget?.contains(relatedTarget)) this.hideDropdown();
     });
     el.addEventListener('keydown', (event) => {
+      if (this.getSelectedVerbType() === 'music' && event.isComposing) return;
       if (event.key === 'Enter') {
+        if (this.getSelectedVerbType() === 'music') event.stopPropagation();
         event.preventDefault();
         this.block.querySelector('.gen-btn')?.click();
       }
@@ -262,13 +270,20 @@ export default class ActionBinder {
     || '';
 
   getMaxPromptCharLimit() {
-    const n = Number(this.limits?.['max-char-limit']);
+    const key = this.getSelectedVerbType() === 'music' ? 'music-max-char-limit' : 'max-char-limit';
+    const n = Number(this.limits?.[key]);
     return Number.isFinite(n) && n > 0 ? n : undefined;
   }
 
   validateInput(query) {
+    const isMusic = this.getSelectedVerbType() === 'music';
+    if (isMusic && !query.trim()) {
+      this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty' }, 'Music prompt is empty');
+      return { isValid: false, errorCode: 'empty-prompt' };
+    }
     const maxLen = this.getMaxPromptCharLimit();
-    if (maxLen !== undefined && query.length > maxLen) {
+    const length = isMusic ? this.inputField.value.length : query.length;
+    if (maxLen !== undefined && length > maxLen) {
       this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-max-length' }, 'Max prompt characters exceeded');
       return { isValid: false, errorCode: 'max-prompt-characters-exceeded' };
     }
@@ -378,7 +393,8 @@ export default class ActionBinder {
     const queryParams = getCgenQueryParams(this.unityEl);
     const currentVerb = this.getSelectedVerbType();
     const genBtn = this.block.querySelector('.gen-btn');
-    const override = genBtn?.dataset?.soundPrompt;
+    const override = currentVerb === 'sound' ? genBtn?.dataset?.soundPrompt : undefined;
+    if (currentVerb === 'music') this.id = '';
     if (currentVerb === 'sound' && override) {
       this.query = override.trim();
       try { delete genBtn.dataset.soundPrompt; } catch (e) { /* noop */ }
@@ -476,6 +492,7 @@ export default class ActionBinder {
   }
 
   handleKeyDown(ev) {
+    if (this.getSelectedVerbType() === 'music' && ev.isComposing) return;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu');
     const openModelMenu = this.block.querySelector('.models-container.show-menu');
     const isMenuOpen = openVerbMenu || openModelMenu;
@@ -553,6 +570,7 @@ export default class ActionBinder {
   }
 
   getDropdownItems() {
+    if (this.getSelectedVerbType() === 'music') return [];
     if (!this.dropdown) return [];
     let tipCon = null;
     if (this.viewport !== 'MOBILE') tipCon = this.dropdown?.querySelector('.tip-con');
@@ -563,7 +581,8 @@ export default class ActionBinder {
   getFocusElems() {
     let elmSelector = '.drop-item';
     if (this.viewport !== 'MOBILE') elmSelector = `${elmSelector}, .legal-text`;
-    const baseSelector = `.selected-verb, .selected-model, .inp-field, .gen-btn, ${elmSelector}`;
+    const extras = this.getSelectedVerbType() === 'music' ? '.shuffle-btn:not(:disabled)' : elmSelector;
+    const baseSelector = `.selected-verb, .selected-model, .inp-field, .gen-btn, ${extras}`;
     const openVerbMenu = this.block.querySelector('.verbs-container.show-menu .verb-link');
     const openModelMenu = this.block.querySelector('.models-container.show-menu .verb-link');
     if (openVerbMenu || openModelMenu) {
@@ -575,7 +594,7 @@ export default class ActionBinder {
     return Array.from(this.block.querySelectorAll(baseSelector));
   }
 
-  isDropdownVisible = () => !this.dropdown?.classList.contains('hidden');
+  isDropdownVisible = () => this.getSelectedVerbType() !== 'music' && !this.dropdown?.classList.contains('hidden');
 
   handleTab(event, focusableElements, dropItems, currentIndex) {
     if (!focusableElements.length) return;
@@ -679,7 +698,7 @@ export default class ActionBinder {
   showDropdown() {
     const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
     const currentVerbType = this.getSelectedVerbType();
-    if (verbsWithoutPromptSuggestions.includes(currentVerbType)) return;
+    if (currentVerbType === 'music' || verbsWithoutPromptSuggestions.includes(currentVerbType)) return;
     this.dropdown?.classList.remove('hidden');
     this.dropdown?.removeAttribute('inert');
     this.dropdown?.removeAttribute('aria-hidden');
@@ -702,7 +721,12 @@ export default class ActionBinder {
 
   resetDropdown() {
     this.inputField.focus();
-    if (!this.query) this.inputField.value = '';
+    if (!this.query) {
+      this.inputField.value = '';
+      if (this.getSelectedVerbType() === 'music') {
+        this.inputField.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
     this.hideDropdown();
   }
 }

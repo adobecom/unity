@@ -47,6 +47,51 @@ All though the core Unity functionality resides in this repo, Milo has a light w
 ### Unity with Custom Block
 Unity block can be added after any other block to take the effect. We need to pass a target element(selector) where we need unity feature/ 
 
+### Music prompt bar
+
+The Firefly prompt bar supports a `music` verb. Use the existing verb authoring
+pattern with `:icon-verb-music:` and a linked feature icon labelled `audio` (or its
+localized equivalent). The visible label is independent of the `music` identifier.
+
+Author the following rows in the Unity block:
+
+| Row | Content |
+| --- | --- |
+| `:icon-placeholder-prompt-label:` | Enter prompt |
+| `:icon-placeholder-input:` | Describe the audio you want to generate |
+| `:icon-generate:` | Generate icon and localized Generate audio label |
+| `:icon-shuffle:` (optional) | Shuffle icon image and localized Shuffle label |
+| `:icon-music-prompt:` (repeat for each suggestion) | Plain-text music prompt |
+| `:icon-placeholder-character-count-label:` (optional) | Localized Characters label for assistive technology |
+
+Music suggestions come only from the authored rows, not the remote prompt
+catalog. The existing `:icon-placeholder-prompt:` and
+`:icon-placeholder-suggestions:` rows are not needed for music.
+Keep the usual localized `:icon-error-empty:`, `:icon-error-max-length:` and
+`:icon-error-request:` rows, with music's maximum-length message matching the
+configured limit.
+
+Music's maximum is defined only by `limits.music-max-char-limit` in the Firefly
+target config (currently 500). It must be a positive integer; there is no
+hardcoded fallback. The native input maximum, live counter, authored suggestion
+validation and submission validation all use this setting. Empty or
+overlong authored suggestions are excluded and logged. Shuffle is disabled and
+logs a diagnostic when authored without valid suggestions. Each randomized cycle
+uses every distinct suggestion before repeating, without an immediate repeat
+between cycles when multiple suggestions exist.
+
+Shuffled text can be submitted directly, or edited by clicking into it. A click
+at a collapsed caret position of zero clears a still-pending suggestion; after
+editing starts, clicks at zero no longer clear the input. Keyboard focus alone
+does not clear a suggestion, and typing edits it at the current caret position.
+Shuffle replaces the current text. The counter includes pending suggestions.
+Existing text is preserved when switching features; text already exceeding the
+configured limit must be shortened before music generation.
+
+Generation submits the displayed text as `query` with workflow `text-to-music`,
+not as a catalog asset ID. The other features' limits and sound previews are
+unchanged.
+
 ### IMS guest token
 Unity Service depends on IMS guest token for logged out user. So IMS client id should be onboarded with IMS guest token [wiki](https://wiki.corp.adobe.com/pages/viewpage.action?spaceKey=~nzotta&title=Guest+Sessions+-+Identity+components+delivery+schedules%2C+integration+and+testing).
 

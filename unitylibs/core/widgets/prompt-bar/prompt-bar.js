@@ -3,6 +3,8 @@
 import { createTag, getConfig, getUnityPromptConfigsBaseUrl, unityConfig } from '../../../scripts/utils.js';
 import TypeaheadUtils from '../../../utils/TypeaheadUtils.js';
 
+let musicCounterId = 0;
+
 function isFireflyRedesign() {
   return !!(document.querySelector('meta[name="theme"][content="firefly-redesign"]')
     || document.querySelector('.theme-firefly-redesign'));
@@ -109,6 +111,10 @@ export default class UnityWidget {
     this.isFireflyRedesign = isFireflyRedesign();
     this.verbDialogInertedEls = [];
     this.verbDialogTrapHandler = null;
+    this.musicPrompts = [];
+    this.musicPromptQueue = [];
+    this.lastMusicPrompt = '';
+    this.musicSuggestionPending = false;
   }
 
   async initWidget() {
@@ -343,6 +349,7 @@ export default class UnityWidget {
         } else this.clearSelectedModelState();
       }
       this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
+      if (!modelList) this.updateMusicMode();
       if (this.selectedModelId) this.widgetWrap.setAttribute('data-selected-model-id', this.selectedModelId);
       else this.widgetWrap.removeAttribute('data-selected-model-id');
       if (this.selectedModelVersion) this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
@@ -352,7 +359,7 @@ export default class UnityWidget {
         const img = this.genBtn.querySelector('img[src*=".svg"]');
         const label = this.computeGenBtnLabel();
         this.genBtn.setAttribute('aria-label', label);
-        if (img) img.setAttribute('alt', label);
+        if (img) img.setAttribute('alt', this.selectedVerbType === 'music' ? '' : label);
       }
     };
   }
@@ -742,7 +749,150 @@ export default class UnityWidget {
       actionContainer.append(modelBtn);
     }
     if (hasDropdowns) inpWrap.append(inpGroup);
+    if (this.el.querySelector('.icon-verb-music')) {
+      this.createMusicControls(inpField, inpGroup, actWrap);
+    }
     return inpWrap;
+  }
+
+  createMusicControls(input, group, actWrap) {
+    this.musicPromptLimit = Number(this.workflowCfg.targetCfg.limits?.['music-max-char-limit']);
+    if (!Number.isInteger(this.musicPromptLimit) || this.musicPromptLimit <= 0) {
+      throw new Error('Music prompt requires a positive integer limits.music-max-char-limit in the target config.');
+    }
+    this.musicInput = input;
+    this.musicActWrap = actWrap;
+    this.musicActParent = actWrap.parentElement;
+    this.musicActNext = actWrap.nextSibling;
+    this.musicInputAria = ['aria-autocomplete', 'aria-haspopup', 'aria-controls', 'aria-activedescendant']
+      .map((name) => [name, input.getAttribute(name)]);
+    this.musicPrompts = [...new Set([...this.el.querySelectorAll('.icon-music-prompt')].map((icon) => {
+      const row = icon.closest('li')?.cloneNode(true);
+      row?.querySelector('.icon-music-prompt')?.remove();
+      const prompt = row?.textContent.trim() || '';
+      if (!prompt || prompt.length > this.musicPromptLimit) {
+        window.lana?.log(`Music prompt authoring requires non-empty suggestions of at most ${this.musicPromptLimit} characters.`, this.lanaOptions);
+        return '';
+      }
+      return prompt;
+    }).filter(Boolean))];
+    this.musicToolbar = createTag('div', { class: 'music-toolbar', hidden: '' });
+    const shuffleRow = this.el.querySelector('.icon-shuffle')?.closest('li');
+    if (shuffleRow) {
+      const labelRow = shuffleRow.cloneNode(true);
+      labelRow.querySelector('.icon-shuffle')?.remove();
+      labelRow.querySelectorAll('img').forEach((img) => img.remove());
+      const label = labelRow.textContent.trim() || 'Shuffle';
+      const shuffle = createTag('button', {
+        type: 'button',
+        class: 'shuffle-btn',
+        'aria-label': label,
+      });
+      const icon = shuffleRow.querySelector('img')?.cloneNode(true);
+      if (icon) {
+        icon.alt = '';
+        icon.setAttribute('aria-hidden', 'true');
+        shuffle.append(icon);
+      }
+      shuffle.append(createTag('span', {}, label));
+      shuffle.disabled = !this.musicPrompts.length;
+      if (shuffle.disabled) {
+        window.lana?.log('Music Shuffle is authored without any valid music prompt suggestions.', this.lanaOptions);
+      }
+      shuffle.addEventListener('click', () => this.shuffleMusicPrompt());
+      this.musicToolbar.append(shuffle);
+      this.musicAnnouncement = createTag('span', {
+        class: 'music-prompt-announcement',
+        role: 'status',
+        'aria-live': 'polite',
+        'aria-atomic': 'true',
+      });
+      this.musicToolbar.append(this.musicAnnouncement);
+    }
+    musicCounterId += 1;
+    this.musicCounter = createTag('span', {
+      class: 'music-char-count',
+      id: `music-char-count-${musicCounterId}`,
+      hidden: '',
+    });
+    actWrap.prepend(this.musicCounter);
+    group.append(this.musicToolbar);
+    input.addEventListener('input', () => {
+      if (this.selectedVerbType !== 'music') return;
+      this.musicSuggestionPending = false;
+      input.classList.remove('music-suggestion-pending');
+      this.updateMusicCount();
+    });
+    input.addEventListener('click', () => {
+      if (this.selectedVerbType !== 'music' || !this.musicSuggestionPending) return;
+      this.musicSuggestionPending = false;
+      input.classList.remove('music-suggestion-pending');
+      if (input.selectionStart === 0 && input.selectionEnd === 0) {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    this.updateMusicMode();
+  }
+
+  updateMusicMode() {
+    if (!this.musicInput) return;
+    const active = this.selectedVerbType === 'music';
+    const input = this.musicInput;
+    this.widgetWrap.classList.toggle('music-prompt', active);
+    this.musicToolbar.hidden = !active;
+    this.musicCounter.hidden = !active;
+    this.musicSuggestionPending = false;
+    input.classList.remove('music-suggestion-pending');
+    if (active) {
+      input.maxLength = this.musicPromptLimit;
+      this.musicInputAria.forEach(([name]) => input.removeAttribute(name));
+      const description = new Set((input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+      description.add(this.musicCounter.id);
+      input.setAttribute('aria-describedby', [...description].join(' '));
+      this.musicToolbar.append(this.musicActWrap);
+      this.hidePromptDropdown();
+      this.updateMusicCount();
+    } else {
+      input.removeAttribute('maxlength');
+      input.removeAttribute('aria-invalid');
+      this.musicInputAria.forEach(([name, value]) => {
+        if (value !== null) input.setAttribute(name, value);
+      });
+      const description = (input.getAttribute('aria-describedby') || '').split(/\s+/)
+        .filter((id) => id && id !== this.musicCounter.id).join(' ');
+      if (description) input.setAttribute('aria-describedby', description);
+      else input.removeAttribute('aria-describedby');
+      this.musicActParent.insertBefore(this.musicActWrap, this.musicActNext);
+    }
+  }
+
+  updateMusicCount() {
+    const count = this.musicInput.value.length;
+    this.musicCounter.textContent = `${count}/${this.musicPromptLimit}`;
+    this.musicCounter.setAttribute('aria-label', `${this.workflowCfg.placeholder['placeholder-character-count-label'] || 'Characters'}: ${count}/${this.musicPromptLimit}`);
+    this.musicInput.setAttribute('aria-invalid', count > this.musicPromptLimit ? 'true' : 'false');
+  }
+
+  shuffleMusicPrompt() {
+    if (this.selectedVerbType !== 'music' || !this.musicPrompts.length) return;
+    if (!this.musicPromptQueue.length) {
+      this.musicPromptQueue = [...this.musicPrompts];
+      for (let i = this.musicPromptQueue.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.musicPromptQueue[i], this.musicPromptQueue[j]] = [this.musicPromptQueue[j], this.musicPromptQueue[i]];
+      }
+      const last = this.musicPromptQueue.length - 1;
+      if (last > 0 && this.musicPromptQueue[last] === this.lastMusicPrompt) {
+        [this.musicPromptQueue[0], this.musicPromptQueue[last]] = [this.musicPromptQueue[last], this.musicPromptQueue[0]];
+      }
+    }
+    this.lastMusicPrompt = this.musicPromptQueue.pop();
+    this.musicInput.value = this.lastMusicPrompt;
+    this.musicInput.dispatchEvent(new Event('input', { bubbles: true }));
+    this.musicSuggestionPending = true;
+    this.musicInput.classList.add('music-suggestion-pending');
+    if (this.musicAnnouncement) this.musicAnnouncement.textContent = this.lastMusicPrompt;
   }
 
   getLimitedDisplayPrompts(prompts) {
@@ -827,6 +977,7 @@ export default class UnityWidget {
     const base = (this.genBtnBaseText || 'Generate').trim();
     const verb = (this.selectedVerbText || '').trim();
     if (!verb) return base;
+    if (this.selectedVerbType === 'music' && base.toLowerCase().endsWith(` ${verb.toLowerCase()}`)) return base;
     return verb.toLowerCase().startsWith(base.toLowerCase()) ? verb : `${base} ${verb}`;
   }
 
@@ -836,7 +987,7 @@ export default class UnityWidget {
     this.genBtnBaseText = txt;
     const img = cfg.querySelector('img[src*=".svg"]');
     const label = this.computeGenBtnLabel();
-    if (img) img.setAttribute('alt', label);
+    if (img) img.setAttribute('alt', this.selectedVerbType === 'music' ? '' : label);
     const btn = createTag('button', {
       type: 'button',
       class: `unity-act-btn ${cls}`,
@@ -874,6 +1025,7 @@ export default class UnityWidget {
   }
 
   async getPrompt(verb) {
+    if (verb === 'music') return [];
     if (!this.hasPromptSuggestions) return [];
     try {
       if (!this.prompts || Object.keys(this.prompts).length === 0) await this.loadPrompts();
@@ -953,12 +1105,13 @@ export default class UnityWidget {
   }
 
   async updateDropdownForVerb(verb) {
-    if (!this.hasPromptSuggestions) return;
+    if (!this.hasPromptSuggestions || verb === 'music') return;
     await this.ensureSoundModuleLoaded();
     const dropdown = this.widget.querySelector('#prompt-dropdown');
     if (!dropdown) return;
     dropdown.querySelectorAll('.drop-item').forEach((item) => item.remove());
     const prompts = await this.getPrompt(verb);
+    if (this.selectedVerbType === 'music') return;
     const limited = this.getLimitedDisplayPrompts(prompts);
     this.addPromptItemsToDropdown(dropdown, limited, this.workflowCfg.placeholder);
     this.widgetWrap.dispatchEvent(new CustomEvent('firefly-reinit-action-listeners'));
