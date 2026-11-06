@@ -47,20 +47,22 @@ All though the core Unity functionality resides in this repo, Milo has a light w
 ### Unity with Custom Block
 Unity block can be added after any other block to take the effect. We need to pass a target element(selector) where we need unity feature/ 
 
-### Prompt bar v2 (opt-in)
+### Prompt bar v2 (default)
 
-Add `prompt-bar-v2` to the Unity block heading to enable the new dark appearance
-and segmented feature selector for that prompt bar:
+The new dark appearance and segmented feature selector are enabled by default.
+Existing Unity block headings need no additional authoring:
 
 ```text
-unity (workflow-firefly, product-firefly, feature-upload-image, dark, prompt-bar-v2)
+unity (workflow-firefly, product-firefly, feature-upload-image, dark)
 ```
 
-Without this flag, the existing appearance and verb dropdown remain unchanged,
-including for music. The flag is independent of the selected verb and does not
-enable music controls. Existing `dark`/`light` authoring keeps its current meaning.
-An explicit `prompt-bar-v2` takes precedence over the page-level
-`firefly-redesign` prompt-bar presentation.
+The existing `firefly-redesign` page theme takes precedence: pages detected through
+`meta[name="theme"][content="firefly-redesign"]` or `.theme-firefly-redesign` keep
+their `pb-redesign` styling and verb-selection dialog unchanged. This remains true
+even if `prompt-bar-v2` was previously authored; that block flag is no longer
+required and does not override the page theme.
+Presentation is independent of the selected verb and does not enable music
+controls. Existing `dark`/`light` authoring keeps its current meaning.
 
 Segments use the existing authored verb labels and order; the first authored
 verb is initially selected. With one verb, the selector is omitted. Arrow keys

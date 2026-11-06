@@ -108,7 +108,7 @@ export default class UnityWidget {
     this.lanaOptions = { sampleRate: 100, tags: 'Unity-FF' };
     this.sound = { audio: null, currentTile: null, currentUrl: '' };
     this.durationCache = new Map();
-    this.isPromptBarV2 = el.classList.contains('prompt-bar-v2');
+    this.isPromptBarV2 = false;
     this.isFireflyRedesign = isFireflyRedesign();
     this.verbDialogInertedEls = [];
     this.verbDialogTrapHandler = null;
@@ -119,7 +119,7 @@ export default class UnityWidget {
   }
 
   async initWidget() {
-    if (this.isPromptBarV2) this.isFireflyRedesign = false;
+    this.isPromptBarV2 = !this.isFireflyRedesign;
     const [widgetWrap, widget, unitySprite] = ['ex-unity-wrap', 'ex-unity-widget', 'unity-sprite-container']
       .map((c) => createTag('div', { class: c }));
     this.widgetWrap = widgetWrap;
