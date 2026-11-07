@@ -11,8 +11,11 @@
       "maxNumFiles": 1
     },
     "limits-photoshop": {
-      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/vnd.adobe.photoshop"],
       "maxFileSize": 40000000,
+      "maxFileSizeByType": {
+        "image/vnd.adobe.photoshop": 500000000
+      },
       "maxHeight": 8000,
       "maxWidth": 8000
     },

@@ -22,7 +22,7 @@ export function getMimeType(fileName) {
     form: 'application/vnd.adobe.form.fillsign',
     msg: 'application/vnd.ms-outlook',
   };
-  return extToTypeMap[getExtension(fileName)];
+  return extToTypeMap[getExtension(fileName).toLowerCase()];
 }
 
 export function getVideoDuration(file) {
@@ -42,6 +42,24 @@ export function getVideoDuration(file) {
   });
 }
 
+function parsePsd(view) {
+  if (view.byteLength < 26 || view.getUint32(0) !== 0x38425053 || view.getUint16(4) !== 1) {
+    throw new Error('Invalid PSD: missing header, signature, or unsupported version');
+  }
+  const channels = view.getUint16(12);
+  const height = view.getUint32(14);
+  const width = view.getUint32(18);
+  const depth = view.getUint16(22);
+  const colorMode = view.getUint16(24);
+  if (view.getUint32(6) !== 0 || view.getUint16(10) !== 0
+    || channels < 1 || channels > 56
+    || width < 1 || height < 1 || width > 30000 || height > 30000
+    || ![1, 8, 16, 32].includes(depth) || ![0, 1, 2, 3, 4, 7, 8, 9].includes(colorMode)) {
+    throw new Error('Invalid PSD: invalid document header');
+  }
+  return { width, height };
+}
+
 export async function getImageDimensions(file) {
   const buffer = await file.slice(0, 256 * 1024).arrayBuffer();
   const view = new DataView(buffer);
@@ -51,6 +69,7 @@ export async function getImageDimensions(file) {
     'image/jpeg': (v) => parseJpeg(v),
     'image/jpg': (v) => parseJpeg(v),
     'image/webp': (v, b) => parseWebp(v, b),
+    'image/vnd.adobe.photoshop': (v) => parsePsd(v),
   };
   const parser = parsers[type];
   if (!parser) throw new Error(`Unsupported file type: ${type}`);

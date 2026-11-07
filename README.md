@@ -47,6 +47,18 @@ All though the core Unity functionality resides in this repo, Milo has a light w
 ### Unity with Custom Block
 Unity block can be added after any other block to take the effect. We need to pass a target element(selector) where we need unity feature/ 
 
+### Photoshop file uploads
+The Photoshop `workflow-upload` supports JPEG, JPG, PNG, and PSD for both file-picker and drag-and-drop uploads. Its [target configuration](unitylibs/core/workflow/workflow-upload/target-config.json) allows one file per upload, up to 8,000 pixels in each dimension.
+
+- JPEG/JPG/PNG: up to 40,000,000 bytes (40 MB).
+- PSD: up to 500,000,000 bytes (500 MB), using `maxFileSizeByType` to override the default size limit for `image/vnd.adobe.photoshop`.
+
+PSD extensions are recognized case-insensitively and normalized to the Photoshop MIME type. Header validation rejects invalid PSD headers and PSB documents; the original document bytes are uploaded without flattening or converting layers. This is header validation, not full-document decoding.
+
+Unity sets the consuming upload block's file-picker filter, including `.psd`; no da-cc upload-block JavaScript change is required. Authored format guidance and error messages must reflect the separate PSD and JPEG/PNG size limits.
+
+Before rollout, verify that Unity asset creation, finalization/safety scanning, and the Photoshop connector support PSD documents up to these limits and preserve layers through app handoff. Frontend support alone does not establish backend compatibility.
+
 ### IMS guest token
 Unity Service depends on IMS guest token for logged out user. So IMS client id should be onboarded with IMS guest token [wiki](https://wiki.corp.adobe.com/pages/viewpage.action?spaceKey=~nzotta&title=Guest+Sessions+-+Identity+components+delivery+schedules%2C+integration+and+testing).
 
