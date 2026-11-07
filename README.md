@@ -59,6 +59,8 @@ Unity sets the consuming upload block's file-picker filter, including `.psd`; no
 
 Before rollout, verify that Unity asset creation, finalization/safety scanning, and the Photoshop connector support PSD documents up to these limits and preserve layers through app handoff. Frontend support alone does not establish backend compatibility.
 
+See [PSD upload support](PSD_UPLOAD_SUPPORT.md) for the implementation summary, validation results, pending rollout work, and deliberately deferred upload limitations.
+
 ### IMS guest token
 Unity Service depends on IMS guest token for logged out user. So IMS client id should be onboarded with IMS guest token [wiki](https://wiki.corp.adobe.com/pages/viewpage.action?spaceKey=~nzotta&title=Guest+Sessions+-+Identity+components+delivery+schedules%2C+integration+and+testing).
 
