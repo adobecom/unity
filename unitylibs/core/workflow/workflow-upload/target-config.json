@@ -14,7 +14,7 @@
       "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/vnd.adobe.photoshop"],
       "maxFileSize": 40000000,
       "maxFileSizeByType": {
-        "image/vnd.adobe.photoshop": 500000000
+        "image/vnd.adobe.photoshop": 1000000000
       },
       "maxHeight": 8000,
       "maxWidth": 8000

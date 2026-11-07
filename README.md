@@ -51,7 +51,7 @@ Unity block can be added after any other block to take the effect. We need to pa
 The Photoshop `workflow-upload` supports JPEG, JPG, PNG, and PSD for both file-picker and drag-and-drop uploads. Its [target configuration](unitylibs/core/workflow/workflow-upload/target-config.json) allows one file per upload, up to 8,000 pixels in each dimension.
 
 - JPEG/JPG/PNG: up to 40,000,000 bytes (40 MB).
-- PSD: up to 500,000,000 bytes (500 MB), using `maxFileSizeByType` to override the default size limit for `image/vnd.adobe.photoshop`.
+- PSD: up to 1,000,000,000 bytes (1 GB), using `maxFileSizeByType` to override the default size limit for `image/vnd.adobe.photoshop`.
 
 PSD extensions are recognized case-insensitively and normalized to the Photoshop MIME type. Header validation rejects invalid PSD headers and PSB documents; the original document bytes are uploaded without flattening or converting layers. This is header validation, not full-document decoding.
 
