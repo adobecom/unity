@@ -22,7 +22,7 @@ export function getMimeType(fileName) {
     form: 'application/vnd.adobe.form.fillsign',
     msg: 'application/vnd.ms-outlook',
   };
-  return extToTypeMap[getExtension(fileName).toLowerCase()];
+  return extToTypeMap[getExtension(fileName)];
 }
 
 export function getVideoDuration(file) {

@@ -63,9 +63,10 @@ describe('FileUtils', () => {
   });
 
   describe('getMimeType', () => {
-    it('should recognize PSD extensions regardless of case', () => {
+    it('should preserve the case-sensitive MIME lookup', () => {
       expect(getMimeType('document.psd')).to.equal('image/vnd.adobe.photoshop');
-      expect(getMimeType('document.PSD')).to.equal('image/vnd.adobe.photoshop');
+      expect(getMimeType('document.PSD')).to.be.undefined;
+      expect(getMimeType('document.AI')).to.be.undefined;
     });
 
     it('should preserve existing mappings and unknown extensions', () => {

@@ -460,7 +460,7 @@ export default class ActionBinder {
     }
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop'
       && this.limits.allowedFileTypes?.includes(PSD_MIME_TYPE)
-      && (file.type === PSD_MIME_TYPE || getMimeType(file.name) === PSD_MIME_TYPE)) {
+      && (file.type === PSD_MIME_TYPE || getMimeType(file.name.toLowerCase()) === PSD_MIME_TYPE)) {
       if (file.type !== PSD_MIME_TYPE) {
         file = new File([file], file.name, { type: PSD_MIME_TYPE, lastModified: file.lastModified });
       }
