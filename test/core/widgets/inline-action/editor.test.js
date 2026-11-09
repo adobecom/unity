@@ -1,5 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
+import { setViewport } from '@web/test-runner-commands';
 import {
   zoomScale, containBox, centeredRect, frameFromDimensions, rawImageEdgesPct,
   imageBoundsPct, resizeRect, rectPctToSourceBounds,
@@ -65,6 +66,75 @@ function cleanup(area) {
   area.remove();
   document.querySelectorAll('.ia-more-menu, .ia-social-menu, .ia-unit-menu').forEach((m) => m.remove());
 }
+
+describe('Editor adjust bar layout', () => {
+  let stylesheet;
+  let widget;
+  let originalViewport;
+
+  before(async () => {
+    originalViewport = { width: window.innerWidth, height: window.innerHeight };
+    stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = '/unitylibs/core/widgets/inline-action/editor.css';
+    await new Promise((resolve, reject) => {
+      stylesheet.onload = resolve;
+      stylesheet.onerror = reject;
+      document.head.append(stylesheet);
+    });
+  });
+
+  after(async () => {
+    stylesheet.remove();
+    await setViewport(originalViewport);
+  });
+
+  afterEach(() => widget?.remove());
+
+  [
+    { operation: 'crop', mode: 'zoom', value: '10.0x' },
+    { operation: 'resize', mode: 'zoom', value: '10.0x' },
+    { operation: 'resize', mode: 'quality', value: '100%' },
+  ].flatMap((item) => [375, 1440].map((viewportWidth) => ({ ...item, viewportWidth }))).forEach(({ operation, mode, value, viewportWidth }) => {
+    it(`keeps the ${operation} ${mode} slider and value inside the bar at viewport ${viewportWidth}`, async () => {
+      widget = document.createElement('div');
+      widget.className = 'ia-widget';
+      widget.dataset.state = 'complete';
+      widget.dataset.operation = operation;
+      const data = operation === 'crop' ? cropData : resizeData;
+      const iconHref = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"/>';
+      widget.append(buildEditorLeftPanel({
+        ...data,
+        sliderModes: data.sliderModes.map((item) => ({ ...item, iconHref })),
+      }));
+      document.body.append(widget);
+      const bar = widget.querySelector('.ia-adjust-bar');
+      const slider = bar.querySelector('.ia-slider');
+      const readout = bar.querySelector('.ia-val');
+      bar.querySelectorAll('.ia-toggle__btn').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.mode === mode);
+      });
+      slider.value = '100';
+      readout.textContent = value;
+      await setViewport({ width: viewportWidth, height: 800 });
+      const widths = viewportWidth < 1200 ? [180, 200, 205, 220, 240, 280, 307, 320, 375] : [484];
+      widths.forEach((width) => {
+        widget.style.width = `${width}px`;
+        const bounds = bar.getBoundingClientRect();
+        expect(bar.scrollWidth, `${viewportWidth}/${width}`).to.be.at.most(bar.clientWidth);
+        [bar.querySelector('.ia-toggle'), slider, readout].forEach((element) => {
+          const rect = element.getBoundingClientRect();
+          expect(rect.left).to.be.at.least(bounds.left);
+          expect(rect.right).to.be.at.most(bounds.right);
+        });
+        const text = document.createRange();
+        text.selectNodeContents(readout);
+        expect(text.getBoundingClientRect().right).to.be.at.most(bounds.right);
+        expect(slider.getBoundingClientRect().width).to.be.at.least(24);
+      });
+    });
+  });
+});
 
 describe('editor geometry helpers', () => {
   it('zoomScale maps 0-100 to 1-10', () => {
