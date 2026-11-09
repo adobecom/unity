@@ -372,6 +372,29 @@ describe('Inline action editor workflow', () => {
     });
   });
 
+  [false, true].forEach((hasInteracted) => {
+    it(`omits default JPEG quality from the resize connector after interaction: ${hasInteracted}`, async () => {
+      binder.operation = 'resize';
+      engine.outputType = 'image/jpeg';
+      engine.quality = 100;
+      engine.hasInteracted = hasInteracted;
+      await runEditInFirefly(binder);
+      expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).not.to.have.property('quality');
+    });
+  });
+
+  it('omits JPEG quality after it is reduced and then restored to 100', async () => {
+    binder.operation = 'resize';
+    engine.outputType = 'image/jpeg';
+    engine.hasInteracted = true;
+    engine.quality = 0;
+    await runEditInFirefly(binder);
+    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.have.property('quality', 0);
+    engine.quality = 100;
+    await runEditInFirefly(binder);
+    expect(binder.buildConnectorPayload.lastCall.args[0].operations[1]).not.to.have.property('quality');
+  });
+
   it('uses platformId and nameId from configured presets in the connector payload', async () => {
     const panel = buildEditorRightPanel({
       operation: 'resize',

@@ -86,7 +86,7 @@ function buildResizeOperation(engine) {
       resizeOp.height = Number(pill.height);
     }
   }
-  if (engine.outputType === 'image/jpeg') resizeOp.quality = Math.round(engine.quality);
+  if (engine.outputType === 'image/jpeg' && engine.quality !== 100) resizeOp.quality = Math.round(engine.quality);
   const aspectRatio = resizeMode === 'standard' ? pill.ratioText : null;
   return { aspectRatio, resizeOp };
 }
