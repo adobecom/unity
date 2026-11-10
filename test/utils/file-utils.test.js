@@ -1,5 +1,5 @@
 import { expect } from '@esm-bundle/chai';
-import { getExtension, removeExtension, getImageDimensions } from '../../unitylibs/utils/FileUtils.js';
+import { getExtension, removeExtension, getMimeType, getImageDimensions } from '../../unitylibs/utils/FileUtils.js';
 
 describe('FileUtils', () => {
   describe('getExtension', () => {
@@ -62,6 +62,20 @@ describe('FileUtils', () => {
     });
   });
 
+  describe('getMimeType', () => {
+    it('should preserve the case-sensitive MIME lookup', () => {
+      expect(getMimeType('document.psd')).to.equal('image/vnd.adobe.photoshop');
+      expect(getMimeType('document.PSD')).to.be.undefined;
+      expect(getMimeType('document.AI')).to.be.undefined;
+    });
+
+    it('should preserve existing mappings and unknown extensions', () => {
+      expect(getMimeType('document.ai')).to.equal('application/illustrator');
+      expect(getMimeType('document.psb')).to.be.undefined;
+      expect(getMimeType(null)).to.be.undefined;
+    });
+  });
+
   describe('getImageDimensions', () => {
     function makeFile(type, buffer) {
       return {
@@ -69,6 +83,65 @@ describe('FileUtils', () => {
         slice: () => ({ arrayBuffer: async () => buffer }),
       };
     }
+
+    function makePsdHeader() {
+      const buffer = new ArrayBuffer(26);
+      const view = new DataView(buffer);
+      view.setUint32(0, 0x38425053);
+      view.setUint16(4, 1);
+      view.setUint16(12, 3);
+      view.setUint32(14, 4000);
+      view.setUint32(18, 6000);
+      view.setUint16(22, 8);
+      view.setUint16(24, 3);
+      return buffer;
+    }
+
+    it('should parse PSD dimensions from its header', async () => {
+      const file = makeFile('image/vnd.adobe.photoshop', makePsdHeader());
+      expect(await getImageDimensions(file)).to.deep.equal({ width: 6000, height: 4000 });
+    });
+
+    [
+      { name: 'truncated header', change: (buffer) => buffer.slice(0, 25) },
+      { name: 'invalid signature', offset: 0, bytes: 4, value: 0 },
+      { name: 'PSB version', offset: 4, bytes: 2, value: 2 },
+      { name: 'invalid version', offset: 4, bytes: 2, value: 0 },
+      { name: 'nonzero reserved bytes', offset: 6, bytes: 2, value: 1 },
+      { name: 'zero channels', offset: 12, bytes: 2, value: 0 },
+      { name: 'too many channels', offset: 12, bytes: 2, value: 57 },
+      { name: 'zero height', offset: 14, bytes: 4, value: 0 },
+      { name: 'zero width', offset: 18, bytes: 4, value: 0 },
+      { name: 'height beyond PSD format limit', offset: 14, bytes: 4, value: 30001 },
+      { name: 'width beyond PSD format limit', offset: 18, bytes: 4, value: 30001 },
+      { name: 'invalid bit depth', offset: 22, bytes: 2, value: 12 },
+      { name: 'invalid color mode', offset: 24, bytes: 2, value: 5 },
+    ].forEach(({ name, change, offset, bytes, value }) => {
+      it(`should reject PSD with ${name}`, async () => {
+        let buffer = makePsdHeader();
+        if (change) buffer = change(buffer);
+        else if (bytes === 4) new DataView(buffer).setUint32(offset, value);
+        else new DataView(buffer).setUint16(offset, value);
+        const file = makeFile('image/vnd.adobe.photoshop', buffer);
+        let error;
+        try {
+          await getImageDimensions(file);
+        } catch (e) {
+          error = e;
+        }
+        expect(error).to.be.instanceOf(Error);
+        expect(error.message).to.match(/^Invalid PSD/);
+      });
+    });
+
+    [1, 8, 16, 32].forEach((depth) => {
+      it(`should support ${depth}-bit PSD headers`, async () => {
+        const buffer = makePsdHeader();
+        new DataView(buffer).setUint16(22, depth);
+        expect(await getImageDimensions(makeFile('image/vnd.adobe.photoshop', buffer)))
+          .to.deep.equal({ width: 6000, height: 4000 });
+      });
+    });
 
     it('should parse PNG dimensions', async () => {
       const width = 1024;
