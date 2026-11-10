@@ -8,9 +8,9 @@ import NetworkUtils from '../../../utils/NetworkUtils.js';
 import { createChunkUploadTasks, createChunkAnalyticsData, validateChunkUrls, extractChunkNumber } from '../../../utils/chunkingUtils.js';
 
 const PSD_MIME_TYPE = 'image/vnd.adobe.photoshop';
-const PSD_CHUNK_LIMITS = { HIGH_END: 10, MID_RANGE: 10, LOW_END: 6 };
-const PSD_CHUNK_TIMEOUT = 60000;
-const PSD_CHUNK_ATTEMPTS = 4;
+const CHUNK_CONCURRENCY_LIMITS = { HIGH_END: 10, MID_RANGE: 10, LOW_END: 6 };
+const CHUNK_TIMEOUT = 60000;
+const CHUNK_MAX_ATTEMPTS = 4;
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
@@ -74,11 +74,11 @@ export default class UploadHandler {
       fileType: file.type,
       ...callbacks,
     };
-    const isPhotoshopPsd = this.actionBinder.workflowCfg.name === 'workflow-upload'
+    const useBoundedChunkUpload = this.actionBinder.workflowCfg.name === 'workflow-upload'
       && this.actionBinder.workflowCfg.productName?.toLowerCase() === 'photoshop'
       && file.type === PSD_MIME_TYPE;
-    const result = isPhotoshopPsd
-      ? await this.uploadPsdChunksToUnity(uploadUrls, file, blockSize, signal, options)
+    const result = useBoundedChunkUpload
+      ? await this.uploadChunksWithConcurrency(uploadUrls, file, blockSize, signal, options)
       : await createChunkUploadTasks(
         uploadUrls,
         file,
@@ -103,12 +103,12 @@ export default class UploadHandler {
     return { failedChunks, attemptMap };
   }
 
-  getPsdConcurrentLimit() {
+  getChunkConcurrencyLimit() {
     const cores = navigator.hardwareConcurrency || null;
-    if (!cores) return PSD_CHUNK_LIMITS.MID_RANGE;
-    if (cores > 6) return PSD_CHUNK_LIMITS.HIGH_END;
-    if (cores <= 3) return PSD_CHUNK_LIMITS.LOW_END;
-    return PSD_CHUNK_LIMITS.MID_RANGE;
+    if (!cores) return CHUNK_CONCURRENCY_LIMITS.MID_RANGE;
+    if (cores > 6) return CHUNK_CONCURRENCY_LIMITS.HIGH_END;
+    if (cores <= 3) return CHUNK_CONCURRENCY_LIMITS.LOW_END;
+    return CHUNK_CONCURRENCY_LIMITS.MID_RANGE;
   }
 
   createAbortError() {
@@ -117,7 +117,7 @@ export default class UploadHandler {
     return error;
   }
 
-  async fetchPsdChunk(storageUrl, blobData, fileType, signal) {
+  async fetchChunkWithTimeout(storageUrl, blobData, fileType, signal) {
     if (signal.aborted) throw this.createAbortError();
     const controller = new AbortController();
     const abort = () => controller.abort();
@@ -126,7 +126,7 @@ export default class UploadHandler {
     const timeout = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, PSD_CHUNK_TIMEOUT);
+    }, CHUNK_TIMEOUT);
     try {
       return await fetch(storageUrl, {
         method: 'PUT',
@@ -137,7 +137,7 @@ export default class UploadHandler {
     } catch (error) {
       if (signal.aborted) throw this.createAbortError();
       if (timedOut) {
-        const timeoutError = new Error(`PSD chunk timed out after ${PSD_CHUNK_TIMEOUT}ms`);
+        const timeoutError = new Error(`Chunk upload timed out after ${CHUNK_TIMEOUT}ms`);
         timeoutError.name = 'TimeoutError';
         timeoutError.status = 504;
         throw timeoutError;
@@ -149,7 +149,7 @@ export default class UploadHandler {
     }
   }
 
-  async waitForPsdRetry(delay, signal) {
+  async waitForChunkRetry(delay, signal) {
     if (signal.aborted) throw this.createAbortError();
     await new Promise((resolve, reject) => {
       let timeout;
@@ -165,12 +165,12 @@ export default class UploadHandler {
     });
   }
 
-  async uploadPsdChunkWithRetry(storageUrl, blobData, fileType, signal) {
-    for (let attempt = 1; attempt <= PSD_CHUNK_ATTEMPTS; attempt += 1) {
+  async uploadChunkWithRetry(storageUrl, blobData, fileType, signal) {
+    for (let attempt = 1; attempt <= CHUNK_MAX_ATTEMPTS; attempt += 1) {
       try {
-        const response = await this.fetchPsdChunk(storageUrl, blobData, fileType, signal);
+        const response = await this.fetchChunkWithTimeout(storageUrl, blobData, fileType, signal);
         if (!response.ok) {
-          const error = new Error(`PSD chunk upload failed: ${response.status} ${response.statusText || ''}`);
+          const error = new Error(`Chunk upload failed: ${response.status} ${response.statusText || ''}`);
           error.status = response.status;
           throw error;
         }
@@ -180,17 +180,17 @@ export default class UploadHandler {
         error.attempt = attempt;
         const retryable = error instanceof TypeError || error.name === 'TimeoutError'
           || error.status === 429 || (error.status >= 500 && error.status < 600);
-        if (!retryable || attempt === PSD_CHUNK_ATTEMPTS) throw error;
-        await this.waitForPsdRetry(1000 * (2 ** (attempt - 1)), signal);
+        if (!retryable || attempt === CHUNK_MAX_ATTEMPTS) throw error;
+        await this.waitForChunkRetry(1000 * (2 ** (attempt - 1)), signal);
       }
     }
-    throw new Error('PSD chunk upload exhausted its attempts');
+    throw new Error('Chunk upload exhausted its attempts');
   }
 
-  async uploadPsdChunksToUnity(uploadUrls, file, blockSize, signal, options) {
+  async uploadChunksWithConcurrency(uploadUrls, file, blockSize, signal, options) {
     if (signal?.aborted) throw this.createAbortError();
     if (!Number.isSafeInteger(blockSize) || blockSize < 1 || file.size < 1) {
-      throw new Error('PSD chunk upload requires a positive integer block size and a nonempty file');
+      throw new Error('Chunk upload requires a positive integer block size and a nonempty file');
     }
     const totalChunks = Math.ceil(file.size / blockSize);
     validateChunkUrls(uploadUrls, totalChunks);
@@ -203,7 +203,7 @@ export default class UploadHandler {
     const attemptMap = new Map();
     try {
       const chunks = Array.from({ length: totalChunks }, (_, index) => index);
-      await executeInBatches(chunks, this.getPsdConcurrentLimit(), async (index) => {
+      await executeInBatches(chunks, this.getChunkConcurrencyLimit(), async (index) => {
         if (controller.signal.aborted) throw this.createAbortError();
         let chunkNumber = index;
         const start = index * blockSize;
@@ -212,7 +212,7 @@ export default class UploadHandler {
           const url = uploadUrls[index];
           const storageUrl = typeof url === 'object' ? url.href : url;
           chunkNumber = extractChunkNumber(url, index);
-          const result = await this.uploadPsdChunkWithRetry(storageUrl, chunk, options.fileType, controller.signal);
+          const result = await this.uploadChunkWithRetry(storageUrl, chunk, options.fileType, controller.signal);
           if (controller.signal.aborted) throw this.createAbortError();
           attemptMap.set(index, result.attempt);
           this.actionBinder.logAnalyticsinSplunk('Chunk Uploaded|UnityWidget', {
@@ -237,7 +237,7 @@ export default class UploadHandler {
               fileType: options.fileType,
               attempt: error.attempt || 1,
               errorData: { code: 'upload-chunk-error', desc: error.message },
-            }, `PSD chunk ${chunkNumber} upload failed: ${error.message}`);
+            }, `Chunk ${chunkNumber} upload failed: ${error.message}`);
             options.onChunkError?.(chunkInfo, error);
           }
           throw error;
