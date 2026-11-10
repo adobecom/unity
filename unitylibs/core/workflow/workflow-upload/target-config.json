@@ -7,6 +7,20 @@
     "productTag-photoshop": "PS",
     "productTag-lightroom": "LR",
     "productTag-firefly": "FF",
+    "uploadLimits": {
+      "HIGH_END": { "chunks": 10 },
+      "MID_RANGE": { "chunks": 10 },
+      "LOW_END": { "chunks": 6 }
+    },
+    "fetchApiConfig": {
+      "default": {
+        "retryType": "exponential",
+        "retryParams": {
+          "maxRetries": 4,
+          "retryDelay": 1000
+        }
+      }
+    },
     "limits": {
       "maxNumFiles": 1
     },

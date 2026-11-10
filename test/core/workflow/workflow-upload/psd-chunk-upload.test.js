@@ -1,12 +1,13 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
+import { readFile } from '@web/test-runner-commands';
 import { getUnityLibs, setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-upload/action-binder.js';
 import sendAnalyticsToSplunk from '../../../../unitylibs/scripts/analytics.js';
 
 setUnityLibs('/unitylibs');
 const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
-await import(`${getUnityLibs()}/utils/executeInBatches.js`);
+const { _defaults: targetCfg } = JSON.parse(await readFile({ path: '../../../../unitylibs/core/workflow/workflow-upload/target-config.json' }));
 
 const PSD_TYPE = 'image/vnd.adobe.photoshop';
 const BLOCK_SIZE = 10;
@@ -49,7 +50,14 @@ describe('PSD-only chunk uploads', () => {
     controller = new AbortController();
     binder = {
       assetId: 'psd-asset',
-      workflowCfg: { name: 'workflow-upload', productName: 'Photoshop' },
+      workflowCfg: {
+        name: 'workflow-upload',
+        productName: 'Photoshop',
+        targetCfg: {
+          uploadLimits: JSON.parse(JSON.stringify(targetCfg.uploadLimits)),
+          fetchApiConfig: JSON.parse(JSON.stringify(targetCfg.fetchApiConfig)),
+        },
+      },
       logAnalyticsinSplunk: sinon.spy(),
       lanaOptions: {},
     };
@@ -130,6 +138,7 @@ describe('PSD-only chunk uploads', () => {
 
   [
     { cores: 8, limit: 10 },
+    { cores: 6, limit: 10 },
     { cores: 4, limit: 10 },
     { cores: 3, limit: 6 },
     { cores: 2, limit: 6 },
@@ -176,6 +185,48 @@ describe('PSD-only chunk uploads', () => {
     });
   });
 
+  [
+    { cores: 8, deviceType: 'HIGH_END', limit: 2 },
+    { cores: 4, deviceType: 'MID_RANGE', limit: 3 },
+    { cores: 2, deviceType: 'LOW_END', limit: 1 },
+  ].forEach(({ cores, deviceType, limit }) => {
+    it(`should use the configured ${deviceType} chunk concurrency limit`, async () => {
+      coresStub.get(() => cores);
+      binder.workflowCfg.targetCfg.uploadLimits[deviceType].chunks = limit;
+      fetchStub.callsFake(stallUntilAborted);
+      const operation = upload().catch((error) => error);
+      await clock.tickAsync(0);
+      expect(fetchStub.callCount).to.equal(limit);
+      controller.abort();
+      expect((await operation).name).to.equal('AbortError');
+      expect(clock.countTimers()).to.equal(0);
+    });
+  });
+
+  it('should reject invalid configured concurrency before starting requests', async () => {
+    binder.workflowCfg.targetCfg.uploadLimits.MID_RANGE.chunks = 0;
+    const error = await upload().catch((caught) => caught);
+    expect(error).to.be.instanceOf(RangeError);
+    expect(fetchStub.called).to.be.false;
+    expect(clock.countTimers()).to.equal(0);
+  });
+
+  it('should prepare chunk slices up front but start only the configured number of requests', async () => {
+    const file = makeFile(20);
+    const slice = sinon.spy(file, 'slice');
+    fetchStub.callsFake(stallUntilAborted);
+    const operation = handler.uploadChunksToUnity(urls(20), file, BLOCK_SIZE, controller.signal)
+      .catch((error) => error);
+    await clock.tickAsync(0);
+    expect(slice.callCount).to.equal(20);
+    expect(fetchStub.callCount).to.equal(10);
+    expect(slice.firstCall.args).to.deep.equal([0, BLOCK_SIZE]);
+    controller.abort();
+    expect((await operation).name).to.equal('AbortError');
+    expect(slice.callCount).to.equal(20);
+    expect(clock.countTimers()).to.equal(0);
+  });
+
   it('should slice exact bytes, support href objects, and complete each chunk once', async () => {
     const file = makeFile(3);
     const uploadUrls = urls(3).map((href) => ({ href }));
@@ -193,7 +244,7 @@ describe('PSD-only chunk uploads', () => {
       expect(url).to.equal(uploadUrls[index].href);
       expect(options.method).to.equal('PUT');
       expect(options.headers['Content-Type']).to.equal(PSD_TYPE);
-      expect(options.signal).not.to.equal(controller.signal);
+      expect(options.signal).to.equal(controller.signal);
       expect(new Uint8Array(await options.body.arrayBuffer())).to.deep.equal(
         new Uint8Array(await file.slice(index * BLOCK_SIZE, (index + 1) * BLOCK_SIZE).arrayBuffer()),
       );
@@ -211,10 +262,13 @@ describe('PSD-only chunk uploads', () => {
       expect(fetchStub.callCount).to.equal(2);
       expect(result.attemptMap.get(0)).to.equal(2);
       expect(result.failedChunks.size).to.equal(0);
+      const events = binder.logAnalyticsinSplunk.withArgs('Chunk Uploaded|UnityWidget');
+      expect(events.callCount).to.equal(1);
+      expect(events.firstCall.args[1].fileMetaData.chunkUploadAttempt).to.equal(2);
     });
   });
 
-  it('should retry a network error without retrying already successful chunks', async () => {
+  it('should fail a network exception without retrying and let active siblings complete', async () => {
     const counts = new Map();
     fetchStub.callsFake(async (url) => {
       const count = (counts.get(url) || 0) + 1;
@@ -223,17 +277,16 @@ describe('PSD-only chunk uploads', () => {
       return response();
     });
     const onChunkComplete = sinon.spy();
-    const operation = upload(3, { onChunkComplete });
-    await clock.tickAsync(1000);
-    const result = await operation;
-    expect([...counts.values()]).to.deep.equal([1, 2, 1]);
-    expect(result.attemptMap.get(1)).to.equal(2);
-    expect(onChunkComplete.callCount).to.equal(3);
-    expect(result.failedChunks.size).to.equal(0);
-    const events = binder.logAnalyticsinSplunk.getCalls();
-    expect(events).to.have.lengthOf(3);
-    expect(events.map((event) => event.args[0])).to.deep.equal(Array(3).fill('Chunk Uploaded|UnityWidget'));
-    expect(events.find((event) => event.args[1].fileMetaData.chunkNumber === 2).args[1].fileMetaData.chunkUploadAttempt).to.equal(2);
+    const result = await upload(3, { onChunkComplete });
+    expect([...counts.values()]).to.deep.equal([1, 1, 1]);
+    expect(result.attemptMap.get(1)).to.equal(1);
+    expect(onChunkComplete.callCount).to.equal(2);
+    expect(result.failedChunks.size).to.equal(1);
+    const events = binder.logAnalyticsinSplunk.withArgs('Chunk Uploaded|UnityWidget').getCalls();
+    expect(events).to.have.lengthOf(2);
+    expect(events.every((event) => event.args[1].fileMetaData.chunkUploadAttempt === 1)).to.be.true;
+    expect(events.some((event) => event.args[1].fileMetaData.chunkNumber === 2)).to.be.false;
+    expect(clock.countTimers()).to.equal(0);
   });
 
   it('should make exactly four attempts with 1s, 2s, and 4s delays', async () => {
@@ -262,48 +315,74 @@ describe('PSD-only chunk uploads', () => {
     expect(clock.countTimers()).to.equal(0);
   });
 
+  it('should use the configured retry count and delay like Acrobat', async () => {
+    binder.workflowCfg.targetCfg.fetchApiConfig.default.retryParams = {
+      maxRetries: 2,
+      retryDelay: 250,
+    };
+    fetchStub.resolves(response(503));
+    const operation = upload(1);
+    await clock.tickAsync(249);
+    expect(fetchStub.callCount).to.equal(1);
+    await clock.tickAsync(1);
+    const result = await operation;
+    expect(fetchStub.callCount).to.equal(2);
+    expect(result.failedChunks.size).to.equal(1);
+    expect(result.attemptMap.get(0)).to.equal(2);
+    expect(clock.countTimers()).to.equal(0);
+  });
+
+  it('should retain the shared 202 retry and Acrobat response-callback analytics behavior', async () => {
+    fetchStub.onFirstCall().resolves(response(202));
+    const onChunkComplete = sinon.spy();
+    const operation = upload(1, { onChunkComplete });
+    await clock.tickAsync(1000);
+    const result = await operation;
+    expect(fetchStub.callCount).to.equal(2);
+    expect(result.failedChunks.size).to.equal(0);
+    expect(result.attemptMap.get(0)).to.equal(2);
+    expect(onChunkComplete.calledOnce).to.be.true;
+    const events = binder.logAnalyticsinSplunk.withArgs('Chunk Uploaded|UnityWidget').getCalls();
+    expect(events.map((event) => event.args[1].fileMetaData.chunkUploadAttempt)).to.deep.equal([1, 2]);
+    expect(clock.countTimers()).to.equal(0);
+  });
+
   [400, 401, 403, 404].forEach((status) => {
-    it(`should fail HTTP ${status} without retrying`, async () => {
+    it(`should retry HTTP ${status} following Acrobat's non-OK response rule`, async () => {
       fetchStub.resolves(response(status));
-      const result = await upload(1);
-      expect(fetchStub.calledOnce).to.be.true;
+      const operation = upload(1);
+      await clock.tickAsync(7000);
+      const result = await operation;
+      expect(fetchStub.callCount).to.equal(4);
       expect(result.failedChunks.size).to.equal(1);
-      expect(result.attemptMap.get(0)).to.equal(1);
+      expect(result.attemptMap.get(0)).to.equal(4);
       expect(controller.signal.aborted).to.be.false;
       expect(clock.countTimers()).to.equal(0);
     });
   });
 
-  it('should abort the actual fetch after 60s and retry with a fresh signal', async () => {
-    fetchStub.onFirstCall().callsFake(stallUntilAborted);
-    const operation = upload(1);
-    await clock.tickAsync(59999);
+  it('should retain the shared timeout behavior when an external signal is supplied', async () => {
+    fetchStub.callsFake(stallUntilAborted);
+    const operation = upload(1).catch((error) => error);
+    await clock.tickAsync(60000);
     expect(fetchStub.calledOnce).to.be.true;
-    const firstSignal = fetchStub.firstCall.args[1].signal;
-    expect(firstSignal.aborted).to.be.false;
-    await clock.tickAsync(1);
-    expect(firstSignal.aborted).to.be.true;
-    expect(fetchStub.calledOnce).to.be.true;
-    await clock.tickAsync(1000);
-    const result = await operation;
-    expect(fetchStub.callCount).to.equal(2);
-    expect(fetchStub.secondCall.args[1].signal).not.to.equal(firstSignal);
-    expect(fetchStub.secondCall.args[1].signal.aborted).to.be.false;
-    expect(result.attemptMap.get(0)).to.equal(2);
+    expect(fetchStub.firstCall.args[1].signal).to.equal(controller.signal);
     expect(controller.signal.aborted).to.be.false;
+    controller.abort();
+    expect((await operation).name).to.equal('AbortError');
     expect(clock.countTimers()).to.equal(0);
   });
 
-  it('should stop after four timeouts and report the timeout rather than user cancellation', async () => {
+  it('should not retry a timeout exception from the shared network utility', async () => {
     fetchStub.callsFake(stallUntilAborted);
     const onChunkError = sinon.spy();
-    const operation = upload(1, { onChunkError });
-    await clock.tickAsync(247000);
+    const operation = handler.uploadChunksToUnity(urls(1), makeFile(1), BLOCK_SIZE, null, { onChunkError });
+    await clock.tickAsync(60000);
     const result = await operation;
-    expect(fetchStub.callCount).to.equal(4);
+    expect(fetchStub.callCount).to.equal(1);
     expect(result.failedChunks.size).to.equal(1);
     expect(onChunkError.firstCall.args[1].name).to.equal('TimeoutError');
-    expect(onChunkError.firstCall.args[1].status).to.equal(504);
+    expect(result.attemptMap.get(0)).to.equal(1);
     expect(controller.signal.aborted).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
@@ -322,21 +401,31 @@ describe('PSD-only chunk uploads', () => {
     expect(fetchStub.callCount).to.equal(10);
     expect(fetchStub.getCalls().every((call) => call.args[1].signal.aborted)).to.be.true;
     expect(onChunkError.called).to.be.false;
-    expect(binder.logAnalyticsinSplunk.called).to.be.false;
+    expect(binder.logAnalyticsinSplunk.calledWith('Chunk Uploaded|UnityWidget')).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
 
-  it('should cancel retry waits immediately without starting more attempts', async () => {
-    fetchStub.resolves(response(503));
-    const operation = upload().catch((error) => error);
+  it('should retain the shared retry delay when cancellation occurs during backoff', async () => {
+    let settled = false;
+    fetchStub.callsFake((_url, { signal }) => {
+      if (signal.aborted) return Promise.reject(new DOMException('Request aborted', 'AbortError'));
+      return Promise.resolve(response(503));
+    });
+    const operation = upload(1).catch((error) => {
+      settled = true;
+      return error;
+    });
     await clock.tickAsync(0);
-    expect(fetchStub.callCount).to.equal(10);
+    expect(fetchStub.callCount).to.equal(1);
     controller.abort();
+    await clock.tickAsync(999);
+    expect(settled).to.be.false;
+    expect(fetchStub.callCount).to.equal(1);
+    await clock.tickAsync(1);
     const error = await operation;
     expect(error.name).to.equal('AbortError');
     expect(error.constructor).to.equal(Error);
-    await clock.tickAsync(7000);
-    expect(fetchStub.callCount).to.equal(10);
+    expect(fetchStub.callCount).to.equal(2);
     expect(clock.countTimers()).to.equal(0);
   });
 
@@ -348,15 +437,12 @@ describe('PSD-only chunk uploads', () => {
     expect(fetchStub.called).to.be.false;
   });
 
-  it('should stop queued chunks, abort siblings, and drain before reporting permanent failure', async () => {
+  it('should skip queued chunks after failure without aborting active siblings and wait for them', async () => {
     let failFirst;
     let settled = false;
-    fetchStub.onFirstCall().callsFake(() => new Promise((resolve) => { failFirst = resolve; }));
-    fetchStub.callsFake((_url, { signal }) => new Promise((_resolve, reject) => {
-      signal.addEventListener('abort', () => {
-        setTimeout(() => reject(new DOMException('Sibling aborted', 'AbortError')), 10);
-      }, { once: true });
-    }));
+    const pending = [];
+    fetchStub.onFirstCall().callsFake(() => new Promise((_resolve, reject) => { failFirst = reject; }));
+    fetchStub.callsFake(() => new Promise((resolve) => { pending.push(resolve); }));
     const onChunkError = sinon.spy();
     const operation = upload(20, { onChunkError }).then((result) => {
       settled = true;
@@ -364,39 +450,42 @@ describe('PSD-only chunk uploads', () => {
     });
     await clock.tickAsync(0);
     expect(fetchStub.callCount).to.equal(10);
-    failFirst(response(403));
+    failFirst(new TypeError('Failed to fetch'));
     await clock.tickAsync(0);
     expect(settled).to.be.false;
-    expect(fetchStub.getCalls().slice(1).every((call) => call.args[1].signal.aborted)).to.be.true;
+    expect(fetchStub.getCalls().every((call) => call.args[1].signal.aborted)).to.be.false;
     expect(fetchStub.callCount).to.equal(10);
-    await clock.tickAsync(10);
+    pending.forEach((resolve) => resolve(response()));
     const result = await operation;
     expect(result.failedChunks.size).to.equal(1);
     expect([...result.failedChunks][0]).to.deep.equal({ chunkIndex: 0, chunkNumber: 1 });
     expect(onChunkError.calledOnce).to.be.true;
-    expect(onChunkError.firstCall.args[1].status).to.equal(403);
-    expect(binder.logAnalyticsinSplunk.calledWith('Chunk Uploaded|UnityWidget')).to.be.false;
+    expect(onChunkError.firstCall.args[1]).to.be.instanceOf(TypeError);
+    expect(binder.logAnalyticsinSplunk.withArgs('Chunk Uploaded|UnityWidget').callCount).to.equal(9);
     expect(controller.signal.aborted).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
 
-  it('should abort siblings in backoff when another chunk fails permanently', async () => {
+  it('should let an active sibling finish its retries after another chunk fails', async () => {
     fetchStub.onFirstCall().resolves(response(503));
-    fetchStub.onSecondCall().resolves(response(403));
-    const result = await upload(2);
+    fetchStub.onSecondCall().rejects(new TypeError('Failed to fetch'));
+    const operation = upload(2);
+    await clock.tickAsync(1000);
+    const result = await operation;
     expect(result.failedChunks.size).to.equal(1);
     expect([...result.failedChunks][0].chunkIndex).to.equal(1);
-    await clock.tickAsync(7000);
-    expect(fetchStub.callCount).to.equal(2);
+    expect(result.attemptMap.get(0)).to.equal(2);
+    expect(fetchStub.callCount).to.equal(3);
+    expect(controller.signal.aborted).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
 
-  it('should remove the parent cancellation listener after success', async () => {
+  it('should not add a separate cancellation controller around the shared transport', async () => {
     const add = sinon.spy(controller.signal, 'addEventListener');
     const remove = sinon.spy(controller.signal, 'removeEventListener');
     await upload(1);
-    expect(add.calledOnce).to.be.true;
-    expect(remove.calledOnceWithExactly('abort', add.firstCall.args[1])).to.be.true;
+    expect(add.called).to.be.false;
+    expect(remove.called).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
 
@@ -454,6 +543,8 @@ describe('PSD-only chunk uploads', () => {
         productName: 'photoshop',
         supportedFeatures: new Set(['tbd']),
         targetCfg: {
+          uploadLimits: targetCfg.uploadLimits,
+          fetchApiConfig: targetCfg.fetchApiConfig,
           limits: {
             maxNumFiles: 1,
             maxFileSize: 1000000000,
@@ -473,7 +564,7 @@ describe('PSD-only chunk uploads', () => {
       actionBinder.transitionScreen = { showSplashScreen: sinon.stub().resolves() };
       const finalize = sinon.stub(UploadHandler.prototype, 'scanImgForSafetyWithRetry').resolves();
       const handoff = sinon.stub(actionBinder, 'continueInApp').resolves();
-      if (outcome === 'failure') fetchStub.resolves(response(403));
+      if (outcome === 'failure') fetchStub.rejects(new TypeError('Failed to fetch'));
       if (outcome === 'cancel') fetchStub.callsFake(stallUntilAborted);
       const operation = actionBinder.uploadFile([makeFile()]);
       await clock.tickAsync(0);
