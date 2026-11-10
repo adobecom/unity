@@ -1,6 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import {
+  executeInBatches,
   createFileChunks,
   validateChunkUrls,
   extractChunkNumber,
@@ -14,6 +15,83 @@ import {
 } from '../../unitylibs/utils/chunkingUtils.js';
 
 describe('Chunking Utils', () => {
+  describe('executeInBatches', () => {
+    let clock;
+
+    beforeEach(() => {
+      clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    });
+
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    it('should refill individual slots without exceeding concurrency', async () => {
+      const started = [];
+      const finished = [];
+      let active = 0;
+      let peak = 0;
+      const operation = executeInBatches([0, 1, 2, 3], 2, async (item) => {
+        started.push(item);
+        active += 1;
+        peak = Math.max(peak, active);
+        await new Promise((resolve) => { setTimeout(resolve, item === 0 ? 100 : 10); });
+        active -= 1;
+        finished.push(item);
+      });
+      expect(started).to.deep.equal([0, 1]);
+      await clock.tickAsync(10);
+      expect(started).to.deep.equal([0, 1, 2]);
+      expect(finished).to.deep.equal([1]);
+      await clock.tickAsync(90);
+      await operation;
+      expect(peak).to.equal(2);
+      expect(active).to.equal(0);
+      expect(finished).to.deep.equal([1, 2, 3, 0]);
+    });
+
+    it('should keep scheduling after rejection and await active siblings like Acrobat', async () => {
+      const started = [];
+      let settled = false;
+      const operation = executeInBatches([0, 1, 2, 3], 2, async (item) => {
+        started.push(item);
+        await new Promise((resolve) => { setTimeout(resolve, item === 1 ? 50 : 10); });
+        if (item === 0) throw new Error('task failed');
+      }).then(() => { settled = true; });
+      await clock.tickAsync(10);
+      expect(started).to.deep.equal([0, 1, 2]);
+      await clock.tickAsync(20);
+      expect(started).to.deep.equal([0, 1, 2, 3]);
+      expect(settled).to.be.false;
+      await clock.tickAsync(20);
+      await operation;
+      expect(settled).to.be.true;
+    });
+
+    it('should await final tasks even when fewer than the concurrency limit', async () => {
+      const finished = [];
+      let settled = false;
+      const operation = executeInBatches([0, 1], 3, async (item) => {
+        await new Promise((resolve) => { setTimeout(resolve, item === 0 ? 10 : 50); });
+        finished.push(item);
+        if (item === 1) throw new Error('last task failed');
+      }).then(() => { settled = true; });
+      await clock.tickAsync(10);
+      expect(finished).to.deep.equal([0]);
+      expect(settled).to.be.false;
+      await clock.tickAsync(40);
+      await operation;
+      expect(finished).to.deep.equal([0, 1]);
+      expect(settled).to.be.true;
+    });
+
+    it('should handle empty work without invoking the processor', async () => {
+      const processFn = sinon.spy();
+      await executeInBatches([], 2, processFn);
+      expect(processFn.called).to.be.false;
+    });
+  });
+
   describe('createFileChunks', () => {
     it('should create correct number of chunks for small file', () => {
       const file = new File(['test data'], 'test.txt', { type: 'text/plain' });
