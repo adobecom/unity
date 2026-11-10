@@ -5,7 +5,9 @@
 
 import { unityConfig, getApiCallOptions } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
+import { getDevicePerformanceTier } from '../../../utils/device-detection.js';
 import {
+  executeInBatches,
   createFileChunks,
   createChunkUploadTasks,
   createChunkAnalyticsData,
@@ -110,16 +112,8 @@ export default class UploadHandler {
     return { failedChunks, attemptMap };
   }
 
-  getDeviceType() {
-    const numCores = navigator.hardwareConcurrency || null;
-    if (!numCores) return 'MID_RANGE';
-    if (numCores > 6) return 'HIGH_END';
-    if (numCores <= 3) return 'LOW_END';
-    return 'MID_RANGE';
-  }
-
   getConcurrentLimits() {
-    const deviceType = this.getDeviceType();
+    const deviceType = getDevicePerformanceTier();
     const limits = this.getUploadLimits();
     return { maxConcurrentChunks: limits[deviceType].chunks };
   }
@@ -169,22 +163,8 @@ export default class UploadHandler {
     throw uploadParams.error;
   }
 
-  async executeInBatches(items, maxConcurrent, processFn) {
-    const executing = new Set();
-    for (const item of items) {
-      const promise = processFn(item)
-        .then(() => { executing.delete(promise); })
-        .catch(() => { executing.delete(promise); });
-      executing.add(promise);
-      if (executing.size >= maxConcurrent) await Promise.any(executing);
-    }
-    if (executing.size > 0) {
-      await Promise.all(executing);
-    }
-  }
-
   async batchUpload(tasks, batchSize) {
-    await this.executeInBatches(tasks, batchSize, async (task) => { await task(); });
+    await executeInBatches(tasks, batchSize, async (task) => { await task(); });
   }
 
   async uploadChunksWithConcurrency(uploadUrls, file, blockSize, signal, options) {

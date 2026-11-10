@@ -1,4 +1,20 @@
 /* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-loop-func */
+
+export async function executeInBatches(items, maxConcurrent, processFn) {
+  const executing = new Set();
+  for (const item of items) {
+    const promise = processFn(item)
+      .then(() => { executing.delete(promise); })
+      .catch(() => { executing.delete(promise); });
+    executing.add(promise);
+    if (executing.size >= maxConcurrent) await Promise.any(executing);
+  }
+  if (executing.size > 0) {
+    await Promise.all(executing);
+  }
+}
 
 export function createFileChunks(file, blockSize) {
   const totalChunks = Math.ceil(file.size / blockSize);
