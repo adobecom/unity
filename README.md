@@ -47,28 +47,6 @@ All though the core Unity functionality resides in this repo, Milo has a light w
 ### Unity with Custom Block
 Unity block can be added after any other block to take the effect. We need to pass a target element(selector) where we need unity feature/ 
 
-### Photoshop file uploads
-The Photoshop `workflow-upload` supports JPEG, JPG, PNG, and PSD for both file-picker and drag-and-drop uploads. Its [target configuration](unitylibs/core/workflow/workflow-upload/target-config.json) allows one file per upload, up to 8,000 pixels in each dimension.
-
-- JPEG/JPG/PNG: up to 40,000,000 bytes (40 MB).
-- PSD: up to 1,000,000,000 bytes (1 GB), using `maxFileSizeByType` to override the default size limit for `image/vnd.adobe.photoshop`.
-
-PSD extensions are recognized case-insensitively and normalized to the Photoshop MIME type. Header validation rejects invalid PSD headers and PSB documents; the original document bytes are uploaded without flattening or converting layers. This is header validation, not full-document decoding.
-
-Photoshop PSD multipart uploads use Acrobat-derived scheduling exported as `executeInBatches` from [chunkingUtils.js](unitylibs/utils/chunkingUtils.js): 10 concurrent chunks on devices reporting at least four logical cores (or no core count), and 6 on smaller devices. The shared network utility and Acrobat-style response callbacks provide four total attempts with 1/2/4-second backoff for non-OK HTTP responses, including 4xx/429/5xx. Network/timeout exceptions are not retried. After permanent failure, queued chunks are skipped while active siblings finish; they are not force-aborted. The existing 60-second shared timeout remains ineffective when an external cancellation signal is supplied, as in Acrobat. Other formats/products, single-PUT fallback, finalization, and progress behavior are unchanged.
-
-Concurrency is read from the upload workflow's `uploadLimits` configuration using `getDevicePerformanceTier` from [device-detection.js](unitylibs/utils/device-detection.js), preserving Acrobat's device classification. Only chunk limits are configured because this workflow uploads one file at a time. Chunk creation, URL-count validation, chunk numbering, and aggregate analytics reuse existing helpers from [chunkingUtils.js](unitylibs/utils/chunkingUtils.js). Both extracted helpers are additive exports; existing shared helper behavior and Acrobat remain unchanged.
-
-Retry settings are read from `fetchApiConfig.default`, following Acrobat. The shared utility also retries HTTP 202 responses. Custom timeout controllers, exception-retry loops, and failure-driven sibling cancellation are intentionally not used, to match Acrobat's production behavior.
-
-When Splunk analytics is enabled, each successfully uploaded PSD chunk emits `Chunk Uploaded|UnityWidget`, with its asset ID and chunk metadata (part number, attempt count, size, and MIME type). The existing `Chunked Upload Completed|UnityWidget` event remains once per successfully finalized file.
-
-Unity sets the consuming upload block's file-picker filter, including `.psd`; no da-cc upload-block JavaScript change is required. Authored format guidance and error messages must reflect the separate PSD and JPEG/PNG size limits.
-
-Before rollout, verify that Unity asset creation, finalization/safety scanning, and the Photoshop connector support PSD documents up to these limits and preserve layers through app handoff. Frontend support alone does not establish backend compatibility.
-
-See [PSD upload support](PSD_UPLOAD_SUPPORT.md) for the implementation summary, validation results, pending rollout work, and remaining upload limitations.
-
 ### IMS guest token
 Unity Service depends on IMS guest token for logged out user. So IMS client id should be onboarded with IMS guest token [wiki](https://wiki.corp.adobe.com/pages/viewpage.action?spaceKey=~nzotta&title=Guest+Sessions+-+Identity+components+delivery+schedules%2C+integration+and+testing).
 
