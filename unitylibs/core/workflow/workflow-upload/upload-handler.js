@@ -111,8 +111,14 @@ export default class UploadHandler {
     return PSD_CHUNK_LIMITS.MID_RANGE;
   }
 
+  createAbortError() {
+    const error = new Error('upload cancelled');
+    error.name = 'AbortError';
+    return error;
+  }
+
   async fetchPsdChunk(storageUrl, blobData, fileType, signal) {
-    if (signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+    if (signal.aborted) throw this.createAbortError();
     const controller = new AbortController();
     const abort = () => controller.abort();
     signal.addEventListener('abort', abort, { once: true });
@@ -129,7 +135,7 @@ export default class UploadHandler {
         signal: controller.signal,
       });
     } catch (error) {
-      if (signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+      if (signal.aborted) throw this.createAbortError();
       if (timedOut) {
         const timeoutError = new Error(`PSD chunk timed out after ${PSD_CHUNK_TIMEOUT}ms`);
         timeoutError.name = 'TimeoutError';
@@ -144,12 +150,12 @@ export default class UploadHandler {
   }
 
   async waitForPsdRetry(delay, signal) {
-    if (signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+    if (signal.aborted) throw this.createAbortError();
     await new Promise((resolve, reject) => {
       let timeout;
       const abort = () => {
         clearTimeout(timeout);
-        reject(new DOMException('PSD upload cancelled', 'AbortError'));
+        reject(this.createAbortError());
       };
       timeout = setTimeout(() => {
         signal.removeEventListener('abort', abort);
@@ -170,7 +176,7 @@ export default class UploadHandler {
         }
         return { response, attempt };
       } catch (error) {
-        if (signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+        if (signal.aborted) throw this.createAbortError();
         error.attempt = attempt;
         const retryable = error instanceof TypeError || error.name === 'TimeoutError'
           || error.status === 429 || (error.status >= 500 && error.status < 600);
@@ -182,7 +188,7 @@ export default class UploadHandler {
   }
 
   async uploadPsdChunksToUnity(uploadUrls, file, blockSize, signal, options) {
-    if (signal?.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+    if (signal?.aborted) throw this.createAbortError();
     if (!Number.isSafeInteger(blockSize) || blockSize < 1 || file.size < 1) {
       throw new Error('PSD chunk upload requires a positive integer block size and a nonempty file');
     }
@@ -198,7 +204,7 @@ export default class UploadHandler {
     try {
       const chunks = Array.from({ length: totalChunks }, (_, index) => index);
       await executeInBatches(chunks, this.getPsdConcurrentLimit(), async (index) => {
-        if (controller.signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+        if (controller.signal.aborted) throw this.createAbortError();
         let chunkNumber = index;
         const start = index * blockSize;
         const chunk = file.slice(start, Math.min(start + blockSize, file.size));
@@ -207,7 +213,7 @@ export default class UploadHandler {
           const storageUrl = typeof url === 'object' ? url.href : url;
           chunkNumber = extractChunkNumber(url, index);
           const result = await this.uploadPsdChunkWithRetry(storageUrl, chunk, options.fileType, controller.signal);
-          if (controller.signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+          if (controller.signal.aborted) throw this.createAbortError();
           attemptMap.set(index, result.attempt);
           this.actionBinder.logAnalyticsinSplunk('Chunk Uploaded|UnityWidget', {
             assetId: this.actionBinder.assetId,
@@ -238,12 +244,12 @@ export default class UploadHandler {
         }
       });
     } catch (error) {
-      if (signal?.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+      if (signal?.aborted) throw this.createAbortError();
       if (failedChunks.size === 0) throw error;
     } finally {
       signal?.removeEventListener('abort', abort);
     }
-    if (signal?.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
+    if (signal?.aborted) throw this.createAbortError();
     return { failedChunks, attemptMap };
   }
 

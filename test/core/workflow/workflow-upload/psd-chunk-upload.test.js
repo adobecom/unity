@@ -317,6 +317,8 @@ describe('PSD-only chunk uploads', () => {
     controller.abort();
     const error = await operation;
     expect(error.name).to.equal('AbortError');
+    expect(error.constructor).to.equal(Error);
+    expect(error.message).to.equal('upload cancelled');
     expect(fetchStub.callCount).to.equal(10);
     expect(fetchStub.getCalls().every((call) => call.args[1].signal.aborted)).to.be.true;
     expect(onChunkError.called).to.be.false;
@@ -330,7 +332,9 @@ describe('PSD-only chunk uploads', () => {
     await clock.tickAsync(0);
     expect(fetchStub.callCount).to.equal(10);
     controller.abort();
-    expect((await operation).name).to.equal('AbortError');
+    const error = await operation;
+    expect(error.name).to.equal('AbortError');
+    expect(error.constructor).to.equal(Error);
     await clock.tickAsync(7000);
     expect(fetchStub.callCount).to.equal(10);
     expect(clock.countTimers()).to.equal(0);
@@ -340,6 +344,7 @@ describe('PSD-only chunk uploads', () => {
     controller.abort();
     const error = await upload().catch((caught) => caught);
     expect(error.name).to.equal('AbortError');
+    expect(error.constructor).to.equal(Error);
     expect(fetchStub.called).to.be.false;
   });
 
