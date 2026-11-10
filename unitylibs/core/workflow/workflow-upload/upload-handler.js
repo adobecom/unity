@@ -209,6 +209,15 @@ export default class UploadHandler {
           const result = await this.uploadPsdChunkWithRetry(storageUrl, chunk, options.fileType, controller.signal);
           if (controller.signal.aborted) throw new DOMException('PSD upload cancelled', 'AbortError');
           attemptMap.set(index, result.attempt);
+          this.actionBinder.logAnalyticsinSplunk('Chunk Uploaded|UnityWidget', {
+            assetId: this.actionBinder.assetId,
+            fileMetaData: {
+              chunkNumber,
+              chunkUploadAttempt: result.attempt,
+              size: `${chunk.size}`,
+              type: options.fileType,
+            },
+          });
           options.onChunkComplete?.(index, chunkNumber, result);
         } catch (error) {
           if (!controller.signal.aborted) {

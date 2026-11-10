@@ -2,6 +2,7 @@ import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { getUnityLibs, setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-upload/action-binder.js';
+import sendAnalyticsToSplunk from '../../../../unitylibs/scripts/analytics.js';
 
 setUnityLibs('/unitylibs');
 const { default: UploadHandler } = await import(`${getUnityLibs()}/core/workflow/workflow-upload/upload-handler.js`);
@@ -72,6 +73,60 @@ describe('PSD-only chunk uploads', () => {
       }, { once: true });
     });
   }
+
+  it('should emit exactly one success event for each uploaded PSD chunk', async () => {
+    await upload(20);
+    const events = binder.logAnalyticsinSplunk.getCalls();
+    expect(events).to.have.lengthOf(20);
+    events.forEach((event, index) => {
+      expect(event.args).to.deep.equal(['Chunk Uploaded|UnityWidget', {
+        assetId: 'psd-asset',
+        fileMetaData: {
+          chunkNumber: index + 1,
+          chunkUploadAttempt: 1,
+          size: `${BLOCK_SIZE}`,
+          type: PSD_TYPE,
+        },
+      }]);
+    });
+  });
+
+  it('should report the actual size of the final partial chunk', async () => {
+    const file = new File([makeFile(3).slice(0, 25)], 'document.psd', { type: PSD_TYPE });
+    await handler.uploadChunksToUnity(urls(3), file, BLOCK_SIZE, controller.signal);
+    expect(binder.logAnalyticsinSplunk.lastCall.args[1].fileMetaData).to.deep.equal({
+      chunkNumber: 3,
+      chunkUploadAttempt: 1,
+      size: '5',
+      type: PSD_TYPE,
+    });
+  });
+
+  it('should preserve chunk details in the serialized Splunk request', async () => {
+    await upload(1);
+    const [eventName, metadata] = binder.logAnalyticsinSplunk.firstCall.args;
+    const originalIms = window.adobeIMS;
+    window.adobeIMS = { getAccessToken: () => undefined };
+    try {
+      await sendAnalyticsToSplunk(eventName, 'photoshop', metadata, '/analytics');
+      const [url, options] = fetchStub.lastCall.args;
+      expect(url).to.equal('/analytics');
+      expect(options.method).to.equal('POST');
+      const payload = JSON.parse(options.body);
+      expect(payload.event.name).to.equal('Chunk Uploaded|UnityWidget');
+      expect(payload.content).to.deep.equal({
+        assetId: 'psd-asset',
+        fileMetaData: {
+          chunkNumber: 1,
+          chunkUploadAttempt: 1,
+          size: `${BLOCK_SIZE}`,
+          type: PSD_TYPE,
+        },
+      });
+    } finally {
+      window.adobeIMS = originalIms;
+    }
+  });
 
   [
     { cores: 8, limit: 10 },
@@ -175,6 +230,10 @@ describe('PSD-only chunk uploads', () => {
     expect(result.attemptMap.get(1)).to.equal(2);
     expect(onChunkComplete.callCount).to.equal(3);
     expect(result.failedChunks.size).to.equal(0);
+    const events = binder.logAnalyticsinSplunk.getCalls();
+    expect(events).to.have.lengthOf(3);
+    expect(events.map((event) => event.args[0])).to.deep.equal(Array(3).fill('Chunk Uploaded|UnityWidget'));
+    expect(events.find((event) => event.args[1].fileMetaData.chunkNumber === 2).args[1].fileMetaData.chunkUploadAttempt).to.equal(2);
   });
 
   it('should make exactly four attempts with 1s, 2s, and 4s delays', async () => {
@@ -199,6 +258,7 @@ describe('PSD-only chunk uploads', () => {
     expect(onChunkError.calledOnce).to.be.true;
     expect(onChunkError.firstCall.args[1].status).to.equal(503);
     expect(onChunkError.firstCall.args[1].attempt).to.equal(4);
+    expect(binder.logAnalyticsinSplunk.calledWith('Chunk Uploaded|UnityWidget')).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
 
@@ -310,6 +370,7 @@ describe('PSD-only chunk uploads', () => {
     expect([...result.failedChunks][0]).to.deep.equal({ chunkIndex: 0, chunkNumber: 1 });
     expect(onChunkError.calledOnce).to.be.true;
     expect(onChunkError.firstCall.args[1].status).to.equal(403);
+    expect(binder.logAnalyticsinSplunk.calledWith('Chunk Uploaded|UnityWidget')).to.be.false;
     expect(controller.signal.aborted).to.be.false;
     expect(clock.countTimers()).to.equal(0);
   });
@@ -340,6 +401,7 @@ describe('PSD-only chunk uploads', () => {
       expect(error).to.be.instanceOf(Error);
       expect(error.message).to.include('positive integer block size');
       expect(fetchStub.called).to.be.false;
+      expect(binder.logAnalyticsinSplunk.called).to.be.false;
     });
   });
 
@@ -375,6 +437,7 @@ describe('PSD-only chunk uploads', () => {
       expect(network.firstCall.args[1].headers['Content-Type']).to.equal(type);
       expect(network.firstCall.args[2]).to.deep.equal({ retryType: 'exponential', retryParams: { maxRetries: 4, retryDelay: 1000 } });
       expect(fetchStub.called).to.be.false;
+      expect(binder.logAnalyticsinSplunk.called).to.be.false;
     });
   });
 
@@ -396,6 +459,7 @@ describe('PSD-only chunk uploads', () => {
         },
       };
       const actionBinder = new ActionBinder(element, workflowCfg, element, [element]);
+      const analytics = sinon.spy(actionBinder, 'logAnalyticsinSplunk');
       sinon.stub(actionBinder, 'checkImageDimensions').resolves({ width: 32, height: 32 });
       actionBinder.serviceHandler = {
         postCallToService: sinon.stub().resolves({ id: 'psd-asset', blocksize: BLOCK_SIZE, uploadUrls: urls(20) }),
@@ -416,6 +480,8 @@ describe('PSD-only chunk uploads', () => {
       expect(finalize.callCount, actionBinder.serviceHandler.showErrorToast.firstCall?.args[1]?.stack).to.equal(outcome === 'success' ? 1 : 0);
       expect(handoff.callCount).to.equal(outcome === 'success' ? 1 : 0);
       expect(actionBinder.serviceHandler.showErrorToast.callCount).to.equal(outcome === 'failure' ? 1 : 0);
+      expect(analytics.withArgs('Chunk Uploaded|UnityWidget').callCount).to.equal(outcome === 'success' ? 20 : 0);
+      expect(analytics.withArgs('Chunked Upload Completed|UnityWidget').callCount).to.equal(outcome === 'success' ? 1 : 0);
       expect(clock.countTimers()).to.equal(0);
     });
   });
