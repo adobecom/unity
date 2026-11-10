@@ -55,11 +55,15 @@ The Photoshop `workflow-upload` supports JPEG, JPG, PNG, and PSD for both file-p
 
 PSD extensions are recognized case-insensitively and normalized to the Photoshop MIME type. Header validation rejects invalid PSD headers and PSB documents; the original document bytes are uploaded without flattening or converting layers. This is header validation, not full-document decoding.
 
+Photoshop PSD multipart uploads use a [bounded scheduler](unitylibs/utils/executeInBatches.js): 10 concurrent chunks on devices reporting at least four logical cores (or no core count), and 6 on smaller devices. Each chunk has up to four attempts with 1/2/4-second backoff for HTTP 429/5xx, network errors, and a working 60-second per-attempt timeout. Permanent failure cancels outstanding chunks and stops queued work. Slow connections may exceed this timeout even while transferring data. Other formats/products, single-PUT fallback, finalization, and progress behavior are unchanged.
+
+When Splunk analytics is enabled, each successfully uploaded PSD chunk emits `Chunk Uploaded|UnityWidget`, with its asset ID and chunk metadata (part number, attempt count, size, and MIME type). The existing `Chunked Upload Completed|UnityWidget` event remains once per successfully finalized file.
+
 Unity sets the consuming upload block's file-picker filter, including `.psd`; no da-cc upload-block JavaScript change is required. Authored format guidance and error messages must reflect the separate PSD and JPEG/PNG size limits.
 
 Before rollout, verify that Unity asset creation, finalization/safety scanning, and the Photoshop connector support PSD documents up to these limits and preserve layers through app handoff. Frontend support alone does not establish backend compatibility.
 
-See [PSD upload support](PSD_UPLOAD_SUPPORT.md) for the implementation summary, validation results, pending rollout work, and deliberately deferred upload limitations.
+See [PSD upload support](PSD_UPLOAD_SUPPORT.md) for the implementation summary, validation results, pending rollout work, and remaining upload limitations.
 
 ### IMS guest token
 Unity Service depends on IMS guest token for logged out user. So IMS client id should be onboarded with IMS guest token [wiki](https://wiki.corp.adobe.com/pages/viewpage.action?spaceKey=~nzotta&title=Guest+Sessions+-+Identity+components+delivery+schedules%2C+integration+and+testing).
