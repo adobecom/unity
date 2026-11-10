@@ -60,15 +60,15 @@ function groupCropRows(rows) {
 }
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
+const MIN_DIMENSION = 50;
+const MAX_DIMENSION = 6000;
+const DIMENSION_INPUT_PATTERN = /^-?\d*(?:\.\d*)?$/;
 const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
 const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg';
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
-const pxToUnit = (px, unit) => {
-  const value = px / PX_PER_UNIT[unit];
-  return unit === 'px' ? Math.round(value) : Math.round(value * 100) / 100;
-};
+const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 1000) / 1000;
 
 export function containBox(naturalW, naturalH, viewportW, viewportH) {
   const cs = Math.min(viewportW / naturalW, viewportH / naturalH);
@@ -366,7 +366,7 @@ function buildDimensionField(labelText, className) {
   const field = createTag('div', { class: 'ia-dim-field' });
   field.append(
     createTag('label', { class: 'ia-dim-label' }, labelText),
-    createTag('input', { type: 'number', class: className, min: '0', step: 'any', inputmode: 'decimal' }),
+    createTag('input', { type: 'text', class: className, inputmode: 'decimal', autocomplete: 'off' }),
   );
   return field;
 }
@@ -900,7 +900,15 @@ export class EditorEngine {
     this.widthInput.addEventListener('blur', commit('width'));
     this.heightInput.addEventListener('blur', commit('height'));
     [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
-      let viaArrowKey = false;
+      let previousValue = input.value;
+      input.addEventListener('focus', () => { previousValue = input.value; });
+      input.addEventListener('beforeinput', (e) => {
+        previousValue = input.value;
+        if (e.data === null || !e.inputType.startsWith('insert')) return;
+        const nextValue = input.value.slice(0, input.selectionStart)
+          + e.data + input.value.slice(input.selectionEnd);
+        if (!DIMENSION_INPUT_PATTERN.test(nextValue)) e.preventDefault();
+      });
       input.addEventListener('click', () => {
         this.trackEvent(`Aspect Ratio freeform - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
       });
@@ -911,12 +919,20 @@ export class EditorEngine {
           input.blur();
           return;
         }
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') viaArrowKey = true;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const current = Number(input.value);
+          const value = input.value && Number.isFinite(current)
+            ? current : pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
+          const step = e.shiftKey ? 10 : 1;
+          input.value = String(value + (e.key === 'ArrowUp' ? step : -step));
+          this.onDimensionCommit(axis);
+          previousValue = input.value;
+        }
       });
       input.addEventListener('input', () => {
-        if (!viaArrowKey) return;
-        viaArrowKey = false;
-        this.onDimensionCommit(axis);
+        if (!DIMENSION_INPUT_PATTERN.test(input.value)) input.value = previousValue;
+        else previousValue = input.value;
       });
     });
     this.lockBtn.addEventListener('click', () => {
@@ -935,24 +951,32 @@ export class EditorEngine {
 
   onDimensionCommit(axis) {
     if (!this.naturalW) return;
-    const raw = Number(axis === 'width' ? this.widthInput.value : this.heightInput.value);
-    if (!raw || raw <= 0) return;
-    const rawPx = unitToPx(raw, this.unit);
+    const input = axis === 'width' ? this.widthInput : this.heightInput;
+    const rawPx = unitToPx(Number(input.value), this.unit);
+    if (!input.value || !DIMENSION_INPUT_PATTERN.test(input.value) || !Number.isFinite(rawPx)) {
+      input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
+      return;
+    }
     if (this.locked) {
-      const ratio = this.targetW / this.targetH;
+      const ratio = clamp(this.targetW / this.targetH, MIN_DIMENSION / MAX_DIMENSION, MAX_DIMENSION / MIN_DIMENSION);
+      const factor = axis === 'width' ? ratio : 1 / ratio;
+      const size = clamp(rawPx, Math.max(MIN_DIMENSION, MIN_DIMENSION * factor), Math.min(MAX_DIMENSION, MAX_DIMENSION * factor));
+      const other = clamp(Math.round(size / factor), MIN_DIMENSION, MAX_DIMENSION);
       if (axis === 'width') {
-        this.targetW = rawPx;
-        this.targetH = Math.round(rawPx / ratio);
+        this.targetW = size;
+        this.targetH = other;
       } else {
-        this.targetH = rawPx;
-        this.targetW = Math.round(rawPx * ratio);
+        this.targetH = size;
+        this.targetW = other;
       }
     } else {
-      if (axis === 'width') this.targetW = rawPx;
-      else this.targetH = rawPx;
+      const size = clamp(rawPx, MIN_DIMENSION, MAX_DIMENSION);
+      if (axis === 'width') this.targetW = size;
+      else this.targetH = size;
       const [vpW, vpH] = this.viewportSize();
       this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH, this.rect);
     }
+    input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
     this.hasInteracted = true;
     this.render();
   }

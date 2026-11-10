@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { setViewport } from '@web/test-runner-commands';
+import { sendKeys, setViewport } from '@web/test-runner-commands';
 import {
   zoomScale, containBox, centeredRect, frameFromDimensions, rawImageEdgesPct,
   imageBoundsPct, resizeRect, rectPctToSourceBounds,
@@ -555,24 +555,130 @@ describe('EditorEngine (resize)', () => {
     expect(ctx.engine.targetH).to.equal(50);
   });
 
-  it('invalid commits are ignored', () => {
-    ctx.engine.widthInput.value = '0';
-    ctx.engine.onDimensionCommit('width');
-    expect(ctx.engine.targetW).to.equal(200);
+  ['width', 'height'].forEach((axis) => {
+    it(`uses a text input and rejects non-numeric edits in ${axis}`, () => {
+      const input = ctx.engine[`${axis}Input`];
+      expect(input.type).to.equal('text');
+      expect(input.inputMode).to.equal('decimal');
+      input.focus();
+      input.select();
+      ['abc', '1e2', '1E2', '12@3', '1..5', '12px', ' 12 '].forEach((data) => {
+        const event = new InputEvent('beforeinput', { data, inputType: 'insertText', bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+        expect(event.defaultPrevented, data).to.be.true;
+      });
+      input.value = '12abc';
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromPaste' }));
+      expect(input.value).to.equal(axis === 'width' ? '200' : '100');
+    });
+
+    [
+      { value: '0', expected: 50 },
+      { value: '-12', expected: 50 },
+      { value: '49.5', expected: 50 },
+      { value: '50', expected: 50 },
+      { value: '100.75', expected: 100.75 },
+      { value: '6000', expected: 6000 },
+      { value: '99999', expected: 6000 },
+    ].forEach(({ value, expected }) => {
+      it(`clamps unlocked ${axis} ${value} to Express limits`, () => {
+        ctx.engine.setLocked(false);
+        const input = ctx.engine[`${axis}Input`];
+        input.value = value;
+        ctx.engine.onDimensionCommit(axis);
+        expect(ctx.engine.getResizeDimensions()[axis]).to.equal(expected);
+        expect(input.value).to.equal(String(expected));
+      });
+    });
+
+    ['', '-', '.', '-.', 'abc', '1e2', '12@3', '1.2.3', 'Infinity', '9'.repeat(310)].forEach((value) => {
+      it(`restores ${axis} after an unfinished or invalid commit ${value.slice(0, 15)}`, () => {
+        const input = ctx.engine[`${axis}Input`];
+        input.value = value;
+        ctx.engine.onDimensionCommit(axis);
+        expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
+        expect(input.value).to.equal(axis === 'width' ? '200' : '100');
+      });
+    });
+
+    it(`allows clearing ${axis} during editing and restores it on blur`, () => {
+      const input = ctx.engine[`${axis}Input`];
+      input.focus();
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+      expect(input.value).to.equal('');
+      input.dispatchEvent(new Event('blur'));
+      expect(input.value).to.equal(axis === 'width' ? '200' : '100');
+    });
+  });
+
+  [
+    { axis: 'width', value: '0', width: 100, height: 50 },
+    { axis: 'height', value: '0', width: 100, height: 50 },
+    { axis: 'width', value: '99999', width: 6000, height: 3000 },
+    { axis: 'height', value: '99999', width: 6000, height: 3000 },
+  ].forEach(({ axis, value, width, height }) => {
+    it(`keeps both locked dimensions within bounds when committing ${axis} ${value}`, () => {
+      ctx.engine[`${axis}Input`].value = value;
+      ctx.engine.onDimensionCommit(axis);
+      expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width, height });
+    });
+  });
+
+  [
+    { sourceWidth: 20000, sourceHeight: 100, width: 6000, height: 50 },
+    { sourceWidth: 100, sourceHeight: 20000, width: 50, height: 6000 },
+  ].forEach(({ sourceWidth, sourceHeight, width, height }) => {
+    it(`keeps extreme locked ratio ${sourceWidth}:${sourceHeight} within the pixel limits`, () => {
+      ctx.engine.targetW = sourceWidth;
+      ctx.engine.targetH = sourceHeight;
+      ctx.engine.widthInput.value = '6000';
+      ctx.engine.onDimensionCommit('width');
+      expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width, height });
+    });
   });
 
   it('Enter commits, blur commits and arrow keys commit', () => {
+    ctx.engine.setLocked(false);
     ctx.engine.widthInput.value = '100';
     ctx.engine.widthInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(ctx.engine.targetW).to.equal(100);
     ctx.engine.heightInput.value = '20';
     ctx.engine.heightInput.dispatchEvent(new Event('blur'));
-    expect(ctx.engine.targetH).to.equal(20);
+    expect(ctx.engine.targetH).to.equal(50);
     ctx.engine.widthInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    expect(ctx.engine.targetW).to.equal(101);
     ctx.engine.widthInput.value = '60';
     ctx.engine.widthInput.dispatchEvent(new Event('input'));
+    expect(ctx.engine.targetW).to.equal(101);
+    ctx.engine.widthInput.dispatchEvent(new Event('blur'));
     expect(ctx.engine.targetW).to.equal(60);
-    ctx.engine.widthInput.dispatchEvent(new Event('input'));
+  });
+
+  it('supports Shift arrow steps and clamps keyboard changes at the limits', () => {
+    ctx.engine.setLocked(false);
+    const input = ctx.engine.widthInput;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true, bubbles: true }));
+    expect(ctx.engine.targetW).to.equal(210);
+    input.value = '50';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(ctx.engine.targetW).to.equal(50);
+    input.value = '6000';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    expect(ctx.engine.targetW).to.equal(6000);
+  });
+
+  it('supports native keyboard filtering, decimal input and Enter commits', async () => {
+    ctx.engine.setLocked(false);
+    const input = ctx.engine.widthInput;
+    input.focus();
+    input.select();
+    await sendKeys({ type: 'abc@eE!' });
+    expect(input.value).to.equal('200');
+    await sendKeys({ type: '100.75' });
+    await sendKeys({ press: 'Enter' });
+    expect(ctx.engine.targetW).to.equal(100.75);
+    expect(input.value).to.equal('100.75');
   });
 
   it('clicking Width and Height sends analytics', () => {
@@ -582,13 +688,56 @@ describe('EditorEngine (resize)', () => {
     expect(ctx.track.calledWith('Aspect Ratio freeform - Height|UnityWidget')).to.be.true;
   });
 
-  it('unit conversion uses 72 dpi', () => {
+  it('unit conversion preserves the agreed 72 dpi', () => {
+    ctx.engine.setLocked(false);
     ctx.engine.unit = 'in';
     ctx.engine.widthInput.value = '1';
     ctx.engine.onDimensionCommit('width');
     expect(ctx.engine.targetW).to.equal(72);
     ctx.engine.syncDimensionFields();
     expect(ctx.engine.widthInput.value).to.equal('1');
+  });
+
+  [
+    { unit: 'in', value: '1' },
+    { unit: 'cm', value: '2.54' },
+    { unit: 'mm', value: '25.4' },
+  ].forEach(({ unit, value }) => {
+    it(`converts ${unit} to pixels with the same physical limits`, () => {
+      ctx.engine.setLocked(false);
+      ctx.engine.unit = unit;
+      const input = ctx.engine.widthInput;
+      input.value = value;
+      ctx.engine.onDimensionCommit('width');
+      expect(ctx.engine.targetW).to.be.closeTo(72, 0.000001);
+      input.value = '0';
+      ctx.engine.onDimensionCommit('width');
+      expect(ctx.engine.targetW).to.equal(50);
+      input.value = '99999';
+      ctx.engine.onDimensionCommit('width');
+      expect(ctx.engine.targetW).to.equal(6000);
+    });
+  });
+
+  it('shows physical unit dimensions to three decimal places like Express', () => {
+    ctx.engine.unit = 'in';
+    ctx.engine.syncDimensionFields();
+    expect(ctx.engine.widthInput.value).to.equal('2.778');
+    expect(ctx.engine.heightInput.value).to.equal('1.389');
+  });
+
+  it('allows fractional edits and clamps their converted pixel dimensions', () => {
+    ctx.engine.unit = 'in';
+    const input = ctx.engine.widthInput;
+    input.focus();
+    ['0', '0.', '0.5'].forEach((value) => {
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      expect(input.value).to.equal(value);
+    });
+    input.dispatchEvent(new Event('blur'));
+    expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 100, height: 50 });
+    expect(input.value).to.equal('1.389');
   });
 
   it('unit menu selects a unit and sends analytics', () => {
