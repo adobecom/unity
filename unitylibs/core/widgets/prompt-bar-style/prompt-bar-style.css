@@ -603,12 +603,13 @@
 .unity-enabled .interactive-area .models-container .menu-icon {
   position: relative;
   top: 1px;
-  transition: transform 0.15s ease-in;
+  transition: transform .2s ease;
 }
 
 .unity-enabled .interactive-area .verbs-container.show-menu .menu-icon,
 .unity-enabled .interactive-area .models-container.show-menu .menu-icon {
   transform: rotate(-180deg);
+  transition: transform .4s cubic-bezier(0.5, 1.8, 0.3, 0.8);
 }
 
 .unity-enabled .interactive-area .selected-verb,

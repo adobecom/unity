@@ -982,6 +982,37 @@
   transform: rotate(-180deg);
 }
 
+/* Shared timing for every pb-redesign verb/model dropdown animation (panel
+   reveal/conceal, selected-link fade, chevron rotation) so they all settle
+   together -- single source of truth instead of duplicated magic numbers.
+   Durations/panel-easing mirror the prototype's `--motion-duration`/panel
+   curve; the chevron intentionally uses a different curve (--pb-chevron-easing),
+   matching the prototype's `--motion-easing` used only for chevron rotation.
+   --pb-menu-bounce-easing drives just the second half of the panel's
+   lift/settle (an explicit overshoot curve -- its y control points exceed
+   [0,1] on purpose -- since the prototype's own fast-start/slow-tail curve
+   alone reads as "bounce-less" at our shorter durations). */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign {
+  --pb-menu-easing: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --pb-menu-bounce-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pb-chevron-easing: cubic-bezier(0.85, 0, 0.15, 1);
+  --pb-menu-open-duration: .58s;
+  --pb-menu-close-duration: .42s;
+  --pb-menu-lift: 16px;
+  --pb-menu-shrink-radius: 8px;
+  --pb-verb-panel-base-y: 0;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .verbs-container .menu-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .menu-icon {
+  transition: transform var(--pb-menu-close-duration, .42s) var(--pb-chevron-easing, ease);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .verbs-container.show-menu .menu-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .menu-icon {
+  transition: transform var(--pb-menu-open-duration, .58s) var(--pb-chevron-easing, cubic-bezier(0.85, 0, 0.15, 1));
+}
+
 .unity-enabled .interactive-area .selected-verb,
 .unity-enabled .interactive-area .selected-model {
   display: flex;
@@ -1061,8 +1092,10 @@
   right: 0;
 }
 
-.unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
-.unity-enabled .interactive-area .models-container.show-menu .verb-list {
+/* Scoped away from .pb-redesign, which has its own symmetric open/close
+   animation (pb-verb-panel-in/out) driven directly off .show-menu below. */
+.unity-enabled .interactive-area .autocomplete:not(.pb-redesign) .verbs-container.show-menu .verb-list,
+.unity-enabled .interactive-area .autocomplete:not(.pb-redesign) .models-container.show-menu .verb-list {
   display: block;
   animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
 }
@@ -1145,80 +1178,88 @@
 
 @keyframes pb-verb-panel-in {
   0% {
+    animation-timing-function: var(--pb-menu-easing, ease-out);
     visibility: visible;
+    transform: translateY(var(--pb-verb-panel-base-y, 0px));
     clip-path: inset(
       var(--verb-origin-y, 0px)
       calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
       calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
       var(--verb-origin-x, 0px)
-      round var(--verb-panel-radius, var(--s2a-border-radius-xl))
+      round var(--pb-menu-shrink-radius, 8px)
     );
+  }
+
+  50% {
+    animation-timing-function: var(--pb-menu-bounce-easing, cubic-bezier(0.34, 1.56, 0.64, 1));
+    transform: translateY(calc(var(--pb-verb-panel-base-y, 0px) - (var(--pb-menu-lift, 16px) * 0.4)));
+    clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
   }
 
   100% {
     visibility: visible;
+    transform: translateY(calc(var(--pb-verb-panel-base-y, 0px) - var(--pb-menu-lift, 16px)));
     clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
   }
 }
 
 @keyframes pb-verb-panel-out {
   0% {
+    animation-timing-function: var(--pb-menu-bounce-easing, cubic-bezier(0.34, 1.56, 0.64, 1));
+    visibility: visible;
+    transform: translateY(calc(var(--pb-verb-panel-base-y, 0px) - var(--pb-menu-lift, 16px)));
+    clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
+  }
+
+  50% {
+    animation-timing-function: var(--pb-menu-easing, ease);
+    transform: translateY(calc(var(--pb-verb-panel-base-y, 0px) - (var(--pb-menu-lift, 16px) * 0.4)));
     clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
   }
 
   100% {
     visibility: hidden;
+    transform: translateY(var(--pb-verb-panel-base-y, 0px));
     clip-path: inset(
       var(--verb-origin-y, 0px)
       calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
       calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
       var(--verb-origin-x, 0px)
-      round var(--verb-panel-radius, var(--s2a-border-radius-xl))
+      round var(--pb-menu-shrink-radius, 8px)
     );
   }
 }
 
-@keyframes pb-verb-item-in {
+/* Decoupled shadow layer (see .verb-list-panel::before / .models-container
+   .verb-list::before below): always the panel's full final footprint, never
+   clipped, so a faint halo is already bleeding out before/around the sharp
+   clip-path reveal -- this is what keeps the edges/timing from reading as a
+   precisely pinned rectangle, matching the prototype's separate shadow layer. */
+@keyframes pb-verb-shadow-in {
   0% {
-    transform: translateY(10px);
-    opacity: 0;
+    visibility: visible;
+    transform: translateY(var(--pb-verb-panel-base-y, 0px));
+    filter: drop-shadow(0 18px 30px rgba(0 0 0 / 0%));
   }
 
   100% {
-    transform: translateY(0);
-    opacity: 1;
+    visibility: visible;
+    transform: translateY(calc(var(--pb-verb-panel-base-y, 0px) - var(--pb-menu-lift, 16px)));
+    filter: drop-shadow(0 18px 30px rgba(0 0 0 / 65%));
   }
 }
 
-@keyframes pb-verb-item-out {
+@keyframes pb-verb-shadow-out {
   0% {
-    transform: translateY(0);
-    opacity: 1;
+    visibility: visible;
+    transform: translateY(calc(var(--pb-verb-panel-base-y, 0px) - var(--pb-menu-lift, 16px)));
+    filter: drop-shadow(0 18px 30px rgba(0 0 0 / 65%));
   }
 
   100% {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-}
-
-@keyframes pb-verb-selected-in {
-  0% {
-    transform: translate(var(--verb-selected-dx, 0px), var(--verb-selected-dy, 0px));
-  }
-
-  100% {
-    transform: translate(0, 0);
-  }
-}
-
-@keyframes pb-verb-selected-out {
-  0% {
-    transform: translate(0, 0);
-  }
-
-  100% {
-    transform: translate(var(--verb-selected-dx, 0px), var(--verb-selected-dy, 0px));
+    visibility: hidden;
+    transform: translateY(var(--pb-verb-panel-base-y, 0px));
+    filter: drop-shadow(0 18px 30px rgba(0 0 0 / 0%));
   }
 }
 
@@ -1240,8 +1281,8 @@
     font-size: 16px;
   }
 
-  .unity-enabled .interactive-area .verbs-container.show-menu .verb-list,
-  .unity-enabled .interactive-area .models-container.show-menu .verb-list {
+  .unity-enabled .interactive-area .autocomplete:not(.pb-redesign) .verbs-container.show-menu .verb-list,
+  .unity-enabled .interactive-area .autocomplete:not(.pb-redesign) .models-container.show-menu .verb-list {
     animation: move-down .4s cubic-bezier(0.5, 1.8, 0.3, 0.8) forwards;
   }
 
@@ -1612,6 +1653,7 @@
     backdrop-filter: blur(88.89px) !important;
     border: 1.42px solid rgba(255 255 255 / 5%) !important;
     border-radius: 22.76px !important;
+    --pb-menu-lift: 11px;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container,
@@ -1958,14 +2000,32 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
   position: absolute;
   z-index: 20;
-  animation: pb-verb-panel-out .25s ease forwards;
-  top: -48px;
+  animation: pb-verb-panel-out var(--pb-menu-close-duration, .42s) var(--pb-menu-easing, ease) forwards;
+  top: -81px;
   inset-inline-start: 20px;
   width: 535px;
   padding: var(--s2a-spacing-sm) var(--s2a-spacing-md) var(--s2a-spacing-md);
   background: #000000;
   border: 2px solid #FFFFFF0D;
   border-radius: var(--s2a-border-radius-xl);
+}
+
+/* Independent shadow halo: unclipped, sized to this panel's own final
+   footprint, painted behind its own background/content via negative z-index. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+  pointer-events: none;
+  visibility: hidden;
+  animation: pb-verb-shadow-out var(--pb-menu-close-duration, .42s) var(--pb-menu-easing, ease) forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list-panel::before {
+  animation: pb-verb-shadow-in var(--pb-menu-open-duration, .58s) var(--pb-menu-easing, ease-out) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list {
@@ -1986,7 +2046,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list-panel {
-  animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pb-verb-panel-in var(--pb-menu-open-duration, .58s) var(--pb-menu-easing, ease-out) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-header {
@@ -2038,20 +2098,11 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-out .15s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-in .3s ease forwards;
+  opacity: 1;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item.selected .verb-link {
   opacity: 1;
-  animation: pb-verb-selected-out .25s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item.selected .verb-link {
-  animation: pb-verb-selected-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
@@ -2076,18 +2127,6 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .selected-model {
   opacity: 0;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(2) .verb-link {
-  animation-delay: .04s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(3) .verb-link {
-  animation-delay: .08s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(4) .verb-link {
-  animation-delay: .12s;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link .selected-icon,
@@ -2180,6 +2219,7 @@
     backdrop-filter: blur(23.4375px) !important;
     border: 2.34px solid rgba(255 255 255 / 5%) !important;
     border-radius: 18.75px !important;
+    --pb-menu-lift: 11px;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
@@ -2317,16 +2357,15 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list {
   display: flex !important;
-  animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pb-verb-panel-in var(--pb-menu-open-duration, .58s) var(--pb-menu-easing, ease-out) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
   position: absolute;
   z-index: 20;
-  animation: pb-verb-panel-out .25s ease forwards;
+  animation: pb-verb-panel-out var(--pb-menu-close-duration, .42s) var(--pb-menu-easing, ease) forwards;
   --verb-panel-radius: var(--s2a-border-radius-lg);
   inset-inline-start: -36px;
-  transform: translateY(-38px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2339,6 +2378,29 @@
   background: #000000;
   border: 2px solid #FFFFFF0D;
   border-radius: var(--s2a-border-radius-lg);
+
+  /* Feeds the shared pb-verb-panel-in/out keyframes below (which also drive
+     `transform`, for the open/close lift) so this base vertical offset isn't
+     clobbered once the animation's `forwards` fill takes over `transform`. */
+  --pb-verb-panel-base-y: -38px;
+}
+
+/* Independent shadow halo: unclipped, sized to this panel's own final
+   footprint, painted behind its own background/content via negative z-index. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+  pointer-events: none;
+  visibility: hidden;
+  animation: pb-verb-shadow-out var(--pb-menu-close-duration, .42s) var(--pb-menu-easing, ease) forwards;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list::before {
+  animation: pb-verb-shadow-in var(--pb-menu-open-duration, .58s) var(--pb-menu-easing, ease-out) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link {
@@ -2358,40 +2420,11 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-out .15s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-in .3s ease forwards;
+  opacity: 1;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link {
   opacity: 1;
-  animation: pb-verb-selected-out .25s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item.selected .verb-link {
-  animation: pb-verb-selected-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(2) .verb-link {
-  animation-delay: .04s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(3) .verb-link {
-  animation-delay: .08s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(4) .verb-link {
-  animation-delay: .12s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(5) .verb-link {
-  animation-delay: .16s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(6) .verb-link {
-  animation-delay: .2s;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link img {
@@ -2481,4 +2514,22 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget:has(.models-container.show-menu) .legal-disclaimer {
   position: static;
   z-index: auto;
+}
+
+/* Respect reduced-motion preference for every verb/model dropdown open+close
+   animation in this widget (legacy move-down/move-up, pb-redesign panel reveal,
+   item/selected-label stagger, chevron rotation, and the firefly-model-showcase
+   variant). Durations/delays are collapsed instead of using `animation: none`
+   so each animation's `forwards` end-state (visibility, clip-path, opacity)
+   still applies instantly instead of elements getting stuck mid-transition. */
+@media (prefers-reduced-motion: reduce) {
+  .unity-enabled .interactive-area .verb-list,
+  .unity-enabled .interactive-area .verb-list .verb-link,
+  .unity-enabled .interactive-area .verbs-container .verb-list-panel,
+  .unity-enabled .interactive-area .verbs-container .menu-icon,
+  .unity-enabled .interactive-area .models-container .menu-icon {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -101,10 +101,10 @@ export class UnityWidget {
     if (!menuContainer) return;
     menuContainer.classList.remove('show-menu');
     selectedElement.setAttribute('aria-expanded', 'false');
-    const list = selectedElement.nextElementSibling;
-    if (list?.classList?.contains('verb-list')) {
-      list.setAttribute('style', 'display: none;');
-    }
+    // Do NOT reapply an inline `display:none` here: that would stomp the CSS
+    // `move-up` close animation (`.verb-list` base rule) before it can render
+    // a single frame. The animation's own `forwards` fill mode already ends
+    // at `display:none`, so removing `.show-menu` is enough to trigger it.
   }
 
   showVerbMenu(selectedElement) {
@@ -125,12 +125,12 @@ export class UnityWidget {
     const isOpen = menuContainer.classList.contains('show-menu');
     selectedElement.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     const siblingList = selectedElement.nextElementSibling;
-    if (siblingList?.classList?.contains('verb-list')) {
-      if (isOpen) {
-        siblingList.removeAttribute('style');
-      } else {
-        siblingList.setAttribute('style', 'display: none;');
-      }
+    // Only ever strip the inline style when opening (clears the one-time initial
+    // `display:none` set at creation). Closing is left entirely to the CSS
+    // `move-up` animation on the base `.verb-list` rule -- reapplying an inline
+    // `display:none` here would kill that animation before it can play.
+    if (isOpen && siblingList?.classList?.contains('verb-list')) {
+      siblingList.removeAttribute('style');
     }
   }
 

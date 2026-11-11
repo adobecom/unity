@@ -1245,11 +1245,11 @@ describe('Firefly Workflow Tests', () => {
       expect(panel.style.getPropertyValue('--verb-origin-h')).to.not.equal('');
     });
 
-    it('sets --verb-selected-dx/dy when a .verb-item.selected .verb-link exists', () => {
+    it('does not set --verb-selected-dx/dy (selected-item slide-to-trigger effect removed)', () => {
       testWidget.showVerbMenu(selectedElement);
 
-      expect(panel.style.getPropertyValue('--verb-selected-dx')).to.not.equal('');
-      expect(panel.style.getPropertyValue('--verb-selected-dy')).to.not.equal('');
+      expect(panel.style.getPropertyValue('--verb-selected-dx')).to.equal('');
+      expect(panel.style.getPropertyValue('--verb-selected-dy')).to.equal('');
     });
 
     it('does not measure when not in Firefly redesign', () => {
@@ -1534,14 +1534,14 @@ describe('Firefly Workflow Tests', () => {
       expect(testWidget.updateDropdownForVerb.calledWith('image')).to.be.true;
     });
 
-    it('sets --verb-selected-dx/dy on the verb list when in Firefly redesign', () => {
+    it('does not set --verb-selected-dx/dy on the verb list (slide-to-trigger effect removed)', () => {
       testWidget.isFireflyRedesign = true;
 
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder);
       handler(event);
 
-      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.not.equal('');
-      expect(verbList.style.getPropertyValue('--verb-selected-dy')).to.not.equal('');
+      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.equal('');
+      expect(verbList.style.getPropertyValue('--verb-selected-dy')).to.equal('');
     });
 
     it('does not set origin custom properties when not in Firefly redesign', () => {
@@ -1553,13 +1553,13 @@ describe('Firefly Workflow Tests', () => {
       expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.equal('');
     });
 
-    it('also sets origin custom properties for the model list (modelList=true)', () => {
+    it('does not set origin custom properties for the model list either (modelList=true)', () => {
       testWidget.isFireflyRedesign = true;
 
       const handler = testWidget.handleVerbLinkClick(link, verbList, selectedElement, menuIcon, inputPlaceHolder, true);
       handler(event);
 
-      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.not.equal('');
+      expect(verbList.style.getPropertyValue('--verb-selected-dx')).to.equal('');
     });
   });
 

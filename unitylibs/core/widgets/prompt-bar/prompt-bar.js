@@ -8,20 +8,40 @@ function isFireflyRedesign() {
     || document.querySelector('.theme-firefly-redesign'));
 }
 
-function getTextRect(el) {
-  const textEl = el.querySelector(':scope > .model-name') || el;
-  const textNode = [...textEl.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
-  if (!textNode) return textEl.getBoundingClientRect();
-  const range = document.createRange();
-  range.selectNodeContents(textNode);
-  return range.getBoundingClientRect();
+function prefersReducedMotion() {
+  return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }
 
-function setVerbSelectedOrigin(panel, btnEl, targetEl) {
-  const btnTextRect = getTextRect(btnEl);
-  const targetTextRect = getTextRect(targetEl);
-  panel.style.setProperty('--verb-selected-dx', `${btnTextRect.left - targetTextRect.left}px`);
-  panel.style.setProperty('--verb-selected-dy', `${btnTextRect.top - targetTextRect.top}px`);
+// The pb-redesign verb/model dropdowns are pure CSS-keyframe driven (no WAAPI),
+// so toggling `show-menu` again mid-animation would snap straight to the new
+// keyframe's 0% state instead of reversing smoothly from where it is. Rather than
+// reimplementing progress-aware animation reversal, we briefly ignore re-triggers
+// on the same dropdown while its open/close animation is still in flight.
+function getAnimatedMenuPanel(menuContainer) {
+  return menuContainer?.querySelector('.verb-list-panel') || menuContainer?.querySelector('.verb-list') || null;
+}
+
+function isMenuAnimationLocked(menuContainer) {
+  return menuContainer?.dataset.pbAnimating === 'true';
+}
+
+function lockMenuAnimation(menuContainer) {
+  const panel = getAnimatedMenuPanel(menuContainer);
+  if (!panel) return;
+  menuContainer.dataset.pbAnimating = 'true';
+  let safetyTimer;
+  const clear = () => {
+    delete menuContainer.dataset.pbAnimating;
+    panel.removeEventListener('animationend', clear);
+    panel.removeEventListener('animationcancel', clear);
+    clearTimeout(safetyTimer);
+  };
+  panel.addEventListener('animationend', clear);
+  panel.addEventListener('animationcancel', clear);
+  // Safety net in case animationend/animationcancel never fires (e.g. the panel
+  // is replaced/removed mid-flight), so the dropdown can never get stuck locked.
+  // Kept comfortably above the slowest panel animation (.58s open) below.
+  safetyTimer = setTimeout(clear, 750);
 }
 
 function setComboboxTriggerAriaLabel(triggerBtn, labelText, valueText) {
@@ -173,6 +193,7 @@ export default class UnityWidget {
   closeVerbOrModelMenu(selectedElement, { focusTrigger = true } = {}) {
     const menuContainer = selectedElement?.parentElement;
     if (!menuContainer) return;
+    const wasOpen = menuContainer.classList.contains('show-menu');
     menuContainer.classList.remove('show-menu');
     if (selectedElement.hasAttribute('aria-expanded')) {
       selectedElement.setAttribute('aria-expanded', 'false');
@@ -180,6 +201,7 @@ export default class UnityWidget {
     if (this.isFireflyRedesign && menuContainer.classList.contains('verbs-container')) {
       this.teardownVerbDialog(menuContainer);
     }
+    if (wasOpen && this.isFireflyRedesign && !prefersReducedMotion()) lockMenuAnimation(menuContainer);
     if (focusTrigger) selectedElement.focus();
   }
 
@@ -195,6 +217,7 @@ export default class UnityWidget {
 
   showVerbMenu(selectedElement) {
     const menuContainer = selectedElement.parentElement;
+    if (this.isFireflyRedesign && isMenuAnimationLocked(menuContainer)) return;
     document.querySelectorAll('.verbs-container').forEach((container) => {
       if (container !== menuContainer) {
         container.classList.remove('show-menu');
@@ -215,15 +238,12 @@ export default class UnityWidget {
       panel.style.setProperty('--verb-origin-y', `${btnRect.top - panelRect.top}px`);
       panel.style.setProperty('--verb-origin-w', `${btnRect.width}px`);
       panel.style.setProperty('--verb-origin-h', `${btnRect.height}px`);
-      const selectedLink = panel.querySelector('.verb-item.selected .verb-link');
-      if (selectedLink) {
-        setVerbSelectedOrigin(panel, selectedElement, selectedLink);
-      }
     }
     menuContainer.classList.toggle('show-menu');
     if (selectedElement.hasAttribute('aria-expanded')) {
       selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
     }
+    if (this.isFireflyRedesign && !prefersReducedMotion()) lockMenuAnimation(menuContainer);
   }
 
   hidePromptDropdown(exceptElement = null) {
@@ -280,13 +300,13 @@ export default class UnityWidget {
         if (useDialogButton) listLink.removeAttribute('aria-current');
         else listLink.setAttribute('aria-selected', 'false');
       });
-      if (this.isFireflyRedesign) {
-        setVerbSelectedOrigin(verbList, selectedElement, link);
-      }
       const menuContainer = selectedElement.parentElement;
       menuContainer.classList.toggle('show-menu');
       if (selectedElement.hasAttribute('aria-expanded')) {
         selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
+      }
+      if (this.isFireflyRedesign && !menuContainer.classList.contains('show-menu') && !prefersReducedMotion()) {
+        lockMenuAnimation(menuContainer);
       }
       link.parentElement.classList.add('selected');
       if (useDialogButton) link.setAttribute('aria-current', 'true');
