@@ -8,6 +8,7 @@ setUnityLibs('/unitylibs');
 const { default: ActionBinder } = await import('../../../../unitylibs/core/workflow/workflow-upload/action-binder.js');
 const { _defaults: targetCfg } = JSON.parse(await readFile({ path: '../../../../unitylibs/core/workflow/workflow-upload/target-config.json' }));
 const PSD_TYPE = 'image/vnd.adobe.photoshop';
+const PSD_SIZE_LIMIT = targetCfg['limits-photoshop'].maxFileSizeByType[PSD_TYPE];
 
 function makePsdFile({ name = 'document.psd', type = PSD_TYPE, width = 6000, height = 4000 } = {}) {
   const header = new ArrayBuffer(26);
@@ -32,6 +33,7 @@ describe('Photoshop PSD upload', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div class="unity"></div>';
     unityEl = document.querySelector('.unity');
+    unityEl.innerHTML = '<ul><li><span class="icon-error-filesize-psd"></span>Authored PSD size error</li></ul>';
     binder = new ActionBinder(unityEl, {
       productName: 'photoshop',
       supportedFeatures: new Set(['tbd']),
@@ -54,10 +56,109 @@ describe('Photoshop PSD upload', () => {
     window.location.hash = '';
   });
 
+  const devices = [
+    { name: 'Windows desktop', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: 'Windows', mobile: false, desktop: true },
+    { name: 'macOS desktop', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', platform: 'macOS', mobile: false, desktop: true },
+    { name: 'Linux desktop', userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', platform: 'Linux', mobile: false, desktop: true },
+    { name: 'touchscreen Windows laptop', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: 'Windows', mobile: false, maxTouchPoints: 10, desktop: true },
+    { name: 'iPhone', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)', platform: 'iOS', mobile: true, maxTouchPoints: 5, desktop: false },
+    { name: 'Android phone', userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile', platform: 'Android', mobile: true, maxTouchPoints: 5, desktop: false },
+    { name: 'Android tablet', userAgent: 'Mozilla/5.0 (Linux; Android 14; Tablet)', platform: 'Android', mobile: false, maxTouchPoints: 10, desktop: false },
+    { name: 'iPad desktop mode', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', platform: 'macOS', mobile: false, maxTouchPoints: 5, desktop: false },
+    { name: 'Windows tablet', userAgent: 'Mozilla/5.0 (Windows NT 10.0; ARM; Touch)', platform: 'Windows', mobile: false, maxTouchPoints: 10, desktop: false },
+    { name: 'unknown device', userAgent: 'UnknownDevice', platform: 'unknown', mobile: false, desktop: false },
+  ];
+  const nonDesktopDevice = devices.find(({ name }) => name === 'iPad desktop mode');
+
+  function useDevice({ userAgent, platform, mobile, maxTouchPoints = 0 }) {
+    sinon.stub(navigator, 'userAgent').get(() => userAgent);
+    sinon.stub(navigator, 'userAgentData').get(() => ({ platform, mobile }));
+    sinon.stub(navigator, 'maxTouchPoints').get(() => maxTouchPoints);
+    const previousBinder = binder;
+    binder = new ActionBinder(unityEl, previousBinder.workflowCfg, unityEl, [unityEl]);
+    binder.serviceHandler = previousBinder.serviceHandler;
+    binder.errorToastEl = previousBinder.errorToastEl;
+    binder.transitionScreen = previousBinder.transitionScreen;
+    uploadAsset = sinon.stub(binder, 'uploadAsset').resolves(true);
+    continueInApp = sinon.stub(binder, 'continueInApp').resolves();
+  }
+
+  devices.forEach((device) => {
+    it(`should expose PSD only on desktop for ${device.name}`, async () => {
+      useDevice(device);
+      const expectedTypes = ['image/jpeg', 'image/png', 'image/jpg', ...(device.desktop ? [PSD_TYPE] : [])];
+      expect(binder.limits.allowedFileTypes).to.deep.equal(expectedTypes);
+      expect(binder.limits.maxFileSize).to.equal(40000000);
+      expect(targetCfg['limits-photoshop'].allowedFileTypes).to.include(PSD_TYPE);
+      unityEl.innerHTML = '<input type="file" id="file-upload">';
+      await binder.initActionListeners(unityEl, { '#file-upload': 'upload' });
+      expect(unityEl.querySelector('input').accept.split(','))
+        .to.deep.equal([...expectedTypes, ...(device.desktop ? ['.psd'] : [])]);
+      await binder.uploadFile([makePsdFile()]);
+      expect(uploadAsset.calledOnce).to.equal(device.desktop);
+      expect(continueInApp.calledOnce).to.equal(device.desktop);
+    });
+  });
+
+  [PSD_TYPE, '', 'application/octet-stream', 'image/x-photoshop', 'image/jpeg', 'image/png'].forEach((type) => {
+    it(`should reject PSD on non-desktop with MIME "${type}" before uploading`, async () => {
+      useDevice(nonDesktopDevice);
+      await binder.uploadFile([makePsdFile({ name: 'document.PSD', type })]);
+      expect(uploadAsset.called).to.be.false;
+      expect(continueInApp.called).to.be.false;
+      expect(showErrorToast.calledOnce).to.be.true;
+      expect(showErrorToast.firstCall.args[0]).to.include({
+        errorType: '.icon-error-filetype',
+        errorCode: 'error-filetype',
+      });
+    });
+  });
+
+  ['image/jpeg', 'image/jpg', 'image/png'].forEach((type) => {
+    it(`should retain uploads and the 40 MB boundary for ${type} on non-desktop`, async () => {
+      useDevice(nonDesktopDevice);
+      const file = new File(['image data'], 'image', { type });
+      const sizeStub = sinon.stub(file, 'size').get(() => 40000000);
+      await binder.uploadFile([file]);
+      expect(uploadAsset.calledOnceWithExactly(file)).to.be.true;
+      sizeStub.get(() => 40000001);
+      await binder.uploadFile([file]);
+      expect(uploadAsset.calledOnce).to.be.true;
+      expect(showErrorToast.firstCall.args[0]).to.include({
+        errorType: '.icon-error-filesize',
+        errorCode: 'error-filesize',
+      });
+    });
+  });
+
+  ['picker', 'drop'].forEach((method) => {
+    it(`should block PSD through the non-desktop ${method} event path`, async () => {
+      useDevice(nonDesktopDevice);
+      unityEl.innerHTML = '<div class="drop-zone"></div><input type="file" id="file-upload">';
+      await binder.initActionListeners(unityEl, { '#file-upload': 'upload', '.drop-zone': 'upload' });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(makePsdFile({ name: 'document.PSD', type: '' }));
+      const finished = new Promise((resolve) => {
+        sinon.stub(binder.serviceHandler, 'showErrorToast').callsFake(resolve);
+      });
+      if (method === 'picker') {
+        const input = unityEl.querySelector('input');
+        input.files = dataTransfer.files;
+        input.dispatchEvent(new Event('change'));
+      } else {
+        unityEl.querySelector('.drop-zone').dispatchEvent(new DragEvent('drop', { dataTransfer }));
+      }
+      const errorOptions = await finished;
+      expect(errorOptions.errorType).to.equal('.icon-error-filetype');
+      expect(uploadAsset.called).to.be.false;
+      expect(continueInApp.called).to.be.false;
+    });
+  });
+
   it('should configure PSD for Photoshop without changing JPEG and PNG limits', () => {
     expect(binder.limits.allowedFileTypes).to.include(PSD_TYPE);
     expect(binder.limits.maxFileSize).to.equal(40000000);
-    expect(binder.limits.maxFileSizeByType[PSD_TYPE]).to.equal(1000000000);
+    expect(binder.limits.maxFileSizeByType[PSD_TYPE]).to.equal(1073741824);
     expect(binder.limits.maxWidth).to.equal(8000);
     expect(binder.limits.maxHeight).to.equal(8000);
     expect(binder.limits.maxNumFiles).to.equal(1);
@@ -88,7 +189,7 @@ describe('Photoshop PSD upload', () => {
     });
   });
 
-  [500000001, 999999999, 1000000000].forEach((size) => {
+  [500000001, 999999999, 1000000000, PSD_SIZE_LIMIT - 1, PSD_SIZE_LIMIT].forEach((size) => {
     it(`should allow a PSD of ${size} bytes`, async () => {
       const file = makePsdFile();
       sinon.stub(file, 'size').get(() => size);
@@ -97,12 +198,23 @@ describe('Photoshop PSD upload', () => {
     });
   });
 
-  it('should reject a PSD one byte above 1 GB', async () => {
-    const file = makePsdFile();
-    sinon.stub(file, 'size').get(() => 1000000001);
-    await binder.uploadFile([file]);
-    expect(uploadAsset.called).to.be.false;
-    expect(showErrorToast.firstCall.args[0].errorCode).to.equal('error-filesize');
+  [
+    { type: PSD_TYPE, name: 'document.psd' },
+    { type: '', name: 'document.PSD' },
+    { type: 'application/octet-stream', name: 'document.PsD' },
+  ].forEach(({ type, name }) => {
+    it(`should select the PSD size error above the configured limit for ${name} with MIME "${type}"`, async () => {
+      const file = makePsdFile({ type, name });
+      sinon.stub(Blob.prototype, 'size').get(() => PSD_SIZE_LIMIT + 1);
+      await binder.uploadFile([file]);
+      expect(uploadAsset.called).to.be.false;
+      expect(continueInApp.called).to.be.false;
+      expect(showErrorToast.calledOnce).to.be.true;
+      expect(showErrorToast.firstCall.args[0]).to.include({
+        errorType: '.icon-error-filesize-psd',
+        errorCode: 'error-filesize',
+      });
+    });
   });
 
   it('should allow a PSD at the 8000-pixel dimension boundary', async () => {
@@ -146,7 +258,7 @@ describe('Photoshop PSD upload', () => {
     expect(showErrorToast.firstCall.args[0].errorCode).to.equal('error-filecount');
   });
 
-  ['image/jpeg', 'image/png'].forEach((type) => {
+  ['image/jpeg', 'image/jpg', 'image/png'].forEach((type) => {
     it(`should retain the 40 MB size boundary for ${type}`, async () => {
       const file = new File(['image data'], 'image', { type });
       sinon.stub(file, 'size').get(() => 40000000);
@@ -159,7 +271,39 @@ describe('Photoshop PSD upload', () => {
       sinon.stub(file, 'size').get(() => 40000001);
       await binder.uploadFile([file]);
       expect(uploadAsset.called).to.be.false;
-      expect(showErrorToast.firstCall.args[0].errorCode).to.equal('error-filesize');
+      expect(showErrorToast.firstCall.args[0]).to.include({
+        errorType: '.icon-error-filesize',
+        errorCode: 'error-filesize',
+      });
+    });
+  });
+
+  [
+    { type: PSD_TYPE, size: PSD_SIZE_LIMIT + 1, message: 'Authored PSD size error' },
+    { type: PSD_TYPE, size: PSD_SIZE_LIMIT + 1, message: 'Authored image size error', psdMessage: null },
+    { type: PSD_TYPE, size: PSD_SIZE_LIMIT + 1, message: 'Authored image size error', psdMessage: ' ' },
+    { type: 'image/jpeg', size: 40000001, message: 'Authored image size error' },
+    { type: 'image/png', size: 40000001, message: 'Authored image size error' },
+  ].forEach(({ type, size, message, psdMessage = 'Authored PSD size error' }) => {
+    it(`should display the authored size error for ${type} with PSD message ${JSON.stringify(psdMessage)}`, async () => {
+      const psdErrorItem = psdMessage === null ? '' : `<li><span class="icon-error-filesize-psd"></span>${psdMessage}</li>`;
+      unityEl.innerHTML = `
+        <ul>
+          <li><span class="icon-error-filesize"></span>Authored image size error</li>
+          ${psdErrorItem}
+        </ul>
+        <div class="alert-holder">
+          <button class="alert-close">Close</button>
+          <div class="alert-text"><p></p></div>
+        </div>`;
+      await binder.initActionListeners();
+      const file = type === PSD_TYPE ? makePsdFile() : new File(['image data'], 'image', { type });
+      sinon.stub(file, 'size').get(() => size);
+      await binder.uploadFile([file]);
+      expect(unityEl.querySelector('.alert-text p').innerText).to.equal(message);
+      expect(unityEl.querySelector('.alert-holder').classList.contains('show')).to.be.true;
+      expect(uploadAsset.called).to.be.false;
+      expect(continueInApp.called).to.be.false;
     });
   });
 
