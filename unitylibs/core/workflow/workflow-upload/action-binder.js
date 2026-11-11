@@ -15,6 +15,7 @@ import {
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
 import { getMimeType } from '../../../utils/FileUtils.js';
+import isDesktopDevice from '../../../utils/device-detection.js';
 
 const PSD_MIME_TYPE = 'image/vnd.adobe.photoshop';
 
@@ -109,7 +110,13 @@ export default class ActionBinder {
       ...(targetCfg[`limits-${feature}`] || {}),
     }), {});
     const hasFeatureLimits = Object.keys(featureLimits).length > 0;
-    return { ...commonLimits, ...(hasFeatureLimits ? featureLimits : productLimits) };
+    const limits = { ...commonLimits, ...(hasFeatureLimits ? featureLimits : productLimits) };
+    if (workflowCfg.productName?.toLowerCase() === 'photoshop'
+      && limits.allowedFileTypes?.includes(PSD_MIME_TYPE)
+      && !isDesktopDevice()) {
+      return { ...limits, allowedFileTypes: limits.allowedFileTypes.filter((type) => type !== PSD_MIME_TYPE) };
+    }
+    return limits;
   }
 
   getApiConfig() {
@@ -459,7 +466,6 @@ export default class ActionBinder {
       return;
     }
     if (this.workflowCfg.productName.toLowerCase() === 'photoshop'
-      && this.limits.allowedFileTypes?.includes(PSD_MIME_TYPE)
       && (file.type === PSD_MIME_TYPE || getMimeType(file.name.toLowerCase()) === PSD_MIME_TYPE)) {
       if (file.type !== PSD_MIME_TYPE) {
         file = new File([file], file.name, { type: PSD_MIME_TYPE, lastModified: file.lastModified });

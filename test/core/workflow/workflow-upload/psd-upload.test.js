@@ -56,6 +56,105 @@ describe('Photoshop PSD upload', () => {
     window.location.hash = '';
   });
 
+  const devices = [
+    { name: 'Windows desktop', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: 'Windows', mobile: false, desktop: true },
+    { name: 'macOS desktop', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', platform: 'macOS', mobile: false, desktop: true },
+    { name: 'Linux desktop', userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', platform: 'Linux', mobile: false, desktop: true },
+    { name: 'touchscreen Windows laptop', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: 'Windows', mobile: false, maxTouchPoints: 10, desktop: true },
+    { name: 'iPhone', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)', platform: 'iOS', mobile: true, maxTouchPoints: 5, desktop: false },
+    { name: 'Android phone', userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile', platform: 'Android', mobile: true, maxTouchPoints: 5, desktop: false },
+    { name: 'Android tablet', userAgent: 'Mozilla/5.0 (Linux; Android 14; Tablet)', platform: 'Android', mobile: false, maxTouchPoints: 10, desktop: false },
+    { name: 'iPad desktop mode', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', platform: 'macOS', mobile: false, maxTouchPoints: 5, desktop: false },
+    { name: 'Windows tablet', userAgent: 'Mozilla/5.0 (Windows NT 10.0; ARM; Touch)', platform: 'Windows', mobile: false, maxTouchPoints: 10, desktop: false },
+    { name: 'unknown device', userAgent: 'UnknownDevice', platform: 'unknown', mobile: false, desktop: false },
+  ];
+  const nonDesktopDevice = devices.find(({ name }) => name === 'iPad desktop mode');
+
+  function useDevice({ userAgent, platform, mobile, maxTouchPoints = 0 }) {
+    sinon.stub(navigator, 'userAgent').get(() => userAgent);
+    sinon.stub(navigator, 'userAgentData').get(() => ({ platform, mobile }));
+    sinon.stub(navigator, 'maxTouchPoints').get(() => maxTouchPoints);
+    const previousBinder = binder;
+    binder = new ActionBinder(unityEl, previousBinder.workflowCfg, unityEl, [unityEl]);
+    binder.serviceHandler = previousBinder.serviceHandler;
+    binder.errorToastEl = previousBinder.errorToastEl;
+    binder.transitionScreen = previousBinder.transitionScreen;
+    uploadAsset = sinon.stub(binder, 'uploadAsset').resolves(true);
+    continueInApp = sinon.stub(binder, 'continueInApp').resolves();
+  }
+
+  devices.forEach((device) => {
+    it(`should expose PSD only on desktop for ${device.name}`, async () => {
+      useDevice(device);
+      const expectedTypes = ['image/jpeg', 'image/png', 'image/jpg', ...(device.desktop ? [PSD_TYPE] : [])];
+      expect(binder.limits.allowedFileTypes).to.deep.equal(expectedTypes);
+      expect(binder.limits.maxFileSize).to.equal(40000000);
+      expect(targetCfg['limits-photoshop'].allowedFileTypes).to.include(PSD_TYPE);
+      unityEl.innerHTML = '<input type="file" id="file-upload">';
+      await binder.initActionListeners(unityEl, { '#file-upload': 'upload' });
+      expect(unityEl.querySelector('input').accept.split(','))
+        .to.deep.equal([...expectedTypes, ...(device.desktop ? ['.psd'] : [])]);
+      await binder.uploadFile([makePsdFile()]);
+      expect(uploadAsset.calledOnce).to.equal(device.desktop);
+      expect(continueInApp.calledOnce).to.equal(device.desktop);
+    });
+  });
+
+  [PSD_TYPE, '', 'application/octet-stream', 'image/x-photoshop', 'image/jpeg', 'image/png'].forEach((type) => {
+    it(`should reject PSD on non-desktop with MIME "${type}" before uploading`, async () => {
+      useDevice(nonDesktopDevice);
+      await binder.uploadFile([makePsdFile({ name: 'document.PSD', type })]);
+      expect(uploadAsset.called).to.be.false;
+      expect(continueInApp.called).to.be.false;
+      expect(showErrorToast.calledOnce).to.be.true;
+      expect(showErrorToast.firstCall.args[0]).to.include({
+        errorType: '.icon-error-filetype',
+        errorCode: 'error-filetype',
+      });
+    });
+  });
+
+  ['image/jpeg', 'image/jpg', 'image/png'].forEach((type) => {
+    it(`should retain uploads and the 40 MB boundary for ${type} on non-desktop`, async () => {
+      useDevice(nonDesktopDevice);
+      const file = new File(['image data'], 'image', { type });
+      const sizeStub = sinon.stub(file, 'size').get(() => 40000000);
+      await binder.uploadFile([file]);
+      expect(uploadAsset.calledOnceWithExactly(file)).to.be.true;
+      sizeStub.get(() => 40000001);
+      await binder.uploadFile([file]);
+      expect(uploadAsset.calledOnce).to.be.true;
+      expect(showErrorToast.firstCall.args[0]).to.include({
+        errorType: '.icon-error-filesize',
+        errorCode: 'error-filesize',
+      });
+    });
+  });
+
+  ['picker', 'drop'].forEach((method) => {
+    it(`should block PSD through the non-desktop ${method} event path`, async () => {
+      useDevice(nonDesktopDevice);
+      unityEl.innerHTML = '<div class="drop-zone"></div><input type="file" id="file-upload">';
+      await binder.initActionListeners(unityEl, { '#file-upload': 'upload', '.drop-zone': 'upload' });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(makePsdFile({ name: 'document.PSD', type: '' }));
+      const finished = new Promise((resolve) => {
+        sinon.stub(binder.serviceHandler, 'showErrorToast').callsFake(resolve);
+      });
+      if (method === 'picker') {
+        const input = unityEl.querySelector('input');
+        input.files = dataTransfer.files;
+        input.dispatchEvent(new Event('change'));
+      } else {
+        unityEl.querySelector('.drop-zone').dispatchEvent(new DragEvent('drop', { dataTransfer }));
+      }
+      const errorOptions = await finished;
+      expect(errorOptions.errorType).to.equal('.icon-error-filetype');
+      expect(uploadAsset.called).to.be.false;
+      expect(continueInApp.called).to.be.false;
+    });
+  });
+
   it('should configure PSD for Photoshop without changing JPEG and PNG limits', () => {
     expect(binder.limits.allowedFileTypes).to.include(PSD_TYPE);
     expect(binder.limits.maxFileSize).to.equal(40000000);
