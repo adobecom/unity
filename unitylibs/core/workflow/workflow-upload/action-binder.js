@@ -472,7 +472,9 @@ export default class ActionBinder {
     }
     const maxFileSize = this.limits.maxFileSizeByType?.[file.type] ?? this.limits.maxFileSize;
     if (maxFileSize < file.size) {
-      this.handleClientUploadError('.icon-error-filesize', 'error-filesize');
+      const psdSizeError = file.type === PSD_MIME_TYPE && this.unityEl.querySelector('.icon-error-filesize-psd')?.closest('li')?.textContent?.trim();
+      const errorTypeSelector = psdSizeError ? '.icon-error-filesize-psd' : '.icon-error-filesize';
+      this.handleClientUploadError(errorTypeSelector, 'error-filesize');
       return;
     }
     const isVideo = file.type.startsWith('video/');
