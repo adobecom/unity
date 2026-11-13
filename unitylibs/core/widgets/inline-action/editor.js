@@ -397,8 +397,8 @@ function buildFreeformDetail(parsedData) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'freeform' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
   const lockBtn = createTag('button', {
-    type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true',
-  }, createTag('img', { src: LOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
+    type: 'button', class: 'ia-dim-lock', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'false',
+  }, createTag('img', { src: UNLOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
   fields.append(
     buildDimensionField(parsedData.widthLabel || 'Width', 'ia-width-input'),
     lockBtn,
@@ -595,7 +595,7 @@ export class EditorEngine {
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
     this.hasInteracted = false;
-    this.locked = true;
+    this.setLocked(this.isCrop);
     this.resizeTab = 'freeform';
     this.selectedPill = null;
     this.rect = {x: 0, y: 0, w: 100, h: 100};
@@ -1074,7 +1074,7 @@ export class EditorEngine {
     if (this.isCrop) {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
-      this.setLocked(true);
+      this.setLocked(false);
       this.resizeTab = 'freeform';
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'freeform'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'freeform'));

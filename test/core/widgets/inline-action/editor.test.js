@@ -526,6 +526,14 @@ describe('EditorEngine (resize)', () => {
     expect(ctx.engine.widthInput.value).to.equal('200');
   });
 
+  it('starts resize unlocked with consistent button state and icon', () => {
+    expect(ctx.engine.locked).to.be.false;
+    expect(ctx.engine.lockBtn.classList.contains('is-active')).to.be.false;
+    expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.lockBtn.querySelector('img').src).to.match(/\/unlock\.svg$/);
+    expect(ctx.engine.getDragRatioLock({ w: 50, h: 50 })).to.equal(null);
+  });
+
   it('formatBytes formats sizes', () => {
     expect(EditorEngine.formatBytes(0)).to.equal('--');
     expect(EditorEngine.formatBytes(500)).to.equal('1 KB');
@@ -533,19 +541,20 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('locked width commit keeps the aspect ratio', () => {
+    ctx.engine.setLocked(true);
     ctx.engine.widthInput.value = '100';
     ctx.engine.onDimensionCommit('width');
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 100, height: 50 });
   });
 
   it('locked height commit keeps the aspect ratio', () => {
+    ctx.engine.setLocked(true);
     ctx.engine.heightInput.value = '50';
     ctx.engine.onDimensionCommit('height');
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 100, height: 50 });
   });
 
   it('unlocked commit changes one axis and moves the frame', () => {
-    ctx.engine.setLocked(false);
     ctx.engine.widthInput.value = '100';
     ctx.engine.onDimensionCommit('width');
     expect(ctx.engine.targetW).to.equal(100);
@@ -619,6 +628,7 @@ describe('EditorEngine (resize)', () => {
     { axis: 'height', value: '99999', width: 6000, height: 3000 },
   ].forEach(({ axis, value, width, height }) => {
     it(`keeps both locked dimensions within bounds when committing ${axis} ${value}`, () => {
+      ctx.engine.setLocked(true);
       ctx.engine[`${axis}Input`].value = value;
       ctx.engine.onDimensionCommit(axis);
       expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width, height });
@@ -630,6 +640,7 @@ describe('EditorEngine (resize)', () => {
     { sourceWidth: 100, sourceHeight: 20000, width: 50, height: 6000 },
   ].forEach(({ sourceWidth, sourceHeight, width, height }) => {
     it(`keeps extreme locked ratio ${sourceWidth}:${sourceHeight} within the pixel limits`, () => {
+      ctx.engine.setLocked(true);
       ctx.engine.targetW = sourceWidth;
       ctx.engine.targetH = sourceHeight;
       ctx.engine.widthInput.value = '6000';
@@ -727,6 +738,7 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('allows fractional edits and clamps their converted pixel dimensions', () => {
+    ctx.engine.setLocked(true);
     ctx.engine.unit = 'in';
     const input = ctx.engine.widthInput;
     input.focus();
@@ -758,6 +770,10 @@ describe('EditorEngine (resize)', () => {
 
   it('lock button toggles the lock state and icon', () => {
     ctx.engine.lockBtn.click();
+    expect(ctx.engine.locked).to.be.true;
+    expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('true');
+    expect(ctx.engine.lockBtn.querySelector('img').src).to.match(/\/lock\.svg$/);
+    ctx.engine.lockBtn.click();
     expect(ctx.engine.locked).to.be.false;
     expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('false');
     expect(ctx.engine.lockBtn.querySelector('img').src).to.contain('unlock');
@@ -768,6 +784,7 @@ describe('EditorEngine (resize)', () => {
     std.click();
     expect(ctx.engine.resizeTab).to.equal('standard');
     expect(ctx.track.calledWith('Aspect Ratio standard|UnityWidget')).to.be.true;
+    expect(ctx.engine.locked).to.be.false;
     const panel = ctx.engine.resizeDetails.find((d) => d.dataset.tab === 'standard');
     expect(panel.classList.contains('hide')).to.be.false;
   });
@@ -777,6 +794,9 @@ describe('EditorEngine (resize)', () => {
     pill.click();
     expect(ctx.track.calledWith('Aspect Ratio standard - square|UnityWidget')).to.be.true;
     expect(ctx.engine.selectedPill).to.equal(pill);
+    expect(ctx.engine.locked).to.be.true;
+    expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('true');
+    expect(ctx.engine.lockBtn.querySelector('img').src).to.match(/\/lock\.svg$/);
   });
 
   it('social menu selects a platform and its pill sends no analytics', () => {
@@ -786,11 +806,15 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.socialMenu.querySelector('.ia-social-opt').click();
     expect(ctx.track.calledWith('Aspect Ratio social - instagram|UnityWidget')).to.be.true;
     expect(social.textContent).to.equal('Instagram');
+    expect(ctx.engine.locked).to.be.false;
     ctx.track.resetHistory();
     const pill = ctx.engine.aspectPills.find((p) => p.dataset.platformId === 'instagram');
     pill.click();
     expect(ctx.track.called).to.be.false;
     expect(ctx.engine.targetW).to.equal(1080);
+    expect(ctx.engine.locked).to.be.true;
+    expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('true');
+    expect(ctx.engine.lockBtn.querySelector('img').src).to.match(/\/lock\.svg$/);
     social.click();
     ctx.engine.socialMenu.querySelector('.ia-dropdown-close').click();
     social.click();
@@ -936,17 +960,30 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.revertQualityPreview();
   });
 
-  it('reset restores the freeform tab, unit, lock and size', () => {
-    ctx.engine.setLocked(false);
+  it('reset restores the freeform tab, unit, unlocked state and size', () => {
+    ctx.engine.setLocked(true);
     ctx.engine.unit = 'in';
     ctx.engine.resizeTabs.find((t) => t.dataset.tab === 'standard').click();
     ctx.engine.reset();
-    expect(ctx.engine.locked).to.be.true;
+    expect(ctx.engine.locked).to.be.false;
+    expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.lockBtn.querySelector('img').src).to.match(/\/unlock\.svg$/);
     expect(ctx.engine.unit).to.equal('px');
     expect(ctx.engine.resizeTab).to.equal('freeform');
     expect(ctx.engine.resizeDetails.filter((panel) => !panel.classList.contains('hide'))
       .map((panel) => panel.dataset.tab)).to.deep.equal(['freeform']);
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
+  });
+
+  it('starts a new image unlocked after a previous preset selection', async () => {
+    ctx.engine.aspectPills.find((pill) => pill.dataset.nameId === 'square').click();
+    expect(ctx.engine.locked).to.be.true;
+    await ctx.engine.setImage(dataUrl(400, 300), 4096, true);
+    ctx.engine.reset();
+    expect(ctx.engine.locked).to.be.false;
+    expect(ctx.engine.lockBtn.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.lockBtn.querySelector('img').src).to.match(/\/unlock\.svg$/);
+    expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 400, height: 300 });
   });
 
   it('unlocked freeform drag updates the target size', () => {
@@ -959,6 +996,7 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('getDragRatioLock returns null when unlocked and the frame ratio when locked', () => {
+    ctx.engine.setLocked(true);
     expect(ctx.engine.getDragRatioLock({ w: 50, h: 50 })).to.be.a('number');
     ctx.engine.setLocked(false);
     expect(ctx.engine.getDragRatioLock({ w: 50, h: 50 })).to.equal(null);
