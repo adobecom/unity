@@ -219,6 +219,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
     class: `ia-toggle__btn${isActive ? ' is-active' : ''}`,
     'data-mode': mode,
     'aria-label': label,
+    'aria-pressed': String(isActive),
   });
   if (iconHref) btn.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
   btn.append(createTag('span', { class: 'ia-toggle-label' }, label));
@@ -227,7 +228,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
 
 function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
-  const toggle = createTag('div', { class: 'ia-toggle' });
+  const toggle = createTag('div', { class: 'ia-toggle', role: 'group' });
   const { sliderModes } = parsedData;
   sliderModes.forEach(({ mode, label, iconHref }, i) => toggle.append(buildToggleButton(mode, label, iconHref, i === 0)));
   const startMode = sliderModes[0]?.mode;
@@ -1428,7 +1429,11 @@ export class EditorEngine {
 
   setMode(mode) {
     this.mode = mode;
-    this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
+    this.toggleBtns.forEach((btn) => {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
     if (!this.slider) return;
     this.slider.min = '0';
     this.slider.max = '100';

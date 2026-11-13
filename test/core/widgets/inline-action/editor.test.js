@@ -190,6 +190,9 @@ describe('Editor styling and layout', () => {
       }));
       document.body.append(widget);
       const bar = widget.querySelector('.ia-adjust-bar');
+      const toggle = bar.querySelector('.ia-toggle');
+      expect(getComputedStyle(toggle).backgroundColor).to.equal('rgb(42, 42, 42)');
+      expect(getComputedStyle(toggle).gap).to.equal('0px');
       const slider = bar.querySelector('.ia-slider');
       const readout = bar.querySelector('.ia-val');
       bar.querySelectorAll('.ia-toggle__btn').forEach((button) => {
@@ -212,6 +215,16 @@ describe('Editor styling and layout', () => {
         text.selectNodeContents(readout);
         expect(text.getBoundingClientRect().right).to.be.at.most(bounds.right);
         expect(slider.getBoundingClientRect().width).to.be.at.least(24);
+        const segments = toggle.querySelectorAll('.ia-toggle__btn');
+        expect(toggle.getBoundingClientRect().height).to.equal(32);
+        segments.forEach((segment) => {
+          expect(segment.getBoundingClientRect().height).to.equal(32);
+          const label = segment.querySelector('.ia-toggle-label');
+          expect(getComputedStyle(label).display === 'none').to.equal(!segment.classList.contains('is-active'));
+        });
+        if (segments.length === 2) {
+          expect(segments[0].getBoundingClientRect().right).to.be.closeTo(segments[1].getBoundingClientRect().left, 0.01);
+        }
       });
     });
   });
@@ -323,8 +336,11 @@ describe('editor panel builders', () => {
 
   it('left panel builds toggles for zoom first', () => {
     const p = buildEditorLeftPanel(resizeData);
+    expect(p.querySelector('.ia-toggle').getAttribute('role')).to.equal('group');
     expect(p.querySelectorAll('.ia-toggle__btn').length).to.equal(2);
     expect(p.querySelector('.ia-toggle__btn').classList.contains('is-active')).to.be.true;
+    expect(p.querySelector('[data-mode="zoom"]').getAttribute('aria-pressed')).to.equal('true');
+    expect(p.querySelector('[data-mode="quality"]').getAttribute('aria-pressed')).to.equal('false');
     expect(p.querySelector('.ia-slider').value).to.equal('0');
     expect(p.querySelector('.ia-val').textContent).to.equal('1.0x');
   });
@@ -1007,12 +1023,25 @@ describe('EditorEngine (resize)', () => {
     expect(ctx.engine.aspectPills[0].textContent).to.equal('Portrait 720 x 1280');
   });
 
-  it('zoom and quality toggles send analytics', () => {
-    ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'zoom').click();
-    ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'quality').click();
+  it('zoom and quality toggle exclusively and send analytics', () => {
+    const zoom = ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'zoom');
+    const quality = ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'quality');
+    zoom.click();
+    quality.click();
     expect(ctx.track.calledWith('Zoom|UnityWidget')).to.be.true;
     expect(ctx.track.calledWith('Quality|UnityWidget')).to.be.true;
     expect(ctx.engine.mode).to.equal('quality');
+    expect(quality.getAttribute('aria-pressed')).to.equal('true');
+    expect(zoom.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.left.querySelectorAll('.ia-toggle__btn.is-active').length).to.equal(1);
+    ctx.engine.slider.value = '60';
+    ctx.engine.slider.dispatchEvent(new Event('input'));
+    zoom.click();
+    expect(zoom.getAttribute('aria-pressed')).to.equal('true');
+    expect(quality.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.mode).to.equal('zoom');
+    quality.click();
+    expect(ctx.engine.slider.value).to.equal('60');
   });
 
   it('quality slider updates quality and the label', () => {

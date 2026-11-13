@@ -232,9 +232,11 @@
 .ia-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
   flex: 0 1 auto;
   min-width: 0;
+  border-radius: 14px;
+  background: #2a2a2a;
 }
 
 .ia-toggle__btn {
@@ -242,7 +244,7 @@
   align-items: center;
   gap: 6px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: var(--ia-white, #fff);
   font-family: var(--body-font-family);
@@ -253,6 +255,8 @@
   cursor: pointer;
   padding: 4px 10px;
   flex-shrink: 0;
+  min-height: 32px;
+  box-sizing: border-box;
 }
 
 .ia-toggle__btn.is-active {
