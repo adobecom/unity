@@ -4,6 +4,7 @@
 import { createTag, getConfig, getUnityPromptConfigsBaseUrl } from '../../../scripts/utils.js';
 
 let promptWithStyleEvents = null;
+const MODEL_OPTIONS_SELECTOR = '[class*="icon-model"]:not([class*="-default"])';
 
 function buildVoiceModelIndex(voices) {
   const indexMap = new Map();
@@ -263,7 +264,7 @@ class UnityWidget {
     };
   }
 
-  createDropdownItems(items, listContainer, selectedElement, menuIcon) {
+  createDropdownItems(items, listContainer, selectedElement, menuIcon, defaultIdx = 0) {
     const fragment = document.createDocumentFragment();
     items.forEach((item, idx) => {
       const { name, icon, module, id, version } = item;
@@ -282,7 +283,7 @@ class UnityWidget {
         'aria-selected': 'false',
         role: 'option',
       }, `<img loading="lazy" src="${icon}" alt="" />${nameContainer.outerHTML}`);
-      if (idx === 0) {
+      if (idx === defaultIdx) {
         listItem.classList.add('selected');
         link.setAttribute('aria-selected', 'true');
       }
@@ -319,11 +320,19 @@ class UnityWidget {
       ? this.models.filter((obj) => obj.module === this.selectedVerbType)
       : [];
     if (models.length === 0) return [];
-    const selectedModelType = models[0].id;
-    const selectedModelVersion = models[0].version;
-    const selectedModelModule = models[0].module;
-    const selectedModelName = models[0].name.trim();
-    const nameContainer = createTag('span', { class: 'model-name' }, models[0].name.trim());
+    const defaultPrefix = `icon-model-default-${this.selectedVerbType}-`;
+    const defaultMarker = [...this.el.querySelectorAll('[class*="icon-model-default-"]')]
+      .flatMap((el) => [...el.classList])
+      .find((className) => className.startsWith(defaultPrefix));
+    const authoredId = defaultMarker?.slice(defaultPrefix.length).toLowerCase();
+    const authoredIdx = authoredId ? models.findIndex((m) => String(m.id).trim().toLowerCase() === authoredId) : -1;
+    const defaultIdx = Math.max(authoredIdx, 0);
+    const defaultModel = models[defaultIdx];
+    const selectedModelType = defaultModel.id;
+    const selectedModelVersion = defaultModel.version;
+    const selectedModelModule = defaultModel.module;
+    const selectedModelName = defaultModel.name.trim();
+    const nameContainer = createTag('span', { class: 'model-name' }, defaultModel.name.trim());
     const selectedElement = createTag('button', {
       class: 'selected-model',
       'aria-expanded': 'false',
@@ -334,7 +343,7 @@ class UnityWidget {
       'data-selected-model-id': selectedModelType,
       'data-selected-model-version': selectedModelVersion,
       'data-selected-model-module': selectedModelModule,
-    }, `<img src="${models[0].icon}" alt="" />${nameContainer.outerHTML}`);
+    }, `<img src="${defaultModel.icon}" alt="" />${nameContainer.outerHTML}`);
     this.selectedModelModule = selectedModelModule;
     this.selectedModelId = selectedModelType;
     this.selectedModelVersion = selectedModelVersion;
@@ -343,7 +352,7 @@ class UnityWidget {
     this.widgetWrap.setAttribute('data-selected-model-version', this.selectedModelVersion);
     this.widgetWrap.setAttribute('data-selected-model-name', this.selectedModelName);
     this.widgetWrap.setAttribute('data-selected-verb', this.selectedVerbType);
-    this.selectedModelText = models[0].name.trim();
+    this.selectedModelText = defaultModel.name.trim();
     const menuIcon = createTag('span', { class: 'menu-icon' }, '<svg><use xlink:href="#unity-chevron-icon"></use></svg>');
     const listItems = createTag('ul', { class: 'verb-list', id: 'model-menu', role: 'listbox', 'aria-label': 'Model options' });
     listItems.setAttribute('style', 'display: none;');
@@ -369,7 +378,7 @@ class UnityWidget {
         selectedElement.focus();
       }
     });
-    this.createDropdownItems(models, listItems, selectedElement, menuIcon);
+    this.createDropdownItems(models, listItems, selectedElement, menuIcon, defaultIdx);
     return [selectedElement, listItems];
   }
 
@@ -871,7 +880,7 @@ function composePromptAudioInputLayout(widget, promptLabelText, inpField, action
 function createPromptAudioInputShell(widgetInstance, el, defaultPrompt, analyticsMod) {
   const pws = analyticsMod?.PROMPT_WITH_STYLE_EVENTS;
   const { widgetWrap, widget } = createPromptAudioShellBase(widgetInstance, el);
-  widgetInstance.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
+  widgetInstance.hasModelOptions = !!el.querySelector(MODEL_OPTIONS_SELECTOR);
   widgetInstance.verbDropdown();
   const modelParts = widgetInstance.modelDropdown();
   const promptLabelText = placeholderRowText(el, 'placeholder-prompt-label') || 'Enter prompt';
@@ -1135,7 +1144,7 @@ export default class PromptBarAudioWidget extends UnityWidget {
     this.voiceConfigAll = voices;
     this.voiceModelIndex = buildVoiceModelIndex(voices);
     const { el } = this;
-    this.hasModelOptions = !!el.querySelector('[class*="icon-model"]');
+    this.hasModelOptions = !!el.querySelector(MODEL_OPTIONS_SELECTOR);
     await mountPromptBarAudioUI(this, {
       voices,
       footerLink,
