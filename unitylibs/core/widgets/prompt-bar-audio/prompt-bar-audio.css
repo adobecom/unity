@@ -176,9 +176,7 @@
   line-height: 1.2;
   letter-spacing: 0.14px;
   color: rgb(255 255 255 / 92%);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-player {
