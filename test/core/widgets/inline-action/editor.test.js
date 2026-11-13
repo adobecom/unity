@@ -67,7 +67,7 @@ function cleanup(area) {
   document.querySelectorAll('.ia-more-menu, .ia-social-menu, .ia-unit-menu').forEach((m) => m.remove());
 }
 
-describe('Editor adjust bar layout', () => {
+describe('Editor styling and layout', () => {
   let stylesheet;
   let widget;
   let originalViewport;
@@ -90,6 +90,45 @@ describe('Editor adjust bar layout', () => {
   });
 
   afterEach(() => widget?.remove());
+
+  [375, 768, 1199, 1200, 1440].forEach((viewportWidth) => {
+    it(`applies the specified resize dimension control styles at viewport ${viewportWidth}`, async () => {
+      await setViewport({ width: viewportWidth, height: 800 });
+      widget = document.createElement('div');
+      widget.className = 'ia-widget';
+      widget.append(buildEditorRightPanel(resizeData));
+      document.body.append(widget);
+      const inputs = widget.querySelectorAll('.ia-dim-field input');
+      expect(inputs.length).to.equal(2);
+      const compact = viewportWidth < 1200;
+      inputs.forEach((input) => {
+        const style = getComputedStyle(input);
+        expect(style.width).to.equal(compact ? '62px' : '69px');
+        expect(style.boxSizing).to.equal('border-box');
+        expect(style.backgroundColor).to.equal('rgb(17, 17, 17)');
+        expect(style.color).to.equal('rgb(219, 219, 219)');
+        expect(style.borderColor).to.equal('rgb(57, 57, 57)');
+        expect(style.borderWidth).to.equal('2px');
+        expect(style.borderStyle).to.equal('solid');
+        expect(style.borderRadius).to.equal(compact ? '8px' : '9px');
+        expect(style.padding).to.equal(compact ? '0px 12px' : '10px 16px');
+        expect(style.textAlign).to.equal('right');
+        if (compact) {
+          expect(style.height).to.equal('32px');
+          expect(style.alignSelf).to.equal('stretch');
+        }
+      });
+      const unitStyle = getComputedStyle(widget.querySelector('.ia-dim-unit'));
+      expect(unitStyle.height).to.equal(compact ? '32px' : '40px');
+      const lockStyle = getComputedStyle(widget.querySelector('.ia-dim-lock'));
+      expect(lockStyle.width).to.equal(compact ? '24px' : '34px');
+      expect(lockStyle.height).to.equal(compact ? '24px' : '34px');
+      if (compact) expect(lockStyle.padding).to.equal('0px');
+      const iconStyle = getComputedStyle(widget.querySelector('.ia-dim-lock-icon'));
+      expect(iconStyle.width).to.equal('20px');
+      expect(iconStyle.height).to.equal('20px');
+    });
+  });
 
   [
     { operation: 'crop', mode: 'zoom', value: '10.0x' },
