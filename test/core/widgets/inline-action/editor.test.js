@@ -133,7 +133,7 @@ describe('Editor styling and layout', () => {
         expect(style.borderWidth).to.equal('2px');
         expect(style.borderStyle).to.equal('solid');
         expect(style.borderRadius).to.equal(compact ? '8px' : '9px');
-        expect(style.padding).to.equal(compact ? '10px 4px' : '8px 10px');
+        expect(style.padding).to.equal(compact ? '4px 10px' : '8px 10px');
         expect(style.textAlign).to.equal('left');
         if (compact) {
           expect(style.height).to.equal('32px');
@@ -149,6 +149,26 @@ describe('Editor styling and layout', () => {
       const iconStyle = getComputedStyle(widget.querySelector('.ia-dim-lock-icon'));
       expect(iconStyle.width).to.equal('20px');
       expect(iconStyle.height).to.equal('20px');
+    });
+  });
+
+  [375, 768, 1440].forEach((viewportWidth) => {
+    it(`keeps dimension values left-aligned despite surrounding input styles at viewport ${viewportWidth}`, async () => {
+      await setViewport({ width: viewportWidth, height: 800 });
+      widget = document.createElement('div');
+      widget.className = 'ia-widget interactive-area';
+      widget.dataset.state = 'complete';
+      const pageStyle = document.createElement('style');
+      pageStyle.textContent = '.interactive-area input[type="text"] { text-align: right; }';
+      widget.append(buildEditorRightPanel(resizeData), pageStyle);
+      document.body.append(widget);
+      const inputs = widget.querySelectorAll('.ia-dim-field input');
+      expect(inputs.length).to.equal(2);
+      inputs.forEach((input) => {
+        input.value = '55';
+        expect(getComputedStyle(input).textAlign).to.equal('left');
+        expect(input.scrollLeft).to.equal(0);
+      });
     });
   });
 
