@@ -366,10 +366,12 @@
   line-height: normal;
 }
 
-.ia-editor-reset:hover,
-.ia-editor-quality:hover,
-.ia-editor-header .ia-reupload-btn:hover {
-  background: #323232;
+@media (hover: hover) {
+  .ia-editor-reset:hover,
+  .ia-editor-quality:hover,
+  .ia-editor-header .ia-reupload-btn:hover {
+    background: #323232;
+  }
 }
 
 .ia-editor-quality.is-active {
@@ -626,10 +628,10 @@
 
 .ia-dim-field input {
   width: 69px;
-  padding: 10px 16px 10px 0;
+  padding: 8px 10px;
   color: #dbdbdb;
   font-size: 16px;
-  text-align: right;
+  text-align: left;
   box-sizing: border-box;
   border-radius: 9px;
   border: 2px solid #393939;
@@ -690,7 +692,7 @@
   background: #2a2a2a;
   color: var(--ia-white, #fff);
   font-family: var(--body-font-family);
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -876,7 +878,7 @@
   .ia-dim-field input {
     width: 62px;
     height: 32px;
-    padding: 0 12px 0 0;
+    padding: 4px 10px;
     align-self: stretch;
     border-radius: 8px;
   }

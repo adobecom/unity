@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { sendKeys, setViewport } from '@web/test-runner-commands';
+import { sendKeys, sendMouse, setViewport } from '@web/test-runner-commands';
 import {
   zoomScale, containBox, centeredRect, frameFromDimensions, rawImageEdgesPct,
   imageBoundsPct, resizeRect, rectPctToSourceBounds,
@@ -91,6 +91,28 @@ describe('Editor styling and layout', () => {
 
   afterEach(() => widget?.remove());
 
+  [375, 768, 1440].flatMap((viewportWidth) => ['reset', 'reupload'].map((action) => ({ viewportWidth, action }))).forEach(({ viewportWidth, action }) => {
+    it(`only highlights the hovered ${action} action on hover-capable devices at viewport ${viewportWidth}`, async () => {
+      await setViewport({ width: viewportWidth, height: 800 });
+      widget = document.createElement('div');
+      widget.className = 'ia-widget';
+      widget.dataset.state = 'complete';
+      widget.append(buildEditorRightPanel(resizeData));
+      document.body.append(widget);
+      const button = widget.querySelector(action === 'reset' ? '.ia-editor-reset' : '.ia-editor-header .ia-reupload-btn');
+      const bounds = button.getBoundingClientRect();
+      await sendMouse({
+        type: 'move',
+        position: [Math.floor(bounds.left + bounds.width / 2), Math.floor(bounds.top + bounds.height / 2)],
+      });
+      expect(button.matches(':hover')).to.equal(true);
+      const expected = window.matchMedia('(hover: hover)').matches ? 'rgb(50, 50, 50)' : 'rgba(0, 0, 0, 0)';
+      expect(getComputedStyle(button).backgroundColor).to.equal(expected);
+      await sendMouse({ type: 'move', position: [0, 0] });
+      expect(getComputedStyle(button).backgroundColor).to.equal('rgba(0, 0, 0, 0)');
+    });
+  });
+
   [375, 768, 1199, 1200, 1440].forEach((viewportWidth) => {
     it(`applies the specified resize dimension control styles at viewport ${viewportWidth}`, async () => {
       await setViewport({ width: viewportWidth, height: 800 });
@@ -111,8 +133,8 @@ describe('Editor styling and layout', () => {
         expect(style.borderWidth).to.equal('2px');
         expect(style.borderStyle).to.equal('solid');
         expect(style.borderRadius).to.equal(compact ? '8px' : '9px');
-        expect(style.padding).to.equal(compact ? '0px 12px' : '10px 16px');
-        expect(style.textAlign).to.equal('right');
+        expect(style.padding).to.equal(compact ? '10px 4px' : '8px 10px');
+        expect(style.textAlign).to.equal('left');
         if (compact) {
           expect(style.height).to.equal('32px');
           expect(style.alignSelf).to.equal('stretch');
