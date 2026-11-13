@@ -811,11 +811,43 @@ describe('EditorEngine (resize)', () => {
     });
   });
 
-  it('shows physical unit dimensions to three decimal places like Express', () => {
-    ctx.engine.unit = 'in';
+  [
+    { unit: 'in', width: '2.78', height: '1.39' },
+    { unit: 'cm', width: '7.06', height: '3.53' },
+    { unit: 'mm', width: '70.56', height: '35.28' },
+  ].forEach(({ unit, width, height }) => {
+    it(`shows ${unit} dimensions rounded to two decimal places`, () => {
+      ctx.engine.unit = unit;
+      ctx.engine.syncDimensionFields();
+      expect(ctx.engine.widthInput.value).to.equal(width);
+      expect(ctx.engine.heightInput.value).to.equal(height);
+      expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
+    });
+  });
+
+  it('rounds fractional pixel dimensions to two decimal places without padding whole numbers', () => {
+    ctx.engine.targetW = 123.456;
+    ctx.engine.targetH = 123.454;
     ctx.engine.syncDimensionFields();
-    expect(ctx.engine.widthInput.value).to.equal('2.778');
-    expect(ctx.engine.heightInput.value).to.equal('1.389');
+    expect(ctx.engine.widthInput.value).to.equal('123.46');
+    expect(ctx.engine.heightInput.value).to.equal('123.45');
+    ctx.engine.targetW = 200;
+    ctx.engine.targetH = 100.5;
+    ctx.engine.syncDimensionFields();
+    expect(ctx.engine.widthInput.value).to.equal('200');
+    expect(ctx.engine.heightInput.value).to.equal('100.5');
+  });
+
+  ['width', 'height'].forEach((axis) => {
+    it(`rounds ${axis} edits to two decimal places on commit and invalid-edit restoration`, () => {
+      const input = ctx.engine[`${axis}Input`];
+      input.value = '100.756';
+      input.dispatchEvent(new Event('blur'));
+      expect(input.value).to.equal('100.76');
+      input.value = '';
+      input.dispatchEvent(new Event('blur'));
+      expect(input.value).to.equal('100.76');
+    });
   });
 
   it('allows fractional edits and clamps their converted pixel dimensions', () => {
@@ -830,7 +862,7 @@ describe('EditorEngine (resize)', () => {
     });
     input.dispatchEvent(new Event('blur'));
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 100, height: 50 });
-    expect(input.value).to.equal('1.389');
+    expect(input.value).to.equal('1.39');
   });
 
   it('unit menu selects a unit and sends analytics', () => {

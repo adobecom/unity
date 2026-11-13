@@ -68,7 +68,7 @@ const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg'
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
-const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 1000) / 1000;
+const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 100) / 100;
 
 export function containBox(naturalW, naturalH, viewportW, viewportH) {
   const cs = Math.min(viewportW / naturalW, viewportH / naturalH);
