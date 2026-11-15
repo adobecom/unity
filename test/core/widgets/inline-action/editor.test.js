@@ -245,12 +245,15 @@ describe('editor panel builders', () => {
     expect(p.querySelectorAll('.ia-toggle__btn').length).to.equal(2);
     expect(p.querySelector('.ia-toggle__btn').classList.contains('is-active')).to.be.true;
     expect(p.querySelector('.ia-slider').value).to.equal('0');
+    expect(p.querySelector('.ia-slider').min).to.equal('0');
     expect(p.querySelector('.ia-val').textContent).to.equal('1.0x');
   });
 
   it('left panel starts at 100% when quality is the first mode', () => {
     const p = buildEditorLeftPanel({ sliderModes: [{ mode: 'quality', label: 'Quality' }] });
     expect(p.querySelector('.ia-slider').value).to.equal('100');
+    expect(p.querySelector('.ia-slider').min).to.equal('1');
+    expect(p.querySelector('.ia-slider').max).to.equal('100');
     expect(p.querySelector('.ia-val').textContent).to.equal('100%');
   });
 
@@ -908,6 +911,45 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.slider.dispatchEvent(new Event('input'));
     expect(ctx.engine.quality).to.equal(60);
     expect(ctx.engine.valEl.textContent).to.equal('60%');
+  });
+
+  [
+    { value: -10, expected: 1 },
+    { value: 0, expected: 1 },
+    { value: 1, expected: 1 },
+    { value: 100, expected: 100 },
+    { value: 150, expected: 100 },
+  ].forEach(({ value, expected }) => {
+    it(`keeps quality ${value} within 1-100 when switching modes`, () => {
+      ctx.engine.quality = value;
+      ctx.engine.setMode('quality');
+      expect(ctx.engine.slider.min).to.equal('1');
+      expect(ctx.engine.slider.max).to.equal('100');
+      expect(ctx.engine.quality).to.equal(expected);
+      expect(ctx.engine.slider.value).to.equal(String(expected));
+      expect(ctx.engine.valEl.textContent).to.equal(`${expected}%`);
+      expect(ctx.engine.encodeQuality()).to.equal(expected / 100);
+      ctx.engine.setMode('zoom');
+      expect(ctx.engine.slider.min).to.equal('0');
+    });
+  });
+
+  it('limits native Quality keyboard changes to 1-100 and keeps Zoom starting at zero', async () => {
+    ctx.engine.setMode('quality');
+    ctx.engine.slider.focus();
+    await sendKeys({ press: 'Home' });
+    await sendKeys({ press: 'ArrowLeft' });
+    expect(ctx.engine.slider.value).to.equal('1');
+    expect(ctx.engine.quality).to.equal(1);
+    expect(ctx.engine.valEl.textContent).to.equal('1%');
+    await sendKeys({ press: 'End' });
+    await sendKeys({ press: 'ArrowRight' });
+    expect(ctx.engine.quality).to.equal(100);
+    expect(ctx.engine.valEl.textContent).to.equal('100%');
+    ctx.engine.setMode('zoom');
+    await sendKeys({ press: 'Home' });
+    expect(ctx.engine.slider.value).to.equal('0');
+    expect(ctx.engine.zoom).to.equal(0);
   });
 
   it('setOutputType hides quality for non-JPEG and normalizes image/jpg', () => {
