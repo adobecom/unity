@@ -236,7 +236,7 @@ function buildAdjustBar(parsedData) {
     type: 'range',
     class: 'ia-slider',
     autocomplete: 'off',
-    min: '0',
+    min: startMode === 'quality' ? '1' : '0',
     max: '100',
     value: startMode === 'quality' ? '100' : '0',
   });
@@ -1434,8 +1434,9 @@ export class EditorEngine {
       btn.classList.toggle('is-active', active);
       btn.setAttribute('aria-pressed', String(active));
     });
+    if (mode === 'quality') this.quality = clamp(this.quality, 1, 100);
     if (!this.slider) return;
-    this.slider.min = '0';
+    this.slider.min = mode === 'quality' ? '1' : '0';
     this.slider.max = '100';
     const current = { zoom: this.zoom, quality: this.quality }[mode] ?? 0;
     this.slider.value = String(current);
@@ -1446,7 +1447,7 @@ export class EditorEngine {
     if (!KNOWN_SLIDER_MODES.has(this.mode)) return;
     const value = Number(this.slider.value);
     if (this.mode === 'zoom') this.zoom = value;
-    else this.quality = value;
+    else this.quality = clamp(value, 1, 100);
     this.hasInteracted = true;
     if (this.mode === 'quality') this.revertQualityPreview();
     this.updateValLabel();
