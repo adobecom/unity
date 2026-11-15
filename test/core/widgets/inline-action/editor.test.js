@@ -40,12 +40,9 @@ function dataUrl(w = 200, h = 100) {
   return c.toDataURL('image/png');
 }
 
-async function makeEngine(data, { quality = false } = {}) {
+async function makeEngine(data) {
   const left = buildEditorLeftPanel(data);
   const right = buildEditorRightPanel(data);
-  if (quality) {
-    right.append(Object.assign(document.createElement('button'), { className: 'ia-editor-quality' }));
-  }
   const area = document.createElement('div');
   area.className = 'interactive-area';
   area.append(left, right);
@@ -55,6 +52,7 @@ async function makeEngine(data, { quality = false } = {}) {
   engines.set(area, engine);
   engine.viewportSize = () => [400, 300];
   await engine.setImage(dataUrl(), 2048, true);
+  await engine.sourceImg.decode();
   return { engine, area, track, left, right };
 }
 
@@ -62,7 +60,7 @@ function cleanup(area) {
   const engine = engines.get(area);
   clearTimeout(engine?.idleTimer);
   clearTimeout(engine?.sizeReadoutTimer);
-  if (engine?.qualityPreviewUrl) URL.revokeObjectURL(engine.qualityPreviewUrl);
+  engine?.revertQualityPreview();
   area.remove();
   document.querySelectorAll('.ia-more-menu, .ia-social-menu, .ia-unit-menu').forEach((m) => m.remove());
 }
@@ -195,6 +193,8 @@ describe('Editor styling and layout', () => {
       expect(getComputedStyle(toggle).gap).to.equal('0px');
       const slider = bar.querySelector('.ia-slider');
       const readout = bar.querySelector('.ia-val');
+      const preview = bar.querySelector('.ia-editor-quality');
+      preview?.classList.toggle('hide', mode !== 'quality');
       bar.querySelectorAll('.ia-toggle__btn').forEach((button) => {
         button.classList.toggle('is-active', button.dataset.mode === mode);
       });
@@ -206,11 +206,17 @@ describe('Editor styling and layout', () => {
         widget.style.width = `${width}px`;
         const bounds = bar.getBoundingClientRect();
         expect(bar.scrollWidth, `${viewportWidth}/${width}`).to.be.at.most(bar.clientWidth);
-        [bar.querySelector('.ia-toggle'), slider, readout].forEach((element) => {
+        const controls = [bar.querySelector('.ia-toggle'), slider, readout];
+        if (preview && mode === 'quality') controls.push(preview);
+        controls.forEach((element) => {
           const rect = element.getBoundingClientRect();
           expect(rect.left).to.be.at.least(bounds.left);
           expect(rect.right).to.be.at.most(bounds.right);
         });
+        if (preview && mode === 'quality') {
+          expect(preview.getBoundingClientRect().width).to.equal(30);
+          expect(preview.getBoundingClientRect().height).to.equal(30);
+        }
         const text = document.createRange();
         text.selectNodeContents(readout);
         expect(text.getBoundingClientRect().right).to.be.at.most(bounds.right);
@@ -219,6 +225,9 @@ describe('Editor styling and layout', () => {
         expect(toggle.getBoundingClientRect().height).to.equal(32);
         segments.forEach((segment) => {
           expect(segment.getBoundingClientRect().height).to.equal(32);
+          const iconBounds = segment.querySelector('.ia-btn-icon').getBoundingClientRect();
+          expect(iconBounds.left).to.be.at.least(segment.getBoundingClientRect().left);
+          expect(iconBounds.right).to.be.at.most(segment.getBoundingClientRect().right);
           const label = segment.querySelector('.ia-toggle-label');
           expect(getComputedStyle(label).display === 'none').to.equal(!segment.classList.contains('is-active'));
         });
@@ -351,6 +360,22 @@ describe('editor panel builders', () => {
     expect(p.querySelector('.ia-val').textContent).to.equal('100%');
   });
 
+  it('uses the authored Quality icon and localized label for the resize preview control', () => {
+    const iconHref = '/beforeAndAfter.svg';
+    const panel = buildEditorLeftPanel({
+      ...resizeData,
+      qualityPreviewLabel: 'Aperçu de la qualité',
+      sliderModes: [{ mode: 'quality', label: 'Qualité', iconHref }],
+    });
+    const preview = panel.querySelector('.ia-editor-quality');
+    expect(panel.querySelector('.ia-adjust-bar').lastElementChild).to.equal(preview);
+    expect(preview.getAttribute('aria-label')).to.equal('Aperçu de la qualité');
+    expect(preview.getAttribute('aria-pressed')).to.equal('false');
+    expect(preview.querySelector('img').getAttribute('src')).to.equal(iconHref);
+    expect(preview.querySelector('img').getAttribute('alt')).to.equal('');
+    expect(buildEditorLeftPanel(cropData).querySelector('.ia-editor-quality')).to.equal(null);
+    expect(buildEditorLeftPanel({ ...resizeData, sliderModes: [{ mode: 'zoom', label: 'Zoom' }] }).querySelector('.ia-editor-quality')).to.equal(null);
+  });
   it('crop right panel builds pills and the More menu', () => {
     const p = buildEditorRightPanel(cropData);
     expect(p.querySelector('.ia-editor-title').textContent).to.equal('Crop your image');
@@ -616,7 +641,10 @@ describe('EditorEngine (crop)', () => {
 describe('EditorEngine (resize)', () => {
   let ctx;
   beforeEach(async () => { ctx = await makeEngine(resizeData); });
-  afterEach(() => cleanup(ctx.area));
+  afterEach(() => {
+    cleanup(ctx.area);
+    sinon.restore();
+  });
 
   it('initial target size equals the natural size', () => {
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
@@ -1087,19 +1115,35 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('quality preview toggles on and off', async () => {
-    ctx.engine.header.append(
-      Object.assign(document.createElement('button'), { className: 'ia-editor-quality' }),
-    );
-    ctx.engine.qualityBtn = ctx.engine.header.querySelector('.ia-editor-quality');
-    ctx.engine.applyQualityPreview();
-    await new Promise((r) => { setTimeout(r, 200); });
+    ctx.engine.setMode('quality');
+    const { sourceImg, originalUrl, rect, targetW, targetH } = ctx.engine;
+    ctx.engine.quality = 35;
+    const draw = sinon.spy(CanvasRenderingContext2D.prototype, 'drawImage');
+    const encode = sinon.spy(HTMLCanvasElement.prototype, 'toBlob');
+    await ctx.engine.toggleQualityPreview();
     expect(ctx.engine.qualityPreviewActive).to.be.true;
-    expect(ctx.engine.qualityBtn.textContent).to.equal('Original');
+    expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('true');
+    expect(ctx.engine.qualityBtn.classList.contains('is-active')).to.equal(true);
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.qualityPreviewUrl);
+    expect(ctx.engine.blurImg.src).to.equal(ctx.engine.qualityPreviewUrl);
+    expect(draw.firstCall.args).to.deep.equal([sourceImg, 0, 0, 200, 100]);
+    expect(encode.firstCall.args.slice(1)).to.deep.equal(['image/jpeg', 0.35]);
+    const preview = new Image();
+    preview.src = ctx.engine.qualityPreviewUrl;
+    await preview.decode();
+    expect([preview.naturalWidth, preview.naturalHeight]).to.deep.equal([200, 100]);
+    const revoke = sinon.spy(URL, 'revokeObjectURL');
+    const previewUrl = ctx.engine.qualityPreviewUrl;
     ctx.engine.toggleQualityPreview();
     expect(ctx.engine.qualityPreviewActive).to.be.false;
-    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
-    ctx.engine.toggleQualityPreview();
-    ctx.engine.revertQualityPreview();
+    expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.qualityBtn.getAttribute('aria-label')).to.equal('Preview quality');
+    expect(ctx.engine.sharpImg.src).to.equal(originalUrl);
+    expect(ctx.engine.blurImg.src).to.equal(originalUrl);
+    expect(revoke.calledWith(previewUrl)).to.equal(true);
+    expect(ctx.engine.sourceImg).to.equal(sourceImg);
+    expect(ctx.engine.rect).to.deep.equal(rect);
+    expect([ctx.engine.targetW, ctx.engine.targetH, ctx.engine.quality]).to.deep.equal([targetW, targetH, 35]);
   });
 
   it('reset restores the freeform tab, unit, unlocked state and size', () => {
@@ -1172,7 +1216,7 @@ describe('EditorEngine responsive layout and extras', () => {
 
   it('moves the header and actions between desktop and mobile layouts', async () => {
     mm = fakeMatchMedia(true);
-    ctx = await makeEngine(cropData, { quality: true });
+    ctx = await makeEngine(resizeData);
     const { engine, left, right } = ctx;
     expect(right.firstElementChild).to.equal(engine.header);
     expect(engine.resetBtn.parentElement).to.equal(engine.header);
@@ -1180,9 +1224,10 @@ describe('EditorEngine responsive layout and extras', () => {
     expect(left.firstElementChild).to.equal(engine.header);
     const actions = engine.header.querySelector('.ia-editor-header-actions');
     expect(actions.contains(engine.resetBtn)).to.be.true;
-    expect(actions.contains(engine.qualityBtn)).to.be.true;
+    expect(engine.qualityBtn.parentElement).to.equal(left.querySelector('.ia-adjust-bar'));
     mm.fire(true);
     expect(engine.resetBtn.parentElement).to.equal(engine.header);
+    expect(engine.qualityBtn.parentElement).to.equal(left.querySelector('.ia-adjust-bar'));
   });
 
   it('works without a quality button in either layout', async () => {
@@ -1194,14 +1239,139 @@ describe('EditorEngine responsive layout and extras', () => {
   });
 
   it('quality button toggles the preview and follows the output type', async () => {
-    ctx = await makeEngine(resizeData, { quality: true });
+    ctx = await makeEngine({ ...resizeData, qualityPreviewLabel: 'Aperçu de la qualité' });
+    ctx.engine.setMode('quality');
+    const applyPreview = sinon.spy(ctx.engine, 'applyQualityPreview');
+    expect(ctx.engine.qualityBtn.getAttribute('aria-label')).to.equal('Aperçu de la qualité');
+    expect(ctx.left.querySelector('.ia-adjust-bar').lastElementChild).to.equal(ctx.engine.qualityBtn);
     ctx.engine.qualityBtn.click();
-    await new Promise((r) => { setTimeout(r, 200); });
-    expect(ctx.engine.qualityBtn.textContent).to.equal('Original');
+    await applyPreview.firstCall.returnValue;
+    expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('true');
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.qualityPreviewUrl);
     ctx.engine.qualityBtn.click();
-    expect(ctx.engine.qualityBtn.textContent).to.equal('Quality');
+    expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('false');
     ctx.engine.setOutputType('image/png');
     expect(ctx.engine.qualityBtn.classList.contains('hide')).to.be.true;
+    await ctx.engine.toggleQualityPreview();
+    expect(ctx.engine.qualityPreviewActive).to.equal(false);
+    ctx.engine.setOutputType('image/jpeg');
+    expect(ctx.engine.qualityBtn.classList.contains('hide')).to.be.true;
+    ctx.engine.setMode('quality');
+    expect(ctx.engine.qualityBtn.classList.contains('hide')).to.be.false;
+  });
+
+  it('only shows preview in Quality mode and restores the original when leaving it', async () => {
+    ctx = await makeEngine(resizeData);
+    const { engine } = ctx;
+    expect(engine.qualityBtn.classList.contains('hide')).to.equal(true);
+    engine.toggleBtns.find((button) => button.dataset.mode === 'quality').click();
+    expect(engine.qualityBtn.classList.contains('hide')).to.equal(false);
+    engine.quality = 35;
+    await engine.toggleQualityPreview();
+    expect(engine.qualityPreviewActive).to.equal(true);
+    engine.toggleBtns.find((button) => button.dataset.mode === 'zoom').click();
+    expect(engine.qualityBtn.classList.contains('hide')).to.equal(true);
+    expect(engine.qualityBtn.getAttribute('aria-pressed')).to.equal('false');
+    expect(engine.qualityPreviewActive).to.equal(false);
+    expect(engine.qualityPreviewUrl).to.equal(null);
+    expect(engine.sharpImg.src).to.equal(engine.originalUrl);
+    expect(engine.blurImg.src).to.equal(engine.originalUrl);
+  });
+
+  [
+    ['toggle off', (engine) => engine.toggleQualityPreview()],
+    ['switch to zoom', (engine) => engine.setMode('zoom')],
+    ['quality change', (engine) => {
+      engine.slider.value = '25';
+      engine.slider.dispatchEvent(new Event('input'));
+    }],
+    ['reset', (engine) => engine.reset()],
+    ['replace image', (engine) => engine.setImage(dataUrl(100, 50), 512, true)],
+    ['output type change', (engine) => engine.setOutputType('image/png')],
+  ].forEach(([action, cancel]) => {
+    it(`discards a pending quality preview after ${action}`, async () => {
+      ctx = await makeEngine(resizeData);
+      ctx.engine.setMode('quality');
+      clearTimeout(ctx.engine.sizeReadoutTimer);
+      let finishEncoding;
+      sinon.stub(HTMLCanvasElement.prototype, 'toBlob').callsFake((callback) => {
+        finishEncoding = callback;
+      });
+      sinon.stub(ctx.engine.sourceImg, 'decode').resolves();
+      const createUrl = sinon.spy(URL, 'createObjectURL');
+      const pending = ctx.engine.applyQualityPreview();
+      expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('true');
+      await Promise.resolve();
+      expect(finishEncoding).to.be.a('function');
+      await cancel(ctx.engine);
+      finishEncoding(new Blob(['preview'], { type: 'image/jpeg' }));
+      await pending;
+      expect(createUrl.called).to.equal(false);
+      expect(ctx.engine.qualityPreviewActive).to.equal(false);
+      expect(ctx.engine.qualityPreviewUrl).to.equal(null);
+      expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('false');
+      expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
+    });
+  });
+
+  it('does not let an older encode replace a newer quality preview', async () => {
+    ctx = await makeEngine(resizeData);
+    ctx.engine.setMode('quality');
+    clearTimeout(ctx.engine.sizeReadoutTimer);
+    const callbacks = [];
+    sinon.stub(ctx.engine.sourceImg, 'decode').resolves();
+    sinon.stub(HTMLCanvasElement.prototype, 'toBlob').callsFake((callback) => callbacks.push(callback));
+    const first = ctx.engine.toggleQualityPreview();
+    await Promise.resolve();
+    ctx.engine.toggleQualityPreview();
+    const second = ctx.engine.toggleQualityPreview();
+    await Promise.resolve();
+    callbacks[1](new Blob(['current'], { type: 'image/jpeg' }));
+    await second;
+    const currentUrl = ctx.engine.qualityPreviewUrl;
+    callbacks[0](new Blob(['stale'], { type: 'image/jpeg' }));
+    await first;
+    expect(ctx.engine.qualityPreviewActive).to.equal(true);
+    expect(ctx.engine.qualityPreviewUrl).to.equal(currentUrl);
+    expect(ctx.engine.sharpImg.src).to.equal(currentUrl);
+  });
+
+  it('does not encode a preview cancelled while its source is decoding', async () => {
+    ctx = await makeEngine(resizeData);
+    ctx.engine.setMode('quality');
+    let finishDecoding;
+    sinon.stub(ctx.engine.sourceImg, 'decode').returns(new Promise((resolve) => {
+      finishDecoding = resolve;
+    }));
+    const encode = sinon.spy(HTMLCanvasElement.prototype, 'toBlob');
+    const pending = ctx.engine.applyQualityPreview();
+    expect(encode.called).to.equal(false);
+    ctx.engine.setMode('zoom');
+    finishDecoding();
+    await pending;
+    expect(encode.called).to.equal(false);
+    expect(ctx.engine.qualityPreviewActive).to.equal(false);
+    expect(ctx.engine.qualityPreviewUrl).to.equal(null);
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
+  });
+
+  it('logs decode failures and restores the original preview state', async () => {
+    ctx = await makeEngine(resizeData);
+    ctx.engine.setMode('quality');
+    sinon.stub(ctx.engine.sourceImg, 'decode').rejects(new Error('Source decode failed'));
+    const log = sinon.spy();
+    const { lana } = window;
+    try {
+      window.lana = { log };
+      await ctx.engine.applyQualityPreview();
+    } finally {
+      window.lana = lana;
+    }
+    expect(log.calledOnce).to.equal(true);
+    expect(log.firstCall.args[0]).to.contain('Source decode failed');
+    expect(ctx.engine.qualityPreviewActive).to.equal(false);
+    expect(ctx.engine.qualityBtn.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
   });
 
   it('wheel scrolls the crop aspect row horizontally', async () => {
@@ -1440,13 +1610,23 @@ describe('EditorEngine responsive layout and extras', () => {
 
   it('handles empty encoder output and source images that are not ready', async () => {
     ctx = await makeEngine(resizeData);
+    ctx.engine.setMode('quality');
     const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob').callsFake((callback) => callback(null));
     expect(await ctx.engine.computeNewSize(20, 10)).to.equal(null);
-    ctx.engine.applyQualityPreview();
+    const log = sinon.spy();
+    const { lana } = window;
+    try {
+      window.lana = { log };
+      await ctx.engine.applyQualityPreview();
+    } finally {
+      window.lana = lana;
+    }
     expect(ctx.engine.qualityPreviewActive).to.equal(false);
+    expect(log.calledOnce).to.equal(true);
+    expect(log.firstCall.args[0]).to.contain('Quality preview encoding failed');
     ctx.engine.sourceImg = null;
     expect(await ctx.engine.computeNewSize(20, 10)).to.equal(null);
-    ctx.engine.applyQualityPreview();
+    await ctx.engine.applyQualityPreview();
     expect(ctx.engine.qualityPreviewActive).to.equal(false);
     encode.restore();
   });

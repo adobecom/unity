@@ -190,6 +190,7 @@ const TEXT_ONLY_FIELDS = {
   'icon-placeholder-new-size': 'newSizeLabel',
   'icon-placeholder-width': 'widthLabel',
   'icon-placeholder-height': 'heightLabel',
+  'icon-placeholder-quality-preview': 'qualityPreviewLabel',
 };
 
 export function parseInlineAuthoring(unityEl) {
@@ -217,6 +218,7 @@ export function parseInlineAuthoring(unityEl) {
     newSizeLabel: 'New size',
     widthLabel: 'Width',
     heightLabel: 'Height',
+    qualityPreviewLabel: 'Preview quality',
   };
   configUl?.querySelectorAll('li').forEach((li) => {
     const cls = configRowIconClass(li);
