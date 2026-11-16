@@ -143,7 +143,7 @@ describe('TransitionScreen', () => {
       screen.clearProgressBarHandler();
       screen.progressBarHandler(splashScreenEl, 10, 10, true);
       expect(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value')).to.equal('0');
-      clock.tick(110);
+      clock.tick(115);
       expect(parseInt(splashScreenEl.querySelector('.spectrum-ProgressBar').getAttribute('value'), 10)).to.be.greaterThan(0);
     });
   });

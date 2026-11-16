@@ -44,8 +44,9 @@ function aspectRatioValue(row) {
   return null;
 }
 
-function composeAspectLabel(row) {
-  const name = row.name || row.group || '';
+function composeAspectLabel(row, localized = false) {
+  const name = (localized && row.nameLabel) || row.nameId
+    || (localized && row.groupLabel) || row.groupId || '';
   if (row.width && row.height) return `${name} ${row.width} x ${row.height}`.trim();
   if (row.ratio) return `${name} ${row.ratio}`.trim();
   return name;
@@ -53,39 +54,21 @@ function composeAspectLabel(row) {
 
 function groupCropRows(rows) {
   return {
-    pillRows: rows.filter((r) => !r.group),
-    moreRows: rows.filter((r) => r.group),
+    pillRows: rows.filter((r) => r.groupId !== 'more'),
+    moreRows: rows.filter((r) => r.groupId === 'more'),
   };
 }
 
-function resizeRowKind(row) {
-  if (row.platform) return 'social';
-  if (row.ratio) return 'standard';
-  return 'custom';
-}
-
-function groupResizeRows(rows) {
-  const buckets = [];
-  const byGroup = new Map();
-  rows.forEach((row) => {
-    if (!byGroup.has(row.group)) {
-      const bucket = { group: row.group, kind: resizeRowKind(row), rows: [] };
-      byGroup.set(row.group, bucket);
-      buckets.push(bucket);
-    }
-    byGroup.get(row.group).rows.push(row);
-  });
-  return buckets;
-}
-
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
-const DPI = 300;
+const MIN_DIMENSION = 50;
+const MAX_DIMENSION = 6000;
+const DIMENSION_INPUT_PATTERN = /^-?\d*(?:\.\d*)?$/;
+const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
+const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg';
+const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
-const pxToUnit = (px, unit) => {
-  const value = px / PX_PER_UNIT[unit];
-  return unit === 'px' ? Math.round(value) : Math.round(value * 100) / 100;
-};
+const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 100) / 100;
 
 export function containBox(naturalW, naturalH, viewportW, viewportH) {
   const cs = Math.min(viewportW / naturalW, viewportH / naturalH);
@@ -236,6 +219,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
     class: `ia-toggle__btn${isActive ? ' is-active' : ''}`,
     'data-mode': mode,
     'aria-label': label,
+    'aria-pressed': String(isActive),
   });
   if (iconHref) btn.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
   btn.append(createTag('span', { class: 'ia-toggle-label' }, label));
@@ -244,7 +228,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
 
 function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
-  const toggle = createTag('div', { class: 'ia-toggle' });
+  const toggle = createTag('div', { class: 'ia-toggle', role: 'group' });
   const { sliderModes } = parsedData;
   sliderModes.forEach(({ mode, label, iconHref }, i) => toggle.append(buildToggleButton(mode, label, iconHref, i === 0)));
   const startMode = sliderModes[0]?.mode;
@@ -252,7 +236,7 @@ function buildAdjustBar(parsedData) {
     type: 'range',
     class: 'ia-slider',
     autocomplete: 'off',
-    min: '0',
+    min: startMode === 'quality' ? '1' : '0',
     max: '100',
     value: startMode === 'quality' ? '100' : '0',
   });
@@ -310,15 +294,19 @@ function buildAspectPill(row, isActive = false) {
   const attrs = {
     type: 'button',
     class: `ia-aspect-pill${isActive ? ' is-active' : ''}`,
+    'data-name-id': row.nameId || row.groupId || '',
     'data-ratio': aspectRatioValue(row) ?? '',
     'data-label': label,
   };
   if (row.ratio) attrs['data-ratio-text'] = row.ratio;
+  if (row.platformId) {
+    attrs['data-platform-id'] = row.platformId;
+  }
   if (row.width && row.height) {
     attrs['data-width'] = row.width;
     attrs['data-height'] = row.height;
   }
-  return buildIconButton('button', attrs, row.icon, label);
+  return buildIconButton('button', attrs, row.icon, composeAspectLabel(row, true));
 }
 
 function buildCtaRow(isCrop, parsedData) {
@@ -343,25 +331,28 @@ function buildCropAspectSection(parsedData) {
     const moreMenu = createTag('div', { class: 'ia-more-menu hide' });
     moreRows.forEach((r) => {
       const label = composeAspectLabel(r);
+      const displayLabel = composeAspectLabel(r, true);
       const ratioVal = aspectRatioValue(r);
-      const opensFirefly = ratioVal === null;
+      const opensFirefly = r.nameId === 'seeAll';
       moreMenu.append(buildIconButton('button', {
         type: 'button',
         class: `ia-more-opt${opensFirefly ? ' ia-editor-open-in-firefly' : ''}`,
+        'data-name-id': r.nameId || '',
         'data-ratio': ratioVal ?? '',
         'data-label': label,
-
+        'data-display-label': displayLabel,
         ...(r.icon && { 'data-icon': r.icon }),
         ...(r.ratio && { 'data-ratio-text': r.ratio }),
-      }, r.icon, label));
+      }, r.icon, displayLabel));
     });
     moreMenu.prepend(buildDropdownCloseButton());
     const moreTrigger = buildIconButton('button', {
       type: 'button',
       class: 'ia-aspect-pill ia-more-trigger',
+      'data-group-id': moreRows[0].groupId,
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
-    }, undefined, moreRows[0].group);
+    }, undefined, moreRows[0].groupLabel || 'More');
     moreTrigger.insertAdjacentHTML('afterbegin', svgUse(MORE_TRIGGER_ICON, 'ia-btn-icon'));
     more.append(moreTrigger, moreMenu);
     row.append(more);
@@ -376,7 +367,7 @@ function buildDimensionField(labelText, className) {
   const field = createTag('div', { class: 'ia-dim-field' });
   field.append(
     createTag('label', { class: 'ia-dim-label' }, labelText),
-    createTag('input', { type: 'number', class: className, min: '0', step: 'any', inputmode: 'decimal' }),
+    createTag('input', { type: 'text', class: className, inputmode: 'decimal', autocomplete: 'off' }),
   );
   return field;
 }
@@ -403,12 +394,15 @@ function buildUnitPicker() {
   return wrap;
 }
 
-function buildCustomDetail(parsedData) {
-  const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'custom' });
+function buildFreeformDetail(parsedData) {
+  const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'freeform' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
+  const lockBtn = createTag('button', {
+    type: 'button', class: 'ia-dim-lock', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'false',
+  }, createTag('img', { src: UNLOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
   fields.append(
     buildDimensionField(parsedData.widthLabel || 'Width', 'ia-width-input'),
-    createTag('button', { type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true' }, '🔒'),
+    lockBtn,
     buildDimensionField(parsedData.heightLabel || 'Height', 'ia-height-input'),
     buildUnitPicker(),
   );
@@ -419,7 +413,11 @@ function buildCustomDetail(parsedData) {
 function buildStandardDetail(standardRows) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'standard' });
   const grid = createTag('div', { class: 'ia-aspect-row' });
-  standardRows.forEach((r) => grid.append(buildAspectPill(r)));
+  standardRows.forEach((r) => {
+    const pill = buildAspectPill(r);
+    pill.dataset.nameId = r.nameId || '';
+    grid.append(pill);
+  });
   detail.append(grid);
   return detail;
 }
@@ -428,9 +426,9 @@ function buildSocialDetail(socialRows, platforms) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel hide', 'data-tab': 'social' });
   const grids = createTag('div', { class: 'ia-social-grids' });
   platforms.forEach((platform) => {
-    const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform': platform });
+    const grid = createTag('div', { class: 'ia-aspect-row ia-social-grid hide', 'data-platform-id': platform });
     socialRows
-      .filter((r) => r.platform === platform)
+      .filter((r) => r.platformId === platform)
       .forEach((r) => grid.append(buildAspectPill(r)));
     grids.append(grid);
   });
@@ -443,24 +441,26 @@ function buildResizeAspectSection(parsedData) {
   const header = createTag('div', { class: 'ia-aspect-header-row' });
   header.append(createTag('p', { class: 'ia-aspect-heading' }, parsedData.aspectRatioLabel || 'Aspect ratio'));
   const row = createTag('div', { class: 'ia-aspect-row' });
-  const buckets = groupResizeRows(parsedData.aspectRows || []);
-  const customBucket = buckets.find((b) => b.kind === 'custom');
-  const standardBucket = buckets.find((b) => b.kind === 'standard');
-  const socialBucket = buckets.find((b) => b.kind === 'social');
-  const platforms = socialBucket ? [...new Set(socialBucket.rows.map((r) => r.platform))] : [];
+  const rows = parsedData.aspectRows || [];
+  const freeformRow = rows.find((r) => r.groupId === 'freeform');
+  const standardRows = rows.filter((r) => r.groupId === 'standard');
+  const socialRows = rows.filter((r) => r.groupId === 'social');
+  const platforms = new Map(
+    socialRows.map((r) => [r.platformId, r.platformLabel || r.platformId]),
+  );
   row.append(createTag('button', {
     type: 'button',
     class: 'ia-resize-tab is-active',
-    'data-tab': 'custom',
-  }, customBucket?.group || 'Custom'));
-  if (standardBucket) {
-    row.append(createTag('button', { type: 'button', class: 'ia-resize-tab', 'data-tab': 'standard' }, standardBucket.group));
+    'data-tab': 'freeform',
+  }, freeformRow?.groupLabel || 'Custom'));
+  if (standardRows.length) {
+    row.append(createTag('button', { type: 'button', class: 'ia-resize-tab', 'data-tab': 'standard' }, standardRows[0].groupLabel || 'Standard'));
   }
-  if (socialBucket) {
+  if (socialRows.length) {
     const social = createTag('div', { class: 'ia-more' });
     const socialMenu = createTag('div', { class: 'ia-social-menu hide' });
-    platforms.forEach((platform) => {
-      socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform': platform }, platform));
+    platforms.forEach((label, platform) => {
+      socialMenu.append(createTag('button', { type: 'button', class: 'ia-social-opt', 'data-platform-id': platform }, label));
     });
     socialMenu.prepend(buildDropdownCloseButton());
     const socialTrigger = createTag('button', {
@@ -469,16 +469,16 @@ function buildResizeAspectSection(parsedData) {
       'data-tab': 'social',
       'aria-haspopup': 'true',
       'aria-expanded': 'false',
-    }, socialBucket.group);
+    }, socialRows[0].groupLabel || 'Social');
     social.append(socialTrigger, socialMenu);
     row.append(social);
   }
   const originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
   const newSizeLabel = parsedData.newSizeLabel || 'New size';
   const readout = createTag('p', { class: 'ia-size-readout' }, `${originalSizeLabel}: -- ${newSizeLabel}: --`);
-  const details = [buildCustomDetail(parsedData)];
-  if (standardBucket) details.push(buildStandardDetail(standardBucket.rows));
-  if (socialBucket) details.push(buildSocialDetail(socialBucket.rows, platforms));
+  const details = [buildFreeformDetail(parsedData)];
+  if (standardRows.length) details.push(buildStandardDetail(standardRows));
+  if (socialRows.length) details.push(buildSocialDetail(socialRows, [...platforms.keys()]));
   header.append(row);
   section.append(header, ...details, readout, buildCtaRow(false, parsedData));
   return section;
@@ -508,13 +508,6 @@ export function buildEditorRightPanel(parsedData) {
     parsedData.resetIconHref,
     parsedData.resetLabel || 'Reset',
   ));
-  if (!isCrop) {
-    actions.append(createTag('button', {
-      type: 'button',
-      class: 'ia-editor-quality',
-      'aria-pressed': 'false',
-    }, 'Quality'));
-  }
   actions.append(buildIconButton(
     'button',
     {
@@ -599,12 +592,13 @@ export class EditorEngine {
     this.sizeReadout = rightPanelEl.querySelector('.ia-size-readout');
     this.originalSizeLabel = parsedData.originalSizeLabel || 'Original size';
     this.newSizeLabel = parsedData.newSizeLabel || 'New size';
-    this.originalSize = 0;
+    this.currentImageSize = 0;
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
     this.hasInteracted = false;
-    this.locked = true;
-    this.resizeTab = 'custom';
+    this.setLocked(this.isCrop);
+    this.resizeTab = 'freeform';
+    this.selectedPill = null;
     this.rect = {x: 0, y: 0, w: 100, h: 100};
     this.naturalW = 0;
     this.naturalH = 0;
@@ -619,6 +613,7 @@ export class EditorEngine {
     this.panX = 0;
     this.panY = 0;
     this.quality = 100;
+    this.outputType = 'image/jpeg';
     this.idleTimer = null;
     this.bindEvents();
     this.setupResponsiveHeader();
@@ -659,15 +654,18 @@ export class EditorEngine {
     return [width, height];
   }
 
-  async setImage(url, originalSize = 0, isOriginalUpload = false) {
-    this.originalSize = originalSize;
+  async setImage(url, imageSize = 0, isOriginalUpload = false) {
+    this.currentImageSize = imageSize;
     this.hasInteracted = false;
     if (this.qualityPreviewUrl) URL.revokeObjectURL(this.qualityPreviewUrl);
     this.qualityPreviewUrl = null;
     this.qualityPreviewActive = false;
     this.updateQualityBtnState();
     this.originalUrl = url;
-    if (isOriginalUpload) this.originalImageUrl = url;
+    if (isOriginalUpload) {
+      this.originalImageUrl = url;
+      this.uploadedImageSize = imageSize;
+    }
     this.blurImg.src = url;
     this.sharpImg.src = url;
     if (!(this.sharpImg.complete && this.sharpImg.naturalWidth)) {
@@ -755,8 +753,27 @@ export class EditorEngine {
       canvas.width = width;
       canvas.height = height;
       canvas.getContext('2d').drawImage(this.sourceImg, 0, 0, width, height);
-      canvas.toBlob((blob) => resolve(blob?.size ?? null), 'image/jpeg', this.quality / 100);
+      canvas.toBlob((blob) => resolve(blob?.size ?? null), this.outputType, this.encodeQuality());
     });
+  }
+
+  setOutputType(type) {
+    this.outputType = type === 'image/jpg' ? 'image/jpeg' : type;
+    const showQuality = this.outputType === 'image/jpeg';
+    this.qualityBtn?.classList.toggle('hide', !showQuality);
+    this.toggleBtns
+      .filter((btn) => btn.dataset.mode === 'quality')
+      .forEach((btn) => btn.classList.toggle('hide', !showQuality));
+    if (!showQuality) {
+      this.quality = 100;
+      this.revertQualityPreview();
+    }
+    this.defaultMode = this.toggleBtns.find((btn) => !btn.classList.contains('hide'))?.dataset.mode || null;
+    this.setMode(this.defaultMode);
+  }
+
+  encodeQuality() {
+    return this.outputType === 'image/jpeg' ? this.quality / 100 : undefined;
   }
 
   scheduleSizeReadout() {
@@ -766,7 +783,7 @@ export class EditorEngine {
   }
 
   async updateSizeReadout() {
-    const original = EditorEngine.formatBytes(this.originalSize);
+    const original = EditorEngine.formatBytes(this.currentImageSize);
     if (!this.hasInteracted) {
       this.sizeReadout.textContent = `${this.originalSizeLabel}: ${original} ${this.newSizeLabel}: --`;
       return;
@@ -833,7 +850,13 @@ export class EditorEngine {
     });
     this.slider?.addEventListener('input', () => this.onSlider());
     this.toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
+      btn.addEventListener('click', () => {
+        const { mode } = btn.dataset;
+        if (!this.isCrop && KNOWN_SLIDER_MODES.has(mode)) {
+          this.trackEvent(`${mode.charAt(0).toUpperCase()}${mode.slice(1)}|UnityWidget`);
+        } 
+        this.setMode(mode);
+      });
     });
     this.viewport.addEventListener('pointerdown', () => this.resetIdle());
     this.viewport.addEventListener('pointermove', () => this.resetIdle());
@@ -854,6 +877,8 @@ export class EditorEngine {
   bindResizeTabEvents() {
     this.resizeTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        this.trackEvent(`Aspect Ratio ${tabName}|UnityWidget`);
         if (tab.dataset.tab === 'social') {
           this.toggleSocialMenu();
           return;
@@ -876,7 +901,18 @@ export class EditorEngine {
     this.widthInput.addEventListener('blur', commit('width'));
     this.heightInput.addEventListener('blur', commit('height'));
     [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
-      let viaArrowKey = false;
+      let previousValue = input.value;
+      input.addEventListener('focus', () => { previousValue = input.value; });
+      input.addEventListener('beforeinput', (e) => {
+        previousValue = input.value;
+        if (e.data === null || !e.inputType.startsWith('insert')) return;
+        const nextValue = input.value.slice(0, input.selectionStart)
+          + e.data + input.value.slice(input.selectionEnd);
+        if (!DIMENSION_INPUT_PATTERN.test(nextValue)) e.preventDefault();
+      });
+      input.addEventListener('click', () => {
+        this.trackEvent(`Aspect Ratio freeform - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
+      });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -884,41 +920,64 @@ export class EditorEngine {
           input.blur();
           return;
         }
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') viaArrowKey = true;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const current = Number(input.value);
+          const value = input.value && Number.isFinite(current)
+            ? current : pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
+          const step = e.shiftKey ? 10 : 1;
+          input.value = String(value + (e.key === 'ArrowUp' ? step : -step));
+          this.onDimensionCommit(axis);
+          previousValue = input.value;
+        }
       });
       input.addEventListener('input', () => {
-        if (!viaArrowKey) return;
-        viaArrowKey = false;
-        this.onDimensionCommit(axis);
+        if (!DIMENSION_INPUT_PATTERN.test(input.value)) input.value = previousValue;
+        else previousValue = input.value;
       });
     });
     this.lockBtn.addEventListener('click', () => {
-      this.locked = !this.locked;
-      this.lockBtn.classList.toggle('is-active', this.locked);
-      this.lockBtn.setAttribute('aria-pressed', String(this.locked));
+      this.setLocked(!this.locked);
     });
+  }
+
+  setLocked(locked) {
+    this.locked = locked;
+    if (!this.lockBtn) return;
+    this.lockBtn.classList.toggle('is-active', locked);
+    this.lockBtn.setAttribute('aria-pressed', String(locked));
+    const icon = this.lockBtn.querySelector('.ia-dim-lock-icon');
+    if (icon) icon.src = locked ? LOCK_ICON_HREF : UNLOCK_ICON_HREF;
   }
 
   onDimensionCommit(axis) {
     if (!this.naturalW) return;
-    const raw = Number(axis === 'width' ? this.widthInput.value : this.heightInput.value);
-    if (!raw || raw <= 0) return;
-    const rawPx = unitToPx(raw, this.unit);
+    const input = axis === 'width' ? this.widthInput : this.heightInput;
+    const rawPx = unitToPx(Number(input.value), this.unit);
+    if (!input.value || !DIMENSION_INPUT_PATTERN.test(input.value) || !Number.isFinite(rawPx)) {
+      input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
+      return;
+    }
     if (this.locked) {
-      const ratio = this.targetW / this.targetH;
+      const ratio = clamp(this.targetW / this.targetH, MIN_DIMENSION / MAX_DIMENSION, MAX_DIMENSION / MIN_DIMENSION);
+      const factor = axis === 'width' ? ratio : 1 / ratio;
+      const size = clamp(rawPx, Math.max(MIN_DIMENSION, MIN_DIMENSION * factor), Math.min(MAX_DIMENSION, MAX_DIMENSION * factor));
+      const other = clamp(Math.round(size / factor), MIN_DIMENSION, MAX_DIMENSION);
       if (axis === 'width') {
-        this.targetW = rawPx;
-        this.targetH = Math.round(rawPx / ratio);
+        this.targetW = size;
+        this.targetH = other;
       } else {
-        this.targetH = rawPx;
-        this.targetW = Math.round(rawPx * ratio);
+        this.targetH = size;
+        this.targetW = other;
       }
     } else {
-      if (axis === 'width') this.targetW = rawPx;
-      else this.targetH = rawPx;
+      const size = clamp(rawPx, MIN_DIMENSION, MAX_DIMENSION);
+      if (axis === 'width') this.targetW = size;
+      else this.targetH = size;
       const [vpW, vpH] = this.viewportSize();
       this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH, this.rect);
     }
+    input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
     this.hasInteracted = true;
     this.render();
   }
@@ -949,9 +1008,10 @@ export class EditorEngine {
     if (!this.socialTrigger) return;
     this.socialMenu?.querySelectorAll('.ia-social-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
-        const { platform } = opt.dataset;
-        this.socialTrigger.textContent = platform;
-        this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platform !== platform));
+        const { platformId } = opt.dataset;
+        this.trackEvent(`Aspect Ratio ${this.socialTrigger.dataset.tab} - ${platformId}|UnityWidget`);
+        this.socialTrigger.textContent = opt.textContent;
+        this.socialGrids.forEach((grid) => grid.classList.toggle('hide', grid.dataset.platformId !== platformId));
         this.closeSocialMenu();
         this.selectResizeTab(this.socialTrigger);
       });
@@ -986,10 +1046,14 @@ export class EditorEngine {
 
   bindUnitEvents() {
     if (!this.unitTrigger) return;
-    this.unitTrigger.addEventListener('click', () => this.toggleUnitMenu());
+    this.unitTrigger.addEventListener('click', () => {
+      this.trackEvent('Aspect Ratio freeform - Unit|UnityWidget');
+      this.toggleUnitMenu();
+    });
     this.unitMenu?.querySelectorAll('.ia-unit-opt').forEach((opt) => {
       opt.addEventListener('click', () => {
         this.unit = opt.dataset.unit;
+        this.trackEvent(`Aspect Ratio freeform - Unit - ${this.unit}|UnityWidget`);
         if (this.unitLabel) this.unitLabel.textContent = this.unit;
         this.closeUnitMenu();
         this.syncDimensionFields();
@@ -1007,15 +1071,14 @@ export class EditorEngine {
     this.panY = 0;
     this.quality = 100;
     this.revertQualityPreview();
+    this.selectedPill = null;
     if (this.isCrop) {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
-      this.locked = true;
-      this.resizeTab = 'custom';
-      this.lockBtn?.classList.add('is-active');
-      this.lockBtn?.setAttribute('aria-pressed', 'true');
-      this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'custom'));
-      this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'custom'));
+      this.setLocked(false);
+      this.resizeTab = 'freeform';
+      this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'freeform'));
+      this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'freeform'));
       this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
       if (this.socialTrigger) this.socialTrigger.textContent = this.socialDefaultLabel;
       this.unit = 'px';
@@ -1041,13 +1104,19 @@ export class EditorEngine {
       pill.addEventListener('click', () => {
         const { ratio, label, width, height, ratioText } = pill.dataset;
         const dimensions = width && height ? { width: Number(width), height: Number(height) } : null;
-        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
+        const panelTab = pill.closest('.ia-resize-detail-panel')?.dataset.tab;
+        if (panelTab === 'standard') {
+          this.trackEvent(`Aspect Ratio ${panelTab} - ${pill.dataset.nameId}|UnityWidget`);
+        } else if (panelTab !== 'social') {
+          this.trackEvent(`Aspect Ratio ${ratioText || pill.dataset.nameId || 'freeform'}|UnityWidget`);
+        }
+        this.selectedPill = pill;
         this.selectAspect(ratio ? Number(ratio) : null, label, false, dimensions, ratioText || null);
         this.closeMore();
       });
     });
     this.moreTrigger?.addEventListener('click', () => {
-      this.trackEvent('Aspect Ratio More|UnityWidget');
+      this.trackEvent(`Aspect Ratio ${this.moreTrigger.dataset.groupId}|UnityWidget`);
       this.toggleMore();
     });
     this.moreMenu?.querySelectorAll('.ia-more-opt')?.forEach((opt) => {
@@ -1056,9 +1125,11 @@ export class EditorEngine {
         return;
       }
       opt.addEventListener('click', () => {
-        const { ratio, label, ratioText, icon } = opt.dataset;
-        this.trackEvent(`Aspect Ratio ${ratioText || label || 'Freeform'}|UnityWidget`);
-        this.selectAspect(Number(ratio), label, true, null, ratioText || null, icon || null);
+        const {
+          ratio, label, displayLabel, ratioText, icon,
+        } = opt.dataset;
+        this.trackEvent(`Aspect Ratio ${ratioText || opt.dataset.nameId || 'freeform'}|UnityWidget`);
+        this.selectAspect(Number(ratio), displayLabel || label, true, null, ratioText || null, icon || null);
         this.closeMore();
       });
     });
@@ -1232,6 +1303,7 @@ export class EditorEngine {
     this.selectedRatioLabel = label;
     this.selectedRatioText = ratioText;
     this.zoom = 0;
+    if (!this.isCrop && ratio) this.setLocked(true);
     this.setMode(this.mode);
     this.aspectPills.forEach((pill) => pill.classList.remove('is-active'));
     if (fromMore) {
@@ -1239,7 +1311,9 @@ export class EditorEngine {
       this.moreTrigger.classList.add('is-active');
     } else {
       this.setMoreTrigger(this.moreDefaultLabel);
-      const match = this.aspectPills.find((pill) => pill.dataset.label === label);
+      const match = this.selectedPill?.dataset.label === label
+        ? this.selectedPill
+        : this.aspectPills.find((pill) => pill.dataset.label === label);
       match?.classList.add('is-active');
     }
     if (this.naturalW) {
@@ -1266,20 +1340,11 @@ export class EditorEngine {
   }
 
   getResizeDimensions() {
-    if (this.resizeTab === 'custom') return { width: this.targetW, height: this.targetH };
-    const [vpW, vpH] = this.viewportSize();
-    const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
-    return { width: b.right - b.left, height: b.bottom - b.top };
-  }
-
-  getResizeOutputDimensions() {
-    const { width, height } = this.getResizeDimensions();
-    if (this.resizeTab !== 'custom') return { width, height, unit: 'px' };
-    return { width: pxToUnit(width, this.unit), height: pxToUnit(height, this.unit), unit: this.unit };
+    return { width: this.targetW, height: this.targetH };
   }
 
   getDragRatioLock(rect) {
-    if (this.isCrop || this.resizeTab !== 'custom') return this.selectedRatio;
+    if (this.isCrop || this.resizeTab !== 'freeform') return this.selectedRatio;
     if (!this.locked) return null;
     const [vpW, vpH] = this.viewportSize();
     const w = rect.w * vpW;
@@ -1309,7 +1374,7 @@ export class EditorEngine {
           y: clamp(baseRect.y + dyPct, bounds.top, bounds.bottom - baseRect.h),
         }
         : resizeRect(baseRect, kind, dxPct, dyPct, ratioLock, bounds);
-      if (!this.isCrop && this.resizeTab === 'custom' && !this.locked) {
+      if (!this.isCrop && this.resizeTab === 'freeform' && !this.locked) {
         const b = rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, 0);
         this.targetW = b.right - b.left;
         this.targetH = b.bottom - b.top;
@@ -1364,9 +1429,14 @@ export class EditorEngine {
 
   setMode(mode) {
     this.mode = mode;
-    this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
+    this.toggleBtns.forEach((btn) => {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+    if (mode === 'quality') this.quality = clamp(this.quality, 1, 100);
     if (!this.slider) return;
-    this.slider.min = '0';
+    this.slider.min = mode === 'quality' ? '1' : '0';
     this.slider.max = '100';
     const current = { zoom: this.zoom, quality: this.quality }[mode] ?? 0;
     this.slider.value = String(current);
@@ -1377,7 +1447,7 @@ export class EditorEngine {
     if (!KNOWN_SLIDER_MODES.has(this.mode)) return;
     const value = Number(this.slider.value);
     if (this.mode === 'zoom') this.zoom = value;
-    else this.quality = value;
+    else this.quality = clamp(value, 1, 100);
     this.hasInteracted = true;
     if (this.mode === 'quality') this.revertQualityPreview();
     this.updateValLabel();
