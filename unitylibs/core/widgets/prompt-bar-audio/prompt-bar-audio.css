@@ -98,7 +98,7 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile {
-  --unity-paf-voice-tile-width: 231px;
+  --unity-paf-voice-tile-width: 280px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -176,7 +176,7 @@
   line-height: 1.2;
   letter-spacing: 0.14px;
   color: rgb(255 255 255 / 92%);
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-player {
@@ -854,7 +854,7 @@
   }
 
   .unity-prompt-bar-audio .unity-paf-voice-tile {
-    --unity-paf-voice-tile-width: 201px;
+    --unity-paf-voice-tile-width: 270px;
   }
 }
 

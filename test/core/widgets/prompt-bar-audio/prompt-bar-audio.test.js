@@ -19,7 +19,7 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     document.body.replaceChildren();
   });
 
-  it('keeps the complete voice descriptions visible with WCAG text-spacing overrides', () => {
+  it('keeps the complete voice descriptions on one line with WCAG text-spacing overrides', () => {
     const labels = [
       'Young Adult • Female',
       'Young Adult • Non-binary',
@@ -60,13 +60,17 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       const tile = description.closest('.unity-paf-voice-tile');
       const descriptionBounds = description.getBoundingClientRect();
       const tileBounds = tile.getBoundingClientRect();
+      const playerBounds = tile.querySelector('.unity-paf-voice-player').getBoundingClientRect();
 
       expect(description.textContent).to.equal(labels[index]);
-      expect(lineFragments.length).to.be.greaterThan(1);
-      expect(style.whiteSpace).to.equal('normal');
+      expect(lineFragments.length).to.equal(1);
+      expect(style.whiteSpace).to.equal('nowrap');
       expect(style.overflow).to.equal('visible');
-      expect(descriptionBounds.height).to.be.greaterThan(30);
-      expect(tileBounds.height).to.be.at.least(descriptionBounds.height + 28);
+      expect(descriptionBounds.height).to.be.at.most(22);
+      expect(lineFragments[0].left).to.be.at.least(tileBounds.left + 15);
+      expect(lineFragments[0].right).to.be.at.most(playerBounds.left - 5);
+      expect(tileBounds.width).to.be.at.least(270);
+      expect(getComputedStyle(tile).padding).to.equal('14px');
     });
   });
 });
