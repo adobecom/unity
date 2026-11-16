@@ -60,15 +60,15 @@ function groupCropRows(rows) {
 }
 
 const UNIT_OPTIONS = ['px', 'in', 'cm', 'mm'];
+const MIN_DIMENSION = 50;
+const MAX_DIMENSION = 6000;
+const DIMENSION_INPUT_PATTERN = /^-?\d*(?:\.\d*)?$/;
 const LOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/lock.svg';
 const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg';
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
-const pxToUnit = (px, unit) => {
-  const value = px / PX_PER_UNIT[unit];
-  return unit === 'px' ? Math.round(value) : Math.round(value * 100) / 100;
-};
+const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 100) / 100;
 
 export function containBox(naturalW, naturalH, viewportW, viewportH) {
   const cs = Math.min(viewportW / naturalW, viewportH / naturalH);
@@ -219,6 +219,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
     class: `ia-toggle__btn${isActive ? ' is-active' : ''}`,
     'data-mode': mode,
     'aria-label': label,
+    'aria-pressed': String(isActive),
   });
   if (iconHref) btn.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
   btn.append(createTag('span', { class: 'ia-toggle-label' }, label));
@@ -227,7 +228,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
 
 function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
-  const toggle = createTag('div', { class: 'ia-toggle' });
+  const toggle = createTag('div', { class: 'ia-toggle', role: 'group' });
   const { sliderModes } = parsedData;
   sliderModes.forEach(({ mode, label, iconHref }, i) => toggle.append(buildToggleButton(mode, label, iconHref, i === 0)));
   const startMode = sliderModes[0]?.mode;
@@ -235,7 +236,7 @@ function buildAdjustBar(parsedData) {
     type: 'range',
     class: 'ia-slider',
     autocomplete: 'off',
-    min: '0',
+    min: startMode === 'quality' ? '1' : '0',
     max: '100',
     value: startMode === 'quality' ? '100' : '0',
   });
@@ -366,7 +367,7 @@ function buildDimensionField(labelText, className) {
   const field = createTag('div', { class: 'ia-dim-field' });
   field.append(
     createTag('label', { class: 'ia-dim-label' }, labelText),
-    createTag('input', { type: 'number', class: className, min: '0', step: 'any', inputmode: 'decimal' }),
+    createTag('input', { type: 'text', class: className, inputmode: 'decimal', autocomplete: 'off' }),
   );
   return field;
 }
@@ -397,8 +398,8 @@ function buildFreeformDetail(parsedData) {
   const detail = createTag('div', { class: 'ia-resize-detail-panel', 'data-tab': 'freeform' });
   const fields = createTag('div', { class: 'ia-dim-fields' });
   const lockBtn = createTag('button', {
-    type: 'button', class: 'ia-dim-lock is-active', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'true',
-  }, createTag('img', { src: LOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
+    type: 'button', class: 'ia-dim-lock', 'aria-label': 'Lock aspect ratio', 'aria-pressed': 'false',
+  }, createTag('img', { src: UNLOCK_ICON_HREF, alt: '', class: 'ia-dim-lock-icon' }));
   fields.append(
     buildDimensionField(parsedData.widthLabel || 'Width', 'ia-width-input'),
     lockBtn,
@@ -595,7 +596,7 @@ export class EditorEngine {
     this.sizeReadoutTimer = null;
     this.sizeReadoutSeq = 0;
     this.hasInteracted = false;
-    this.locked = true;
+    this.setLocked(this.isCrop);
     this.resizeTab = 'freeform';
     this.selectedPill = null;
     this.rect = {x: 0, y: 0, w: 100, h: 100};
@@ -900,7 +901,15 @@ export class EditorEngine {
     this.widthInput.addEventListener('blur', commit('width'));
     this.heightInput.addEventListener('blur', commit('height'));
     [[this.widthInput, 'width'], [this.heightInput, 'height']].forEach(([input, axis]) => {
-      let viaArrowKey = false;
+      let previousValue = input.value;
+      input.addEventListener('focus', () => { previousValue = input.value; });
+      input.addEventListener('beforeinput', (e) => {
+        previousValue = input.value;
+        if (e.data === null || !e.inputType.startsWith('insert')) return;
+        const nextValue = input.value.slice(0, input.selectionStart)
+          + e.data + input.value.slice(input.selectionEnd);
+        if (!DIMENSION_INPUT_PATTERN.test(nextValue)) e.preventDefault();
+      });
       input.addEventListener('click', () => {
         this.trackEvent(`Aspect Ratio freeform - ${axis === 'width' ? 'Width' : 'Height'}|UnityWidget`);
       });
@@ -911,12 +920,20 @@ export class EditorEngine {
           input.blur();
           return;
         }
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') viaArrowKey = true;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const current = Number(input.value);
+          const value = input.value && Number.isFinite(current)
+            ? current : pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
+          const step = e.shiftKey ? 10 : 1;
+          input.value = String(value + (e.key === 'ArrowUp' ? step : -step));
+          this.onDimensionCommit(axis);
+          previousValue = input.value;
+        }
       });
       input.addEventListener('input', () => {
-        if (!viaArrowKey) return;
-        viaArrowKey = false;
-        this.onDimensionCommit(axis);
+        if (!DIMENSION_INPUT_PATTERN.test(input.value)) input.value = previousValue;
+        else previousValue = input.value;
       });
     });
     this.lockBtn.addEventListener('click', () => {
@@ -935,24 +952,32 @@ export class EditorEngine {
 
   onDimensionCommit(axis) {
     if (!this.naturalW) return;
-    const raw = Number(axis === 'width' ? this.widthInput.value : this.heightInput.value);
-    if (!raw || raw <= 0) return;
-    const rawPx = unitToPx(raw, this.unit);
+    const input = axis === 'width' ? this.widthInput : this.heightInput;
+    const rawPx = unitToPx(Number(input.value), this.unit);
+    if (!input.value || !DIMENSION_INPUT_PATTERN.test(input.value) || !Number.isFinite(rawPx)) {
+      input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
+      return;
+    }
     if (this.locked) {
-      const ratio = this.targetW / this.targetH;
+      const ratio = clamp(this.targetW / this.targetH, MIN_DIMENSION / MAX_DIMENSION, MAX_DIMENSION / MIN_DIMENSION);
+      const factor = axis === 'width' ? ratio : 1 / ratio;
+      const size = clamp(rawPx, Math.max(MIN_DIMENSION, MIN_DIMENSION * factor), Math.min(MAX_DIMENSION, MAX_DIMENSION * factor));
+      const other = clamp(Math.round(size / factor), MIN_DIMENSION, MAX_DIMENSION);
       if (axis === 'width') {
-        this.targetW = rawPx;
-        this.targetH = Math.round(rawPx / ratio);
+        this.targetW = size;
+        this.targetH = other;
       } else {
-        this.targetH = rawPx;
-        this.targetW = Math.round(rawPx * ratio);
+        this.targetH = size;
+        this.targetW = other;
       }
     } else {
-      if (axis === 'width') this.targetW = rawPx;
-      else this.targetH = rawPx;
+      const size = clamp(rawPx, MIN_DIMENSION, MAX_DIMENSION);
+      if (axis === 'width') this.targetW = size;
+      else this.targetH = size;
       const [vpW, vpH] = this.viewportSize();
       this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH, this.rect);
     }
+    input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
     this.hasInteracted = true;
     this.render();
   }
@@ -1050,7 +1075,7 @@ export class EditorEngine {
     if (this.isCrop) {
       this.selectAspect(this.defaultAspectRatio, this.defaultAspectLabel, false, null, this.defaultAspectRatioText);
     } else {
-      this.setLocked(true);
+      this.setLocked(false);
       this.resizeTab = 'freeform';
       this.resizeTabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === 'freeform'));
       this.resizeDetails.forEach((d) => d.classList.toggle('hide', d.dataset.tab !== 'freeform'));
@@ -1404,9 +1429,14 @@ export class EditorEngine {
 
   setMode(mode) {
     this.mode = mode;
-    this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
+    this.toggleBtns.forEach((btn) => {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+    if (mode === 'quality') this.quality = clamp(this.quality, 1, 100);
     if (!this.slider) return;
-    this.slider.min = '0';
+    this.slider.min = mode === 'quality' ? '1' : '0';
     this.slider.max = '100';
     const current = { zoom: this.zoom, quality: this.quality }[mode] ?? 0;
     this.slider.value = String(current);
@@ -1417,7 +1447,7 @@ export class EditorEngine {
     if (!KNOWN_SLIDER_MODES.has(this.mode)) return;
     const value = Number(this.slider.value);
     if (this.mode === 'zoom') this.zoom = value;
-    else this.quality = value;
+    else this.quality = clamp(value, 1, 100);
     this.hasInteracted = true;
     if (this.mode === 'quality') this.revertQualityPreview();
     this.updateValLabel();

@@ -115,6 +115,14 @@ export function isIOSSafari(userAgent) {
   return isIOS(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
 }
 
+export function getDevicePerformanceTier() {
+  const numCores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : null;
+  if (!numCores) return 'MID_RANGE';
+  if (numCores > 6) return 'HIGH_END';
+  if (numCores <= 3) return 'LOW_END';
+  return 'MID_RANGE';
+}
+
 export default function isDesktop(userAgent) {
   const ua = getUserAgent(userAgent);
   if (isHeadlessBrowser(ua)) return true;

@@ -7,12 +7,29 @@
     "productTag-photoshop": "PS",
     "productTag-lightroom": "LR",
     "productTag-firefly": "FF",
+    "uploadLimits": {
+      "HIGH_END": { "chunks": 10 },
+      "MID_RANGE": { "chunks": 10 },
+      "LOW_END": { "chunks": 6 }
+    },
+    "fetchApiConfig": {
+      "default": {
+        "retryType": "exponential",
+        "retryParams": {
+          "maxRetries": 4,
+          "retryDelay": 1000
+        }
+      }
+    },
     "limits": {
       "maxNumFiles": 1
     },
     "limits-photoshop": {
-      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg"],
+      "allowedFileTypes": ["image/jpeg", "image/png", "image/jpg", "image/vnd.adobe.photoshop"],
       "maxFileSize": 40000000,
+      "maxFileSizeByType": {
+        "image/vnd.adobe.photoshop": 1073741824
+      },
       "maxHeight": 8000,
       "maxWidth": 8000
     },

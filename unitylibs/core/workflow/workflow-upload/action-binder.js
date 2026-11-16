@@ -14,6 +14,10 @@ import {
   getHeaders,
   sendAnalyticsEvent,
 } from '../../../scripts/utils.js';
+import { getMimeType } from '../../../utils/FileUtils.js';
+import isDesktopDevice from '../../../utils/device-detection.js';
+
+const PSD_MIME_TYPE = 'image/vnd.adobe.photoshop';
 
 class ServiceHandler {
   constructor(renderWidget = false, canvasArea = null, unityEl = null, workflowCfg = {}, getAdditionalHeaders = null) {
@@ -106,7 +110,13 @@ export default class ActionBinder {
       ...(targetCfg[`limits-${feature}`] || {}),
     }), {});
     const hasFeatureLimits = Object.keys(featureLimits).length > 0;
-    return { ...commonLimits, ...(hasFeatureLimits ? featureLimits : productLimits) };
+    const limits = { ...commonLimits, ...(hasFeatureLimits ? featureLimits : productLimits) };
+    if (workflowCfg.productName?.toLowerCase() === 'photoshop'
+      && limits.allowedFileTypes?.includes(PSD_MIME_TYPE)
+      && !isDesktopDevice()) {
+      return { ...limits, allowedFileTypes: limits.allowedFileTypes.filter((type) => type !== PSD_MIME_TYPE) };
+    }
+    return limits;
   }
 
   getApiConfig() {
@@ -401,7 +411,13 @@ export default class ActionBinder {
     let { width, height } = {};
     try {
       ({ width, height } = await getImageDimensions(file));
-    } catch (e) { return null; }
+    } catch (e) {
+      if (file.type === PSD_MIME_TYPE) {
+        this.handleClientUploadError('.icon-error-filetype', 'error-filetype', e.message);
+        throw e;
+      }
+      return null;
+    }
     this.filesData = { ...this.filesData, width, height };
     if (this.limits.maxWidth && this.limits.maxHeight && (width > this.limits.maxWidth || height > this.limits.maxHeight)) {
       this.handleClientUploadError('.icon-error-filedimension', 'error-filedimension', 'Unable to process the file type!');
@@ -444,17 +460,27 @@ export default class ActionBinder {
 
   async uploadFile(files) {
     if (!files) return;
-    const file = files[0];
+    let file = files[0];
     if (this.limits.maxNumFiles !== files.length) {
       this.handleClientUploadError('.icon-error-filecount', 'error-filecount');
       return;
+    }
+    if (this.workflowCfg.productName.toLowerCase() === 'photoshop'
+      && (file.type === PSD_MIME_TYPE || getMimeType(file.name.toLowerCase()) === PSD_MIME_TYPE)) {
+      if (file.type !== PSD_MIME_TYPE) {
+        file = new File([file], file.name, { type: PSD_MIME_TYPE, lastModified: file.lastModified });
+      }
+      this.filesData = { ...this.filesData, type: file.type };
     }
     if (!this.limits.allowedFileTypes?.includes(file.type)) {
       this.handleClientUploadError('.icon-error-filetype', 'error-filetype');
       return;
     }
-    if (this.limits.maxFileSize < file.size) {
-      this.handleClientUploadError('.icon-error-filesize', 'error-filesize');
+    const maxFileSize = this.limits.maxFileSizeByType?.[file.type] ?? this.limits.maxFileSize;
+    if (maxFileSize < file.size) {
+      const psdSizeError = file.type === PSD_MIME_TYPE && this.unityEl.querySelector('.icon-error-filesize-psd')?.closest('li')?.textContent?.trim();
+      const errorTypeSelector = psdSizeError ? '.icon-error-filesize-psd' : '.icon-error-filesize';
+      this.handleClientUploadError(errorTypeSelector, 'error-filesize');
       return;
     }
     const isVideo = file.type.startsWith('video/');
@@ -546,7 +572,8 @@ export default class ActionBinder {
       },
       INPUT: (el, key) => {
         if (this.limits.allowedFileTypes?.length) {
-          el.setAttribute('accept', this.limits.allowedFileTypes.join(','));
+          const extensions = this.limits.allowedFileTypes.includes(PSD_MIME_TYPE) ? ['.psd'] : [];
+          el.setAttribute('accept', [...this.limits.allowedFileTypes, ...extensions].join(','));
         }
         let isFilePickerOpen = false;
         el.addEventListener('click', (e) => {

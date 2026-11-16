@@ -1,7 +1,35 @@
 /* eslint-disable quote-props */
 /* eslint-disable quotes */
 import { expect } from '@esm-bundle/chai';
-import isDesktop from '../../unitylibs/utils/device-detection.js';
+import sinon from 'sinon';
+import isDesktop, { getDevicePerformanceTier } from '../../unitylibs/utils/device-detection.js';
+
+describe('getDevicePerformanceTier', () => {
+  afterEach(() => {
+    sinon.restore();
+  });
+
+  [
+    { cores: 8, tier: 'HIGH_END' },
+    { cores: 7, tier: 'HIGH_END' },
+    { cores: 6, tier: 'MID_RANGE' },
+    { cores: 4, tier: 'MID_RANGE' },
+    { cores: 3, tier: 'LOW_END' },
+    { cores: 1, tier: 'LOW_END' },
+    { cores: 0, tier: 'MID_RANGE' },
+    { cores: undefined, tier: 'MID_RANGE' },
+  ].forEach(({ cores, tier }) => {
+    it(`should classify ${cores} reported cores as ${tier}`, () => {
+      sinon.stub(navigator, 'hardwareConcurrency').get(() => cores);
+      expect(getDevicePerformanceTier()).to.equal(tier);
+    });
+  });
+
+  it('should use MID_RANGE when navigator is unavailable', () => {
+    sinon.stub(window, 'navigator').get(() => undefined);
+    expect(getDevicePerformanceTier()).to.equal('MID_RANGE');
+  });
+});
 
 describe('Device Detection', () => {
   let originalNavigator;

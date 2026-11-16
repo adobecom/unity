@@ -5,13 +5,27 @@
 
 import { unityConfig, getApiCallOptions } from '../../../scripts/utils.js';
 import NetworkUtils from '../../../utils/NetworkUtils.js';
-import { createChunkUploadTasks, createChunkAnalyticsData } from '../../../utils/chunkingUtils.js';
+import { getDevicePerformanceTier } from '../../../utils/device-detection.js';
+import {
+  executeInBatches,
+  createFileChunks,
+  createChunkUploadTasks,
+  createChunkAnalyticsData,
+  validateChunkUrls,
+  extractChunkNumber,
+} from '../../../utils/chunkingUtils.js';
+
+const PSD_MIME_TYPE = 'image/vnd.adobe.photoshop';
 
 export default class UploadHandler {
   constructor(actionBinder, serviceHandler) {
     this.actionBinder = actionBinder;
     this.serviceHandler = serviceHandler;
     this.networkUtils = new NetworkUtils();
+  }
+
+  getUploadLimits() {
+    return this.actionBinder.workflowCfg.targetCfg.uploadLimits;
   }
 
   logError(eventName, errorData, debugMessage) {
@@ -69,14 +83,19 @@ export default class UploadHandler {
       fileType: file.type,
       ...callbacks,
     };
-    const result = await createChunkUploadTasks(
-      uploadUrls,
-      file,
-      blockSize,
-      this.uploadFileToUnity.bind(this),
-      signal,
-      options,
-    );
+    const useBoundedChunkUpload = this.actionBinder.workflowCfg.name === 'workflow-upload'
+      && this.actionBinder.workflowCfg.productName?.toLowerCase() === 'photoshop'
+      && file.type === PSD_MIME_TYPE;
+    const result = useBoundedChunkUpload
+      ? await this.uploadChunksWithConcurrency(uploadUrls, file, blockSize, signal, options)
+      : await createChunkUploadTasks(
+        uploadUrls,
+        file,
+        blockSize,
+        this.uploadFileToUnity.bind(this),
+        signal,
+        options,
+      );
     const { failedChunks, attemptMap } = result;
     const totalChunks = Math.ceil(file.size / blockSize);
     if (failedChunks.size > 0 && !signal?.aborted) {
@@ -90,6 +109,130 @@ export default class UploadHandler {
         }),
       );
     }
+    return { failedChunks, attemptMap };
+  }
+
+  getConcurrentLimits() {
+    const deviceType = getDevicePerformanceTier();
+    const limits = this.getUploadLimits();
+    return { maxConcurrentChunks: limits[deviceType].chunks };
+  }
+
+  createAbortError() {
+    const error = new Error('upload cancelled');
+    error.name = 'AbortError';
+    return error;
+  }
+
+  async afterUploadFileToUnity(uploadParams) {
+    if (uploadParams.response.ok) {
+      this.actionBinder.logAnalyticsinSplunk('Chunk Uploaded|UnityWidget', {
+        assetId: uploadParams.assetId,
+        fileMetaData: {
+          chunkNumber: uploadParams.chunkNumber,
+          chunkUploadAttempt: uploadParams.attempt,
+          size: `${uploadParams.blobData.size}`,
+          type: uploadParams.fileType,
+        },
+      });
+      return uploadParams.response;
+    }
+    const error = new Error(uploadParams.response.statusText || 'Upload request failed');
+    error.status = uploadParams.response.status;
+    error.attempt = uploadParams.attempt;
+    this.logError('Upload Chunk Error|UnityWidget', {
+      chunkNumber: uploadParams.chunkNumber,
+      size: uploadParams.blobData.size,
+      fileType: uploadParams.fileType,
+      attempt: uploadParams.attempt,
+      errorData: { code: 'upload-chunk-error', desc: error.message },
+    }, `Failed when uploading chunk to storage; ${error.message}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`);
+    if (uploadParams.attempt < this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default.retryParams.maxRetries) return uploadParams.response;
+    throw error;
+  }
+
+  async errorAfterUploadFileToUnity(uploadParams) {
+    if (uploadParams.error.name === 'AbortError') throw uploadParams.error;
+    this.logError('Upload Chunk Error|UnityWidget', {
+      chunkNumber: uploadParams.chunkNumber,
+      size: uploadParams.blobData.size,
+      fileType: uploadParams.fileType,
+      attempt: uploadParams.attempt,
+      errorData: { code: 'upload-chunk-error', desc: uploadParams.error.message },
+    }, `Exception raised when uploading chunk to storage; ${uploadParams.error.message}, ${uploadParams.assetId}, ${uploadParams.blobData.size} bytes`);
+    throw uploadParams.error;
+  }
+
+  async batchUpload(tasks, batchSize) {
+    await executeInBatches(tasks, batchSize, async (task) => { await task(); });
+  }
+
+  async uploadChunksWithConcurrency(uploadUrls, file, blockSize, signal, options) {
+    if (signal?.aborted) throw this.createAbortError();
+    if (!Number.isSafeInteger(blockSize) || blockSize < 1 || file.size < 1) {
+      throw new Error('Chunk upload requires a positive integer block size and a nonempty file');
+    }
+    const chunks = createFileChunks(file, blockSize);
+    validateChunkUrls(uploadUrls, chunks.length);
+    const failedChunks = new Set();
+    const attemptMap = new Map();
+    const { maxConcurrentChunks } = this.getConcurrentLimits();
+    if (!Number.isInteger(maxConcurrentChunks) || maxConcurrentChunks < 1) {
+      throw new RangeError('Concurrency must be a positive integer');
+    }
+    let fileUploadFailed = false;
+    const chunkTasks = chunks.map((chunk, index) => {
+      const url = uploadUrls[index];
+      return async () => {
+        if (fileUploadFailed || signal?.aborted) return;
+        let chunkNumber = index;
+        let lastAttempt = 1;
+        try {
+          const storageUrl = typeof url === 'object' ? url.href : url;
+          chunkNumber = extractChunkNumber(url, index);
+          const putOpts = {
+            method: 'PUT',
+            headers: { 'Content-Type': options.fileType },
+            body: chunk,
+            signal,
+          };
+          const modifiedRetryConfig = { ...this.actionBinder.workflowCfg.targetCfg.fetchApiConfig.default };
+          modifiedRetryConfig.extraRetryCheck = async (response) => !response.ok;
+          const chunkContext = {
+            assetId: options.assetId,
+            blobData: chunk,
+            chunkNumber,
+            fileType: options.fileType,
+          };
+          const result = await this.networkUtils.fetchFromServiceWithRetry(
+            storageUrl,
+            putOpts,
+            modifiedRetryConfig,
+            (response, attempt) => {
+              lastAttempt = attempt;
+              return this.afterUploadFileToUnity({ ...chunkContext, response, attempt });
+            },
+            (error, attempt) => {
+              lastAttempt = attempt;
+              error.attempt = attempt;
+              return this.errorAfterUploadFileToUnity({ ...chunkContext, error, attempt });
+            },
+          );
+          attemptMap.set(index, result.attempt);
+          options.onChunkComplete?.(index, chunkNumber, result);
+        } catch (error) {
+          fileUploadFailed = true;
+          if (!signal?.aborted) {
+            const chunkInfo = { chunkIndex: index, chunkNumber };
+            failedChunks.add(chunkInfo);
+            attemptMap.set(index, lastAttempt);
+            options.onChunkError?.(chunkInfo, error);
+          }
+        }
+      };
+    });
+    await this.batchUpload(chunkTasks, maxConcurrentChunks);
+    if (signal?.aborted) throw this.createAbortError();
     return { failedChunks, attemptMap };
   }
 
