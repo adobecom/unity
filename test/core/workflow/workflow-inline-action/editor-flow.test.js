@@ -372,6 +372,49 @@ describe('Inline action editor workflow', () => {
     });
   });
 
+  [false, true].forEach((hasInteracted) => {
+    it(`omits default JPEG quality from the resize connector after interaction: ${hasInteracted}`, async () => {
+      binder.operation = 'resize';
+      engine.outputType = 'image/jpeg';
+      engine.quality = 100;
+      engine.hasInteracted = hasInteracted;
+      await runEditInFirefly(binder);
+      expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).not.to.have.property('quality');
+    });
+  });
+
+  it('omits JPEG quality after it is reduced and then restored to 100', async () => {
+    binder.operation = 'resize';
+    engine.outputType = 'image/jpeg';
+    engine.hasInteracted = true;
+    engine.quality = 1;
+    await runEditInFirefly(binder);
+    expect(binder.buildConnectorPayload.firstCall.args[0].operations[1]).to.have.property('quality', 1);
+    engine.quality = 100;
+    await runEditInFirefly(binder);
+    expect(binder.buildConnectorPayload.lastCall.args[0].operations[1]).not.to.have.property('quality');
+  });
+
+  [
+    { value: -10, expected: 1 },
+    { value: 0, expected: 1 },
+    { value: 1, expected: 1 },
+    { value: 99, expected: 99 },
+    { value: 99.7, expected: 100 },
+    { value: 100, expected: 100 },
+    { value: 150, expected: 100 },
+  ].forEach(({ value, expected }) => {
+    it(`keeps connector quality ${value} within 1-100 and omits normalized 100`, async () => {
+      binder.operation = 'resize';
+      engine.outputType = 'image/jpeg';
+      engine.quality = value;
+      await runEditInFirefly(binder);
+      const operation = binder.buildConnectorPayload.firstCall.args[0].operations[1];
+      if (expected === 100) expect(operation).not.to.have.property('quality');
+      else expect(operation).to.have.property('quality', expected);
+    });
+  });
+
   it('uses platformId and nameId from configured presets in the connector payload', async () => {
     const panel = buildEditorRightPanel({
       operation: 'resize',
