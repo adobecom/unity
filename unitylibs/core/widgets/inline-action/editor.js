@@ -68,7 +68,7 @@ const UNLOCK_ICON_HREF = 'https://www.adobe.com/cc-shared/assets/svg/unlock.svg'
 const DPI = 72;
 const PX_PER_UNIT = { px: 1, in: DPI, cm: DPI / 2.54, mm: DPI / 25.4 };
 const unitToPx = (value, unit) => value * PX_PER_UNIT[unit];
-const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 1000) / 1000;
+const pxToUnit = (px, unit) => Math.round((px / PX_PER_UNIT[unit]) * 100) / 100;
 
 export function containBox(naturalW, naturalH, viewportW, viewportH) {
   const cs = Math.min(viewportW / naturalW, viewportH / naturalH);
@@ -219,6 +219,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
     class: `ia-toggle__btn${isActive ? ' is-active' : ''}`,
     'data-mode': mode,
     'aria-label': label,
+    'aria-pressed': String(isActive),
   });
   if (iconHref) btn.append(createTag('img', { src: iconHref, alt: '', loading: 'lazy', class: 'ia-btn-icon' }));
   btn.append(createTag('span', { class: 'ia-toggle-label' }, label));
@@ -227,7 +228,7 @@ function buildToggleButton(mode, label, iconHref, isActive) {
 
 function buildAdjustBar(parsedData) {
   const bar = createTag('div', { class: 'ia-adjust-bar' });
-  const toggle = createTag('div', { class: 'ia-toggle' });
+  const toggle = createTag('div', { class: 'ia-toggle', role: 'group' });
   const { sliderModes } = parsedData;
   sliderModes.forEach(({ mode, label, iconHref }, i) => toggle.append(buildToggleButton(mode, label, iconHref, i === 0)));
   const startMode = sliderModes[0]?.mode;
@@ -1428,8 +1429,12 @@ export class EditorEngine {
 
   setMode(mode) {
     this.mode = mode;
+    this.toggleBtns.forEach((btn) => {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
     if (mode === 'quality') this.quality = clamp(this.quality, 1, 100);
-    this.toggleBtns.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.mode === mode));
     if (!this.slider) return;
     this.slider.min = mode === 'quality' ? '1' : '0';
     this.slider.max = '100';

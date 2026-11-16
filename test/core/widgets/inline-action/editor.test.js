@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { sendKeys, setViewport } from '@web/test-runner-commands';
+import { sendKeys, sendMouse, setViewport } from '@web/test-runner-commands';
 import {
   zoomScale, containBox, centeredRect, frameFromDimensions, rawImageEdgesPct,
   imageBoundsPct, resizeRect, rectPctToSourceBounds,
@@ -67,7 +67,7 @@ function cleanup(area) {
   document.querySelectorAll('.ia-more-menu, .ia-social-menu, .ia-unit-menu').forEach((m) => m.remove());
 }
 
-describe('Editor adjust bar layout', () => {
+describe('Editor styling and layout', () => {
   let stylesheet;
   let widget;
   let originalViewport;
@@ -91,6 +91,87 @@ describe('Editor adjust bar layout', () => {
 
   afterEach(() => widget?.remove());
 
+  [375, 768, 1440].flatMap((viewportWidth) => ['reset', 'reupload'].map((action) => ({ viewportWidth, action }))).forEach(({ viewportWidth, action }) => {
+    it(`only highlights the hovered ${action} action on hover-capable devices at viewport ${viewportWidth}`, async () => {
+      await setViewport({ width: viewportWidth, height: 800 });
+      widget = document.createElement('div');
+      widget.className = 'ia-widget';
+      widget.dataset.state = 'complete';
+      widget.append(buildEditorRightPanel(resizeData));
+      document.body.append(widget);
+      const button = widget.querySelector(action === 'reset' ? '.ia-editor-reset' : '.ia-editor-header .ia-reupload-btn');
+      const bounds = button.getBoundingClientRect();
+      await sendMouse({
+        type: 'move',
+        position: [Math.floor(bounds.left + bounds.width / 2), Math.floor(bounds.top + bounds.height / 2)],
+      });
+      expect(button.matches(':hover')).to.equal(true);
+      const expected = window.matchMedia('(hover: hover)').matches ? 'rgb(50, 50, 50)' : 'rgba(0, 0, 0, 0)';
+      expect(getComputedStyle(button).backgroundColor).to.equal(expected);
+      await sendMouse({ type: 'move', position: [0, 0] });
+      expect(getComputedStyle(button).backgroundColor).to.equal('rgba(0, 0, 0, 0)');
+    });
+  });
+
+  [375, 768, 1199, 1200, 1440].forEach((viewportWidth) => {
+    it(`applies the specified resize dimension control styles at viewport ${viewportWidth}`, async () => {
+      await setViewport({ width: viewportWidth, height: 800 });
+      widget = document.createElement('div');
+      widget.className = 'ia-widget';
+      widget.append(buildEditorRightPanel(resizeData));
+      document.body.append(widget);
+      const inputs = widget.querySelectorAll('.ia-dim-field input');
+      expect(inputs.length).to.equal(2);
+      const compact = viewportWidth < 1200;
+      inputs.forEach((input) => {
+        const style = getComputedStyle(input);
+        expect(style.width).to.equal(compact ? '62px' : '69px');
+        expect(style.boxSizing).to.equal('border-box');
+        expect(style.backgroundColor).to.equal('rgb(17, 17, 17)');
+        expect(style.color).to.equal('rgb(219, 219, 219)');
+        expect(style.borderColor).to.equal('rgb(57, 57, 57)');
+        expect(style.borderWidth).to.equal('2px');
+        expect(style.borderStyle).to.equal('solid');
+        expect(style.borderRadius).to.equal(compact ? '8px' : '9px');
+        expect(style.padding).to.equal(compact ? '4px 10px' : '8px 10px');
+        expect(style.textAlign).to.equal('left');
+        if (compact) {
+          expect(style.height).to.equal('32px');
+          expect(style.alignSelf).to.equal('stretch');
+        }
+      });
+      const unitStyle = getComputedStyle(widget.querySelector('.ia-dim-unit'));
+      expect(unitStyle.height).to.equal(compact ? '32px' : '40px');
+      const lockStyle = getComputedStyle(widget.querySelector('.ia-dim-lock'));
+      expect(lockStyle.width).to.equal(compact ? '24px' : '34px');
+      expect(lockStyle.height).to.equal(compact ? '24px' : '34px');
+      if (compact) expect(lockStyle.padding).to.equal('0px');
+      const iconStyle = getComputedStyle(widget.querySelector('.ia-dim-lock-icon'));
+      expect(iconStyle.width).to.equal('20px');
+      expect(iconStyle.height).to.equal('20px');
+    });
+  });
+
+  [375, 768, 1440].forEach((viewportWidth) => {
+    it(`keeps dimension values left-aligned despite surrounding input styles at viewport ${viewportWidth}`, async () => {
+      await setViewport({ width: viewportWidth, height: 800 });
+      widget = document.createElement('div');
+      widget.className = 'ia-widget interactive-area';
+      widget.dataset.state = 'complete';
+      const pageStyle = document.createElement('style');
+      pageStyle.textContent = '.interactive-area input[type="text"] { text-align: right; }';
+      widget.append(buildEditorRightPanel(resizeData), pageStyle);
+      document.body.append(widget);
+      const inputs = widget.querySelectorAll('.ia-dim-field input');
+      expect(inputs.length).to.equal(2);
+      inputs.forEach((input) => {
+        input.value = '55';
+        expect(getComputedStyle(input).textAlign).to.equal('left');
+        expect(input.scrollLeft).to.equal(0);
+      });
+    });
+  });
+
   [
     { operation: 'crop', mode: 'zoom', value: '10.0x' },
     { operation: 'resize', mode: 'zoom', value: '10.0x' },
@@ -109,6 +190,9 @@ describe('Editor adjust bar layout', () => {
       }));
       document.body.append(widget);
       const bar = widget.querySelector('.ia-adjust-bar');
+      const toggle = bar.querySelector('.ia-toggle');
+      expect(getComputedStyle(toggle).backgroundColor).to.equal('rgb(42, 42, 42)');
+      expect(getComputedStyle(toggle).gap).to.equal('0px');
       const slider = bar.querySelector('.ia-slider');
       const readout = bar.querySelector('.ia-val');
       bar.querySelectorAll('.ia-toggle__btn').forEach((button) => {
@@ -131,6 +215,16 @@ describe('Editor adjust bar layout', () => {
         text.selectNodeContents(readout);
         expect(text.getBoundingClientRect().right).to.be.at.most(bounds.right);
         expect(slider.getBoundingClientRect().width).to.be.at.least(24);
+        const segments = toggle.querySelectorAll('.ia-toggle__btn');
+        expect(toggle.getBoundingClientRect().height).to.equal(32);
+        segments.forEach((segment) => {
+          expect(segment.getBoundingClientRect().height).to.equal(32);
+          const label = segment.querySelector('.ia-toggle-label');
+          expect(getComputedStyle(label).display === 'none').to.equal(!segment.classList.contains('is-active'));
+        });
+        if (segments.length === 2) {
+          expect(segments[0].getBoundingClientRect().right).to.be.closeTo(segments[1].getBoundingClientRect().left, 0.01);
+        }
       });
     });
   });
@@ -242,8 +336,11 @@ describe('editor panel builders', () => {
 
   it('left panel builds toggles for zoom first', () => {
     const p = buildEditorLeftPanel(resizeData);
+    expect(p.querySelector('.ia-toggle').getAttribute('role')).to.equal('group');
     expect(p.querySelectorAll('.ia-toggle__btn').length).to.equal(2);
     expect(p.querySelector('.ia-toggle__btn').classList.contains('is-active')).to.be.true;
+    expect(p.querySelector('[data-mode="zoom"]').getAttribute('aria-pressed')).to.equal('true');
+    expect(p.querySelector('[data-mode="quality"]').getAttribute('aria-pressed')).to.equal('false');
     expect(p.querySelector('.ia-slider').value).to.equal('0');
     expect(p.querySelector('.ia-slider').min).to.equal('0');
     expect(p.querySelector('.ia-val').textContent).to.equal('1.0x');
@@ -733,11 +830,43 @@ describe('EditorEngine (resize)', () => {
     });
   });
 
-  it('shows physical unit dimensions to three decimal places like Express', () => {
-    ctx.engine.unit = 'in';
+  [
+    { unit: 'in', width: '2.78', height: '1.39' },
+    { unit: 'cm', width: '7.06', height: '3.53' },
+    { unit: 'mm', width: '70.56', height: '35.28' },
+  ].forEach(({ unit, width, height }) => {
+    it(`shows ${unit} dimensions rounded to two decimal places`, () => {
+      ctx.engine.unit = unit;
+      ctx.engine.syncDimensionFields();
+      expect(ctx.engine.widthInput.value).to.equal(width);
+      expect(ctx.engine.heightInput.value).to.equal(height);
+      expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
+    });
+  });
+
+  it('rounds fractional pixel dimensions to two decimal places without padding whole numbers', () => {
+    ctx.engine.targetW = 123.456;
+    ctx.engine.targetH = 123.454;
     ctx.engine.syncDimensionFields();
-    expect(ctx.engine.widthInput.value).to.equal('2.778');
-    expect(ctx.engine.heightInput.value).to.equal('1.389');
+    expect(ctx.engine.widthInput.value).to.equal('123.46');
+    expect(ctx.engine.heightInput.value).to.equal('123.45');
+    ctx.engine.targetW = 200;
+    ctx.engine.targetH = 100.5;
+    ctx.engine.syncDimensionFields();
+    expect(ctx.engine.widthInput.value).to.equal('200');
+    expect(ctx.engine.heightInput.value).to.equal('100.5');
+  });
+
+  ['width', 'height'].forEach((axis) => {
+    it(`rounds ${axis} edits to two decimal places on commit and invalid-edit restoration`, () => {
+      const input = ctx.engine[`${axis}Input`];
+      input.value = '100.756';
+      input.dispatchEvent(new Event('blur'));
+      expect(input.value).to.equal('100.76');
+      input.value = '';
+      input.dispatchEvent(new Event('blur'));
+      expect(input.value).to.equal('100.76');
+    });
   });
 
   it('allows fractional edits and clamps their converted pixel dimensions', () => {
@@ -752,7 +881,7 @@ describe('EditorEngine (resize)', () => {
     });
     input.dispatchEvent(new Event('blur'));
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 100, height: 50 });
-    expect(input.value).to.equal('1.389');
+    expect(input.value).to.equal('1.39');
   });
 
   it('unit menu selects a unit and sends analytics', () => {
@@ -897,12 +1026,25 @@ describe('EditorEngine (resize)', () => {
     expect(ctx.engine.aspectPills[0].textContent).to.equal('Portrait 720 x 1280');
   });
 
-  it('zoom and quality toggles send analytics', () => {
-    ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'zoom').click();
-    ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'quality').click();
+  it('zoom and quality toggle exclusively and send analytics', () => {
+    const zoom = ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'zoom');
+    const quality = ctx.engine.toggleBtns.find((b) => b.dataset.mode === 'quality');
+    zoom.click();
+    quality.click();
     expect(ctx.track.calledWith('Zoom|UnityWidget')).to.be.true;
     expect(ctx.track.calledWith('Quality|UnityWidget')).to.be.true;
     expect(ctx.engine.mode).to.equal('quality');
+    expect(quality.getAttribute('aria-pressed')).to.equal('true');
+    expect(zoom.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.left.querySelectorAll('.ia-toggle__btn.is-active').length).to.equal(1);
+    ctx.engine.slider.value = '60';
+    ctx.engine.slider.dispatchEvent(new Event('input'));
+    zoom.click();
+    expect(zoom.getAttribute('aria-pressed')).to.equal('true');
+    expect(quality.getAttribute('aria-pressed')).to.equal('false');
+    expect(ctx.engine.mode).to.equal('zoom');
+    quality.click();
+    expect(ctx.engine.slider.value).to.equal('60');
   });
 
   it('quality slider updates quality and the label', () => {
