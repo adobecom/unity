@@ -901,14 +901,7 @@
   }
 
   .unity-prompt-bar-audio .unity-paf-voice-desc {
-    display: flex;
-    flex-wrap: wrap;
-    column-gap: 8px;
     white-space: normal;
-  }
-
-  .unity-prompt-bar-audio .unity-paf-voice-desc-separator {
-    display: none;
   }
 
   .unity-prompt-bar-audio .unity-paf-voice-row-peek + .unity-paf-voice-scroll-hint {

@@ -38,23 +38,10 @@ describe('Prompt Bar Audio voice description text spacing', () => {
 
       const description = document.createElement('span');
       description.className = 'unity-paf-voice-desc';
-      description.setAttribute('aria-label', label);
+      description.textContent = label;
       description.style.setProperty('line-height', '1.5', 'important');
       description.style.setProperty('letter-spacing', '0.12em', 'important');
       description.style.setProperty('word-spacing', '0.16em', 'important');
-
-      const [age, gender] = label.split(/\s*•\s*/, 2);
-      const ageGroup = document.createElement('span');
-      ageGroup.className = 'unity-paf-voice-desc-age';
-      ageGroup.textContent = age;
-      const separator = document.createElement('span');
-      separator.className = 'unity-paf-voice-desc-separator';
-      separator.setAttribute('aria-hidden', 'true');
-      separator.textContent = ' • ';
-      const genderGroup = document.createElement('span');
-      genderGroup.className = 'unity-paf-voice-desc-gender';
-      genderGroup.textContent = gender;
-      description.append(ageGroup, separator, genderGroup);
 
       const player = document.createElement('div');
       player.className = 'unity-paf-voice-player';
@@ -81,16 +68,15 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     const { section, row } = addVoiceSection(900, labels);
     const tiles = row.querySelectorAll('.unity-paf-voice-tile');
 
-    tiles.forEach((tile, index) => {
+    tiles.forEach((tile) => {
       const description = tile.querySelector('.unity-paf-voice-desc');
       const range = document.createRange();
       range.selectNodeContents(description);
       const lineTops = new Set([...range.getClientRects()].map((rect) => rect.top));
 
-      expect(description.getAttribute('aria-label')).to.equal(labels[index]);
+      expect(description.childElementCount).to.equal(0);
       expect(lineTops).to.have.lengthOf(1);
       expect(getComputedStyle(description).whiteSpace).to.equal('nowrap');
-      expect(getComputedStyle(tile.querySelector('.unity-paf-voice-desc-separator')).display).not.to.equal('none');
       expect(getComputedStyle(tile).padding).to.equal('14px');
       expect(tile.getBoundingClientRect().width).to.be.at.least(270);
     });
@@ -118,20 +104,14 @@ describe('Prompt Bar Audio voice description text spacing', () => {
 
     tiles.forEach((tile, index) => {
       const description = tile.querySelector('.unity-paf-voice-desc');
-      const separator = tile.querySelector('.unity-paf-voice-desc-separator');
-      const age = tile.querySelector('.unity-paf-voice-desc-age');
-      const gender = tile.querySelector('.unity-paf-voice-desc-gender');
       const textBounds = tile.querySelector('.unity-paf-voice-tile-text').getBoundingClientRect();
       const tileBounds = tile.getBoundingClientRect();
 
-      expect(description.getAttribute('aria-label')).to.equal(labels[index]);
       expect(description.textContent).to.equal(labels[index]);
+      expect(description.childElementCount).to.equal(0);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
-      expect(getComputedStyle(separator).display).to.equal('none');
       expect(getComputedStyle(tile).alignItems).to.equal('center');
       expect(Math.abs((textBounds.top + textBounds.bottom) / 2 - (tileBounds.top + tileBounds.bottom) / 2)).to.be.lessThan(1);
-      expect(age.textContent).not.to.equal('');
-      expect(gender.textContent).not.to.equal('');
       expect(getComputedStyle(tile).padding).to.equal('14px');
       expect(tile.getBoundingClientRect().height).to.be.greaterThan(60);
     });

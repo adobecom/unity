@@ -504,24 +504,6 @@ export function parsePromptBarAudioAuthoring(root) {
   };
 }
 
-function buildVoiceDescription(description) {
-  const descriptionElement = createTag('span', {
-    class: 'unity-paf-voice-desc',
-    'aria-label': description,
-  });
-  const [age, gender] = description.split(/\s*•\s*/, 2);
-  if (!gender) {
-    descriptionElement.textContent = description;
-    return descriptionElement;
-  }
-  descriptionElement.append(
-    createTag('span', { class: 'unity-paf-voice-desc-age' }, age),
-    createTag('span', { class: 'unity-paf-voice-desc-separator', 'aria-hidden': 'true' }, ' • '),
-    createTag('span', { class: 'unity-paf-voice-desc-gender' }, gender),
-  );
-  return descriptionElement;
-}
-
 function buildVoiceTile(voice, index, row, widgetInstance) {
   const { name, description, url, voiceId } = voice;
   const tile = createTag('div', {
@@ -537,7 +519,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   const textCol = createTag('div', { class: 'unity-paf-voice-tile-text' });
   textCol.append(
     createTag('span', { class: 'unity-paf-voice-name' }, name),
-    buildVoiceDescription(description),
+    createTag('span', { class: 'unity-paf-voice-desc' }, description),
   );
 
   const player = createTag('div', { class: 'unity-paf-voice-player' });
