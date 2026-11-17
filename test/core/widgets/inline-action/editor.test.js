@@ -259,11 +259,35 @@ describe('editor geometry helpers', () => {
     expect(frameFromDimensions(100, 50, 200, 100, 100, 100)).to.deep.equal({ x: 25, y: 37.5, w: 50, h: 25 });
   });
 
-  it('frameFromDimensions clamps to the minimum size and to the anchor', () => {
+  it('frameFromDimensions keeps small frames proportional and clamps the anchor to the image', () => {
     const r = frameFromDimensions(1, 1, 200, 100, 100, 100, { x: 0, y: 0, w: 20, h: 20 });
-    expect(r.w).to.equal(10);
-    expect(r.x).to.equal(5);
-    expect(r.y).to.be.at.least(0);
+    expect(r.w).to.equal(0.5);
+    expect(r.h).to.equal(0.5);
+    expect(r.x).to.equal(9.75);
+    expect(r.y).to.equal(25);
+  });
+
+  [
+    { width: 6000, height: 100 },
+    { width: 200, height: 6000 },
+    { width: 6000, height: 6000 },
+    { width: 6000, height: 50 },
+    { width: 50, height: 6000 },
+    { width: 100, height: 50 },
+  ].forEach(({ width, height }) => {
+    [[200, 100], [100, 200]].forEach(([naturalW, naturalH]) => {
+      it(`fits ${width}x${height} proportionally inside a ${naturalW}x${naturalH} image`, () => {
+        const viewportW = 400;
+        const viewportH = 300;
+        const bounds = imageBoundsPct(naturalW, naturalH, viewportW, viewportH);
+        const rect = frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH, { x: 90, y: 90, w: 10, h: 10 });
+        expect(rect.x).to.be.at.least(bounds.left - 1e-10);
+        expect(rect.y).to.be.at.least(bounds.top - 1e-10);
+        expect(rect.x + rect.w).to.be.at.most(bounds.right + 1e-10);
+        expect(rect.y + rect.h).to.be.at.most(bounds.bottom + 1e-10);
+        expect((rect.w * viewportW) / (rect.h * viewportH)).to.be.closeTo(width / height, 1e-10);
+      });
+    });
   });
 
   it('rawImageEdgesPct applies pan', () => {
@@ -662,6 +686,59 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.heightInput.value = '50';
     ctx.engine.onDimensionCommit('height');
     expect(ctx.engine.targetH).to.equal(50);
+  });
+
+  [
+    { axis: 'width', value: 6000, width: 6000, height: 100 },
+    { axis: 'height', value: 6000, width: 200, height: 6000 },
+  ].forEach(({ axis, value, width, height }) => {
+    it(`crops instead of stretching when unlocked ${axis} exceeds the source size`, () => {
+      ctx.engine[`${axis}Input`].value = String(value);
+      ctx.engine.onDimensionCommit(axis);
+      expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width, height });
+      const { rect } = ctx.engine;
+      const bounds = imageBoundsPct(200, 100, 400, 300);
+      expect(rect.x).to.be.at.least(bounds.left - 1e-10);
+      expect(rect.y).to.be.at.least(bounds.top - 1e-10);
+      expect(rect.x + rect.w).to.be.at.most(bounds.right + 1e-10);
+      expect(rect.y + rect.h).to.be.at.most(bounds.bottom + 1e-10);
+      expect((rect.w * 400) / (rect.h * 300)).to.be.closeTo(width / height, 1e-10);
+      const source = ctx.engine.getSourceBounds();
+      expect(source.right - source.left).to.be.greaterThan(0);
+      expect(source.bottom - source.top).to.be.greaterThan(0);
+      expect((source.right - source.left) / (source.bottom - source.top)).to.be.closeTo(width / height, 1e-8);
+      expect(source.right - source.left < 200 || source.bottom - source.top < 100).to.be.true;
+    });
+  });
+
+  it('preserves a subpixel source crop for the maximum unlocked output ratio', async () => {
+    await ctx.engine.setImage(dataUrl(50, 50), 1024, true);
+    ctx.engine.widthInput.value = '6000';
+    ctx.engine.onDimensionCommit('width');
+    const source = ctx.engine.getSourceBounds();
+    expect(source.left).to.be.closeTo(0, 1e-10);
+    expect(source.right).to.be.closeTo(50, 1e-10);
+    expect(source.bottom - source.top).to.be.closeTo(50 / 120, 1e-10);
+    expect((source.right - source.left) / (source.bottom - source.top)).to.be.closeTo(120, 1e-8);
+    expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 6000, height: 50 });
+  });
+
+  it('keeps typed dimensions inside a zoomed and panned image', () => {
+    ctx.engine.heightInput.value = '50';
+    ctx.engine.onDimensionCommit('height');
+    ctx.engine.zoom = 5;
+    ctx.engine.panY = 20;
+    ctx.engine.render();
+    ctx.engine.heightInput.value = '6000';
+    ctx.engine.onDimensionCommit('height');
+    const bounds = imageBoundsPct(200, 100, 400, 300, ctx.engine.zoom, ctx.engine.panX, ctx.engine.panY);
+    const { rect } = ctx.engine;
+    expect(rect.x).to.be.at.least(bounds.left - 1e-10);
+    expect(rect.y).to.be.at.least(bounds.top - 1e-10);
+    expect(rect.x + rect.w).to.be.at.most(bounds.right + 1e-10);
+    expect(rect.y + rect.h).to.be.at.most(bounds.bottom + 1e-10);
+    expect((rect.w * 400) / (rect.h * 300)).to.be.closeTo(1 / 30, 1e-10);
+    expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 6000 });
   });
 
   ['width', 'height'].forEach((axis) => {
