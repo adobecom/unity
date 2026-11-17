@@ -50,13 +50,10 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       row.append(tile);
     });
 
-    const hint = document.createElement('p');
-    hint.className = 'unity-paf-voice-scroll-hint';
-    hint.textContent = 'Swipe or scroll to see more voices';
-    section.append(row, hint);
+    section.append(row);
     widget.append(section);
     document.body.append(widget);
-    return { row, section, hint };
+    return { row, section };
   }
 
   it('keeps desktop voice descriptions on one line with the separator', () => {
@@ -89,7 +86,7 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       'Young Adult • Non-binary',
       'Middle Aged • Female',
     ];
-    const { row, section, hint } = addVoiceSection(260, labels);
+    const { row, section } = addVoiceSection(260, labels);
     const tiles = row.querySelectorAll('.unity-paf-voice-tile');
     const rowBounds = row.getBoundingClientRect();
     const firstBounds = tiles[0].getBoundingClientRect();
@@ -100,7 +97,6 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     expect(firstBounds.width).to.be.within(190, 210);
     expect(visibleNextCardWidth).to.be.within(35, 75);
     expect(row.scrollWidth).to.be.greaterThan(row.clientWidth);
-    expect(getComputedStyle(hint).display).to.equal('block');
 
     tiles.forEach((tile, index) => {
       const description = tile.querySelector('.unity-paf-voice-desc');

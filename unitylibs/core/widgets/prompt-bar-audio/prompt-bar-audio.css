@@ -183,14 +183,6 @@
   white-space: nowrap;
 }
 
-.unity-prompt-bar-audio .unity-paf-voice-scroll-hint {
-  display: none;
-  margin: -4px 0 0;
-  color: rgb(255 255 255 / 72%);
-  font-size: 12px;
-  text-align: center;
-}
-
 .unity-prompt-bar-audio .unity-paf-voice-player {
   position: relative;
   width: 37.17px;
@@ -904,7 +896,4 @@
     white-space: normal;
   }
 
-  .unity-prompt-bar-audio .unity-paf-voice-row-peek + .unity-paf-voice-scroll-hint {
-    display: block;
-  }
 }

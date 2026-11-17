@@ -969,8 +969,7 @@ function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, 
   );
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
   const tiles = visibleVoices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
-  const scrollHint = createTag('p', { class: 'unity-paf-voice-scroll-hint' }, 'Swipe or scroll to see more voices');
-  section.append(heading, row, scrollHint);
+  section.append(heading, row);
   appendVoiceExploreSubfoot(section, exploreHtml, footerLink);
   return { section, tiles };
 }
