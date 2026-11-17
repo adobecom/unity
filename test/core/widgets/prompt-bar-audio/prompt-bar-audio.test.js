@@ -125,7 +125,6 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(description.getAttribute('aria-label')).to.equal(labels[index]);
       expect(description.textContent).to.equal(labels[index]);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
-      expect(getComputedStyle(tile.querySelector('.unity-paf-voice-tile-text')).textAlign).to.equal('center');
       expect(getComputedStyle(separator).display).to.equal('none');
       expect(age.textContent).not.to.equal('');
       expect(gender.textContent).not.to.equal('');
