@@ -229,6 +229,44 @@
   width: 100%;
 }
 
+.ia-adjust-bar-resize {
+  padding-right: 4px;
+}
+
+.ia-editor-quality {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ia-white, #fff);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.ia-editor-quality.is-active {
+  background: #000;
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .ia-editor-quality:hover {
+    background: #000;
+    opacity: 1;
+  }
+}
+
+.ia-editor-quality:focus-visible {
+  outline: 2px solid var(--ia-white, #fff);
+  outline-offset: 2px;
+}
+
 .ia-toggle {
   display: flex;
   align-items: center;
@@ -324,6 +362,10 @@
   color: var(--ia-white, #fff);
 }
 
+.ia-adjust-bar-resize .ia-val {
+  text-align: center;
+}
+
 .ia-editor-header {
   position: relative;
   z-index: 1;
@@ -350,7 +392,6 @@
 }
 
 .ia-editor-reset,
-.ia-editor-quality,
 .ia-editor-header .ia-reupload-btn {
   display: inline-flex;
   align-items: center;
@@ -372,16 +413,9 @@
 
 @media (hover: hover) {
   .ia-editor-reset:hover,
-  .ia-editor-quality:hover,
   .ia-editor-header .ia-reupload-btn:hover {
     background: #323232;
   }
-}
-
-.ia-editor-quality.is-active {
-  background: var(--ia-white, #fff);
-  color: #111;
-  border-color: var(--ia-white, #fff);
 }
 
 .ia-aspect-section,
@@ -903,6 +937,14 @@
   .ia-adjust-bar {
     gap: 4px;
     padding-right: 8px;
+  }
+
+  .ia-adjust-bar-resize {
+    padding-right: 4px;
+  }
+
+  .ia-adjust-bar-resize:has(.ia-editor-quality:not(.hide)) .ia-toggle > button {
+    padding: 4px;
   }
 
   .ia-widget[data-state="complete"] .ia-editor-left-panel {
