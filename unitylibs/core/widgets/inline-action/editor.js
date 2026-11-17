@@ -96,22 +96,6 @@ export function centeredRect(ratio, naturalW, naturalH, viewportW, viewportH) {
   };
 }
 
-export function frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH, anchorRect = null) {
-  const { cs } = containBox(naturalW, naturalH, viewportW, viewportH);
-  const iw = (naturalW * cs) / viewportW;
-  const ih = (naturalH * cs) / viewportH;
-  const wPct = clamp((width / naturalW) * iw * 100, MIN_PCT, 100);
-  const hPct = clamp((height / naturalH) * ih * 100, MIN_PCT, 100);
-  const centerX = anchorRect ? anchorRect.x + (anchorRect.w / 2) : 50;
-  const centerY = anchorRect ? anchorRect.y + (anchorRect.h / 2) : 50;
-  return {
-    x: clamp(centerX - (wPct / 2), 0, 100 - wPct),
-    y: clamp(centerY - (hPct / 2), 0, 100 - hPct),
-    w: wPct,
-    h: hPct,
-  };
-}
-
 function edgeDelta(movesNeg, movesPos, delta) {
   if (movesNeg) return -delta;
   if (movesPos) return delta;
@@ -140,6 +124,23 @@ export function imageBoundsPct(naturalW, naturalH, viewportW, viewportH, zoom = 
     top: clamp(edges.top, 0, 100),
     right: clamp(edges.right, 0, 100),
     bottom: clamp(edges.bottom, 0, 100),
+  };
+}
+
+export function frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH, anchorRect = null, bounds = imageBoundsPct(naturalW, naturalH, viewportW, viewportH)) {
+  const { cs } = containBox(naturalW, naturalH, viewportW, viewportH);
+  const requestedW = ((width * cs) / viewportW) * 100;
+  const requestedH = ((height * cs) / viewportH) * 100;
+  const scale = Math.min(1, (bounds.right - bounds.left) / requestedW, (bounds.bottom - bounds.top) / requestedH);
+  const wPct = requestedW * scale;
+  const hPct = requestedH * scale;
+  const centerX = anchorRect ? anchorRect.x + (anchorRect.w / 2) : 50;
+  const centerY = anchorRect ? anchorRect.y + (anchorRect.h / 2) : 50;
+  return {
+    x: clamp(centerX - (wPct / 2), bounds.left, bounds.right - wPct),
+    y: clamp(centerY - (hPct / 2), bounds.top, bounds.bottom - hPct),
+    w: wPct,
+    h: hPct,
   };
 }
 
@@ -181,7 +182,7 @@ export function resizeRect(base, handle, dxPct, dyPct, ratioLock, bounds = { lef
   };
 }
 
-export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0) {
+export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewportH, zoom = 0, panXPct = 0, panYPct = 0, roundToPixels = true) {
   const { cs, w: dispW, h: dispH } = containBox(naturalW, naturalH, viewportW, viewportH);
   const offsetX = (viewportW - dispW) / 2;
   const offsetY = (viewportH - dispH) / 2;
@@ -193,10 +194,11 @@ export function rectPctToSourceBounds(rect, naturalW, naturalH, viewportW, viewp
   const topPx = unscale(((rect.y / 100) * viewportH) - panYPx, viewportH);
   const rightPx = unscale((((rect.x + rect.w) / 100) * viewportW) - panXPx, viewportW);
   const bottomPx = unscale((((rect.y + rect.h) / 100) * viewportH) - panYPx, viewportH);
-  const left = clamp(Math.round((leftPx - offsetX) / cs), 0, naturalW);
-  const top = clamp(Math.round((topPx - offsetY) / cs), 0, naturalH);
-  const right = clamp(Math.round((rightPx - offsetX) / cs), left, naturalW);
-  const bottom = clamp(Math.round((bottomPx - offsetY) / cs), top, naturalH);
+  const round = roundToPixels ? Math.round : (value) => value;
+  const left = clamp(round((leftPx - offsetX) / cs), 0, naturalW);
+  const top = clamp(round((topPx - offsetY) / cs), 0, naturalH);
+  const right = clamp(round((rightPx - offsetX) / cs), left, naturalW);
+  const bottom = clamp(round((bottomPx - offsetY) / cs), top, naturalH);
   return { left, top, right, bottom };
 }
 
@@ -1001,7 +1003,8 @@ export class EditorEngine {
       if (axis === 'width') this.targetW = size;
       else this.targetH = size;
       const [vpW, vpH] = this.viewportSize();
-      this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH, this.rect);
+      const bounds = imageBoundsPct(this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
+      this.rect = frameFromDimensions(this.targetW, this.targetH, this.naturalW, this.naturalH, vpW, vpH, this.rect, bounds);
     }
     input.value = pxToUnit(axis === 'width' ? this.targetW : this.targetH, this.unit);
     this.hasInteracted = true;
@@ -1362,7 +1365,7 @@ export class EditorEngine {
 
   getSourceBounds() {
     const [vpW, vpH] = this.viewportSize();
-    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY);
+    return rectPctToSourceBounds(this.rect, this.naturalW, this.naturalH, vpW, vpH, this.zoom, this.panX, this.panY, this.isCrop);
   }
 
   getResizeDimensions() {
