@@ -931,10 +931,16 @@ function wireVoiceRowPeekTracking(widgetInstance, row) {
     return;
   }
   const refresh = () => {
-    syncVoiceRowPeekClasses(row, row.scrollWidth > row.clientWidth + 1);
+    const section = row.closest('.unity-paf-voice-section');
+    const shouldPeek = section?.clientWidth <= 600
+      ? row.scrollWidth > row.clientWidth + 1
+      : row.children.length > 4;
+    syncVoiceRowPeekClasses(row, shouldPeek);
   };
   const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(refresh);
   observer?.observe(row);
+  const section = row.closest('.unity-paf-voice-section');
+  if (section) observer?.observe(section);
   [...row.children].forEach((child) => observer?.observe(child));
   row.addEventListener('scroll', refresh, { passive: true });
   window.addEventListener('resize', refresh);

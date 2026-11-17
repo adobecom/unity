@@ -65,7 +65,6 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-row {
-  box-sizing: border-box;
   display: flex;
   flex-flow: row nowrap;
   gap: 4.76px;
@@ -102,7 +101,7 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-tile {
-  --unity-paf-voice-tile-width: 280px;
+  --unity-paf-voice-tile-width: 231px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -181,6 +180,8 @@
   letter-spacing: 0.14px;
   color: rgb(255 255 255 / 92%);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-player {
@@ -858,7 +859,7 @@
   }
 
   .unity-prompt-bar-audio .unity-paf-voice-tile {
-    --unity-paf-voice-tile-width: 270px;
+    --unity-paf-voice-tile-width: 201px;
   }
 }
 
@@ -894,6 +895,8 @@
 
   .unity-prompt-bar-audio .unity-paf-voice-desc {
     white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
 
 }

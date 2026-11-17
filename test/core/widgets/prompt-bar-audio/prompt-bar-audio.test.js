@@ -74,8 +74,11 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(description.childElementCount).to.equal(0);
       expect(lineTops).to.have.lengthOf(1);
       expect(getComputedStyle(description).whiteSpace).to.equal('nowrap');
+      expect(getComputedStyle(description).overflow).to.equal('hidden');
+      expect(getComputedStyle(description).textOverflow).to.equal('ellipsis');
       expect(getComputedStyle(tile).padding).to.equal('14px');
-      expect(tile.getBoundingClientRect().width).to.be.at.least(270);
+      const expectedWidth = window.matchMedia('(max-width: 1199px)').matches ? 201 : 231;
+      expect(tile.getBoundingClientRect().width).to.equal(expectedWidth);
     });
     expect(section.getBoundingClientRect().width).to.equal(900);
   });
@@ -106,6 +109,8 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(description.textContent).to.equal(labels[index]);
       expect(description.childElementCount).to.equal(0);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
+      expect(getComputedStyle(description).overflow).to.equal('visible');
+      expect(getComputedStyle(description).textOverflow).to.equal('clip');
       expect(getComputedStyle(tile).alignItems).to.equal('center');
       expect(Math.abs((textBounds.top + textBounds.bottom) / 2 - (tileBounds.top + tileBounds.bottom) / 2)).to.be.lessThan(1);
       expect(getComputedStyle(tile).padding).to.equal('14px');
