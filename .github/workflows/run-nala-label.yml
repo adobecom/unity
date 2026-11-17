@@ -7,7 +7,7 @@ on:
 jobs:
   action:
     name: Running Nala E2E UI Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: |
       github.event_name == 'workflow_dispatch' ||
       contains(join(github.event.pull_request.labels.*.name, ' '), 'run-nala')
@@ -43,4 +43,3 @@ jobs:
           GITHUB_ACTION_PATH: ${{ github.workspace }}
           IMS_EMAIL: ${{ secrets.IMS_EMAIL }}
           IMS_PASS: ${{ secrets.IMS_PASS }}
-
