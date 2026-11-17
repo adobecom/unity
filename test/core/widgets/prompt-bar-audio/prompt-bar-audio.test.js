@@ -103,7 +103,7 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       'Young Adult • Non-binary',
       'Middle Aged • Female',
     ];
-    const { row, section, hint } = addVoiceSection(320, labels);
+    const { row, section, hint } = addVoiceSection(260, labels);
     const tiles = row.querySelectorAll('.unity-paf-voice-tile');
     const rowBounds = row.getBoundingClientRect();
     const firstBounds = tiles[0].getBoundingClientRect();
@@ -111,7 +111,8 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     const visibleNextCardWidth = rowBounds.right - nextBounds.left;
 
     expect(firstBounds.width).to.be.lessThan(rowBounds.width);
-    expect(visibleNextCardWidth).to.be.within(35, 65);
+    expect(firstBounds.width).to.be.within(190, 210);
+    expect(visibleNextCardWidth).to.be.within(35, 75);
     expect(row.scrollWidth).to.be.greaterThan(row.clientWidth);
     expect(getComputedStyle(hint).display).to.equal('block');
 
@@ -130,6 +131,6 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(getComputedStyle(tile).padding).to.equal('14px');
       expect(tile.getBoundingClientRect().height).to.be.greaterThan(60);
     });
-    expect(section.getBoundingClientRect().width).to.equal(320);
+    expect(section.getBoundingClientRect().width).to.equal(260);
   });
 });
