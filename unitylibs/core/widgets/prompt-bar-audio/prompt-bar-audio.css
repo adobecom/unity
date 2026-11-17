@@ -887,7 +887,7 @@
   }
 }
 
-@container (max-width: 600px) {
+@container (max-width: 480px) {
   .unity-prompt-bar-audio .unity-paf-voice-tile {
     --unity-paf-voice-tile-width: calc(100% - 50px);
     align-items: center;
@@ -898,5 +898,4 @@
     overflow: visible;
     text-overflow: clip;
   }
-
 }

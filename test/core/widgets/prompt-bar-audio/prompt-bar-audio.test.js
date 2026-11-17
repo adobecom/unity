@@ -126,4 +126,28 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     });
     expect(section.getBoundingClientRect().width).to.equal(260);
   });
+
+  it('wraps tablet labels vertically without expanding tile widths', () => {
+    const labels = [
+      'Young Adult • Female',
+      'Young Adult • Non-binary',
+      'Middle Aged • Female',
+    ];
+    const { row } = addVoiceSection(520, labels);
+    const tiles = row.querySelectorAll('.unity-paf-voice-tile');
+
+    tiles.forEach((tile, index) => {
+      const description = tile.querySelector('.unity-paf-voice-desc');
+      const range = document.createRange();
+      range.selectNodeContents(description);
+      const lineTops = new Set([...range.getClientRects()].map((rect) => rect.top));
+
+      expect(tile.getBoundingClientRect().width).to.be.at.most(231);
+      expect(description.textContent).to.equal(labels[index]);
+      expect(getComputedStyle(description).whiteSpace).to.equal('normal');
+      expect(getComputedStyle(description).overflow).to.equal('visible');
+      expect(tile.getBoundingClientRect().height).to.be.greaterThan(60);
+      if (index === 1) expect(lineTops.size).to.be.greaterThan(1);
+    });
+  });
 });
