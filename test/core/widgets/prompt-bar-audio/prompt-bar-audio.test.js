@@ -121,11 +121,15 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       const separator = tile.querySelector('.unity-paf-voice-desc-separator');
       const age = tile.querySelector('.unity-paf-voice-desc-age');
       const gender = tile.querySelector('.unity-paf-voice-desc-gender');
+      const textBounds = tile.querySelector('.unity-paf-voice-tile-text').getBoundingClientRect();
+      const tileBounds = tile.getBoundingClientRect();
 
       expect(description.getAttribute('aria-label')).to.equal(labels[index]);
       expect(description.textContent).to.equal(labels[index]);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
       expect(getComputedStyle(separator).display).to.equal('none');
+      expect(getComputedStyle(tile).alignItems).to.equal('center');
+      expect(Math.abs((textBounds.top + textBounds.bottom) / 2 - (tileBounds.top + tileBounds.bottom) / 2)).to.be.lessThan(1);
       expect(age.textContent).not.to.equal('');
       expect(gender.textContent).not.to.equal('');
       expect(getComputedStyle(tile).padding).to.equal('14px');

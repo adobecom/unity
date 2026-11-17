@@ -897,11 +897,7 @@
 @container (max-width: 600px) {
   .unity-prompt-bar-audio .unity-paf-voice-tile {
     --unity-paf-voice-tile-width: calc(100% - 50px);
-    align-items: flex-start;
-  }
-
-  .unity-prompt-bar-audio .unity-paf-voice-tile-text {
-    padding-top: 2px;
+    align-items: center;
   }
 
   .unity-prompt-bar-audio .unity-paf-voice-desc {
