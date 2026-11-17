@@ -902,6 +902,8 @@
 
   .unity-prompt-bar-audio .unity-paf-voice-tile-text {
     padding-top: 2px;
+    text-align: center;
+    align-items: center;
   }
 
   .unity-prompt-bar-audio .unity-paf-voice-desc {
