@@ -56,7 +56,7 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     return { row, section };
   }
 
-  it('keeps desktop voice descriptions on one line with the separator', () => {
+  it('keeps complete desktop voice descriptions visible with text-spacing overrides', () => {
     const labels = [
       'Young Adult • Female',
       'Young Adult • Non-binary',
@@ -69,13 +69,21 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       const description = tile.querySelector('.unity-paf-voice-desc');
       const range = document.createRange();
       range.selectNodeContents(description);
-      const lineTops = new Set([...range.getClientRects()].map((rect) => rect.top));
+      const fragments = [...range.getClientRects()];
+      const descriptionBounds = description.getBoundingClientRect();
+      const tileBounds = tile.getBoundingClientRect();
 
       expect(description.childElementCount).to.equal(0);
-      expect(lineTops).to.have.lengthOf(1);
-      expect(getComputedStyle(description).whiteSpace).to.equal('nowrap');
-      expect(getComputedStyle(description).overflow).to.equal('hidden');
-      expect(getComputedStyle(description).textOverflow).to.equal('ellipsis');
+      expect(fragments.length).to.be.greaterThan(0);
+      expect(getComputedStyle(description).whiteSpace).to.equal('normal');
+      expect(getComputedStyle(description).overflow).to.equal('visible');
+      expect(getComputedStyle(description).textOverflow).to.equal('clip');
+      fragments.forEach((fragment) => {
+        expect(fragment.left).to.be.at.least(descriptionBounds.left - 1);
+        expect(fragment.right).to.be.at.most(descriptionBounds.right + 1);
+        expect(fragment.top).to.be.at.least(tileBounds.top);
+        expect(fragment.bottom).to.be.at.most(tileBounds.bottom);
+      });
       expect(getComputedStyle(tile).padding).to.equal('14px');
       const expectedWidth = window.matchMedia('(max-width: 1199px)').matches ? 201 : 231;
       expect(tile.getBoundingClientRect().width).to.equal(expectedWidth);
