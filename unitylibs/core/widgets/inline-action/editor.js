@@ -390,7 +390,7 @@ function buildUnitPicker() {
   });
   trigger.append(
     createTag('span', { class: 'ia-unit-label' }, 'px'),
-    createTag('span', { class: 'ia-unit-chevron', 'aria-hidden': 'true' }),
+    createTag('span', { class: 'ia-unit-chevron', 'aria-hidden': 'true' }, '<svg width="14" height="8" viewBox="0 0 14 8" fill="none"><path d="M1 1L7 7L13 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
   );
   wrap.append(trigger, menu);
   return wrap;

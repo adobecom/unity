@@ -708,13 +708,10 @@
 }
 
 .ia-unit-chevron {
-  display: inline-block;
-  width: 8px;
+  display: inline-flex;
+  width: 14px;
   height: 8px;
-  margin-top: -4px;
-  border-right: 2px solid currentcolor;
-  border-bottom: 2px solid currentcolor;
-  transform: rotate(45deg);
+  flex-shrink: 0;
 }
 
 .ia-size-readout {

@@ -142,6 +142,17 @@ describe('Editor styling and layout', () => {
       });
       const unitStyle = getComputedStyle(widget.querySelector('.ia-dim-unit'));
       expect(unitStyle.height).to.equal(compact ? '32px' : '40px');
+      const chevron = widget.querySelector('.ia-unit-chevron');
+      expect(chevron.getAttribute('aria-hidden')).to.equal('true');
+      const chevronStyle = getComputedStyle(chevron);
+      expect(chevronStyle.width).to.equal('14px');
+      expect(chevronStyle.height).to.equal('8px');
+      expect(chevronStyle.borderWidth).to.equal('0px');
+      expect(chevronStyle.transform).to.equal('none');
+      const chevronPath = chevron.querySelector('svg path');
+      expect(getComputedStyle(chevronPath).strokeLinecap).to.equal('round');
+      expect(getComputedStyle(chevronPath).strokeLinejoin).to.equal('round');
+      expect(getComputedStyle(chevronPath).stroke).to.equal(unitStyle.color);
       const lockStyle = getComputedStyle(widget.querySelector('.ia-dim-lock'));
       expect(lockStyle.width).to.equal(compact ? '24px' : '34px');
       expect(lockStyle.height).to.equal(compact ? '24px' : '34px');
