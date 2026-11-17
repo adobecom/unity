@@ -504,6 +504,24 @@ export function parsePromptBarAudioAuthoring(root) {
   };
 }
 
+function buildVoiceDescription(description) {
+  const descriptionElement = createTag('span', {
+    class: 'unity-paf-voice-desc',
+    'aria-label': description,
+  });
+  const [age, gender] = description.split(/\s*•\s*/, 2);
+  if (!gender) {
+    descriptionElement.textContent = description;
+    return descriptionElement;
+  }
+  descriptionElement.append(
+    createTag('span', { class: 'unity-paf-voice-desc-age' }, age),
+    createTag('span', { class: 'unity-paf-voice-desc-separator', 'aria-hidden': 'true' }, ' • '),
+    createTag('span', { class: 'unity-paf-voice-desc-gender' }, gender),
+  );
+  return descriptionElement;
+}
+
 function buildVoiceTile(voice, index, row, widgetInstance) {
   const { name, description, url, voiceId } = voice;
   const tile = createTag('div', {
@@ -519,7 +537,7 @@ function buildVoiceTile(voice, index, row, widgetInstance) {
   const textCol = createTag('div', { class: 'unity-paf-voice-tile-text' });
   textCol.append(
     createTag('span', { class: 'unity-paf-voice-name' }, name),
-    createTag('span', { class: 'unity-paf-voice-desc' }, description),
+    buildVoiceDescription(description),
   );
 
   const player = createTag('div', { class: 'unity-paf-voice-player' });
@@ -921,7 +939,7 @@ function syncVoiceRowPeekClasses(row, shouldPeek) {
   row.classList.toggle('unity-paf-voice-row-peek-scrolled', shouldPeek && row.scrollLeft > 0);
 }
 
-function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
+function wireVoiceRowPeekTracking(widgetInstance, row) {
   if (widgetInstance.detachVoiceRowPeekTracking) {
     try { widgetInstance.detachVoiceRowPeekTracking(); } catch (e) { /* noop */ }
     widgetInstance.detachVoiceRowPeekTracking = null;
@@ -930,13 +948,20 @@ function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
     syncVoiceRowPeekClasses(null, false);
     return;
   }
-  const onScroll = () => {
-    const active = row.classList.contains('unity-paf-voice-row-peek');
-    syncVoiceRowPeekClasses(row, active);
+  const refresh = () => {
+    syncVoiceRowPeekClasses(row, row.scrollWidth > row.clientWidth + 1);
   };
-  row.addEventListener('scroll', onScroll, { passive: true });
-  widgetInstance.detachVoiceRowPeekTracking = () => row.removeEventListener('scroll', onScroll);
-  syncVoiceRowPeekClasses(row, shouldPeek);
+  const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(refresh);
+  observer?.observe(row);
+  [...row.children].forEach((child) => observer?.observe(child));
+  row.addEventListener('scroll', refresh, { passive: true });
+  window.addEventListener('resize', refresh);
+  widgetInstance.detachVoiceRowPeekTracking = () => {
+    observer?.disconnect();
+    row.removeEventListener('scroll', refresh);
+    window.removeEventListener('resize', refresh);
+  };
+  refresh();
 }
 
 function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, widgetInstance, opts = {}) {
@@ -961,9 +986,9 @@ function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, 
     sectionHeading,
   );
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
-  syncVoiceRowPeekClasses(row, visibleVoices.length > 4);
   const tiles = visibleVoices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
-  section.append(heading, row);
+  const scrollHint = createTag('p', { class: 'unity-paf-voice-scroll-hint' }, 'Swipe or scroll to see more voices');
+  section.append(heading, row, scrollHint);
   appendVoiceExploreSubfoot(section, exploreHtml, footerLink);
   return { section, tiles };
 }
@@ -1046,7 +1071,6 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     const auth = (this.defaultPromptFromAuthoring ?? '').trim();
     row.replaceChildren();
     const visible = filterVoicesByModelId(all, this.voiceModelIndex, mid);
-    syncVoiceRowPeekClasses(row, visible.length > 4);
     if (this.voicePromptInpField) {
       const cur = (this.voicePromptInpField.value || '').trim();
       if (visible.length > 0 && (cur === '' || cur === auth)) {
@@ -1056,12 +1080,14 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
       }
     }
     if (visible.length === 0) {
+      wireVoiceRowPeekTracking(this, row);
       this.widgetWrap?.removeAttribute('data-selected-voice-index');
       this.widgetWrap?.removeAttribute('data-selected-voice-name');
       this.widgetWrap?.removeAttribute('data-selected-voice-id');
       return;
     }
     const newTiles = visible.map((v, i) => buildVoiceTile(v, i, row, this));
+    wireVoiceRowPeekTracking(this, row);
     this.teardownVoiceTiles = attachVoiceInteractivity(
       newTiles,
       this,
@@ -1073,7 +1099,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner);
   const root = widgetInstance.extendedRoot;
   const initialRow = root?.querySelector('.unity-paf-voice-row') ?? null;
-  wireVoiceRowPeekTracking(widgetInstance, initialRow, visibleVoices.length > 4);
+  wireVoiceRowPeekTracking(widgetInstance, initialRow);
   let removalObserver = null;
   let interactivityTornDown = false;
   const teardown = () => {

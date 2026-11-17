@@ -19,16 +19,16 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     document.body.replaceChildren();
   });
 
-  it('keeps the complete voice descriptions on one line with WCAG text-spacing overrides', () => {
-    const labels = [
-      'Young Adult • Female',
-      'Young Adult • Non-binary',
-      'Middle Aged • Female',
-    ];
+  function addVoiceSection(width, labels) {
     const widget = document.createElement('div');
     widget.className = 'unity-prompt-bar-audio';
-    document.body.append(widget);
+    const section = document.createElement('div');
+    section.className = 'unity-paf-voice-section';
+    section.style.width = `${width}px`;
 
+    const row = document.createElement('div');
+    row.className = 'unity-paf-voice-row unity-paf-voice-row-peek';
+    row.setAttribute('role', 'list');
     labels.forEach((label) => {
       const tile = document.createElement('div');
       tile.className = 'unity-paf-voice-tile';
@@ -38,39 +38,98 @@ describe('Prompt Bar Audio voice description text spacing', () => {
 
       const description = document.createElement('span');
       description.className = 'unity-paf-voice-desc';
-      description.textContent = label;
+      description.setAttribute('aria-label', label);
       description.style.setProperty('line-height', '1.5', 'important');
       description.style.setProperty('letter-spacing', '0.12em', 'important');
       description.style.setProperty('word-spacing', '0.16em', 'important');
 
+      const [age, gender] = label.split(/\s*•\s*/, 2);
+      const ageGroup = document.createElement('span');
+      ageGroup.className = 'unity-paf-voice-desc-age';
+      ageGroup.textContent = age;
+      const separator = document.createElement('span');
+      separator.className = 'unity-paf-voice-desc-separator';
+      separator.setAttribute('aria-hidden', 'true');
+      separator.textContent = ' • ';
+      const genderGroup = document.createElement('span');
+      genderGroup.className = 'unity-paf-voice-desc-gender';
+      genderGroup.textContent = gender;
+      description.append(ageGroup, separator, genderGroup);
+
       const player = document.createElement('div');
       player.className = 'unity-paf-voice-player';
-      tile.append(text, player);
       text.append(description);
-      widget.append(tile);
+      tile.append(text, player);
+      row.append(tile);
     });
 
-    const descriptions = widget.querySelectorAll('.unity-paf-voice-desc');
-    expect(descriptions).to.have.lengthOf(labels.length);
-    descriptions.forEach((description, index) => {
+    const hint = document.createElement('p');
+    hint.className = 'unity-paf-voice-scroll-hint';
+    hint.textContent = 'Swipe or scroll to see more voices';
+    section.append(row, hint);
+    widget.append(section);
+    document.body.append(widget);
+    return { row, section, hint };
+  }
+
+  it('keeps desktop voice descriptions on one line with the separator', () => {
+    const labels = [
+      'Young Adult • Female',
+      'Young Adult • Non-binary',
+      'Middle Aged • Female',
+    ];
+    const { section, row } = addVoiceSection(900, labels);
+    const tiles = row.querySelectorAll('.unity-paf-voice-tile');
+
+    tiles.forEach((tile, index) => {
+      const description = tile.querySelector('.unity-paf-voice-desc');
       const range = document.createRange();
       range.selectNodeContents(description);
-      const lineFragments = range.getClientRects();
-      const style = getComputedStyle(description);
-      const tile = description.closest('.unity-paf-voice-tile');
-      const descriptionBounds = description.getBoundingClientRect();
-      const tileBounds = tile.getBoundingClientRect();
-      const playerBounds = tile.querySelector('.unity-paf-voice-player').getBoundingClientRect();
+      const lineTops = new Set([...range.getClientRects()].map((rect) => rect.top));
 
-      expect(description.textContent).to.equal(labels[index]);
-      expect(lineFragments.length).to.equal(1);
-      expect(style.whiteSpace).to.equal('nowrap');
-      expect(style.overflow).to.equal('visible');
-      expect(descriptionBounds.height).to.be.at.most(22);
-      expect(lineFragments[0].left).to.be.at.least(tileBounds.left + 15);
-      expect(lineFragments[0].right).to.be.at.most(playerBounds.left - 5);
-      expect(tileBounds.width).to.be.at.least(270);
+      expect(description.getAttribute('aria-label')).to.equal(labels[index]);
+      expect(lineTops).to.have.lengthOf(1);
+      expect(getComputedStyle(description).whiteSpace).to.equal('nowrap');
+      expect(getComputedStyle(tile.querySelector('.unity-paf-voice-desc-separator')).display).not.to.equal('none');
       expect(getComputedStyle(tile).padding).to.equal('14px');
+      expect(tile.getBoundingClientRect().width).to.be.at.least(270);
     });
+    expect(section.getBoundingClientRect().width).to.equal(900);
+  });
+
+  it('fits mobile tiles to the row, keeps labels readable, and shows a next-card peek', () => {
+    const labels = [
+      'Young Adult • Female',
+      'Young Adult • Non-binary',
+      'Middle Aged • Female',
+    ];
+    const { row, section, hint } = addVoiceSection(320, labels);
+    const tiles = row.querySelectorAll('.unity-paf-voice-tile');
+    const rowBounds = row.getBoundingClientRect();
+    const firstBounds = tiles[0].getBoundingClientRect();
+    const nextBounds = tiles[1].getBoundingClientRect();
+    const visibleNextCardWidth = rowBounds.right - nextBounds.left;
+
+    expect(firstBounds.width).to.be.lessThan(rowBounds.width);
+    expect(visibleNextCardWidth).to.be.within(35, 65);
+    expect(row.scrollWidth).to.be.greaterThan(row.clientWidth);
+    expect(getComputedStyle(hint).display).to.equal('block');
+
+    tiles.forEach((tile, index) => {
+      const description = tile.querySelector('.unity-paf-voice-desc');
+      const separator = tile.querySelector('.unity-paf-voice-desc-separator');
+      const age = tile.querySelector('.unity-paf-voice-desc-age');
+      const gender = tile.querySelector('.unity-paf-voice-desc-gender');
+
+      expect(description.getAttribute('aria-label')).to.equal(labels[index]);
+      expect(description.textContent).to.equal(labels[index]);
+      expect(getComputedStyle(description).whiteSpace).to.equal('normal');
+      expect(getComputedStyle(separator).display).to.equal('none');
+      expect(age.textContent).not.to.equal('');
+      expect(gender.textContent).not.to.equal('');
+      expect(getComputedStyle(tile).padding).to.equal('14px');
+      expect(tile.getBoundingClientRect().height).to.be.greaterThan(60);
+    });
+    expect(section.getBoundingClientRect().width).to.equal(320);
   });
 });

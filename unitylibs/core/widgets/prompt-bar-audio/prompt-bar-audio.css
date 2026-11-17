@@ -53,6 +53,9 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  /* Stylelint in this repo doesn't recognize the container query property yet. */
+  /* stylelint-disable-next-line property-no-unknown */
+  container-type: inline-size;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-heading {
@@ -62,6 +65,7 @@
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-row {
+  box-sizing: border-box;
   display: flex;
   flex-flow: row nowrap;
   gap: 4.76px;
@@ -179,6 +183,14 @@
   white-space: nowrap;
 }
 
+.unity-prompt-bar-audio .unity-paf-voice-scroll-hint {
+  display: none;
+  margin: -4px 0 0;
+  color: rgb(255 255 255 / 72%);
+  font-size: 12px;
+  text-align: center;
+}
+
 .unity-prompt-bar-audio .unity-paf-voice-player {
   position: relative;
   width: 37.17px;
@@ -202,6 +214,32 @@
 @media (hover: none), (pointer: coarse) {
   .unity-prompt-bar-audio .unity-paf-voice-tile .unity-paf-voice-player {
     opacity: 1;
+  }
+}
+
+@container (max-width: 600px) {
+  .unity-prompt-bar-audio .unity-paf-voice-tile {
+    --unity-paf-voice-tile-width: calc(100% - 50px);
+    align-items: flex-start;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-tile-text {
+    padding-top: 2px;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-desc {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    white-space: normal;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-desc-separator {
+    display: none;
+  }
+
+  .unity-prompt-bar-audio .unity-paf-voice-row-peek + .unity-paf-voice-scroll-hint {
+    display: block;
   }
 }
 
