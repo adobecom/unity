@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
 import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
-import { buildEditorRightPanel } from '../../../../unitylibs/core/widgets/inline-action/editor.js';
+import { buildEditorLeftPanel, buildEditorRightPanel, EditorEngine } from '../../../../unitylibs/core/widgets/inline-action/editor.js';
 import {
   buildImageOperationsPayload, editorUploadFlow, runEditorOperation,
   resetEditor, runEditInFirefly,
@@ -118,6 +118,82 @@ describe('Inline action editor workflow', () => {
       expect(binder.originalAssetId).to.equal('original');
       expect(binder.originalFileType).to.equal('image/png');
       expect(engine.setImage.calledWith(binder.resultUrl, binder.resultBlob.size)).to.equal(true);
+    });
+  });
+
+  [
+    { axis: 'width', value: 400, width: 400, height: 100, source: [0, 25, 200, 50] },
+    { axis: 'height', value: 200, width: 200, height: 200, source: [50, 0, 100, 100] },
+    { axis: 'width', value: 6000, width: 6000, height: 100, source: [0, 50 - (5 / 3), 200, 10 / 3] },
+  ].forEach(({ axis, value, width, height, source }) => {
+    it(`exports the cropped source without stretching when typed ${axis} exceeds the image`, async () => {
+      const data = {
+        operation: 'resize',
+        sliderModes: [{ mode: 'zoom', label: 'Zoom' }],
+        aspectRows: [{ groupId: 'freeform', groupLabel: 'Custom' }],
+        nbaPills: [],
+      };
+      const left = buildEditorLeftPanel(data);
+      const right = buildEditorRightPanel(data);
+      const area = document.createElement('div');
+      area.className = 'interactive-area';
+      area.append(left, right);
+      document.body.append(area);
+      const actualEngine = new EditorEngine(left, right, data);
+      actualEngine.viewportSize = () => [400, 300];
+      try {
+        const image = document.createElement('canvas');
+        image.width = 200;
+        image.height = 100;
+        const context = image.getContext('2d');
+        context.fillStyle = '#ff0000';
+        context.fillRect(0, 0, 200, 100);
+        context.fillStyle = '#00ff00';
+        context.fillRect(Math.floor(source[0]) - 1, Math.floor(source[1]) - 1, Math.ceil(source[2]) + 2, Math.ceil(source[3]) + 2);
+        actualEngine.setOutputType('image/png');
+        await actualEngine.setImage(image.toDataURL(), 2048, true);
+        // Keep real source pixels without background-throttled image decoding.
+        image.decode = sinon.stub().resolves();
+        actualEngine.sourceImg = image;
+        actualEngine[`${axis}Input`].value = String(value);
+        actualEngine.onDimensionCommit(axis);
+        const { sourceImg } = actualEngine;
+        binder.operation = 'resize';
+        binder.widgetRef.editorEngine = actualEngine;
+        await runEditInFirefly(binder);
+        const [cropOp, resizeOp] = binder.buildConnectorPayload.lastCall.args[0].operations;
+        expect(resizeOp.width).to.equal(width);
+        expect(resizeOp.height).to.equal(height);
+        expect((200 - cropOp.left - cropOp.right) / (100 - cropOp.top - cropOp.bottom))
+          .to.be.closeTo(width / height, 1e-8);
+        const draw = sinon.spy(CanvasRenderingContext2D.prototype, 'drawImage');
+        await runEditorOperation(binder);
+        const cropDraw = draw.getCalls().find((call) => call.args.length === 9);
+        expect(cropDraw.args[0]).to.equal(sourceImg);
+        [...source, 0, 0, width, height].forEach((expected, index) => {
+          expect(cropDraw.args[index + 1]).to.be.closeTo(expected, 1e-8);
+        });
+        expect(binder.trackServerError.called).to.be.false;
+        const result = await createImageBitmap(binder.resultBlob);
+        try {
+          expect(result.width).to.equal(width);
+          expect(result.height).to.equal(height);
+          const output = document.createElement('canvas');
+          output.width = width;
+          output.height = height;
+          const outputContext = output.getContext('2d');
+          outputContext.drawImage(result, 0, 0);
+          [[1, 1], [width - 2, height - 2]].forEach(([x, y]) => {
+            expect([...outputContext.getImageData(x, y, 1, 1).data]).to.deep.equal([0, 255, 0, 255]);
+          });
+        } finally {
+          result.close();
+        }
+      } finally {
+        clearTimeout(actualEngine.idleTimer);
+        clearTimeout(actualEngine.sizeReadoutTimer);
+        area.remove();
+      }
     });
   });
 
