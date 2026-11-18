@@ -33,6 +33,15 @@ describe('Music functionality in the existing prompt bar', () => {
     window.lana = { log: sandbox.spy() };
     document.body.innerHTML = '<div class="hero-marquee unity-enabled"><div class="interactive-area dark"><div class="copy"></div></div></div><div class="unity workflow-firefly"></div>';
     document.querySelector('.hero-marquee').style.setProperty('--s2a-font-family-body', 'Arial');
+    const host = document.querySelector('.hero-marquee');
+    host.style.setProperty('--s2a-font-family-caption', 'Verdana');
+    host.style.setProperty('--s2a-typography-font-size-caption', '12px');
+    host.style.setProperty('--s2a-font-weight-caption', '500');
+    host.style.setProperty('--s2a-typography-line-height-caption', '16px');
+    host.style.setProperty('--s2a-typography-letter-spacing-caption', '0.3px');
+    host.style.setProperty('--s2a-typography-font-size-body-sm', '18px');
+    host.style.setProperty('--s2a-typography-line-height-body-sm', '24px');
+    host.style.setProperty('--s2a-typography-letter-spacing-body-sm', '0.2px');
   });
 
   afterEach(() => {
@@ -132,6 +141,38 @@ describe('Music functionality in the existing prompt bar', () => {
     expect(style.fontWeight).to.equal('400');
     expect(style.lineHeight).to.equal(`${lineHeight}px`);
     expect(style.letterSpacing).to.be.oneOf(['normal', '0px']);
+  }
+
+  function expectRedesignLabel(style, width, showcase = false) {
+    let size = 12;
+    let lineHeight = 16;
+    if (width < 1280) {
+      size = 8.53;
+      lineHeight = 11.38;
+    }
+    if (width < 768) {
+      size = 14.06;
+      lineHeight = 18.75;
+    }
+    expect(style.color).to.equal(showcase ? 'rgb(219, 219, 219)' : 'rgba(248, 248, 248, 0.7)');
+    expect(style.fontFamily).to.equal('Verdana');
+    expect(style.fontSize).to.equal(`${size}px`);
+    expect(style.fontWeight).to.equal('500');
+    expect(style.lineHeight).to.equal(`${lineHeight}px`);
+    expect(style.letterSpacing).to.equal(width < 1280 ? 'normal' : '0.3px');
+    expect(style.marginBottom).to.equal('0px');
+  }
+
+  function expectRedesignInput(style, width, showcase = false) {
+    const size = width < 768 ? '16.41px' : '18px';
+    const lineHeight = width < 768 ? '21.09px' : '24px';
+    expect(style.color).to.equal('rgb(255, 255, 255)');
+    expect(style.fontFamily).to.equal('Arial, "Adobe Clean", adobe-clean, sans-serif');
+    expect(style.fontSize).to.equal(showcase ? '16px' : size);
+    expect(style.fontStyle).to.equal('normal');
+    expect(style.fontWeight).to.equal('400');
+    expect(style.lineHeight).to.equal(showcase ? '20px' : lineHeight);
+    expect(style.letterSpacing).to.equal(width < 768 ? 'normal' : '0.2px');
   }
 
   it('starts empty with a placeholder, configured native cap and a live character counter', async () => {
@@ -334,16 +375,39 @@ describe('Music functionality in the existing prompt bar', () => {
           try {
             await createWidget({ verbs: ['image', 'music'], suggestions: true, redesign });
             document.querySelector('.interactive-area').className = `interactive-area ${skin}`;
-            document.querySelector('.hero-marquee').classList.add('theme-two', 'firefly-model-showcase');
+            const host = document.querySelector('.hero-marquee');
             const label = widget.widget.querySelector('.inp-field-label');
             const suggestion = widget.widget.querySelector('.drop-item');
-            expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 16);
-            expectTypography(getComputedStyle(widget.musicInput, '::placeholder'), 'rgb(68, 68, 68)', 16, 20);
+            if (redesign) {
+              expectRedesignLabel(getComputedStyle(label), width);
+              expectRedesignInput(getComputedStyle(widget.musicInput), width);
+              const placeholder = getComputedStyle(widget.musicInput, '::placeholder');
+              expectRedesignInput(placeholder, width);
+              host.classList.add('theme-two');
+              expect(getComputedStyle(widget.musicInput, '::placeholder').fontSize)
+                .to.equal(width <= 1024 ? '16px' : '20px');
+            }
+            host.classList.add('theme-two', 'firefly-model-showcase');
+            if (redesign) {
+              expectRedesignLabel(getComputedStyle(label), width, true);
+              expectRedesignInput(getComputedStyle(widget.musicInput), width, true);
+              const placeholder = getComputedStyle(widget.musicInput, '::placeholder');
+              expect(placeholder.color).to.equal('rgb(219, 219, 219)');
+              expect(placeholder.fontSize).to.equal('16px');
+              expect(placeholder.fontStyle).to.equal('normal');
+              widget.musicInput.style.flex = 'none';
+              expect(getComputedStyle(widget.musicInput).height).to.equal(width <= 599 ? '46px' : '36px');
+              widget.musicInput.style.removeProperty('flex');
+            } else {
+              expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 16);
+              expectTypography(getComputedStyle(widget.musicInput, '::placeholder'), 'rgb(68, 68, 68)', 16, 20);
+            }
             expectTypography(getComputedStyle(suggestion), 'rgb(68, 68, 68)', 16, 20);
             suggestion.setAttribute('aria-selected', 'true');
             expectTypography(getComputedStyle(suggestion), 'rgb(0, 0, 0)', 16, 20);
             input('A user-written prompt');
-            expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+            if (redesign) expectRedesignInput(getComputedStyle(widget.musicInput), width, true);
+            else expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
           } finally {
             await setViewport({ width: 1024, height: 768 });
           }
@@ -353,28 +417,32 @@ describe('Music functionality in the existing prompt bar', () => {
 
     it(`styles pending music suggestions separately from active and edited text (redesign: ${redesign})`, async () => {
       await createWidget({ verbs: ['music', 'image'], redesign });
+      const expectInput = (color) => {
+        if (redesign) expectRedesignInput(getComputedStyle(widget.musicInput), window.innerWidth);
+        else expectTypography(getComputedStyle(widget.musicInput), color, 16, 20);
+      };
       widget.shuffleMusicPrompt();
       blurEl(widget.musicInput);
       expect(widget.musicSuggestionPending).to.be.true;
-      expectTypography(getComputedStyle(widget.musicInput), 'rgb(68, 68, 68)', 16, 20);
+      expectInput('rgb(68, 68, 68)');
       await executeServerCommand('focus-test-page');
       focusEl(widget.musicInput);
-      expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+      expectInput('rgb(0, 0, 0)');
       expect(widget.musicSuggestionPending).to.be.true;
       input('My edited suggestion');
       blurEl(widget.musicInput);
       expect(widget.musicSuggestionPending).to.be.false;
-      expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+      expectInput('rgb(0, 0, 0)');
       widget.shuffleMusicPrompt();
       widget.widget.querySelector('[data-verb-type="image"]').click();
       expect(widget.musicInput.classList.contains('is-suggested')).to.be.false;
-      expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+      expectInput('rgb(0, 0, 0)');
     });
 
     it(`resolves typography design-token overrides (redesign: ${redesign})`, async () => {
       await createWidget({ redesign });
       const host = document.querySelector('.hero-marquee');
-      host.style.cssText = `
+      host.style.cssText += `
         --Alias-content-neutral-subdued-default: rgb(90, 91, 92);
         --Palette-gray-400: rgb(70, 71, 72);
         --Palette-gray-1000: rgb(10, 11, 12);
@@ -388,6 +456,17 @@ describe('Music functionality in the existing prompt bar', () => {
       const label = getComputedStyle(widget.widget.querySelector('.inp-field-label'));
       const placeholder = getComputedStyle(widget.musicInput, '::placeholder');
       const active = getComputedStyle(widget.musicInput);
+      if (redesign) {
+        expectRedesignLabel(label, window.innerWidth);
+        [placeholder, active].forEach((style) => {
+          expect(style.color).to.equal('rgb(255, 255, 255)');
+          expect(style.fontSize).to.equal('18px');
+          expect(style.lineHeight).to.equal('24px');
+          expect(style.fontFamily).to.equal('monospace, "Adobe Clean", adobe-clean, sans-serif');
+          expect(style.letterSpacing).to.equal('0.2px');
+        });
+        return;
+      }
       expect(label.color).to.equal('rgb(90, 91, 92)');
       expect(label.fontSize).to.equal('15px');
       expect(label.lineHeight).to.equal('19px');
