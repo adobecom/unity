@@ -4,13 +4,14 @@
     "handler": "render",
     "renderWidget": true,
     "limits": {
-      "max-char-limit": 750
+      "max-char-limit": 750,
+      "music-max-char-limit": 500
     },
     "limits-prompt-bar-audio": {
       "max-char-limit": 5000
     },
     "extendedWidgets": ["prompt-bar-style", "prompt-bar-audio"],
-    "verbsWithoutPromptSuggestions": ["vector"],
+    "verbsWithoutPromptSuggestions": ["vector", "music"],
     "actionMap": {
       ".inp-field": { "actionType": "autocomplete" },
       ".gen-btn": { "actionType": "generate" },
