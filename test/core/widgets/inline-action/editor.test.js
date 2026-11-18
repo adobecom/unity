@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { sendKeys, sendMouse, setViewport } from '@web/test-runner-commands';
+import { executeServerCommand, sendKeys, sendMouse, setViewport } from '@web/test-runner-commands';
 import {
   zoomScale, containBox, centeredRect, frameFromDimensions, rawImageEdgesPct,
   imageBoundsPct, resizeRect, rectPctToSourceBounds,
@@ -94,6 +94,8 @@ describe('Editor styling and layout', () => {
   [375, 768, 1440].flatMap((viewportWidth) => ['reset', 'reupload'].map((action) => ({ viewportWidth, action }))).forEach(({ viewportWidth, action }) => {
     it(`only highlights the hovered ${action} action on hover-capable devices at viewport ${viewportWidth}`, async () => {
       await setViewport({ width: viewportWidth, height: 800 });
+      // Chrome can stall native mouse commands on background test pages.
+      await executeServerCommand('focus-test-page');
       widget = document.createElement('div');
       widget.className = 'ia-widget';
       widget.dataset.state = 'complete';

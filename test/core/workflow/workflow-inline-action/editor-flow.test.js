@@ -152,7 +152,9 @@ describe('Inline action editor workflow', () => {
         context.fillRect(Math.floor(source[0]) - 1, Math.floor(source[1]) - 1, Math.ceil(source[2]) + 2, Math.ceil(source[3]) + 2);
         actualEngine.setOutputType('image/png');
         await actualEngine.setImage(image.toDataURL(), 2048, true);
-        await actualEngine.sourceImg.decode();
+        // Keep real source pixels without background-throttled image decoding.
+        image.decode = sinon.stub().resolves();
+        actualEngine.sourceImg = image;
         actualEngine[`${axis}Input`].value = String(value);
         actualEngine.onDimensionCommit(axis);
         const { sourceImg } = actualEngine;
