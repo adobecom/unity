@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { readFile, setViewport } from '@web/test-runner-commands';
+import { executeServerCommand, readFile, setViewport } from '@web/test-runner-commands';
 import UnityWidget from '../../../../unitylibs/core/widgets/prompt-bar/prompt-bar.js';
 import ActionBinder from '../../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
 import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
@@ -32,6 +32,7 @@ describe('Music functionality in the existing prompt bar', () => {
     originalLana = window.lana;
     window.lana = { log: sandbox.spy() };
     document.body.innerHTML = '<div class="hero-marquee unity-enabled"><div class="interactive-area dark"><div class="copy"></div></div></div><div class="unity workflow-firefly"></div>';
+    document.querySelector('.hero-marquee').style.setProperty('--s2a-font-family-body', 'Arial');
   });
 
   afterEach(() => {
@@ -121,6 +122,16 @@ describe('Music functionality in the existing prompt bar', () => {
     focusEl(widget.musicInput);
     widget.musicInput.setSelectionRange(start, end);
     widget.musicInput.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function expectTypography(style, color, size, lineHeight) {
+    expect(style.color).to.equal(color);
+    expect(style.fontFamily).to.equal('Arial, "Adobe Clean", adobe-clean, sans-serif');
+    expect(style.fontSize).to.equal(`${size}px`);
+    expect(style.fontStyle).to.equal('normal');
+    expect(style.fontWeight).to.equal('400');
+    expect(style.lineHeight).to.equal(`${lineHeight}px`);
+    expect(style.letterSpacing).to.be.oneOf(['normal', '0px']);
   }
 
   it('starts empty with a placeholder, configured native cap and a live character counter', async () => {
@@ -290,6 +301,82 @@ describe('Music functionality in the existing prompt bar', () => {
   });
 
   [false, true].forEach((redesign) => {
+    [390, 900, 1440].forEach((width) => {
+      ['dark', 'light'].forEach((skin) => {
+        it(`uses the requested typography at ${width}px in ${skin} skin (redesign: ${redesign})`, async () => {
+          await setViewport({ width, height: 900 });
+          try {
+            await createWidget({ verbs: ['image', 'music'], suggestions: true, redesign });
+            document.querySelector('.interactive-area').className = `interactive-area ${skin}`;
+            document.querySelector('.hero-marquee').classList.add('theme-two', 'firefly-model-showcase');
+            const label = widget.widget.querySelector('.inp-field-label');
+            const suggestion = widget.widget.querySelector('.drop-item');
+            expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 18);
+            expectTypography(getComputedStyle(widget.musicInput, '::placeholder'), 'rgb(68, 68, 68)', 16, 20);
+            expectTypography(getComputedStyle(suggestion), 'rgb(68, 68, 68)', 16, 20);
+            suggestion.setAttribute('aria-selected', 'true');
+            expectTypography(getComputedStyle(suggestion), 'rgb(0, 0, 0)', 16, 20);
+            input('A user-written prompt');
+            expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+          } finally {
+            await setViewport({ width: 1024, height: 768 });
+          }
+        });
+      });
+    });
+
+    it(`styles pending music suggestions separately from active and edited text (redesign: ${redesign})`, async () => {
+      await createWidget({ verbs: ['music', 'image'], redesign });
+      widget.shuffleMusicPrompt();
+      blurEl(widget.musicInput);
+      expect(widget.musicSuggestionPending).to.be.true;
+      expectTypography(getComputedStyle(widget.musicInput), 'rgb(68, 68, 68)', 16, 20);
+      await executeServerCommand('focus-test-page');
+      focusEl(widget.musicInput);
+      expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+      expect(widget.musicSuggestionPending).to.be.true;
+      input('My edited suggestion');
+      blurEl(widget.musicInput);
+      expect(widget.musicSuggestionPending).to.be.false;
+      expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+      widget.shuffleMusicPrompt();
+      widget.widget.querySelector('[data-verb-type="image"]').click();
+      expect(widget.musicInput.classList.contains('is-suggested')).to.be.false;
+      expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+    });
+
+    it(`resolves typography design-token overrides (redesign: ${redesign})`, async () => {
+      await createWidget({ redesign });
+      const host = document.querySelector('.hero-marquee');
+      host.style.cssText = `
+        --Alias-content-neutral-subdued-default: rgb(90, 91, 92);
+        --Palette-gray-400: rgb(70, 71, 72);
+        --Palette-gray-1000: rgb(10, 11, 12);
+        --s2a-font-family-body: monospace;
+        --Font-size-100: 15px;
+        --Font-size-200: 17px;
+        --Line-height-100: 19px;
+        --Line-height-200: 21px;
+        --Letter-spacing: 0.4px;
+      `;
+      const label = getComputedStyle(widget.widget.querySelector('.inp-field-label'));
+      const placeholder = getComputedStyle(widget.musicInput, '::placeholder');
+      const active = getComputedStyle(widget.musicInput);
+      expect(label.color).to.equal('rgb(90, 91, 92)');
+      expect(label.fontSize).to.equal('15px');
+      expect(label.lineHeight).to.equal('19px');
+      expect(placeholder.color).to.equal('rgb(70, 71, 72)');
+      expect(active.color).to.equal('rgb(10, 11, 12)');
+      [placeholder, active].forEach((style) => {
+        expect(style.fontSize).to.equal('17px');
+        expect(style.lineHeight).to.equal('21px');
+      });
+      [label, placeholder, active].forEach((style) => {
+        expect(style.fontFamily).to.equal('monospace, "Adobe Clean", adobe-clean, sans-serif');
+        expect(style.letterSpacing).to.equal('0.4px');
+      });
+    });
+
     ['image', 'video', 'sound', 'music'].forEach((verb) => {
       it(`hides the ${verb} placeholder on focus and restores it when left empty (redesign: ${redesign})`, async () => {
         await createWidget({ verbs: [verb], redesign });

@@ -829,12 +829,12 @@ export default class UnityWidget {
     actWrap.prepend(this.musicCounter);
     input.addEventListener('input', () => {
       if (this.selectedVerbType !== 'music') return;
-      this.musicSuggestionPending = false;
+      this.setMusicSuggestionPending(false);
       this.updateMusicCount();
     });
     input.addEventListener('click', () => {
       if (this.selectedVerbType !== 'music' || !this.musicSuggestionPending) return;
-      this.musicSuggestionPending = false;
+      this.setMusicSuggestionPending(false);
       if (input.selectionStart === 0 && input.selectionEnd === 0) {
         input.value = '';
         input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -850,7 +850,7 @@ export default class UnityWidget {
     if (this.musicShuffle) this.musicShuffle.hidden = !active;
     if (this.musicAnnouncement) this.musicAnnouncement.hidden = !active;
     this.musicCounter.hidden = !active;
-    this.musicSuggestionPending = false;
+    this.setMusicSuggestionPending(false);
     if (active) {
       this.musicInputAria.forEach(([name]) => input.removeAttribute(name));
       input.maxLength = this.musicPromptLimit;
@@ -870,6 +870,11 @@ export default class UnityWidget {
       if (description) input.setAttribute('aria-describedby', description);
       else input.removeAttribute('aria-describedby');
     }
+  }
+
+  setMusicSuggestionPending(pending) {
+    this.musicSuggestionPending = pending;
+    this.musicInput.classList.toggle('is-suggested', pending);
   }
 
   updateMusicCount() {
@@ -897,7 +902,7 @@ export default class UnityWidget {
     this.lastMusicPrompt = this.musicPromptQueue.pop();
     this.musicInput.value = this.lastMusicPrompt;
     this.musicInput.dispatchEvent(new Event('input', { bubbles: true }));
-    this.musicSuggestionPending = true;
+    this.setMusicSuggestionPending(true);
     if (this.musicAnnouncement) this.musicAnnouncement.textContent = this.lastMusicPrompt;
   }
 
