@@ -654,7 +654,10 @@ describe('EditorEngine (crop)', () => {
 describe('EditorEngine (resize)', () => {
   let ctx;
   beforeEach(async () => { ctx = await makeEngine(resizeData); });
-  afterEach(() => cleanup(ctx.area));
+  afterEach(() => {
+    cleanup(ctx.area);
+    sinon.restore();
+  });
 
   it('initial target size equals the natural size', () => {
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
@@ -1198,12 +1201,17 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('size readout shows the original size, then the new size after interaction', async () => {
+    clearTimeout(ctx.engine.sizeReadoutTimer);
+    const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob');
     await ctx.engine.updateSizeReadout();
-    expect(ctx.engine.sizeReadout.textContent).to.contain('2 KB');
-    expect(ctx.engine.sizeReadout.textContent).to.contain('--');
+    expect(ctx.engine.sizeReadout.textContent).to.equal('Original size: 2 KB New size: --');
+    expect(encode.called).to.be.false;
     ctx.engine.hasInteracted = true;
-    await ctx.engine.updateSizeReadout();
-    expect(ctx.engine.sizeReadout.textContent).to.match(/New size: \d+ KB/);
+    const update = ctx.engine.updateSizeReadout();
+    expect(encode.calledOnce).to.be.true;
+    encode.yield(new Blob(['x'.repeat(4096)], { type: 'image/jpeg' }));
+    await update;
+    expect(ctx.engine.sizeReadout.textContent).to.equal('Original size: 2 KB New size: 4 KB');
   });
 
   it('scheduleSizeReadout debounces', () => {
@@ -1217,19 +1225,29 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('quality preview toggles on and off', async () => {
+    const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob');
+    const preview = new Blob(['preview'], { type: 'image/jpeg' });
     ctx.engine.header.append(
       Object.assign(document.createElement('button'), { className: 'ia-editor-quality' }),
     );
     ctx.engine.qualityBtn = ctx.engine.header.querySelector('.ia-editor-quality');
     ctx.engine.applyQualityPreview();
-    await new Promise((r) => { setTimeout(r, 200); });
+    expect(ctx.engine.qualityPreviewActive).to.be.false;
+    expect(encode.calledOnce).to.be.true;
+    encode.yield(preview);
     expect(ctx.engine.qualityPreviewActive).to.be.true;
     expect(ctx.engine.qualityBtn.textContent).to.equal('Original');
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.qualityPreviewUrl);
     ctx.engine.toggleQualityPreview();
     expect(ctx.engine.qualityPreviewActive).to.be.false;
     expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
     ctx.engine.toggleQualityPreview();
+    expect(encode.calledTwice).to.be.true;
+    encode.yield(preview);
+    expect(ctx.engine.qualityPreviewActive).to.be.true;
     ctx.engine.revertQualityPreview();
+    expect(ctx.engine.qualityPreviewActive).to.be.false;
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
   });
 
   it('reset restores the freeform tab, unit, unlocked state and size', () => {
@@ -1325,8 +1343,11 @@ describe('EditorEngine responsive layout and extras', () => {
 
   it('quality button toggles the preview and follows the output type', async () => {
     ctx = await makeEngine(resizeData, { quality: true });
+    const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob');
     ctx.engine.qualityBtn.click();
-    await new Promise((r) => { setTimeout(r, 200); });
+    expect(encode.calledOnce).to.be.true;
+    expect(ctx.engine.qualityPreviewActive).to.be.false;
+    encode.yield(new Blob(['preview'], { type: 'image/jpeg' }));
     expect(ctx.engine.qualityBtn.textContent).to.equal('Original');
     ctx.engine.qualityBtn.click();
     expect(ctx.engine.qualityBtn.textContent).to.equal('Quality');
