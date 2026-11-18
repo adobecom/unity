@@ -176,9 +176,7 @@
   line-height: 1.2;
   letter-spacing: 0.14px;
   color: rgb(255 255 255 / 92%);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-player {
@@ -881,5 +879,13 @@
   .hero-marquee:has(+ .unity-prompt-bar-audio) .foreground .copy h1 {
     font-size: 64px;
     letter-spacing: -1.92px;
+  }
+}
+
+@media screen and (max-width: 599px) {
+  .unity-prompt-bar-audio .unity-paf-voice-tile {
+    --unity-paf-voice-tile-width: calc(100% - 50px);
+
+    align-items: center;
   }
 }
