@@ -345,6 +345,13 @@ describe('Music functionality in the existing prompt bar', () => {
       expect(widget.widget.querySelector('.selected-verb')).to.exist;
       expect(widget.widget.querySelector('.selected-model')).to.exist;
       expect(!!widget.widget.querySelector('.pb-redesign')).to.equal(redesign);
+      const expectShuffleLast = () => {
+        widget.widget.querySelectorAll('.verbs-container, .models-container').forEach((dropdown) => {
+          // eslint-disable-next-line no-bitwise
+          expect(dropdown.compareDocumentPosition(widget.musicShuffle) & Node.DOCUMENT_POSITION_FOLLOWING).to.not.equal(0);
+        });
+      };
+      expectShuffleLast();
       widget.shuffleMusicPrompt();
       const text = widget.musicInput.value;
       widget.widget.querySelector('[data-verb-type="image"]').click();
@@ -360,9 +367,25 @@ describe('Music functionality in the existing prompt bar', () => {
       expect(widget.musicShuffle.hidden).to.be.false;
       expect(widget.musicInput.maxLength).to.equal(500);
       expect(binder.getSelectedModelId()).to.equal('music-one');
+      expectShuffleLast();
       expect(widget.genBtn.parentElement).to.equal(actWrap);
       expect(actWrap.parentElement).to.equal(parent);
       expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
+    });
+
+    it(`keeps Shuffle after a model dropdown added by a feature switch (redesign: ${redesign})`, async () => {
+      await createWidget({
+        verbs: ['music', 'image'],
+        redesign,
+        models: [{ module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' }],
+      });
+      expect(widget.widget.querySelector('.models-container')).to.equal(null);
+      widget.widget.querySelector('[data-verb-type="image"]').click();
+      const models = widget.widget.querySelector('.models-container');
+      expect(models).to.exist;
+      expect(models.parentElement).to.equal(widget.musicShuffle.parentElement);
+      // eslint-disable-next-line no-bitwise
+      expect(models.compareDocumentPosition(widget.musicShuffle) & Node.DOCUMENT_POSITION_FOLLOWING).to.not.equal(0);
     });
 
     it(`fits Shuffle, counters and Generate on mobile (redesign: ${redesign})`, async () => {

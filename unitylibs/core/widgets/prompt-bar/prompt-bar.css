@@ -2503,10 +2503,15 @@
   border: none;
   border-radius: 24px;
   background: transparent;
-  color: inherit;
+  color: #292929;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  font-size: 14px;
+}
+
+.unity-enabled .interactive-area.light .ex-unity-wrap .shuffle-btn {
+  color: #fff;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn:disabled {
@@ -2519,12 +2524,23 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn img {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .music-prompt-count {
-  font-size: 14px;
+  color: #505050;
+  text-align: center;
+  font-family: var(--s2a-font-family-caption), "Adobe Clean", adobe-clean, sans-serif;
+  font-size: var(--Font-size-100, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--Line-height-Font-size-100, 18px); /* 128.571% */
+  letter-spacing: var(--Letter-spacing, 0);
+}
+
+.unity-enabled .interactive-area.light .ex-unity-wrap .music-prompt-count {
+  color: #fff;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .music-prompt-announcement {

@@ -344,7 +344,8 @@ export default class UnityWidget {
           if (actionContainer) {
             const newModelContainer = createTag('div', { class: 'models-container', 'aria-label': 'Prompt options' });
             newModelContainer.append(...modelDropdown);
-            actionContainer.append(newModelContainer);
+            const shuffle = this.musicShuffle?.parentElement === actionContainer ? this.musicShuffle : null;
+            actionContainer.insertBefore(newModelContainer, shuffle);
           }
         } else this.clearSelectedModelState();
       }
@@ -810,7 +811,7 @@ export default class UnityWidget {
         window.lana?.log('Music Shuffle is authored without any valid music prompt suggestions.', this.lanaOptions);
       }
       this.musicShuffle.addEventListener('click', () => this.shuffleMusicPrompt());
-      actionContainer.prepend(this.musicShuffle);
+      actionContainer.append(this.musicShuffle);
       this.musicAnnouncement = createTag('span', {
         class: 'music-prompt-announcement',
         role: 'status',
