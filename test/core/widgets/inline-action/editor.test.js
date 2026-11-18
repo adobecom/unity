@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai';
 import sinon from 'sinon';
-import { sendKeys, sendMouse, setViewport } from '@web/test-runner-commands';
+import { executeServerCommand, sendKeys, sendMouse, setViewport } from '@web/test-runner-commands';
 import {
   zoomScale, containBox, centeredRect, frameFromDimensions, rawImageEdgesPct,
   imageBoundsPct, resizeRect, rectPctToSourceBounds,
@@ -94,6 +94,8 @@ describe('Editor styling and layout', () => {
   [375, 768, 1440].flatMap((viewportWidth) => ['reset', 'reupload'].map((action) => ({ viewportWidth, action }))).forEach(({ viewportWidth, action }) => {
     it(`only highlights the hovered ${action} action on hover-capable devices at viewport ${viewportWidth}`, async () => {
       await setViewport({ width: viewportWidth, height: 800 });
+      // Chrome can stall native mouse commands on background test pages.
+      await executeServerCommand('focus-test-page');
       widget = document.createElement('div');
       widget.className = 'ia-widget';
       widget.dataset.state = 'complete';
@@ -142,6 +144,17 @@ describe('Editor styling and layout', () => {
       });
       const unitStyle = getComputedStyle(widget.querySelector('.ia-dim-unit'));
       expect(unitStyle.height).to.equal(compact ? '32px' : '40px');
+      const chevron = widget.querySelector('.ia-unit-chevron');
+      expect(chevron.getAttribute('aria-hidden')).to.equal('true');
+      const chevronStyle = getComputedStyle(chevron);
+      expect(chevronStyle.width).to.equal('14px');
+      expect(chevronStyle.height).to.equal('8px');
+      expect(chevronStyle.borderWidth).to.equal('0px');
+      expect(chevronStyle.transform).to.equal('none');
+      const chevronPath = chevron.querySelector('svg path');
+      expect(getComputedStyle(chevronPath).strokeLinecap).to.equal('round');
+      expect(getComputedStyle(chevronPath).strokeLinejoin).to.equal('round');
+      expect(getComputedStyle(chevronPath).stroke).to.equal(unitStyle.color);
       const lockStyle = getComputedStyle(widget.querySelector('.ia-dim-lock'));
       expect(lockStyle.width).to.equal(compact ? '24px' : '34px');
       expect(lockStyle.height).to.equal(compact ? '24px' : '34px');
@@ -259,11 +272,35 @@ describe('editor geometry helpers', () => {
     expect(frameFromDimensions(100, 50, 200, 100, 100, 100)).to.deep.equal({ x: 25, y: 37.5, w: 50, h: 25 });
   });
 
-  it('frameFromDimensions clamps to the minimum size and to the anchor', () => {
+  it('frameFromDimensions keeps small frames proportional and clamps the anchor to the image', () => {
     const r = frameFromDimensions(1, 1, 200, 100, 100, 100, { x: 0, y: 0, w: 20, h: 20 });
-    expect(r.w).to.equal(10);
-    expect(r.x).to.equal(5);
-    expect(r.y).to.be.at.least(0);
+    expect(r.w).to.equal(0.5);
+    expect(r.h).to.equal(0.5);
+    expect(r.x).to.equal(9.75);
+    expect(r.y).to.equal(25);
+  });
+
+  [
+    { width: 6000, height: 100 },
+    { width: 200, height: 6000 },
+    { width: 6000, height: 6000 },
+    { width: 6000, height: 50 },
+    { width: 50, height: 6000 },
+    { width: 100, height: 50 },
+  ].forEach(({ width, height }) => {
+    [[200, 100], [100, 200]].forEach(([naturalW, naturalH]) => {
+      it(`fits ${width}x${height} proportionally inside a ${naturalW}x${naturalH} image`, () => {
+        const viewportW = 400;
+        const viewportH = 300;
+        const bounds = imageBoundsPct(naturalW, naturalH, viewportW, viewportH);
+        const rect = frameFromDimensions(width, height, naturalW, naturalH, viewportW, viewportH, { x: 90, y: 90, w: 10, h: 10 });
+        expect(rect.x).to.be.at.least(bounds.left - 1e-10);
+        expect(rect.y).to.be.at.least(bounds.top - 1e-10);
+        expect(rect.x + rect.w).to.be.at.most(bounds.right + 1e-10);
+        expect(rect.y + rect.h).to.be.at.most(bounds.bottom + 1e-10);
+        expect((rect.w * viewportW) / (rect.h * viewportH)).to.be.closeTo(width / height, 1e-10);
+      });
+    });
   });
 
   it('rawImageEdgesPct applies pan', () => {
@@ -619,7 +656,10 @@ describe('EditorEngine (crop)', () => {
 describe('EditorEngine (resize)', () => {
   let ctx;
   beforeEach(async () => { ctx = await makeEngine(resizeData); });
-  afterEach(() => cleanup(ctx.area));
+  afterEach(() => {
+    cleanup(ctx.area);
+    sinon.restore();
+  });
 
   it('initial target size equals the natural size', () => {
     expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 100 });
@@ -662,6 +702,59 @@ describe('EditorEngine (resize)', () => {
     ctx.engine.heightInput.value = '50';
     ctx.engine.onDimensionCommit('height');
     expect(ctx.engine.targetH).to.equal(50);
+  });
+
+  [
+    { axis: 'width', value: 6000, width: 6000, height: 100 },
+    { axis: 'height', value: 6000, width: 200, height: 6000 },
+  ].forEach(({ axis, value, width, height }) => {
+    it(`crops instead of stretching when unlocked ${axis} exceeds the source size`, () => {
+      ctx.engine[`${axis}Input`].value = String(value);
+      ctx.engine.onDimensionCommit(axis);
+      expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width, height });
+      const { rect } = ctx.engine;
+      const bounds = imageBoundsPct(200, 100, 400, 300);
+      expect(rect.x).to.be.at.least(bounds.left - 1e-10);
+      expect(rect.y).to.be.at.least(bounds.top - 1e-10);
+      expect(rect.x + rect.w).to.be.at.most(bounds.right + 1e-10);
+      expect(rect.y + rect.h).to.be.at.most(bounds.bottom + 1e-10);
+      expect((rect.w * 400) / (rect.h * 300)).to.be.closeTo(width / height, 1e-10);
+      const source = ctx.engine.getSourceBounds();
+      expect(source.right - source.left).to.be.greaterThan(0);
+      expect(source.bottom - source.top).to.be.greaterThan(0);
+      expect((source.right - source.left) / (source.bottom - source.top)).to.be.closeTo(width / height, 1e-8);
+      expect(source.right - source.left < 200 || source.bottom - source.top < 100).to.be.true;
+    });
+  });
+
+  it('preserves a subpixel source crop for the maximum unlocked output ratio', async () => {
+    await ctx.engine.setImage(dataUrl(50, 50), 1024, true);
+    ctx.engine.widthInput.value = '6000';
+    ctx.engine.onDimensionCommit('width');
+    const source = ctx.engine.getSourceBounds();
+    expect(source.left).to.be.closeTo(0, 1e-10);
+    expect(source.right).to.be.closeTo(50, 1e-10);
+    expect(source.bottom - source.top).to.be.closeTo(50 / 120, 1e-10);
+    expect((source.right - source.left) / (source.bottom - source.top)).to.be.closeTo(120, 1e-8);
+    expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 6000, height: 50 });
+  });
+
+  it('keeps typed dimensions inside a zoomed and panned image', () => {
+    ctx.engine.heightInput.value = '50';
+    ctx.engine.onDimensionCommit('height');
+    ctx.engine.zoom = 5;
+    ctx.engine.panY = 20;
+    ctx.engine.render();
+    ctx.engine.heightInput.value = '6000';
+    ctx.engine.onDimensionCommit('height');
+    const bounds = imageBoundsPct(200, 100, 400, 300, ctx.engine.zoom, ctx.engine.panX, ctx.engine.panY);
+    const { rect } = ctx.engine;
+    expect(rect.x).to.be.at.least(bounds.left - 1e-10);
+    expect(rect.y).to.be.at.least(bounds.top - 1e-10);
+    expect(rect.x + rect.w).to.be.at.most(bounds.right + 1e-10);
+    expect(rect.y + rect.h).to.be.at.most(bounds.bottom + 1e-10);
+    expect((rect.w * 400) / (rect.h * 300)).to.be.closeTo(1 / 30, 1e-10);
+    expect(ctx.engine.getResizeDimensions()).to.deep.equal({ width: 200, height: 6000 });
   });
 
   ['width', 'height'].forEach((axis) => {
@@ -1110,12 +1203,17 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('size readout shows the original size, then the new size after interaction', async () => {
+    clearTimeout(ctx.engine.sizeReadoutTimer);
+    const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob');
     await ctx.engine.updateSizeReadout();
-    expect(ctx.engine.sizeReadout.textContent).to.contain('2 KB');
-    expect(ctx.engine.sizeReadout.textContent).to.contain('--');
+    expect(ctx.engine.sizeReadout.textContent).to.equal('Original size: 2 KB New size: --');
+    expect(encode.called).to.be.false;
     ctx.engine.hasInteracted = true;
-    await ctx.engine.updateSizeReadout();
-    expect(ctx.engine.sizeReadout.textContent).to.match(/New size: \d+ KB/);
+    const update = ctx.engine.updateSizeReadout();
+    expect(encode.calledOnce).to.be.true;
+    encode.yield(new Blob(['x'.repeat(4096)], { type: 'image/jpeg' }));
+    await update;
+    expect(ctx.engine.sizeReadout.textContent).to.equal('Original size: 2 KB New size: 4 KB');
   });
 
   it('scheduleSizeReadout debounces', () => {
@@ -1129,19 +1227,29 @@ describe('EditorEngine (resize)', () => {
   });
 
   it('quality preview toggles on and off', async () => {
+    const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob');
+    const preview = new Blob(['preview'], { type: 'image/jpeg' });
     ctx.engine.header.append(
       Object.assign(document.createElement('button'), { className: 'ia-editor-quality' }),
     );
     ctx.engine.qualityBtn = ctx.engine.header.querySelector('.ia-editor-quality');
     ctx.engine.applyQualityPreview();
-    await new Promise((r) => { setTimeout(r, 200); });
+    expect(ctx.engine.qualityPreviewActive).to.be.false;
+    expect(encode.calledOnce).to.be.true;
+    encode.yield(preview);
     expect(ctx.engine.qualityPreviewActive).to.be.true;
     expect(ctx.engine.qualityBtn.textContent).to.equal('Original');
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.qualityPreviewUrl);
     ctx.engine.toggleQualityPreview();
     expect(ctx.engine.qualityPreviewActive).to.be.false;
     expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
     ctx.engine.toggleQualityPreview();
+    expect(encode.calledTwice).to.be.true;
+    encode.yield(preview);
+    expect(ctx.engine.qualityPreviewActive).to.be.true;
     ctx.engine.revertQualityPreview();
+    expect(ctx.engine.qualityPreviewActive).to.be.false;
+    expect(ctx.engine.sharpImg.src).to.equal(ctx.engine.originalUrl);
   });
 
   it('reset restores the freeform tab, unit, unlocked state and size', () => {
@@ -1237,8 +1345,11 @@ describe('EditorEngine responsive layout and extras', () => {
 
   it('quality button toggles the preview and follows the output type', async () => {
     ctx = await makeEngine(resizeData, { quality: true });
+    const encode = sinon.stub(HTMLCanvasElement.prototype, 'toBlob');
     ctx.engine.qualityBtn.click();
-    await new Promise((r) => { setTimeout(r, 200); });
+    expect(encode.calledOnce).to.be.true;
+    expect(ctx.engine.qualityPreviewActive).to.be.false;
+    encode.yield(new Blob(['preview'], { type: 'image/jpeg' }));
     expect(ctx.engine.qualityBtn.textContent).to.equal('Original');
     ctx.engine.qualityBtn.click();
     expect(ctx.engine.qualityBtn.textContent).to.equal('Quality');
