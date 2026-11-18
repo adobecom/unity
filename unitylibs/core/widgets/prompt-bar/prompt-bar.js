@@ -703,7 +703,13 @@ export default class UnityWidget {
       ...(this.isFireflyRedesign && { rows: '1' }),
     });
     const dropdown = this.widget.querySelector('.prompt-dropdown-container');
-    inpField.addEventListener('focus', () => this.hidePromptDropdown());
+    inpField.addEventListener('focus', () => {
+      inpField.placeholder = '';
+      this.hidePromptDropdown();
+    });
+    inpField.addEventListener('blur', () => {
+      inpField.placeholder = this.resolveVerbPlaceholder(this.workflowCfg.placeholder, this.selectedVerbType);
+    });
     inpField.addEventListener('click', () => this.resetAllSoundVariations?.(dropdown));
     inpField.addEventListener('input', () => this.resetAllSoundVariations?.(dropdown));
     const modelDropdown = this.modelDropdown();
@@ -867,13 +873,10 @@ export default class UnityWidget {
 
   updateMusicCount() {
     const characters = this.musicInput.value.length;
-    const text = this.musicInput.value.trim();
-    const words = text ? text.split(/\s+/u).length : 0;
     const ph = this.workflowCfg.placeholder;
-    const wordLabel = ph['placeholder-word-count-label'] || 'Words';
     const characterLabel = ph['placeholder-character-count-label'] || 'Characters';
-    this.musicCounter.textContent = `${wordLabel}: ${words} | ${characters}/${this.musicPromptLimit}`;
-    this.musicCounter.setAttribute('aria-label', `${wordLabel}: ${words}; ${characterLabel}: ${characters}/${this.musicPromptLimit}`);
+    this.musicCounter.textContent = `${characters}/${this.musicPromptLimit}`;
+    this.musicCounter.setAttribute('aria-label', `${characterLabel}: ${characters}/${this.musicPromptLimit}`);
     this.musicInput.setAttribute('aria-invalid', characters > this.musicPromptLimit ? 'true' : 'false');
   }
 
