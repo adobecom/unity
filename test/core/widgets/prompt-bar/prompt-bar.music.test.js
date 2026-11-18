@@ -301,6 +301,32 @@ describe('Music functionality in the existing prompt bar', () => {
   });
 
   [false, true].forEach((redesign) => {
+    [390, 599, 600, 767, 768, 1024, 1440].forEach((width) => {
+      it(`uses the responsive input radius at ${width}px (redesign: ${redesign})`, async () => {
+        await setViewport({ width, height: 900 });
+        try {
+          await createWidget({ redesign });
+          const host = document.querySelector('.hero-marquee');
+          const area = host.querySelector('.interactive-area');
+          const wrap = host.querySelector('.ex-unity-wrap');
+          const inputWrap = host.querySelector('.inp-wrap');
+          const radius = width <= 599 ? '24px' : '10px';
+          ['dark', 'light'].forEach((skin) => {
+            area.className = `interactive-area ${skin}`;
+            expect(getComputedStyle(inputWrap).borderRadius).to.equal(radius);
+            wrap.classList.add('verb-options');
+            expect(getComputedStyle(inputWrap).borderRadius).to.equal(radius);
+            host.classList.add('theme-two');
+            expect(getComputedStyle(inputWrap).borderRadius).to.equal(radius);
+            host.classList.remove('theme-two');
+            wrap.classList.remove('verb-options');
+          });
+        } finally {
+          await setViewport({ width: 1024, height: 768 });
+        }
+      });
+    });
+
     [390, 900, 1440].forEach((width) => {
       ['dark', 'light'].forEach((skin) => {
         it(`uses the requested typography at ${width}px in ${skin} skin (redesign: ${redesign})`, async () => {
@@ -311,7 +337,7 @@ describe('Music functionality in the existing prompt bar', () => {
             document.querySelector('.hero-marquee').classList.add('theme-two', 'firefly-model-showcase');
             const label = widget.widget.querySelector('.inp-field-label');
             const suggestion = widget.widget.querySelector('.drop-item');
-            expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 18);
+            expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 16);
             expectTypography(getComputedStyle(widget.musicInput, '::placeholder'), 'rgb(68, 68, 68)', 16, 20);
             expectTypography(getComputedStyle(suggestion), 'rgb(68, 68, 68)', 16, 20);
             suggestion.setAttribute('aria-selected', 'true');
