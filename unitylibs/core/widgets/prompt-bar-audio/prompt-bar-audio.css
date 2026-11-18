@@ -53,9 +53,6 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  /* Stylelint in this repo doesn't recognize the container query property yet. */
-  /* stylelint-disable-next-line property-no-unknown */
-  container-type: inline-size;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-heading {
@@ -180,8 +177,6 @@
   letter-spacing: 0.14px;
   color: rgb(255 255 255 / 92%);
   white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
 }
 
 .unity-prompt-bar-audio .unity-paf-voice-player {
@@ -887,15 +882,10 @@
   }
 }
 
-@container (max-width: 480px) {
+@media screen and (max-width: 599px) {
   .unity-prompt-bar-audio .unity-paf-voice-tile {
     --unity-paf-voice-tile-width: calc(100% - 50px);
-    align-items: center;
-  }
 
-  .unity-prompt-bar-audio .unity-paf-voice-desc {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
+    align-items: center;
   }
 }

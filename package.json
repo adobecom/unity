@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "description": "Adobecom Unity interactivity components",
   "scripts": {
-    "test": "wtr --config ./web-test-runner.config.mjs \"./test/**/*.test.(js|html)\" --node-resolve --port=2000 --coverage --concurrency=1",
+    "test": "wtr --config ./web-test-runner.config.mjs \"./test/**/*.test.(js|html)\" --node-resolve --port=2000 --coverage",
     "test:watch": "npm test -- --watch",
     "test:coverage": "npm test && node scripts/check-coverage.js",
     "nala": "node nala/utils/nala.run.cjs",

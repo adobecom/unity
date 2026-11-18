@@ -931,10 +931,7 @@ function wireVoiceRowPeekTracking(widgetInstance, row) {
     return;
   }
   const refresh = () => {
-    const section = row.closest('.unity-paf-voice-section');
-    const shouldPeek = section?.clientWidth <= 600
-      ? row.scrollWidth > row.clientWidth + 1
-      : row.children.length > 4;
+    const shouldPeek = row.scrollWidth > row.clientWidth + 1;
     syncVoiceRowPeekClasses(row, shouldPeek);
   };
   const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(refresh);

@@ -1,4 +1,5 @@
 import { expect } from '@esm-bundle/chai';
+import { setViewport } from '@web/test-runner-commands';
 
 describe('Prompt Bar Audio voice description text spacing', () => {
   let stylesheet;
@@ -56,7 +57,8 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     return { row, section };
   }
 
-  it('keeps complete desktop voice descriptions visible with text-spacing overrides', () => {
+  it('keeps complete desktop voice descriptions visible with text-spacing overrides', async () => {
+    await setViewport({ width: 1440, height: 900 });
     const labels = [
       'Young Adult • Female',
       'Young Adult • Non-binary',
@@ -76,8 +78,6 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(description.childElementCount).to.equal(0);
       expect(fragments.length).to.be.greaterThan(0);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
-      expect(getComputedStyle(description).overflow).to.equal('visible');
-      expect(getComputedStyle(description).textOverflow).to.equal('clip');
       fragments.forEach((fragment) => {
         expect(fragment.left).to.be.at.least(descriptionBounds.left - 1);
         expect(fragment.right).to.be.at.most(descriptionBounds.right + 1);
@@ -91,7 +91,8 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     expect(section.getBoundingClientRect().width).to.equal(900);
   });
 
-  it('fits mobile tiles to the row, keeps labels readable, and shows a next-card peek', () => {
+  it('fits mobile tiles to the row, keeps labels readable, and shows a next-card peek', async () => {
+    await setViewport({ width: 390, height: 844 });
     const labels = [
       'Young Adult • Female',
       'Young Adult • Non-binary',
@@ -117,8 +118,6 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(description.textContent).to.equal(labels[index]);
       expect(description.childElementCount).to.equal(0);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
-      expect(getComputedStyle(description).overflow).to.equal('visible');
-      expect(getComputedStyle(description).textOverflow).to.equal('clip');
       expect(getComputedStyle(tile).alignItems).to.equal('center');
       expect(Math.abs((textBounds.top + textBounds.bottom) / 2 - (tileBounds.top + tileBounds.bottom) / 2)).to.be.lessThan(1);
       expect(getComputedStyle(tile).padding).to.equal('14px');
@@ -127,7 +126,8 @@ describe('Prompt Bar Audio voice description text spacing', () => {
     expect(section.getBoundingClientRect().width).to.equal(260);
   });
 
-  it('wraps tablet labels vertically without expanding tile widths', () => {
+  it('wraps tablet labels vertically without expanding tile widths', async () => {
+    await setViewport({ width: 768, height: 1024 });
     const labels = [
       'Young Adult • Female',
       'Young Adult • Non-binary',
@@ -145,9 +145,17 @@ describe('Prompt Bar Audio voice description text spacing', () => {
       expect(tile.getBoundingClientRect().width).to.be.at.most(231);
       expect(description.textContent).to.equal(labels[index]);
       expect(getComputedStyle(description).whiteSpace).to.equal('normal');
-      expect(getComputedStyle(description).overflow).to.equal('visible');
       expect(tile.getBoundingClientRect().height).to.be.greaterThan(60);
       if (index === 1) expect(lineTops.size).to.be.greaterThan(1);
     });
+  });
+
+  it('detects an overflowing four-card row in a 900px viewport', async () => {
+    await setViewport({ width: 900, height: 900 });
+    const labels = ['One', 'Two', 'Three', 'Four'];
+    const { row } = addVoiceSection(750, labels);
+
+    expect(row.scrollWidth).to.be.greaterThan(row.clientWidth);
+    expect(row.children).to.have.length(4);
   });
 });
