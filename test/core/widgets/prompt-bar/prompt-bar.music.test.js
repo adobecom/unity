@@ -1,0 +1,423 @@
+import { expect } from '@esm-bundle/chai';
+import sinon from 'sinon';
+import { readFile, setViewport } from '@web/test-runner-commands';
+import UnityWidget from '../../../../unitylibs/core/widgets/prompt-bar/prompt-bar.js';
+import ActionBinder from '../../../../unitylibs/core/workflow/workflow-firefly/action-binder.js';
+import { setUnityLibs } from '../../../../unitylibs/scripts/utils.js';
+
+describe('Music functionality in the existing prompt bar', () => {
+  let sandbox;
+  let widget;
+  let binder;
+  let originalLana;
+  let limits;
+
+  before(async () => {
+    const { _defaults: defaults } = JSON.parse(await readFile({ path: '../../../../unitylibs/core/workflow/workflow-firefly/target-config.json' }));
+    limits = defaults.limits;
+    setUnityLibs('', 'unity');
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = '/unitylibs/core/widgets/prompt-bar/prompt-bar.css';
+    await new Promise((resolve, reject) => {
+      stylesheet.onload = resolve;
+      stylesheet.onerror = reject;
+      document.head.append(stylesheet);
+    });
+  });
+
+  beforeEach(() => {
+    sandbox = sinon.createSandbox();
+    sandbox.stub(ActionBinder.prototype, 'initAction').resolves();
+    originalLana = window.lana;
+    window.lana = { log: sandbox.spy() };
+    document.body.innerHTML = '<div class="hero-marquee unity-enabled"><div class="interactive-area dark"><div class="copy"></div></div></div><div class="unity workflow-firefly"></div>';
+  });
+
+  afterEach(() => {
+    binder?.rmvKeyDown();
+    if (binder) document.removeEventListener('click', binder.boundOutsideClickHandler, true);
+    if (widget?.outsideDropdownHandler) document.removeEventListener('click', widget.outsideDropdownHandler, true);
+    sandbox.restore();
+    window.lana = originalLana;
+    widget = null;
+    binder = null;
+    document.body.innerHTML = '';
+  });
+
+  async function createWidget({
+    verbs = ['music'],
+    prompts = ['Gentle acoustic guitar', 'Ambient piano', 'Uplifting orchestral music'],
+    shuffle = true,
+    suggestions = false,
+    redesign = false,
+    max = limits['music-max-char-limit'],
+    models = [],
+  } = {}) {
+    const author = document.querySelector('.unity');
+    author.innerHTML = `<ul>
+      ${verbs.map((verb) => `<li><span class="icon icon-verb-${verb}"></span><a href="/test/assets/img.svg">${verb}</a></li>`).join('')}
+      <li><span class="icon icon-placeholder-input"></span>Describe your music</li>
+      <li><span class="icon icon-placeholder-prompt-label"></span>Enter prompt</li>
+      <li><span class="icon icon-generate"></span><img src="/test/assets/img.svg" alt="">Generate</li>
+      ${shuffle ? '<li><span class="icon icon-shuffle"></span><img src="/test/assets/img.svg" alt="">Shuffle</li>' : ''}
+      ${models.length ? '<li><span class="icon icon-model"></span></li>' : ''}
+      ${suggestions ? '<li><span class="icon icon-placeholder-prompt"></span>Prompt</li><li><span class="icon icon-placeholder-suggestions"></span>Suggestions</li>' : ''}
+    </ul>`;
+    prompts.forEach((prompt) => {
+      const row = document.createElement('li');
+      row.innerHTML = '<span class="icon icon-music-prompt"></span>';
+      row.append(document.createTextNode(prompt));
+      author.querySelector('ul').append(row);
+    });
+    const actionMap = {
+      '.inp-field': { actionType: 'autocomplete' },
+      '.gen-btn': { actionType: 'generate' },
+      '.drop-item': { actionType: 'setPromptValue' },
+    };
+    const cfg = {
+      productName: 'Firefly',
+      targetCfg: {
+        selector: '.copy',
+        target: 'a',
+        actionMap,
+        limits: { ...limits, 'music-max-char-limit': max },
+        verbsWithoutPromptSuggestions: ['vector', 'music'],
+      },
+    };
+    const host = document.querySelector('.hero-marquee');
+    widget = new UnityWidget(host.querySelector('.interactive-area'), author, cfg, '<svg></svg>');
+    widget.isFireflyRedesign = redesign;
+    widget.models = models;
+    sandbox.stub(widget, 'loadPrompts').callsFake(async () => {
+      widget.prompts = {
+        image: [{ prompt: 'An image suggestion', assetid: 'image-asset' }],
+        sound: [{ prompt: 'A sound suggestion', assetid: 'sound-asset', variations: [] }],
+        video: [{ prompt: 'A video suggestion', assetid: 'video-asset' }],
+      };
+    });
+    await widget.initWidget();
+    binder = new ActionBinder(author, cfg, host, host, actionMap);
+    await binder.initActionListeners();
+  }
+
+  function input(value) {
+    widget.musicInput.value = value;
+    widget.musicInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // Focus events are unreliable in background test tabs, so dispatch them explicitly.
+  function focusEl(el) {
+    el.focus();
+    el.dispatchEvent(new FocusEvent('focus'));
+  }
+
+  function blurEl(el) {
+    el.blur();
+    el.dispatchEvent(new FocusEvent('blur'));
+  }
+
+  function clickAt(start, end = start) {
+    focusEl(widget.musicInput);
+    widget.musicInput.setSelectionRange(start, end);
+    widget.musicInput.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  it('starts empty with a placeholder, configured native cap and a live character counter', async () => {
+    await createWidget();
+    expect(widget.musicInput.value).to.equal('');
+    expect(widget.musicInput.placeholder).to.equal('Describe your music');
+    expect(widget.musicInput.maxLength).to.equal(500);
+    expect(widget.musicCounter.textContent).to.equal('0/500');
+    expect(widget.musicInput.getAttribute('aria-describedby')).to.include(widget.musicCounter.id);
+    expect(widget.musicInput.hasAttribute('aria-controls')).to.be.false;
+    expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
+    expect(widget.widget.querySelector('.verb-segments')).to.equal(null);
+    expect(widget.widgetWrap.classList.contains('prompt-bar-v2')).to.be.false;
+  });
+
+  it('counts raw characters including whitespace on input and reset', async () => {
+    await createWidget();
+    input('  bright\tpiano\nmusic  ');
+    expect(widget.musicCounter.textContent).to.equal('22/500');
+    input(' \n\t ');
+    expect(widget.musicCounter.textContent).to.equal('4/500');
+    binder.query = '';
+    binder.resetDropdown();
+    expect(widget.musicCounter.textContent).to.equal('0/500');
+  });
+
+  it('supports localized counter labels', async () => {
+    await createWidget();
+    widget.workflowCfg.placeholder['placeholder-character-count-label'] = 'Caracteres';
+    input('piano doux');
+    expect(widget.musicCounter.textContent).to.equal('10/500');
+    expect(widget.musicCounter.getAttribute('aria-label')).to.equal('Caracteres: 10/500');
+  });
+
+  it('keeps the character counter without authoring Shuffle', async () => {
+    await createWidget({ shuffle: false });
+    expect(widget.widget.querySelector('.shuffle-btn')).to.equal(null);
+    expect(widget.musicCounter.hidden).to.be.false;
+    expect(widget.genBtn.parentElement.contains(widget.musicCounter)).to.be.true;
+  });
+
+  it('deduplicates and cycles through all authored suggestions without adjacent repeats', async () => {
+    const prompts = Array.from({ length: 30 }, (_, index) => `Suggestion ${index}`);
+    await createWidget({ prompts: [...prompts, prompts[0]] });
+    const seen = new Set();
+    prompts.forEach(() => {
+      widget.shuffleMusicPrompt();
+      expect(seen.has(widget.musicInput.value)).to.be.false;
+      seen.add(widget.musicInput.value);
+    });
+    expect(seen.size).to.equal(30);
+    const last = widget.musicInput.value;
+    widget.shuffleMusicPrompt();
+    expect(widget.musicInput.value).not.to.equal(last);
+    expect(widget.musicCounter.textContent).to.equal(`${widget.musicInput.value.length}/500`);
+    expect(widget.musicAnnouncement.textContent).to.equal(widget.musicInput.value);
+  });
+
+  it('handles a single authored suggestion', async () => {
+    await createWidget({ prompts: ['One prompt'] });
+    widget.shuffleMusicPrompt();
+    widget.shuffleMusicPrompt();
+    expect(widget.musicInput.value).to.equal('One prompt');
+  });
+
+  it('uses the configured cap for suggestions, native input, counters and validation', async () => {
+    await createWidget({ max: 12, prompts: ['', 'x'.repeat(12), 'y'.repeat(13)] });
+    expect(widget.musicPrompts).to.deep.equal(['x'.repeat(12)]);
+    expect(window.lana.log.calledWithMatch('at most 12 characters')).to.be.true;
+    widget.shuffleMusicPrompt();
+    expect(widget.musicInput.maxLength).to.equal(12);
+    expect(widget.musicCounter.textContent).to.equal('12/12');
+    widget.musicInput.focus();
+    widget.musicInput.setSelectionRange(12, 12);
+    document.execCommand('insertText', false, 'more');
+    expect(widget.musicInput.value.length).to.equal(12);
+    input('x'.repeat(13));
+    sandbox.stub(binder, 'showErrorToast');
+    expect(binder.validateInput(widget.musicInput.value).isValid).to.be.false;
+  });
+
+  it('disables and logs Shuffle without valid suggestions', async () => {
+    await createWidget({ prompts: ['', 'x'.repeat(501)] });
+    expect(widget.musicShuffle.disabled).to.be.true;
+    expect(window.lana.log.calledWithMatch('without any valid')).to.be.true;
+  });
+
+  [0, -1, 1.5, 'invalid'].forEach((max) => {
+    it(`rejects invalid music configuration (${max})`, async () => {
+      await createWidget({ max }).then(
+        () => expect.fail('Expected invalid config to fail'),
+        (error) => expect(error.message).to.include('positive integer'),
+      );
+    });
+  });
+
+  it('clears only a pending suggestion when clicked at its beginning', async () => {
+    await createWidget();
+    widget.shuffleMusicPrompt();
+    clickAt(0);
+    expect(widget.musicInput.value).to.equal('');
+    expect(widget.musicCounter.textContent).to.equal('0/500');
+    widget.shuffleMusicPrompt();
+    const prompt = widget.musicInput.value;
+    clickAt(4);
+    expect(widget.musicInput.selectionStart).to.equal(4);
+    clickAt(0);
+    expect(widget.musicInput.value).to.equal(prompt);
+  });
+
+  it('preserves suggestions on focus and selection; typing accepts editing', async () => {
+    await createWidget();
+    widget.shuffleMusicPrompt();
+    widget.musicInput.focus();
+    expect(widget.musicSuggestionPending).to.be.true;
+    clickAt(0, 3);
+    expect(widget.musicInput.value).not.to.equal('');
+    widget.shuffleMusicPrompt();
+    input('My edited prompt');
+    clickAt(0);
+    expect(widget.musicInput.value).to.equal('My edited prompt');
+  });
+
+  it('submits untouched shuffled text to text-to-music, not a stale asset or sound override', async () => {
+    await createWidget();
+    sandbox.stub(binder, 'initAnalytics').resolves();
+    sandbox.stub(binder, 'emitGenerateStartAnalytics').returns({});
+    sandbox.stub(binder, 'logAnalytics');
+    sandbox.stub(binder, 'showErrorToast');
+    sandbox.stub(binder, 'resetDropdown');
+    const fetch = sandbox.stub().resolves({});
+    sandbox.stub(binder, 'getNetworkUtils').resolves({ fetchFromService: fetch });
+    widget.shuffleMusicPrompt();
+    const prompt = widget.musicInput.value;
+    binder.id = 'old-asset';
+    widget.genBtn.dataset.soundPrompt = 'old sound';
+    await binder.generateContent();
+    const payload = JSON.parse(fetch.firstCall.args[1].body);
+    expect(payload.query).to.equal(prompt);
+    expect(payload.assetId).to.equal(undefined);
+    expect(payload.payload.workflow).to.equal('text-to-music');
+    expect(payload.payload.action).to.equal('generate');
+  });
+
+  it('rejects empty music and validates the displayed raw character count', async () => {
+    await createWidget();
+    sandbox.stub(binder, 'showErrorToast');
+    expect(binder.validateInput(' ').errorCode).to.equal('empty-prompt');
+    input(` ${'x'.repeat(499)} `);
+    expect(binder.validateInput(widget.musicInput.value.trim()).isValid).to.be.false;
+    expect(widget.musicCounter.textContent).to.equal('501/500');
+  });
+
+  it('submits Enter once, ignores composition Enter and supports keyboard Shuffle', async () => {
+    await createWidget();
+    const generate = sandbox.stub(binder, 'generateContent');
+    input('A prompt');
+    widget.musicInput.focus();
+    widget.musicInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(generate.calledOnce).to.be.true;
+    widget.musicInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true }));
+    expect(generate.calledOnce).to.be.true;
+    widget.musicShuffle.focus();
+    widget.musicShuffle.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    expect(widget.musicSuggestionPending).to.be.true;
+    expect(generate.calledOnce).to.be.true;
+  });
+
+  [false, true].forEach((redesign) => {
+    ['image', 'video', 'sound', 'music'].forEach((verb) => {
+      it(`hides the ${verb} placeholder on focus and restores it when left empty (redesign: ${redesign})`, async () => {
+        await createWidget({ verbs: [verb], redesign });
+        const textarea = widget.widget.querySelector('.inp-field');
+        const { placeholder } = textarea;
+        expect(placeholder).not.to.equal('');
+        focusEl(textarea);
+        expect(textarea.placeholder).to.equal('');
+        textarea.value = 'An edited prompt';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.value = '';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(textarea.placeholder).to.equal('');
+        blurEl(textarea);
+        expect(textarea.placeholder).to.equal(placeholder);
+      });
+    });
+
+    it(`keeps the placeholder hidden after clearing a pending music suggestion (redesign: ${redesign})`, async () => {
+      await createWidget({ redesign });
+      widget.shuffleMusicPrompt();
+      clickAt(0);
+      expect(widget.musicInput.value).to.equal('');
+      expect(widget.musicInput.placeholder).to.equal('');
+      expect(widget.musicCounter.textContent).to.equal('0/500');
+      blurEl(widget.musicInput);
+      expect(widget.musicInput.placeholder).to.equal('Describe your music');
+    });
+
+    it(`retains the selected verb placeholder through focus and feature switches (redesign: ${redesign})`, async () => {
+      await createWidget({ verbs: ['music', 'image'], redesign });
+      widget.workflowCfg.placeholder['placeholder-input-image'] = 'Describe an image';
+      focusEl(widget.musicInput);
+      widget.widget.querySelector('[data-verb-type="image"]').click();
+      expect(widget.musicInput.placeholder).to.equal('Describe an image');
+      focusEl(widget.musicInput);
+      expect(widget.musicInput.placeholder).to.equal('');
+      blurEl(widget.musicInput);
+      expect(widget.musicInput.placeholder).to.equal('Describe an image');
+    });
+
+    it(`retains dropdowns and containers through feature switches (redesign: ${redesign})`, async () => {
+      await createWidget({
+        verbs: ['music', 'image'],
+        redesign,
+        models: [
+          { module: 'music', id: 'music-one', version: '1', name: 'Music One', icon: '/test/assets/img.svg' },
+          { module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' },
+        ],
+      });
+      const actWrap = widget.genBtn.parentElement;
+      const parent = actWrap.parentElement;
+      expect(widget.widget.querySelector('.selected-verb')).to.exist;
+      expect(widget.widget.querySelector('.selected-model')).to.exist;
+      expect(!!widget.widget.querySelector('.pb-redesign')).to.equal(redesign);
+      widget.shuffleMusicPrompt();
+      const text = widget.musicInput.value;
+      widget.widget.querySelector('[data-verb-type="image"]').click();
+      expect(widget.musicShuffle.hidden).to.be.true;
+      expect(getComputedStyle(widget.musicShuffle).display).to.equal('none');
+      expect(widget.musicCounter.hidden).to.be.true;
+      expect(widget.musicInput.hasAttribute('maxlength')).to.be.false;
+      expect(widget.musicInput.getAttribute('aria-controls')).to.equal('prompt-dropdown');
+      expect(binder.getMaxPromptCharLimit()).to.equal(750);
+      expect(binder.getSelectedModelId()).to.equal('image-one');
+      expect(widget.musicInput.value).to.equal(text);
+      widget.widget.querySelector('[data-verb-type="music"]').click();
+      expect(widget.musicShuffle.hidden).to.be.false;
+      expect(widget.musicInput.maxLength).to.equal(500);
+      expect(binder.getSelectedModelId()).to.equal('music-one');
+      expect(widget.genBtn.parentElement).to.equal(actWrap);
+      expect(actWrap.parentElement).to.equal(parent);
+      expect(widget.widget.querySelector('.music-toolbar')).to.equal(null);
+    });
+
+    it(`fits Shuffle, counters and Generate on mobile (redesign: ${redesign})`, async () => {
+      await setViewport({ width: 390, height: 844 });
+      try {
+        await createWidget({ redesign });
+        const panel = widget.widget.querySelector('.autocomplete').getBoundingClientRect();
+        const controls = [widget.musicShuffle, widget.musicCounter, widget.genBtn]
+          .map((el) => el.getBoundingClientRect());
+        controls.forEach((rect) => {
+          expect(rect.width).to.be.greaterThan(0);
+          expect(rect.left).to.be.at.least(panel.left);
+          expect(rect.right).to.be.at.most(panel.right);
+        });
+        expect(controls[0].right).to.be.at.most(controls[1].left);
+        expect(controls[1].right).to.be.at.most(controls[2].left);
+      } finally {
+        await setViewport({ width: 1024, height: 768 });
+      }
+    });
+  });
+
+  it('keeps existing long text when switching into music and blocks submission', async () => {
+    await createWidget({ verbs: ['image', 'music'] });
+    input('x'.repeat(600));
+    widget.widget.querySelector('[data-verb-type="music"]').click();
+    expect(widget.musicInput.value.length).to.equal(600);
+    sandbox.stub(binder, 'showErrorToast');
+    expect(binder.validateInput(widget.musicInput.value).isValid).to.be.false;
+  });
+
+  ['image', 'video', 'sound'].forEach((verb) => {
+    it(`retains ${verb} catalog suggestions when switching from music`, async () => {
+      await createWidget({ verbs: ['music', verb], suggestions: true });
+      expect(widget.loadPrompts.called).to.be.false;
+      widget.widget.querySelector(`[data-verb-type="${verb}"]`).click();
+      await widget.updateDropdownForVerb(verb);
+      expect(widget.widget.querySelector('.drop-item').id).to.equal(`${verb}-asset`);
+      expect(binder.getMaxPromptCharLimit()).to.equal(750);
+      expect(widget.musicCounter.hidden).to.be.true;
+      if (verb === 'sound') expect(widget.soundAugmented).to.be.true;
+    });
+  });
+
+  it('discards an in-flight catalog result after switching to music', async () => {
+    await createWidget({ verbs: ['image', 'music'], suggestions: true });
+    let resolve;
+    sandbox.stub(widget, 'getPrompt').returns(new Promise((done) => { resolve = done; }));
+    const pending = widget.updateDropdownForVerb('image');
+    await Promise.resolve();
+    widget.widget.querySelector('[data-verb-type="music"]').click();
+    resolve([{ prompt: 'Stale suggestion', assetid: 'stale' }]);
+    await pending;
+    expect(widget.widget.querySelector('#stale')).to.equal(null);
+    binder.showDropdown();
+    expect(widget.widget.querySelector('.drop').classList.contains('hidden')).to.be.true;
+  });
+});
