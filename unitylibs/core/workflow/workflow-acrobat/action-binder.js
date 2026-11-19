@@ -109,6 +109,7 @@ export default class ActionBinder {
     pre_upload_error_missing_verb_config: -56,
     pre_upload_error_transition_screen: -57,
     pre_upload_error_direct_upload: -58,
+    pre_upload_error_resume_fork: -59,
     validation_error_validate_files: -100,
     validation_error_unsupported_type: -101,
     validation_error_empty_file: -102,
@@ -207,6 +208,9 @@ export default class ActionBinder {
     this.filesData = {};
     this.errorData = {};
     this.redirectWithoutUpload = false;
+    this.resumeForkChoice = null;
+    this.cancelResumeFork = null;
+    this.resumeForkUploadActive = false;
     this.LOADER_LIMIT = 95;
     this.MULTI_FILE = false;
     this.initActionListeners = this.initActionListeners.bind(this);
@@ -214,7 +218,7 @@ export default class ActionBinder {
     this.uploadTimestamp = null;
     this.showInfoToast = false;
     this.multiFileValidationFailure = false;
-    this.initialize();
+    this.initializationPromise = this.initialize();
     this.experimentData = null;
     this.experimentViaPageConfig = false;
     this.pageConfigLocation = null;
@@ -587,6 +591,10 @@ export default class ActionBinder {
     if (this.experimentData && (this.experimentViaPageConfig || this.workflowCfg.targetCfg?.experimentationOn?.includes(this.workflowCfg.enabledFeatures[0]))) {
       cOpts.payload.variationId = this.experimentData.variationId;
     }
+    if (this.workflowCfg.enabledFeatures[0] === 'resume-builder' && this.signedOut === true) {
+      if (this.resumeForkChoice === 'sharpen') cOpts.payload.variationId = 'sharpen';
+      else if (this.resumeForkChoice === 'refresh') delete cOpts.payload.variationId;
+    }
     await this.getRedirectUrl(cOpts);
     if (!this.redirectUrl) return false;
     const [baseUrl, queryString] = this.redirectUrl.split('?');
@@ -746,7 +754,88 @@ export default class ActionBinder {
     return files;
   }
 
+  isResumeForkEnabled() {
+    return this.workflowCfg.enabledFeatures[0] === 'resume-builder'
+      && this.signedOut === true
+      && this.block.getAttribute('data-show-resume-fork') === 'true';
+  }
+
+  async requestResumeFork() {
+    try {
+      return await new Promise((resolve, reject) => {
+        const signal = this.getAbortSignal();
+        let settled = false;
+        let loadTimeoutId;
+        let onResponse;
+        let onModalLoaded;
+        let onAbort;
+
+        const cleanup = () => {
+          clearTimeout(loadTimeoutId);
+          this.block.removeEventListener('unity:resume-fork-response', onResponse);
+          window.removeEventListener('milo:modal:loaded', onModalLoaded);
+          signal.removeEventListener('abort', onAbort);
+          this.cancelResumeFork = null;
+        };
+
+        const finish = (choice, error) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          if (error) reject(error);
+          else resolve(choice);
+        };
+
+        onResponse = ({ detail }) => {
+          const { action, choice } = detail ?? {};
+          if (action === 'cancel-fork') {
+            finish(null);
+            return;
+          }
+          if (action === 'continue-fork' && ['sharpen', 'refresh'].includes(choice)) {
+            finish(choice);
+            return;
+          }
+          finish(null, new Error('Invalid resume fork response'));
+        };
+
+        onModalLoaded = ({ detail }) => {
+          if (detail?.id !== 'resume-upload-fork') return;
+          clearTimeout(loadTimeoutId);
+        };
+
+        onAbort = () => finish(null);
+        this.cancelResumeFork = onAbort;
+        this.block.addEventListener('unity:resume-fork-response', onResponse);
+        window.addEventListener('milo:modal:loaded', onModalLoaded);
+        signal.addEventListener('abort', onAbort, { once: true });
+        loadTimeoutId = setTimeout(() => {
+          finish(null, new Error('Resume fork modal did not load within 15 seconds'));
+        }, 15000);
+
+        if (signal.aborted) {
+          finish(null);
+          return;
+        }
+
+        try {
+          this.block.dispatchEvent(new CustomEvent('unity:show-resume-fork'));
+        } catch (error) {
+          finish(null, error);
+        }
+      });
+    } catch (error) {
+      await this.dispatchErrorToast('error_generic', 500, error.message, false, true, {
+        code: 'pre_upload_error_resume_fork',
+        desc: error.message,
+      });
+      return null;
+    }
+  }
+
   async handleFileUpload(files) {
+    if (this.cancelResumeFork) return;
+    const abortSignal = this.getAbortSignal();
     const verbsWithoutFallback = this.workflowCfg.targetCfg.verbsWithoutMfuToSfuFallback;
     const sanitizedFiles = await Promise.all(files.map(async (file) => {
       const sanitizedFileName = await this.sanitizeFileName(file.name);
@@ -762,13 +851,27 @@ export default class ActionBinder {
     if (wordValidatedFiles.length === 0) return;
     const { isValid, validFiles } = await this.validateFiles(wordValidatedFiles);
     if (!isValid) return;
-    if (!this.pageConfigPromise && !this.pageConfigFetched) this.pageConfigPromise = this.ensurePageConfig();
-    await this.pageConfigReady;
-    await this.initUploadHandler();
-    if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
-      await this.handleSingleFileUpload(validFiles);
-    } else {
-      await this.handleMultiFileUpload(validFiles);
+    if (this.isResumeForkEnabled()) {
+      this.resumeForkChoice = await this.requestResumeFork();
+      if (!this.resumeForkChoice) {
+        this.dispatchAnalyticsEvent('cancel', { ...this.filesData, workflowStep: 'preuploading' });
+        this.filesData = {};
+        return;
+      }
+    }
+    try {
+      if (!this.pageConfigPromise && !this.pageConfigFetched) this.pageConfigPromise = this.ensurePageConfig();
+      await this.pageConfigReady;
+      if (abortSignal.aborted) return;
+      await this.initUploadHandler();
+      if (abortSignal.aborted) return;
+      if (files.length === 1 || (validFiles.length === 1 && !verbsWithoutFallback.includes(this.workflowCfg.enabledFeatures[0]))) {
+        await this.handleSingleFileUpload(validFiles);
+      } else {
+        await this.handleMultiFileUpload(validFiles);
+      }
+    } finally {
+      this.resumeForkChoice = null;
     }
   }
 
@@ -903,6 +1006,11 @@ export default class ActionBinder {
   }
 
   async cancelAcrobatOperation() {
+    if (this.cancelResumeFork) {
+      this.cancelResumeFork();
+      return;
+    }
+    this.resumeForkChoice = null;
     await this.showTransitionScreen();
     this.redirectUrl = '';
     this.operations = [];
@@ -932,10 +1040,12 @@ export default class ActionBinder {
   }
 
   async acrobatActionMaps(value, files, totalFileSize, eventName) {
+    if (value === 'upload' && this.resumeForkUploadActive) return;
     await this.loadTransitionScreen();
     await this.handlePreloads();
     if (this.signedOut === undefined) {
       if (this.tokenError) await this.initialize();
+      else await this.initializationPromise;
       if (this.tokenError) {
         const errorDetails = this.tokenError;
         await this.dispatchErrorToast('pre_upload_error_fetching_access_token', null, `Could not fetch access token; Error: ${JSON.stringify(errorDetails.originalError)}`, false, true, {
@@ -957,13 +1067,20 @@ export default class ActionBinder {
     }
     const uploadType = ActionBinder.LIMITS_MAP[this.workflowCfg.enabledFeatures[0]][0];
     switch (value) {
-      case 'upload':
+      case 'upload': {
+        if (this.resumeForkUploadActive) return;
+        this.resumeForkUploadActive = this.isResumeForkEnabled();
         this.promiseStack = [];
         this.filesData = { type: this.isMixedFileTypes(files), size: totalFileSize, count: files.length, uploadType: files.length > 1 ? 'mfu' : 'sfu' };
         this.dispatchAnalyticsEvent(eventName, this.filesData);
-        if (uploadType === 'single') await this.processSingleFile(files);
-        else if (uploadType === 'hybrid') await this.processHybrid(files);
+        try {
+          if (uploadType === 'single') await this.processSingleFile(files);
+          else if (uploadType === 'hybrid') await this.processHybrid(files);
+        } finally {
+          this.resumeForkUploadActive = false;
+        }
         break;
+      }
       case 'interrupt':
         await this.cancelAcrobatOperation();
         break;

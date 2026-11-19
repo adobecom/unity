@@ -44,6 +44,17 @@ export default {
   nodeResolve: true,
   middlewares: [enableCORS],
   plugins: [
+    {
+      name: 'focus-test-page',
+      async executeCommand({ command, session }) {
+        if (command !== 'focus-test-page') return undefined;
+        if (!['puppeteer', 'playwright'].includes(session.browser.type)) {
+          throw new Error('Focusing a test page requires Puppeteer or Playwright');
+        }
+        await session.browser.getPage(session.id).bringToFront();
+        return true;
+      },
+    },
     importMapsPlugin({
       inject: {
         importMap: {

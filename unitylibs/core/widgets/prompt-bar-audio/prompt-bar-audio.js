@@ -921,7 +921,7 @@ function syncVoiceRowPeekClasses(row, shouldPeek) {
   row.classList.toggle('unity-paf-voice-row-peek-scrolled', shouldPeek && row.scrollLeft > 0);
 }
 
-function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
+function wireVoiceRowPeekTracking(widgetInstance, row) {
   if (widgetInstance.detachVoiceRowPeekTracking) {
     try { widgetInstance.detachVoiceRowPeekTracking(); } catch (e) { /* noop */ }
     widgetInstance.detachVoiceRowPeekTracking = null;
@@ -930,13 +930,23 @@ function wireVoiceRowPeekTracking(widgetInstance, row, shouldPeek) {
     syncVoiceRowPeekClasses(null, false);
     return;
   }
-  const onScroll = () => {
-    const active = row.classList.contains('unity-paf-voice-row-peek');
-    syncVoiceRowPeekClasses(row, active);
+  const refresh = () => {
+    const shouldPeek = row.scrollWidth > row.clientWidth + 1;
+    syncVoiceRowPeekClasses(row, shouldPeek);
   };
-  row.addEventListener('scroll', onScroll, { passive: true });
-  widgetInstance.detachVoiceRowPeekTracking = () => row.removeEventListener('scroll', onScroll);
-  syncVoiceRowPeekClasses(row, shouldPeek);
+  const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(refresh);
+  observer?.observe(row);
+  const section = row.closest('.unity-paf-voice-section');
+  if (section) observer?.observe(section);
+  [...row.children].forEach((child) => observer?.observe(child));
+  row.addEventListener('scroll', refresh, { passive: true });
+  window.addEventListener('resize', refresh);
+  widgetInstance.detachVoiceRowPeekTracking = () => {
+    observer?.disconnect();
+    row.removeEventListener('scroll', refresh);
+    window.removeEventListener('resize', refresh);
+  };
+  refresh();
 }
 
 function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, widgetInstance, opts = {}) {
@@ -961,7 +971,6 @@ function createVoiceStrip(allVoices, visibleVoices, sectionHeading, footerLink, 
     sectionHeading,
   );
   const row = createTag('div', { class: 'unity-paf-voice-row', role: 'list', 'aria-label': 'Voice samples' });
-  syncVoiceRowPeekClasses(row, visibleVoices.length > 4);
   const tiles = visibleVoices.map((v, i) => buildVoiceTile(v, i, row, widgetInstance));
   section.append(heading, row);
   appendVoiceExploreSubfoot(section, exploreHtml, footerLink);
@@ -1046,7 +1055,6 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
     const auth = (this.defaultPromptFromAuthoring ?? '').trim();
     row.replaceChildren();
     const visible = filterVoicesByModelId(all, this.voiceModelIndex, mid);
-    syncVoiceRowPeekClasses(row, visible.length > 4);
     if (this.voicePromptInpField) {
       const cur = (this.voicePromptInpField.value || '').trim();
       if (visible.length > 0 && (cur === '' || cur === auth)) {
@@ -1056,12 +1064,14 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
       }
     }
     if (visible.length === 0) {
+      wireVoiceRowPeekTracking(this, row);
       this.widgetWrap?.removeAttribute('data-selected-voice-index');
       this.widgetWrap?.removeAttribute('data-selected-voice-name');
       this.widgetWrap?.removeAttribute('data-selected-voice-id');
       return;
     }
     const newTiles = visible.map((v, i) => buildVoiceTile(v, i, row, this));
+    wireVoiceRowPeekTracking(this, row);
     this.teardownVoiceTiles = attachVoiceInteractivity(
       newTiles,
       this,
@@ -1073,7 +1083,7 @@ async function mountPromptBarAudioUI(widgetInstance, parsed) {
   insertPromptBarAudioRoot(el, widgetInstance, widgetWrap, voiceSection, termsBanner);
   const root = widgetInstance.extendedRoot;
   const initialRow = root?.querySelector('.unity-paf-voice-row') ?? null;
-  wireVoiceRowPeekTracking(widgetInstance, initialRow, visibleVoices.length > 4);
+  wireVoiceRowPeekTracking(widgetInstance, initialRow);
   let removalObserver = null;
   let interactivityTornDown = false;
   const teardown = () => {
