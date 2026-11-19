@@ -2502,8 +2502,10 @@
   cursor: not-allowed;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn:hover:not(:disabled) {
-  background: rgb(255 255 255 / 55%);
+@media (hover: hover) {
+  .unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn:hover:not(:disabled) {
+    background: rgb(255 255 255 / 55%);
+  }
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn img {
