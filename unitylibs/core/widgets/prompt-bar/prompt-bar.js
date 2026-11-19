@@ -8,22 +8,6 @@ function isFireflyRedesign() {
     || document.querySelector('.theme-firefly-redesign'));
 }
 
-function getTextRect(el) {
-  const textEl = el.querySelector(':scope > .model-name') || el;
-  const textNode = [...textEl.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
-  if (!textNode) return textEl.getBoundingClientRect();
-  const range = document.createRange();
-  range.selectNodeContents(textNode);
-  return range.getBoundingClientRect();
-}
-
-function setVerbSelectedOrigin(panel, btnEl, targetEl) {
-  const btnTextRect = getTextRect(btnEl);
-  const targetTextRect = getTextRect(targetEl);
-  panel.style.setProperty('--verb-selected-dx', `${btnTextRect.left - targetTextRect.left}px`);
-  panel.style.setProperty('--verb-selected-dy', `${btnTextRect.top - targetTextRect.top}px`);
-}
-
 function setComboboxTriggerAriaLabel(triggerBtn, labelText, valueText) {
   const label = (labelText || '').trim();
   const value = (valueText || '').trim();
@@ -215,10 +199,9 @@ export default class UnityWidget {
       panel.style.setProperty('--verb-origin-y', `${btnRect.top - panelRect.top}px`);
       panel.style.setProperty('--verb-origin-w', `${btnRect.width}px`);
       panel.style.setProperty('--verb-origin-h', `${btnRect.height}px`);
-      const selectedLink = panel.querySelector('.verb-item.selected .verb-link');
-      if (selectedLink) {
-        setVerbSelectedOrigin(panel, selectedElement, selectedLink);
-      }
+      const computedRadius = parseFloat(getComputedStyle(selectedElement).borderRadius) || 0;
+      const originRadius = Math.min(computedRadius, btnRect.width / 2, btnRect.height / 2);
+      panel.style.setProperty('--verb-origin-radius', `${originRadius}px`);
     }
     menuContainer.classList.toggle('show-menu');
     if (selectedElement.hasAttribute('aria-expanded')) {
@@ -280,9 +263,6 @@ export default class UnityWidget {
         if (useDialogButton) listLink.removeAttribute('aria-current');
         else listLink.setAttribute('aria-selected', 'false');
       });
-      if (this.isFireflyRedesign) {
-        setVerbSelectedOrigin(verbList, selectedElement, link);
-      }
       const menuContainer = selectedElement.parentElement;
       menuContainer.classList.toggle('show-menu');
       if (selectedElement.hasAttribute('aria-expanded')) {
