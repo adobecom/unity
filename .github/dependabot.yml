@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keep Playwright current so Nala keeps working on new GitHub runner images
+  - package-ecosystem: npm
+    directory: /
+    target-branch: stage
+    schedule:
+      interval: monthly
+    allow:
+      - dependency-name: "@playwright/test"
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: "[trivial]"
+    labels:
+      - dependencies
