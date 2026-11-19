@@ -811,6 +811,7 @@ export default class UnityWidget {
         window.lana?.log('Music Shuffle is authored without any valid music prompt suggestions.', this.lanaOptions);
       }
       this.musicShuffle.addEventListener('click', () => this.shuffleMusicPrompt());
+      this.musicShuffle.addEventListener('touchstart', () => {}, { passive: true });
       actionContainer.append(this.musicShuffle);
       this.musicAnnouncement = createTag('span', {
         class: 'music-prompt-announcement',

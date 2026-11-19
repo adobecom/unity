@@ -2508,6 +2508,10 @@
   }
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn:active:not(:disabled) {
+  background: rgb(255 255 255 / 55%);
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .shuffle-btn img {
   width: 18px;
   height: 18px;
