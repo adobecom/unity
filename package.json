@@ -38,7 +38,7 @@
     "@web/test-runner-commands": "0.6.1",
     "axe-core": "^4.10.3",
     "axe-html-reporter": "^2.2.11",
-    "axios": "^1.9.0",
+    "axios": "^1.18.0",
     "chai": "4.3.6",
     "chalk": "5.4.1",
     "commander": "^13.1.0",
