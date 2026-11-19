@@ -277,10 +277,6 @@ export default class ActionBinder {
 
   validateInput(query) {
     const isMusic = this.getSelectedVerbType() === 'music';
-    if (isMusic && !query.trim()) {
-      this.showErrorToast({ errorToastEl: this.errorToastEl, errorType: '.icon-error-empty' }, 'Music prompt is empty');
-      return { isValid: false, errorCode: 'empty-prompt' };
-    }
     const maxLen = this.getMaxPromptCharLimit();
     const length = isMusic ? this.inputField.value.length : query.length;
     if (maxLen !== undefined && length > maxLen) {

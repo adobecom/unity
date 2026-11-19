@@ -317,10 +317,27 @@ describe('Music functionality in the existing prompt bar', () => {
     expect(payload.payload.action).to.equal('generate');
   });
 
-  it('rejects empty music and validates the displayed raw character count', async () => {
+  it('allows an empty music prompt and submits it to text-to-music without an error', async () => {
+    await createWidget();
+    sandbox.stub(binder, 'initAnalytics').resolves();
+    sandbox.stub(binder, 'emitGenerateStartAnalytics').returns({});
+    sandbox.stub(binder, 'logAnalytics');
+    const toast = sandbox.stub(binder, 'showErrorToast');
+    sandbox.stub(binder, 'resetDropdown');
+    const fetch = sandbox.stub().resolves({});
+    sandbox.stub(binder, 'getNetworkUtils').resolves({ fetchFromService: fetch });
+    input('   ');
+    expect(binder.validateInput('').isValid).to.be.true;
+    await binder.generateContent();
+    expect(toast.called).to.be.false;
+    const payload = JSON.parse(fetch.firstCall.args[1].body);
+    expect(payload.query).to.equal('');
+    expect(payload.payload.workflow).to.equal('text-to-music');
+  });
+
+  it('validates the displayed raw character count', async () => {
     await createWidget();
     sandbox.stub(binder, 'showErrorToast');
-    expect(binder.validateInput(' ').errorCode).to.equal('empty-prompt');
     input(` ${'x'.repeat(499)} `);
     expect(binder.validateInput(widget.musicInput.value.trim()).isValid).to.be.false;
     expect(widget.musicCounter.textContent).to.equal('501/500');
