@@ -974,11 +974,12 @@
 .unity-enabled .interactive-area .models-container .menu-icon {
   position: relative;
   top: 1px;
-  transition: transform 0.15s ease-in;
+  transition: transform var(--verb-motion-close-duration, .15s) var(--verb-motion-bounce-easing, ease-in);
 }
 
 .unity-enabled .interactive-area .verbs-container.show-menu .menu-icon,
 .unity-enabled .interactive-area .models-container.show-menu .menu-icon {
+  transition: transform var(--verb-motion-open-duration, .15s) var(--verb-motion-bounce-easing, ease-in);
   transform: rotate(-180deg);
 }
 
@@ -1146,79 +1147,53 @@
 @keyframes pb-verb-panel-in {
   0% {
     visibility: visible;
+    opacity: 0;
+    transform: var(--verb-panel-base-transform, translate(0));
     clip-path: inset(
       var(--verb-origin-y, 0px)
       calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
       calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
       var(--verb-origin-x, 0px)
-      round var(--verb-panel-radius, var(--s2a-border-radius-xl))
+      round var(--verb-origin-radius, var(--verb-panel-radius, var(--s2a-border-radius-xl)))
     );
   }
 
   100% {
     visibility: visible;
+    opacity: 1;
+    transform: var(--verb-panel-base-transform, translate(0));
     clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
   }
 }
 
 @keyframes pb-verb-panel-out {
   0% {
+    visibility: visible;
+    opacity: 1;
+    transform: var(--verb-panel-base-transform, translate(0)) scale(1);
     clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
+    animation-timing-function: cubic-bezier(.36, 0, .66, -0.56);
+  }
+
+  40% {
+    visibility: visible;
+    opacity: 1;
+    transform: var(--verb-panel-base-transform, translate(0)) scale(.96);
+    clip-path: inset(0 0 0 0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
+    animation-timing-function: cubic-bezier(.33, 1, .68, 1);
   }
 
   100% {
     visibility: hidden;
+    opacity: 0;
+    transform: var(--verb-panel-base-transform, translate(0)) scale(.96);
     clip-path: inset(
       var(--verb-origin-y, 0px)
       calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
       calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
       var(--verb-origin-x, 0px)
-      round var(--verb-panel-radius, var(--s2a-border-radius-xl))
+      round var(--verb-origin-radius, var(--verb-panel-radius, var(--s2a-border-radius-xl)))
     );
-  }
-}
-
-@keyframes pb-verb-item-in {
-  0% {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes pb-verb-item-out {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-}
-
-@keyframes pb-verb-selected-in {
-  0% {
-    transform: translate(var(--verb-selected-dx, 0px), var(--verb-selected-dy, 0px));
-  }
-
-  100% {
-    transform: translate(0, 0);
-  }
-}
-
-@keyframes pb-verb-selected-out {
-  0% {
-    transform: translate(0, 0);
-  }
-
-  100% {
-    transform: translate(var(--verb-selected-dx, 0px), var(--verb-selected-dy, 0px));
   }
 }
 
@@ -1585,6 +1560,13 @@
 .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign:hover,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign:focus-within {
+  --verb-motion-open-duration: .55s;
+  --verb-motion-close-duration: .65s;
+  --verb-motion-easing: cubic-bezier(.33, 1, .68, 1);
+  --verb-motion-bounce-easing: cubic-bezier(.34, 1.56, .64, 1);
+  --verb-panel-base-transform: translate(0);
+
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1593,14 +1575,21 @@
   padding: var(--s2a-spacing-xs);
   background-color: #000000A6 !important;
   background-image: none !important;
-  backdrop-filter: blur(125px) !important;
   border: 2px solid rgba(255 255 255 / 5%) !important;
   border-radius: var(--s2a-border-radius-xl) !important;
-  filter: brightness(1);
   box-shadow:
     0 36px 81px 0 rgba(0 0 0 / 71%),
     0 4.508px 10.142px 0 rgba(0 0 0 / 35%);
   box-sizing: border-box;
+}
+
+/* Default blur value declared early (before the breakpoint overrides below) so the
+   cascade order matches source order for this equal-specificity, all-!important
+   property: tablet/mobile overrides must come after this to correctly win at
+   their breakpoints instead of being clobbered by this desktop default. */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before,
+.unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before {
+  backdrop-filter: blur(125px) !important;
 }
 
 @media (min-width: 768px) and (max-width: 1279px) {
@@ -1609,9 +1598,13 @@
     width: 556.8px !important;
     height: 162.27px !important;
     padding: 5.69px !important;
-    backdrop-filter: blur(88.89px) !important;
     border: 1.42px solid rgba(255 255 255 / 5%) !important;
     border-radius: 22.76px !important;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before {
+    backdrop-filter: blur(88.89px) !important;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container,
@@ -1958,8 +1951,8 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
   position: absolute;
   z-index: 20;
-  animation: pb-verb-panel-out .25s ease forwards;
-  top: -48px;
+  animation: pb-verb-panel-out var(--verb-motion-close-duration) linear forwards;
+  top: -72px;
   inset-inline-start: 20px;
   width: 535px;
   padding: var(--s2a-spacing-sm) var(--s2a-spacing-md) var(--s2a-spacing-md);
@@ -1986,7 +1979,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list-panel {
-  animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pb-verb-panel-in var(--verb-motion-open-duration) var(--verb-motion-easing) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-header {
@@ -2038,25 +2031,15 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-out .15s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-in .3s ease forwards;
+  opacity: 1;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-item.selected .verb-link {
   opacity: 1;
-  animation: pb-verb-selected-out .25s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item.selected .verb-link {
-  animation: pb-verb-selected-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
   opacity: 1;
-  transition: opacity .2s ease;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb:focus-visible {
@@ -2065,30 +2048,10 @@
   border-radius: 0;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .selected-verb {
-  opacity: 0;
-}
-
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-model {
   opacity: 1;
-  transition: opacity .2s ease;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .selected-model {
-  opacity: 0;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(2) .verb-link {
-  animation-delay: .04s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(3) .verb-link {
-  animation-delay: .08s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list .verb-item:not(.selected):nth-child(4) .verb-link {
-  animation-delay: .12s;
-}
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link .selected-icon,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link > img {
@@ -2157,6 +2120,7 @@
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
     backdrop-filter: blur(14.2222px) !important;
+    top: -60px
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list .verb-link:hover,
@@ -2177,9 +2141,13 @@
     max-width: 609.38px !important;
     padding: 9.38px !important;
     background-color: #0000004D !important;
-    backdrop-filter: blur(23.4375px) !important;
     border: 2.34px solid rgba(255 255 255 / 5%) !important;
     border-radius: 18.75px !important;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before,
+  .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before {
+    backdrop-filter: blur(23.4375px) !important;
   }
 
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .selected-verb {
@@ -2252,6 +2220,7 @@
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel,
   .unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel {
     --verb-panel-radius: 19.44px;
+    top: -48px;
     inset-inline-start: -11.72px !important;
     width: calc(100% + 23.44px) !important;
     box-sizing: border-box !important;
@@ -2315,18 +2284,29 @@
   box-shadow: none !important;
 }
 
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before,
+.unity-enabled .interactive-area.dark .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign::before {
+  content: '' !important;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list {
   display: flex !important;
-  animation: pb-verb-panel-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pb-verb-panel-in var(--verb-motion-open-duration) var(--verb-motion-easing) forwards;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
   position: absolute;
   z-index: 20;
-  animation: pb-verb-panel-out .25s ease forwards;
+  animation: pb-verb-panel-out var(--verb-motion-close-duration) linear forwards;
+
   --verb-panel-radius: var(--s2a-border-radius-lg);
+  --verb-panel-base-transform: translateY(-38px);
   inset-inline-start: -36px;
-  transform: translateY(-38px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2358,40 +2338,11 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-out .15s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected) .verb-link {
-  animation: pb-verb-item-in .3s ease forwards;
+  opacity: 1;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-item.selected .verb-link {
   opacity: 1;
-  animation: pb-verb-selected-out .25s ease forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item.selected .verb-link {
-  animation: pb-verb-selected-in .35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(2) .verb-link {
-  animation-delay: .04s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(3) .verb-link {
-  animation-delay: .08s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(4) .verb-link {
-  animation-delay: .12s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(5) .verb-link {
-  animation-delay: .16s;
-}
-
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list .verb-item:not(.selected):nth-child(6) .verb-link {
-  animation-delay: .2s;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list .verb-link img {
@@ -2447,7 +2398,8 @@
 @media (min-width: 768px) and (max-width: 1279px) {
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
     inset-inline-start: -26px;
-    transform: translateY(-28px);
+
+    --verb-panel-base-transform: translateY(-28px);
   }
 }
 
@@ -2477,8 +2429,34 @@
   text-decoration: underline;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget:has(.verbs-container.show-menu) .legal-disclaimer,
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget:has(.models-container.show-menu) .legal-disclaimer {
-  position: static;
-  z-index: auto;
+@media (prefers-reduced-motion: reduce) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .verb-list-panel,
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list,
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .verb-list .verb-link,
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .menu-icon {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container .verb-list-panel,
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container .verb-list {
+    visibility: hidden;
+    opacity: 0;
+    transform: var(--verb-panel-base-transform, translate(0));
+    clip-path: inset(
+      var(--verb-origin-y, 0px)
+      calc(100% - var(--verb-origin-x, 0px) - var(--verb-origin-w, 100%))
+      calc(100% - var(--verb-origin-y, 0px) - var(--verb-origin-h, 100%))
+      var(--verb-origin-x, 0px)
+      round var(--verb-origin-radius, var(--verb-panel-radius, var(--s2a-border-radius-xl)))
+    );
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign > .verbs-container.show-menu .verb-list-panel,
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .models-container.show-menu .verb-list {
+    visibility: visible;
+    opacity: 1;
+    transform: var(--verb-panel-base-transform, translate(0));
+    clip-path: inset(0 round var(--verb-panel-radius, var(--s2a-border-radius-xl)));
+  }
 }
