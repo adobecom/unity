@@ -515,6 +515,8 @@
   margin: 0 5px 0 0;
   box-sizing: border-box;
   padding-top: 3px;
+  padding-inline: 2px;
+  appearance: none;
   border-radius: 3px;
   outline: none;
   background: linear-gradient(rgba(255 255 255 / 0%), rgba(55 255 255 / 0%));
