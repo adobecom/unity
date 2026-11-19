@@ -70,7 +70,7 @@ describe('Music functionality in the existing prompt bar', () => {
       <li><span class="icon icon-placeholder-input"></span>Describe your music</li>
       <li><span class="icon icon-placeholder-prompt-label"></span>Enter prompt</li>
       <li><span class="icon icon-generate"></span><img src="/test/assets/img.svg" alt="">Generate</li>
-      ${shuffle ? '<li><span class="icon icon-shuffle"></span><img src="/test/assets/img.svg" alt="">Shuffle</li>' : ''}
+      ${shuffle ? `<li><span class="icon icon-shuffle"></span>${shuffle === 'noIcon' ? '' : '<img src="/test/assets/img.svg" alt="">'}Shuffle</li>` : ''}
       ${models.length ? '<li><span class="icon icon-model"></span></li>' : ''}
       ${suggestions ? '<li><span class="icon icon-placeholder-prompt"></span>Prompt</li><li><span class="icon icon-placeholder-suggestions"></span>Suggestions</li>' : ''}
     </ul>`;
@@ -594,6 +594,34 @@ describe('Music functionality in the existing prompt bar', () => {
         });
         expect(controls[0].right).to.be.at.most(controls[1].left);
         expect(controls[1].right).to.be.at.most(controls[2].left);
+      } finally {
+        await setViewport({ width: 1024, height: 768 });
+      }
+    });
+
+    it(`hides Shuffle text where Generate text is hidden, keeping its accessible name (redesign: ${redesign})`, async () => {
+      const textDisplay = () => getComputedStyle(widget.musicShuffle.querySelector('.shuffle-txt')).display;
+      try {
+        await setViewport({ width: 390, height: 844 });
+        await createWidget({ redesign });
+        expect(textDisplay()).to.equal('none');
+        expect(getComputedStyle(widget.genBtn.querySelector('.btn-txt')).display).to.equal('none');
+        expect(widget.musicShuffle.getAttribute('aria-label')).to.equal('Shuffle');
+        expect(widget.musicShuffle.querySelector('img')).to.exist;
+        await setViewport({ width: 1280, height: 800 });
+        expect(textDisplay()).not.to.equal('none');
+        await setViewport({ width: 900, height: 800 });
+        expect(textDisplay() === 'none').to.equal(getComputedStyle(widget.genBtn.querySelector('.btn-txt')).display === 'none');
+      } finally {
+        await setViewport({ width: 1024, height: 768 });
+      }
+    });
+
+    it(`keeps Shuffle text on mobile when no icon is authored (redesign: ${redesign})`, async () => {
+      try {
+        await setViewport({ width: 390, height: 844 });
+        await createWidget({ redesign, shuffle: 'noIcon' });
+        expect(getComputedStyle(widget.musicShuffle.querySelector('.shuffle-txt')).display).not.to.equal('none');
       } finally {
         await setViewport({ width: 1024, height: 768 });
       }

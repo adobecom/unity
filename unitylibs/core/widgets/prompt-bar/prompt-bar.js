@@ -805,7 +805,7 @@ export default class UnityWidget {
         icon.setAttribute('aria-hidden', 'true');
         this.musicShuffle.append(icon);
       }
-      this.musicShuffle.append(createTag('span', {}, label));
+      this.musicShuffle.append(createTag('span', { class: 'shuffle-txt' }, label));
       this.musicShuffle.disabled = !this.musicPrompts.length;
       if (this.musicShuffle.disabled) {
         window.lana?.log('Music Shuffle is authored without any valid music prompt suggestions.', this.lanaOptions);

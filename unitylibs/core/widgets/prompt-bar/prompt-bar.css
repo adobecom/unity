@@ -2541,6 +2541,18 @@
   display: none;
 }
 
+@media (max-width: 1024px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .shuffle-btn:has(img) .shuffle-txt {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .shuffle-btn:has(img) .shuffle-txt {
+    display: none;
+  }
+}
+
 @media screen and (max-width: 599px) {
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign),
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap,
