@@ -2542,6 +2542,7 @@
 }
 
 @media screen and (max-width: 599px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign),
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .inp-wrap,
   .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap {
     border-radius: 24px;
