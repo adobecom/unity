@@ -1,0 +1,49 @@
+name: Nala Runner Canary
+
+# Nala jobs are pinned to a fixed Ubuntu image. This canary checks whether the
+# locked Playwright version can still install browsers on ubuntu-latest, so we
+# get advance warning before the pinned image must be bumped.
+
+on:
+  schedule:
+    - cron: '0 14 * * 1' # Mondays 14:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright-install-check:
+    name: Playwright browser install on ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          if ! npx playwright install --with-deps chromium firefox; then
+            echo "::error::Playwright $(npx playwright --version) cannot install browsers on $(lsb_release -ds). Upgrade @playwright/test before re-pinning runs-on in run-nala-*.yml."
+            exit 1
+          fi
+
+      - name: Launch browsers
+        run: |
+          node -e "
+            const { chromium, firefox } = require('@playwright/test');
+            (async () => {
+              for (const type of [chromium, firefox]) {
+                const browser = await type.launch();
+                console.log(type.name(), browser.version(), 'OK');
+                await browser.close();
+              }
+            })().catch((e) => { console.error(e); process.exit(1); });
+          "

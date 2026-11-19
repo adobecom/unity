@@ -95,8 +95,11 @@ echo "*******************************"
 
 # Navigate to the GitHub Action path and install dependencies
 cd "$GITHUB_ACTION_PATH" || exit
-npm ci
-npx playwright install --with-deps
+npm ci || exit $?
+if ! npx playwright install --with-deps; then
+  echo "Playwright browser installation failed (unsupported runner OS?). Aborting test run."
+  exit 1
+fi
 
 # Run Playwright tests on the specific browser project
 echo "*** Running tests on project: $BROWSER ***"

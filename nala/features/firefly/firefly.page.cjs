@@ -4,13 +4,14 @@ export default class FireflyPage {
     // Firefly locators
     this.unityWrapper = this.page.locator('.ex-unity-wrap');
     this.imageVerbButton = this.unityWrapper.locator('button.selected-verb[data-selected-verb="image"]');
-    this.imageVerbLink = this.unityWrapper.locator('a.verb-link[data-verb-type="image"]');
-    this.generateImageButton = this.unityWrapper.locator('a.gen-btn[aria-label="Generate image"]');
-    this.generateVectorButton = this.unityWrapper.locator('a.gen-btn[aria-label="Generate vector"]');
+    // Tag-agnostic: gen-btn is a <button>, verb-link is <a> or <button> depending on variant
+    this.imageVerbLink = this.unityWrapper.locator('.verb-link[data-verb-type="image"]');
+    this.generateImageButton = this.unityWrapper.locator('.gen-btn[aria-label="Generate image"]');
+    this.generateVectorButton = this.unityWrapper.locator('.gen-btn[aria-label="Generate vector"]');
     this.videoVerbButton = this.unityWrapper.locator('button.selected-verb[data-selected-verb="video"]');
-    this.vectorVerbLink = this.unityWrapper.locator('a.verb-link[data-verb-type="vector"]');
-    this.videoVerbLink = this.unityWrapper.locator('a.verb-link[data-verb-type="video"]');
-    this.generateVideoButton = this.unityWrapper.locator('a.gen-btn[aria-label="Generate video"]');
+    this.vectorVerbLink = this.unityWrapper.locator('.verb-link[data-verb-type="vector"]');
+    this.videoVerbLink = this.unityWrapper.locator('.verb-link[data-verb-type="video"]');
+    this.generateVideoButton = this.unityWrapper.locator('.gen-btn[aria-label="Generate video"]');
     this.promptInput = this.unityWrapper.locator('textarea#promptInput');
     this.promptDropdown = this.unityWrapper.locator('ul#prompt-dropdown');
     this.promptSuggestions = this.unityWrapper.locator('ul#prompt-dropdown li.drop-item').first();

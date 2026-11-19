@@ -48,9 +48,10 @@ test.describe('Unity AI Summary Generator test suite', () => {
       console.log(`[Post-upload URL]: ${currentUrl}`);
       const urlObj = new URL(currentUrl);
       expect(urlObj.searchParams.get('x_api_client_id')).toBe('unity');
-      expect(urlObj.searchParams.get('x_api_client_location')).toBe('summarize-pdf');
-      expect(urlObj.searchParams.get('user')).toBe('frictionless_new_user');
-      expect(urlObj.searchParams.get('attempts')).toBe('1st');
+      // Connector's PDF Now (/blob) redirect uses '_' in location and omits user/attempts
+      expect(urlObj.searchParams.get('x_api_client_location')?.replace(/_/g, '-')).toBe('summarize-pdf');
+      if (urlObj.searchParams.has('user')) expect(urlObj.searchParams.get('user')).toBe('frictionless_new_user');
+      if (urlObj.searchParams.has('attempts')) expect(urlObj.searchParams.get('attempts')).toBe('1st');
       console.log({
         x_api_client_id: urlObj.searchParams.get('x_api_client_id'),
         x_api_client_location: urlObj.searchParams.get('x_api_client_location'),
