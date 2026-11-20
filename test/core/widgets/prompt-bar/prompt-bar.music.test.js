@@ -680,4 +680,103 @@ describe('Music functionality in the existing prompt bar', () => {
     binder.showDropdown();
     expect(widget.widget.querySelector('.drop').classList.contains('hidden')).to.be.true;
   });
+
+  describe('Verb toggle', () => {
+    const models = [
+      { module: 'music', id: 'music-one', version: '1', name: 'Music One', icon: '/test/assets/img.svg' },
+      { module: 'image', id: 'image-one', version: '1', name: 'Image One', icon: '/test/assets/img.svg' },
+    ];
+    const visible = (el) => getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0;
+    const toggleBtn = (type) => widget.widget.querySelector(`.verb-toggle-btn[data-verb-type="${type}"]`);
+
+    afterEach(() => setViewport({ width: 1024, height: 768 }));
+
+    it('shows the toggle on desktop with authored labels/order and hides the verb dropdown', async () => {
+      await setViewport({ width: 1280, height: 800 });
+      await createWidget({ verbs: ['image', 'video', 'music'], models });
+      const btns = [...widget.widget.querySelectorAll('.verb-toggle-btn')];
+      expect(btns.map((b) => b.textContent)).to.deep.equal(['image', 'video', 'music']);
+      expect(btns.map((b) => b.getAttribute('aria-checked'))).to.deep.equal(['true', 'false', 'false']);
+      expect(widget.widget.querySelector('.verb-toggle').getAttribute('role')).to.equal('radiogroup');
+      expect(visible(widget.widget.querySelector('.verb-toggle'))).to.be.true;
+      expect(visible(widget.widget.querySelector('.verbs-container'))).to.be.false;
+      expect(visible(widget.widget.querySelector('.selected-model'))).to.be.true;
+      expect(binder.getFocusElems()).to.include(btns[0]);
+      expect(binder.getFocusElems()).not.to.include(widget.widget.querySelector('.selected-verb'));
+    });
+
+    it('shows the toggle on tablet', async () => {
+      await setViewport({ width: 768, height: 1024 });
+      await createWidget({ verbs: ['image', 'video'] });
+      expect(visible(widget.widget.querySelector('.verb-toggle'))).to.be.true;
+      expect(visible(widget.widget.querySelector('.verbs-container'))).to.be.false;
+    });
+
+    it('keeps the verb dropdown on mobile and hides the toggle', async () => {
+      await setViewport({ width: 390, height: 844 });
+      await createWidget({ verbs: ['image', 'video'] });
+      expect(visible(widget.widget.querySelector('.verb-toggle'))).to.be.false;
+      expect(visible(widget.widget.querySelector('.selected-verb'))).to.be.true;
+      expect(binder.getFocusElems()).not.to.include(toggleBtn('image'));
+    });
+
+    it('switches features through the shared selection logic without opening the dropdown', async () => {
+      await setViewport({ width: 1280, height: 800 });
+      await createWidget({ verbs: ['image', 'music'], models });
+      widget.workflowCfg.placeholder['placeholder-input-image'] = 'Describe an image';
+      toggleBtn('music').click();
+      expect(binder.getSelectedVerbType()).to.equal('music');
+      expect(binder.getSelectedModelId()).to.equal('music-one');
+      expect(widget.musicShuffle.hidden).to.be.false;
+      expect(widget.musicCounter.hidden).to.be.false;
+      expect(widget.genBtn.getAttribute('daa-ll')).to.equal('Generate--music');
+      expect(widget.widget.querySelector('.verbs-container').classList.contains('show-menu')).to.be.false;
+      expect(widget.widget.querySelector('.selected-verb').dataset.selectedVerb).to.equal('music');
+      expect(toggleBtn('music').getAttribute('aria-checked')).to.equal('true');
+      expect(toggleBtn('image').tabIndex).to.equal(-1);
+      toggleBtn('image').click();
+      expect(binder.getSelectedVerbType()).to.equal('image');
+      expect(binder.getSelectedModelId()).to.equal('image-one');
+      expect(widget.musicShuffle.hidden).to.be.true;
+      expect(widget.musicInput.placeholder).to.equal('Describe an image');
+    });
+
+    it('syncs the toggle when the dropdown is used (e.g. after resizing from mobile)', async () => {
+      await setViewport({ width: 390, height: 844 });
+      await createWidget({ verbs: ['image', 'video'] });
+      widget.widget.querySelector('.selected-verb').click();
+      widget.widget.querySelector('.verb-link[data-verb-type="video"]').click();
+      expect(binder.getSelectedVerbType()).to.equal('video');
+      expect(toggleBtn('video').getAttribute('aria-checked')).to.equal('true');
+      expect(toggleBtn('image').getAttribute('aria-checked')).to.equal('false');
+    });
+
+    it('supports arrow keys and Home/End without generating', async () => {
+      await setViewport({ width: 1280, height: 800 });
+      await createWidget({ verbs: ['image', 'video', 'music'] });
+      const generate = sandbox.stub(binder, 'generateContent');
+      const key = (k) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+      toggleBtn('image').focus();
+      key('ArrowRight');
+      expect(document.activeElement).to.equal(toggleBtn('video'));
+      expect(binder.getSelectedVerbType()).to.equal('video');
+      key('End');
+      expect(binder.getSelectedVerbType()).to.equal('music');
+      key('ArrowRight');
+      expect(binder.getSelectedVerbType()).to.equal('image');
+      key('Enter');
+      key(' ');
+      expect(generate.called).to.be.false;
+    });
+
+    it('is not rendered for a single verb or on pb-redesign pages', async () => {
+      await setViewport({ width: 1280, height: 800 });
+      await createWidget({ verbs: ['music'] });
+      expect(widget.widget.querySelector('.verb-toggle')).to.equal(null);
+      binder.rmvKeyDown();
+      await createWidget({ verbs: ['image', 'video'], redesign: true });
+      expect(widget.widget.querySelector('.verb-toggle')).to.equal(null);
+      expect(widget.widget.querySelector('.verb-list-panel')).to.exist;
+    });
+  });
 });

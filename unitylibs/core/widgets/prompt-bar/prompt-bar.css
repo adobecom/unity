@@ -2593,3 +2593,45 @@
   color: #dbdbdb;
   font-size: 16px;
 }
+
+.unity-enabled .interactive-area .ex-unity-wrap .verb-toggle {
+  display: none;
+  align-items: center;
+  padding: 4px;
+  border-radius: 999px;
+  background: #1b1b1b;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .verb-toggle .verb-toggle-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #b3b3b3;
+  font: inherit;
+  font-size: 16px;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .verb-toggle .verb-toggle-btn[aria-checked="true"] {
+  background: #3b3b3b;
+  color: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 40%);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .verb-toggle .verb-toggle-btn:focus-visible {
+  outline: 2px solid #8da6ff;
+  outline-offset: -2px;
+}
+
+@media (min-width: 600px) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-toggle {
+    display: inline-flex;
+  }
+
+  .unity-enabled .interactive-area .ex-unity-wrap.verb-options .ex-unity-widget .autocomplete:not(.pb-redesign) .action-container:has(.verb-toggle) .verbs-container {
+    display: none;
+  }
+}

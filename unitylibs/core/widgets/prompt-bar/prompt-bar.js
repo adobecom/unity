@@ -290,7 +290,8 @@ export default class UnityWidget {
         setVerbSelectedOrigin(verbList, selectedElement, link);
       }
       const menuContainer = selectedElement.parentElement;
-      menuContainer.classList.toggle('show-menu');
+      const fromToggle = !modelList && this.verbToggleSelecting;
+      if (!fromToggle) menuContainer.classList.toggle('show-menu');
       if (selectedElement.hasAttribute('aria-expanded')) {
         selectedElement.setAttribute('aria-expanded', menuContainer.classList.contains('show-menu') ? 'true' : 'false');
       }
@@ -321,8 +322,9 @@ export default class UnityWidget {
         if (inpField) {
           inpField.placeholder = this.resolveVerbPlaceholder(this.workflowCfg.placeholder, this.selectedVerbType);
         }
+        this.syncVerbToggle();
       }
-      selectedElement.focus();
+      if (!fromToggle) selectedElement.focus();
       this.ensureSoundModuleLoaded();
       const verbsWithoutPromptSuggestions = this.workflowCfg.targetCfg?.verbsWithoutPromptSuggestions ?? [];
       if (!verbsWithoutPromptSuggestions.includes(this.selectedVerbType)) this.updateDropdownForVerb(this.selectedVerbType);
@@ -585,7 +587,63 @@ export default class UnityWidget {
       icon: verb.nextElementSibling?.href,
     }));
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
+    if (!this.isFireflyRedesign) this.verbToggle = this.createVerbToggle(verbsData, verbList, labelText);
     return [selectedElement, panel];
+  }
+
+  // Desktop/tablet segmented selector; it drives the existing dropdown so selection logic stays shared.
+  createVerbToggle(verbsData, verbList, labelText) {
+    const toggle = createTag('div', { class: 'verb-toggle', role: 'radiogroup', 'aria-label': labelText });
+    verbsData.forEach(({ name, type }, idx) => {
+      const btn = createTag('button', {
+        type: 'button',
+        class: 'verb-toggle-btn',
+        role: 'radio',
+        'data-verb-type': type,
+        'aria-checked': idx === 0 ? 'true' : 'false',
+        tabindex: idx === 0 ? '0' : '-1',
+      }, name);
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (btn.getAttribute('aria-checked') === 'true') return;
+        const link = verbList.querySelector(`.verb-link[data-verb-type="${type}"]`);
+        if (!link) return;
+        this.hidePromptDropdown();
+        this.verbToggleSelecting = true;
+        try {
+          link.click();
+        } finally {
+          this.verbToggleSelecting = false;
+        }
+      });
+      toggle.append(btn);
+    });
+    toggle.addEventListener('keydown', (e) => {
+      const btns = [...toggle.querySelectorAll('.verb-toggle-btn')];
+      const idx = btns.indexOf(e.target);
+      if (idx < 0) return;
+      const rtl = getComputedStyle(toggle).direction === 'rtl';
+      const step = { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1, ArrowDown: 1, ArrowUp: -1 }[e.key];
+      let next;
+      if (step) next = (idx + step + btns.length) % btns.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = btns.length - 1;
+      else if (e.key === 'Enter' || e.key === ' ') next = idx;
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+      btns[next].click();
+      btns[next].focus();
+    });
+    return toggle;
+  }
+
+  syncVerbToggle() {
+    this.verbToggle?.querySelectorAll('.verb-toggle-btn').forEach((btn) => {
+      const selected = btn.dataset.verbType === this.selectedVerbType;
+      btn.setAttribute('aria-checked', selected ? 'true' : 'false');
+      btn.tabIndex = selected ? 0 : -1;
+    });
   }
 
   modelDropdown() {
@@ -739,6 +797,7 @@ export default class UnityWidget {
     if (verbDropdown.length > 1) {
       const verbBtn = createTag('div', { class: 'verbs-container', 'aria-label': 'Media options' });
       verbBtn.append(...verbDropdown);
+      if (this.verbToggle) actionContainer.append(this.verbToggle);
       actionContainer.append(verbBtn);
       if (this.isFireflyRedesign) {
         const actionBar = createTag('div', { class: 'action-bar' });
