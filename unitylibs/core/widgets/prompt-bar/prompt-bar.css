@@ -626,6 +626,13 @@
 .unity-enabled .interactive-area .selected-model img,
 .unity-enabled .interactive-area .selected-verb .selected-verb-icon,
 .unity-enabled .interactive-area .verb-list .verb-link img {
+  width: 22px;
+  height: 22px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .selected-model img,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .selected-verb .selected-verb-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-link img {
   width: 16px;
   height: 16px;
 }
@@ -636,7 +643,7 @@
 }
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
-  filter: brightness(0);
+  filter: none;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-txt {
@@ -658,14 +665,14 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
   border-radius: 25px;
-  background: linear-gradient(90deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+  background: #4069fd;
   border: none;
   padding: 7px 12px;
   gap: 8px;
 }
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn {
-  background: var(--light-bg);
+  background: #4069fd;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
@@ -679,7 +686,7 @@
 }
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .gen-btn .btn-txt {
-  color: var(--color-black);
+  color: #fff;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop {
