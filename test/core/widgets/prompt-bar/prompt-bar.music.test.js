@@ -368,7 +368,10 @@ describe('Music functionality in the existing prompt bar', () => {
           const area = host.querySelector('.interactive-area');
           const wrap = host.querySelector('.ex-unity-wrap');
           const inputWrap = host.querySelector('.inp-wrap');
-          const radius = width <= 599 ? '24px' : '10px';
+          host.style.setProperty('--s2a-border-radius-24', '24px');
+          let radius = '24px';
+          if (redesign && width <= 767) radius = '9.38px';
+          else if (redesign && width <= 1279) radius = '17.07px';
           ['dark', 'light'].forEach((skin) => {
             area.className = `interactive-area ${skin}`;
             expect(getComputedStyle(inputWrap).borderRadius).to.equal(radius);
@@ -416,15 +419,15 @@ describe('Music functionality in the existing prompt bar', () => {
               expect(getComputedStyle(widget.musicInput).height).to.equal(width <= 599 ? '46px' : '36px');
               widget.musicInput.style.removeProperty('flex');
             } else {
-              expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 16);
-              expectTypography(getComputedStyle(widget.musicInput, '::placeholder'), 'rgb(68, 68, 68)', 16, 20);
+              expectTypography(getComputedStyle(label), 'rgb(80, 80, 80)', 14, 18);
+              expectTypography(getComputedStyle(widget.musicInput, '::placeholder'), 'rgb(138, 138, 138)', 16, 20);
             }
             expectTypography(getComputedStyle(suggestion), 'rgb(68, 68, 68)', 16, 20);
             suggestion.setAttribute('aria-selected', 'true');
             expectTypography(getComputedStyle(suggestion), 'rgb(0, 0, 0)', 16, 20);
             input('A user-written prompt');
             if (redesign) expectRedesignInput(getComputedStyle(widget.musicInput), width, true);
-            else expectTypography(getComputedStyle(widget.musicInput), 'rgb(0, 0, 0)', 16, 20);
+            else expectTypography(getComputedStyle(widget.musicInput), 'rgb(255, 255, 255)', 16, 20);
           } finally {
             await setViewport({ width: 1024, height: 768 });
           }
@@ -441,19 +444,19 @@ describe('Music functionality in the existing prompt bar', () => {
       widget.shuffleMusicPrompt();
       blurEl(widget.musicInput);
       expect(widget.musicSuggestionPending).to.be.true;
-      expectInput('rgb(68, 68, 68)');
+      expectInput('rgb(138, 138, 138)');
       await executeServerCommand('focus-test-page');
       focusEl(widget.musicInput);
-      expectInput('rgb(0, 0, 0)');
+      expectInput('rgb(255, 255, 255)');
       expect(widget.musicSuggestionPending).to.be.true;
       input('My edited suggestion');
       blurEl(widget.musicInput);
       expect(widget.musicSuggestionPending).to.be.false;
-      expectInput('rgb(0, 0, 0)');
+      expectInput('rgb(255, 255, 255)');
       widget.shuffleMusicPrompt();
       widget.widget.querySelector('[data-verb-type="image"]').click();
       expect(widget.musicInput.classList.contains('is-suggested')).to.be.false;
-      expectInput('rgb(0, 0, 0)');
+      expectInput('rgb(255, 255, 255)');
     });
 
     it(`resolves typography design-token overrides (redesign: ${redesign})`, async () => {
@@ -486,9 +489,9 @@ describe('Music functionality in the existing prompt bar', () => {
       }
       expect(label.color).to.equal('rgb(90, 91, 92)');
       expect(label.fontSize).to.equal('15px');
-      expect(label.lineHeight).to.equal('19px');
-      expect(placeholder.color).to.equal('rgb(70, 71, 72)');
-      expect(active.color).to.equal('rgb(10, 11, 12)');
+      expect(label.lineHeight).to.equal('18px');
+      expect(placeholder.color).to.equal('rgb(138, 138, 138)');
+      expect(active.color).to.equal('rgb(255, 255, 255)');
       [placeholder, active].forEach((style) => {
         expect(style.fontSize).to.equal('17px');
         expect(style.lineHeight).to.equal('21px');
@@ -718,6 +721,24 @@ describe('Music functionality in the existing prompt bar', () => {
       expect(visible(widget.widget.querySelector('.verb-toggle'))).to.be.false;
       expect(visible(widget.widget.querySelector('.selected-verb'))).to.be.true;
       expect(binder.getFocusElems()).not.to.include(toggleBtn('image'));
+    });
+
+    it('shows only the verb icon and chevron in the mobile verb dropdown button', async () => {
+      await setViewport({ width: 390, height: 844 });
+      await createWidget({ verbs: ['image', 'video'] });
+      const trigger = widget.widget.querySelector('.selected-verb');
+      expect(trigger.querySelector('.selected-verb-icon').getAttribute('src')).to.include('/test/assets/img.svg');
+      expect(visible(trigger.querySelector('.selected-verb-icon'))).to.be.true;
+      expect(visible(trigger.querySelector('.selected-verb-text'))).to.be.false;
+      expect(visible(trigger.querySelector('.menu-icon'))).to.be.true;
+      expect(trigger.getAttribute('aria-label')).to.include('image');
+      trigger.click();
+      widget.widget.querySelector('.verb-link[data-verb-type="video"]').click();
+      expect(trigger.querySelector('.selected-verb-text').textContent).to.equal('video');
+      expect(trigger.querySelector('.selected-verb-icon')).to.exist;
+      expect(trigger.getAttribute('aria-label')).to.include('video');
+      await setViewport({ width: 1280, height: 800 });
+      expect(visible(trigger)).to.be.false;
     });
 
     it('switches features through the shared selection logic without opening the dropdown', async () => {

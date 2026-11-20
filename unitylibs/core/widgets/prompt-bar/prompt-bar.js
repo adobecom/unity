@@ -315,7 +315,8 @@ export default class UnityWidget {
       } else {
         this.selectedVerbType = link.getAttribute('data-verb-type');
         this.selectedVerbText = link.textContent.trim();
-        selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
+        if (this.isFireflyRedesign) selectedElement.replaceChildren(this.selectedVerbText, menuIcon);
+        else selectedElement.replaceChildren(...this.verbTriggerContent(this.selectedVerbText, link.querySelector('img')?.src), menuIcon);
         selectedElement.dataset.selectedVerb = this.selectedVerbType;
         setComboboxTriggerAriaLabel(selectedElement, verbList.dataset.triggerLabel || verbList.getAttribute('aria-label'), this.selectedVerbText);
         const inpField = this.widget.querySelector('.inp-field');
@@ -456,7 +457,8 @@ export default class UnityWidget {
       verbList.setAttribute('aria-label', labelText);
     }
     verbList.setAttribute('style', 'display: none;');
-    selectedElement.append(menuIcon);
+    if (this.isFireflyRedesign) selectedElement.append(menuIcon);
+    else selectedElement.replaceChildren(...this.verbTriggerContent(this.selectedVerbText, selectedVerb?.href), menuIcon);
 
     const focusSelectedOrFirstOption = () => {
       if (selectedElement.getAttribute('aria-expanded') !== 'true') return;
@@ -589,6 +591,13 @@ export default class UnityWidget {
     this.createDropdownItems(verbsData, verbList, selectedElement, menuIcon, inputPlaceHolder, false);
     if (!this.isFireflyRedesign) this.verbToggle = this.createVerbToggle(verbsData, verbList, labelText);
     return [selectedElement, panel];
+  }
+
+  // Verb trigger content: icon plus a label that is hidden on mobile (accessible name comes from aria-label).
+  verbTriggerContent(text, iconSrc) {
+    const label = createTag('span', { class: 'selected-verb-text' }, text);
+    if (!iconSrc) return [label];
+    return [createTag('img', { class: 'selected-verb-icon', src: iconSrc, alt: '', 'aria-hidden': 'true' }), label];
   }
 
   // Desktop/tablet segmented selector; it drives the existing dropdown so selection logic stays shared.

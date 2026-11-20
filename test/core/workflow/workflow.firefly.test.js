@@ -1408,7 +1408,10 @@ describe('Firefly Workflow Tests', () => {
 
       handler(event);
 
-      expect(selectedElement.children.length).to.equal(1); // only menuIcon (first child is removed)
+      // Label span (no icon in this fixture) followed by the chevron
+      expect(selectedElement.children.length).to.equal(2);
+      expect(selectedElement.querySelector('.selected-verb-text').textContent).to.equal('iconImage');
+      expect(selectedElement.lastElementChild).to.equal(menuIcon);
       expect(selectedElement.dataset.selectedVerb).to.equal('image');
     });
 

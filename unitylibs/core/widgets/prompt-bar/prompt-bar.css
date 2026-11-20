@@ -592,7 +592,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .inp-wrap .inp-field.is-suggested:not(:focus) {
-  color: var(--Palette-gray-400, #444);
+  color: #8a8a8a;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:is(:focus, :active, [aria-selected="true"]) {
@@ -624,9 +624,10 @@
 }
 
 .unity-enabled .interactive-area .selected-model img,
+.unity-enabled .interactive-area .selected-verb .selected-verb-icon,
 .unity-enabled .interactive-area .verb-list .verb-link img {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .act-wrap .unity-act-btn .btn-ico img {
@@ -762,6 +763,23 @@
 .unity-enabled .interactive-area .models-container .menu-icon svg,
 .unity-enabled .interactive-area.dark .models-container .menu-icon svg {
   filter: invert(0);
+}
+
+/* The chevron sprite hard-codes its fill, so recolour it to #f2f2f2 with a filter */
+.unity-enabled .interactive-area:not(.light) .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .models-container .menu-icon svg {
+  filter: brightness(0) invert(95%);
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .selected-verb {
+  color: #dbdbdb;
+  min-width: 0;
+}
+
+/* The verb icon and chevron are images with fixed colours, so recolour them to #dbdbdb with a filter */
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .selected-verb .selected-verb-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verbs-container .verb-list .verb-link img,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verbs-container .menu-icon svg {
+  filter: brightness(0) invert(86%);
 }
 
 .unity-enabled .interactive-area.light .verbs-container .menu-icon svg,
@@ -929,12 +947,18 @@
   max-width: unset;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .models-container .model-name, 
-.unity-enabled .interactive-area.dark .ex-unity-wrap .models-container .model-name {
-  color: #000;
+.unity-enabled .interactive-area .ex-unity-wrap .models-container .verb-list .model-name,
+.unity-enabled .interactive-area.dark .ex-unity-wrap .models-container .verb-list .model-name {
+  color: #dbdbdb;
 }
 
-.unity-enabled .interactive-area.light .ex-unity-wrap .models-container .model-name {
+.unity-enabled .interactive-area .ex-unity-wrap .models-container .selected-model .model-name,
+.unity-enabled .interactive-area.dark .ex-unity-wrap .models-container .selected-model .model-name {
+  color: #f2f2f2;
+}
+
+.unity-enabled .interactive-area.light .ex-unity-wrap .models-container .model-name,
+.unity-enabled .interactive-area.light .ex-unity-wrap .models-container .selected-model .model-name {
   color: #DBDBDB;
 }
 
@@ -1007,7 +1031,7 @@
   padding: 18px;
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
-  border-radius: 10px;
+  border-radius: 24px;
   background: rgba(255 255 255 / 100%);
   color: #292929;
   margin: 0;
@@ -1017,6 +1041,30 @@
   top: 0;
   left: 0;
   z-index: 1;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list {
+  background: #1b1b1b;
+  color: #dbdbdb;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-link {
+  display: flex;
+  padding: var(--Base-Padding-Vertical-Medium, 7px) var(--Base-Padding-Horizontal-Medium, 12px);
+  align-items: flex-start;
+  gap: var(--Accessory-Gap-Medium, 6px);
+  border-radius: 16px;
+  line-height: 18px;
+}
+
+@media (hover: hover) {
+  .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-link:hover {
+    background: #2c2c2c;
+  }
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-link:focus-visible {
+  background: #2c2c2c;
 }
 
 :root:has(meta[name="theme"][content="max25"], .theme-two) .unity-enabled .interactive-area .verb-list {
@@ -1347,7 +1395,8 @@
     white-space: nowrap;
   }
 
-  .unity-enabled .interactive-area .selected-model .model-name {
+  .unity-enabled .interactive-area .selected-model .model-name,
+  .unity-enabled .interactive-area .selected-verb .selected-verb-text {
     display: none;
   }
 
@@ -2545,6 +2594,16 @@
 :root:has(meta[name="theme"][content="max25"], .theme-two) .firefly-model-showcase.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete.pb-redesign .inp-wrap .inp-field::placeholder {
   color: #dbdbdb;
   font-size: 16px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .selected-verb,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .selected-model {
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 18px;
+  border-radius: 20px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .verb-toggle {
