@@ -233,7 +233,9 @@ export default class PromptBarUploadWidget {
 
   async loadModels() {
     const baseUrl = getUnityPromptConfigsBaseUrl();
-    const res = await fetch(`${baseUrl}/unity/configs/prompt/model-picker-video.json`);
+    const { videoModelsRequest } = this.workflowCfg;
+    delete this.workflowCfg.videoModelsRequest;
+    const res = await (videoModelsRequest || fetch(`${baseUrl}/unity/configs/prompt/model-picker-video.json`));
     if (!res.ok) throw new Error('Failed to fetch video models.');
     const json = await res.json();
     this.models = json?.content?.data || [];

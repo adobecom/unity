@@ -548,7 +548,9 @@ export default class ActionBinder {
       this.workflowCfg,
       this.getAdditionalHeaders.bind(this),
     );
-    await this.initAnalytics();
+    this.initAnalytics().catch((e) => {
+      window.lana?.log(`Message: Analytics init failed, Error: ${e}`, this.lanaOptions);
+    });
     const actions = {
       A: (el, key) => {
         el.addEventListener('click', async (e) => {
