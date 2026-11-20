@@ -630,6 +630,25 @@ describe('Unity Upload Block', () => {
       await actionBinder.initActionListeners();
     });
 
+    it('should not wait for analytics to bind action listeners', async () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      sinon.stub(actionBinder, 'initAnalytics').returns(new Promise(() => {}));
+
+      await actionBinder.initActionListeners(unityEl, { a: 'upload' });
+
+      expect(actionBinder.initAnalytics.calledOnce).to.be.true;
+    });
+
+    it('should log when analytics fails to initialize', async () => {
+      const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
+      sinon.stub(actionBinder, 'initAnalytics').rejects(new Error('analytics down'));
+
+      await actionBinder.initActionListeners(unityEl, {});
+      await delay(0);
+
+      expect(window.lana.log.calledWithMatch(/Analytics init failed/)).to.be.true;
+    });
+
     it('should handle click events on action elements', async () => {
       const actionBinder = new ActionBinder(unityEl, workflowCfg, unityEl, [unityEl]);
 
@@ -913,7 +932,6 @@ describe('Unity Upload Block', () => {
       });
       const objectUrl = URL.createObjectURL(blob);
     });
-
 
     it('should handle continueInApp with query parameters parsing', async () => {
       const testWorkflowCfg = {

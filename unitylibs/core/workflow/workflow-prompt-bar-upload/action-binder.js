@@ -167,6 +167,18 @@ export default class ActionBinder {
     }
   }
 
+  ensureErrorToast() {
+    if (this.errorToastEl) return Promise.resolve(this.errorToastEl);
+    if (!this.errorToastPromise) {
+      this.errorToastPromise = this.createErrorToast().then((toastEl) => {
+        this.errorToastEl = toastEl;
+        if (!toastEl) this.errorToastPromise = null;
+        return toastEl;
+      });
+    }
+    return this.errorToastPromise;
+  }
+
   async createErrorToast() {
     try {
       const [alertImg, closeImg] = await Promise.all([
@@ -535,7 +547,7 @@ export default class ActionBinder {
 
   async executeActionMaps(value) {
     await this.handlePreloads();
-    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
+    await this.ensureErrorToast();
     if (value === 'interrupt') await this.cancelUploadOperation();
   }
 
@@ -606,14 +618,18 @@ export default class ActionBinder {
     this.widgetWrap = searchRoot?.querySelector?.('.ex-unity-wrap') || this.widgetWrap;
 
     this.setupServiceHandler();
-    await this.initAnalytics();
+    this.initAnalytics().catch((e) => {
+      window.lana?.log(`Message: Analytics init failed, Error: ${e}`, this.lanaOptions);
+    });
 
     if (this.isStringActionMap(actMap)) {
       await this.bindStringActionMap(b, actMap);
       return;
     }
-    if (!this.errorToastEl) this.errorToastEl = await this.createErrorToast();
-    await this.handlePreloads();
+    this.ensureErrorToast();
+    this.handlePreloads().catch((e) => {
+      window.lana?.log(`Message: Preloads failed, Error: ${e}`, this.lanaOptions);
+    });
     this.inputField = this.widgetWrap?.querySelector('#pbuPromptInput')
       || this.widgetWrap?.querySelector('.inp-field')
       || this.inputField;
@@ -633,10 +649,9 @@ export default class ActionBinder {
       }
     });
 
-    const pbuEvents = this.analyticsModule.PROMPT_BAR_EVENTS;
-    this.bindWidgetInteractionEvent('pbu-enter-prompt', pbuEvents.ENTER_PROMPT, 'enter-prompt');
-    this.bindWidgetInteractionEvent('pbu-model-dropdown-open', pbuEvents.MODEL_SELECT_DROPDOWN, 'open');
-    this.bindWidgetInteractionEvent('pbu-ratio-dropdown-open', pbuEvents.RATIO_DROPDOWN, 'open');
+    this.bindWidgetInteractionEvent('pbu-enter-prompt', 'ENTER_PROMPT', 'enter-prompt');
+    this.bindWidgetInteractionEvent('pbu-model-dropdown-open', 'MODEL_SELECT_DROPDOWN', 'open');
+    this.bindWidgetInteractionEvent('pbu-ratio-dropdown-open', 'RATIO_DROPDOWN', 'open');
     this.widgetWrap?.addEventListener('pbu-delete-image', () => this.resetUploadedAssetState({ dropPendingImage: true }));
     this.bindOuterMarqueeDropTarget();
   }
@@ -745,10 +760,16 @@ export default class ActionBinder {
     }
   }
 
-  bindWidgetInteractionEvent(domEventName, analyticsEventName, action) {
-    this.widgetWrap?.addEventListener(domEventName, () => {
-      sendAnalyticsEvent(new CustomEvent(analyticsEventName));
-      this.logAnalyticsinSplunk(analyticsEventName, { action });
+  bindWidgetInteractionEvent(domEventName, eventKey, action) {
+    this.widgetWrap?.addEventListener(domEventName, async () => {
+      try {
+        if (!this.analyticsModule) await this.initAnalytics();
+        const analyticsEventName = this.analyticsModule.PROMPT_BAR_EVENTS[eventKey];
+        sendAnalyticsEvent(new CustomEvent(analyticsEventName));
+        this.logAnalyticsinSplunk(analyticsEventName, { action });
+      } catch (e) {
+        window.lana?.log(`Message: ${domEventName} analytics failed, Error: ${e}`, this.lanaOptions);
+      }
     });
   }
 

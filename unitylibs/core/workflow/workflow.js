@@ -6,6 +6,7 @@ import {
   defineDeviceByScreenSize,
   getConfig,
   priorityLoad,
+  getUnityPromptConfigsBaseUrl,
 } from '../../scripts/utils.js';
 
 class WfInitiator {
@@ -57,10 +58,14 @@ class WfInitiator {
         `${getUnityLibs()}/core/features/progress-circle/progress-circle.css`,
       ],
       'workflow-ai': [...bundledWidgetAssets],
-      'workflow-firefly': fireflyShared,
+      'workflow-firefly': [...fireflyShared, `${getUnityLibs()}/utils/TypeaheadUtils.js`],
       'workflow-prompt-bar-upload': [
         `${baseWfPath}/sprite.svg`,
         ...this.getWidgetPaths(),
+      ],
+      'workflow-upload': [
+        `${getUnityLibs()}/utils/FileUtils.js`,
+        `${getUnityLibs()}/utils/device-detection.js`,
       ],
       'workflow-prompt-upload': [
         `${baseWfPath}/sprite.svg`,
@@ -86,12 +91,18 @@ class WfInitiator {
       `${baseWfPath}/action-binder.js`,
     ];
     const wfRes = workflowRes[workflowName] || [];
+    if (this.widgetName === 'prompt-bar-upload') {
+      const videoModelsRequest = fetch(`${getUnityPromptConfigsBaseUrl()}/unity/configs/prompt/model-picker-video.json`);
+      videoModelsRequest.catch(() => {});
+      this.workflowCfg.videoModelsRequest = videoModelsRequest;
+    }
     const priorityList = [...commonResources, ...wfRes];
     const pfr = await priorityLoad(priorityList);
+    const spriteIdx = priorityList.indexOf(`${baseWfPath}/sprite.svg`);
 
     return {
       targetConfigCallRes: pfr[0],
-      spriteCallRes: pfr.length > 2 ? pfr[2] : null,
+      spriteCallRes: spriteIdx > -1 ? pfr[spriteIdx] : null,
     };
   }
 
