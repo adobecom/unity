@@ -11,7 +11,6 @@
   margin: 0;
   padding: 0 var(--spacing-xs);
   border-radius: 10px;
-  background: #fff;
   box-shadow: none;
 }
 
@@ -59,8 +58,8 @@
   box-sizing: border-box;
   padding: 4px 4px 4px 8px;
   border-radius: 8px;
-  border: 1px solid #E1E1E1;
-  background: #fafafa;
+  background: #222;
+  border: 1px solid transparent;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .variation-label {
@@ -73,19 +72,19 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile:hover .variation-label {
-  color: #292929;
+  color: #dbdbdb;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .variation-label,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .variation-label,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-active .variation-label {
-  color: #292929;
+  color: #dbdbdb;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-idle .variation-label {
-  color: #505050;
+  color: #afafaf;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.is-idle:hover .variation-label {
-  color: #292929;
+  color: #dbdbdb;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player {
@@ -114,7 +113,7 @@
   display: flex;
   align-items: center;
 }
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn svg { display: block; }
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn svg { display: block; filter: brightness(0) invert(86%); }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .pause-btn.hidden { display: none; }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing .custom-player .pause-btn,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.paused .custom-player .pause-btn { display: flex; }
@@ -125,7 +124,7 @@
   height: 4px;
   margin-right: 4px;
   margin-left: 2px;
-  background: linear-gradient(#3B63FB, #3B63FB) left center/var(--progress, 0%) 100% no-repeat, #e5e5e5;
+  background: linear-gradient(#5681ff, #5681ff) left center/var(--progress, 0%) 100% no-repeat, #393939;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
@@ -134,7 +133,7 @@
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile .custom-player .time-el {
   grid-area: time;
-  color: #505050;
+  color: #afafaf;
   font-size: var(--type-body-xs-size);
   width: 44px;
   text-align: left;
@@ -153,8 +152,7 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.playing,
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .variation-tile.selected {
-  border-color: #3b63fb;
-  background: #fff;
+  border: 1px solid rgba(225, 225, 225, 0.10);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded {
@@ -164,7 +162,8 @@
   align-items: center;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded svg {
-  color: #3b63fb;
+  stroke: currentColor;
+  stroke-width: 0.6px;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item.sound-expanded .drop-left {
@@ -663,7 +662,7 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop {
-  background: linear-gradient(0deg, rgba(255 255 255 / 100%) 0%, rgba(255 255 255 / 100%) 100%), linear-gradient(89deg, rgba(255 255 255 / 80%) 1.01%, rgba(255 255 255 / 20%) 111.14%);
+  background: #1b1b1b;
   box-shadow: 0 2px 8px 0 rgba(0 0 0 / 16%);
   list-style: none;
   width: 100%;
@@ -706,7 +705,7 @@
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop-title-con .drop-title {
   font-weight: 700;
   font-size: var(--type-body-s-size);
-  color: #292929;
+  color: rgba(219, 219, 219, 0.87);
   line-height: 20.8px;
   padding: 0 var(--spacing-xxs);
 }
@@ -797,12 +796,13 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .drop-text {
+  color: #dbdbdb;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item:hover {
-  background-color: #e6e6e6;
+  background-color: #2c2c2c;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .use-prompt-btn.inline {
@@ -815,8 +815,12 @@
   box-sizing: border-box;
   white-space: nowrap;
   flex: 0 0 auto;
-  font-family: var(--font-family-adobe-clean);
+  font-family: var(--s2a-font-family-body), "Adobe Clean", adobe-clean, sans-serif;
   font-size: 14px;
+  border-radius: 100px;
+  border: 2px solid rgba(219, 219, 219, 0.87);
+  color: #dbdbdb;
+  background-color: transparent;
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .prompt-icon {
@@ -826,6 +830,7 @@
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
+  color: #dbdbdb;
 }
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-item .prompt-icon svg {
   display: block;
@@ -849,6 +854,7 @@
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con {
   display: flex;
+  color: rgba(219, 219, 219, 0.87);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con.active {
@@ -860,6 +866,7 @@
   height: 20px;
   padding-right: var(--spacing-xxs);
   margin-top: 3px;
+  filter: brightness(0) invert(86%);
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .tip-con .tip-text {
@@ -881,8 +888,8 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .drop .drop-footer .legal-con .legal-text {
-  color: #5258E4;
-  text-decoration: none;
+  color: rgba(219, 219, 219, 0.87);
+  text-decoration: underline;
   font-weight: 500;
   font-size: 14px;
   line-height: var(--type-detail-s-lh);
@@ -948,7 +955,7 @@
   width: max-content;
 }
 
-.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .action-container > :is(.verb-toggle, .verbs-container) ~ .models-container {
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .action-container > :is(.verb-toggle, .verbs-container) ~ :is(.models-container, .shuffle-btn) {
   margin-inline-start: 8px;
 }
 
