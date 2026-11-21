@@ -970,7 +970,12 @@
 }
 
 .unity-enabled .interactive-area .ex-unity-wrap.verb-options .models-container .verb-list {
-  min-width: 270px;
+  min-width: 0;
+  width: max-content;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .action-container > :is(.verb-toggle, .verbs-container) ~ .models-container {
+  margin-inline-start: 8px;
 }
 
 .unity-enabled .interactive-area .verbs-container .menu-icon,
@@ -1035,7 +1040,7 @@
 } 
 
 .unity-enabled .interactive-area .verb-list {
-  padding: 18px;
+  padding: 8px;
   list-style: none;
   box-shadow: 0 0 10px #0000001c;
   border-radius: 24px;
@@ -1131,6 +1136,27 @@
 
 [dir="rtl"] .unity-enabled .interactive-area .verb-list .verb-item.selected .selected-icon {
   right: 3px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-item .selected-icon,
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-item.selected .selected-icon {
+  display: block;
+  position: static;
+  transform: none;
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  margin-inline-end: 2px;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-item:not(.selected) .selected-icon {
+  visibility: hidden;
+}
+
+.unity-enabled .interactive-area .ex-unity-wrap .ex-unity-widget .autocomplete:not(.pb-redesign) .verb-list .verb-item .selected-icon svg {
+  display: block;
+  width: 10px;
+  height: 10px;
 }
 
 @keyframes move-down {
