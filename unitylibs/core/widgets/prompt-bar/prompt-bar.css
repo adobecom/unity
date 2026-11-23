@@ -210,6 +210,11 @@
   background: none;
 }
 
+.upload-marquee-block .upload-marquee-media {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
 .hero-marquee.unity-enabled .interactive-area .text {
   max-width: 800px;
   margin: var(--spacing-xxl) 0 var(--spacing-m);
