@@ -830,10 +830,10 @@ export default class ActionBinder {
     dropTarget.addEventListener('drop', async (e) => {
       if (!hasFilePayload(e)) return;
       e.preventDefault();
+      e.stopPropagation();
       dragDepth = 0;
       setHighlight(false);
       const { files } = this.extractFiles(e);
-      this.dispatchAnalyticsEvent('drop');
       this.dispatchEntryAnalytics();
       await this.uploadFilesImmediately(files, 'drop');
     });
@@ -1003,7 +1003,7 @@ export default class ActionBinder {
             e.stopPropagation();
             el.classList.remove('drag-over');
             const { files } = this.extractFiles(e);
-            this.dispatchAnalyticsEvent('drop');
+            if (value !== 'upload') this.dispatchAnalyticsEvent('drop');
             this.dispatchEntryAnalytics();
             if (value === 'upload') await this.uploadFilesImmediately(files, 'drop');
           });
@@ -1021,7 +1021,6 @@ export default class ActionBinder {
           const onDrop = async (e) => {
             e.preventDefault();
             const { files } = this.extractFiles(e);
-            this.dispatchAnalyticsEvent('drop');
             this.dispatchEntryAnalytics();
             await this.uploadFilesImmediately(files, 'drop');
           };
