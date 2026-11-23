@@ -279,6 +279,7 @@ class WfInitiator {
           'quiz-maker',
           'flashcard-maker',
           'mindmap-maker',
+          'cheat-sheet',
           'resume-builder',
           'gen-presentation-v2',
           'interactive-report',
